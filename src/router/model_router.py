@@ -22,12 +22,16 @@ failover.logged (الحزمة) + router.call.logged الختامي (الموجّ
 
 from __future__ import annotations
 
+import json
+import socket
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable
 
-from core.config import provider_settings
+from core.config import live_model_settings, provider_settings
 from router.cooling_loop import CoolingLoop
 from router.failover_chain import FailoverChain
 from router.rate_limiter import RateLimiter
@@ -150,6 +154,8 @@ class ModelRouter:
         self._sleeper = sleeper
         self._max_rate_waits = max(1, int(max_rate_waits))
         self._slot_timeout = float(slot_timeout)
+        #: النموذج الافتراضي للاستدعاءات الحية (build_live يضبطه — §1).
+        self._live_default_model: str = ""
         self.events: list[dict] = []
 
     # ------------------------------------------------------------ #
@@ -310,3 +316,266 @@ class ModelRouter:
     def _estimate_tokens(messages: list[ChatMessage]) -> int:
         """تقدير خشن (~4 محارف/توكن) — يُصحَّح بالفعل بعد النجاح."""
         return sum(len(m.content) for m in messages) // 4 + 32
+
+    # ------------------------------------------------------------------ #
+    # الأمر السادس — الربط الحي: نقل urllib + chat_live + build_live
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def build_live(
+        cls,
+        live_cfg: "Any" = None,
+        *,
+        on_event: Callable[[dict], None] | None = None,
+        sleeper: Callable[[float], None] = time.sleep,
+    ) -> "ModelRouter":
+        """بناء موجّه حي — كل مزود محلول بمفتاحه، بسلسلة تبدّل مرتّبة.
+
+        المزود الافتراضي أول السلسلة؛ ما بعده احتياط بترتيب الحل (§1.5).
+        حدود كل مزود تُضبط في المحدد بإعداداته الخاصة (§1.4)، والتبريد
+        والتبريد يعملان على أي مزود بنفس المنطق (§1.6). لا مزود محلول
+        = ProviderCallError صريحة — لا mock ولا صمت.
+        """
+        live_cfg = live_cfg or live_model_settings
+        resolved = resolve_live_providers(live_cfg)
+        if not resolved:
+            raise ProviderCallError(
+                "لا مزود حي بمفتاح قابل للحل — أضف OPENROUTER_API_KEY "
+                "أو اضبط AGenthubV2_LIVE_PROVIDERS في ‎.env (فشل صريح، "
+                "لا سقوط إلى mock)"
+            )
+        default_provider = str(getattr(live_cfg, "default_provider", "openai_compatible"))
+        default_model = str(getattr(live_cfg, "default_model", ""))
+        if default_provider not in resolved:
+            # المزود الافتراضي بلا مفتاح: فشل صريح — لا نبدّل بصمت
+            raise ProviderCallError(
+                f"المزود الافتراضي '{default_provider}' بلا مفتاح قابل "
+                f"للحل (المتاح: {sorted(resolved)}) — اضبط المفتاح في ‎.env"
+            )
+
+        transports = {
+            name: live_transport(cfg) for name, cfg in resolved.items()
+        }
+        chain_members = [default_provider] + [
+            name for name in resolved if name != default_provider
+        ]
+        # حدود كل مزود بإعداداته الخاصة (§1.4) — rpm/min_interval/cooldown
+        limiter = RateLimiter(provider_settings.as_dicts()["rate_limiter"])
+        for name, cfg in resolved.items():
+            override = {
+                key: cfg[key]
+                for key in ("rpm", "min_interval", "cooldown", "concurrency")
+                if cfg.get(key) is not None
+            }
+            if override:
+                limiter.configure(name, override)
+
+        router = cls(
+            rate_limiter=limiter,
+            failover_chain=FailoverChain(
+                chain_members,
+                provider_settings.as_dicts()["failover"],
+                on_event=on_event,
+            ),
+            cooling_loop=CoolingLoop(
+                provider_settings.as_dicts()["cooling"], on_event=on_event
+            ),
+            default_provider=default_provider,
+            transports=transports,
+            on_event=on_event,
+            sleeper=sleeper,
+        )
+        router._live_default_model = (
+            default_model
+            or resolved[default_provider].get("model", "")
+            or "gpt-4o-mini"
+        )
+        return router
+
+    def chat_live(
+        self,
+        messages: list[ChatMessage],
+        *,
+        provider_id: Provider | str | None = None,
+        model: str | None = None,
+    ) -> dict:
+        """استدعاء حي — نموذج حقيقي عبر نقل urllib، لا سقوط إلى mock أبدًا.
+
+        نفس حمايات chat() (حد معدل ← تبريد ← تبدّل) لكن النقل حصريًا
+        حي: إن لم يكن للمزود نقل urllib مسجَّل يُرفض الطلب فورًا —
+        الفشل الصريح أفضل من رد وهمي (الأمر السادس §2.4).
+        """
+        pid = (
+            provider_id.value
+            if isinstance(provider_id, Provider)
+            else str(provider_id or self.default_provider)
+        )
+        if pid == Provider.MOCK.value or pid not in self._transports:
+            raise ProviderCallError(
+                f"لا نقل حي مسجَّل للمزود '{pid}' — الربط الحي يُبنى عبر "
+                "ModelRouter.build_live()؛ لا سقوط إلى mock"
+            )
+        chosen_model = model or self._live_default_model
+        if not chosen_model:
+            raise ProviderCallError(
+                "لا نموذج محدد للاستدعاء الحي — مرره أو اضبط "
+                "AGenthubV2_LIVE_DEFAULT_MODEL في .env"
+            )
+        return self.chat(messages, provider_id=pid, model=chosen_model)
+
+
+def live_transport(provider_cfg: dict) -> Callable[[str, list[ChatMessage]], str]:
+    """نقل urllib حقيقي لمزود متوافق مع OpenAI — صفر تبعيات جديدة (§1.3).
+
+    provider_cfg: {base_url, api_key, model, headers?, timeout?, max_tokens?}
+    الأخطاء مصنَّفة بطرفية ProviderCallError: 429 اختناق (تبريد)،
+    5xx/مهلة خطأ خادم (إعادات ثم تبدّل)، 4xx عميل (فشل صريح فوري).
+    """
+    base_url = str(provider_cfg["base_url"]).rstrip("/")
+    api_key = str(provider_cfg.get("api_key", ""))
+    timeout = float(provider_cfg.get("timeout", 90))
+    max_tokens = int(provider_cfg.get("max_tokens", 4000) or 0)
+
+    def transport(model: str, messages: list[ChatMessage]) -> str:
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [
+                {"role": m.role, "content": m.content} for m in messages
+            ],
+        }
+        if max_tokens > 0:
+            payload["max_tokens"] = max_tokens
+        # حقول إضافية خاصة بالمزود (مثل تعطيل thinking في نقاط GLM)
+        payload.update(dict(provider_cfg.get("extra_body", {}) or {}))
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        headers.update(dict(provider_cfg.get("headers", {}) or {}))
+        request = urllib.request.Request(
+            base_url + "/chat/completions",
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as error:
+            detail = error.read()[:300].decode("utf-8", "replace")
+            code = int(error.code)
+            if code == 429:
+                retry_after = error.headers.get("Retry-After") if error.headers else None
+                raise ProviderCallError(
+                    f"429 اختناق من {base_url}: {detail}",
+                    code=code,
+                    is_throttle=True,
+                    retry_after=int(retry_after) if retry_after and retry_after.isdigit() else None,
+                ) from error
+            if code >= 500:
+                raise ProviderCallError(
+                    f"{code} خطأ خادم من {base_url}: {detail}",
+                    code=code,
+                    is_server_error=True,
+                ) from error
+            raise ProviderCallError(
+                f"{code} خطأ عميل من {base_url} (مفتاح/عنوان؟): {detail}",
+                code=code,
+            ) from error
+        except (urllib.error.URLError, TimeoutError, socket.timeout) as error:
+            raise ProviderCallError(
+                f"مهلة/اتصال فشل مع {base_url}: {error}",
+                is_timeout=True,
+            ) from error
+        try:
+            content = body["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as error:
+            raise ProviderCallError(
+                f"استجابة بلا choices/content من {base_url}: "
+                f"{json.dumps(body, ensure_ascii=False)[:200]}",
+                is_server_error=True,
+            ) from error
+        if not isinstance(content, str) or not content.strip():
+            raise ProviderCallError(
+                f"رد فارغ من {base_url} — فشل صريح لا تكرار صامت",
+                is_server_error=True,
+            )
+        return content
+
+    return transport
+
+
+#: قالب المزودات الحية المدمج — يُستكمل بالمفاتيح من البيئة/‎.env (§1.2).
+BUILTIN_LIVE_PROVIDERS: dict[str, dict] = {
+    "openai_compatible": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "anthropic/claude-haiku-3.5",
+        "env_keys": ("OPENROUTER_API_KEY", "OPENAI_COMPATIBLE_API_KEY"),
+    },
+    "zai_internal": {
+        "base_url": "https://internal-api.z.ai/v1",
+        "model": "glm-4.6",
+        "config_file": "/etc/.z-ai-config",
+    },
+}
+
+
+def _resolve_provider_credentials(spec: dict) -> dict | None:
+    """استكمال مفتاح مزود واحد من مصادره — يعيد None إن لم يُحلّ."""
+    cfg = dict(spec)
+    for env_name in cfg.pop("env_keys", ()):  # من البيئة
+        import os
+
+        value = os.environ.get(env_name, "").strip()
+        if value:
+            cfg["api_key"] = value
+            return cfg
+    config_file = cfg.pop("config_file", "")
+    if config_file:  # من ملف إعدادات جاهز (JSON: baseUrl/apiKey/token)
+        try:
+            with open(config_file, encoding="utf-8") as handle:
+                found = json.load(handle)
+            if found.get("apiKey"):
+                cfg["api_key"] = found["apiKey"]
+                headers = {"X-Z-AI-From": "Z"}
+                if found.get("token"):
+                    headers["X-Token"] = found["token"]
+                cfg.setdefault("headers", {}).update(headers)
+                return cfg
+        except (OSError, ValueError):
+            return None
+    return cfg if cfg.get("api_key") else None
+
+
+def resolve_live_providers(cfg: "Any" = None) -> dict[str, dict]:
+    """حل المزودات الحية: المدمج + JSON الإعدادات — بلا مفاتيح يُستبعد.
+
+    المزود من providers_json ينسخ فوق المدمج بالاسم نفسه (تخصيص كامل:
+    base_url/api_key/model/الحدود). المزود بلا مفتاح قابل للحل يُستبعد
+    صراحةً — لا يُنادى أبدًا (فشل صريح لا 401 عشوائية).
+    """
+    live_cfg = cfg or live_model_settings
+    resolved: dict[str, dict] = {}
+    for name, spec in BUILTIN_LIVE_PROVIDERS.items():
+        found = _resolve_provider_credentials(dict(spec))
+        if found:
+            resolved[name] = found
+    if getattr(live_cfg, "providers_json", ""):
+        try:
+            custom = json.loads(live_cfg.providers_json)
+        except ValueError as error:
+            raise ProviderCallError(
+                f"AGenthubV2_LIVE_PROVIDERS ليست JSON صالحًا: {error}"
+            ) from error
+        if not isinstance(custom, dict):
+            raise ProviderCallError("AGenthubV2_LIVE_PROVIDERS يجب أن تكون كائن JSON")
+        for name, spec in custom.items():
+            if not isinstance(spec, dict) or not spec.get("base_url"):
+                raise ProviderCallError(
+                    f"المزود المخصص '{name}' يحتاج base_url على الأقل"
+                )
+            found = _resolve_provider_credentials(dict(spec))
+            if found:
+                merged = {**resolved.get(name, {}), **found}
+                resolved[name] = merged
+    return resolved

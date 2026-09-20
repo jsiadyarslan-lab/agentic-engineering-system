@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     port: int = 8010
     db_path: Path = Path("runtime") / "agent_hub_v2.db"
 
-    model_config = {"env_prefix": "AGenthubV2_", "env_file": ".env"}
+    model_config = {"env_prefix": "AGenthubV2_", "env_file": ".env", "extra": "ignore"}
 
 
 class ProviderConfig(BaseSettings):
@@ -53,6 +53,7 @@ class ProviderConfig(BaseSettings):
     model_config = {
         "env_prefix": "AGenthubV2_PROVIDER_",
         "env_file": ".env",
+        "extra": "ignore",
     }
 
     def as_dicts(self) -> dict[str, dict]:
@@ -78,5 +79,28 @@ class ProviderConfig(BaseSettings):
         }
 
 
+class LiveModelConfig(BaseSettings):
+    """إعدادات الربط الحي (الأمر السادس §1.2) — نقطة متوافقة OpenAI.
+
+    - default_provider: المزود الافتراضي (openai_compatible = OpenRouter).
+    - default_model: النموذج الافتراضي — يختاره المستخدم عبر .env.
+    - providers_json: مزودات إضافية/مخصصة بصيغة JSON
+      {"الاسم": {"base_url":…, "api_key":…, "model":…, "rpm":…,
+                  "min_interval":…, "timeout":…, "max_tokens":…,
+                  "headers": {…}, "config_file": "/etc/…"}}.
+    """
+
+    default_provider: str = "openai_compatible"
+    default_model: str = "anthropic/claude-haiku-3.5"
+    providers_json: str = ""
+
+    model_config = {
+        "env_prefix": "AGenthubV2_LIVE_",
+        "env_file": ".env",
+        "extra": "ignore",
+    }
+
+
 settings = Settings()
 provider_settings = ProviderConfig()
+live_model_settings = LiveModelConfig()

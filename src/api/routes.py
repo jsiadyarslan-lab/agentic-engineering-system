@@ -598,3 +598,136 @@ def eoe_approve(body: EoeApproveIn) -> dict:
         "approved": body.approved,
         "note": "الموافقة سارية — استؤنف التنفيذ" if body.approved else "الرفض مسجل — fail-closed",
     }
+
+
+# ------------------------------------------------------------------ #
+# الأمر السادس — المهمة الحية: ربط نموذج حقيقي + PDF عربي (§5+§6)
+# ------------------------------------------------------------------ #
+
+class MissionStartIn(BaseModel):
+    """جسم بدء المهمة — الهدف (فارغ = المهمة الافتراضية §5.1)."""
+
+    goal: str = ""
+
+
+class MissionVerifyIn(BaseModel):
+    """جسم موافقة المستخدم على مهمة — معرّف الدورة."""
+
+    cycle_id: str = Field(min_length=1)
+
+
+#: موجّه المهمة الحية — يُبنى مرة واحدة كسولًا (المفاتيح من ‎.env).
+_mission_state: dict = {"router": None, "orchestrator": None, "lock": threading.Lock()}
+
+
+def _mission_router():
+    """بناء الموجّه الحي مرة واحدة — فشل صريح إن لم تُحل المفاتيح."""
+    with _mission_state["lock"]:
+        if _mission_state["router"] is None:
+            from router.model_router import ModelRouter
+
+            _mission_state["router"] = ModelRouter.build_live()
+        return _mission_state["router"]
+
+
+@app.post("/api/mission/stream")
+async def mission_stream(body: MissionStartIn) -> StreamingResponse:
+    """بث المهمة الحية كاملة (SSE) — LLM حقيقي، لا mock في المسار.
+
+    أحداث الدورة (أدوار/حالات/أدوات بـ sha256) تُبث لحظة حدوثها،
+    وختامها mission_done بالحكم الصادق PASS/HARD STOP والأدلة.
+    """
+    from missions import DEFAULT_MISSION_GOAL, run_mission
+
+    goal = body.goal.strip() or DEFAULT_MISSION_GOAL
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+    def sink(event: dict) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, event)
+        _persist_event(event)
+
+    def run_mission_in_thread() -> None:
+        try:
+            router = _mission_router()
+            result = run_mission(goal, router=router, on_event=sink)
+            with _mission_state["lock"]:
+                _mission_state["orchestrator"] = result.orchestrator
+                _mission_state["last_result"] = {
+                    "cycle_id": result.cycle_id,
+                    "verdict": result.verdict,
+                    "pdf_path": result.pdf_path,
+                }
+        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته صامتًا
+            loop.call_soon_threadsafe(
+                queue.put_nowait,
+                {
+                    "seq": 0,
+                    "cycle_id": "",
+                    "role": "mission",
+                    "kind": "mission_error",
+                    "state": None,
+                    "text": f"المهمة فشلت قبل الدورة: {error}",
+                    "duration_ms": 0,
+                    "details": {"error": str(error)},
+                },
+            )
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    loop.run_in_executor(_eoe_executor, run_mission_in_thread)
+
+    async def generate():
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/api/mission/report")
+def mission_report():
+    """تسليم PDF المهمة — 404 صريح إن لم يوجد بعد."""
+    pdf = Path("runtime") / "missions" / "default" / "mideast_report.pdf"
+    if not pdf.is_file():
+        raise HTTPException(status_code=404, detail="لا PDF بعد — شغّل المهمة أولًا")
+    return FileResponse(pdf, media_type="application/pdf", filename="mideast_report.pdf")
+
+
+@app.get("/api/mission/evidence")
+def mission_evidence() -> dict:
+    """تسليم evidence.json — 404 صريح إن لم يوجد بعد."""
+    path = Path("runtime") / "missions" / "default" / "evidence.json"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="لا دليل بعد — شغّل المهمة أولًا")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.post("/api/mission/verify")
+def mission_verify(body: MissionVerifyIn) -> dict:
+    """موافقة المستخدم على مهمة — القناة الوحيدة إلى VERIFIED (§6.3)."""
+    with _mission_state["lock"]:
+        if _mission_state.get("orchestrator") is None:
+            raise HTTPException(
+                status_code=404, detail="لا مهمة منجزة بعد — شغّل المهمة أولًا"
+            )
+    orchestrator: object = _mission_state["orchestrator"]
+    try:
+        outcome = orchestrator.user_verifies(body.cycle_id)
+    except KeyError:
+        raise HTTPException(
+            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
+        )
+    except StateTransitionError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+    return {
+        "cycle_id": body.cycle_id,
+        "state": outcome["state"],
+        "badge": "✔ VERIFIED",
+    }

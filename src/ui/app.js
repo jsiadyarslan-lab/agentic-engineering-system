@@ -246,6 +246,32 @@
       case "router.demo.error":
         renderRouterDemo(event);
         return;
+      case "mission.start":
+        renderMissionStart(event);
+        return;
+      case "mission_done":
+        renderMissionDone(event);
+        return;
+      case "mission_error": {
+        var errMsg = makeRoleMessage(event);
+        errMsg.body.classList.add("cycle-error");
+        errMsg.body.textContent = "المهمة فشلت قبل الدورة: " +
+          ((event.details || {}).error || event.text);
+        removeWorking();
+        messagesEl.appendChild(errMsg.root);
+        scrollDown();
+        return;
+      }
+      case "tool.call":
+        renderToolCall(event);
+        return;
+      case "tool.site_declared": {
+        var declared = makeRoleMessage(event);
+        declared.body.textContent = "⚠ نفيذ معلن خارج الركيزة: " +
+          event.tool + " (" + ((event.reason || "").slice(0, 90)) + ")";
+        insertBeforeWorking(declared.root);
+        return;
+      }
       default: {
         // plan | plan_revised | review_verdict | task_execution |
         // task_verification | verification_rollup | arbiter_decision |
@@ -546,6 +572,152 @@
   function autoGrow() {
     inputEl.style.height = "auto";
     inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + "px";
+  }
+
+  // ---------- الأمر السادس: المهمة الحية (ربط نموذج حقيقي + PDF) ----------
+  var missionRunEl = $("mission-run");
+
+  function renderMissionStart(event) {
+    var msg = makeRoleMessage(event);
+    msg.body.textContent = "🚀 مهمة حية — نموذج حقيقي بلا mock: " +
+      (event.goal || "") +
+      " — المصادر تجلب من الويب والـPDF يُولد داخل الركيزة";
+    insertBeforeWorking(msg.root);
+  }
+
+  function renderToolCall(event) {
+    var msg = makeRoleMessage(event);
+    msg.root.classList.add("router-call");
+    var a = event.args_summary || {};
+    var desc = a.results !== undefined
+      ? (a.results + " نتيجة — " + (a.first || ""))
+      : a.pages !== undefined
+        ? ("صفحات: " + a.pages)
+        : (a.chars !== undefined ? (a.chars + " حرفًا") : (a.path || ""));
+    msg.body.textContent = "🔧 " + event.tool + " — " + desc +
+      " · sha256: " + String(event.output_sha256 || "").slice(0, 10) +
+      " · " + (event.execution_site === "substrate"
+        ? "داخل الركيزة" : "معلاَن خارجها") +
+      " · " + fmtTime(event.duration_ms || 0);
+    insertBeforeWorking(msg.root);
+  }
+
+  function renderMissionDone(event) {
+    removeWorking();
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.root.classList.add("cycle-summary");
+    if (event.verdict === "PASS") {
+      msg.body.textContent = "✅ VERDICT: PASS — المهمة اكتملت بأدلة كاملة";
+    } else {
+      msg.body.classList.add("cycle-error");
+      msg.body.textContent = "⛔ VERDICT: HARD STOP — " + (event.text || "");
+    }
+    var facts = document.createElement("div");
+    facts.textContent =
+      "الحالة: " + (d.final_state || "—") +
+      " · صفحات PDF: " + (d.pdf_pages !== undefined ? d.pdf_pages : "—") +
+      " · المصادر: " + (d.sources_count !== undefined ? d.sources_count : "—") +
+      " · المدة: " + fmtTime(d.duration_ms || 0);
+    msg.body.appendChild(facts);
+    if (Array.isArray(d.verdict_reasons) && d.verdict_reasons.length) {
+      var list = document.createElement("div");
+      list.className = "router-reason";
+      list.textContent = "أسباب التوقف: " + d.verdict_reasons.join(" · ");
+      msg.body.appendChild(list);
+    }
+    if (event.verdict === "PASS") {
+      var openBtn = document.createElement("button");
+      openBtn.className = "verify-btn";
+      openBtn.style.marginLeft = "8px";
+      openBtn.textContent = "📄 افتح التقرير";
+      openBtn.addEventListener("click", function () {
+        window.open("/api/mission/report", "_blank");
+      });
+      msg.body.appendChild(openBtn);
+      if (d.cycle_id) {
+        var verifyBtn = document.createElement("button");
+        verifyBtn.className = "verify-btn";
+        verifyBtn.textContent = "✔ أوافق على النتيجة";
+        verifyBtn.addEventListener("click", function () {
+          verifyMission(d.cycle_id, verifyBtn);
+        });
+        msg.body.appendChild(verifyBtn);
+      }
+    }
+    var evLink = document.createElement("button");
+    evLink.className = "verify-btn";
+    evLink.style.background = "transparent";
+    evLink.style.color = "inherit";
+    evLink.textContent = "🧾 الأدلة (evidence.json)";
+    evLink.addEventListener("click", function () {
+      window.open("/api/mission/evidence", "_blank");
+    });
+    msg.body.appendChild(evLink);
+    messagesEl.appendChild(msg.root);
+    scrollDown();
+  }
+
+  function verifyMission(cycleId, btn) {
+    btn.disabled = true;
+    fetch("/api/mission/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cycle_id: cycleId })
+    })
+      .then(function (resp) { return resp.json(); })
+      .then(function () {
+        btn.replaceWith(makeVerifiedNote());
+        scrollDown();
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "تعذّرت الموافقة: " + err.message;
+      });
+  }
+
+  function streamMission(goal) {
+    addWorking();
+    postStream("/api/mission/stream", { goal: goal || "" })
+      .then(finishStream, streamFailed);
+
+    function streamFailed(err) {
+      var fallback = makeRoleMessage({
+        role: "mission",
+        kind: "mission_error",
+        state: null,
+        text: "تعذّر البث: " + err.message,
+        details: { error: String(err.message) }
+      });
+      messagesEl.appendChild(fallback.root);
+      finishStream();
+    }
+
+    function finishStream() {
+      removeWorking();
+      busy = false;
+      if (missionRunEl) missionRunEl.disabled = false;
+      scrollDown();
+    }
+  }
+
+  if (missionRunEl) {
+    missionRunEl.addEventListener("click", function () {
+      if (busy) return;
+      setBusy(true);
+      missionRunEl.disabled = true;
+      hideWelcome();
+      markConversation("🚀 المهمة الحية الافتراضية");
+      var goalText = inputEl.value.trim();
+      if (goalText) {
+        addUserMessage(goalText);
+        inputEl.value = "";
+        autoGrow();
+      } else {
+        addUserMessage("نفّذ المهمة الافتراضية: تقرير جيوسياسي من صفحة، 5-8 مصادر، PDF عربي A4");
+      }
+      streamMission(goalText);
+    });
   }
 
   var routerDemoEl = $("router-demo");

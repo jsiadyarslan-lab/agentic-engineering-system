@@ -22,6 +22,14 @@ dependencies = [
 [project.optional-dependencies]
 # pytest وحده — تبعية تطوير لا إنتاج (الأمر حدّد ست تبعيات إنتاجية).
 test = ["pytest>=7.2"]
+# أدوات PDF العربية (الأمر السادس §4): reportlab + reshaper + bidi + pypdf.
+# مثبتة في requirements-full.txt لدى v1 — هنا extra مستقل بنفس الحزم.
+pdf = [
+    "reportlab>=4.0",
+    "arabic-reshaper>=3.0",
+    "python-bidi>=0.4",
+    "pypdf>=4.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
