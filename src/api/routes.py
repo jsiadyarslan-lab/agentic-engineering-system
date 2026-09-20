@@ -1,4 +1,4 @@
-"""نقاط النهاية النحيفة — FastAPI (الأمر الثاني: أول دورة كاملة).
+"""نقاط النهاية النحيفة — FastAPI (الأمر الثالث: حزم الموجّه + عرضها).
 
 - GET  /                    الواجهة (index.html)
 - GET  /health              الحالة الصادقة (بما فيها توفر الركيزة)
@@ -7,6 +7,9 @@
                             الدورة تعمل في خيط وكل حدث دور يُدفَع إلى
                             الطابور فور انبعاثه، ويُسجَّل في جدول events
 - POST /api/cycle/verify    موافقة المستخدم — القناة الوحيدة إلى VERIFIED
+- POST /api/router/demo     بث SSE لأحداث الموجّه (الأمر الثالث): الحزم
+                            الثلاث الحقيقية بنقل mock وأزمنة مضغوطة
+                            معلنة — إثبات عملها لا ادعاء استدعاءات حية
 
 لا منطق أدوار هنا — الأدوار مجمعَّة في core.wiring والتنسيق كله في
 core.orchestrator؛ هذه الطبقة نقل وتسجيل فقط.
@@ -17,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -30,6 +34,10 @@ from core.state import StateTransitionError
 from core.wiring import build_mock_orchestrator
 from persistence.database import build_engine, init_db, make_session_factory
 from persistence.models import Event
+from router.cooling_loop import CoolingLoop
+from router.failover_chain import FailoverChain
+from router.model_router import ChatMessage, ModelRouter, ProviderCallError
+from router.rate_limiter import RateLimiter
 
 logger = logging.getLogger("agent-hub-v2.api")
 
@@ -107,7 +115,7 @@ def health() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "phase": "mock-cycle",
+        "phase": "mock-cycle+router-packages",
         "substrate": {
             "available": substrate_available,
             "isolation": "linux-namespaces+seccomp",
@@ -200,3 +208,173 @@ def cycle_verify(body: CycleVerifyIn) -> dict:
         "badge": "✔ VERIFIED",
         "event": outcome["event"],
     }
+
+
+# ------------------------------------------------------------------ #
+# الأمر الثالث — عرض أحداث الموجّه (الحزم الثلاث بنقل mock)
+# ------------------------------------------------------------------ #
+
+def _build_demo_router(on_event) -> ModelRouter:
+    """موجّه العرض: الحزم الثلاث الحقيقية بأزمنة مضغوطة معلنة.
+
+    الأزمنة هنا للعرض (فاصل 0.7ث، تبريد 0.6←1.2ث، تراجع 0.15ث) —
+    القيم الافتراضية الحقيقية (40 طلب/دقيقة، 60←120←240←300، ميزانية
+    1800ث) مثبتة في tests/router/ بالساعة والنوم القابلين للحقن.
+    """
+    limiter = RateLimiter(
+        {"rpm": 40, "min_interval": 0.7, "cooldown": 0.4, "concurrency": 1}
+    )
+    # أطوار العرض مستقلة: كل طور بمزوده وبلا فاصل أدنى إلا طور الحد
+    for demo_provider in ("demo-throttled", "demo-primary", "demo-backup"):
+        limiter.configure(demo_provider, {"min_interval": 0.0, "cooldown": 0.4})
+
+    chain = FailoverChain(
+        ["demo-primary", "demo-backup"],
+        {"max_retries": 2, "backoff_base": 0.15},
+        on_event=on_event,
+    )
+    cooling = CoolingLoop(
+        {"cooldown_base": 0.6, "cooldown_max": 1.2, "max_waits": 3,
+         "budget_seconds": 10},
+        on_event=on_event,
+    )
+
+    throttled_calls = {"n": 0}
+
+    def free_gateway(model: str, messages) -> str:
+        return "رد النموذج من البوابة المجانية (40 طلبًا/دقيقة)"
+
+    def throttled_gateway(model: str, messages) -> str:
+        throttled_calls["n"] += 1
+        if throttled_calls["n"] <= 2:
+            raise ProviderCallError(
+                "429 Too Many Requests — حصة الدقيقة مستنفدة",
+                code=429,
+                is_throttle=True,
+            )
+        return "رد النموذج بعد الصبر على الاختناق (تبريد ×2)"
+
+    def primary_down(model: str, messages) -> str:
+        raise ProviderCallError(
+            "503 Service Unavailable — البوابة الأساسية منهارة",
+            code=503,
+            is_server_error=True,
+        )
+
+    def backup_gateway(model: str, messages) -> str:
+        return "رد النموذج عبر البوابة الاحتياطية بعد التبدّل"
+
+    return ModelRouter(
+        rate_limiter=limiter,
+        failover_chain=chain,
+        cooling_loop=cooling,
+        default_provider="demo-nvidia",
+        transports={
+            "demo-nvidia": free_gateway,
+            "demo-throttled": throttled_gateway,
+            "demo-primary": primary_down,
+            "demo-backup": backup_gateway,
+        },
+        on_event=on_event,
+    )
+
+
+@app.post("/api/router/demo")
+async def router_demo() -> StreamingResponse:
+    """بث حي لأحداث الموجّه: ⏳ حد المعدل ثم 🧊 التبريد ثم 🔄 التبدّل.
+
+    الأدوار الخمسة ما زالت mock خالصة لا تستدعي الموجّه — هذا مسار
+    عرض صريح يشغّل الحزم الثلاث المنقولة بنقل mock حقيقي (وليس
+    استدعاءات LLM). كل حدث يُسجَّل في جدول events بدور "router".
+    """
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+    demo_id = f"router-demo-{uuid.uuid4().hex[:8]}"
+    seq = {"n": 0}
+
+    def emit(kind: str, details: dict, text: str = "") -> None:
+        seq["n"] += 1
+        envelope = {
+            "seq": seq["n"],
+            "cycle_id": demo_id,
+            "role": "router",
+            "kind": kind,
+            "state": None,
+            "text": text,
+            "duration_ms": 0,
+            "details": details,
+        }
+        loop.call_soon_threadsafe(queue.put_nowait, envelope)
+        _persist_event(envelope)
+
+    def sink(event: dict) -> None:
+        emit(event.get("kind", "router.event"), event)
+
+    def run_demo() -> None:
+        try:
+            emit(
+                "router.demo.start",
+                {"demo_id": demo_id},
+            )
+            router = _build_demo_router(sink)
+            messages = [ChatMessage(role="user", content="اشرح أداء السوق اليوم")]
+
+            emit(
+                "router.demo.phase",
+                {"phase": "rate_limit",
+                 "note": "طور 1 من 3 — حماية مفتاح نفيديا المجاني"},
+            )
+            router.chat(messages, provider_id="demo-nvidia", model="free-40rpm")
+            router.chat(messages, provider_id="demo-nvidia", model="free-40rpm")
+
+            emit(
+                "router.demo.phase",
+                {"phase": "cooling",
+                 "note": "طور 2 من 3 — الصبر عند اختناق 429"},
+            )
+            router.chat(
+                messages, provider_id="demo-throttled", model="free-40rpm"
+            )
+
+            emit(
+                "router.demo.phase",
+                {"phase": "failover",
+                 "note": "طور 3 من 3 — المرونة عند انهيار المزود"},
+            )
+            router.chat(
+                messages, provider_id="demo-primary", model="free-40rpm"
+            )
+
+            emit(
+                "router.demo.done",
+                {
+                    "demo_id": demo_id,
+                    "calls": 4,
+                    "note": (
+                        "أزمنة العرض مضغوطة (0.7ث/0.6ث/0.15ث) — القيم "
+                        "الافتراضية الحقيقية: 40 طلبًا/دقيقة، تبريد "
+                        "60←120←240←300ث بميزانية 1800ث، وإعادتان قبل "
+                        "التبدّل (كلها مثبتة في tests/router/)"
+                    ),
+                },
+            )
+        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته صامتًا
+            emit("router.demo.error", {"error": str(error)})
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    running = loop.run_in_executor(_executor, run_demo)
+
+    async def generate():
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+        await running
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

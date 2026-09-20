@@ -328,6 +328,34 @@ html, body {
   color: var(--text-faint);
   font-size: 11.5px;
   text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* زر عرض أحداث الموجّه (الأمر الثالث) — أحادي اللونية صارمة */
+.router-demo-btn {
+  flex: none;
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.router-demo-btn:hover { border-color: #666; color: var(--text); }
+.router-demo-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* سطر سبب الحدث تحت نص رسالة الموجّه */
+.router-reason {
+  margin-top: 4px;
+  color: var(--text-faint);
+  font-size: 12px;
 }
 
 /* ---------- استجابة صغيرة ---------- */

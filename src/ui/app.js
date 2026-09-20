@@ -1,4 +1,4 @@
-/* agent hub v2 — واجهة الدورة الكاملة (الأمر الثاني).
+/* agent hub v2 — واجهة الدورة الكاملة + أحداث الموجّه (الأمر الثالث).
  * سقف دائم: <2000 سطر (يُفحص في tests/contracts/test_thinness.py).
  * البث: POST /api/cycle/stream يعيد أحداث SSE لحظة حدوثها — كل حدث دور
  * يُعرض برمزه وشارة حالته وزمنه ورابط تفاصيله (الـ JSON الكامل).
@@ -28,6 +28,7 @@
     verifier: { sym: "✦", ar: "المراجع" },
     arbiter: { sym: "⚖", ar: "المُحكَّم" },
     coordinator: { sym: "◉", ar: "المنسّق" },
+    router: { sym: "⇄", ar: "الموجّه" },
     user: { sym: "●", ar: "أنت" }
   };
 
@@ -222,6 +223,24 @@
       case "cycle_done":
         renderCycleDone(event);
         return;
+      case "rate_limit.wait":
+        addRouterWait(event);
+        return;
+      case "cooling.cooldown":
+        addCooling(event);
+        return;
+      case "failover.logged":
+        addFailover(event);
+        return;
+      case "router.call.logged":
+        addCallLogged(event);
+        return;
+      case "router.demo.start":
+      case "router.demo.phase":
+      case "router.demo.done":
+      case "router.demo.error":
+        renderRouterDemo(event);
+        return;
       default: {
         // plan | plan_revised | review_verdict | task_execution |
         // task_verification | verification_rollup | arbiter_decision |
@@ -233,6 +252,80 @@
         insertBeforeWorking(msg.root);
       }
     }
+  }
+
+  // ---------- أحداث الموجّه (الأمر الثالث: الحزم الثلاث منقولة من v1) ----------
+
+  function addRouterWait(event) {
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.body.textContent = "⏳ انتظار حد المعدل: " + d.wait_seconds +
+      " ثانية" + (d.attempt ? " (المحاولة " + d.attempt + ")" : "");
+    insertBeforeWorking(msg.root);
+  }
+
+  function addCooling(event) {
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.body.textContent = "🧊 تبريد اختناق: " + d.wait_s + " ثانية (محاولة " +
+      d.attempt + " من " + d.max_waits + ")";
+    if (d.reason) {
+      var reason = document.createElement("div");
+      reason.className = "router-reason";
+      reason.textContent = "السبب: " + d.reason;
+      msg.body.appendChild(reason);
+    }
+    insertBeforeWorking(msg.root);
+  }
+
+  function addFailover(event) {
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.body.textContent = "🔄 تبدّل المزود: من " + d.from + " إلى " + d.to +
+      " (السبب: " + d.reason + ")";
+    insertBeforeWorking(msg.root);
+  }
+
+  function addCallLogged(event) {
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.root.classList.add("router-call");
+    msg.body.textContent = "";
+    var line1 = document.createElement("div");
+    line1.textContent = "استدعاء عبر الموجّه — المزود: " + d.provider +
+      " · النموذج: " + d.model;
+    var line2 = document.createElement("div");
+    line2.textContent = "التوكنات: " + d.tokens + " · الزمن: " +
+      fmtTime(d.duration_ms) +
+      (d.cooled ? " · 🧊 تبريد ×" + d.cooling_waits : "") +
+      (d.failed_over ? " · 🔄 تبدّل من " + d.failover_from : "");
+    msg.body.appendChild(line1);
+    msg.body.appendChild(line2);
+    insertBeforeWorking(msg.root);
+  }
+
+  function renderRouterDemo(event) {
+    var d = event.details || {};
+    if (event.kind === "router.demo.done" || event.kind === "router.demo.error") {
+      removeWorking();
+      var done = makeRoleMessage(event);
+      done.root.classList.add("cycle-summary");
+      if (event.kind === "router.demo.error") {
+        done.body.classList.add("cycle-error");
+        done.body.textContent = "تعذّر عرض أحداث الموجّه: " + (d.error || "");
+      } else if (d.note) {
+        var note = document.createElement("div");
+        note.textContent = d.note;
+        done.body.appendChild(note);
+      }
+      messagesEl.appendChild(done.root);
+      scrollDown();
+      return;
+    }
+    // start | phase — سطر تمهيدي رفيع
+    var intro = makeRoleMessage(event);
+    intro.body.textContent = d.note || "تشغيل عرض أحداث الموجّه — الحزم الثلاث بنقل mock…";
+    insertBeforeWorking(intro.root);
   }
 
   // ---------- خلاصة الدورة + زر الموافقة (القناة الوحيدة إلى VERIFIED) ----------
@@ -322,14 +415,12 @@
     return note;
   }
 
-  // ---------- بث الدورة: SSE لحظة الحدوث ----------
-  function streamCycle(goal) {
-    var working = addWorking();
-
-    fetch("/api/cycle/stream", {
+  // ---------- بث SSE عام (الدورة وعرض الموجّه على الملصق نفسه) ----------
+  function postStream(url, body) {
+    return fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ goal: goal })
+      body: JSON.stringify(body)
     })
       .then(function (resp) {
         if (!resp.ok) throw new Error("HTTP " + resp.status);
@@ -339,7 +430,7 @@
 
         function pump() {
           return reader.read().then(function (chunk) {
-            if (chunk.done) return finish();
+            if (chunk.done) return;
             buffer += decoder.decode(chunk.value, { stream: true });
             var parts = buffer.split("\n\n");
             buffer = parts.pop();
@@ -356,23 +447,59 @@
           });
         }
         return pump();
-      })
-      .catch(function (err) {
-        removeWorking();
-        var fallback = makeRoleMessage({
-          role: "coordinator",
-          kind: "cycle_error",
-          state: null,
-          text: "تعذّر البث: " + err.message,
-          details: { error: String(err.message) }
-        });
-        messagesEl.appendChild(fallback.root);
-        setBusy(false);
       });
+  }
 
-    function finish() {
+  function streamCycle(goal) {
+    addWorking();
+    postStream("/api/cycle/stream", { goal: goal })
+      .then(finishStream, streamFailed);
+
+    function streamFailed(err) {
+      var fallback = makeRoleMessage({
+        role: "coordinator",
+        kind: "cycle_error",
+        state: null,
+        text: "تعذّر البث: " + err.message,
+        details: { error: String(err.message) }
+      });
+      messagesEl.appendChild(fallback.root);
+      finishStream();
+    }
+
+    function finishStream() {
       removeWorking();
       setBusy(false);
+      scrollDown();
+    }
+  }
+
+  // ---------- عرض أحداث الموجّه: الحزم الثلاث بنقل mock (الأمر الثالث) ----------
+  function streamRouterDemo() {
+    hideWelcome();
+    markConversation("⇄ عرض أحداث الموجّه (الأمر الثالث)");
+    addWorking();
+    postStream("/api/router/demo", {})
+      .then(finishDemo, demoFailed);
+
+    function demoFailed(err) {
+      var fallback = makeRoleMessage({
+        role: "router",
+        kind: "router.demo.error",
+        state: null,
+        text: "",
+        details: { error: String(err.message) }
+      });
+      fallback.body.classList.add("cycle-error");
+      fallback.body.textContent = "تعذّر البث: " + err.message;
+      messagesEl.appendChild(fallback.root);
+      finishDemo();
+    }
+
+    function finishDemo() {
+      removeWorking();
+      setBusy(false);
+      if (routerDemoEl) routerDemoEl.disabled = false;
       scrollDown();
     }
   }
@@ -414,6 +541,16 @@
   function autoGrow() {
     inputEl.style.height = "auto";
     inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + "px";
+  }
+
+  var routerDemoEl = $("router-demo");
+  if (routerDemoEl) {
+    routerDemoEl.addEventListener("click", function () {
+      if (busy) return;
+      setBusy(true);
+      routerDemoEl.disabled = true;
+      streamRouterDemo();
+    });
   }
 
   sendEl.addEventListener("click", send);

@@ -14,7 +14,7 @@
     <aside class="sidebar">
       <div class="sidebar-head">
         <span class="brand">◉ agent hub</span>
-        <span class="version">v2 · أول دورة</span>
+        <span class="version">v2 · دورة + موجّه</span>
       </div>
       <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
         <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
@@ -64,7 +64,10 @@
             aria-label="الهدف"></textarea>
           <button id="send" title="ابدأ الدورة">←</button>
         </div>
-        <div class="composer-note">الأمر الثاني: دورة كاملة بنماذج mock — التنفيذ حقيقي داخل الركيزة المعزولة، ولا استدعاءات LLM بعد.</div>
+        <div class="composer-note">
+          <span>الأمر الثالث: حزم الموجّه الثلاث منقولة من v1 (حد المعدل + التبريد + التبدّل) — نقل mock، لا استدعاءات LLM حقيقية بعد.</span>
+          <button id="router-demo" class="router-demo-btn" title="تشغيل الحزم الثلاث بنقل mock وأزمنة مضغوطة معلنة">⇄ عرض أحداث الموجّه</button>
+        </div>
       </div>
     </main>
 
