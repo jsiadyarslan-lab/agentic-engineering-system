@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from core.orchestrator import CYCLE, CycleContext, Orchestrator
 from core.roles import RoleType
 from core.state import PlanState
@@ -56,20 +58,53 @@ def test_cycle_context_moves_only_via_transition_table():
     ctx = CycleContext(goal="g")
     ctx.move_to(PlanState.UNDER_REVIEW, actor="system")
     assert ctx.state is PlanState.UNDER_REVIEW
-    import pytest
-
     from core.state import StateTransitionError
 
     with pytest.raises(StateTransitionError):
         ctx.move_to(PlanState.VERIFIED, actor="system")  # القاعدة الذهبية
 
 
-def test_run_cycle_locked_until_order_two():
-    import pytest
+def test_run_cycle_requires_all_five_roles():
+    """الأمر الثاني فتح run_cycle — الشرط البنيوي: الأدوار الخمسة مسجلة.
 
+    استدعاء بلا أدوار يرفض برسالة تسمي الناقص (تركيب صريح لا اكتشاف
+    خافت) — بديل اختبار القفل التأسيسي الذي فتحه الأمر الثاني.
+    """
     orch = Orchestrator()
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(RuntimeError) as excinfo:
         orch.run_cycle("هدف")
+    message = str(excinfo.value)
+    for role in ("thinker", "reviewer", "implementer", "verifier", "arbiter"):
+        assert role in message
+
+
+#: الوحدات الاثنتا عشرة الخامدة (غلق اعتماديات المنسوخ) — ARCHITECTURE.md §10.
+DORMANT_MODULES = (
+    "capability", "contract", "domain", "result", "implementation",
+    "high_impact", "mission", "objective", "operations",
+    "static_analysis", "testing_domain", "write_operations",
+)
+
+#: أكواد v2 التي لا يجوز لها استيراد وحدة خامدة (الأمر الثاني: شرط القبول).
+V2_CODE_DIRS = ("core", "roles", "api", "router", "persistence", "ui")
+
+
+def test_dormant_modules_not_imported_by_v2():
+    """الوحدات الـ12 الإضافية خامدة — لا استيراد لها من كود v2.
+
+    أي استيراد مستقبلي يجب أن يكون قرارًا معماريًا موثقًا في
+    ARCHITECTURE.md §10 يحدّث هذا الاختبار معه — لا نتيجة عرضية.
+    """
+    violations: list[str] = []
+    for code_dir in V2_CODE_DIRS:
+        for path in (REPO / "src" / code_dir).rglob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            for module in DORMANT_MODULES:
+                if f"from contracts.{module}" in text or (
+                    f"import contracts.{module}" in text
+                ):
+                    violations.append(f"{path.relative_to(REPO)} → {module}")
+    assert not violations, f"استيراد وحدات خامدة من كود v2: {violations}"
 
 
 def test_role_registration_composition():
