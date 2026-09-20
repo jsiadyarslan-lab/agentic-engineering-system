@@ -35,6 +35,12 @@ from core.config import live_model_settings, provider_settings
 from router.cooling_loop import CoolingLoop
 from router.failover_chain import FailoverChain
 from router.rate_limiter import RateLimiter
+from router.live_providers import (  # noqa: F401 — إعادة تصدير契约 العقد القديم
+    BUILTIN_LIVE_PROVIDERS,
+    ProviderCallError,
+    _resolve_provider_credentials,
+    resolve_live_providers,
+)
 
 
 class Provider(str, Enum):
@@ -83,33 +89,6 @@ class ChatMessage:
 
     role: str  # "system" | "user" | "assistant"
     content: str
-
-
-class ProviderCallError(Exception):
-    """خطأ نقل مزود — تصنيفه بسمات صريحة تقرؤها الحزم بطرفية.
-
-    is_throttle:      429/503-overloaded — يدخل حلقة التبريد.
-    is_server_error:  5xx غير الاختناقي — إعادات ثم تبدّل.
-    is_timeout:       انتهت مهلة الاتصال/الفتحة — كخطأ خادم.
-    retry_after:      ثواني رأس Retry-After إن أرسلها المزود.
-    """
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        code: int | None = None,
-        is_throttle: bool = False,
-        is_server_error: bool = False,
-        is_timeout: bool = False,
-        retry_after: int | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.is_throttle = is_throttle
-        self.is_server_error = is_server_error
-        self.is_timeout = is_timeout
-        self.retry_after = retry_after
 
 
 class RateLimitBlocked(RuntimeError):
@@ -340,17 +319,17 @@ class ModelRouter:
         resolved = resolve_live_providers(live_cfg)
         if not resolved:
             raise ProviderCallError(
-                "لا مزود حي بمفتاح قابل للحل — أضف OPENROUTER_API_KEY "
-                "أو اضبط AGenthubV2_LIVE_PROVIDERS في ‎.env (فشل صريح، "
+                "لا مزود حي بمفتاح قابل للحل — احفظ مفتاح nvidia من صفحة المزودات في الواجهة فيُخزَّن في مخزن الأسرار (فشل صريح، "
+                "لا سقوط إلى mock)"
                 "لا سقوط إلى mock)"
             )
-        default_provider = str(getattr(live_cfg, "default_provider", "openai_compatible"))
+        default_provider = str(getattr(live_cfg, "default_provider", "nvidia"))
         default_model = str(getattr(live_cfg, "default_model", ""))
         if default_provider not in resolved:
             # المزود الافتراضي بلا مفتاح: فشل صريح — لا نبدّل بصمت
             raise ProviderCallError(
                 f"المزود الافتراضي '{default_provider}' بلا مفتاح قابل "
-                f"للحل (المتاح: {sorted(resolved)}) — اضبط المفتاح في ‎.env"
+                f"للحل (المتاح: {sorted(resolved)}) — احفظ مفتاحه من صفحة المزودات في الواجهة (مخزن الأسرار) ‎.env"
             )
 
         transports = {
@@ -505,77 +484,3 @@ def live_transport(provider_cfg: dict) -> Callable[[str, list[ChatMessage]], str
     return transport
 
 
-#: قالب المزودات الحية المدمج — يُستكمل بالمفاتيح من البيئة/‎.env (§1.2).
-BUILTIN_LIVE_PROVIDERS: dict[str, dict] = {
-    "openai_compatible": {
-        "base_url": "https://openrouter.ai/api/v1",
-        "model": "anthropic/claude-haiku-3.5",
-        "env_keys": ("OPENROUTER_API_KEY", "OPENAI_COMPATIBLE_API_KEY"),
-    },
-    "zai_internal": {
-        "base_url": "https://internal-api.z.ai/v1",
-        "model": "glm-4.6",
-        "config_file": "/etc/.z-ai-config",
-    },
-}
-
-
-def _resolve_provider_credentials(spec: dict) -> dict | None:
-    """استكمال مفتاح مزود واحد من مصادره — يعيد None إن لم يُحلّ."""
-    cfg = dict(spec)
-    for env_name in cfg.pop("env_keys", ()):  # من البيئة
-        import os
-
-        value = os.environ.get(env_name, "").strip()
-        if value:
-            cfg["api_key"] = value
-            return cfg
-    config_file = cfg.pop("config_file", "")
-    if config_file:  # من ملف إعدادات جاهز (JSON: baseUrl/apiKey/token)
-        try:
-            with open(config_file, encoding="utf-8") as handle:
-                found = json.load(handle)
-            if found.get("apiKey"):
-                cfg["api_key"] = found["apiKey"]
-                headers = {"X-Z-AI-From": "Z"}
-                if found.get("token"):
-                    headers["X-Token"] = found["token"]
-                cfg.setdefault("headers", {}).update(headers)
-                return cfg
-        except (OSError, ValueError):
-            return None
-    return cfg if cfg.get("api_key") else None
-
-
-def resolve_live_providers(cfg: "Any" = None) -> dict[str, dict]:
-    """حل المزودات الحية: المدمج + JSON الإعدادات — بلا مفاتيح يُستبعد.
-
-    المزود من providers_json ينسخ فوق المدمج بالاسم نفسه (تخصيص كامل:
-    base_url/api_key/model/الحدود). المزود بلا مفتاح قابل للحل يُستبعد
-    صراحةً — لا يُنادى أبدًا (فشل صريح لا 401 عشوائية).
-    """
-    live_cfg = cfg or live_model_settings
-    resolved: dict[str, dict] = {}
-    for name, spec in BUILTIN_LIVE_PROVIDERS.items():
-        found = _resolve_provider_credentials(dict(spec))
-        if found:
-            resolved[name] = found
-    if getattr(live_cfg, "providers_json", ""):
-        try:
-            custom = json.loads(live_cfg.providers_json)
-        except ValueError as error:
-            raise ProviderCallError(
-                f"AGenthubV2_LIVE_PROVIDERS ليست JSON صالحًا: {error}"
-            ) from error
-        if not isinstance(custom, dict):
-            raise ProviderCallError("AGenthubV2_LIVE_PROVIDERS يجب أن تكون كائن JSON")
-        for name, spec in custom.items():
-            if not isinstance(spec, dict) or not spec.get("base_url"):
-                raise ProviderCallError(
-                    f"المزود المخصص '{name}' يحتاج base_url على الأقل"
-                )
-            found = _resolve_provider_credentials(dict(spec))
-            if found:
-                merged = {**resolved.get(name, {}), **found}
-                resolved[name] = merged
-    return resolved

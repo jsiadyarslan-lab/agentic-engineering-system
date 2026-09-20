@@ -80,18 +80,20 @@ class ProviderConfig(BaseSettings):
 
 
 class LiveModelConfig(BaseSettings):
-    """إعدادات الربط الحي (الأمر السادس §1.2) — نقطة متوافقة OpenAI.
+    """إعدادات الربط الحي (الأمر السادس المنقح §2) — nvidia افتراضيًا.
 
-    - default_provider: المزود الافتراضي (openai_compatible = OpenRouter).
-    - default_model: النموذج الافتراضي — يختاره المستخدم عبر .env.
+    - default_provider: nvidia — مفتاح المالكة من مخزن الأسرار حصرًا
+      (لا من متغيرات البيئة أبدًا §0.3).
+    - default_model: nemotron-3-ultra-550b-a55b لكل الأدوار (nano
+      ممنوع للتحكيم — قرار موثق §2.3).
     - providers_json: مزودات إضافية/مخصصة بصيغة JSON
-      {"الاسم": {"base_url":…, "api_key":…, "model":…, "rpm":…,
-                  "min_interval":…, "timeout":…, "max_tokens":…,
-                  "headers": {…}, "config_file": "/etc/…"}}.
+      {"الاسم": {"base_url":…, "model":…, "rpm":…, "min_interval":…,
+                  "timeout":…, "max_tokens":…, "headers": {…},
+                  "config_file": "/etc/…"}}.
     """
 
-    default_provider: str = "openai_compatible"
-    default_model: str = "anthropic/claude-haiku-3.5"
+    default_provider: str = "nvidia"
+    default_model: str = "nemotron-3-ultra-550b-a55b"
     providers_json: str = ""
 
     model_config = {

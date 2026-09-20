@@ -983,4 +983,248 @@
     });
   }
 
+
+  // ================================================================ //
+  // الأمر السادس المنقح — المزودات والمفاتيح + مهمة البناء textstats
+  // ================================================================ //
+
+  var providersBackdrop = $("providers-backdrop");
+  var providersBody = $("providers-body");
+  var providersOpenEl = $("providers-open");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function loadProviders() {
+    if (!providersBody) return;
+    providersBody.textContent = "جارٍ التحميل…";
+    fetch("/api/providers")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var htmlParts = [];
+        var store = data.store || {};
+        htmlParts.push(
+          '<div style="font-size:12px;color:#888;margin-bottom:10px">' +
+          esc(store.warning || "المخزن: " + (store.file || "")) +
+          " | التشفير: " + (store.encryption_available ? "DPAPI (Windows)" : "صلاحيات 600") +
+          "</div>"
+        );
+        (data.providers || []).forEach(function (p) {
+          htmlParts.push(
+            '<div class="provider-card" style="border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:10px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            "<b>" + esc(p.label) + "</b>" +
+            '<span style="font-size:12px;color:' + (p.has_key ? "#7aa874" : "#c2776f") + '">' +
+            (p.has_key ? "مفتاح محفوظ " + esc(p.key_masked) : "بلا مفتاح") +
+            "</span></div>" +
+            '<div style="font-size:11px;color:#777;margin:4px 0">' + esc(p.base_url) +
+            " | النموذج: " + esc(p.model) + "</div>" +
+            '<div style="font-size:11px;color:#666;margin-bottom:8px">' + esc(p.note || "") + "</div>"
+          );
+          if (p.requires_key) {
+            htmlParts.push(
+              '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+              '<input type="password" data-provider="' + esc(p.id) + '" class="prov-key-input" ' +
+              'placeholder="مفتاح API (يُخزَّن مشفرًا محليًا)" ' +
+              'style="flex:1;min-width:180px;background:#111;border:1px solid #333;border-radius:6px;color:#eee;padding:6px 10px">' +
+              '<button class="prov-save" data-provider="' + esc(p.id) + '">حفظ</button>' +
+              '<button class="prov-delete" data-provider="' + esc(p.id) + '">حذف</button>' +
+              "</div>"
+            );
+          }
+          htmlParts.push(
+            '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">' +
+            '<button class="prov-test" data-provider="' + esc(p.id) + '">اختبار الاتصال</button>' +
+            '<button class="prov-models" data-provider="' + esc(p.id) + '">قائمة النماذج</button>' +
+            '<span class="prov-result" data-provider="' + esc(p.id) +
+            '" style="font-size:12px;color:#999"></span>' +
+            "</div></div>"
+          );
+        });
+        providersBody.innerHTML = htmlParts.join("");
+
+        providersBody.querySelectorAll(".prov-save").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-provider");
+            var input = providersBody.querySelector('.prov-key-input[data-provider="' + name + '"]');
+            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
+            fetch("/api/providers/" + name + "/key", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ key: input.value })
+            })
+              .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+              .then(function (out) {
+                result.textContent = out.ok ? "✔ " + (out.j.key_masked || "حُفظ") : "✕ " + (out.j.detail || "فشل");
+                if (out.ok) { input.value = ""; loadProviders(); }
+              });
+          });
+        });
+        providersBody.querySelectorAll(".prov-delete").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-provider");
+            fetch("/api/providers/" + name + "/key", { method: "DELETE" })
+              .then(function () { loadProviders(); });
+          });
+        });
+        providersBody.querySelectorAll(".prov-test").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-provider");
+            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
+            result.textContent = "…اختبار";
+            fetch("/api/providers/" + name + "/test", { method: "POST" })
+              .then(function (r) { return r.json(); })
+              .then(function (j) {
+                result.textContent = j.ok
+                  ? "✔ اتصال ناجح (" + j.models_count + " نموذج، " + j.latency_ms + "ms)"
+                  : "✕ " + (j.message || "فشل");
+              });
+          });
+        });
+        providersBody.querySelectorAll(".prov-models").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-provider");
+            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
+            result.textContent = "…جلب";
+            fetch("/api/providers/" + name + "/models?refresh=1")
+              .then(function (r) { return r.json(); })
+              .then(function (j) {
+                result.textContent = j.ok
+                  ? "✔ " + (j.model_ids || []).slice(0, 6).join(" · ") +
+                    ((j.model_ids || []).length > 6 ? " …" : "")
+                  : "✕ " + (j.message || "فشل");
+              });
+          });
+        });
+      });
+  }
+
+  if (providersOpenEl) {
+    providersOpenEl.addEventListener("click", function () {
+      if (providersBackdrop) providersBackdrop.hidden = false;
+      loadProviders();
+    });
+  }
+  var providersCloseEl = $("providers-close");
+  if (providersCloseEl) {
+    providersCloseEl.addEventListener("click", function () {
+      providersBackdrop.hidden = true;
+    });
+  }
+  if (providersBackdrop) {
+    providersBackdrop.addEventListener("click", function (e) {
+      if (e.target === providersBackdrop) providersBackdrop.hidden = true;
+    });
+  }
+
+  // ---- مهمة البناء textstats: بث SSE + بطاقتا موافقة -----------------
+
+  var buildRunEl = $("build-run");
+  var buildBusy = false;
+
+  function buildApprovalCard(ev) {
+    var kind = ev.details && ev.details.gate_kind;
+    var payload = (ev.details && ev.details.payload) || {};
+    var card = document.createElement("div");
+    card.className = "approval-card";
+    card.style.cssText = "border:1px solid #d0a048;border-radius:10px;padding:12px;margin:8px 0;background:rgba(208,160,72,0.06)";
+    var title = document.createElement("div");
+    title.textContent = "⚖ بطاقة موافقة — " + (kind === "push" ? "الدفع إلى mission/textstats" : "منحة المسار textstats/**");
+    title.style.fontWeight = "bold";
+    card.appendChild(title);
+    var info = document.createElement("div");
+    info.style.cssText = "font-size:12px;color:#999;margin:6px 0";
+    info.textContent = kind === "push"
+      ? "commit: " + String(payload.commit_sha || "").slice(0, 12) + " | ملفات: " + (payload.files || []).join(", ")
+      : "المسارات: " + (payload.paths || []).join(", ");
+    card.appendChild(info);
+    var row = document.createElement("div");
+    var okBtn = document.createElement("button");
+    okBtn.textContent = "أوافق";
+    var noBtn = document.createElement("button");
+    noBtn.textContent = "أرفض";
+    okBtn.style.marginLeft = "8px";
+    row.appendChild(noBtn);
+    row.appendChild(okBtn);
+    card.appendChild(row);
+    function decide(approved) {
+      okBtn.disabled = true;
+      noBtn.disabled = true;
+      fetch("/api/mission/textstats/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ run_id: ev.cycle_id, kind: kind, approved: approved })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function () { title.textContent += approved ? " — ✔ وُافقت" : " — ✕ رُفضت"; })
+        .catch(function () { title.textContent += " — تعذرت الإجابة"; });
+    }
+    okBtn.addEventListener("click", function () { decide(true); });
+    noBtn.addEventListener("click", function () { decide(false); });
+    return card;
+  }
+
+  function streamBuildMission() {
+    var parts = [];
+    var decoder = new TextDecoder();
+    fetch("/api/mission/textstats/stream", { method: "POST" })
+      .then(function (resp) {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        var reader = resp.body.getReader();
+        function pump() {
+          return reader.read().then(function (chunk) {
+            if (chunk.done) return;
+            parts.push(decoder.decode(chunk.value, { stream: true }));
+            var buf = parts.join("");
+            var events = buf.split("\n\n");
+            parts = [events.pop()];
+            events.forEach(function (block) {
+              if (!block.startsWith("data: ")) return;
+              var ev;
+              try { ev = JSON.parse(block.slice(6)); } catch (e) { return; }
+              if (ev.kind === "approval.card") {
+                var msg = makeRoleMessage(ev);
+                messagesEl.appendChild(msg.root);
+                msg.root.appendChild(buildApprovalCard(ev));
+                scrollDown();
+                return;
+              }
+              var view = makeRoleMessage(ev);
+              messagesEl.appendChild(view.root);
+              scrollDown();
+            });
+            return pump();
+          });
+        }
+        return pump();
+      })
+      .catch(function (err) {
+        var fallback = makeRoleMessage({
+          role: "mission", kind: "mission_error", state: null,
+          text: "تعذر بدء مهمة البناء: " + err.message, details: {}
+        });
+        messagesEl.appendChild(fallback.root);
+      })
+      .finally(function () {
+        buildBusy = false;
+        if (buildRunEl) buildRunEl.disabled = false;
+        scrollDown();
+      });
+  }
+
+  if (buildRunEl) {
+    buildRunEl.addEventListener("click", function () {
+      if (buildBusy) return;
+      buildBusy = true;
+      buildRunEl.disabled = true;
+      hideWelcome();
+      markConversation("🏗️ مهمة البناء textstats");
+      addUserMessage("ابنِ حزمة textstats: CLI عدّ أسطر/كلمات/أحرف + suite pytest + README، ثم ادفعها إلى mission/textstats");
+      streamBuildMission();
+    });
+  }
+
 })();

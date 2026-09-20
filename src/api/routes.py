@@ -731,3 +731,169 @@ def mission_verify(body: MissionVerifyIn) -> dict:
         "state": outcome["state"],
         "badge": "✔ VERIFIED",
     }
+
+
+# ------------------------------------------------------------------ #
+# الأمر السادس المنقح — المزودات (§1) + مهمة البناء textstats (§4+§5)
+# ------------------------------------------------------------------ #
+
+from api.providers import router as providers_router  # noqa: E402
+
+app.include_router(providers_router)
+
+#: تفعيل مرشح تقنيع المفاتيح على السجلات ([REDACTED] — §1.2).
+from secrets_store import install_log_redaction  # noqa: E402
+
+install_log_redaction()
+
+TEXTSTATS_APPROVAL_TIMEOUT_S = 600.0
+_textstats_state: dict = {"active": None, "lock": threading.Lock()}
+
+
+class TextstatsApproveIn(BaseModel):
+    """موافقة المالك على بوابة مهمة البناء — path_grant أو push."""
+
+    run_id: str = Field(min_length=1)
+    kind: str = Field(min_length=1)
+    approved: bool
+
+
+@app.post("/api/mission/textstats/stream")
+async def textstats_stream() -> StreamingResponse:
+    """بث مهمة البناء الحية (SSE) — بطاقتا موافقة: منحة المسار والدفع.
+
+    لا موافقة = لا فعل (fail-closed): بوابة المسار قبل أي كتابة،
+    وبوابة الدفع قبل أي push — كل واحدة توقظ بخيط الانتظار نفسه.
+    """
+    global _textstats_state
+    with _textstats_state["lock"]:
+        if _textstats_state["active"] is not None:
+            raise HTTPException(status_code=409, detail="مهمة بناء تعمل بالفعل")
+
+    from missions_textstats import run_textstats_mission
+    from router.model_router import ModelRouter
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+    run_id = f"textstats-{uuid.uuid4().hex[:10]}"
+    seq_box = [0]
+    gates = {
+        "path_grant": threading.Event(),
+        "push": threading.Event(),
+    }
+    decisions: dict = {"path_grant": None, "push": None}
+    done_event = threading.Event()
+
+    def emit(event: dict) -> None:
+        seq_box[0] += 1
+        wrapped = {
+            "seq": seq_box[0],
+            "cycle_id": run_id,
+            "state": None,
+            **event,
+        }
+        loop.call_soon_threadsafe(queue.put_nowait, wrapped)
+        _persist_event(wrapped)
+
+    def approvals(kind: str, payload: dict) -> bool:
+        gate = gates.get(kind)
+        if gate is None:
+            return False
+        emit({
+            "kind": "approval.card",
+            "role": "mission",
+            "text": "بطاقة موافقة: " + (
+                "منحة المسار (textstats/**)" if kind == "path_grant"
+                else "الدفع إلى mission/textstats بموافقة موقعة"
+            ),
+            "details": {"gate_kind": kind, "payload": payload},
+        })
+        gate.wait(timeout=TEXTSTATS_APPROVAL_TIMEOUT_S)
+        return decisions[kind] is True
+
+    with _textstats_state["lock"]:
+        _textstats_state["active"] = {
+            "run_id": run_id, "done": done_event,
+            "gates": gates, "decisions": decisions,
+        }
+
+    def run_in_thread() -> None:
+        try:
+            try:
+                router_obj = ModelRouter.build_live()
+            except Exception as error:  # noqa: BLE001 — بث الفشل لا موته
+                emit({
+                    "kind": "mission_error", "role": "mission",
+                    "text": f"لا موجّه حي: {error}",
+                    "duration_ms": 0, "details": {"error": str(error)},
+                })
+                return
+            result = run_textstats_mission(
+                router=router_obj, on_event=emit, approvals=approvals,
+            )
+            with _textstats_state["lock"]:
+                _textstats_state["last_result"] = {
+                    "verdict": result.verdict,
+                    "commit_sha": result.commit_sha,
+                    "evidence_sha256": result.evidence_sha256,
+                }
+        except Exception as error:  # noqa: BLE001
+            emit({
+                "kind": "mission_error", "role": "mission",
+                "text": f"مهمة البناء فشلت: {error}",
+                "duration_ms": 0, "details": {"error": str(error)},
+            })
+        finally:
+            done_event.set()
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    loop.run_in_executor(_eoe_executor, run_in_thread)
+
+    async def generate():
+        global _textstats_state
+        try:
+            while True:
+                event = await queue.get()
+                if event is None:
+                    break
+                yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+        finally:
+            with _textstats_state["lock"]:
+                _textstats_state["active"] = None
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.post("/api/mission/textstats/approve")
+def textstats_approve(body: TextstatsApproveIn) -> dict:
+    """موافقة المالك الحية على بوابة مهمة البناء — توقظ الخيط المنتظر."""
+    with _textstats_state["lock"]:
+        run = _textstats_state["active"]
+        if run is None or run["run_id"] != body.run_id:
+            raise HTTPException(
+                status_code=404, detail=f"مهمة بناء غير معروفة: {body.run_id}"
+            )
+        if body.kind not in ("path_grant", "push"):
+            raise HTTPException(status_code=422, detail="نوع بوابة غير معروف")
+        run["decisions"][body.kind] = body.approved
+        run["gates"][body.kind].set()
+    return {
+        "run_id": body.run_id,
+        "kind": body.kind,
+        "approved": body.approved,
+        "note": "الموافقة سارية — استؤنف التنفيذ" if body.approved
+                else "الرفض مسجل — fail-closed",
+    }
+
+
+@app.get("/api/mission/textstats/evidence")
+def textstats_evidence() -> dict:
+    """تسليم دليل مهمة البناء — 404 صريح إن لم يوجد بعد."""
+    path = Path("runtime") / "missions" / "textstats" / "evidence.json"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="لا دليل بعد — شغّل المهمة أولًا")
+    return json.loads(path.read_text(encoding="utf-8"))
