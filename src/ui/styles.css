@@ -443,6 +443,9 @@ html, body {
   padding: 24px;
 }
 
+/* display:flex يتغلب على [hidden] الافتراضية — لذا النفي صريح هنا */
+.modal-backdrop[hidden] { display: none; }
+
 .modal {
   width: min(760px, 100%);
   max-height: 82vh;

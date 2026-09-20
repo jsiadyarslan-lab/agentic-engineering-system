@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-hub-v2"
-version = "2.0.0a1"
-description = "Agent Hub v2 — نظام وكلاء حقيقي: محادثة بسيطة + تنفيذ معزول موثوق + حالات صادقة (تأسيس)"
+version = "2.0.0a2"
+description = "Agent Hub v2 — نظام وكلاء حقيقي: أول دورة كاملة بين الأدوار الخمسة بتنفيذ معزول وحالات صادقة"
 readme = "README.md"
 requires-python = ">=3.10"
 # الست الإنتاجية فقط — بأمر التأسيس. لا pandas/numpy/matplotlib/yfinance

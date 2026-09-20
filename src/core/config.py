@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 APP_NAME = "agent-hub-v2"
-APP_VERSION = "2.0.0a1"  # ألفا تأسيس — ترقّي مع الأوامر
+APP_VERSION = "2.0.0a2"  # الأمر الثاني: أول دورة كاملة (mock) — ترقّي مع الأوامر
 
 
 class Settings(BaseSettings):
