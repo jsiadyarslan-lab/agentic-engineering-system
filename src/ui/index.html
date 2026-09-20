@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Hub v2</title>
+  <link rel="stylesheet" href="/static/fonts/fonts.css">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- الشريط الجانبي: قائمة المحادثات فقط -->
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <span class="brand">◉ agent hub</span>
+        <span class="version">v2 · تأسيس</span>
+      </div>
+      <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
+        <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="substrate-dot" id="substrate-dot" title=""></span>
+        <span id="substrate-label">الركيزة: …</span>
+      </div>
+    </aside>
+
+    <!-- عمود المحادثة 780px متمركز -->
+    <main class="chat">
+      <div class="chat-scroll" id="chat-scroll">
+
+        <!-- شاشة البداية: الأدوار الخمسة وشارات الحالات -->
+        <section class="welcome" id="welcome">
+          <h1>agent hub <span class="thin">v2</span></h1>
+          <p class="tagline">محادثة بسيطة · تنفيذ معزول موثوق · حالات صادقة</p>
+
+          <div class="roles-row" id="roles-row">
+            <span class="role-chip"><b>◆</b> المفكر</span>
+            <span class="role-chip"><b>◇</b> المدقق</span>
+            <span class="role-chip"><b>▸</b> المنفذ</span>
+            <span class="role-chip"><b>✦</b> المراجع</span>
+            <span class="role-chip arbiter"><b>⚖</b> المُحكَّم</span>
+          </div>
+
+          <div class="badges-legend">
+            <span class="badge">◌ DRAFT</span>
+            <span class="badge">✓ EXECUTED</span>
+            <span class="badge">✦ EVIDENCED</span>
+            <span class="badge">⚖ ADJUDICATED</span>
+            <span class="badge">✔ VERIFIED</span>
+          </div>
+          <p class="hint">✔ VERIFIED لا تُمنح إلا بقرارك — لا دور يمنح النظام نجاحه بنفسه.</p>
+        </section>
+
+        <!-- الرسائل -->
+        <div class="messages" id="messages"></div>
+      </div>
+
+      <!-- صندوق الإدخال السفلي الثابت -->
+      <div class="composer">
+        <div class="composer-inner">
+          <textarea id="input" rows="1"
+            placeholder="اكتب رسالة… (Enter للإرسال)"
+            aria-label="رسالة"></textarea>
+          <button id="send" title="إرسال">←</button>
+        </div>
+        <div class="composer-note">مرحلة التأسيس: البث توضيحي — الدورة الكاملة بين الأدوار تبدأ بالأمر الثاني.</div>
+      </div>
+    </main>
+
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
