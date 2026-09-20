@@ -44,6 +44,29 @@ def test_cooling_loop_under_250_lines():
     assert _count_lines("src/router/cooling_loop.py") < 250
 
 
+def test_eoe_engine_under_600_lines():
+    """الأمر الرابع: منطق EOE كله في وحداته — المنسق لا يتضخم."""
+    assert _count_lines("src/eoe/eoe_engine.py") < 600
+
+
+def test_push_engine_under_500_lines():
+    """الأمر الرابع: محرك الدفع — أخطر وحدة، سقفها الخاص."""
+    assert _count_lines("src/eoe/push_engine.py") < 500
+
+
+def test_eoe_units_under_400_lines():
+    """الأمر الرابع: بقية وحدات EOE نحيفة (محلل/بوابة/تنفيذ/بوابة مالك)."""
+    for unit in (
+        "src/eoe/order_parser.py",
+        "src/eoe/access_gateway.py",
+        "src/eoe/execution_engine.py",
+        "src/eoe/proofs.py",
+        "src/eoe/owner_gate.py",
+        "src/eoe/report_builder.py",
+    ):
+        assert _count_lines(unit) < 400, unit
+
+
 def test_ui_js_under_2000_lines():
     """يعمل حتى بعد كتابة الواجهة — ملف app.js سقفه 2000."""
     path = REPO / "src/ui/app.js"

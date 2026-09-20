@@ -29,6 +29,7 @@
     arbiter: { sym: "⚖", ar: "المُحكَّم" },
     coordinator: { sym: "◉", ar: "المنسّق" },
     router: { sym: "⇄", ar: "الموجّه" },
+    eoe: { sym: "⚡", ar: "محرك الأوامر" },
     user: { sym: "●", ar: "أنت" }
   };
 
@@ -214,6 +215,10 @@
 
   // ---------- عرض حدث واحد وفق نوعه ----------
   function renderEvent(event) {
+    if (event.role === "eoe") {
+      renderEoeEvent(event);
+      return;
+    }
     switch (event.kind) {
       case "goal":
         return; // رسالة المستخدم عُرضت محليًا عند الإرسال
@@ -585,4 +590,225 @@
     .catch(function () { /* الشارة تبقى رمادية = غير معروف */ });
 
   inputEl.focus();
+
+  // ---------- الأمر الرابع: محرك الأوامر التنفيذية (EOE) ----------
+  var eoeRunEl = $("eoe-run");
+
+  var EOE_KIND_LABELS = {
+    "order.parsed": "الأمر حُلّل — العقد والأقسام والقالب",
+    "grant.requested": "منح مقترحة من الأمر",
+    "grant.awaiting_owner": "بطاقة موافقة المنح",
+    "grant.approved": "المنح وُقّعت بعد موافقتك",
+    "section.started": "قسم بدأ",
+    "section.proof": "إثبات قسم",
+    "section.done": "قسم اكتمل",
+    "hard_stop.fired": "توقف صلب",
+    "push.awaiting_owner": "بطاقة موافقة الدفع",
+    "push.approval_needed": "دفع ينتظر موافقتك",
+    "push.done": "الدفع انتهى",
+    "report.ready": "التقرير جاهز",
+    "eoe.finished": "انتهى تنفيذ الأمر",
+    "eoe.error": "خطأ EOE"
+  };
+
+  function eoeRunStream(orderText) {
+    addWorking();
+    postStream("/api/eoe/stream", { order_text: orderText })
+      .then(finishStream, streamFailed);
+
+    function streamFailed(err) {
+      var fallback = makeRoleMessage({
+        role: "eoe",
+        kind: "eoe.error",
+        state: null,
+        text: "تعذّر بث الأمر: " + err.message,
+        details: { error: String(err.message) }
+      });
+      messagesEl.appendChild(fallback.root);
+      finishStream();
+    }
+
+    function finishStream() {
+      removeWorking();
+      busy = false;
+      inputEl.value = "";
+      autoGrow();
+      scrollDown();
+    }
+  }
+
+  function renderEoeEvent(event) {
+    var kind = event.kind;
+    var details = event.details || {};
+    var label = EOE_KIND_LABELS[kind] || kind;
+    var text = label;
+
+    if (kind === "section.started") {
+      text = "القسم §" + (details.section ?? "?") + " — " +
+        (details.title || "") + " بدأ التنفيذ" +
+        (details.commands && details.commands.length
+          ? " (" + details.commands.length + " أمر معلن)"
+          : "");
+    } else if (kind === "section.done") {
+      var st = details.state === "executed" ? "منفَّذ" :
+        (details.state === "declared" ? "مُعلن" : "موقوف");
+      text = "القسم §" + (details.section ?? "?") + " — " + st;
+    } else if (kind === "section.proof") {
+      if (details.inside_probe !== undefined) {
+        text = "مسبار الكتابة الداخلي: " +
+          (String(details.inside_probe).indexOf("PROBE-BLOCKED") === 0
+            ? "محجوب (EROFS) — العزل سليم ✓"
+            : String(details.inside_probe));
+      } else {
+        text = "إثبات خارجي §" + (details.section ?? "?") + ": " +
+          (details.identical ? "البصمة متطابقة قبل/بعد ✓"
+            : "اختلاف: " + JSON.stringify(details.diffs || []));
+      }
+    } else if (kind === "order.parsed") {
+      text = "الأمر حُلّل: " + (details.sections ?? "?") + " أقسام · وضع " +
+        (details.mode || "?") + " · " + (details.stops ?? "?") +
+        " شرط توقف · " + (details.decisions ?? "?") + " قرارات مالك · " +
+        (details.template_fields ?? "?") + " حقل قالب";
+    } else if (kind === "hard_stop.fired") {
+      text = "توقف صلب: " + (details.reason || "") + " — " +
+        (details.detail || "").slice(0, 160);
+    }
+
+    var msg = makeRoleMessage({
+      role: "eoe",
+      kind: kind,
+      state: kind === "hard_stop.fired" ? "HARD STOP" : null,
+      text: text,
+      details: details
+    });
+    if (kind === "section.started" || kind === "section.proof" ||
+        kind === "section.done") {
+      msg.root.classList.add("eoe-section");
+    }
+    if (kind === "hard_stop.fired") msg.root.classList.add("eoe-hardstop");
+
+    if (kind === "grant.awaiting_owner") {
+      msg.body.appendChild(
+        makeApprovalCard(event.cycle_id, "grants", details.proposals || [])
+      );
+    } else if (kind === "push.awaiting_owner") {
+      msg.body.appendChild(
+        makeApprovalCard(event.cycle_id, "push", [
+          { kind: "الدفع", scope: "موقع أحادي الاستخدام",
+            target: "commit " + (details.commit_sha || "?") }
+        ])
+      );
+    } else if (kind === "eoe.finished") {
+      if (details.report_text) {
+        var pre = document.createElement("pre");
+        pre.className = "report-mono";
+        pre.textContent = details.report_text;
+        msg.body.appendChild(pre);
+      }
+      if (details.artifact_hash) {
+        var hash = document.createElement("div");
+        hash.className = "report-hash";
+        hash.textContent = "artifact sha256: " + details.artifact_hash;
+        msg.body.appendChild(hash);
+      }
+      var verdict = document.createElement("div");
+      verdict.className = "approval-result";
+      verdict.textContent = details.verdict === "PASS"
+        ? "✔ VERDICT: PASS" : "✕ VERDICT: HARD STOP";
+      msg.body.appendChild(verdict);
+    }
+    messagesEl.appendChild(msg.root);
+    scrollDown();
+  }
+
+  function makeApprovalCard(runId, kind, items) {
+    var card = document.createElement("div");
+    card.className = "approval-card";
+    var title = document.createElement("div");
+    title.className = "approval-title";
+    title.textContent = kind === "grants"
+      ? "بطاقة موافقة المنح — بلا موافقتك لا وصول"
+      : "بطاقة موافقة الدفع — موافقة موقعة أحادية الاستخدام";
+    card.appendChild(title);
+
+    var list = document.createElement("div");
+    list.className = "approval-items";
+    items.forEach(function (item) {
+      var row = document.createElement("div");
+      row.textContent = "• " + (item.kind || "") + " [" + (item.scope || "") +
+        "] → " + (item.target || "");
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+
+    var actions = document.createElement("div");
+    actions.className = "approval-actions";
+    var okBtn = document.createElement("button");
+    okBtn.className = "btn-approve";
+    okBtn.textContent = kind === "grants" ? "أوافق على المنح" : "أوافق على الدفع";
+    var noBtn = document.createElement("button");
+    noBtn.className = "btn-deny";
+    noBtn.textContent = "أرفض";
+    actions.appendChild(okBtn);
+    actions.appendChild(noBtn);
+    card.appendChild(actions);
+
+    var result = document.createElement("div");
+    result.className = "approval-result";
+    card.appendChild(result);
+
+    function decide(approved) {
+      okBtn.disabled = true;
+      noBtn.disabled = true;
+      fetch("/api/eoe/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ run_id: runId, kind: kind, approved: approved })
+      })
+        .then(function (resp) {
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          return resp.json();
+        })
+        .then(function (outcome) {
+          result.textContent = approved
+            ? "✔ " + (outcome.note || "استؤنف التنفيذ")
+            : "✕ الرفض مسجل — لا وصول (fail-closed)";
+        })
+        .catch(function (err) {
+          result.textContent = "تعذرت الموافقة: " + err.message;
+          okBtn.disabled = false;
+          noBtn.disabled = false;
+        });
+    }
+    okBtn.addEventListener("click", function () { decide(true); });
+    noBtn.addEventListener("click", function () { decide(false); });
+    return card;
+  }
+
+  if (eoeRunEl) {
+    eoeRunEl.addEventListener("click", function () {
+      if (busy) return;
+      var orderText = inputEl.value.trim();
+      if (!orderText) {
+        inputEl.focus();
+        return;
+      }
+      hideWelcome();
+      conversationStarted = true;
+      busy = true;
+      eoeRunEl.disabled = true;
+      setTimeout(function () { eoeRunEl.disabled = false; }, 400);
+      var userMsg = makeRoleMessage({
+        role: "user",
+        kind: "order",
+        state: null,
+        text: "أمر تنفيذي (طوله " + orderText.length + " حرفًا) — نفّذه كما كُتب",
+        details: { order_text: orderText.slice(0, 2000) }
+      });
+      messagesEl.appendChild(userMsg.root);
+      scrollDown();
+      eoeRunStream(orderText);
+    });
+  }
+
 })();
