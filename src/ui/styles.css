@@ -313,6 +313,15 @@ html, body {
 #send:hover { color: var(--text); border-color: #3d3d3d; }
 #send:disabled { color: var(--text-faint); cursor: default; }
 
+/* زر «ابدأ الدورة» — يتسع عند وجود نص (الأمر الثاني) */
+#send.wide {
+  width: auto;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .composer-note {
   max-width: var(--chat-width);
   margin: 8px auto 0;
@@ -325,4 +334,157 @@ html, body {
 
 @media (max-width: 980px) {
   .sidebar { display: none; }
+}
+
+/* ==========================================================================
+   الأمر الثاني: عناصر الدورة الكاملة — شارات الرسائل، الزمن، التفاصيل،
+   رقاقات الحالة، زر الموافقة، النافذة. تظل الأحادية اللونية صارمة.
+   ========================================================================== */
+
+/* شارة الحالة على رسالة دور */
+.msg-badge {
+  font-family: "IBM Plex Sans Arabic", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.4px;
+  color: var(--text);
+  background: #1c1c1c;
+  border: 1px solid #3a3a3a;
+  border-radius: 5px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.msg-badge.dim { color: var(--text-dim); border-color: var(--border-soft); background: transparent; }
+.msg-badge.final { border-color: #555; }
+
+/* زمن الحدث ورابط التفاصيل في سطر التعريف */
+.msg-time {
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.details-link {
+  color: var(--text-dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--text-faint);
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  margin-inline-start: auto;
+}
+
+.details-link:hover { color: var(--text); }
+
+/* رقاقة تغيّر حالة الخطة — سطر رفيع بين الرسائل لا رسالة كاملة */
+.state-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-family: "IBM Plex Sans Arabic", monospace;
+  letter-spacing: 0.4px;
+}
+
+.state-chip::before,
+.state-chip::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+/* ملخص الدورة الختامي + زر الموافقة */
+.cycle-summary .msg-body { border-color: #3a3a3a; }
+
+.verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  background: var(--text);
+  color: #0d0d0d;
+  border: 1px solid var(--text);
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.verify-btn:hover { opacity: 0.85; }
+.verify-btn:disabled { opacity: 0.4; cursor: default; }
+
+.verified-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid #555;
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* نافذة تفاصيل الحدث (modal) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 24px;
+}
+
+.modal {
+  width: min(760px, 100%);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: #141414;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-mid);
+  font-size: 13px;
+}
+
+#modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-mid);
+  width: 30px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#modal-close:hover { color: var(--text); border-color: #3d3d3d; }
+
+#modal-json {
+  margin: 0;
+  padding: 16px 18px;
+  overflow: auto;
+  color: var(--text-mid);
+  font-family: "IBM Plex Sans Arabic", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
