@@ -525,3 +525,19 @@ def test_textstats_mission_path_grant_denied_no_writes(repo_with_remote, tmp_pat
     assert "رُفضت منحة المسار" in result.reason
     workspace = tmp_path / "mission" / "repo"
     assert not (workspace / "textstats").exists()
+
+
+def test_default_repo_root_is_this_repo_not_parent():
+    """انحدار الجذر الافتراضي: parents[2] الخاطئة كانت تدفع مساحة عمل
+    المهمة إلى مستودع المجلد الأب فيهبط الدفع في المستودع الخطأ —
+    الجذر الصحيح هو المستودع الحاوي لهذا المصدر نفسه (درس المهمة الأولى)."""
+    from missions_textstats import _default_repo_root
+
+    root = _default_repo_root().resolve()
+    # جذر هذا المستودع حصرًا: بنيته المميزة موجودة فيه
+    assert (root / "pyproject.toml").is_file()
+    assert (root / "src" / "missions_textstats.py").is_file()
+    assert (root / ".git").exists()
+    # وليس المجلد الأب (الذي لا يحوي هذه البنية)
+    assert root != root.parent
+    assert not (root.parent / "src" / "missions_textstats.py").is_file()

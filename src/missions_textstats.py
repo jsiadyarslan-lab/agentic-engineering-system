@@ -57,6 +57,14 @@ MISSION_BRANCH = "mission/textstats"
 MISSIONS_DIR = Path("runtime") / "missions"
 TEXTSTATS_MISSION_DIR = MISSIONS_DIR / "textstats"
 
+
+def _default_repo_root() -> Path:
+    """جذر مستودع المهمة الافتراضي — هذا الملف في src/ مباشرة فالجذر
+    parents[1]، وليس parents[2] كالوحدات الأعمق (src/roles/live.py):
+    إزاحة المستوى الواحد كانت تدفع مساحة عمل المهمة إلى مستودع
+    المجلد الأب فيهبط الدفع في المستودع الخطأ (درس المهمة الأولى)."""
+    return Path(__file__).resolve().parents[1]
+
 #: الملفات التي يكتبها المنفذ (LLM) — §4.1.
 EXPECTED_FILES: tuple[str, ...] = (
     "textstats/__init__.py",
@@ -399,7 +407,7 @@ def run_textstats_mission(
     )
 
     started = time.monotonic()
-    repo = Path(repo_root) if repo_root else Path(__file__).resolve().parents[2]
+    repo = Path(repo_root) if repo_root else _default_repo_root()
     mission = (Path(mission_dir) if mission_dir else TEXTSTATS_MISSION_DIR).resolve()
     mission.mkdir(parents=True, exist_ok=True)
     mission_events: list[dict] = []
