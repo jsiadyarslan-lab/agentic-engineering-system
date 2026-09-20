@@ -31,6 +31,19 @@ def test_model_router_under_600_lines():
     assert _count_lines("src/router/model_router.py") < 600
 
 
+def test_rate_limiter_under_300_lines():
+    """الأمر الثالث: الحزم المنقولة لها سقوفها الملتزمة (ARCHITECTURE §12)."""
+    assert _count_lines("src/router/rate_limiter.py") < 300
+
+
+def test_failover_chain_under_250_lines():
+    assert _count_lines("src/router/failover_chain.py") < 250
+
+
+def test_cooling_loop_under_250_lines():
+    assert _count_lines("src/router/cooling_loop.py") < 250
+
+
 def test_ui_js_under_2000_lines():
     """يعمل حتى بعد كتابة الواجهة — ملف app.js سقفه 2000."""
     path = REPO / "src/ui/app.js"
