@@ -1,0 +1,31 @@
+# بيئات Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# أسرار وبيئة
+.env
+.env.*
+
+# بيانات تشغيل وسجلات
+runtime/
+logs/
+*.db
+*.sqlite3
+
+# أدوات البناء والاختبار
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# أنظمة التشغيل والمحررات
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
