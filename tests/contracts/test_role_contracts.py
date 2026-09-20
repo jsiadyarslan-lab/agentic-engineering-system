@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -13,9 +16,14 @@ from roles.implementer import (
     ImplementerRequest,
     ImplementerResult,
 )
-from roles.reviewer import Reviewer, ReviewerRequest, ReviewerResult
+from roles.reviewer import (
+    Reviewer,
+    ReviewerRequest,
+    ReviewerResult,
+    ReviewerVerdict,
+)
 from roles.thinker import Plan, PlanTask, Thinker, ThinkerRequest, ThinkerResult
-from roles.verifier import Verifier, VerifierRequest, VerifierResult
+from roles.verifier import Verifier, VerifierRequest, VerifierResult, VerifierVerdict
 
 
 def _valid_plan() -> Plan:
@@ -141,20 +149,62 @@ def test_every_role_honest_state_matches_contracts():
     assert ROLES[RoleType.ARBITER].honest_state is PlanState.ADJUDICATED
 
 
-def test_role_skeletons_honestly_not_implemented():
-    """الهياكل ترفض التنفيذ بصدق — لا كود ميزات في التأسيس."""
-    for role, req in (
-        (Thinker(), ThinkerRequest(goal="g")),
-        (Reviewer(), ReviewerRequest(plan=_valid_plan())),
-        (
-            Implementer(),
-            ImplementerRequest(task=PlanTask(id="t", description="d")),
-        ),
-        (Verifier(), VerifierRequest()),
-        (Arbiter(), ArbiterRequest(conflict_type="c")),
-    ):
-        with pytest.raises(NotImplementedError):
-            role.run(req)
+def test_role_mocks_execute_and_return_contracts():
+    """الأمر الثاني فتح الأدوار — كل mock يعيد عقده (بلا NotImplementedError).
+
+    المفكر/المدقق/المحكَّم بلا ركيزة؛ المراجع بفحص ملفات حقيقي (tmp)؛
+    المنفذ يُغطى في اختبارات التكامل لأنه يحتاج الركيزة الفعلية.
+    """
+    # المفكر: خطة بثلاث مهام ومخاطر وافتراضات
+    thinker = Thinker()
+    result = thinker.run(ThinkerRequest(goal="بناء تقرير"))
+    assert len(result.plan.tasks) == 3
+    assert result.plan.risks and result.plan.assumptions
+
+    # المدقق: الجولة الأولى revise، وبعد معالجة الملاحظات approved
+    reviewer = Reviewer()
+    first = reviewer.run(ReviewerRequest(plan=result.plan))
+    assert first.verdict is ReviewerVerdict.REVISE
+    assert first.issues  # الملاحظات موثقة لا حكم أعمى
+    revised = thinker.run(
+        ThinkerRequest(goal="بناء تقرير", previous_reviews=first.issues)
+    )
+    second = reviewer.run(ReviewerRequest(plan=revised.plan))
+    assert second.verdict is ReviewerVerdict.APPROVED
+
+    # المراجع: فحص ملفات حقيقي — الناقص not_evidenced ثم evidenced بعد الإكمال
+    verifier = Verifier()
+    criteria = ["الملف T1-output.txt موجود ضمن الأدلة",
+                "الملف T1-run-log.txt موجود ضمن الأدلة"]
+    incomplete = verifier.run(VerifierRequest(task_acceptance_criteria=criteria))
+    assert incomplete.verdict is VerifierVerdict.NOT_EVIDENCED
+    assert incomplete.missing_evidence  # النقص موثق بالاسم
+    tmp = Path(tempfile.mkdtemp(prefix="v2-contracts-"))
+    for name in ("T1-output.txt", "T1-run-log.txt"):
+        (tmp / name).write_text("أثر", encoding="utf-8")
+    complete = verifier.run(
+        VerifierRequest(
+            task_acceptance_criteria=criteria,
+            artifacts=[str(tmp / "T1-output.txt"), str(tmp / "T1-run-log.txt")],
+        )
+    )
+    assert complete.verdict is VerifierVerdict.EVIDENCED
+    assert complete.confidence == 1.0
+
+    # المحكَّم: خصام مراجعة → إنهاء ركودي بتصعيد؛ وبصمة متكررة → كذلك
+    arbiter = Arbiter()
+    verdict = arbiter.run(
+        ArbiterRequest(conflict_type="review_deadlock",
+                       parties=["thinker", "reviewer"])
+    )
+    assert verdict.sub_verdict is SubVerdict.STAGNANT
+    assert verdict.escalation_to_human is True
+    repeat = arbiter.run(
+        ArbiterRequest(conflict_type="execution_exhausted", history=[
+            "execution_exhausted:retry_with_constraints",
+        ])
+    )
+    assert repeat.decision == "terminate_stagnant"
 
 
 def test_state_badges_cover_all_eleven_states():

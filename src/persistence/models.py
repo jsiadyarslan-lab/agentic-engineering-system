@@ -1,10 +1,12 @@
-"""نماذج البيانات — جدولان فقط في التأسيس (هدف دائم: <10 جداول).
+"""نماذج البيانات — ثلاثة جداول بعد الأمر الثاني (هدف دائم: <10 جداول).
 
 v1 حمل 13 جدولًا تراكمت عبر 19 مرحلة. v2 تبدأ بالحد الأدنى الصادق
 وتنمو مع الأوامر لا قبلها:
 
 - conversations: المحادثات (المحادثة هي التطبيق)
 - messages: الرسائل — بوسم الدور وشارة الحالة الصادقة
+- events: سجل نشاط كل دور داخل كل دورة (الأمر الثاني) — مرجع التدقيق
+  والواجهة: خطة/حكم مراجعة/تنفيذ مهمة/تحقق/قرار محكَّم/تغيير حالة.
 """
 
 from __future__ import annotations
@@ -59,4 +61,28 @@ class Message(Base):
         return self.state_badge in {s.value for s in PlanState}
 
 
-TABLE_COUNT = 2  # هدف دائم: <10 (design-principles.md المبدأ 6)
+class Event(Base):
+    """حدث دور واحد داخل دورة — نشاط كل دور يُسجَّل هنا (الأمر الثاني).
+
+    kind: goal | plan | plan_revised | review_verdict | task_execution |
+          task_verification | verification_rollup | arbiter_decision |
+          state_change | cycle_done | cycle_error | user_verification
+    state: الحالة الصادقة التي يحملها الحدث (قيم PlanState) أو الحكم
+           الفرعي (NOT_EVIDENCED / STAGNANT) — NULL للأحداث المحايدة.
+    payload: تفاصيل الحدث الكاملة JSON (العقد كما رُدَّت) — للتفصيل والعرض.
+    """
+
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cycle_id: Mapped[str] = mapped_column(String(64), index=True)
+    seq: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(20))
+    kind: Mapped[str] = mapped_column(String(40))
+    state: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    payload: Mapped[str] = mapped_column(Text, default="{}")
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
+
+
+TABLE_COUNT = 3  # هدف دائم: <10 (design-principles.md المبدأ 6)
