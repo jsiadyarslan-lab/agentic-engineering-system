@@ -1,12 +1,15 @@
-"""اختيار النموذج لكل دور (الأمر 006 §3+§4) — مصدر الحقيقة الوحيد.
+"""اختيار النموذج لكل دور (الأمر 006 §3+§4 + الأمر 007.1 §10).
 
-كل دور يملك (provider, model) مستقلين؛ المحادثة العادية تملك اختيارها
-أيضًا. الحفظ ملف JSON واحد atomic تحت runtime/ — إعداد تشغيلي لا
-بيانات علائقية (جداول SQLAlchemy للكيانات لا للتفضيلات).
+كل دور يملك (provider, configuration, model) مستقلة؛ المحادثة العادية
+تملك اختيارها أيضًا. مصدر الحقيقة الدائم منذ الأمر 007.1: جدول
+role_provider_mappings في القاعدة (§15) — الوصول إليه عبر
+providers_registry.registry.get_mappings/save_mappings. دوال ملف
+JSON هنا تبقى للتوافق: ترحيلًا للإعدادات القديمة واستخدامًا في
+الاختبارات المباشرة بلا خادم.
 
-فصل الطبقات الصارم: هذه الوحدة بيانات صرفة (تحميل/حفظ/افتراضات) لا
-تعرف بطاقات المزودات؛ التحقق الدلالي (مزود معروف؟ نموذج معلَن أو
-حي؟) مسؤولية طبقة api (models_config) التي ترى الطبقتين معًا.
+فصل الطبقات الصارم: هذه الوحدة بيانات صرفة لا تعرف بطاقات
+المزودين؛ التحقق الدلالي (مزود معروف؟ تكوين موجود؟ نموذج معلَن؟)
+مسؤولية طبقة api (models_config) التي ترى الطبقتين معًا.
 """
 
 from __future__ import annotations
@@ -28,9 +31,10 @@ ROLE_KEYS: tuple[str, ...] = (
 )
 
 #: الافتراض المعلن (الأمر 006 §4): كل الأدوار والمحادثة على المزود
-#: الافتراضي للبطاقات — إعلان صريح لا استنتاج خافت.
+#: الافتراضي — إعلان صريح لا استنتاج خافت. (007.1: الاسم بالبادئة
+#: nvidia/ — الدليل من قائمة المزود الحية، مصدر 404 السابق).
 DEFAULT_PROVIDER = "nvidia"
-DEFAULT_MODEL = "nemotron-3-ultra-550b-a55b"
+DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 
 CONFIG_PATH = Path("runtime") / "role_model_config.json"
 
@@ -41,13 +45,25 @@ class RoleConfigError(ValueError):
 
 @dataclass(frozen=True)
 class RoleSelection:
-    """اختيار واحد: مزود + نموذج."""
+    """اختيار واحد: مزود + تكوين (Base URL) + نموذج (007.1 §10)."""
 
     provider: str
     model: str
+    #: اسم التكوين داخل المزود — "" يعني التكوين الأساسي (default).
+    configuration: str = ""
 
     def as_dict(self) -> dict:
-        return {"provider": self.provider, "model": self.model}
+        return {
+            "provider": self.provider,
+            "configuration": self.configuration or "",
+            "model": self.model,
+        }
+
+    def transport_key(self) -> str:
+        """مفتاح النقل في الموجّه — المزود للأساسي، «مزود::تكوين» لغيره."""
+        if not self.configuration or self.configuration == "default":
+            return self.provider
+        return f"{self.provider}::{self.configuration}"
 
 
 def _defaults() -> dict[str, RoleSelection]:
@@ -65,11 +81,12 @@ def _coerce_one(key: str, raw: object) -> RoleSelection:
         )
     provider = str(raw.get("provider", "")).strip()
     model = str(raw.get("model", "")).strip()
+    configuration = str(raw.get("configuration", "") or "").strip()
     if not provider or not model:
         raise RoleConfigError(
             f"الدور '{key}' يحتاج provider وmodel غير فارغين"
         )
-    return RoleSelection(provider, model)
+    return RoleSelection(provider, model, configuration)
 
 
 def load_role_config(path: Path | str | None = None) -> dict[str, RoleSelection]:

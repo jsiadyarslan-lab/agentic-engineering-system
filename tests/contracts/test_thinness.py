@@ -115,8 +115,27 @@ def test_styles_css_under_1200_lines():
     assert _count_lines("src/ui/styles.css") < 1200
 
 
-def test_tables_under_10():
-    assert TABLE_COUNT < 10
+def test_tables_per_family_documented():
+    """(الأمر 007) العائلات الثلاث بأعدادها الموثقة — قرار معماري معلن.
+
+    السقف القديم (<10) وصف منتج المحادثة وحده؛ الأمر 007 جعل القاعدة
+    مصدر الحقيقة الدائم لحالة المشروع (§9) ولمزودي الخدمة (007.1 §15)
+    — فالعائلات الثلاث بأعداد مقفلة، وأي جدول جديد قرار يحدّث هذا
+    الاختبار معه.
+    """
+    from persistence.models import TABLE_COUNT_TOTAL
+    from providers_registry import models as provider_models
+    from workflow.models import WORKFLOW_TABLES
+
+    assert TABLE_COUNT == 3  # المنتج اليومي: محادثات/رسائل/أحداث أدوار
+    assert len(WORKFLOW_TABLES) == 11  # Project/Plan/Phase/Step/Execution/
+    # Evidence/Audit/Retry/Checkpoint/OwnerGate/ProjectEvent
+    provider_tables = {
+        t for t in provider_models.Base.metadata.tables
+        if t in ("providers", "provider_configurations", "role_provider_mappings")
+    }
+    assert len(provider_tables) == 3
+    assert TABLE_COUNT_TOTAL == 17
 
 
 def test_cycle_structure_is_the_five_roles_in_order():

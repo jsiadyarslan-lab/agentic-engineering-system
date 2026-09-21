@@ -109,18 +109,28 @@ def _resolve_provider_credentials(spec: dict, name: str = "") -> dict | None:
 
 
 def resolve_live_providers(cfg: "Any" = None) -> dict[str, dict]:
-    """حل المزودات الحية: المدمج + JSON الإعدادات — بلا مفاتيح يُستبعد.
+    """حل المزودات الحية: سجل القاعدة الدائم + JSON الإعدادات.
 
-    المزود من providers_json ينسخ فوق المدمج بالاسم نفسه (تخصيص كامل:
-    base_url/api_key/model/الحدود). المزود بلا مفتاح قابل للحل يُستبعد
-    صراحةً — لا يُنادى أبدًا (فشل صريح لا 401 عشوائية).
+    (الأمر 007.1 §15): سجل المزودين في القاعدة هو مصدر الحقيقة —
+    المزودون المباشرون من الواجهة، بتكويناتهم المتعددة، يُحلّون هنا.
+    JSON الإعدادات (AGenthubV2_LIVE_PROVIDERS) ما زال يعمل فوقهم
+    (تخصيص تشغيلي معلن). القالب المدمج يعمل عند غياب سياق القاعدة
+    فقط (اختبارات مباشرة بلا خادم). المزود بلا مفتاح قابل للحل
+    يُستبعد صراحةً — لا يُنادى أبدًا (فشل صريح لا 401 عشوائية).
     """
     live_cfg = cfg or live_model_settings
     resolved: dict[str, dict] = {}
-    for name, spec in BUILTIN_LIVE_PROVIDERS.items():
-        found = _resolve_provider_credentials(dict(spec), name=name)
-        if found:
-            resolved[name] = found
+    # 1) سجل القاعدة الدائم — إن وُجد سياق API (مصدر الحقيقة)
+    db_specs = _resolve_db_provider_specs()
+    if db_specs is not None:
+        resolved.update(db_specs)
+    else:
+        # لا سياق قاعدة (اختبار مباشر) — القالب المدمج فقط
+        for name, spec in BUILTIN_LIVE_PROVIDERS.items():
+            found = _resolve_provider_credentials(dict(spec), name=name)
+            if found:
+                resolved[name] = found
+    # 2) تخصيصات JSON التشغيلية فوق الجميع (معلنة لا خفية)
     if getattr(live_cfg, "providers_json", ""):
         try:
             custom = json.loads(live_cfg.providers_json)
@@ -140,3 +150,20 @@ def resolve_live_providers(cfg: "Any" = None) -> dict[str, dict]:
                 merged = {**resolved.get(name, {}), **found}
                 resolved[name] = merged
     return resolved
+
+
+def _resolve_db_provider_specs() -> dict[str, dict] | None:
+    """مواصفات المزودين من سجل القاعدة — None إن لم يوجد سياق قاعدة.
+
+    فشلُ مزودٍ واحد في الحل لا يمنع غيره (007.1 §9): كل تكوين يُحل
+    باستقلال تام، والمقصي هو الذي بلا مصادقة قابلة للحل فقط.
+    """
+    try:
+        from providers_registry import registry  # noqa: PLC0415 — كسول يمنع الدوران
+
+        sessions = registry._api_sessions()
+        if sessions is None:
+            return None
+        return registry.resolve_provider_specs(sessions)
+    except Exception:  # noqa: BLE001 — لا قاعدة = القالب المدمج
+        return None

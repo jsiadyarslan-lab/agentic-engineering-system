@@ -117,13 +117,14 @@ def test_chat_and_task_stream_endpoints_wired():
 
 
 def test_versioned_assets_and_new_modules():
-    """أصول مرقمة بالإصدار + وحدات الواجهة الثلاث محمّلة بالترتيب."""
-    assert "styles.css?v=2.2.0" in HTML
-    assert "app.js?v=2.2.0" in HTML
-    app_pos = HTML.index("app.js?v=2.2.0")
-    task_pos = HTML.index("task-cards.js?v=2.2.0")
-    settings_pos = HTML.index("settings.js?v=2.2.0")
-    assert app_pos < task_pos < settings_pos
+    """أصول مرقمة بالإصدار + وحدات الواجهة الأربع محمّلة بالترتيب."""
+    assert "styles.css?v=3.0.0" in HTML
+    assert "app.js?v=3.0.0" in HTML
+    app_pos = HTML.index("app.js?v=3.0.0")
+    task_pos = HTML.index("task-cards.js?v=3.0.0")
+    settings_pos = HTML.index("settings.js?v=3.0.0")
+    projects_pos = HTML.index("projects.js?v=3.0.0")
+    assert app_pos < task_pos < settings_pos < projects_pos
 
 
 def test_mode_chip_shows_current_selection():

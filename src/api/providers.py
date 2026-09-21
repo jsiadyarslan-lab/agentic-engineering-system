@@ -1,109 +1,331 @@
-"""نقاط نهاية المزودات (الأمر السادس المنقح §1) — منقولة من v1.
+"""نقاط نهاية المزودين (الأمر 007.1 §14) — إدارة كاملة من الواجهة.
 
-نفس عقد v1: بطاقات مزودات + حفظ/حذف مفتاح في مخزن الأسرار + اختبار
-اتصال حقيقي (ping صغير عبر نقطة /models) + جلب قائمة النماذج.
-لا تُعاد قيمة مفتاح كاملة من أي نقطة إطلاقًا — تقنيع ****+آخر 4 فقط،
-والسجلات يحميها مرشح [REDACTED].
+هذه لم تعد بطاقات مغلقة في الكود: المزود كيان دائم في القاعدة
+(إنشاء/تعديل/حذف)، وله تكوينات متعددة (Base URLs) قابلة للإضافة
+والتعديل والحذف مع حماية المستخدَم منها، ومسبار جاهزية حقيقي بتصنيف
+صريح (READY/AUTH_FAILED/NOT_FOUND/…) وتشخيص منظم كامل (§7).
+
+نقاط النهاية:
+- GET/POST /api/providers                     قائمة/إنشاء
+- GET/PUT/DELETE /api/providers/{id}          تفصيل/تعديل/حذف
+- GET/POST /api/providers/{id}/configurations تكوينات المزود
+- PUT/DELETE /api/provider-configurations/{id} تعديل/حذف تكوين
+- POST /api/provider-configurations/{id}/test مسبار الجاهزية
+- GET /api/providers/{id}/models              نماذج التكوين الأساسي
+- POST /api/providers/{id}/models/refresh     جلب حي للنماذج
+- PUT/DELETE /api/providers/{name}/key        مفاتيح الأسرار (توافق 006)
+
+لا قيمة مفتاح تعود من أي نقطة إطلاقًا — تقنيع ****+آخر 4 فقط.
 """
 
 from __future__ import annotations
 
-import json
-import time
-import urllib.error
-import urllib.request
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from providers_registry import registry
 from secrets_store import store as secrets
 
 router = APIRouter(prefix="/api/providers", tags=["providers"])
 
-#: سجل المزودات — بطاقة لكل مزود (نفس بطاقات v1 §1.4: nvidia تظهر فورًا).
-#: الأمر 005: known_models لكل بطاقة = نماذج معلنة مجرّبة في هذا المشروع
-#: (البطاقة نفسها/الإثباتات الحية السابقة) — تُعرض عند تعذر الجلب الحي
-#: (بلا مفتاح أو منشأة بلا نقطة نماذج) بمصدر معلن "declared" لا ادعاء حي.
-PROVIDER_CARDS: dict[str, dict[str, Any]] = {
-    "nvidia": {
-        "label": "NVIDIA NIM",
-        "base_url": "https://integrate.api.nvidia.com/v1",
-        "requires_key": True,
-        "model": "nemotron-3-ultra-550b-a55b",
-        "known_models": ["nemotron-3-ultra-550b-a55b"],
-        "note": "المزود الافتراضي — مفتاحك يُحفظ في مخزن الأسرار (DPAPI على Windows)",
-    },
-    "openai_compatible": {
-        "label": "OpenRouter (متوافق OpenAI)",
-        "base_url": "https://openrouter.ai/api/v1",
-        "requires_key": True,
-        "model": "anthropic/claude-haiku-3.5",
-        "known_models": ["anthropic/claude-haiku-3.5"],
-        "note": "بديل اختياري — يُفعَّل بحفظ مفتاحه",
-    },
-    "zai_internal": {
-        "label": "z.ai داخلي (منشأة الحاوية المعلنة)",
-        "base_url": "https://internal-api.z.ai/v1",
-        "requires_key": False,
-        "model": "glm-4.6",
-        "known_models": ["glm-4.6"],
-        "config_file": "/etc/.z-ai-config",
-        "note": "منشأة اختبار معلنة داخل الحاوية — مصادقتها من ملف الإعدادات",
-    },
-}
 
+def _sessions():
+    """جلسة القاعدة الحية — مسؤولية routes (المصدر الموحد)."""
+    from api import routes  # noqa: PLC0415 — كسول: routes يُستورد متأخرًا
+
+    return routes._sessions
+
+
+def _err(error: Exception) -> HTTPException:
+    """خطأ السجل → HTTP صادق يسمي السبب."""
+    if isinstance(error, KeyError):
+        return HTTPException(status_code=404, detail=str(error.args[0] or error))
+    return HTTPException(status_code=422, detail=str(error))
+
+
+# ------------------------------------------------------------------ #
+# أجسام الطلبات
+# ------------------------------------------------------------------ #
 
 class ProviderKeyIn(BaseModel):
     """جسم حفظ مفتاح — القيمة لا تُعاد أبدًا (تقنيع فقط)."""
 
-    key: str = Field(min_length=1, max_length=4096)
+    key: str = Field(min_length=8, max_length=4096)
 
 
-def _card(name: str) -> dict:
-    card = PROVIDER_CARDS[name]
-    key = secrets.get_key(name) if card["requires_key"] else None
-    return {
-        "id": name,
-        "label": card["label"],
-        "base_url": card["base_url"],
-        "requires_key": card["requires_key"],
-        "model": card["model"],
-        "known_models": list(card.get("known_models", [])),
-        "note": card["note"],
-        "has_key": bool(key),
-        "key_masked": secrets.mask(key) if key else None,
-    }
+class ProviderCreateIn(BaseModel):
+    """إنشاء مزود جديد من الواجهة (§3) — القائمة ليست مغلقة."""
 
+    name: str = Field(min_length=2, max_length=64, pattern=r"^[a-z0-9][a-z0-9_-]+$")
+    display_name: str = Field(default="", max_length=120)
+    type: str = Field(default="custom", max_length=40)
+    api_style: str = Field(default="openai_compatible", max_length=40)
+    auth_type: str = Field(default="bearer", max_length=20)
+    enabled: bool = True
+    base_url: str = Field(default="", max_length=500)
+    default_model: str = Field(default="", max_length=200)
+    models: list[str] = Field(default_factory=list)
+    config_file: str = Field(default="", max_length=500)
+    api_key: str = Field(default="", max_length=4096, description="يُحفظ في مخزن الأسرار ولا يُعاد أبدًا")
+
+
+class ProviderUpdateIn(BaseModel):
+    """تعديل مزود — الحقول القابلة للتغيير حصرًا."""
+
+    display_name: str | None = Field(default=None, max_length=120)
+    type: str | None = Field(default=None, max_length=40)
+    enabled: bool | None = None
+    api_style: str | None = Field(default=None, max_length=40)
+    auth_type: str | None = Field(default=None, max_length=20)
+
+
+class ConfigurationIn(BaseModel):
+    """تكوين مزود — Base URL واحد بنموذجه (§4+§5)."""
+
+    name: str = Field(min_length=1, max_length=120)
+    base_url: str = Field(min_length=1, max_length=500)
+    api_style: str = Field(default="openai_compatible", max_length=40)
+    enabled: bool = True
+    default_model: str = Field(default="", max_length=200)
+    models: list[str] = Field(default_factory=list)
+    config_file: str = Field(default="", max_length=500)
+
+
+class ConfigurationUpdateIn(BaseModel):
+    """تعديل تكوين — base_url قابل للتغيير بلا لمس الكود (§4)."""
+
+    name: str | None = Field(default=None, max_length=120)
+    base_url: str | None = Field(default=None, max_length=500)
+    api_style: str | None = Field(default=None, max_length=40)
+    enabled: bool | None = None
+    default_model: str | None = Field(default=None, max_length=200)
+    models: list[str] | None = None
+    config_file: str | None = Field(default=None, max_length=500)
+
+
+# ------------------------------------------------------------------ #
+# القائمة والإنشاء
+# ------------------------------------------------------------------ #
 
 @router.get("")
 def list_providers() -> dict:
-    """بطاقات المزودات + حالة المخزن — بلا أي قيمة سرية."""
+    """كل المزودين بتكويناتهم وجاهزيتهم — من القاعدة الدائمة."""
+    providers = registry.list_providers(_sessions())
     return {
-        "providers": [_card(name) for name in PROVIDER_CARDS],
+        "providers": providers,
         "store": secrets.store_status(),
-        "default": {"provider": "nvidia", "model": "nemotron-3-ultra-550b-a55b"},
+        "default": _default_selection(),
     }
+
+
+def _default_selection() -> dict:
+    """الاختيار الافتراضي الحالي لعرض الواجهة — من ربط الأدوار الدائم."""
+    try:
+        mappings = registry.get_mappings(_sessions())
+        chat = mappings.get("chat", {})
+        return {
+            "provider": chat.get("provider", "nvidia"),
+            "configuration": chat.get("configuration", ""),
+            "model": chat.get("model", ""),
+        }
+    except Exception:  # noqa: BLE001 — العرض لا ينهار
+        return {"provider": "nvidia", "configuration": "", "model": ""}
+
+
+@router.post("", status_code=201)
+def create_provider(body: ProviderCreateIn) -> dict:
+    """إنشاء مزود جديد — لا تعديل مصدر مطلوب أبدًا (§3)."""
+    try:
+        provider = registry.create_provider(
+            _sessions(),
+            name=body.name, display_name=body.display_name, type_=body.type,
+            api_style=body.api_style, auth_type=body.auth_type,
+            enabled=body.enabled, base_url=body.base_url,
+            default_model=body.default_model, models=body.models,
+            config_file=body.config_file,
+        )
+    except ValueError as error:
+        raise _err(error) from error
+    # مفتاح اختياري مع الإنشاء — يذهب لمخزن الأسرار مباشرة (لا سجل)
+    if body.api_key:
+        if provider["auth_type"] != "bearer":
+            raise HTTPException(
+                status_code=422,
+                detail="المزود لا يستخدم مفتاح Bearer — أزل api_key من الطلب",
+            )
+        secrets.set_key(provider["name"], body.api_key.strip())
+        provider["has_key"] = True
+        provider["key_masked"] = secrets.mask(body.api_key.strip())
+    return {"success": True, "provider": provider}
+
+
+@router.get("/{provider_id}")
+def get_provider(provider_id: int) -> dict:
+    """تفصيل مزود واحد — 404 صادق إن لم يكن معروفًا."""
+    provider = registry.get_provider(_sessions(), provider_id)
+    if provider is None:
+        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {provider_id}")
+    return provider
+
+
+@router.put("/{provider_id}")
+def update_provider(provider_id: int, body: ProviderUpdateIn) -> dict:
+    """تعديل مزود — الحقول المعلنة فقط."""
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=422, detail="لا حقول للتعديل في الطلب")
+    try:
+        return registry.update_provider(_sessions(), provider_id, **fields)
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+
+
+@router.delete("/{provider_id}")
+def delete_provider(provider_id: int) -> dict:
+    """حذف مزود — مرفوض إن كان مرتبطًا بأدوار (حماية الاستخدام §4)."""
+    try:
+        return registry.delete_provider(_sessions(), provider_id)
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+
+
+# ------------------------------------------------------------------ #
+# التكوينات — إضافة/تعديل/حذف/اختبار Base URL (§4+§5)
+# ------------------------------------------------------------------ #
+
+@router.get("/{provider_id}/configurations")
+def list_configurations(provider_id: int) -> dict:
+    provider = registry.get_provider(_sessions(), provider_id)
+    if provider is None:
+        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {provider_id}")
+    return {"configurations": provider["configurations"]}
+
+
+@router.post("/{provider_id}/configurations", status_code=201)
+def add_configuration(provider_id: int, body: ConfigurationIn) -> dict:
+    """إضافة Base URL/تكوين جديد للمزود (§4 إضافة)."""
+    try:
+        cfg = registry.add_configuration(
+            _sessions(), provider_id, name=body.name, base_url=body.base_url,
+            api_style=body.api_style, enabled=body.enabled,
+            default_model=body.default_model, models=body.models,
+            config_file=body.config_file,
+        )
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+    return {"success": True, "configuration": cfg}
+
+
+configurations_router = APIRouter(
+    prefix="/api/provider-configurations", tags=["providers"]
+)
+
+
+@configurations_router.put("/{config_id}")
+def update_configuration(config_id: int, body: ConfigurationUpdateIn) -> dict:
+    """تعديل تكوين — Base URL يتغير من الواجهة لا من الكود (§4 تعديل)."""
+    fields = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not fields:
+        raise HTTPException(status_code=422, detail="لا حقول للتعديل في الطلب")
+    try:
+        return registry.update_configuration(_sessions(), config_id, **fields)
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+
+
+@configurations_router.delete("/{config_id}")
+def delete_configuration(config_id: int) -> dict:
+    """حذف تكوين غير مستخدم (§4 حذف) — المحمي بالربط يُرفض."""
+    try:
+        return registry.delete_configuration(_sessions(), config_id)
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+
+
+@configurations_router.post("/{config_id}/test")
+def test_configuration(config_id: int) -> dict:
+    """مسبار الجاهزية الحقيقي (§4 اختبار) — تصنيف صريح وتشخيص كامل.
+
+    يعيد دائمًا 200: النتيجة داخل الجسم ببنية موحدة — status من
+    READINESS_STATES حصرًا، ولا «LIVE» بلا نجاح HTTP فعلي.
+    """
+    registry.log_provider_event(_sessions(), "PROVIDER_TEST_STARTED",
+                                {"configuration_id": config_id})
+    try:
+        result = registry.probe_configuration(_sessions(), config_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error.args[0] or error))
+    except ValueError as error:
+        raise _err(error) from error
+    return result
+
+
+# ------------------------------------------------------------------ #
+# النماذج (§12) — معلنة + جلب حي اختياري
+# ------------------------------------------------------------------ #
+
+@router.get("/{provider_id}/models")
+def provider_models(provider_id: int) -> dict:
+    """نماذج التكوين الأساسي للمزود — المعلنة دائمًا، والحي إن أمكن."""
+    provider = registry.get_provider(_sessions(), provider_id)
+    if provider is None:
+        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {provider_id}")
+    configs = [c for c in provider["configurations"] if c["is_primary"]] \
+        or provider["configurations"]
+    if not configs:
+        return {"ok": False, "source": "declared", "model_ids": [],
+                "models_count": 0, "message": "لا تكوين مفعّل لهذا المزود"}
+    cfg = configs[0]
+    return {
+        "ok": True, "source": "declared",
+        "model_ids": cfg["models"],
+        "models_count": len(cfg["models"]),
+        "configuration": cfg["name"],
+        "message": "نماذج معلنة من تكوين المزود — استخدم تحديث النماذج للجلب الحي",
+    }
+
+
+@router.post("/{provider_id}/models/refresh")
+def refresh_provider_models(provider_id: int) -> dict:
+    """جلب النماذج حيًا من التكوين الأساسي (§12) — ليس شرطًا للتشغيل."""
+    provider = registry.get_provider(_sessions(), provider_id)
+    if provider is None:
+        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {provider_id}")
+    configs = [c for c in provider["configurations"] if c["is_primary"]] \
+        or provider["configurations"]
+    if not configs:
+        raise HTTPException(status_code=422, detail="لا تكوين مفعّل لهذا المزود")
+    try:
+        return registry.refresh_models(_sessions(), configs[0]["id"])
+    except (ValueError, KeyError) as error:
+        raise _err(error) from error
+
+
+# ------------------------------------------------------------------ #
+# مفاتيح الأسرار (توافق الأمر 006) — بالاسم لا بالمعرف
+# ------------------------------------------------------------------ #
+
+def _find_by_name(name: str) -> dict:
+    for provider in registry.list_providers(_sessions()):
+        if provider["name"] == name:
+            return provider
+    raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
 
 
 @router.put("/{name}/key")
 def put_provider_key(name: str, body: ProviderKeyIn) -> dict:
-    """حفظ مفتاح مزود في مخزن الأسرار (DPAPI على Windows، §1.2)."""
-    if name not in PROVIDER_CARDS:
-        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
-    if not PROVIDER_CARDS[name]["requires_key"]:
+    """حفظ مفتاح مزود في مخزن الأسرار (DPAPI على Windows — §13)."""
+    provider = _find_by_name(name)
+    if provider["auth_type"] != "bearer":
         raise HTTPException(
             status_code=400,
-            detail=f"المزود {name} لا يتطلب مفتاح API (مصادقته معلنة)",
+            detail=f"المزود {name} لا يتطلب مفتاح API (مصادقته {provider['auth_type']})",
         )
     key = body.key.strip()
-    if len(key) < 8:
-        raise HTTPException(
-            status_code=400, detail="المفتاح قصير جدًا (الحد الأدنى 8 أحرف)"
-        )
     secrets.set_key(name, key)
     masked = secrets.mask(key)
-    # السجل يحمل القيمة المقنّعة فقط — أبدًا لا يُكتب المفتاح كاملًا
     return {
         "success": True,
         "message": f"تم حفظ مفتاح المزود {name} في المخزن المحلي ({masked})",
@@ -115,8 +337,7 @@ def put_provider_key(name: str, body: ProviderKeyIn) -> dict:
 @router.delete("/{name}/key")
 def delete_provider_key(name: str) -> dict:
     """حذف مفتاح مزود من المخزن المحلي."""
-    if name not in PROVIDER_CARDS:
-        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
+    _find_by_name(name)
     existed = secrets.delete_key(name)
     message = (
         f"تم حذف مفتاح المزود {name} من المخزن المحلي"
@@ -124,144 +345,3 @@ def delete_provider_key(name: str) -> dict:
         else f"لا يوجد مفتاح محفوظ للمزود {name} أصلًا"
     )
     return {"success": True, "message": message, "existed": existed, "provider": name}
-
-
-def _provider_auth(name: str) -> tuple[str, dict[str, str]]:
-    """حل مصادقة مزود لاختبار الاتصال — (المفتاح، ترويسات إضافية).
-
-    المفتاح من المخزن المحلي حصرًا (لا بيئة §0.3)؛ zai_internal
-    منشأة معلنة تقرأ مصادقتها من ملف الإعدادات.
-    """
-    card = PROVIDER_CARDS[name]
-    headers: dict[str, str] = {}
-    config_file = card.get("config_file")
-    if config_file:
-        try:
-            with open(config_file, encoding="utf-8") as handle:
-                found = json.load(handle)
-        except (OSError, ValueError) as error:
-            raise HTTPException(
-                status_code=503,
-                detail=f"ملف مصادقة المنشأة غير مقروء: {error}",
-            ) from error
-        headers["X-Z-AI-From"] = "Z"
-        if found.get("token"):
-            headers["X-Token"] = str(found["token"])
-        return str(found.get("apiKey", "")), headers
-    key = secrets.get_key(name)
-    if not key:
-        raise HTTPException(
-            status_code=400,
-            detail=f"لا مفتاح محفوظ للمزود {name} — احفظه أولًا من بطاقته",
-        )
-    return key, headers
-
-
-def _get_models(base_url: str, api_key: str, extra_headers: dict) -> dict:
-    """GET {base_url}/models عبر urllib — ping صغير بلا استهلاك توكنات."""
-    request = urllib.request.Request(
-        base_url.rstrip("/") + "/models",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            **extra_headers,
-        },
-        method="GET",
-    )
-    started = time.monotonic()
-    try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            body = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        detail = error.read()[:200].decode("utf-8", "replace")
-        return {
-            "ok": False,
-            "latency_ms": int((time.monotonic() - started) * 1000),
-            "models_count": 0,
-            "message": f"HTTP {error.code}: {detail}",
-        }
-    except Exception as error:  # noqa: BLE001 — خطأ شبكة واحد صريح
-        return {
-            "ok": False,
-            "latency_ms": int((time.monotonic() - started) * 1000),
-            "models_count": 0,
-            "message": f"فشل الاتصال: {error}",
-        }
-    models = body.get("data", []) if isinstance(body, dict) else []
-    return {
-        "ok": True,
-        "latency_ms": int((time.monotonic() - started) * 1000),
-        "models_count": len(models),
-        "message": "اتصال ناجح",
-        "model_ids": [str(m.get("id", "")) for m in models][:200],
-    }
-
-
-@router.post("/{name}/test")
-def test_provider(name: str) -> dict:
-    """اختبار اتصال حقيقي بالمفتاح المخزن — ping صغير (§1.4).
-
-    يعيد دائمًا 200 (الخطأ داخل الجسم) — الخادم لا ينهار أبدًا،
-    والمفتاح لا يظهر في أي مخرج.
-    """
-    if name not in PROVIDER_CARDS:
-        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
-    try:
-        api_key, headers = _provider_auth(name)
-    except HTTPException as error:
-        return {"ok": False, "latency_ms": 0, "models_count": 0,
-                "message": str(error.detail)}
-    return _get_models(PROVIDER_CARDS[name]["base_url"], api_key, headers)
-
-
-#: كاش قوائم النماذج — 5 دقائق لكل مزود (نفس سياسة v1).
-_models_cache: dict[str, tuple[float, dict]] = {}
-_MODELS_TTL = 300.0
-
-
-def _declared_models(name: str, reason: str, latency_ms: int) -> dict:
-    """تراجع صادق: تعذر الجلب الحي ← نماذج البطاقة المعلنة بمصدر معلن.
-
-    الأمر 005: القائمة لا تعود فارغة صامتة أبدًا — إما نماذج حية
-    (source=live) أو نماذج معلنة من البطاقة (source=declared) مع سبب
-    تعذر الحي، فلا يبقى الزر صامتًا ولا يُدّعى ما لم يُجلب فعلًا.
-    """
-    known = list(PROVIDER_CARDS[name].get("known_models", []))
-    return {
-        "ok": False,
-        "source": "declared",
-        "latency_ms": latency_ms,
-        "models_count": len(known),
-        "model_ids": known,
-        "message": (
-            f"الجلب الحي تعذر: {reason} — "
-            "تُعرض النماذج المعلنة في البطاقة (مجرّبة سابقًا، بلا اتصال الآن)"
-        ),
-    }
-
-
-@router.get("/{name}/models")
-def list_provider_models(name: str, refresh: bool = False) -> dict:
-    """جلب قائمة النماذج من المزود — حية إن أمكن، وإلا المعلنة بصدق."""
-    if name not in PROVIDER_CARDS:
-        raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
-    cached = _models_cache.get(name)
-    now = time.monotonic()
-    if cached and not refresh and now - cached[0] < _MODELS_TTL:
-        return {**cached[1], "cached": True}
-    try:
-        api_key, headers = _provider_auth(name)
-    except HTTPException as error:
-        result = _declared_models(name, str(error.detail), 0)
-        _models_cache[name] = (now, result)
-        return {**result, "cached": False}
-    result = _get_models(PROVIDER_CARDS[name]["base_url"], api_key, headers)
-    if result.get("ok"):
-        result["source"] = "live"
-    else:
-        # الأمر 005: 404/فشل شبكة ← التراجع المعلن بدل قائمة فارغة صامتة
-        result = _declared_models(
-            name, result.get("message", "سبب غير معروف"),
-            int(result.get("latency_ms", 0)),
-        )
-    _models_cache[name] = (now, result)
-    return {**result, "cached": False}

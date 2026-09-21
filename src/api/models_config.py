@@ -1,25 +1,28 @@
-"""نقاط نهاية إعدادات النماذج (الأمر 006 §5+§13) — لكل دور اختياره.
+"""نقاط نهاية إعدادات النماذج (الأمر 006 §5+§13 + الأمر 007.1 §10).
 
-GET /api/models/config : المزودون وحالتهم + اختيار كل دور + الافتراضات.
-PUT /api/models/config : حفظ اختيارات الأدوار — بعد تحقق صارم:
-                          مزود معروف + نموذج معلَن أو حي.
+GET /api/models/config : المزودون بتكويناتهم وجاهزيتهم + ربط كل دور
+                          (مزود + تكوين + نموذج) — من القاعدة الدائمة.
+PUT /api/models/config : حفظ ربط الأدوار — بعد تحقق صارم: مزود معروف
+                          وتكوين موجود ونموذج معلَن في التكوين.
 
-لا تُعاد قيمة مفتاح من أي رد أبدًا (تقنيع ****+آخر 4 في الأفضل،
-وهنا لا تُعاد أصلًا — حالة المخزن فقط).
+لا تُعاد قيمة مفتاح من أي رد أبدًا — حالة المخزن فقط.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from api.providers import PROVIDER_CARDS, _get_models, _provider_auth
-from router import role_config as rc
-from secrets_store import store as secrets
+from providers_registry import registry
 
 router = APIRouter(prefix="/api/models", tags=["models-config"])
+
+
+def _sessions():
+    from api import routes  # noqa: PLC0415 — كسول: routes يُستورد متأخرًا
+
+    return routes._sessions
+
 
 #: أسماء الأدوار العربية — المرجع الواحد للعرض (core/roles.py هو المصدر).
 ROLE_LABELS: dict[str, str] = {
@@ -33,10 +36,11 @@ ROLE_LABELS: dict[str, str] = {
 
 
 class RoleSelectionIn(BaseModel):
-    """جسم اختيار دور واحد — مزود + نموذج."""
+    """جسم اختيار دور واحد — مزود + تكوين + نموذج (007.1 §10)."""
 
     provider: str = Field(min_length=1, max_length=64)
     model: str = Field(min_length=1, max_length=200)
+    configuration: str = Field(default="", max_length=120)
 
 
 class ModelsConfigIn(BaseModel):
@@ -50,115 +54,153 @@ class ModelsConfigIn(BaseModel):
     chat: RoleSelectionIn | None = None
 
 
-def _provider_availability(name: str, card: dict) -> dict:
-    """حالة المزود الصادقة: متاح للربط الحي أم لا — ولماذا."""
-    if not card["requires_key"]:
-        # مزود بلا مفتاح مطلوب (منشأة معلنة): متاح إن حلّت مصادقته
-        from router.live_providers import _resolve_provider_credentials
-
-        spec = {
-            k: v for k, v in card.items()
-            if k in ("base_url", "model", "config_file")
-        }
-        resolved = _resolve_provider_credentials(spec, name)
-        return {
-            "available": resolved is not None,
-            "state": "متاح" if resolved else "غير متصل",
-            "reason": None if resolved else "تعذّر حل مصادقة المنشأة المعلنة",
-        }
-    has_key = bool(secrets.get_key(name))
+def _provider_payload(provider: dict) -> dict:
+    """حالة المزود للعرض — متاح للربط الحي أم لا، ولماذا (صادق)."""
+    configs = provider["configurations"]
+    usable = [c for c in configs if c["enabled"]]
+    if not usable:
+        return {**_base(provider), "available": False,
+                "state": "غير مفعّل", "reason": "لا تكوين مفعّل للمزود"}
+    primary = usable[0]
+    if provider["auth_type"] == "bearer" and not provider.get("has_key"):
+        return {**_base(provider), "available": False,
+                "state": "غير متصل",
+                "reason": "لا مفتاح محفوظ لهذا المزود"}
+    if provider["auth_type"] == "config_file" and not primary.get("config_file"):
+        return {**_base(provider), "available": False,
+                "state": "غير متصل",
+                "reason": "ملف مصادقة المنشأة غير معلن"}
     return {
-        "available": has_key,
-        "state": "متاح" if has_key else "غير متصل",
-        "reason": None if has_key else "لا مفتاح محفوظ لهذا المزود",
+        **_base(provider),
+        "available": True,
+        "state": "متاح",
+        "reason": None,
+        "readiness_status": primary["readiness"]["status"],
     }
 
 
-def _provider_payload(name: str) -> dict[str, Any]:
-    card = PROVIDER_CARDS[name]
-    availability = _provider_availability(name, card)
+def _base(provider: dict) -> dict:
+    primary = provider["configurations"][0] if provider["configurations"] else {}
     return {
-        "id": name,
-        "label": card["label"],
-        "base_url": card["base_url"],
-        "requires_key": card["requires_key"],
-        "default_model": card["model"],
-        "known_models": list(card.get("known_models", [])),
-        "has_key": bool(secrets.get_key(name)) if card["requires_key"] else None,
-        "availability": availability,
+        "id": provider["name"],          # الاسم هو المعرف في ربط الأدوار
+        "provider_id": provider["id"],
+        "label": provider["display_name"],
+        "base_url": primary.get("base_url", ""),
+        "requires_key": provider["auth_type"] == "bearer",
+        "default_model": primary.get("default_model", ""),
+        "known_models": primary.get("models", []),
+        "has_key": provider.get("has_key"),
+        "configurations": [
+            {
+                "name": c["name"],
+                "base_url": c["base_url"],
+                "default_model": c["default_model"],
+                "models": c["models"],
+                "enabled": c["enabled"],
+                "is_primary": c["is_primary"],
+                "readiness": c["readiness"],
+            }
+            for c in provider["configurations"]
+        ],
     }
 
 
-def _live_model_ids(name: str) -> set[str]:
-    """أفضل محاولة لجلب النماذج الحية — الفشل = مجموعة فارغة (معلنة فقط).
-
-    تجاوز كاش الواجهة هنا مقصود: التحقق وقت الحفظ يريد الحقيقة الآن،
-    لا قائمة عمرها 5 دقائق غيّرها المزود.
-    """
-    try:
-        api_key, headers = _provider_auth(name)
-    except HTTPException:
-        return set()
-    outcome = _get_models(PROVIDER_CARDS[name]["base_url"], api_key, headers)
-    if outcome.get("ok"):
-        return {str(m) for m in outcome.get("model_ids", [])}
-    return set()
+def _find_provider(name: str) -> dict | None:
+    for provider in registry.list_providers(_sessions()):
+        if provider["name"] == name:
+            return provider
+    return None
 
 
-def _validate_selection(role: str, selection: rc.RoleSelection) -> None:
+def _validate_selection(role: str, raw: dict) -> None:
     """تحقق صارم — الخطأ يسمي الدور والسبب (رفض لا تخمين)."""
-    if selection.provider not in PROVIDER_CARDS:
+    label = ROLE_LABELS.get(role, role)
+    provider = _find_provider(raw["provider"])
+    if provider is None:
         raise HTTPException(
             status_code=422,
             detail=(
-                f"الدور '{ROLE_LABELS.get(role, role)}': مزود غير معروف "
-                f"'{selection.provider}' (المعروفون: {sorted(PROVIDER_CARDS)})"
+                f"الدور '{label}': مزود غير معروف '{raw['provider']}' "
+                "(أضفه من إدارة المزودين في الإعدادات)"
             ),
         )
-    card = PROVIDER_CARDS[selection.provider]
-    allowed = set(card.get("known_models", [])) | {card["model"]}
-    allowed |= _live_model_ids(selection.provider)
-    if selection.model not in allowed:
+    if not provider["enabled"]:
+        raise HTTPException(
+            status_code=422,
+            detail=f"الدور '{label}': المزود '{raw['provider']}' معطّل",
+        )
+    config_name = raw.get("configuration", "") or ""
+    configs = {
+        c["name"]: c for c in provider["configurations"] if c["enabled"]
+    }
+    if config_name and config_name not in configs:
         raise HTTPException(
             status_code=422,
             detail=(
-                f"الدور '{ROLE_LABELS.get(role, role)}' ({role}): النموذج "
-                f"'{selection.model}' غير موجود ولا معلَن لدى مزود "
-                f"'{selection.provider}' — المعلنون: {sorted(allowed)[:12]}"
+                f"الدور '{label}': تكوين غير معروف '{config_name}' لدى مزود "
+                f"'{raw['provider']}' (المتاح: {sorted(configs)})"
+            ),
+        )
+    cfg = configs.get(config_name) or (
+        provider["configurations"][0] if provider["configurations"] else None
+    )
+    if cfg is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"الدور '{label}': المزود '{raw['provider']}' بلا تكوين مفعّل",
+        )
+    allowed = set(cfg.get("models", [])) | ({cfg["default_model"]} if cfg["default_model"] else set())
+    if raw["model"] not in allowed:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"الدور '{label}' ({role}): النموذج '{raw['model']}' غير معلَن "
+                f"في تكوين '{cfg['name']}' لدى مزود '{raw['provider']}' — "
+                f"المعلنون: {sorted(allowed)[:12]}"
             ),
         )
 
 
 @router.get("/config")
 def get_models_config() -> dict:
-    """الإعدادات الحالية: مزودون + اختيار كل دور + الافتراضات المعلنة."""
-    selections = rc.load_role_config()
+    """الإعدادات الحالية: مزودون بتكويناتهم + ربط كل دور — من القاعدة."""
+    from router.role_config import DEFAULT_MODEL, DEFAULT_PROVIDER, ROLE_KEYS
+
+    providers = registry.list_providers(_sessions())
+    mappings = registry.get_mappings(_sessions())
+    roles = []
+    for key in ROLE_KEYS:
+        found = mappings.get(key, {})
+        roles.append({
+            "key": key,
+            "label": ROLE_LABELS.get(key, key),
+            "selection": {
+                "provider": found.get("provider", DEFAULT_PROVIDER),
+                "configuration": found.get("configuration", ""),
+                "model": found.get("model", DEFAULT_MODEL),
+            },
+            "is_default": (
+                found.get("provider", DEFAULT_PROVIDER) == DEFAULT_PROVIDER
+                and found.get("model", DEFAULT_MODEL) == DEFAULT_MODEL
+            ),
+        })
     return {
-        "providers": [_provider_payload(name) for name in PROVIDER_CARDS],
-        "roles": [
-            {
-                "key": key,
-                "label": ROLE_LABELS.get(key, key),
-                "selection": selections[key].as_dict(),
-                "is_default": (
-                    selections[key].provider == rc.DEFAULT_PROVIDER
-                    and selections[key].model == rc.DEFAULT_MODEL
-                ),
-            }
-            for key in rc.ROLE_KEYS
-        ],
+        "providers": [_provider_payload(p) for p in providers],
+        "roles": roles,
         "defaults": {
-            "provider": rc.DEFAULT_PROVIDER,
-            "model": rc.DEFAULT_MODEL,
+            "provider": DEFAULT_PROVIDER,
+            "model": DEFAULT_MODEL,
         },
-        "warning": rc.load_warning(),
-        "note": "اختيار كل دور مستقل — لا دور يرث مزود دور آخر",
+        "warning": None,
+        "note": "اختيار كل دور مستقل (مزود + تكوين + نموذج) — دائم في القاعدة",
     }
 
 
 @router.put("/config")
 def put_models_config(body: ModelsConfigIn) -> dict:
-    """حفظ اختيارات الأدوار — تحقق صارم ثم حفظ atomic."""
+    """حفظ ربط الأدوار — تحقق صارم ثم upsert دائم في القاعدة."""
+    from router.role_config import ROLE_KEYS
+
     incoming = {
         key: value
         for key, value in body.model_dump().items()
@@ -168,29 +210,16 @@ def put_models_config(body: ModelsConfigIn) -> dict:
         raise HTTPException(
             status_code=422, detail="لا اختيارات في الطلب — دور واحد على الأقل"
         )
-    selections = rc.load_role_config()
-    validated: dict[str, rc.RoleSelection] = {}
+    validated: dict[str, dict] = {}
     for key, raw in incoming.items():
-        if key not in rc.ROLE_KEYS:
-            raise HTTPException(
-                status_code=422, detail=f"دور غير معروف: {key}"
-            )
-        try:
-            selection = rc.RoleSelection(
-                provider=raw["provider"], model=raw["model"]
-            )
-        except (KeyError, TypeError) as error:
-            raise HTTPException(
-                status_code=422,
-                detail=f"الدور '{key}': اختيار غير صالح ({error})",
-            ) from error
-        _validate_selection(key, selection)
-        validated[key] = selection
-    selections.update(validated)
-    rc.save_role_config(selections)
+        if key not in ROLE_KEYS:
+            raise HTTPException(status_code=422, detail=f"دور غير معروف: {key}")
+        _validate_selection(key, raw)
+        validated[key] = raw
+    registry.save_mappings(_sessions(), validated)
     return {
         "success": True,
         "saved": sorted(validated),
-        "selections": rc.selections_as_dict(selections),
-        "note": "حُفظت اختيارات النماذج لكل دور — المهام القادمة تستخدمها",
+        "selections": registry.get_mappings(_sessions()),
+        "note": "حُفظ ربط الأدوار في القاعدة — المهام القادمة تستخدمه",
     }

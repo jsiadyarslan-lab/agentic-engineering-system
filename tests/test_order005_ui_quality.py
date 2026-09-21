@@ -33,15 +33,20 @@ def store_dir(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def client(store_dir):
+def client(store_dir, monkeypatch, tmp_path):
+    """عميل معزول بالكامل (الأمر 007.1): مخزن أسرار مؤقت + قاعدة مزودين
+    مؤقتة — البطاقات من السجل الدائم لا من كود، والاختبار لا يعتمد
+    على حالة الجهاز أبدًا."""
     from fastapi.testclient import TestClient
 
-    from api import providers as providers_mod
     from api import routes
+    from persistence.database import build_engine, init_db, make_session_factory
 
-    providers_mod._models_cache.clear()
+    engine = build_engine(tmp_path / "order005-providers.db")
+    init_db(engine)
+    sessions = make_session_factory(engine)
+    monkeypatch.setattr(routes, "_sessions", sessions)
     yield TestClient(routes.app)
-    providers_mod._models_cache.clear()
 
 
 # ------------------------------------------------------------------ #
@@ -121,29 +126,65 @@ def test_unsupported_platform_fails_closed_per_request(monkeypatch):
 
 
 # ------------------------------------------------------------------ #
-# §2 — قائمة النماذج: التراجع المعلن عند تعذر الحي
+# §2 — قائمة النماذج: التراجع المعلن عند تعذر الحي (007.1: عبر السجل الدائم)
 # ------------------------------------------------------------------ #
 
-def test_provider_cards_expose_known_models(client):
-    """البطاقات تكشف نماذجها المعلنة — الواجهة تعرضها فورًا."""
+def _provider_by_name(client, name: str) -> dict:
     body = client.get("/api/providers").json()
-    for card in body["providers"]:
-        assert card["known_models"], f"البطاقة {card['id']} بلا نماذج معلنة"
-        assert card["model"] in card["known_models"]
+    for provider in body["providers"]:
+        if provider["name"] == name:
+            return provider
+    raise AssertionError(f"المزود غير مبذور: {name}")
+
+
+def _primary_config(provider: dict) -> dict:
+    configs = [c for c in provider["configurations"] if c["is_primary"]]
+    assert configs, "لا تكوين أساسي للمزود"
+    return configs[0]
+
+
+def test_provider_cards_expose_known_models(client):
+    """البطاقات (من السجل الدائم) تكشف نماذجها المعلنة — الواجهة تعرضها فورًا."""
+    body = client.get("/api/providers").json()
+    assert body["providers"], "لا مزودين مبذورين"
+    for provider in body["providers"]:
+        cfg = _primary_config(provider)
+        assert cfg["models"], f"المزود {provider['name']} بلا نماذج معلنة"
+        if cfg["default_model"]:
+            assert cfg["default_model"] in cfg["models"]
 
 
 def test_models_without_key_falls_back_to_declared(client):
     """بلا مفتاح محفوظ: القائمة المعلنة تُعرض بمصدر declared لا فراغ صامت."""
-    body = client.get("/api/providers/nvidia/models?refresh=1").json()
+    provider = _provider_by_name(client, "nvidia")
+    cfg = _primary_config(provider)
+    body = client.post(
+        f"/api/providers/{provider['id']}/models/refresh"
+    ).json()
     assert body["source"] == "declared"
-    assert body["model_ids"] == ["nemotron-3-ultra-550b-a55b"]
-    assert "لا مفتاح محفوظ" in body["message"]
-    assert "معلنة" in body["message"]
+    # المعلن في البذر: النسخة الصحيحة بالبادئة + القديمة (توافق)
+    assert "nvidia/nemotron-3-ultra-550b-a55b" in body["model_ids"]
+    assert "لا مفتاح" in body["message"]
+    assert cfg["models"]
 
 
-def test_models_live_404_falls_back_to_declared(client):
-    """404 من نقطة النماذج (منشأة zai بلا نقطة نماذج): تراجع معلن بصدق."""
-    body = client.get("/api/providers/zai_internal/models?refresh=1").json()
+def test_models_live_404_falls_back_to_declared(client, monkeypatch):
+    """404 من نقطة النماذج: تراجع معلن بصدق — لا فراغ صامت ولا ادعاء حي."""
+    import urllib.error
+
+    def fake_fetch(url, headers, timeout, method="GET", body=None):
+        raise urllib.error.HTTPError(
+            url, 404, "404 page not found", {}, None  # type: ignore[arg-type]
+        )
+
+    from providers_registry import registry
+
+    monkeypatch.setattr(registry, "_http_fetch_real", fake_fetch)
+    provider = _provider_by_name(client, "zai_internal")
+    # منشأة معلنة: مصادقتها تُحل ثم يفشل الجلب بـ 404 ← التراجع المعلن
+    body = client.post(
+        f"/api/providers/{provider['id']}/models/refresh"
+    ).json()
     assert body["source"] == "declared"
     assert "glm-4.6" in body["model_ids"]
     assert "404" in body["message"], "سبب تعذر الحي يجب أن يظهر حرفيًا"
@@ -152,33 +193,28 @@ def test_models_live_404_falls_back_to_declared(client):
 def test_models_live_success_labels_source_live(client, monkeypatch):
     """نجاح الجلب الحي: المصدر live والعدد من الخادم فعلًا."""
 
-    class _FakeResponse:
-        def __init__(self, payload):
-            self._payload = payload
+    def fake_fetch(url, headers, timeout, method="GET", body=None):
+        import json as json_mod
 
-        def read(self):
-            import json as json_mod
-            return json_mod.dumps(self._payload).encode("utf-8")
+        return 200, json_mod.dumps(
+            {"data": [{"id": "model-a"}, {"id": "model-b"}]}
+        )
 
-        def __enter__(self):
-            return self
+    from providers_registry import registry
 
-        def __exit__(self, *exc):
-            return False
+    monkeypatch.setattr(registry, "_http_fetch_real", fake_fetch)
+    provider = _provider_by_name(client, "nvidia")
+    from secrets_store import store as secrets
 
-    def fake_urlopen(request, timeout=15):  # noqa: ANN001, ARG001
-        return _FakeResponse({"data": [{"id": "model-a"}, {"id": "model-b"}]})
-
-    from api import providers as providers_mod
-
-    monkeypatch.setattr(providers_mod.urllib.request, "urlopen", fake_urlopen)
-    store_key = "nvapi-LIVEKEY-000111"
-    providers_mod.secrets.set_key("nvidia", store_key)
-    body = client.get("/api/providers/nvidia/models?refresh=1").json()
+    secrets.set_key("nvidia", "nvapi-LIVEKEY-000111")
+    body = client.post(
+        f"/api/providers/{provider['id']}/models/refresh"
+    ).json()
     assert body["source"] == "live"
     assert body["ok"] is True
-    assert body["model_ids"] == ["model-a", "model-b"]
-    assert body["models_count"] == 2
+    assert "model-a" in body["model_ids"] and "model-b" in body["model_ids"]
+    # الدمج الصادق: المكتشف حيًا + المعلن سابقًا (نسختا nemotron) = 4
+    assert body["models_count"] == 4
 
 
 # ------------------------------------------------------------------ #

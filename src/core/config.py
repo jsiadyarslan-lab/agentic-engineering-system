@@ -11,8 +11,11 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-APP_NAME = "agent-hub-v2"
-APP_VERSION = "2.2.0"  # الأمر 006: مسار رئيسي حي + محادثة/مهمة + نموذج لكل دور
+APP_NAME = "Agentic Engineering System"
+#: (الأمر 007 §1) الاسم الرسمي تغيّر من «Agent Hub v2» — مسارات الكود
+#: (agent-hub-v2/، حزمة src) تبقى كما هي عمدًا: تغيير المسارات بلا
+#: ضرورة يكسر الاستيرادات والنصوص البرمجية القائمة.
+APP_VERSION = "3.0.0"  # الأمر 007: نواة المشروع الدائمة + حلقة ذاتية + إدارة مزودين
 
 
 class Settings(BaseSettings):
@@ -93,7 +96,7 @@ class LiveModelConfig(BaseSettings):
     """
 
     default_provider: str = "nvidia"
-    default_model: str = "nemotron-3-ultra-550b-a55b"
+    default_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     providers_json: str = ""
 
     model_config = {

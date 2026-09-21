@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Hub</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=2.2.0">
-  <link rel="stylesheet" href="/static/styles.css?v=2.2.0">
+  <title>Agentic Engineering System</title>
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/projects.css?v=3.0.0">
 </head>
 <body>
   <div class="app">
@@ -13,7 +14,7 @@
     <!-- الشريط الجانبي: المحادثات -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
-        <span class="brand">agent hub</span>
+        <span class="brand">Agentic Engineering System</span>
         <button class="icon-btn" id="sidebar-collapse" title="طي الشريط">⟨</button>
       </div>
 
@@ -24,6 +25,15 @@
       <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
         <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
       </nav>
+
+      <!-- المشاريع — الكيان الأول في النظام: حلقة ذاتية دائمة بإشرافك -->
+      <div class="projects-side" id="projects-side">
+        <div class="side-section-head">
+          <span>المشاريع</span>
+          <button class="icon-btn" id="project-new" title="مشروع جديد — هدف ← خطة ← تنفيذ ذاتي ← أدلة">＋</button>
+        </div>
+        <nav class="projects-list" id="projects-list" aria-label="قائمة المشاريع"></nav>
+      </div>
 
       <div class="sidebar-foot">
         <span class="substrate-dot" id="substrate-dot" title=""></span>
@@ -55,6 +65,9 @@
         <!-- الرسائل -->
         <div class="messages" id="messages"></div>
       </div>
+
+      <!-- عرض المشروع — يحل محل المحادثة عند فتح مشروع (وضع المشروع) -->
+      <section class="project-view" id="project-view" hidden></section>
 
       <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
       <div class="task-settings" id="task-settings" hidden>
@@ -104,8 +117,8 @@
       </section>
 
       <section class="drawer-section" id="section-providers">
-        <h3>المزودات والمفاتيح</h3>
-        <p class="drawer-note">المفاتيح تُخزَّن مشفّرة محليًا فقط — ولا تُعاد من الخادم أبدًا.</p>
+        <h3>المزودون والاتصال</h3>
+        <p class="drawer-note">إدارة كاملة من هنا: أضف مزودًا، عدّل Base URL، أضف تكوينات، واختبر الاتصال — المفاتيح محلية ولا تُعاد أبدًا.</p>
         <div id="providers-body"></div>
       </section>
 
@@ -134,8 +147,9 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=2.2.0"></script>
-  <script src="/static/task-cards.js?v=2.2.0"></script>
-  <script src="/static/settings.js?v=2.2.0"></script>
+  <script src="/static/app.js?v=3.0.0"></script>
+  <script src="/static/task-cards.js?v=3.0.0"></script>
+  <script src="/static/settings.js?v=3.0.0"></script>
+  <script src="/static/projects.js?v=3.0.0"></script>
 </body>
 </html>

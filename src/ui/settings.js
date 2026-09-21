@@ -1,7 +1,7 @@
-/* agent hub v2 — لوحة الإعدادات: نموذج لكل دور + المزودات والمفاتيح.
- * الأمر 006 §5: ليست modal بدائية — لوحة جانبية حقيقية: لكل دور
- * مزود + نموذج، وحالة المزود الصادقة (متاح/غير متصل/نماذج معلنة —
- * الاتصال غير متاح)، والحفظ عبر PUT /api/models/config.
+/* Agentic Engineering System — لوحة الإعدادات (الأمر 007.1).
+ * نموذج لكل دور (مزود + تكوين + نموذج) من السجل الدائم، وإدارة مزودين
+ * كاملة: إضافة/تعديل/حذف مزود وتكوينات Base URL واختبار جاهزية حقيقي
+ * بتصنيف صادق (READY/NOT_FOUND/…) — والمفاتيح في مخزن الأسرار فقط.
  */
 (function () {
   "use strict";
@@ -16,8 +16,8 @@
   var providersBody = $("providers-body");
   var saveResultEl = $("models-save-result");
 
-  // نموذج خام للقوائم: known + default (والمزود الحي يُدمج عند الجلب)
-  var providerModelCache = {};
+  var providersCache = [];   // آخر قائمة مزودين من السجل الدائم
+  var configCache = {};      // آخر إعدادات الأدوار
 
   function openDrawer() {
     drawer.hidden = false;
@@ -36,7 +36,7 @@
   backdrop.addEventListener("click", closeDrawer);
   document.addEventListener("hub:open-settings", openDrawer);
 
-  // ---------- إعدادات النماذج: دور × مزود × نموذج ----------
+  // ---------- إعدادات النماذج: دور × مزود × تكوين × نموذج ----------
 
   function loadModelsConfig() {
     roleModelsEl.textContent = "جارٍ التحميل…";
@@ -45,51 +45,24 @@
         roleModelsEl.textContent = "تعذر تحميل الإعدادات";
         return;
       }
+      configCache = out.j;
       Hub.state.modelsConfig = out.j;
       renderRoleModels(out.j);
-      Hub.state.mode === "task" && document.dispatchEvent(new Event("hub:refresh-task-settings"));
+      document.dispatchEvent(new Event("hub:refresh-task-settings"));
     });
   }
 
-  // إعادة رسم ملخص إعدادات المهمة فوق الـcomposer عند تغيّر الإعدادات
-  document.addEventListener("hub:refresh-task-settings", function () {
-    // استدعاء داخلي عبر حدث مخصص — نفس منطق app.js
-    var body = $("task-settings-body");
-    var cfg = Hub.state.modelsConfig;
-    if (!body || !cfg || !cfg.roles) return;
-    var rows = cfg.roles
-      .filter(function (r) { return r.key !== "chat"; })
-      .map(function (r) {
-        return '<div class="ts-row"><span>' + Hub.esc(r.label) + "</span>" +
-          '<span class="ts-model" dir="ltr">' + Hub.esc(r.selection.provider) +
-          " / " + Hub.esc(r.selection.model) + "</span></div>";
-      }).join("");
-    body.innerHTML = rows +
-      '<div class="ts-hint">غيّر النماذج من ⚙ الإعدادات — لكل دور اختياره المستقل.</div>';
-  });
-
-  function providerLabel(id, providers) {
-    var found = providers.filter(function (p) { return p.id === id; })[0];
-    return found ? found.label : id;
+  function providerByName(name) {
+    return providersCache.filter(function (p) { return p.name === name; })[0];
   }
 
-  function providerStateBadge(provider) {
-    var av = provider.availability || {};
-    if (av.available) return '<span class="pv-src live">متاح</span>';
-    return '<span class="pv-src declared">غير متصل — ' +
-      Hub.esc(av.reason || "بلا مفتاح") + "</span>";
+  function readinessBadge(status) {
+    var cls = status === "READY" ? "ok" : (status === "UNTESTED" ? "" : "bad");
+    return '<span class="rd-badge ' + cls + '">' + Hub.esc(status || "UNTESTED") + "</span>";
   }
 
   function renderRoleModels(config) {
     roleModelsEl.textContent = "";
-    if (config.warning) {
-      roleModelsEl.appendChild((function () {
-        var w = document.createElement("div");
-        w.className = "drawer-warning";
-        w.textContent = config.warning;
-        return w;
-      })());
-    }
     config.roles.forEach(function (role) {
       var box = document.createElement("div");
       box.className = "role-config";
@@ -97,18 +70,14 @@
 
       var head = document.createElement("div");
       head.className = "role-config-head";
-      head.appendChild((function () {
-        var name = document.createElement("span");
-        name.textContent = role.label;
-        return name;
-      })());
+      var name = document.createElement("span");
+      name.textContent = role.label;
+      head.appendChild(name);
       if (role.is_default) {
-        head.appendChild((function () {
-          var badge = document.createElement("span");
-          badge.className = "default-badge";
-          badge.textContent = "افتراضي";
-          return badge;
-        })());
+        var badge = document.createElement("span");
+        badge.className = "default-badge";
+        badge.textContent = "افتراضي";
+        head.appendChild(badge);
       }
       box.appendChild(head);
 
@@ -119,103 +88,99 @@
       providerSel.className = "sel-provider";
       config.providers.forEach(function (p) {
         var opt = document.createElement("option");
-        opt.value = p.id;
+        opt.value = p.id;   // المعرف في الربط = اسم المزود
         opt.textContent = p.label;
         if (p.id === role.selection.provider) opt.selected = true;
         providerSel.appendChild(opt);
       });
       row.appendChild(providerSel);
 
+      var configSel = document.createElement("select");
+      configSel.className = "sel-config";
+      row.appendChild(configSel);
+
       var modelSel = document.createElement("select");
       modelSel.className = "sel-model";
       row.appendChild(modelSel);
 
-      var stateBox = document.createElement("div");
-      stateBox.className = "role-provider-state";
-      row.appendChild(stateBox);
-
       box.appendChild(row);
       roleModelsEl.appendChild(box);
 
-      function refreshProviderState() {
-        var pid = providerSel.value;
-        var provider = config.providers.filter(function (p) {
-          return p.id === pid;
-        })[0];
-        stateBox.innerHTML = provider ? providerStateBadge(provider) : "";
+      function fillConfigs() {
+        var provider = providerByName(providerSel.value) ||
+          (config.providers.filter(function (p) {
+            return p.id === providerSel.value;
+          })[0] || { configurations: [] });
+        var current = configSel.getAttribute("data-chosen") ||
+          (role.selection.configuration || "");
+        configSel.textContent = "";
+        (provider.configurations || []).forEach(function (c) {
+          var opt = document.createElement("option");
+          opt.value = c.name;
+          opt.textContent = c.is_primary ? (c.name + " · أساسي") : c.name;
+          if ((c.name || "default") === (current || "default")) opt.selected = true;
+          configSel.appendChild(opt);
+        });
+        fillModels(provider);
       }
 
-      function fillModels(models, source) {
+      function fillModels(provider) {
+        var cfgName = configSel.value || "default";
+        var cfg = (provider.configurations || []).filter(function (c) {
+          return c.name === cfgName;
+        })[0] || (provider.configurations || [])[0] || {};
         var current = modelSel.getAttribute("data-chosen") ||
           role.selection.model;
+        var models = (cfg.models || []).slice();
+        if (cfg.default_model && models.indexOf(cfg.default_model) === -1) {
+          models.unshift(cfg.default_model);
+        }
         modelSel.textContent = "";
-        var seen = {};
         models.forEach(function (m) {
-          if (seen[m]) return;
-          seen[m] = true;
           var opt = document.createElement("option");
           opt.value = m;
           opt.textContent = m;
           if (m === current) opt.selected = true;
           modelSel.appendChild(opt);
         });
-        if (source === "declared") {
-          var note = document.createElement("option");
-          note.disabled = true;
-          note.textContent = "— نماذج معلنة (الاتصال غير متاح) —";
-          modelSel.insertBefore(note, modelSel.firstChild);
-        }
         modelSel.setAttribute("data-chosen", current);
       }
 
-      function loadModelsFor(providerId) {
-        var provider = config.providers.filter(function (p) {
-          return p.id === providerId;
-        })[0];
-        var declared = (provider && provider.known_models &&
-          provider.known_models.slice()) || [];
-        if (provider && provider.default_model &&
-            declared.indexOf(provider.default_model) === -1) {
-          declared.unshift(provider.default_model);
-        }
-        fillModels(declared, "declared");
-        refreshProviderState();
-        // محاولة الجلب الحي — إن نجحت تُدمج القائمة الحية بوسمها
-        Hub.fetchJSON("/api/providers/" + providerId + "/models")
-          .then(function (out) {
-            if (!out.ok) return;
-            var j = out.j;
-            var live = (j.source === "live" && j.model_ids) ? j.model_ids.slice() : [];
-            var merged = live.length ? live.concat(declared) : declared;
-            fillModels(merged, live.length ? "live" : "declared");
-          });
-      }
-
       providerSel.addEventListener("change", function () {
+        configSel.removeAttribute("data-chosen");
         modelSel.removeAttribute("data-chosen");
-        loadModelsFor(providerSel.value);
+        fillConfigs();
+      });
+      configSel.addEventListener("change", function () {
+        configSel.setAttribute("data-chosen", configSel.value);
+        modelSel.removeAttribute("data-chosen");
+        fillConfigs();
       });
       modelSel.addEventListener("change", function () {
         modelSel.setAttribute("data-chosen", modelSel.value);
       });
 
-      loadModelsFor(role.selection.provider);
+      fillConfigs();
     });
   }
+
+  // ---------- حفظ الربط الدائم ----------
 
   $("models-save").addEventListener("click", function () {
     var btn = this;
     btn.disabled = true;
     saveResultEl.textContent = "جارٍ الحفظ…";
     var payload = {};
-    var boxes = roleModelsEl.querySelectorAll(".role-config");
     var any = false;
-    boxes.forEach(function (box) {
+    roleModelsEl.querySelectorAll(".role-config").forEach(function (box) {
       var role = box.getAttribute("data-role");
       var provider = box.querySelector(".sel-provider").value;
+      var configuration = box.querySelector(".sel-config").value || "default";
       var model = box.querySelector(".sel-model").value;
       if (provider && model) {
-        payload[role] = { provider: provider, model: model };
+        payload[role] = {
+          provider: provider, configuration: configuration, model: model
+        };
         any = true;
       }
     });
@@ -231,7 +196,7 @@
     }).then(function (out) {
       btn.disabled = false;
       if (out.ok) {
-        saveResultEl.textContent = "✔ حُفظت — المهام القادمة تستخدمها";
+        saveResultEl.textContent = "✔ حُفظ في السجل الدائم — المهام القادمة تستخدمه";
         loadModelsConfig();
       } else {
         saveResultEl.textContent = "✕ " + (out.j.detail || "فشل الحفظ");
@@ -239,139 +204,326 @@
     });
   });
 
-  // ---------- المزودات والمفاتيح (منقول من الواجهة السابقة) ----------
+  // ---------- إدارة المزودين: بطاقات من السجل الدائم ----------
 
-  function pvModelsHtml(models, defaultModel, source) {
-    if (!Array.isArray(models) || !models.length) return "";
-    var chips = models.map(function (m) {
-      return '<span class="pv-chip' + (m === defaultModel ? " default" : "") + '">' +
-        Hub.esc(m) + (m === defaultModel ? " · الافتراضي" : "") + "</span>";
-    }).join("");
-    var srcLabel = source === "live"
-      ? '<span class="pv-src live">● جُلبت حيًا الآن</span>'
-      : '<span class="pv-src declared">◇ معلنة من البطاقة — الاتصال غير متاح</span>';
-    return '<div class="pv-models">' + chips + srcLabel + "</div>";
+  function esc(s) { return Hub.esc(s); }
+
+  function configCardHtml(p, c) {
+    var html = '<div class="cfg-card" data-cfg="' + c.id + '" data-provider="' + esc(p.name) + '">' +
+      '<div class="cfg-head"><span class="cfg-name">' + esc(c.name) +
+      (c.is_primary ? ' <span class="cfg-primary">أساسي</span>' : "") + "</span>" +
+      readinessBadge(c.readiness && c.readiness.status) + "</div>" +
+      '<div class="cfg-url" dir="ltr"><input class="cfg-url-input" value="' +
+      esc(c.base_url) + '" dir="ltr" spellcheck="false">' +
+      '<button class="pv-btn cfg-url-save" data-cfg="' + c.id + '">حفظ العنوان</button></div>' +
+      '<div class="cfg-meta">النموذج الافتراضي: <b dir="ltr">' + esc(c.default_model || "—") +
+      "</b> · النمط: " + esc(c.api_style) + (c.enabled ? "" : " · معطّل") + "</div>";
+
+    html += '<div class="cfg-models">' +
+      (c.models || []).map(function (m) {
+        return '<span class="pv-chip' + (m === c.default_model ? " default" : "") +
+          '">' + esc(m) + (m === c.default_model ? " · الافتراضي" : "") + "</span>";
+      }).join("") + "</div>";
+
+    html += '<div class="cfg-add-model">' +
+      '<input class="pv-input new-model" placeholder="اسم نموذج جديد (يدويًا)">' +
+      '<button class="pv-btn model-add" data-cfg="' + c.id + '">إضافة نموذج</button></div>';
+
+    if (p.auth_type === "bearer") {
+      html += '<div class="pv-row">' +
+        '<input type="password" class="pv-input key-input" placeholder="' +
+        (p.key_masked ? ("مفتاح جديد (المحفوظ: " + esc(p.key_masked) + ")")
+          : "مفتاح API — يُخزَّن محليًا فقط") + '">' +
+        '<button class="pv-btn primary key-save" data-name="' + esc(p.name) + '">حفظ المفتاح</button>' +
+        '<button class="pv-btn danger key-delete" data-name="' + esc(p.name) + '">حذف المفتاح</button></div>';
+    }
+
+    html += '<div class="pv-row">' +
+      '<button class="pv-btn primary cfg-test" data-cfg="' + c.id + '">اختبار الاتصال</button>' +
+      '<button class="pv-btn cfg-refresh" data-provider="' + p.id + '">تحديث النماذج (جلب حي)</button>' +
+      (c.is_primary ? "" : '<button class="pv-btn danger cfg-delete" data-cfg="' + c.id + '">حذف التكوين</button>') +
+      "</div>" +
+      '<div class="pv-result" data-cfg="' + c.id + '"></div>' +
+      "</div>";
+    return html;
+  }
+
+  function providerCardHtml(p) {
+    var statusHtml = p.auth_type === "bearer"
+      ? (p.has_key
+        ? '<span class="pv-status ok">مفتاح محفوظ ' + esc(p.key_masked) + "</span>"
+        : '<span class="pv-status none">بلا مفتاح</span>')
+      : '<span class="pv-status ok">' + esc(p.auth_type === "config_file"
+        ? "مصادقة منشأة معلنة" : "بلا مصادقة") + "</span>";
+    var html = '<div class="pv-card" data-provider-id="' + p.id + '" data-name="' + esc(p.name) + '">' +
+      '<div class="pv-head"><span class="pv-title">' + esc(p.display_name) + "</span>" + statusHtml + "</div>" +
+      '<div class="pv-meta">المعرف: <code dir="ltr">' + esc(p.name) + "</code> · النوع: " +
+      esc(p.type) + " · المصادقة: " + esc(p.auth_type) + "</div>";
+    (p.configurations || []).forEach(function (c) {
+      html += configCardHtml(p, c);
+    });
+    html += '<div class="pv-row">' +
+      '<button class="pv-btn cfg-add" data-provider="' + p.id + '">+ تكوين (Base URL) جديد</button>' +
+      '<button class="pv-btn danger prov-delete" data-provider="' + p.id + '">حذف المزود</button></div>' +
+      '<div class="cfg-new-box" data-provider="' + p.id + '" hidden>' +
+      '<input class="pv-input new-cfg-name" placeholder="اسم التكوين (مثل: production)">' +
+      '<input class="pv-input new-cfg-url" dir="ltr" placeholder="https://…/v1">' +
+      '<input class="pv-input new-cfg-model" dir="ltr" placeholder="النموذج الافتراضي">' +
+      '<button class="pv-btn primary cfg-create" data-provider="' + p.id + '">إضافة التكوين</button></div>' +
+      "</div>";
+    return html;
   }
 
   function loadProviders() {
     if (!providersBody) return;
     providersBody.textContent = "جارٍ التحميل…";
     Hub.fetchJSON("/api/providers").then(function (out) {
-      if (!out.ok) return;
+      if (!out.ok) {
+        providersBody.textContent = "تعذر تحميل المزودين";
+        return;
+      }
       var data = out.j;
-      var htmlParts = [];
+      providersCache = data.providers || [];
       var store = data.store || {};
-      htmlParts.push(
-        '<div class="pv-store"><b>المخزن المحلي:</b> ' +
-        Hub.esc(store.warning || store.file || "") +
-        " · التشفير: " +
+      var html = '<div class="pv-store"><b>المخزن المحلي:</b> ' +
+        esc(store.warning || store.file || "") + " · التشفير: " +
         (store.encryption_available ? "DPAPI (Windows)" : "صلاحيات 600") +
-        "</div>"
-      );
-      (data.providers || []).forEach(function (p) {
-        htmlParts.push(
-          '<div class="pv-card" data-provider="' + Hub.esc(p.id) + '" data-default="' + Hub.esc(p.model) + '">' +
-          '<div class="pv-head">' +
-          '<span class="pv-title">' + Hub.esc(p.label) + "</span>" +
-          '<span class="pv-status ' + (p.has_key ? "ok" : "none") + '">' +
-          (p.has_key ? ("مفتاح محفوظ " + Hub.esc(p.key_masked)) : (p.requires_key ? "بلا مفتاح" : "بلا مفتاح مطلوب")) +
-          "</span></div>" +
-          '<div class="pv-meta">' + Hub.esc(p.base_url) +
-          " · الافتراضي: " + Hub.esc(p.model) + "</div>" +
-          '<div class="pv-note">' + Hub.esc(p.note || "") + "</div>"
-        );
-        if (p.requires_key) {
-          htmlParts.push(
-            '<div class="pv-row">' +
-            '<input type="password" data-provider="' + Hub.esc(p.id) + '" class="pv-input" ' +
-            'placeholder="مفتاح API — يُخزَّن مشفّرًا محليًا فقط">' +
-            '<button class="pv-btn primary prov-save" data-provider="' + Hub.esc(p.id) + '">حفظ المفتاح</button>' +
-            '<button class="pv-btn danger prov-delete" data-provider="' + Hub.esc(p.id) + '">حذف</button>' +
-            "</div>"
-          );
-        }
-        htmlParts.push(
-          '<div class="pv-row">' +
-          '<button class="pv-btn prov-test" data-provider="' + Hub.esc(p.id) + '">اختبار الاتصال</button>' +
-          '<button class="pv-btn prov-models" data-provider="' + Hub.esc(p.id) + '">قائمة النماذج</button>' +
-          "</div>" +
-          '<div class="pv-result" data-provider="' + Hub.esc(p.id) + '"></div>' +
-          '<div class="pv-models-box" data-provider="' + Hub.esc(p.id) + '">' +
-          pvModelsHtml(p.known_models, p.model, "declared") +
-          "</div></div>"
-        );
-      });
-      providersBody.innerHTML = htmlParts.join("");
+        "</div>";
+      html += '<button class="pv-btn primary" id="provider-add-open">+ إضافة مزود</button>' +
+        '<div class="prov-new-box" id="prov-new-box" hidden>' +
+        '<input class="pv-input" id="np-name" dir="ltr" placeholder="المعرّف: مثل my_provider (لاتيني صغير)">' +
+        '<input class="pv-input" id="np-display" placeholder="الاسم المعروض">' +
+        '<input class="pv-input" id="np-url" dir="ltr" placeholder="Base URL: https://…/v1">' +
+        '<input class="pv-input" id="np-model" dir="ltr" placeholder="النموذج الافتراضي">' +
+        '<input type="password" class="pv-input" id="np-key" placeholder="مفتاح API (اختياري — يُخزَّن محليًا فقط)">' +
+        '<button class="pv-btn primary" id="np-create">إنشاء المزود</button></div>';
+      providersCache.forEach(function (p) { html += providerCardHtml(p); });
+      providersBody.innerHTML = html;
       wireProviderButtons();
     });
   }
 
+  function showResult(el, ok, text, detail) {
+    el.className = "pv-result " + (ok ? "ok" : "bad");
+    el.innerHTML = (ok ? "✔ " : "✕ ") + esc(text) +
+      (detail ? '<div class="rd-detail" dir="ltr">' + esc(detail) + "</div>" : "");
+  }
+
   function wireProviderButtons() {
-    providersBody.querySelectorAll(".prov-save").forEach(function (btn) {
+    var addOpen = $("provider-add-open");
+    if (addOpen) {
+      addOpen.addEventListener("click", function () {
+        var box = $("prov-new-box");
+        box.hidden = !box.hidden;
+      });
+    }
+    var npCreate = $("np-create");
+    if (npCreate) {
+      npCreate.addEventListener("click", function () {
+        var body = {
+          name: $("np-name").value.trim(),
+          display_name: $("np-display").value.trim(),
+          base_url: $("np-url").value.trim(),
+          default_model: $("np-model").value.trim(),
+          api_key: $("np-key").value.trim()
+        };
+        if (!body.name || !body.base_url) {
+          showResult(providersBody.querySelector(".prov-new-box"), false,
+            "المعرّف وBase URL مطلوبان");
+          return;
+        }
+        Hub.fetchJSON("/api/providers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }).then(function (out) {
+          if (out.ok) { loadProviders(); loadModelsConfig(); }
+          else showResult(providersBody.querySelector(".prov-new-box"), false,
+            out.j.detail || "فشل الإنشاء");
+        });
+      });
+    }
+
+    providersBody.querySelectorAll(".cfg-url-save").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var name = btn.getAttribute("data-provider");
-        var input = providersBody.querySelector('.pv-input[data-provider="' + name + '"]');
-        var result = providersBody.querySelector('.pv-result[data-provider="' + name + '"]');
-        btn.disabled = true;
-        Hub.fetchJSON("/api/providers/" + name + "/key", {
+        var cid = btn.getAttribute("data-cfg");
+        var card = btn.closest(".cfg-card");
+        var url = card.querySelector(".cfg-url-input").value.trim();
+        Hub.fetchJSON("/api/provider-configurations/" + cid, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: input.value })
+          body: JSON.stringify({ base_url: url })
         }).then(function (out) {
-          result.textContent = out.ok
-            ? "✔ حُفظ (" + (out.j.key_masked || "") + ")"
-            : "✕ " + (out.j.detail || "فشل الحفظ");
-          if (out.ok) { input.value = ""; loadProviders(); loadModelsConfig(); }
-        }).finally(function () { btn.disabled = false; });
+          var el = card.querySelector(".pv-result");
+          if (out.ok) { showResult(el, true, "حُفظ العنوان الجديد"); loadProviders(); }
+          else showResult(el, false, out.j.detail || "فشل الحفظ");
+        });
       });
     });
-    providersBody.querySelectorAll(".prov-delete").forEach(function (btn) {
+
+    providersBody.querySelectorAll(".cfg-test").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var name = btn.getAttribute("data-provider");
-        Hub.fetchJSON("/api/providers/" + name + "/key", { method: "DELETE" })
-          .then(function () { loadProviders(); });
-      });
-    });
-    providersBody.querySelectorAll(".prov-test").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var name = btn.getAttribute("data-provider");
-        var result = providersBody.querySelector('.pv-result[data-provider="' + name + '"]');
+        var cid = btn.getAttribute("data-cfg");
+        var card = btn.closest(".cfg-card");
+        var el = card.querySelector(".pv-result");
         btn.disabled = true;
-        result.textContent = "…اختبار الاتصال";
-        Hub.fetchJSON("/api/providers/" + name + "/test", { method: "POST" })
+        el.textContent = "…اختبار الاتصال الحقيقي";
+        Hub.fetchJSON("/api/provider-configurations/" + cid + "/test",
+          { method: "POST" })
           .then(function (out) {
-            result.textContent = out.j.ok
-              ? "✔ اتصال ناجح (" + out.j.models_count + " نموذج، " + out.j.latency_ms + "ms)"
-              : "✕ " + (out.j.message || "فشل الاتصال");
-          })
-          .finally(function () { btn.disabled = false; });
-      });
-    });
-    providersBody.querySelectorAll(".prov-models").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var name = btn.getAttribute("data-provider");
-        var result = providersBody.querySelector('.pv-result[data-provider="' + name + '"]');
-        result.textContent = "…جلب قائمة النماذج";
-        btn.disabled = true;
-        Hub.fetchJSON("/api/providers/" + name + "/models?refresh=1")
-          .then(function (out) {
-            var j = out.j;
-            result.textContent = j.ok
-              ? "اتصال ناجح — " + (j.models_count || 0) + " نموذج"
-              : (j.message || "تعذر الجلب الحي — النماذج المعلنة معروضة");
-            var modelsBox = providersBody.querySelector('.pv-models-box[data-provider="' + name + '"]');
-            if (modelsBox) {
-              var card = providersBody.querySelector('.pv-card[data-provider="' + name + '"]');
-              var def = card ? (card.getAttribute("data-default") || "") : "";
-              modelsBox.innerHTML = pvModelsHtml(j.model_ids, def, j.source || "declared");
+            var j = out.j || {};
+            var ok = j.status === "READY";
+            var d = j.diagnosis || {};
+            var detail = [
+              "endpoint: " + (j.endpoint || d.final_url || "—"),
+              "http: " + (j.http_status || "—"),
+              "problem: " + (d.problem || "none"),
+              "latency: " + (j.latency_ms || 0) + "ms"
+            ].join("  ·  ");
+            showResult(el, ok,
+              (j.status || "UNKNOWN") + " — " + (j.error_message ||
+                "المسبار نجح: اتصال حقيقي") +
+              (d.available_models_sample
+                ? " (متاح: " + d.available_models_sample.slice(0, 4).join(", ") + "…)" : ""),
+              detail);
+            // إعادة الرسم مؤجلة كي تُقرأ النتيجة قبل تحديث الشارات
+            if (out.ok) {
+              setTimeout(function () { loadProviders(); }, 3500);
             }
           })
           .finally(function () { btn.disabled = false; });
       });
     });
+
+    providersBody.querySelectorAll(".cfg-refresh").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var pid = btn.getAttribute("data-provider");
+        btn.disabled = true;
+        Hub.fetchJSON("/api/providers/" + pid + "/models/refresh",
+          { method: "POST" })
+          .then(function (out) {
+            if (out.ok) { loadProviders(); loadModelsConfig(); }
+          })
+          .finally(function () { btn.disabled = false; });
+      });
+    });
+
+    providersBody.querySelectorAll(".model-add").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var cid = btn.getAttribute("data-cfg");
+        var card = btn.closest(".cfg-card");
+        var input = card.querySelector(".new-model");
+        var model = input.value.trim();
+        if (!model) return;
+        var chips = card.querySelectorAll(".pv-chip");
+        var models = [];
+        chips.forEach(function (chip) {
+          var text = chip.textContent.replace(" · الافتراضي", "").trim();
+          if (text) models.push(text);
+        });
+        if (models.indexOf(model) === -1) models.push(model);
+        Hub.fetchJSON("/api/provider-configurations/" + cid, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ models: models, default_model: model })
+        }).then(function (out) {
+          var el = card.querySelector(".pv-result");
+          if (out.ok) { showResult(el, true, "أُضيف النموذج " + model); loadProviders(); }
+          else showResult(el, false, out.j.detail || "فشل الإضافة");
+        });
+      });
+    });
+
+    providersBody.querySelectorAll(".key-save").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var name = btn.getAttribute("data-name");
+        var card = btn.closest(".pv-card");
+        var input = card.querySelector(".key-input");
+        var el = card.querySelector(".pv-result") ||
+          document.createElement("div");
+        Hub.fetchJSON("/api/providers/" + encodeURIComponent(name) + "/key", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: input.value })
+        }).then(function (out) {
+          if (out.ok) {
+            showResult(el, true, "حُفظ المفتاح (" + (out.j.key_masked || "") + ")");
+            input.value = "";
+            loadProviders(); loadModelsConfig();
+          } else {
+            showResult(el, false, out.j.detail || "فشل الحفظ");
+          }
+        });
+      });
+    });
+
+    providersBody.querySelectorAll(".key-delete").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var name = btn.getAttribute("data-name");
+        Hub.fetchJSON("/api/providers/" + encodeURIComponent(name) + "/key",
+          { method: "DELETE" })
+          .then(function () { loadProviders(); loadModelsConfig(); });
+      });
+    });
+
+    providersBody.querySelectorAll(".cfg-add").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var box = providersBody.querySelector(
+          '.cfg-new-box[data-provider="' + btn.getAttribute("data-provider") + '"]');
+        if (box) box.hidden = !box.hidden;
+      });
+    });
+
+    providersBody.querySelectorAll(".cfg-create").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var pid = btn.getAttribute("data-provider");
+        var box = providersBody.querySelector(
+          '.cfg-new-box[data-provider="' + pid + '"]');
+        var body = {
+          name: box.querySelector(".new-cfg-name").value.trim(),
+          base_url: box.querySelector(".new-cfg-url").value.trim(),
+          default_model: box.querySelector(".new-cfg-model").value.trim()
+        };
+        if (!body.name || !body.base_url) return;
+        Hub.fetchJSON("/api/providers/" + pid + "/configurations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }).then(function (out) {
+          if (out.ok) loadProviders();
+          else showResult(box, false, out.j.detail || "فشل الإضافة");
+        });
+      });
+    });
+
+    providersBody.querySelectorAll(".cfg-delete").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var cid = btn.getAttribute("data-cfg");
+        Hub.fetchJSON("/api/provider-configurations/" + cid,
+          { method: "DELETE" })
+          .then(function (out) {
+            if (out.ok) loadProviders();
+            else alert(out.j.detail || "فشل الحذف");
+          });
+      });
+    });
+
+    providersBody.querySelectorAll(".prov-delete").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var pid = btn.getAttribute("data-provider");
+        if (!confirm("حذف المزود وكل تكويناته؟ المحمي بربط الأدوار يُرفض حذفه."))
+          return;
+        Hub.fetchJSON("/api/providers/" + pid, { method: "DELETE" })
+          .then(function (out) {
+            if (out.ok) { loadProviders(); loadModelsConfig(); }
+            else alert(out.j.detail || "فشل الحذف");
+          });
+      });
+    });
   }
 
   // ---------- الأدوات المتقدمة ----------
+
   $("eoe-run").addEventListener("click", function () {
     closeDrawer();
     Hub.runAdvanced("eoe");

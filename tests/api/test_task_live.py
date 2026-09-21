@@ -81,7 +81,7 @@ def test_task_each_role_receives_its_own_provider_and_model(client, api_env):
     assert ("zai-test", "model-reviewer-y") in by_pair, "المدقق لم يستلم اختياره"
     assert ("openrouter-test", "model-verifier-z") in by_pair, "المراجع لم يستلم اختياره"
     # الأدوار بلا تخصيص = الافتراضي المعلن (nvidia/nemotron الافتراضي)
-    assert any(c["model"] == "nemotron-3-ultra-550b-a55b" for c in calls), (
+    assert any(c["model"] == "nvidia/nemotron-3-ultra-550b-a55b" for c in calls), (
         "الدور غير المخصص يجب أن يستخدم الافتراضي المعلن"
     )
 

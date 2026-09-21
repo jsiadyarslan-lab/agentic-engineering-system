@@ -109,10 +109,18 @@ def test_key_never_in_environment(store_dir):
         assert "nvapi-SECRETKEY" not in value, f"المفتاح تسرب إلى {name}"
 
 
-def test_key_never_in_api_response(store_dir):
+def test_key_never_in_api_response(store_dir, monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
 
-    from api import routes  # noqa: F401 — يبني التطبيق كاملًا
+    from api import routes
+
+    # عزل القاعدة (الأمر 007.1): بطاقات المزودين من سجل دائم لا كود
+    from persistence.database import build_engine, init_db, make_session_factory
+
+    engine = build_engine(tmp_path / "order6-key.db")
+    init_db(engine)
+    sessions = make_session_factory(engine)
+    monkeypatch.setattr(routes, "_sessions", sessions)
 
     secret = "nvapi-VERYSECRET-7777"
     store_mod.set_key("nvidia", secret)
@@ -122,10 +130,11 @@ def test_key_never_in_api_response(store_dir):
     body = response.text
     assert secret not in body
     assert "****7777" in body
-    # حفظ مفتاح قصير يُرفض؛ الحفظ السليم يعيد التقنيع فقط
+    # حفظ مفتاح قصير يُرفض (تحقق المخطط 422 — الأمر 007.1)؛ والحفظ
+    # السليم يعيد التقنيع فقط
     assert client.put(
         "/api/providers/nvidia/key", json={"key": "short"}
-    ).status_code == 400
+    ).status_code == 422
     saved = client.put(
         "/api/providers/nvidia/key", json={"key": "nvapi-NEWSECRET-8888"}
     ).json()
@@ -170,7 +179,7 @@ def test_default_provider_is_nvidia():
 
     cfg = LiveModelConfig(_env_file=None)  # بلا ‎.env — الافتراضي الخام
     assert cfg.default_provider == "nvidia"
-    assert cfg.default_model == "nemotron-3-ultra-550b-a55b"
+    assert cfg.default_model == "nvidia/nemotron-3-ultra-550b-a55b"
 
 
 def test_nano_forbidden_for_arbitration(store_dir, tmp_path):

@@ -42,6 +42,7 @@ from core.state import StateTransitionError
 from persistence import conversations as convo
 from persistence.database import build_engine, init_db, make_session_factory
 from persistence.models import Event
+from providers_registry import registry
 from router import role_config as rc
 from router.cooling_loop import CoolingLoop
 from router.failover_chain import FailoverChain
@@ -196,7 +197,7 @@ def health() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "phase": "live-chat+live-task+role-models",
+        "phase": "agentic-engineering-system: durable-projects+autonomous-loop+provider-management",
         "substrate": {
             "available": substrate_available,
             "isolation": "linux-namespaces+seccomp",
@@ -258,8 +259,18 @@ ROLE_LABELS: dict[str, str] = {
 def _resolve_role_selections(
     overrides: dict[str, RoleSelectionBody] | None,
 ) -> dict[str, rc.RoleSelection]:
-    """دمج اختيارات الطلب فوق المحفوظة — كل دور باختياره المستقل (§3)."""
-    selections = rc.load_role_config()
+    """دمج اختيارات الطلب فوق المحفوظة — كل دور باختياره المستقل (§3).
+
+    (الأمر 007.1 §15): المصدر الدائم هو جدول role_provider_mappings
+    في القاعدة — لا ملف JSON بعد الآن في مسار الـAPI.
+    """
+    selections: dict[str, rc.RoleSelection] = {}
+    for key, found in registry.get_mappings(_sessions).items():
+        selections[key] = rc.RoleSelection(
+            provider=found["provider"],
+            model=found["model"],
+            configuration=found.get("configuration", ""),
+        )
     for key, value in (overrides or {}).items():
         if key not in rc.ROLE_KEYS:
             raise HTTPException(
@@ -365,9 +376,9 @@ async def _stream_task_run(
 
     # فحص مقدم: أي دور بلا نموذج متاح يسمى قبل بدء الدورة (§1)
     missing_roles = [
-        f"{ROLE_LABELS[key]} (المزود {value.provider})"
+        f"{ROLE_LABELS[key]} (المزود {value.transport_key()})"
         for key, value in role_config.items()
-        if not router.has_live_provider(value.provider)
+        if not router.has_live_provider(value.transport_key())
     ]
     if missing_roles:
         return _sse_response(_emit_single(
@@ -566,9 +577,9 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
         _sessions, conversation_id, role="user", content=body.message
     )
 
-    # اختيار النموذج: الطلب ثم المحفوظ ثم الافتراضي المعلن
-    saved = rc.load_role_config()["chat"]
-    provider = body.provider or saved.provider
+    # اختيار النموذج: الطلب ثم المحفوظ في القاعدة ثم الافتراضي المعلن
+    saved = _resolve_role_selections(None)["chat"]
+    provider = body.provider or saved.transport_key()
     model = body.model or saved.model
 
     chat_seq = {"n": 0}
@@ -1483,15 +1494,46 @@ def mission_verify(body: MissionVerifyIn) -> dict:
 # ------------------------------------------------------------------ #
 
 from api.models_config import router as models_config_router  # noqa: E402
-from api.providers import router as providers_router  # noqa: E402
+from api.projects import router as projects_router  # noqa: E402
+from api.projects import run_startup_recovery  # noqa: E402
+from api.providers import configurations_router, router as providers_router  # noqa: E402
 
 app.include_router(providers_router)
+app.include_router(configurations_router)
 app.include_router(models_config_router)
+app.include_router(projects_router)
 
 #: تفعيل مرشح تقنيع المفاتيح على السجلات ([REDACTED] — §1.2).
 from secrets_store import install_log_redaction  # noqa: E402
 
 install_log_redaction()
+
+#: استرداد الإقلاع (الأمر 007 §19): مرة واحدة لكل عملية — اكتشاف
+#: المشاريع غير النهائية وتقييمها (checkpoint/بوابات/قابلية الاستئناف)
+#: وتسجيل RECOVERY_ASSESSED. لا تنفيذ عشوائي أبدًا — الاستئناف قرار
+#: صريح عبر /api/projects/{id}/resume.
+_RECOVERY_DONE = False
+
+
+@app.on_event("startup")
+def _startup_recovery() -> None:
+    global _RECOVERY_DONE
+    if _RECOVERY_DONE:
+        return
+    _RECOVERY_DONE = True
+    try:
+        assessments = run_startup_recovery(_sessions)
+        if assessments:
+            logger.info(
+                "استرداد الإقلاع: %d مشروعًا غير منتهٍ — %s",
+                len(assessments),
+                ", ".join(
+                    f"#{a['project_id']} {a['recommendation']}"
+                    for a in assessments
+                ),
+            )
+    except Exception as error:  # noqa: BLE001 — الاسترداد لا يمنع الإقلاع
+        logger.warning("تعذر استرداد الإقلاع: %s", error)
 
 TEXTSTATS_APPROVAL_TIMEOUT_S = 600.0
 _textstats_state: dict = {"active": None, "lock": threading.Lock()}

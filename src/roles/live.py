@@ -78,12 +78,17 @@ class LiveRoleBase:
         self._system_prompt = load_prompt(self.PROMPT_NAME)
 
     def _live_call(self, messages: list[ChatMessage]) -> dict:
-        """استدعاء حي واحد باختيار الدور — لا افتراض صامت لمزود آخر."""
+        """استدعاء حي واحد باختيار الدور — لا افتراض صامت لمزود آخر.
+
+        transport_key (007.1 §10): اختيار الدور قد يحدد تكوينًا بعينه
+        داخل المزود — «مزود::تكوين» — فيصل الاستدعاء إلى Base URL
+        المختار حصرًا، لا إلى التكوين الأساسي.
+        """
         if self._selection is None:
             return self._router.chat_live(messages)
         return self._router.chat_live(
             messages,
-            provider_id=self._selection.provider,
+            provider_id=self._selection.transport_key(),
             model=self._selection.model,
         )
 

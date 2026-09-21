@@ -30,7 +30,7 @@ def test_models_config_lists_roles_and_providers(client, api_env):
     assert {"nvidia", "openai_compatible", "zai_internal"} <= provider_ids
     # الافتراضات المعلنة
     assert body["defaults"]["provider"] == "nvidia"
-    assert body["defaults"]["model"] == "nemotron-3-ultra-550b-a55b"
+    assert body["defaults"]["model"] == "nvidia/nemotron-3-ultra-550b-a55b"
     # كل دور يبدأ على الافتراضي المعلن
     assert all(r["is_default"] for r in body["roles"])
 
@@ -39,10 +39,10 @@ def test_models_config_save_selection_per_role(client, api_env):
     """PUT: حفظ اختيار مستقل لكل دور — ثم قراءته كما حُفظ."""
     resp = client.put("/api/models/config", json={
         "thinker": {"provider": "nvidia",
-                    "model": "nemotron-3-ultra-550b-a55b"},
+                    "model": "nvidia/nemotron-3-ultra-550b-a55b"},
         "reviewer": {"provider": "nvidia",
-                     "model": "nemotron-3-ultra-550b-a55b"},
-        "chat": {"provider": "nvidia", "model": "nemotron-3-ultra-550b-a55b"},
+                     "model": "nvidia/nemotron-3-ultra-550b-a55b"},
+        "chat": {"provider": "nvidia", "model": "nvidia/nemotron-3-ultra-550b-a55b"},
     })
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -52,13 +52,13 @@ def test_models_config_save_selection_per_role(client, api_env):
     after = client.get("/api/models/config").json()
     by_key = {r["key"]: r for r in after["roles"]}
     assert by_key["thinker"]["selection"]["model"] == \
-        "nemotron-3-ultra-550b-a55b"
+        "nvidia/nemotron-3-ultra-550b-a55b"
     # الدور الذي لم يُحفظ بقي على الافتراضي
     assert by_key["implementer"]["is_default"] is True
 
 
 def test_models_config_rejects_unknown_model(client, api_env):
-    """رفض نموذج غير موجود ولا معلن — والرسالة تسمي الدور (§15)."""
+    """رفض نموذج غير معلن — والرسالة تسمي الدور والتكوين (§15 + 007.1 §10)."""
     resp = client.put("/api/models/config", json={
         "arbiter": {"provider": "nvidia", "model": "model-does-not-exist"},
     })
@@ -66,7 +66,8 @@ def test_models_config_rejects_unknown_model(client, api_env):
     detail = resp.json()["detail"]
     assert "arbiter" in detail  # الدور مسمّى (بمفتاحه اللاتيني الثابت)
     assert "model-does-not-exist" in detail
-    assert "غير موجود" in detail
+    assert "غير معلَن" in detail  # صيغة الأمر 007.1: النموذج غير معلَن بالتكوين
+    assert "default" in detail   # التكوين مسمّى (التحقق صار لكل تكوين)
 
 
 def test_models_config_rejects_unknown_provider(client, api_env):
@@ -95,7 +96,7 @@ def test_models_config_never_leaks_api_keys(client, api_env):
     ):
         if method == "PUT":
             body = {"thinker": {"provider": "nvidia",
-                                "model": "nemotron-3-ultra-550b-a55b"}}
+                                "model": "nvidia/nemotron-3-ultra-550b-a55b"}}
             resp = client.put(url, json=body)
         else:
             resp = client.get(url)

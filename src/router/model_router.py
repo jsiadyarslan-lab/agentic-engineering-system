@@ -363,9 +363,13 @@ class ModelRouter:
             default_provider if default_provider in resolved
             else next(iter(resolved))
         )
-        chain_members = [chain_head] + [
-            name for name in resolved if name != chain_head
-        ]
+        # (الأمر 007.1 §9) لا تبدّل صامتًا بين المزودين: اختيار المزود
+        # صريح لكل دور — فسلسلة التبدّل أحادية العضو (إعادات داخلية على
+        # المزود نفسه عند 5xx ثم فشل صريح). بقية المزودين المحلولين
+        # مسجلون كنقلات، وكل استدعاء صريح عليهم يمر بسلسلته الأحادية
+        # (فرع else في chat) — المزود الفاشل لا يمنع غيره ولا يُبدَّل
+        # إليه خفيةً أبدًا.
+        chain_members = [chain_head]
         # حدود كل مزود بإعداداته الخاصة (§1.4) — rpm/min_interval/cooldown
         limiter = RateLimiter(provider_settings.as_dicts()["rate_limiter"])
         for name, cfg in resolved.items():

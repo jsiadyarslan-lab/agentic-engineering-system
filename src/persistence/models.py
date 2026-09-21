@@ -1,13 +1,16 @@
-"""نماذج البيانات — ثلاثة جداول بعد الأمر الثاني (هدف دائم: <10 جداول).
+"""نماذج البيانات — الجداول الدائمة (الأمر 007 وسّع العائلة).
 
-v1 حمل 13 جدولًا تراكمت عبر 19 مرحلة. v2 تبدأ بالحد الأدنى الصادق
-وتنمو مع الأوامر لا قبلها:
+v1 حمل 13 جدولًا تراكمت عبر 19 مرحلة. v2 بدأت بثلاثة جداول للمنتج
+اليدوي (محادثة/رسالة/حدث دورة) بسقف <10. الأمر 007 نقل النظام إلى
+«Agentic Engineering System»: كيانات workflow الدائمة (Project/Plan/
+Phase/Step/Execution/Evidence/Audit/Retry/Checkpoint/OwnerGate/
+ProjectEvent) وسجل المزودين (Provider/Configuration/RoleMapping) —
+قرار معماري موثق: القاعدة مصدر الحقيقة الدائم لحالة المشروع (§9)
+ولإدارة المزودين (007.1 §15)، والسقف القديم لم يعد يصف النظام.
 
-- conversations: المحادثات (المحادثة هي التطبيق) — mode: chat|task
-  (الأمر 006 §14: قائمة حقيقية مرتبطة برسائلها)
-- messages: الرسائل — بوسم الدور وشارة الحالة الصادقة
-- events: سجل نشاط كل دور داخل كل دورة (الأمر الثاني) — مرجع التدقيق
-  والواجهة: خطة/حكم مراجعة/تنفيذ مهمة/تحقق/قرار محكَّم/تغيير حالة.
+- conversations / messages / events: المنتج اليومي (الأمر 006)
+- workflow/*: مشروع هندسي كامل بحلقة ذاتية دائمة (الأمر 007)
+- providers_registry/*: مزودون وتكوينات وربط أدوار (الأمر 007.1)
 """
 
 from __future__ import annotations
@@ -91,4 +94,12 @@ class Event(Base):
     created_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
 
 
-TABLE_COUNT = 3  # هدف دائم: <10 (design-principles.md المبدأ 6)
+TABLE_COUNT = 3  # جداول المنتج اليومي (الأمر 006)
+
+#: تسجيل عائلات الجداول الجديدة في الـmetadata — init_db تنشئها كلها.
+#: استيراد ختامي متعمد (بعد تعريف Base) لتفادي أي دوران استيرادي.
+from providers_registry import models as _provider_models  # noqa: E402,F401
+from workflow import models as _workflow_models  # noqa: E402,F401
+
+#: العدد الكلي بعد الأمر 007 — 3 (يومي) + 11 (workflow) + 3 (مزودون).
+TABLE_COUNT_TOTAL = 3 + len(_workflow_models.WORKFLOW_TABLES) + 3
