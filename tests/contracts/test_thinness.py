@@ -67,6 +67,26 @@ def test_eoe_units_under_400_lines():
         assert _count_lines(unit) < 400, unit
 
 
+def test_data_tools_under_420_lines():
+    """الأمر 003: حزمة أدوات البيانات لها سقفها المرسّخ (كحزم الأمر 3)."""
+    assert _count_lines("src/tools/data_tools.py") < 420
+
+
+def test_sources_registry_under_220_lines():
+    """الأمر 003: واجهة سجل المصادر قراءة صرفة — سقف مضغوط."""
+    assert _count_lines("src/sources/__init__.py") < 220
+
+
+def test_roles_tools_under_620_lines():
+    """الأمر 003: الموزّع كبر بتسجيل خمس أدوات — سقف جديد يراقبه."""
+    assert _count_lines("src/roles/tools.py") < 620
+
+
+def test_implementer_live_under_430_lines():
+    """الأمر 003: المنفذ الحي كبر ببروتوكول أدوات البيانات — سقف يراقبه."""
+    assert _count_lines("src/roles/implementer_live.py") < 430
+
+
 def test_ui_js_under_2000_lines():
     """يعمل حتى بعد كتابة الواجهة — ملف app.js سقفه 2000."""
     path = REPO / "src/ui/app.js"

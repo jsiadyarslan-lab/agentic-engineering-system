@@ -29,7 +29,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-#: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF (§4 يوسّعها صراحةً).
+#: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF (§4) + أدوات البيانات
+#: الخمس (الأمر 003 — تنفيذها في tools/data_tools.py، استدعاء المنفذ
+#: الحي حصرًا، نمط معلن خارج الركيزة بقرار المالك).
 TOOL_WHITELIST: tuple[str, ...] = (
     "web_search",
     "fetch_page",
@@ -37,7 +39,18 @@ TOOL_WHITELIST: tuple[str, ...] = (
     "read_file",
     "generate_pdf_arabic",
     "verify_pdf_pages",
+    "http_get_text",
+    "http_get_json",
+    "page_to_text",
+    "fred_csv",
+    "worldbank_indicator",
 )
+
+#: أدوات البيانات الخمس (الأمر 003) — تنفيذ معلن خارج الركيزة دائمًا.
+DATA_TOOLS: frozenset[str] = frozenset({
+    "http_get_text", "http_get_json", "page_to_text",
+    "fred_csv", "worldbank_indicator",
+})
 
 #: حدّ مستحضَر من نتائج البحث/الصفحات — لا احتجاز ذاكرة.
 MAX_SEARCH_RESULTS = 8
@@ -67,6 +80,9 @@ class ToolContext:
     #: آخر نتائج البحث (لتغذية المراجع بعدد المصادر).
     search_results: list[dict] = field(default_factory=list)
     fetched_urls: list[str] = field(default_factory=list)
+    #: مصادر البيانات الرسمية المجلوبة (الأمر 003) — تُغذّي sources.json
+    #: مثل نتائج البحث: رابط + عنوان.
+    data_urls: list[dict] = field(default_factory=list)
 
     def emit(self, event: dict) -> None:
         if self.on_event is not None:
@@ -419,7 +435,11 @@ def run_tool(name: str, args: dict, ctx: ToolContext) -> Any:
             f"أداة خارج القائمة البيضاء: '{name}' (المسموح: {list(TOOL_WHITELIST)})"
         )
     started = time.monotonic()
-    site = "in_process_declared" if name in ("web_search", "fetch_page") else "substrate"
+    site = (
+        "in_process_declared"
+        if name in ("web_search", "fetch_page") or name in DATA_TOOLS
+        else "substrate"
+    )
     try:
         if name == "web_search":
             value = web_search(**args)
@@ -447,6 +467,54 @@ def run_tool(name: str, args: dict, ctx: ToolContext) -> Any:
         elif name == "verify_pdf_pages":
             value = verify_pdf_pages(ctx, str(args.get("path", "")))
             digest = _sha256_text(f"pages={value}")
+        elif name in DATA_TOOLS:
+            # الأمر 003: أدوات البيانات — استيراد مؤجل (حزمة tools
+            # تستورد roles.tools فالاستيراد المبكر دائري).
+            from tools import data_tools
+
+            if name == "http_get_text":
+                value = data_tools.http_get_text(ctx, str(args.get("url", "")))
+                ctx.data_urls.append({
+                    "url": value["url"],
+                    "title": value.get("artifact", ""),
+                })
+            elif name == "http_get_json":
+                value = data_tools.http_get_json(ctx, str(args.get("url", "")))
+                ctx.data_urls.append({
+                    "url": value["url"],
+                    "title": value.get("artifact", ""),
+                })
+            elif name == "page_to_text":
+                value = data_tools.page_to_text(ctx, str(args.get("url", "")))
+                ctx.data_urls.append({
+                    "url": value["url"],
+                    "title": value.get("artifact", ""),
+                })
+            elif name == "fred_csv":
+                value = data_tools.fred_csv(
+                    ctx, str(args.get("series_id", "")),
+                    start=args.get("start") or None,
+                    end=args.get("end") or None,
+                )
+                ctx.data_urls.append({
+                    "url": f"https://fred.stlouisfed.org/data/{value['series_id']}",
+                    "title": f"FRED — سلسلة {value['series_id']}",
+                })
+            else:  # worldbank_indicator
+                value = data_tools.worldbank_indicator(
+                    ctx, str(args.get("indicator", "")),
+                    countries=str(args.get("countries", "all")),
+                    dates=args.get("dates") or None,
+                )
+                ctx.data_urls.append({
+                    "url": (
+                        "https://data.worldbank.org/indicator/"
+                        f"{value['indicator']}"
+                    ),
+                    "title": f"البنك الدولي — مؤشر {value['indicator']}",
+                })
+            #: sha256 للمحتوى المستلم خامًا — عقد الأمر 003 للتكامل.
+            digest = str(value["sha256"])
         else:  # pragma: no cover — القائمة مغلقة أعلاه
             raise ToolError(f"أداة غير منفذة: {name}")
     except ToolError:
@@ -462,6 +530,13 @@ def run_tool(name: str, args: dict, ctx: ToolContext) -> Any:
         summary = {"chars": len(value)}
     elif name == "verify_pdf_pages":
         summary = {"pages": value}
+    elif name in DATA_TOOLS:
+        summary = {
+            key: value.get(key)
+            for key in ("series_id", "indicator", "rows", "count",
+                        "chars", "words", "artifact")
+            if key in value
+        }
     else:
         summary = {"path": str(value)}
     ctx.emit({
@@ -491,4 +566,15 @@ TOOLS_MANIFEST: list[dict] = [
      "desc": "توليد PDF عربي RTL بحجم A4 من ملف Markdown (داخل الركيزة)"},
     {"tool": "verify_pdf_pages", "args": {"path": "report.pdf"},
      "desc": "عدّ صفحات ملف PDF (داخل الركيزة)"},
+    {"tool": "http_get_text", "args": {"url": "https://…/data.csv"},
+     "desc": "جلب نص/CSV خام من رابط (معلن خارج الركيزة)"},
+    {"tool": "http_get_json", "args": {"url": "https://…/api.json"},
+     "desc": "جلب JSON من واجهة عامة (معلن خارج الركيزة)"},
+    {"tool": "page_to_text", "args": {"url": "https://…/page"},
+     "desc": "صفحة HTML → نص فقرات منسق (معلن خارج الركيزة)"},
+    {"tool": "fred_csv", "args": {"series_id": "DGS10"},
+     "desc": "سلسلة FRED رسمية بلا مفتاح — مثل DGS10/CPIAUCSL (معلن)"},
+    {"tool": "worldbank_indicator",
+     "args": {"indicator": "FP.CPI.TOTL.ZG", "countries": "SA;US", "dates": "2020:2024"},
+     "desc": "مؤشر البنك الدولي — قيّد countries وdates (معلن)"},
 ]

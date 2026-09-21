@@ -28,6 +28,7 @@ from roles.implementer import (
 )
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
 from roles.tools import (
+    DATA_TOOLS,
     MAX_SEARCH_RESULTS,
     TOOLS_MANIFEST,
     ToolContext,
@@ -67,9 +68,25 @@ class LiveImplementer(LiveRoleBase):
     # 1) خطة الأدوات — بروتوكول سطر لكل استدعاء (لا JSON: أقواس LLM
     #    الناقصة علة معروفة؛ لكل أداة ويب وسيطة واحدة فيكفي السطر)
     #    مع إعادة محاولة واحدة عند فشل التحليل (§2.3)
+    #    الأمر 003: أدوات البيانات الخمس تنضم — ثلاث برابط واحد،
+    #    واثنتان (fred_csv/worldbank_indicator) بوسيطة أساسية +
+    #    أزواج مفتاح=قيمة اختيارية (start/end/countries/dates).
     # ------------------------------------------------------------------ #
 
-    _LINE_TOOLS = {"web_search": "query", "fetch_page": "url"}
+    _LINE_TOOLS = {
+        "web_search": "query",
+        "fetch_page": "url",
+        "http_get_text": "url",
+        "http_get_json": "url",
+        "page_to_text": "url",
+    }
+    #: وسيطة أساسية + أزواج مفتاح=قيمة اختيارية بعد فراغ (fail-closed:
+    #: أي جزء بلا «=» بعد الوسيطة الأساسية = سطر غير صالح).
+    _KV_LINE_TOOLS = {"fred_csv": "series_id", "worldbank_indicator": "indicator"}
+    _KV_ALLOWED_KEYS = {
+        "fred_csv": {"start", "end"},
+        "worldbank_indicator": {"countries", "dates"},
+    }
     _STRIP_ARG_CHARS = "`'\""  # أسوار الكود وعلامات الاقتباس المحيطة
 
     def _parse_tool_lines(self, text: str) -> list[dict]:
@@ -81,19 +98,49 @@ class LiveImplementer(LiveRoleBase):
             name, _, arg = line.partition("|")
             name = name.strip()
             arg = arg.strip().strip(self._STRIP_ARG_CHARS)
-            if name not in self._LINE_TOOLS or not arg:
+            if not arg:
                 raise ValueError(f"سطر أداة غير صالح: {raw_line[:80]}")
-            calls.append({"tool": name, "args": {self._LINE_TOOLS[name]: arg}})
+            if name in self._LINE_TOOLS:
+                calls.append(
+                    {"tool": name, "args": {self._LINE_TOOLS[name]: arg}}
+                )
+            elif name in self._KV_LINE_TOOLS:
+                parts = arg.split()
+                primary = parts[0]
+                args = {self._KV_LINE_TOOLS[name]: primary}
+                for token in parts[1:]:
+                    if "=" not in token:
+                        raise ValueError(
+                            f"جزء بلا مفتاح=قيمة في سطر {name}: {token[:40]}"
+                        )
+                    key, _, val = token.partition("=")
+                    if key not in self._KV_ALLOWED_KEYS[name]:
+                        raise ValueError(
+                            f"مفتاح غير مسموح {key} لأداة {name} "
+                            f"(المسموح: {sorted(self._KV_ALLOWED_KEYS[name])})"
+                        )
+                    args[key] = val
+                calls.append({"tool": name, "args": args})
+            else:
+                raise ValueError(f"سطر أداة غير صالح: {raw_line[:80]}")
         if not calls:
             raise ValueError("لا أسطر استدعاء صالحة في الرد")
         return calls
 
     def _plan_tool_calls(self, task_payload: dict) -> list[dict]:
+        from sources import suggest_sources
+
         payload = {
             "phase": "plan_tools",
             "task": task_payload,
             "tools": [t for t in TOOLS_MANIFEST
-                      if t["tool"] in self._LINE_TOOLS],
+                      if t["tool"] in self._LINE_TOOLS
+                      or t["tool"] in self._KV_LINE_TOOLS],
+            #: الأمر 003: مصادر رسمية مقترحة بأسطر استدعاء جاهزة —
+            #: يختارها النموذج عند ملاءمتها للموضوع (لا فرض).
+            "official_sources": suggest_sources(
+                task_payload.get("description", ""), limit=8
+            ),
         }
         messages = [
             ChatMessage(role="system", content=self._system_prompt),
@@ -170,11 +217,13 @@ class LiveImplementer(LiveRoleBase):
 
         try:
             # (1) خطة الأدوات ← تنفيذها (كل استدعاء موثق داخل run_tool).
-            # فشل أداة بيضاء (رابط يحجب الروبوتات مثلًا) يُسجَّل حدثًا
+            # فشل أداة بيضاء (رابط يحجب الروبوتات مثلًا) يُسجّل حدثًا
             # ويُتجاوز — المادة تُجمع مما نجح؛ الفشل الكامل فقط عند
             # انعدام أي مادة (لا ترقيع: الإخفاق موثق في الأدلة).
             calls = self._plan_tool_calls(task_payload)
-            materials: dict[str, list] = {"search_results": [], "pages": []}
+            materials: dict[str, list] = {
+                "search_results": [], "pages": [], "data": [],
+            }
             failed_calls: list[str] = []
             for call in calls[:8]:  # سقف صلب فوق تعليمات البرومبت
                 name = str(call.get("tool", ""))
@@ -198,7 +247,21 @@ class LiveImplementer(LiveRoleBase):
                     materials["pages"].append(
                         {"chars": len(value), "text": value[:6000]}
                     )
-            if not materials["search_results"] and not materials["pages"]:
+                elif name in DATA_TOOLS:
+                    # الأمر 003: ملخص محدود من مادة البيانات للتقرير —
+                    # الخام الكامل في data/ داخل الأدلة، لا في البرومبت.
+                    materials["data"].append({
+                        key: value.get(key)
+                        for key in ("tool", "series_id", "indicator", "url",
+                                    "rows", "count", "chars", "words",
+                                    "structure", "sample_rows", "first_300_words")
+                        if key in value
+                    })
+            if (
+                not materials["search_results"]
+                and not materials["pages"]
+                and not materials["data"]
+            ):
                 return ImplementerResult(
                     status=ImplementerStatus.FAILED,
                     stderr_truncated=(
@@ -282,7 +345,7 @@ class LiveImplementer(LiveRoleBase):
                         {"title": _title_of(clean), "url": clean}
                     )
             if len(sources) < 5:
-                for item in ctx.search_results:
+                for item in [*ctx.search_results, *ctx.data_urls]:
                     url = item.get("url", "")
                     if url and url not in seen:
                         seen.add(url)
