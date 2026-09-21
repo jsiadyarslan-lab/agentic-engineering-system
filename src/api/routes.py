@@ -24,6 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -102,6 +103,19 @@ class CycleStartIn(BaseModel):
 
 class CycleVerifyIn(BaseModel):
     """جسم موافقة المستخدم — معرّف الدورة."""
+
+    cycle_id: str = Field(min_length=1)
+
+
+class CycleStopIn(BaseModel):
+    """جسم طلب الإيقاف الفوري (الأمر 004) — الدورة."""
+
+    cycle_id: str = Field(min_length=1)
+    reason: str = ""
+
+
+class CycleResumeIn(BaseModel):
+    """جسم استئناف دورة موقوفة (الأمر 004)."""
 
     cycle_id: str = Field(min_length=1)
 
@@ -217,6 +231,140 @@ def cycle_verify(body: CycleVerifyIn) -> dict:
         "badge": "✔ VERIFIED",
         "event": outcome["event"],
     }
+
+
+# ------------------------------------------------------------------ #
+# الأمر 004 — الإيقاف الفوري الآمن للدورة + الاستئناف من اللقطة
+# ------------------------------------------------------------------ #
+
+#: معرف الدورة الصالح حصرًا — fail-closed ضد اجتياز المسارات.
+_CYCLE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+
+
+def _cycle_snapshot_path(cycle_id: str) -> Path:
+    return Path("runtime") / "cycles" / cycle_id / "stop_snapshot.json"
+
+
+@app.post("/api/cycle/stop")
+def cycle_stop(body: CycleStopIn) -> dict:
+    """طلب إيقاف فوري للدورة — يُقبل فورًا ويُكرَّم عند حدّ آمن.
+
+    القبول يعني: العلم رُفع ذرّيًا والحالة STOPPING؛ التوقف الفعلي
+    عند أقرب نقطة تفتيش (أقصى الانتظار = استدعاء دور واحد).
+    """
+    outcome = _orchestrator.request_stop(
+        body.cycle_id, by="owner", reason=body.reason
+    )
+    if outcome["status"] == "unknown":
+        raise HTTPException(
+            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
+        )
+    if not outcome["accepted"]:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "الدورة ليست قيد التشغيل — حالتها النهائية: "
+                f"{outcome.get('final_state', 'منتهية')}"
+            ),
+        )
+    return {
+        "cycle_id": body.cycle_id,
+        "status": outcome["status"],
+        "receipt": outcome["receipt"],
+    }
+
+
+@app.get("/api/cycle/status/{cycle_id}")
+def cycle_status(cycle_id: str) -> dict:
+    """حالة الدورة لحظة الطلب — الخطة والتشغيل وإيصال الإيقاف."""
+    if not _CYCLE_ID_RE.match(cycle_id):
+        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
+    status = _orchestrator.cycle_status(cycle_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail=f"دورة غير معروفة: {cycle_id}")
+    status["can_resume"] = _cycle_snapshot_path(cycle_id).is_file()
+    return status
+
+
+@app.post("/api/cycle/resume")
+async def cycle_resume(body: CycleResumeIn) -> StreamingResponse:
+    """استئناف دورة موقوفة من لقطتها — دورة جديدة بث SSE (الأمر 004).
+
+    الخطة الموقّعة تُحقن فتتخطى التفكير والمراجعة، والمهام المثبتة
+    لا تُعاد؛ مساحة العمل نفسها تُعاد الاستخدام حتى تبقى الأدلة متصلة.
+    """
+    from core.stop_controller import load_resume_point
+
+    if not _CYCLE_ID_RE.match(body.cycle_id):
+        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
+    path = _cycle_snapshot_path(body.cycle_id)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="لا لقطة إيقاف لهذه الدورة")
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+        load_resume_point(snapshot)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=f"لقطة غير صالحة: {error}")
+    goal = str(snapshot.get("goal", ""))
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+    def sink(event: dict) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, event)
+        _persist_event(event)
+
+    def run_resumed_in_thread() -> None:
+        try:
+            _orchestrator.run_cycle(
+                goal,
+                workspace_root=path.parent,  # مساحة العمل نفسها — الأدلة متصلة
+                on_event=sink,
+                resume_from=snapshot,
+            )
+        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته صامتًا
+            loop.call_soon_threadsafe(
+                queue.put_nowait,
+                {
+                    "seq": 0,
+                    "cycle_id": "",
+                    "role": "coordinator",
+                    "kind": "cycle_error",
+                    "state": None,
+                    "text": f"الاستئناف فشل: {error}",
+                    "duration_ms": 0,
+                    "details": {"error": str(error)},
+                },
+            )
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    loop.run_in_executor(_executor, run_resumed_in_thread)
+
+    async def generate():
+        yield "data: " + json.dumps(
+            {
+                "seq": 0,
+                "cycle_id": "",
+                "role": "coordinator",
+                "kind": "cycle.resume_requested",
+                "state": None,
+                "text": f"استئناف الدورة الموقوفة {body.cycle_id} من لقطتها",
+                "duration_ms": 0,
+                "details": {"from_cycle_id": body.cycle_id},
+            },
+            ensure_ascii=False,
+        ) + "\n\n"
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ------------------------------------------------------------------ #
@@ -616,8 +764,21 @@ class MissionVerifyIn(BaseModel):
     cycle_id: str = Field(min_length=1)
 
 
+class MissionStopIn(BaseModel):
+    """جسم طلب إيقاف المهمة الحية (الأمر 004)."""
+
+    reason: str = ""
+
+
 #: موجّه المهمة الحية — يُبنى مرة واحدة كسولًا (المفاتيح من ‎.env).
-_mission_state: dict = {"router": None, "orchestrator": None, "lock": threading.Lock()}
+#: الأمر 004: حقل active يتتبع المهمة الجارية (معرفها + متحكم إيقافها).
+_mission_state: dict = {
+    "router": None,
+    "orchestrator": None,
+    "lock": threading.Lock(),
+    "active": None,
+    "last_state": None,
+}
 
 
 def _mission_router():
@@ -630,27 +791,52 @@ def _mission_router():
         return _mission_state["router"]
 
 
-@app.post("/api/mission/stream")
-async def mission_stream(body: MissionStartIn) -> StreamingResponse:
-    """بث المهمة الحية كاملة (SSE) — LLM حقيقي، لا mock في المسار.
+async def _stream_mission_run(
+    goal: str, resume_from: dict | None
+) -> StreamingResponse:
+    """بث مهمة حية (SSE) — الإيقاف الفوري مربوط بنقاط التفتيش (004).
 
-    أحداث الدورة (أدوار/حالات/أدوات بـ sha256) تُبث لحظة حدوثها،
-    وختامها mission_done بالحكم الصادق PASS/HARD STOP والأدلة.
+    معرّف الدورة يُعلن هنا (لا يولَّد داخليًا) حتى يستطيع المالك طلب
+    إيقافها من اللحظة الأولى؛ ونقاط تفتيش المنفذ الحي تُربط بمتحكم
+    الإيقاف فيُكرَّم الطلب بين خطوات المنفذ لا بعد دوره كاملًا.
     """
-    from missions import DEFAULT_MISSION_GOAL, run_mission
+    from core.stop_controller import StopController
+    from missions import run_mission
 
-    goal = body.goal.strip() or DEFAULT_MISSION_GOAL
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
+    cycle_id = f"mission-{uuid.uuid4().hex[:12]}"
+    stop = StopController()
+    done_event = threading.Event()
+
+    with _mission_state["lock"]:
+        active = _mission_state.get("active")
+        if active is not None and not active["done"].is_set():
+            raise HTTPException(status_code=409, detail="مهمة حية تعمل بالفعل")
+        _mission_state["active"] = {
+            "cycle_id": cycle_id,
+            "stop": stop,
+            "done": done_event,
+        }
+        _mission_state["last_state"] = None
 
     def sink(event: dict) -> None:
         loop.call_soon_threadsafe(queue.put_nowait, event)
         _persist_event(event)
+        if event.get("kind") == "state_change":
+            _mission_state["last_state"] = event.get("details", {}).get("to")
 
     def run_mission_in_thread() -> None:
         try:
             router = _mission_router()
-            result = run_mission(goal, router=router, on_event=sink)
+            result = run_mission(
+                goal,
+                router=router,
+                on_event=sink,
+                cycle_id=cycle_id,
+                stop_controller=stop,
+                resume_from=resume_from,
+            )
             with _mission_state["lock"]:
                 _mission_state["orchestrator"] = result.orchestrator
                 _mission_state["last_result"] = {
@@ -673,6 +859,7 @@ async def mission_stream(body: MissionStartIn) -> StreamingResponse:
                 },
             )
         finally:
+            done_event.set()
             loop.call_soon_threadsafe(queue.put_nowait, None)
 
     loop.run_in_executor(_eoe_executor, run_mission_in_thread)
@@ -689,6 +876,94 @@ async def mission_stream(body: MissionStartIn) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/mission/stream")
+async def mission_stream(body: MissionStartIn) -> StreamingResponse:
+    """بث المهمة الحية كاملة (SSE) — LLM حقيقي، لا mock في المسار.
+
+    أحداث الدورة (أدوار/حالات/أدوات بـ sha256) تُبث لحظة حدوثها،
+    وختامها mission_done بالحكم الصادق PASS/HARD STOP/STOPPED والأدلة.
+    """
+    from missions import DEFAULT_MISSION_GOAL
+
+    goal = body.goal.strip() or DEFAULT_MISSION_GOAL
+    return await _stream_mission_run(goal, resume_from=None)
+
+
+@app.post("/api/mission/stop")
+def mission_stop(body: MissionStopIn) -> dict:
+    """إيقاف المهمة الحية فورًا — يُكرَّم عند أقرب نقطة تفتيش آمنة.
+
+    القبول فوري (علم ذرّي)؛ التكريم عند حدّ آمن — أقصى الانتظار
+    استدعاء أدوات/نموذج واحد قيد التنفيذ، ثم STOPPING → STOPPED
+    واللقطة القابلة للاستئناف تُكتب في مجلد المهمة.
+    """
+    with _mission_state["lock"]:
+        active = _mission_state.get("active")
+        if active is None:
+            raise HTTPException(status_code=409, detail="لا مهمة حية قيد التشغيل")
+    if active["done"].is_set():
+        raise HTTPException(status_code=409, detail="المهمة انتهت أصلًا")
+    receipt = active["stop"].request_stop(
+        active["cycle_id"], by="owner", reason=body.reason
+    )
+    return {
+        "cycle_id": active["cycle_id"],
+        "status": "STOPPING",
+        "receipt": {
+            "cycle_id": receipt.cycle_id,
+            "requested_by": receipt.requested_by,
+            "at": receipt.at,
+            "reason": receipt.reason,
+        },
+    }
+
+
+@app.get("/api/mission/status")
+def mission_status() -> dict:
+    """حالة المهمة الحية لحظة الطلب — التشغيل وإيصال الإيقاف."""
+    with _mission_state["lock"]:
+        active = _mission_state.get("active")
+        payload = {
+            "running": bool(
+                active is not None and not active["done"].is_set()
+            ),
+            "cycle_id": active["cycle_id"] if active else None,
+            "state": _mission_state.get("last_state"),
+            "last_result": _mission_state.get("last_result"),
+            "stop_requested": False,
+            "stop_receipt": None,
+        }
+        if active is not None:
+            receipt = active["stop"].receipt(active["cycle_id"])
+            payload["stop_requested"] = receipt is not None
+            if receipt is not None:
+                payload["stop_receipt"] = {
+                    "cycle_id": receipt.cycle_id,
+                    "requested_by": receipt.requested_by,
+                    "at": receipt.at,
+                    "reason": receipt.reason,
+                }
+    return payload
+
+
+@app.post("/api/mission/resume")
+async def mission_resume() -> StreamingResponse:
+    """استئناف المهمة الموقوفة من لقطتها — دورة جديدة تُحقن بالخطة (004)."""
+    from core.stop_controller import load_resume_point
+
+    path = Path("runtime") / "missions" / "default" / "stop_snapshot.json"
+    if not path.is_file():
+        raise HTTPException(
+            status_code=404, detail="لا لقطة إيقاف — لا شيء للاستئناف"
+        )
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+        load_resume_point(snapshot)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=f"لقطة غير صالحة: {error}")
+    return await _stream_mission_run(str(snapshot.get("goal", "")), snapshot)
 
 
 @app.get("/api/mission/report")

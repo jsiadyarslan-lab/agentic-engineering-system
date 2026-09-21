@@ -51,12 +51,15 @@ def build_live_orchestrator(
     *,
     tools_ctx: Any = None,
     verifier_facts_builder: Any = None,
+    stop_controller: Any = None,
 ) -> Orchestrator:
     """منسق بالأدوار الخمسة **الحية** (الأمر السادس §2).
 
     router: ModelRouter.build_live() — نقل urllib حقيقي لكل مزود محلول.
     لا mock هنا إطلاقًا: أي دور يفشل يفشل صراحةً (RoleSystemFault
     يلتقطه مشغّل المهمة ويسجّله system_fault).
+    stop_controller (الأمر 004): متحكم الإيقاف الفوري — يُمرّر للمنسق
+    وتُربط نقاط تفتيشه بسياق أدوات المنفذ الحي.
     """
     from roles.implementer_live import LiveImplementer
     from roles.live import ArbiterLive, ReviewerLive, ThinkerLive, VerifierLive
@@ -65,7 +68,7 @@ def build_live_orchestrator(
     if verifier_facts_builder is not None:
         verifier.facts_builder = verifier_facts_builder
 
-    orchestrator = Orchestrator()
+    orchestrator = Orchestrator(stop_controller=stop_controller)
     for role, implementation in {
         RoleType.THINKER: ThinkerLive(router),
         RoleType.REVIEWER: ReviewerLive(router),

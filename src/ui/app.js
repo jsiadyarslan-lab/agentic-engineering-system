@@ -47,11 +47,77 @@
     FAILED: "✕ FAILED",
     ESCALATED_TO_HUMAN: "▲ ESCALATED_TO_HUMAN",
     NOT_EVIDENCED: "◌ NOT_EVIDENCED",
-    STAGNANT: "▲ STAGNANT"
+    STAGNANT: "▲ STAGNANT",
+    STOPPING: "◌ STOPPING",
+    STOPPED: "⏹ STOPPED"
   };
 
   var busy = false;
   var conversationStarted = false;
+
+  // ---------- الأمر 004: تتبع الجارية القابلة للإيقاف + زر الإيقاف ----------
+  var activeRun = null; // { kind: "cycle"|"mission", cycleId }
+  var stopRunEl = $("stop-run");
+
+  function resetStopButton() {
+    if (!stopRunEl) return;
+    stopRunEl.disabled = true;
+    stopRunEl.textContent = "⏹ إيقاف فوري";
+  }
+
+  function trackRun(event) {
+    if (activeRun && !activeRun.cycleId && event.cycle_id) {
+      activeRun.cycleId = event.cycle_id;
+    }
+  }
+
+  function requestStop() {
+    if (!activeRun || !stopRunEl || stopRunEl.disabled) return;
+    if (activeRun.kind === "cycle" && !activeRun.cycleId) {
+      stopRunEl.textContent = "⏹ انتظر أول حدث…";
+      return;
+    }
+    stopRunEl.disabled = true;
+    stopRunEl.textContent = "⏹ جارٍ طلب الإيقاف…";
+    var isMission = activeRun.kind === "mission";
+    var body = isMission
+      ? { reason: "زر الإيقاف من الواجهة" }
+      : { cycle_id: activeRun.cycleId, reason: "زر الإيقاف من الواجهة" };
+    fetch(isMission ? "/api/mission/stop" : "/api/cycle/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+      .then(function (resp) {
+        return resp.json().then(function (j) { return { ok: resp.ok, j: j }; });
+      })
+      .then(function (out) {
+        var r = (out.j && out.j.receipt) || {};
+        var note = makeRoleMessage({
+          role: "coordinator",
+          kind: "stop.receipt",
+          state: "STOPPING",
+          text: out.ok
+            ? "⏹ طلب الإيقاف قُبل (" + (r.requested_by || "owner") +
+              " عند " + (r.at || "?") +
+              ") — يُكرّم عند أقرب حدّ آمن، واللقطة ستُكتب"
+            : "تعذّر طلب الإيقاف: " + ((out.j && out.j.detail) || "خطأ غير معروف"),
+          details: out.j || {}
+        });
+        note.root.classList.add("stop-card");
+        insertBeforeWorking(note.root);
+        if (!out.ok) resetStopButton();
+      })
+      .catch(function (err) {
+        resetStopButton();
+      });
+  }
+
+  if (stopRunEl) {
+    stopRunEl.addEventListener("click", function () {
+      if (busy) requestStop();
+    });
+  }
 
   // ---------- أدوات ----------
   function scrollDown() {
@@ -142,7 +208,8 @@
   // رقاقة تغيّر حالة الخطة — سطر رفيع بين الرسائل
   function addStateChip(event) {
     var chip = document.createElement("div");
-    chip.className = "state-chip";
+    chip.className = "state-chip" +
+      (event.state === "STOPPING" || event.state === "STOPPED" ? " chip-stop" : "");
     chip.textContent = event.state || "";
     messagesEl.appendChild(chip);
     scrollDown();
@@ -215,6 +282,7 @@
 
   // ---------- عرض حدث واحد وفق نوعه ----------
   function renderEvent(event) {
+    trackRun(event);
     if (event.role === "eoe") {
       renderEoeEvent(event);
       return;
@@ -225,6 +293,15 @@
       case "state_change":
         addStateChip(event);
         return;
+      case "cycle.stopped":
+        renderStopCard(event);
+        return;
+      case "cycle.resumed":
+      case "cycle.resume_requested": {
+        var info = makeRoleMessage(event);
+        insertBeforeWorking(info.root);
+        return;
+      }
       case "cycle_done":
         renderCycleDone(event);
         return;
@@ -482,6 +559,8 @@
   }
 
   function streamCycle(goal) {
+    activeRun = { kind: "cycle", cycleId: "" };
+    if (stopRunEl) { stopRunEl.disabled = false; }
     addWorking();
     postStream("/api/cycle/stream", { goal: goal })
       .then(finishStream, streamFailed);
@@ -501,6 +580,8 @@
     function finishStream() {
       removeWorking();
       setBusy(false);
+      activeRun = null;
+      resetStopButton();
       scrollDown();
     }
   }
@@ -577,6 +658,61 @@
   // ---------- الأمر السادس: المهمة الحية (ربط نموذج حقيقي + PDF) ----------
   var missionRunEl = $("mission-run");
 
+  // ---------- الأمر 004: بطاقة الإيقاف + الاستئناف ----------
+  function renderStopCard(event) {
+    var d = event.details || {};
+    var msg = makeRoleMessage(event);
+    msg.root.classList.add("stop-card");
+    msg.body.textContent = "⏹ أُوقفت الدورة بأمر (" +
+      (d.stopped_by || "المالك") + ") عند " +
+      (d.honored_at_step || "؟") +
+      " — الحالة والأدلة الجزئية محفوظة في " +
+      (d.snapshot_path || "stop_snapshot.json");
+    var sha = document.createElement("div");
+    sha.className = "router-reason";
+    sha.textContent = "لقطة sha256: " +
+      String(d.snapshot_sha256 || "").slice(0, 20) + "…";
+    msg.body.appendChild(sha);
+    var resumeBtn = document.createElement("button");
+    resumeBtn.className = "verify-btn";
+    resumeBtn.textContent = "▶ استئناف من نقطة الإيقاف";
+    resumeBtn.addEventListener("click", function () {
+      resumeBtn.disabled = true;
+      setBusy(true);
+      resumeRun(event.cycle_id);
+    });
+    msg.body.appendChild(resumeBtn);
+    insertBeforeWorking(msg.root);
+  }
+
+  function resumeRun(cycleId) {
+    activeRun = { kind: "cycle", cycleId: cycleId };
+    if (stopRunEl) { stopRunEl.disabled = false; }
+    addWorking();
+    postStream("/api/cycle/resume", { cycle_id: cycleId })
+      .then(finishStream, streamFailed);
+
+    function streamFailed(err) {
+      var fallback = makeRoleMessage({
+        role: "coordinator",
+        kind: "cycle_error",
+        state: null,
+        text: "تعذّر الاستئناف: " + err.message,
+        details: { error: String(err.message) }
+      });
+      messagesEl.appendChild(fallback.root);
+      finishStream();
+    }
+
+    function finishStream() {
+      removeWorking();
+      setBusy(false);
+      activeRun = null;
+      resetStopButton();
+      scrollDown();
+    }
+  }
+
   function renderMissionStart(event) {
     var msg = makeRoleMessage(event);
     msg.body.textContent = "🚀 مهمة حية — نموذج حقيقي بلا mock: " +
@@ -609,6 +745,10 @@
     msg.root.classList.add("cycle-summary");
     if (event.verdict === "PASS") {
       msg.body.textContent = "✅ VERDICT: PASS — المهمة اكتملت بأدلة كاملة";
+    } else if (event.verdict === "STOPPED") {
+      msg.root.classList.add("mission-stopped");
+      msg.body.textContent = "⏹ VERDICT: STOPPED — أُوقفت بأمر والأدلة الجزئية محفوظة — " +
+        (event.text || "");
     } else {
       msg.body.classList.add("cycle-error");
       msg.body.textContent = "⛔ VERDICT: HARD STOP — " + (event.text || "");
@@ -625,6 +765,18 @@
       list.className = "router-reason";
       list.textContent = "أسباب التوقف: " + d.verdict_reasons.join(" · ");
       msg.body.appendChild(list);
+    }
+    if (event.verdict === "STOPPED") {
+      var resumeM = document.createElement("button");
+      resumeM.className = "verify-btn";
+      resumeM.style.marginLeft = "8px";
+      resumeM.textContent = "▶ استئناف المهمة من اللقطة";
+      resumeM.addEventListener("click", function () {
+        resumeM.disabled = true;
+        setBusy(true);
+        streamMission("", true);
+      });
+      msg.body.appendChild(resumeM);
     }
     if (event.verdict === "PASS") {
       var openBtn = document.createElement("button");
@@ -676,9 +828,12 @@
       });
   }
 
-  function streamMission(goal) {
+  function streamMission(goal, resume) {
+    activeRun = { kind: "mission", cycleId: "" };
+    if (stopRunEl) { stopRunEl.disabled = false; }
     addWorking();
-    postStream("/api/mission/stream", { goal: goal || "" })
+    postStream(resume ? "/api/mission/resume" : "/api/mission/stream",
+      resume ? {} : { goal: goal || "" })
       .then(finishStream, streamFailed);
 
     function streamFailed(err) {
@@ -696,6 +851,8 @@
     function finishStream() {
       removeWorking();
       busy = false;
+      activeRun = null;
+      resetStopButton();
       if (missionRunEl) missionRunEl.disabled = false;
       scrollDown();
     }

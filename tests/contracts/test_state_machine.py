@@ -14,9 +14,9 @@ from core.state import (
 )
 
 
-def test_exactly_eleven_honest_states():
-    """11 حالة بالضبط — لا 13 كما تراكمت في v1."""
-    assert len(PlanState) == 11
+def test_exactly_thirteen_honest_states():
+    """13 حالة بالضبط — 11 الأصلية + زوج الإيقاف STOPPING/STOPPED (الأمر 004)."""
+    assert len(PlanState) == 13
 
 
 def test_no_success_state_exists():
@@ -87,3 +87,48 @@ def test_reviewer_revise_returns_to_draft():
     validate_transition(
         PlanState.UNDER_REVIEW, PlanState.DRAFT, actor="reviewer"
     )
+
+
+# ------------------------------------------------------------------ #
+# الأمر 004 — زوج الإيقاف الآمن (STOPPING → STOPPED)
+# ------------------------------------------------------------------ #
+
+
+def test_stop_reachable_from_every_non_terminal_state():
+    """كل حالة نشطة قابلة للإيقاف — لا حالة تعجز المالك عن إيقافها."""
+    for state in PlanState:
+        if state in TERMINAL_STATES or state is PlanState.STOPPING:
+            continue
+        validate_transition(state, PlanState.STOPPING, actor="user")
+
+
+def test_stopping_goes_only_to_stopped():
+    """STOPPING هدفها الوحيد STOPPED — لا التفاف إلى مسارات العمل."""
+    assert TRANSITIONS[PlanState.STOPPING] == frozenset({PlanState.STOPPED})
+
+
+def test_stopped_is_terminal_and_frozen():
+    """STOPPED نهائية مجمّدة — الاستئناف دورة جديدة لا إحياء."""
+    assert PlanState.STOPPED in TERMINAL_STATES
+    assert TRANSITIONS[PlanState.STOPPED] == frozenset()
+    with pytest.raises(StateTransitionError):
+        validate_transition(PlanState.STOPPED, PlanState.EXECUTING, actor="user")
+
+
+def test_no_role_can_stop_a_cycle():
+    """الإيقاف فعل المالك/المنسق حصرًا — الأدوار لا توقف دورة."""
+    for actor in ("thinker", "reviewer", "implementer", "verifier", "arbiter"):
+        with pytest.raises(StateTransitionError) as err:
+            validate_transition(
+                PlanState.EXECUTING, PlanState.STOPPING, actor=actor
+            )
+        assert "حصرًا" in str(err.value)
+    validate_transition(
+        PlanState.EXECUTING, PlanState.STOPPING, actor="user"
+    )  # المالك يملكها
+
+
+def test_stopped_not_verified_path():
+    """الموقوفة لا تُمنح VERIFIED — لا نجاح بعد إيقاف بأمر."""
+    with pytest.raises(StateTransitionError):
+        validate_transition(PlanState.STOPPED, PlanState.VERIFIED, actor="user")

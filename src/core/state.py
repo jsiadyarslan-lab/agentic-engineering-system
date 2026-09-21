@@ -1,4 +1,4 @@
-"""آلة حالات v2 الصادقة — 11 حالة + حُكمان فرعيان.
+"""آلة حالات v2 الصادقة — 13 حالة + حُكمان فرعيان.
 
 التصميم (CONTRACTS.md / ARCHITECTURE.md القسمان 3-4):
 
@@ -7,7 +7,15 @@
 
 - الحالات الإحدى عشرة:
     DRAFT, UNDER_REVIEW, APPROVED, EXECUTING, EXECUTED, VERIFYING,
-    EVIDENCED, ADJUDICATED, VERIFIED, FAILED, ESCALATED_TO_HUMAN
+    EVIDENCED, ADJUDICATED, VERIFIED, FAILED, ESCALATED_TO_HUMAN,
+    STOPPING, STOPPED
+
+- زوج الإيقاف الآمن (الأمر 004 — إضافة موثقة لا تعديل جوهري):
+    STOPPING — طلبُ إيقافٍ قُبِل عند حدّ آمن؛ الخطوة الجارية تكتمل
+              ثم تُحفظ الحالة والأدلة الجزئية (فاعلها user/system حصرًا)
+    STOPPED  — موقوفة بأمر: لقطة قابلة للاستئناف مكتوبة، والحالة
+              نهائية مجمّدة — الاستئناف دورة جديدة تُحقن باللقطة،
+              لا إحياء للدورة الموقوفة
 
 - الحكمان الفرعيان (ليسا حالتَي خطة):
     NOT_EVIDENCED — حكم المراجع عند قصور الأدلة (يُغذّي المُحكَّم)
@@ -23,7 +31,7 @@ from enum import Enum
 
 
 class PlanState(str, Enum):
-    """الحالات الصادقة الإحدى عشرة لدورة العمل."""
+    """الحالات الصادقة الثلاث عشرة لدورة العمل."""
 
     DRAFT = "DRAFT"                        # المفكر أنتج خطة (مسودة)
     UNDER_REVIEW = "UNDER_REVIEW"          # المدقق يراجع
@@ -36,6 +44,8 @@ class PlanState(str, Enum):
     VERIFIED = "VERIFIED"                  # المستخدم وافق (وحده)
     FAILED = "FAILED"                      # فشل تنفيذي
     ESCALATED_TO_HUMAN = "ESCALATED_TO_HUMAN"  # تصعيد للبشر
+    STOPPING = "STOPPING"                  # الأمر 004: طلب إيقاف قُبِل — إنهاء آمن
+    STOPPED = "STOPPED"                    # الأمر 004: موقوفة — لقطة للاستئناف
 
 
 class SubVerdict(str, Enum):
@@ -46,43 +56,57 @@ class SubVerdict(str, Enum):
 
 
 #: الحالات النهائية — لا انتقال يخرج منها (إلا قرار بشري موثق لاحقًا).
+#: STOPPED نهائية عمدًا (الأمر 004): الاستئناف دورة جديدة من اللقطة
+#: لا إحياء للدورة الموقوفة — التجميد يبقى صنمًا معماريًا.
 TERMINAL_STATES: frozenset[PlanState] = frozenset(
-    {PlanState.VERIFIED, PlanState.FAILED, PlanState.ESCALATED_TO_HUMAN}
+    {
+        PlanState.VERIFIED,
+        PlanState.FAILED,
+        PlanState.ESCALATED_TO_HUMAN,
+        PlanState.STOPPED,
+    }
 )
+
+#: زوج الإيقاف (الأمر 004) — هدف مسموح من كل حالة غير نهائية.
+_STOP_TARGET: frozenset[PlanState] = frozenset({PlanState.STOPPING})
 
 #: جدول الانتقالات المسموحة: من → مجموعة «إلى» المسموحة.
 TRANSITIONS: dict[PlanState, frozenset[PlanState]] = {
     PlanState.DRAFT: frozenset(
         {PlanState.UNDER_REVIEW, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.UNDER_REVIEW: frozenset(
         {PlanState.APPROVED, PlanState.DRAFT, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.APPROVED: frozenset(
         {PlanState.EXECUTING, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.EXECUTING: frozenset(
         {PlanState.EXECUTED, PlanState.FAILED, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.EXECUTED: frozenset(
         {PlanState.VERIFYING, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.VERIFYING: frozenset(
         {PlanState.EVIDENCED, PlanState.ADJUDICATED, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.EVIDENCED: frozenset(
         {PlanState.ADJUDICATED, PlanState.VERIFIED, PlanState.ESCALATED_TO_HUMAN}
-    ),
+    ) | _STOP_TARGET,
     PlanState.ADJUDICATED: frozenset(
         {
             PlanState.VERIFIED,
             PlanState.EXECUTING,  # المُحكَّم يقرر إعادة التنفيذ
             PlanState.ESCALATED_TO_HUMAN,
         }
-    ),
+    )
+    | _STOP_TARGET,
+    # زوج الإيقاف الآمن (الأمر 004): STOPPING → STOPPED فقط.
+    PlanState.STOPPING: frozenset({PlanState.STOPPED}),
     PlanState.VERIFIED: frozenset(),
     PlanState.FAILED: frozenset(),
     PlanState.ESCALATED_TO_HUMAN: frozenset(),
+    PlanState.STOPPED: frozenset(),
 }
 
 
@@ -138,6 +162,13 @@ def validate_transition(
             from_state,
             to_state,
             "إعادة التنفيذ بعد الحسم قرار المُحكَّم وحده",
+        )
+    # الأمر 004: الإيقاف فعل المالك أو المنسق حصرًا — لا دور يوقف دورة.
+    if to_state is PlanState.STOPPING and actor not in ("user", "system"):
+        raise StateTransitionError(
+            from_state,
+            to_state,
+            "طلب الإيقاف للمالك أو المنسق حصرًا — لا دور يوقف دورة",
         )
 
 

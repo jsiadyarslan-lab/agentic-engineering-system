@@ -155,12 +155,13 @@
 
 ---
 
-## آلة الحالات الكاملة (11 حالة صادقة)
+## آلة الحالات الكاملة (13 حالة صادقة)
 
 ```text
 DRAFT → UNDER_REVIEW → APPROVED → EXECUTING → EXECUTED → VERIFYING
       → EVIDENCED → ADJUDICATED → VERIFIED (من المستخدم وحده)
 
+زوج الإيقاف الآمن (الأمر 004): STOPPING → STOPPED (نهائية — الاستئناف دورة جديدة)
 الحالات السلبية: FAILED، ESCALATED_TO_HUMAN
 حكمان فرعيان (ليسا حالتَي خطة): NOT_EVIDENCED (حكم المراجع)، STAGNANT (تشخيص المحكَّم)
 ```

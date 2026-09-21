@@ -86,6 +86,8 @@ STATE_BADGES: dict[PlanState, str] = {
     PlanState.VERIFIED: "✔ VERIFIED",
     PlanState.FAILED: "✕ FAILED",
     PlanState.ESCALATED_TO_HUMAN: "▲ ESCALATED_TO_HUMAN",
+    PlanState.STOPPING: "◌ STOPPING",   # الأمر 004 — زوج الإيقاف الآمن
+    PlanState.STOPPED: "⏹ STOPPED",
 }
 
 

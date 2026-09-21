@@ -83,6 +83,9 @@ class ToolContext:
     #: مصادر البيانات الرسمية المجلوبة (الأمر 003) — تُغذّي sources.json
     #: مثل نتائج البحث: رابط + عنوان.
     data_urls: list[dict] = field(default_factory=list)
+    #: الأمر 004: فحص طلب الإيقاف بين خطوات المنفذ الحي — إغلاق اختياري
+    #: يرفع CycleStopSignal عند نقطة آمنة (لا يقتل استدعاءً جاريًا).
+    stop_check: Callable[[], bool] | None = None
 
     def emit(self, event: dict) -> None:
         if self.on_event is not None:

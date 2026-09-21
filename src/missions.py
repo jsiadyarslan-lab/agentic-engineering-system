@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 from core.orchestrator import Orchestrator
 from core.state import PlanState
+from core.stop_controller import SNAPSHOT_NAME, StopController
 from roles.live import RoleSystemFault
 from roles.tools import ToolContext
 
@@ -43,7 +44,7 @@ REPORT_PDF_NAME = "mideast_report.pdf"
 class MissionResult:
     """حصيلة المهمة — الحكم الصادق والأدلة الكاملة."""
 
-    verdict: str                     # "PASS" | "HARD STOP"
+    verdict: str                     # "PASS" | "HARD STOP" | "STOPPED"
     reason: str
     goal: str
     cycle_id: str = ""
@@ -78,13 +79,25 @@ def run_mission(
     mission_dir: Path | str | None = None,
     on_event: Callable[[dict], None] | None = None,
     facts_builder: Callable | None = None,
+    cycle_id: str | None = None,
+    stop_controller: StopController | None = None,
+    resume_from: dict | None = None,
 ) -> MissionResult:
     """تشغيل المهمة الحية كاملة — دورة الأدوار الخمسة بأدوار حية.
 
     router: موجّه حي (ModelRouter.build_live()). فشل بناء الأدوار أو
     أي system_fault = HARD STOP صريح بسبب موثق.
+    cycle_id/stop_controller (الأمر 004): معرّف معلن للدورة + متحكم
+    الإيقاف — يربط نقاط تفتيش المنسق والمنفذ الحي بطلب المالك.
+    resume_from (الأمر 004): لقطة إيقاف دورة سابقة — تُحقن في دورة
+    جديدة (الهدف من اللقطة إن لم يُحدد).
     """
     from core.wiring import build_live_orchestrator
+    from core.stop_controller import load_resume_point
+
+    if resume_from is not None:
+        point = load_resume_point(resume_from)
+        goal = point.goal  # هدف اللقطة هو العقد الأصلي
 
     started = time.monotonic()
     target_dir = Path(mission_dir) if mission_dir else DEFAULT_MISSION_DIR
@@ -111,6 +124,11 @@ def run_mission(
 
     ctx.on_event = tool_event_sink
 
+    # الأمر 004: نقاط تفتيش الإيقاف تُربط بسياق أدوات المنفذ الحي —
+    # طلب المالك يُكرَّم بين خطوات المنفذ لا بعد الدور كاملًا.
+    if stop_controller is not None and cycle_id:
+        ctx.stop_check = stop_controller.checker_for(cycle_id)
+
     # المراجع الحي يبني حقائقه الميكانيكية من مجلد المهمة الفعلي
     if facts_builder is None:
         def facts_builder(request) -> dict:
@@ -136,7 +154,10 @@ def run_mission(
 
     try:
         orchestrator = build_live_orchestrator(
-            router, tools_ctx=ctx, verifier_facts_builder=facts_builder
+            router,
+            tools_ctx=ctx,
+            verifier_facts_builder=facts_builder,
+            stop_controller=stop_controller,
         )
     except RoleSystemFault as fault:
         return _hard_stop(goal, str(fault), started, target_dir, [], on_event)
@@ -144,8 +165,10 @@ def run_mission(
     try:
         cycle = orchestrator.run_cycle(
             goal,
+            cycle_id=cycle_id,
             workspace_root=target_dir,  # كل أدلة التنفيذ في مجلد المهمة
             on_event=sink,
+            resume_from=resume_from,
         )
     except RoleSystemFault as fault:
         # system_fault موثق (§2.3) — حدث صريح ثم HARD STOP
@@ -221,20 +244,48 @@ def run_mission(
         "duration_ms": cycle.duration_ms,
     }
 
-    # ---- الحكم الصادق (§8) ----
-    reasons: list[str] = []
-    if cycle.final_state not in (PlanState.EVIDENCED, PlanState.ADJUDICATED):
-        reasons.append(
-            f"الحالة النهائية {cycle.final_state.value} — الدورة لم تكتمل أدلةً"
-        )
-    if not pdf_path.is_file():
-        reasons.append("PDF غير موجود في مجلد المهمة")
-    elif pdf_pages != 1:
-        reasons.append(f"صفحات PDF = {pdf_pages} (المطلوب 1 بالضبط — §4.3)")
-    if not (5 <= len(sources) <= 8):
-        reasons.append(f"عدد المصادر {len(sources)} خارج النطاق 5-8")
-
-    verdict = "PASS" if not reasons else "HARD STOP"
+    # ---- الحكم الصادق (§8 + الأمر 004: STOPPED حكم مستقل لا فشل) ----
+    stopped = cycle.final_state is PlanState.STOPPED
+    snapshot_path = target_dir / SNAPSHOT_NAME
+    stop_block: dict | None = None
+    if stopped:
+        # اللقطة مصدر التدقيق: من أوقف؟ متى؟ لماذا؟ وعند أي خطوة؟
+        try:
+            snap = json.loads(
+                snapshot_path.read_text(encoding="utf-8")
+            )
+            stop_block = {
+                "stopped_by": snap.get("stopped_by", "غير معروف"),
+                "stopped_at": snap.get("stopped_at", ""),
+                "reason": snap.get("stop_reason", ""),
+                "state_at_stop": snap.get("state_at_stop", ""),
+                "phase": snap.get("phase", ""),
+                "snapshot_path": str(snapshot_path),
+                "snapshot_sha256": _sha256_file(snapshot_path),
+            }
+        except (OSError, ValueError):
+            stop_block = {"snapshot_path": str(snapshot_path), "readable": False}
+        reasons = [
+            f"أوقفت المهمة بأمر ({stop_block.get('stopped_by', 'غير معروف')}) "
+            f"عند {stop_block.get('phase', 'خطوة غير معروفة')}"
+        ]
+        verdict = "STOPPED"
+    else:
+        reasons = []
+        if cycle.final_state not in (PlanState.EVIDENCED, PlanState.ADJUDICATED):
+            reasons.append(
+                f"الحالة النهائية {cycle.final_state.value} — الدورة لم تكتمل أدلةً"
+            )
+        if not pdf_path.is_file():
+            reasons.append("PDF غير موجود في مجلد المهمة")
+        elif pdf_pages != 1:
+            reasons.append(f"صفحات PDF = {pdf_pages} (المطلوب 1 بالضبط — §4.3)")
+        if not (5 <= len(sources) <= 8):
+            reasons.append(f"عدد المصادر {len(sources)} خارج النطاق 5-8")
+        verdict = "PASS" if not reasons else "HARD STOP"
+    evidence["resumed_from"] = cycle.resumed_from
+    if stop_block is not None:
+        evidence["stop"] = stop_block
     evidence["verdict"] = verdict
     evidence["verdict_reasons"] = reasons
     evidence_path = target_dir / "evidence.json"
@@ -273,6 +324,7 @@ def run_mission(
             "evidence_sha256": evidence_sha,
             "verdict_reasons": reasons,
             "duration_ms": result.duration_ms,
+            "stop": stop_block,  # الأمر 004: بيانات الإيقاف أو None
         },
     })
     return result

@@ -26,6 +26,7 @@ from roles.implementer import (
     ImplementerResult,
     ImplementerStatus,
 )
+from core.stop_controller import CycleStopSignal
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
 from roles.tools import (
     DATA_TOOLS,
@@ -63,6 +64,12 @@ class LiveImplementer(LiveRoleBase):
     def __init__(self, router, tools_ctx: ToolContext | None = None):
         super().__init__(router)
         self._ctx = tools_ctx
+
+    def _stop_requested(self, ctx: ToolContext, at_step: str) -> None:
+        """نقطة تفتيش إيقاف (الأمر 004) — إشارة تُرفع ولا تُبتلع هنا."""
+        check = getattr(ctx, "stop_check", None)
+        if check is not None and check():
+            raise CycleStopSignal(at_step)
 
     # ------------------------------------------------------------------ #
     # 1) خطة الأدوات — بروتوكول سطر لكل استدعاء (لا JSON: أقواس LLM
@@ -220,12 +227,14 @@ class LiveImplementer(LiveRoleBase):
             # فشل أداة بيضاء (رابط يحجب الروبوتات مثلًا) يُسجّل حدثًا
             # ويُتجاوز — المادة تُجمع مما نجح؛ الفشل الكامل فقط عند
             # انعدام أي مادة (لا ترقيع: الإخفاق موثق في الأدلة).
+            self._stop_requested(ctx, "implementer.plan_tools")
             calls = self._plan_tool_calls(task_payload)
             materials: dict[str, list] = {
                 "search_results": [], "pages": [], "data": [],
             }
             failed_calls: list[str] = []
             for call in calls[:8]:  # سقف صلب فوق تعليمات البرومبت
+                self._stop_requested(ctx, "implementer.tool_loop")
                 name = str(call.get("tool", ""))
                 args = dict(call.get("args", {}) or {})
                 try:
@@ -271,6 +280,7 @@ class LiveImplementer(LiveRoleBase):
                 )
 
             # (2) التقرير من المادة المجلوبة
+            self._stop_requested(ctx, "implementer.write_report")
             report_md = self._write_report(task_payload, materials)
 
             # (3) الكتابة والـPDF — كلها عبر الأدوات (ركيزة + توثيق)
@@ -383,6 +393,8 @@ class LiveImplementer(LiveRoleBase):
                 status=ImplementerStatus.FAILED,
                 stderr_truncated=str(fault)[:_TRUNCATE],
             )
+        except CycleStopSignal:
+            raise  # الأمر 004: إشارة إيقاف — تُكرّم عند المنسق لا تُبتلع
         except Exception as error:  # noqa: BLE001 — فشل صريح موثق
             return ImplementerResult(
                 status=ImplementerStatus.FAILED,

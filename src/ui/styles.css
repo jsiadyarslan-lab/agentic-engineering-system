@@ -614,3 +614,36 @@ html, body {
   margin-top: 4px;
   font-family: monospace;
 }
+
+/* ===== الأمر 004: الإيقاف الفوري الآمن ===== */
+.stop-run-btn {
+  background: #7a2e2e;
+  color: #f3d9d9;
+  border: 1px solid #a34444;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.stop-run-btn:hover:not(:disabled) { background: #9c3838; }
+.stop-run-btn:disabled { opacity: 0.35; cursor: default; }
+
+.stop-card {
+  border-right: 3px solid #d0a048;
+  background: rgba(208, 160, 72, 0.06);
+}
+.stop-card .msg-body { color: #e8d5ac; }
+
+.mission-stopped {
+  border-right: 3px solid #d0a048;
+  background: rgba(208, 160, 72, 0.06);
+}
+.mission-stopped .msg-body { color: #e8d5ac; }
+
+.chip-stop {
+  background: rgba(208, 160, 72, 0.16);
+  color: #d0a048;
+  letter-spacing: 0.4px;
+}

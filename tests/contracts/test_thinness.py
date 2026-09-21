@@ -27,6 +27,21 @@ def test_orchestrator_under_800_lines():
     assert _count_lines("src/core/orchestrator.py") < 800
 
 
+def test_stop_controller_under_380_lines():
+    """الأمر 004: وحدة الإيقاف الكاملة (متحكم + لقطة + تكريم) بسقفها."""
+    assert _count_lines("src/core/stop_controller.py") < 380
+
+
+def test_cycle_events_under_120_lines():
+    """الأمر 004: باثر الأحداث منقول من المنسق — وحدة نحيلة نقية."""
+    assert _count_lines("src/core/events.py") < 120
+
+
+def test_cycle_types_under_140_lines():
+    """الأمر 004: أنواع الدورة (سياق/نتيجة/خطوات) منقولة من المنسق."""
+    assert _count_lines("src/core/cycle_types.py") < 140
+
+
 def test_model_router_under_600_lines():
     assert _count_lines("src/router/model_router.py") < 600
 
