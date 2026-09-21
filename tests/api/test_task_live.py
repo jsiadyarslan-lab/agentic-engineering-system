@@ -55,7 +55,10 @@ def test_task_live_cycle_passes_and_persists_conversation(client, api_env):
         f"/api/conversations/{conversation_id}/messages"
     ).json()["messages"]
     assert [m["role"] for m in history][:2] == ["user", "assistant"]
-    assert "PASS" in history[1]["content"]
+    # (الأمر 008 §27) الخلاصة مولَّدة من حالة الدورة: حكم + ما تم + إجراء
+    assert "اكتملت المهمة" in history[1]["content"]
+    assert "الحالة النهائية: EVIDENCED" in history[1]["content"]
+    assert "استدعاء أداة" in history[1]["content"]
 
 
 def test_task_each_role_receives_its_own_provider_and_model(client, api_env):

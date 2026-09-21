@@ -99,7 +99,9 @@ TABLE_COUNT = 3  # جداول المنتج اليومي (الأمر 006)
 #: تسجيل عائلات الجداول الجديدة في الـmetadata — init_db تنشئها كلها.
 #: استيراد ختامي متعمد (بعد تعريف Base) لتفادي أي دوران استيرادي.
 from providers_registry import models as _provider_models  # noqa: E402,F401
+from readiness import models as _readiness_models  # noqa: E402,F401
 from workflow import models as _workflow_models  # noqa: E402,F401
 
-#: العدد الكلي بعد الأمر 007 — 3 (يومي) + 11 (workflow) + 3 (مزودون).
-TABLE_COUNT_TOTAL = 3 + len(_workflow_models.WORKFLOW_TABLES) + 3
+#: العدد الكلي بعد الأمر 008/009 — 3 (يومي) + 11 (workflow) + 3 (مزودون)
+#: + 2 (جاهزية: tool_invocations + capability_records).
+TABLE_COUNT_TOTAL = 3 + len(_workflow_models.WORKFLOW_TABLES) + 3 + 2

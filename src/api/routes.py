@@ -41,6 +41,7 @@ from core.config import settings
 from core.state import StateTransitionError
 from persistence import conversations as convo
 from persistence.database import build_engine, init_db, make_session_factory
+from core.live_bus import BUS, normalize_event
 from persistence.models import Event
 from providers_registry import registry
 from router import role_config as rc
@@ -91,10 +92,17 @@ _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v2-cycle")
 #: الدورة أبدًا، والعكس صحيح (الأمر الرابع).
 _eoe_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v2-eoe")
 
+#: توليدات المحادثة الجارية (008 §19+§34) — إعادة الاتصال تجدها حية.
+_chat_active: dict[str, dict] = {}
+
 #: فصل التركيب الصريح (§12): production يبني الموجّه الحي من مزودات
 #: المالك حصرًا. الاختبارات — وحدها — تحقن مصنعًا بديلًا عبر هذا
 #: الخطاف (نقلات حتمية للاختبار، لا يمر منه أي مسار إنتاج).
 _test_router_factory = None
+
+#: (الأمر 009) خطاف مسبار preflight — الاختبارات وحدها تحقن مسبارًا
+#: مضبوطًا عبر هذا الخطاف (نقلة حتمية للاختبار لا يمر منها إنتاج).
+_preflight_probe_fn = None
 
 
 def _build_live_router(on_event=None) -> ModelRouter:
@@ -111,24 +119,24 @@ def _build_live_router(on_event=None) -> ModelRouter:
 
 
 def _persist_event(event: dict) -> None:
-    """كتابة الحدث في جدول events — سجل نشاط كل دور (الأمر الثاني).
+    """كتابة الحدث في جدول events — الغلاف الكامل (008 §19 replay).
 
-    فشل التسجيل لا يقتل الدورة (الحدث محفوظ في ذاكرة النتيجة) لكنه
-    يُعلن في السجل — لا ابتلاع صامت.
+    payload يحمل الحدث الموحد كاملًا (status/text/details) حتى يعيد
+    replay بناء التجربة الحية بلا فقد — فشل التسجيل يُعلن لا يُبتلع.
     """
     try:
         with _sessions() as session:
             session.add(
                 Event(
-                    cycle_id=event["cycle_id"],
-                    seq=event["seq"],
-                    role=event["role"],
-                    kind=event["kind"],
+                    cycle_id=str(event.get("cycle_id") or "legacy"),
+                    seq=int(event.get("seq") or 0),
+                    role=str(event.get("role") or "system")[:20],
+                    kind=str(event.get("kind") or "event")[:40],
                     state=event.get("state"),
                     payload=json.dumps(
-                        event.get("details", {}), ensure_ascii=False
+                        event, ensure_ascii=False, default=str
                     ),
-                    duration_ms=event.get("duration_ms", 0),
+                    duration_ms=int(event.get("duration_ms", 0) or 0),
                 )
             )
             session.commit()
@@ -325,15 +333,13 @@ async def _stream_task_run(
 ) -> StreamingResponse:
     """بث مهمة حية (SSE) — الأدوار الخمسة الحية باختيارات مستقلة.
 
-    لا mock في هذا المسار أبدًا: تعذر حل المزودات أو نموذج أي دور
-    = حدث CONFIGURATION_REQUIRED صريح يسمي الدور والسبب (§1)،
-    ثم ينتهي البث — لا سقوط إلى أدوار وهمية ولا نجاح مزيف.
+    (الأمر 008 §18-§19): التنفيذ ينشر عبر الناقل الحي لا عبر طلب SSE —
+    فانقطاع اتصال المالك لا يوقف المهمة، والعودة تُكمل من آخر seq عبر
+    ‎/api/cycle/events/{id}. لا mock في هذا المسار أبدًا: تعذر حل
+    المزودات = CONFIGURATION_REQUIRED صريح يسمي الدور والسبب.
     """
     from core.stop_controller import StopController
     from tasks import run_task
-
-    loop = asyncio.get_running_loop()
-    queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
     selections = _resolve_role_selections(role_overrides)
     role_config = {
@@ -353,13 +359,15 @@ async def _stream_task_run(
         )
     convo.append_message(_sessions, conversation_id, role="user", content=goal)
 
-    # الموجه الحي — فشل الحل = إعلان صريح لا mock (§1)
-    # أحداث الموجّه (حد معدل/تبريد/تبدل/سجل استدعاء) تبث في المحادثة
-    # نفسها — الواجهة ترى المزود والنموذج والزمن لكل استدعاء (§17).
-    router_events: list[dict] = []
+    # الموجه الحي — فشل الحل = إعلان صريح لا mock (§1). أحداث الموجّه
+    # تنشر لحظيًا عبر وكيل ربط متأخر (المهمة لا تبدأ إلا بعد اكتمال
+    # الربط) — لا تجلس في buffer أبدًا (008 §16).
+    _router_publish = {"fn": None}
 
     def router_sink(event: dict) -> None:
-        router_events.append(event)
+        fn = _router_publish["fn"]
+        if fn is not None:
+            fn(event)
 
     router_error: str | None = None
     try:
@@ -367,12 +375,12 @@ async def _stream_task_run(
     except Exception as error:  # noqa: BLE001 — بث الفشل لا موته
         router_error = str(error)
     if router_error is not None:
-        return _sse_response(_emit_single(
-            _config_required_event(
-                f"لا مزود حي قابل للحل — {router_error}",
-                details={"conversation_id": conversation_id},
-            )
-        ))
+        event = _config_required_event(
+            f"لا مزود حي قابل للحل — {router_error}",
+            details={"conversation_id": conversation_id},
+        )
+        _persist_event(normalize_event(event, stream=event["cycle_id"] or "tasks"))
+        return _sse_response(_emit_single(event))
 
     # فحص مقدم: أي دور بلا نموذج متاح يسمى قبل بدء الدورة (§1)
     missing_roles = [
@@ -381,18 +389,98 @@ async def _stream_task_run(
         if not router.has_live_provider(value.transport_key())
     ]
     if missing_roles:
-        return _sse_response(_emit_single(
-            _config_required_event(
-                "أدوار بلا نموذج متاح: " + "، ".join(missing_roles),
-                details={
-                    "missing_roles": missing_roles,
-                    "available_providers": router.live_providers(),
-                    "conversation_id": conversation_id,
-                },
-            )
-        ))
+        event = _config_required_event(
+            "أدوار بلا نموذج متاح: " + "، ".join(missing_roles),
+            details={
+                "missing_roles": missing_roles,
+                "available_providers": router.live_providers(),
+                "conversation_id": conversation_id,
+            },
+        )
+        _persist_event(normalize_event(event, stream="tasks"))
+        return _sse_response(_emit_single(event))
+
+    # ---- فحص مسبق (009 §16): قبل البدء لا بعده — القدرة المطلوبة
+    # غير الجاهزة توقف المهمة بسبب معروف وخطة استرداد، لا بعد دقائق.
+    # أحداث الفحص تجري على تيار المهمة نفسه فيراها المالك حية.
+    from api import routes as routes_module  # noqa: PLC0415
+    from readiness import preflight as preflight_mod
 
     cycle_id = f"task-{uuid.uuid4().hex[:12]}"
+    preflight_seq = {"n": 0}
+
+    def preflight_emit(kind: str, text: str, details: dict) -> None:
+        preflight_seq["n"] += 1
+        envelope = normalize_event({
+            "seq": preflight_seq["n"], "cycle_id": cycle_id,
+            "role": "coordinator", "kind": kind, "state": None,
+            "text": text, "duration_ms": 0, "details": details,
+        }, stream=cycle_id)
+        _persist_event(envelope)
+        BUS.publish(envelope)
+
+    def publish_router_event(event: dict) -> None:
+        """أحداث الموجّه (انتظار/تبريد/استدعاء) تبث لحظيًا — لا تجلس
+        في buffer دقائق (008 §16): المالك يرى التبريد وهو يحدث."""
+        preflight_seq["n"] += 1
+        envelope = normalize_event({
+            **event,
+            "seq": preflight_seq["n"], "cycle_id": cycle_id,
+            "role": "router",
+        }, stream=cycle_id)
+        _persist_event(envelope)
+        BUS.publish(envelope)
+
+    _router_publish["fn"] = publish_router_event
+
+    # (أصدق من مسبار مستقل): جاهزية LLM من الموجّه نفسه الذي سيشغّل
+    # المهمة — الأدوار كلها محلولة عليه (missing_roles فُحصت قبل قليل).
+    preflight_result = preflight_mod.task_preflight(
+        _sessions, goal,
+        llm_ready=not missing_roles,
+        run_probe_fn=getattr(routes_module, "_preflight_probe_fn", None),
+    )
+    for preflight_event in preflight_mod.preflight_events(preflight_result):
+        preflight_emit(
+            preflight_event["kind"], preflight_event["text"],
+            preflight_event["details"],
+        )
+    if preflight_result["verdict"] != "PASS":
+        # لا تبدأ المهمة أبدًا — الحاجز معروف والإجراء معلن (§16)
+        blocked = preflight_result["blocked"]
+        preflight_emit(
+            "CONFIGURATION_REQUIRED",
+            "فحص البيئة المسبق منع البدء — " + preflight_result["summary"],
+            {"preflight": preflight_result,
+             "conversation_id": conversation_id},
+        )
+        convo.append_message(
+            _sessions, conversation_id, role="assistant",
+            content=(
+                "⛔ لم تبدأ المهمة — فحص البيئة المسبق وجد حواجز:\n\n"
+                + "\n".join(
+                    "• " + (b.get("name") or b["capability_id"]) + ": "
+                    + b["status"]
+                    + (" — " + b["reason"] if b.get("reason") else "")
+                    + ("\n  الإجراء: " + b["recovery"]
+                       if b.get("recovery") else "")
+                    + ("\n  " + b["owner_action"]
+                       if b.get("owner_action") else "")
+                    for b in blocked
+                )
+            ),
+            state_badge="PREFLIGHT_BLOCKED",
+        )
+        from api.streaming import live_stream
+
+        async def blocked_stream():
+            async for chunk in live_stream(
+                _sessions, cycle_id, after=0, is_running=lambda: False,
+            ):
+                yield chunk
+
+        return _sse_response(blocked_stream())
+
     stop = StopController()
     done_event = threading.Event()
 
@@ -408,34 +496,35 @@ async def _stream_task_run(
         }
         _task_state["last_state"] = None
 
-    task_seq = {"n": 0}
+    # تيار واحد رتيب: عداد واحد مشترك للفحص المسبق وأحداث الموجّه
+    # وأحداث الأدوار — لا seq مكرر أبدًا (§19 replay يفترض الرتابة).
+    task_seq = preflight_seq
+
+    # حدث الربط: الواجهة تعرف المحادثة صاحبة المهمة (§26 تجربة واحدة)
+    normalize_and_announce = normalize_event({
+        "seq": 0, "cycle_id": cycle_id, "role": "coordinator",
+        "kind": "task.conversation", "state": None, "text": "",
+        "duration_ms": 0,
+        "details": {"conversation_id": conversation_id},
+    }, stream=cycle_id)
+    task_seq["n"] += 1
+    normalize_and_announce["seq"] = task_seq["n"]
+    _persist_event(normalize_and_announce)
+    BUS.publish(normalize_and_announce)
 
     def sink(event: dict) -> None:
-        """تغليف كل حدث بذيل موحد — أحداث الأدوات بلا seq/cycle_id
-        كانت تضيع من جدول events (الأمر 006: سجل كامل لا فجوات)."""
+        """النشر الموحد: تسلسل ← دائمة ← ناقل حي (§42) — انقطاع SSE
+        لا يوقف المهمة؛ الأحداث المبكرة (قبل اتصال أي مشترك) تبقى
+        في القاعدة ويعيدها replay."""
         task_seq["n"] += 1
-        envelope = {
-            "seq": event.get("seq") or task_seq["n"],
+        raw = {k: v for k, v in event.items() if k != "seq"}
+        envelope = normalize_event({
+            **raw,
+            "seq": task_seq["n"],
             "cycle_id": event.get("cycle_id") or cycle_id,
-            "state": None,
-            "duration_ms": 0,
-            **event,
-        }
-        # أحداث الموجّه المجمعة تُضخ قبل حدث الدور — بترتيب حدوثها
-        while router_events:
-            router_event = router_events.pop(0)
-            router_envelope = {
-                "seq": task_seq["n"],
-                "cycle_id": cycle_id,
-                "role": "router",
-                "state": None,
-                "duration_ms": 0,
-                **router_event,
-            }
-            loop.call_soon_threadsafe(queue.put_nowait, router_envelope)
-            _persist_event(router_envelope)
-        loop.call_soon_threadsafe(queue.put_nowait, envelope)
+        }, stream=cycle_id)
         _persist_event(envelope)
+        BUS.publish(envelope)
         if envelope.get("kind") == "state_change":
             _task_state["last_state"] = envelope.get("details", {}).get("to")
 
@@ -450,6 +539,7 @@ async def _stream_task_run(
                 cycle_id=cycle_id,
                 stop_controller=stop,
                 resume_from=resume_from,
+                sessions=_sessions,
             )
             with _task_state["lock"]:
                 _task_state["orchestrator"] = result.orchestrator
@@ -459,57 +549,52 @@ async def _stream_task_run(
                     "reason": result.reason,
                     "evidence_path": result.evidence_path,
                 }
-            # رسالة خلاصة في المحادثة — الحكم الصادق يحفظ مع التاريخ
+            # رسالة خلاصة مولَّدة من حالة الدورة الفعلية (008 §27) —
+            # لا قالب ثابت: الحكم والأدوات والفشل المنظم كلها من النتيجة.
             convo.append_message(
                 _sessions, conversation_id,
                 role="assistant",
-                content=(
-                    f"[{result.verdict}] {result.reason} — "
-                    f"الحالة النهائية: {result.final_state or '—'} · "
-                    f"الأدلة: {result.evidence_path or '—'}"
-                ),
+                content=result.human_summary(),
                 state_badge=result.verdict,
             )
         except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
-            loop.call_soon_threadsafe(
-                queue.put_nowait,
-                {
-                    "seq": 0,
-                    "cycle_id": cycle_id,
-                    "role": "coordinator",
-                    "kind": "cycle_error",
-                    "state": None,
-                    "text": f"المهمة فشلت قبل الدورة: {error}",
-                    "duration_ms": 0,
-                    "details": {"error": str(error)},
-                },
-            )
+            envelope = normalize_event({
+                "seq": 0, "cycle_id": cycle_id, "role": "coordinator",
+                "kind": "cycle_error", "state": None,
+                "text": f"المهمة فشلت قبل الدورة: {error}",
+                "duration_ms": 0, "details": {"error": str(error)},
+            }, stream=cycle_id)
+            _persist_event(envelope)
+            BUS.publish(envelope)
         finally:
             done_event.set()
-            loop.call_soon_threadsafe(queue.put_nowait, None)  # خاتمة البث
+            BUS.publish(normalize_event({
+                "kind": "task.thread_done", "role": "coordinator",
+                "seq": 0, "cycle_id": cycle_id, "text": "",
+                "details": {}, "duration_ms": 0,
+            }, stream=cycle_id))
 
-    running = loop.run_in_executor(_executor, run_task_in_thread)
+    def is_running() -> bool:
+        with _task_state["lock"]:
+            active = _task_state.get("active")
+        return bool(
+            active is not None and active["cycle_id"] == cycle_id
+            and not active["done"].is_set()
+        )
+
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(_executor, run_task_in_thread)
+
+    from api.streaming import live_stream
 
     async def generate():
-        yield "data: " + json.dumps(
-            {
-                "seq": 0,
-                "cycle_id": cycle_id,
-                "role": "coordinator",
-                "kind": "task.conversation",
-                "state": None,
-                "text": "",
-                "duration_ms": 0,
-                "details": {"conversation_id": conversation_id},
-            },
-            ensure_ascii=False,
-        ) + "\n\n"
-        while True:
-            event = await queue.get()
-            if event is None:  # خاتمة — الخيط انتهى
-                break
-            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
-        await running
+        async for chunk in live_stream(
+            _sessions, cycle_id,
+            after=0,
+            is_running=is_running,
+            done_kinds=("task_done", "cycle_error"),
+        ):
+            yield chunk
 
     return _sse_response(generate())
 
@@ -531,19 +616,63 @@ async def cycle_stream(body: CycleStartIn) -> StreamingResponse:
     )
 
 
+@app.get("/api/cycle/events/{cycle_id}")
+async def cycle_events(cycle_id: str, after: int = 0) -> StreamingResponse:
+    """إعادة الاتصال بمهمة (008 §19+§33-§34): أرشيف بعد-seq ثم حي.
+
+    المتصفح المغلق ثم المفتوح يرى المهمة كما هي — لا محادثة ناقصة.
+    """
+    if not _CYCLE_ID_RE.match(cycle_id):
+        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
+
+    def is_running() -> bool:
+        with _task_state["lock"]:
+            active = _task_state.get("active")
+        return bool(
+            active is not None and active["cycle_id"] == cycle_id
+            and not active["done"].is_set()
+        )
+
+    from api.streaming import live_stream
+
+    async def generate():
+        async for chunk in live_stream(
+            _sessions, cycle_id, after=after, is_running=is_running,
+            done_kinds=("task_done", "cycle_error", "CONFIGURATION_REQUIRED"),
+        ):
+            yield chunk
+
+    return _sse_response(generate())
+
+
+@app.get("/api/cycle/active")
+def cycle_active() -> dict:
+    """المهمة الحية الجارية — لتستأنفها الواجهة بعد refresh (§34)."""
+    with _task_state["lock"]:
+        active = _task_state.get("active")
+    if active is None or active["done"].is_set():
+        return {"running": False, "cycle_id": None, "conversation_id": None}
+    return {
+        "running": True,
+        "cycle_id": active["cycle_id"],
+        "conversation_id": active["conversation_id"],
+        "state": _task_state.get("last_state"),
+    }
+
+
 # ------------------------------------------------------------------ #
-# المحادثة الحية — نموذج واحد بلا أدوار (§2 محادثة)
+# المحادثة الحية — نموذج واحد بلا أدوار (§2 محادثة) — بث حقيقي (008 §3)
 # ------------------------------------------------------------------ #
 
 #: عدد رسائل التاريخ التي تبنى منها رسائل النموذج (نافذة سياق).
 _CHAT_HISTORY_LIMIT = 12
 
-#: حجم قطعة البث — كلمات لكل chat.delta (بث تطبيقي §2).
+#: حجم قطعة البث الافتراضي عند تراجع معلَن للمسار الكامل.
 _CHAT_DELTA_WORDS = 8
 
 
 def _chunk_text(text: str, words_per_chunk: int = _CHAT_DELTA_WORDS):
-    """تقسيم النص الجاهز إلى قطع بث تطبيقية — النقل غير متدفق."""
+    """تقسيم النص الجاهز إلى قطع — مسار التراجع المعلن فقط (§3)."""
     words = text.split(" ")
     for start in range(0, len(words), words_per_chunk):
         yield " ".join(words[start:start + words_per_chunk])
@@ -551,14 +680,15 @@ def _chunk_text(text: str, words_per_chunk: int = _CHAT_DELTA_WORDS):
 
 @app.post("/api/chat/stream")
 async def chat_stream(body: ChatStartIn) -> StreamingResponse:
-    """محادثة بنموذج واحد — SSE: chat.start ثم chat.delta* ثم chat.done.
+    """محادثة بنموذج واحد — بث متدفق حقيقي (008 §2-§6).
 
-    بث تطبيقي صادق: النقل (urllib) غير متدفق، فالنص الجاهز يقسم
-    إلى قطع وتبث لحظة اكتمال الاستدعاء (مسموح صراحة §2). لا mock:
-    تعذر المزود = chat.error بـ CONFIGURATION_REQUIRED ثم ختام.
+    message_started ← chat.status(connecting→generating) ←
+    message_delta* (قطع فعلية من المزود) ← message_completed.
+    إن لم يدعم المزود البث: تراجع معلَن إلى المسار الكامل بحدث
+    stream_fallback — لا انتظار صامت يبدو كتفكير (§31 لا كذب).
+    انقطاع الاتصال لا يقتل التوليد: الأحداث في القاعدة والناقل.
     """
-    loop = asyncio.get_running_loop()
-    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+    from api.streaming import next_seq_base
 
     # المحادثة: إنشاء إن لم تعط — نمط محادثة (§14)
     if body.conversation_id is None:
@@ -581,21 +711,23 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
     saved = _resolve_role_selections(None)["chat"]
     provider = body.provider or saved.transport_key()
     model = body.model or saved.model
-
-    chat_seq = {"n": 0}
+    message_id = f"msg-{uuid.uuid4().hex[:10]}"
+    stream_key = f"chat-{conversation_id}"
+    chat_seq = {"n": next_seq_base(_sessions, stream_key)}
+    done_event = threading.Event()
+    _chat_active[message_id] = {"done": done_event, "stream": stream_key}
 
     def put(event: dict) -> None:
-        """تغليف حدث المحادثة بذيل الأحداث الموحد — يسجل في جدول events."""
+        """النشر الموحد — تسلسل رتيب عبر الطلبات + دائمة + ناقل حي."""
         chat_seq["n"] += 1
-        envelope = {
-            "seq": chat_seq["n"],
-            "cycle_id": f"chat-{conversation_id}",
-            "state": None,
-            "role": "chat",
+        envelope = normalize_event({
             **event,
-        }
-        loop.call_soon_threadsafe(queue.put_nowait, envelope)
+            "seq": chat_seq["n"],
+            "cycle_id": stream_key,
+            "role": event.get("role", "chat"),
+        }, stream=stream_key)
         _persist_event(envelope)
+        BUS.publish(envelope)
 
     def run_chat_in_thread() -> None:
         try:
@@ -613,8 +745,8 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     ),
                     "details": {
                         "conversation_id": conversation_id,
-                        "provider": provider,
-                        "model": model,
+                        "provider": provider, "model": model,
+                        "message_id": message_id,
                     },
                 })
                 return
@@ -625,28 +757,75 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 )
                 if m["role"] in ("user", "assistant")
             ]
-            outcome = router.chat_live(
-                history, provider_id=provider, model=model
-            )
-            for piece in _chunk_text(outcome["text"]):
+            put({
+                "kind": "message_started",
+                "message_id": message_id,
+                "status": "connecting",
+                "text": "",
+                "details": {
+                    "conversation_id": conversation_id,
+                    "provider": provider, "model": model,
+                },
+            })
+            put({
+                "kind": "chat.status",
+                "message_id": message_id,
+                "status": "generating",
+                "text": "يكتب الآن…",
+                "details": {"provider": provider, "model": model},
+            })
+
+            def on_delta(delta: str) -> None:
                 put({
-                    "kind": "chat.delta",
-                    "text": piece,
+                    "kind": "message_delta",
+                    "message_id": message_id,
+                    "delta": delta,
+                    "text": delta,
                     "details": {"conversation_id": conversation_id},
                 })
+
+            streamed = False
+            try:
+                outcome = router.chat_live_stream(
+                    history, provider_id=provider, model=model,
+                    on_delta=on_delta,
+                )
+                streamed = bool(outcome.get("streamed"))
+            except (ProviderCallError, AttributeError) as stream_error:
+                # تراجع معلَن (لا كذب §31): المزود لم يدعم البث أو فشل
+                # نقله المتدفق — مسار كامل واحد ثم قطع معلنة.
+                put({
+                    "kind": "chat.status",
+                    "message_id": message_id,
+                    "status": "stream_fallback",
+                    "text": (
+                        "البث المتدفق غير متاح لدى هذا المزود — نقل كامل معلن"
+                    ),
+                    "details": {"reason": str(stream_error)[:200]},
+                })
+                outcome = router.chat_live(
+                    history, provider_id=provider, model=model
+                )
+                for piece in _chunk_text(outcome["text"]):
+                    on_delta(piece)
             convo.append_message(
                 _sessions, conversation_id,
                 role="assistant", content=outcome["text"],
             )
             put({
-                "kind": "chat.done",
+                "kind": "message_completed",
+                "message_id": message_id,
+                "status": "completed",
                 "text": "",
                 "details": {
                     "conversation_id": conversation_id,
+                    "message_id": message_id,
                     "provider": outcome["provider"],
                     "model": outcome["model"],
-                    "tokens": outcome["tokens"],
-                    "duration_ms": outcome["duration_ms"],
+                    "tokens": outcome.get("tokens"),
+                    "duration_ms": outcome.get("duration_ms", 0),
+                    "streamed": streamed,
+                    "chars": len(outcome["text"]),
                 },
             })
         except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
@@ -656,34 +835,68 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 "text": f"تعذر الاستدعاء الحي: {error}",
                 "details": {
                     "conversation_id": conversation_id,
-                    "provider": provider,
-                    "model": model,
+                    "message_id": message_id,
+                    "provider": provider, "model": model,
                     "error": str(error),
                 },
             })
         finally:
-            loop.call_soon_threadsafe(queue.put_nowait, None)
+            done_event.set()
+            _chat_active.pop(message_id, None)
 
+    def is_running() -> bool:
+        return not done_event.is_set()
+
+    loop = asyncio.get_running_loop()
     loop.run_in_executor(_executor, run_chat_in_thread)
 
+    from api.streaming import live_stream
+
     async def generate():
-        yield "data: " + json.dumps(
-            {
-                "kind": "chat.start",
-                "text": "",
-                "details": {
-                    "conversation_id": conversation_id,
-                    "provider": provider,
-                    "model": model,
-                },
-            },
-            ensure_ascii=False,
-        ) + "\n\n"
-        while True:
-            event = await queue.get()
-            if event is None:
-                break
-            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+        async for chunk in live_stream(
+            _sessions, stream_key,
+            after=chat_seq["n"],
+            is_running=is_running,
+            done_kinds=("message_completed", "chat.error"),
+        ):
+            yield chunk
+
+    return _sse_response(generate())
+
+
+@app.get("/api/chat/active")
+def chat_active(conversation_id: int) -> dict:
+    """توليد محادثة جارية (§34) — تعيد الواجهة تعليق البث بعد refresh."""
+    stream_key = f"chat-{conversation_id}"
+    for message_id, run in list(_chat_active.items()):
+        if run["stream"] == stream_key and not run["done"].is_set():
+            return {"running": True, "message_id": message_id}
+    return {"running": False, "message_id": None}
+
+
+@app.get("/api/chat/events/{conversation_id}")
+async def chat_events(conversation_id: int, after: int = 0) -> StreamingResponse:
+    """إعادة الاتصال بتوليد محادثة جارية (§19+§34) — أرشيف ثم حي."""
+    if convo.get_conversation(_sessions, conversation_id) is None:
+        raise HTTPException(
+            status_code=404, detail=f"محادثة غير معروفة: {conversation_id}"
+        )
+    stream_key = f"chat-{conversation_id}"
+
+    def is_running() -> bool:
+        return any(
+            run["stream"] == stream_key and not run["done"].is_set()
+            for run in _chat_active.values()
+        )
+
+    from api.streaming import live_stream
+
+    async def generate():
+        async for chunk in live_stream(
+            _sessions, stream_key, after=after, is_running=is_running,
+            done_kinds=("message_completed", "chat.error"),
+        ):
+            yield chunk
 
     return _sse_response(generate())
 
@@ -1493,6 +1706,7 @@ def mission_verify(body: MissionVerifyIn) -> dict:
 # الأمر السادس المنقح — المزودات (§1) + مهمة البناء textstats (§4+§5)
 # ------------------------------------------------------------------ #
 
+from api.environment import router as environment_router  # noqa: E402
 from api.models_config import router as models_config_router  # noqa: E402
 from api.projects import router as projects_router  # noqa: E402
 from api.projects import run_startup_recovery  # noqa: E402
@@ -1502,6 +1716,7 @@ app.include_router(providers_router)
 app.include_router(configurations_router)
 app.include_router(models_config_router)
 app.include_router(projects_router)
+app.include_router(environment_router)
 
 #: تفعيل مرشح تقنيع المفاتيح على السجلات ([REDACTED] — §1.2).
 from secrets_store import install_log_redaction  # noqa: E402

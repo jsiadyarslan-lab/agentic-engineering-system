@@ -1,18 +1,18 @@
 """مشغّل المهمة العامة (الأمر 006 §2) — الدورة الحية لأي هدف مستخدم.
 
-هذا هو المسار الرئيسي للمهمة في الواجهة: هدف المستخدم يمر بالأدوار
-الخمسة الحية باختيارات النموذج المستقلة لكل دور (§3+§4)، والمنفذ
-ينفذ أدوات حقيقية (بحث/جلب معلَن + كتابة/PDF داخل الركيزة)، والمراجع
-يحكم على أدلة ميكانيكية. لا mock في أي دور، ولا نجاح وهمي أبدًا.
+المسار الرئيسي للمهمة في الواجهة: هدف المستخدم يمر بالأدوار الخمسة
+الحية، والمنفذ ينفذ أدوات حقيقية، والمراجع يحكم على أدلة ميكانيكية.
+لا mock في أي دور، ولا نجاح وهمي أبدًا.
 
-الحكم الصادق (أبسط من المهمة المتخصصة missions.py — هنا عقد عام):
+الأمر 008 (+ الإضافة): كل استدعاء أداة يخلف ToolInvocation دائمًا
+(نجح أم فشل)؛ الفشل يصل الحكمَ كتلةً منظمة (class/stage/reason)؛
+الخلاصة النهائية نص عربي مولَّد من حالة الدورة الفعلية لا قالبًا
+ثابتًا (§27)؛ evidence_quality صادقة (artifacts=[] = NO_EVIDENCE §19).
+
+الحكم الصادق:
 - PASS إذا وفقط إذا كانت الحالة النهائية EVIDENCED أو ADJUDICATED.
-- STOPPED إذا أوقفها المالك (لقطة قابلة للاستئناف مكتوبة).
-- غير ذلك HARD STOP بسبب موثق (حالة/فشل مهام).
-
-الأدلة evidence.json في مساحة عمل المهمة: كل ملف بـ sha256، وكل
-استدعاء أداة موثق، وكل دور بنموذجه الذي استخدمه فعلًا (provider و
-model من اختيار المستخدم — إثبات توجيه الأدوار §17).
+- STOPPED إذا أوقفت (لقطة قابلة للاستئناف مكتوبة).
+- غير ذلك HARD STOP بسبب موثق.
 """
 
 from __future__ import annotations
@@ -31,6 +31,12 @@ from roles.tools import ToolContext
 
 TASKS_DIR = Path("runtime") / "tasks"
 
+_VERDICT_TITLES = {
+    "PASS": "اكتملت المهمة",
+    "STOPPED": "أُوقفت المهمة",
+    "HARD STOP": "توقفت المهمة عند حدّ صلب",
+}
+
 
 @dataclass
 class TaskResult:
@@ -44,12 +50,61 @@ class TaskResult:
     workspace: str = ""
     files: list[str] = field(default_factory=list)
     tool_calls: list[dict] = field(default_factory=list)
+    tool_invocations: list[dict] = field(default_factory=list)
+    failure: dict | None = None       # كتلة الفشل المنظمة (008 §18)
     evidence_path: str = ""
     evidence_sha256: str = ""
     duration_ms: int = 0
     state_history: list[str] = field(default_factory=list)
     #: المنسق الحي — يبقى للموافقة اللاحقة (user_verifies).
     orchestrator: Any = None
+
+    def human_summary(self) -> str:
+        """خلاصة عربية مولَّدة من حالة الدورة الفعلية (008 §27)."""
+        lines = [_VERDICT_TITLES.get(self.verdict, self.verdict) + "."]
+        lines.append("")
+        lines.append(f"الحالة النهائية: {self.final_state or '—'}")
+        if self.failure:
+            lines.append(
+                f"السبب المباشر: {self.failure.get('tool', '')} — "
+                f"{self.failure.get('reason', '')}"
+                + (
+                    f" (التصنيف: {self.failure.get('class', '')} / "
+                    f"المرحلة: {self.failure.get('stage', '')})"
+                    if self.failure.get("class") else ""
+                )
+            )
+            attempts = self.failure.get("attempt")
+            if attempts:
+                lines.append(f"المحاولات: {attempts}")
+        done = len(self.tool_invocations)
+        succeeded = sum(
+            1 for r in self.tool_invocations
+            if r.get("status") == "SUCCEEDED"
+        )
+        lines.append(
+            f"ما تم: {done} استدعاء أداة (نجح {succeeded}) · "
+            f"{len(self.files)} ملفًا في مساحة العمل"
+        )
+        if self.verdict != "PASS":
+            lines.append(
+                "ما لم يتم: "
+                + (
+                    "المخرجات النهائية غير مكتملة الأدلة"
+                    if not self.files else "التوثيق الكامل للنتيجة"
+                )
+            )
+        lines.append(
+            "الإجراء التالي: "
+            + (
+                "يمكن الموافقة على النتيجة"
+                if self.verdict == "PASS"
+                else "إعادة المحاولة أو مراجعة إعدادات الأدوات/المزودات"
+            )
+        )
+        if self.evidence_path:
+            lines.append(f"الأدلة: {self.evidence_path}")
+        return "\n".join(lines)
 
 
 def _emit(on_event: Callable[[dict], None] | None, event: dict) -> None:
@@ -75,6 +130,42 @@ def _role_models_block(role_config: dict | None) -> dict:
     return block
 
 
+def _persist_tool_invocations(sessions, cycle_id: str,
+                              records: list) -> None:
+    """سجل الاستدعاءات الدائم (إضافة 008 §2) — فشل الكتابة لا يقتل."""
+    if sessions is None or not records:
+        return
+    try:
+        from readiness.models import ToolInvocation  # noqa: PLC0415
+
+        with sessions() as session:
+            for record in records:
+                data = record.to_dict() if hasattr(record, "to_dict") else dict(record)
+                session.add(ToolInvocation(
+                    cycle_id=cycle_id,
+                    tool_call_id=str(data.get("tool_call_id", ""))[:40],
+                    tool=str(data.get("tool", ""))[:40],
+                    status=str(data.get("status", "")),
+                    transport_status=str(data.get("transport_status", "")),
+                    result_status=str(data.get("result_status", "")),
+                    failure_class=str(data.get("failure_class", ""))[:32],
+                    failure_stage=str(data.get("failure_stage", ""))[:24],
+                    failure_reason=str(data.get("failure_reason", ""))[:40],
+                    query=str(data.get("query", "")),
+                    result_count=int(data.get("result_count", 0) or 0),
+                    analyzable=1 if data.get("analyzable") else 0,
+                    error=str(data.get("error", "")),
+                    retryable=1 if data.get("retryable") else 0,
+                    duration_ms=int(data.get("duration_ms", 0) or 0),
+                    execution_site=str(data.get("execution_site", ""))[:32],
+                    output_sha256=str(data.get("output_sha256", ""))[:64],
+                    record_json=json.dumps(data, ensure_ascii=False, default=str),
+                ))
+            session.commit()
+    except Exception:  # noqa: BLE001 — السجل لا يكسر المهمة
+        pass
+
+
 def run_task(
     goal: str,
     *,
@@ -85,11 +176,13 @@ def run_task(
     cycle_id: str | None = None,
     stop_controller: StopController | None = None,
     resume_from: dict | None = None,
+    sessions: Any = None,
 ) -> TaskResult:
     """تشغيل المهمة الحية العامة — دورة الأدوار الخمسة بأدوار حية.
 
     router: موجّه حي (ModelRouter.build_live() — production wiring).
     role_config: اختيار مستقل لكل دور (router.role_config.RoleSelection).
+    sessions: جلسة القاعدة لسجل tool_invocations الدائم (اختياري).
     فشل بناء الأدوار أو أي system_fault = HARD STOP صريح بسبب موثق.
     """
     from core.stop_controller import load_resume_point
@@ -134,7 +227,9 @@ def run_task(
             role_config=role_config,
         )
     except RoleSystemFault as fault:
-        return _hard_stop(goal, str(fault), started, target, on_event)
+        _persist_tool_invocations(sessions, cycle_id or "", ctx.tool_records)
+        return _hard_stop(goal, str(fault), started, target, on_event,
+                          tool_records=ctx.tool_records)
 
     try:
         cycle = orchestrator.run_cycle(
@@ -150,23 +245,32 @@ def run_task(
             "role": getattr(fault, "role", "unknown"),
             "text": str(fault),
         })
-        return _hard_stop(goal, str(fault), started, target, on_event)
+        _persist_tool_invocations(sessions, cycle_id or "", ctx.tool_records)
+        return _hard_stop(goal, str(fault), started, target, on_event,
+                          tool_records=ctx.tool_records)
     except Exception as error:  # noqa: BLE001 — فشل صريح موثق
         _emit(on_event, {
             "kind": "role.system_fault",
             "role": "coordinator",
             "text": f"الدورة الحية فشلت: {error}",
         })
+        _persist_tool_invocations(sessions, cycle_id or "", ctx.tool_records)
         return _hard_stop(
-            goal, f"الدورة الحية فشلت: {error}", started, target, on_event
+            goal, f"الدورة الحية فشلت: {error}", started, target, on_event,
+            tool_records=ctx.tool_records,
         )
 
-    # ---- جمع الأدلة الميكانيكية من مساحة العمل ----
+    # ---- سجل الاستدعاءات الدائم + الأدلة الميكانيكية ----
+    _persist_tool_invocations(sessions, cycle.cycle_id, ctx.tool_records)
     files = sorted(
         p.name for p in target.iterdir()
         if p.is_file() and p.name != "evidence.json"
     )
     tool_calls = [e for e in task_events if e.get("kind") == "tool.call"]
+    tool_records = [
+        r.to_dict() if hasattr(r, "to_dict") else dict(r)
+        for r in ctx.tool_records
+    ]
 
     stopped = cycle.final_state is PlanState.STOPPED
     stop_block: dict | None = None
@@ -186,6 +290,36 @@ def run_task(
         except (OSError, ValueError):
             stop_block = {"snapshot_path": str(snapshot_path), "readable": False}
 
+    # كتلة الفشل المنظمة من نتائج المهام الفاشلة (008 §18-§19)
+    failure_block: dict | None = None
+    failed_steps = [
+        step for step in getattr(cycle, "steps", [])
+        if getattr(step, "status", "") == "failed"
+    ]
+    if failed_steps:
+        first = failed_steps[0]
+        failure_block = (
+            getattr(first, "failure", None)
+            or {
+                "class": "INSUFFICIENT_EVIDENCE",
+                "stage": "IMPLEMENTATION",
+                "reason": "EXECUTION_FAILED",
+                "tool": "",
+                "retryable": True,
+            }
+        )
+        failure_block = {
+            **failure_block,
+            "task_id": getattr(first, "task_id", ""),
+            "attempts": getattr(first, "attempts", 0),
+            "queries": sorted({
+                str(r.get("query", "")) for r in tool_records
+                if r.get("query") and r.get("tool") == failure_block.get("tool")
+            })[:6],
+            "artifacts": 0 if not files else len(files),
+            "evidence": "NO_EVIDENCE" if not files else "PARTIAL",
+        }
+
     if stopped:
         verdict = "STOPPED"
         reasons = [
@@ -198,13 +332,12 @@ def run_task(
             reasons.append(
                 f"الحالة النهائية {cycle.final_state.value} — الدورة لم تكتمل أدلةً"
             )
-        failed_tasks = [
-            getattr(step, "task_id", "?")
-            for step in getattr(cycle, "steps", [])
-            if getattr(step, "status", "") == "failed"
-        ]
-        if failed_tasks:
-            reasons.append("مهام فاشلة: " + "، ".join(failed_tasks))
+        if failed_steps:
+            reasons.append(
+                "مهام فاشلة: " + "، ".join(
+                    getattr(step, "task_id", "?") for step in failed_steps
+                )
+            )
         verdict = "PASS" if not reasons else "HARD STOP"
 
     evidence: dict[str, Any] = {
@@ -218,6 +351,11 @@ def run_task(
             if p.is_file() and p.name != "evidence.json"
         },
         "tool_calls": tool_calls,
+        "tool_invocations": tool_records,
+        "failure": failure_block,
+        "evidence_quality": (
+            "NO_EVIDENCE" if not files and not tool_records else "PRESENT"
+        ),
         "state_history": cycle.state_history,
         "arbiter_decisions": cycle.arbiter_decisions,
         "resumed_from": cycle.resumed_from,
@@ -229,7 +367,8 @@ def run_task(
         evidence["stop"] = stop_block
     evidence_path = target / "evidence.json"
     evidence_path.write_text(
-        json.dumps(evidence, ensure_ascii=False, indent=1), encoding="utf-8"
+        json.dumps(evidence, ensure_ascii=False, indent=1, default=str),
+        encoding="utf-8",
     )
     evidence_sha = _sha256_file(evidence_path)
 
@@ -242,6 +381,8 @@ def run_task(
         workspace=str(target),
         files=files,
         tool_calls=tool_calls,
+        tool_invocations=tool_records,
+        failure=failure_block,
         evidence_path=str(evidence_path),
         evidence_sha256=evidence_sha,
         duration_ms=int((time.monotonic() - started) * 1000),
@@ -259,6 +400,16 @@ def run_task(
             "workspace": result.workspace,
             "files_count": len(result.files),
             "tool_calls_count": len(result.tool_calls),
+            "tool_invocations_count": len(tool_records),
+            "failed_tool_calls": sum(
+                1 for r in tool_records if r.get("status") == "FAILED"
+            ),
+            "recovery_attempts": sum(
+                1 for e in task_events if e.get("kind") == "tool.recovery"
+            ),
+            "failure": failure_block,
+            "evidence_quality": evidence["evidence_quality"],
+            "human_summary": result.human_summary(),
             "evidence_path": result.evidence_path,
             "evidence_sha256": evidence_sha,
             "verdict_reasons": reasons,
@@ -276,13 +427,37 @@ def _hard_stop(
     started: float,
     workspace: Path,
     on_event: Callable[[dict], None] | None,
+    *,
+    tool_records: list | None = None,
 ) -> TaskResult:
     """توقف صلب صريح — سبب موثق لا ترقيع (ولا دليل مزيف)."""
+    records = [
+        r.to_dict() if hasattr(r, "to_dict") else dict(r)
+        for r in (tool_records or [])
+    ]
+    sandbox_failure = next(
+        (r for r in records if r.get("failure_class") == "SANDBOX_FAILURE"),
+        None,
+    )
+    failure_block = None
+    if sandbox_failure is not None:
+        failure_block = {
+            "class": "SANDBOX_FAILURE",
+            "stage": sandbox_failure.get("failure_stage", "STARTUP"),
+            "tool": sandbox_failure.get("tool", ""),
+            "reason": sandbox_failure.get("failure_reason", ""),
+            "retryable": False,
+        }
     result = TaskResult(
         verdict="HARD STOP",
         reason=reason,
         goal=goal,
         workspace=str(workspace),
+        tool_invocations=records,
+        failure=failure_block or {
+            "class": "EXECUTOR_FAILURE", "stage": "IMPLEMENTATION",
+            "reason": "SYSTEM_FAULT", "retryable": False,
+        },
         duration_ms=int((time.monotonic() - started) * 1000),
     )
     _emit(on_event, {
@@ -295,6 +470,9 @@ def _hard_stop(
             "verdict_reasons": [reason],
             "duration_ms": result.duration_ms,
             "workspace": str(workspace),
+            "failure": result.failure,
+            "tool_invocations_count": len(records),
+            "human_summary": result.human_summary(),
         },
     })
     return result

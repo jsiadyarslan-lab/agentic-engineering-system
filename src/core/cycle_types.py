@@ -66,6 +66,8 @@ class TaskOutcome:
     evidenced: bool = False
     execution_failed: bool = False
     artifacts: list[str] = field(default_factory=list)
+    #: كتلة الفشل المنظمة لآخر محاولة فاشلة (إضافة 008 §18-§19).
+    failure: dict | None = None
 
 
 @dataclass

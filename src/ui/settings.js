@@ -99,9 +99,14 @@
       configSel.className = "sel-config";
       row.appendChild(configSel);
 
-      var modelSel = document.createElement("select");
-      modelSel.className = "sel-model";
-      row.appendChild(modelSel);
+      // منتقي النماذج الحقيقي (008 §7-§11): بحث + تمرير + لوحة مفاتيح
+      // + اكتشاف حي — لا select من نموذجين أبدًا.
+      var modelBtn = document.createElement("button");
+      modelBtn.type = "button";
+      modelBtn.className = "sel-model-btn";
+      modelBtn.dir = "ltr";
+      row.appendChild(modelBtn);
+      var chosenModel = { value: role.selection.model || "" };
 
       box.appendChild(row);
       roleModelsEl.appendChild(box);
@@ -129,35 +134,47 @@
         var cfg = (provider.configurations || []).filter(function (c) {
           return c.name === cfgName;
         })[0] || (provider.configurations || [])[0] || {};
-        var current = modelSel.getAttribute("data-chosen") ||
-          role.selection.model;
-        var models = (cfg.models || []).slice();
-        if (cfg.default_model && models.indexOf(cfg.default_model) === -1) {
-          models.unshift(cfg.default_model);
-        }
-        modelSel.textContent = "";
-        models.forEach(function (m) {
-          var opt = document.createElement("option");
-          opt.value = m;
-          opt.textContent = m;
-          if (m === current) opt.selected = true;
-          modelSel.appendChild(opt);
-        });
-        modelSel.setAttribute("data-chosen", current);
+        if (!chosenModel.value) chosenModel.value = cfg.default_model || "";
+        modelBtn.textContent = chosenModel.value || "اختر نموذجًا…";
+        modelBtn.classList.toggle("empty", !chosenModel.value);
+        modelBtn.onclick = function () {
+          if (!window.ModelPicker) return;
+          window.ModelPicker.open({
+            anchor: modelBtn,
+            current: chosenModel.value,
+            provider: { id: provider.id, name: provider.name },
+            configuration: { id: cfg.id, name: cfg.name },
+            models: (cfg.models || []).slice(),
+            onPick: function (model) {
+              chosenModel.value = model;
+              modelBtn.textContent = model;
+              modelBtn.classList.remove("empty");
+            },
+            onManual: function (model) {
+              // نموذج يدوي (§9): يُضاف للتكوين فورًا ليصبح معلنًا
+              Hub.fetchJSON("/api/provider-configurations/" + cfg.id, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ models: [].concat(cfg.models || [], [model]) })
+              }).then(function () {
+                chosenModel.value = model;
+                modelBtn.textContent = model;
+                loadModelsConfig();
+              });
+            },
+          });
+        };
       }
 
       providerSel.addEventListener("change", function () {
         configSel.removeAttribute("data-chosen");
-        modelSel.removeAttribute("data-chosen");
+        chosenModel.value = "";
         fillConfigs();
       });
       configSel.addEventListener("change", function () {
         configSel.setAttribute("data-chosen", configSel.value);
-        modelSel.removeAttribute("data-chosen");
+        chosenModel.value = "";
         fillConfigs();
-      });
-      modelSel.addEventListener("change", function () {
-        modelSel.setAttribute("data-chosen", modelSel.value);
       });
 
       fillConfigs();
@@ -176,7 +193,8 @@
       var role = box.getAttribute("data-role");
       var provider = box.querySelector(".sel-provider").value;
       var configuration = box.querySelector(".sel-config").value || "default";
-      var model = box.querySelector(".sel-model").value;
+      var model = box.querySelector(".sel-model-btn").textContent.trim();
+      if (model === "اختر نموذجًا…") model = "";
       if (provider && model) {
         payload[role] = {
           provider: provider, configuration: configuration, model: model

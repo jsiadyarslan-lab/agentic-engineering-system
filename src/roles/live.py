@@ -226,6 +226,8 @@ class ArbiterLive(LiveRoleBase):
             "evidences": request.evidences[:20],
             "history": request.history[:20],
             "max_retries_budget": self._max_retries,
+            # سياق الفشل المنظم (إضافة 008 §14) — قرار حقيقي على السبب
+            "failure_context": request.failure_context or None,
         }
         result = self._validated_completion(payload, ArbiterResult)
         # الميزانية المركزية ملك المحكَّم — لا يتجاوزها النموذج فوق السقف

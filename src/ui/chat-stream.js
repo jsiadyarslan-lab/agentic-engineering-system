@@ -1,0 +1,181 @@
+/* Agentic Engineering System — المحادثة الحية المتدفقة (الأمر 008 §2-§6).
+ *
+ * message_started ← chat.status(generating) ← message_delta* ←
+ * message_completed — مع مؤشر حالة صادق من أحداث فعلية فقط (§31 لا
+ * كذب)، وعارض Markdown مقيد الأداء (buffer → throttled render §4)،
+ * وبصمة المزود/النموذج أسفل الرسالة (§6)، وإعادة اتصال بلا فقد (§19).
+ */
+(function () {
+  "use strict";
+
+  if (!window.Hub || !window.MD) return;
+  var Hub = window.Hub;
+  var H = Hub.handlers;
+  var MD = window.MD;
+
+  var STATUS_TEXT = {
+    connecting: "يتصل بالنموذج…",
+    generating: "يكتب الآن…",
+    stream_fallback: "نقل كامل معلن…",
+    completed: "",
+    failed: ""
+  };
+
+  // ---------- الرسالة الحية الواحدة ----------
+  function LiveMessage(messageId) {
+    this.id = messageId;
+    this.root = document.createElement("div");
+    this.root.className = "bubble assistant live-msg";
+    this.body = document.createElement("div");
+    this.body.className = "bubble-body md-body";
+    this.status = document.createElement("div");
+    this.status.className = "live-status";
+    this.foot = document.createElement("div");
+    this.foot.className = "bubble-foot";
+    this.meta = document.createElement("div");
+    this.meta.className = "bubble-meta";
+    this.root.appendChild(this.body);
+    this.root.appendChild(this.status);
+    this.root.appendChild(this.foot);
+    this.root.appendChild(this.meta);
+    this.text = "";
+    this.buffer = "";
+    this.provider = "";
+    this.model = "";
+    this.startedAt = null;
+    this.dirty = false;
+    this.raf = null;
+  }
+
+  LiveMessage.prototype.setStatus = function (key, note) {
+    var label = note || STATUS_TEXT[key] || key;
+    if (!label) { this.status.hidden = true; return; }
+    this.status.hidden = false;
+    this.status.innerHTML =
+      '<span class="status-dot' + (key === "generating" ? " pulse" : "") +
+      '"></span><span>' + Hub.esc(label) + "</span>";
+    Hub.onLiveContent();
+  };
+
+  LiveMessage.prototype.setMeta = function (info, streaming) {
+    this.provider = info.provider || this.provider;
+    this.model = info.model || this.model;
+    this.meta.hidden = false;
+    this.meta.innerHTML =
+      '<span class="meta-prov" dir="ltr">' + Hub.esc(this.provider) + "</span>" +
+      '<span class="meta-model" dir="ltr">' + Hub.esc(this.model) + "</span>" +
+      (streaming
+        ? '<span class="meta-stream">● streaming</span>'
+        : "");
+  };
+
+  LiveMessage.prototype.appendDelta = function (delta) {
+    this.text += delta;
+    this.buffer += delta;
+    this.dirty = true;
+    if (this.raf === null) {
+      var self = this;
+      this.raf = setTimeout(function () { self.flush(); }, 90);
+    }
+  };
+
+  LiveMessage.prototype.flush = function (final) {
+    if (this.raf !== null) {
+      clearTimeout(this.raf);
+      this.raf = null;
+    }
+    if (!this.dirty && !final) return;
+    this.dirty = false;
+    // عارض كامل لكن على عقدة واحدة فقط — لا إعادة رسم الصفحة (§32)
+    this.body.innerHTML = MD.render(this.text, { streaming: !final });
+    Hub.onLiveContent();
+  };
+
+  LiveMessage.prototype.complete = function (details) {
+    var d = details || {};
+    this.flush(true);
+    this.setStatus("completed");
+    this.status.hidden = true;
+    var secs = d.duration_ms ? (d.duration_ms / 1000).toFixed(1) + " ث" : "";
+    this.foot.textContent =
+      ((d.streamed ? "بث حي · " : "") + secs).trim();
+    this.setMeta(d, false);
+    this.root.classList.remove("streaming");
+  };
+
+  // ---------- إدارة الرسائل الجارية ----------
+  var live = null;           // LiveMessage الحالية
+  var activeId = "";
+
+  function ensureLive(event) {
+    var id = event.message_id || "";
+    if (live && activeId === id) return live;
+    if (live) { live.complete({}); live = null; }
+    live = new LiveMessage(id);
+    activeId = id;
+    Hub.insertAtEnd(live.root);
+    return live;
+  }
+
+  H["message_started"] = function (event) {
+    var msg = ensureLive(event);
+    msg.setMeta(event.details || {}, true);
+    msg.root.classList.add("streaming");
+    msg.setStatus(event.status || "connecting");
+  };
+
+  H["chat.status"] = function (event) {
+    if (!live && event.message_id) ensureLive(event);
+    if (live) live.setStatus(event.status, event.text);
+  };
+
+  H["message_delta"] = function (event) {
+    var msg = ensureLive(event);
+    if (!msg.root.classList.contains("streaming")) {
+      msg.root.classList.add("streaming");
+      msg.setMeta(event.details || {}, true);
+    }
+    msg.setStatus("generating");
+    msg.appendDelta(event.delta != null ? event.delta : (event.text || ""));
+  };
+
+  H["message_completed"] = function (event) {
+    if (live && (event.message_id === activeId || !event.message_id)) {
+      live.complete(event.details);
+      live = null;
+      activeId = "";
+    }
+    Hub.onChatDone(event);
+  };
+
+  H["chat.error"] = function (event) {
+    if (live) { live.flush(true); live.status.hidden = true; live = null; activeId = ""; }
+    Hub.showErrorCard(event);
+    Hub.onChatDone(event);
+  };
+
+  // ---------- إعادة الاتصال (§19+§34) ----------
+  function attachStream(conversationId, after) {
+    return fetch(
+      "/api/chat/events/" + conversationId + "?after=" + (after || 0)
+    ).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return Hub.pumpSSE(resp);
+    });
+  }
+
+  /** تعليق البث بعد refresh — يُستدعى عند فتح محادثة فيها توليد جارٍ. */
+  window.ChatLive = {
+    resumeIfRunning: function (conversationId) {
+      Hub.fetchJSON("/api/chat/active?conversation_id=" + conversationId)
+        .then(function (out) {
+          if (!out.ok || !out.j.running) return;
+          Hub.setBusy(true);
+          Hub.state.activeRun = { kind: "chat", cycleId: "" };
+          attachStream(conversationId, 0).then(Hub.onChatDone, function () {
+            Hub.onChatDone({});
+          });
+        });
+    }
+  };
+})();

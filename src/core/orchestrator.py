@@ -73,6 +73,16 @@ def _new_cycle_id() -> str:
     return f"cycle-{uuid.uuid4().hex[:12]}"
 
 
+def _failures_of(outcomes: list, exhausted: list) -> dict:
+    """سياق الفشل المنظم (008 §14) — لكل مهمة مستنفدة كتلتها الصادقة."""
+    ids = {t_.id for t_ in exhausted}
+    fallback = {"class": "INSUFFICIENT_EVIDENCE", "stage": "VERIFICATION",
+                "reason": "NOT_EVIDENCED"}
+    return {o.task_id: (o.failure or {**fallback, "attempts": o.attempts,
+                                      "artifacts": len(o.artifacts)})
+            for o in outcomes if o.task_id in ids}
+
+
 class Orchestrator:
     """المنسق — يمسك دورة الحالات ويستدعي الأدوار بعقودها.
 
@@ -353,11 +363,8 @@ class Orchestrator:
             )
             return result
 
-        def adjudicate(
-            conflict_type: str,
-            parties: list[str],
-            evidences: list[str],
-        ):
+        def adjudicate(conflict_type: str, parties: list[str],
+                      evidences: list[str], failure_context: dict | None = None):
             """استدعاء المحكَّم بسقف صلب — بعده تصعيد قسري بلا حكم."""
             nonlocal sub_verdict
             stopping("before_arbiter")
@@ -388,6 +395,7 @@ class Orchestrator:
                         parties=parties,
                         evidences=evidences,
                         history=list(arbiter_decisions) + list(ctx.history),
+                        failure_context=failure_context or {},
                     )
                 )
                 emitter.emit(
@@ -528,10 +536,7 @@ class Orchestrator:
                     if review_cycles >= MAX_REVIEW_CYCLES:
                         # خصام مراجعة: 3 جولات بلا اتفاق → المحكَّم
                         decision = adjudicate(
-                            "review_deadlock",
-                            parties=["thinker", "reviewer"],
-                            evidences=issues,
-                        )
+                            "review_deadlock", ["thinker", "reviewer"], issues)
                         if "retry" in decision:
                             move(PlanState.DRAFT, actor="arbiter")
                             continue
@@ -627,10 +632,9 @@ class Orchestrator:
                 # نُفِّذت مهام دون أدلة كافية → خلاف منفذ×مراجع → المحكَّم
                 move(PlanState.ADJUDICATED, actor="verifier")
                 decision = adjudicate(
-                    "execution_exhausted",
-                    parties=["implementer", "verifier"],
-                    evidences=rollup.missing_evidence,
-                )
+                    "execution_exhausted", ["implementer", "verifier"],
+                    rollup.missing_evidence,
+                    failure_context=_failures_of(outcomes, exhausted))
                 if (
                     "retry" in decision
                     and exhausted
@@ -722,10 +726,18 @@ class Orchestrator:
                     "evidence_refs": implementation.evidence_refs[:8],
                     "stdout": implementation.stdout_truncated,
                     "stderr": implementation.stderr_truncated,
+                    # الفشل المنظم (008 §18) + جودة الأدلة (§19)
+                    "failure": implementation.failure or None,
+                    "evidence_quality": (
+                        "NO_EVIDENCE" if (
+                            implementation.status is not ImplementerStatus.EXECUTED
+                            and not implementation.artifacts
+                            and not implementation.evidence_refs) else None),
                 },
             )
             if implementation.status is not ImplementerStatus.EXECUTED:
                 outcome.execution_failed = True
+                outcome.failure = implementation.failure
                 previous.append(
                     f"محاولة {attempt}: فشل تنفيذي — "
                     f"{implementation.stderr_truncated[:100]}"

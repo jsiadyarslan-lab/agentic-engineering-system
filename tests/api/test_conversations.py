@@ -25,7 +25,7 @@ def _start_chat(client, message):
     resp = client.post("/api/chat/stream", json={"message": message})
     assert resp.status_code == 200, resp.text[:300]
     events = sse_events(resp)
-    return next(e for e in events if e["kind"] == "chat.start")
+    return next(e for e in events if e["kind"] == "message_started")
 
 
 def test_conversations_list_is_real_not_placeholder(client, api_env):

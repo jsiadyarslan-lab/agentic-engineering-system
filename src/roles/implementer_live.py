@@ -28,12 +28,13 @@ from roles.implementer import (
 )
 from core.stop_controller import CycleStopSignal
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
+from roles.recovery import run_with_recovery
+from roles.tool_failures import ToolError, ToolFailure
 from roles.tools import (
     DATA_TOOLS,
     MAX_SEARCH_RESULTS,
     TOOLS_MANIFEST,
     ToolContext,
-    ToolError,
     run_tool,
 )
 from router.model_router import ChatMessage
@@ -224,60 +225,64 @@ class LiveImplementer(LiveRoleBase):
         ctx.grant_root = root
 
         try:
-            # (1) خطة الأدوات ← تنفيذها (كل استدعاء موثق داخل run_tool).
-            # فشل أداة بيضاء (رابط يحجب الروبوتات مثلًا) يُسجّل حدثًا
-            # ويُتجاوز — المادة تُجمع مما نجح؛ الفشل الكامل فقط عند
-            # انعدام أي مادة (لا ترقيع: الإخفاق موثق في الأدلة).
+            # (1) خطة الأدوات ← تنفيذها بتعافٍ مصنَّف (إضافة 008 §8-§12):
+            # لا إعادة عمياء — فشل عابر يعاد، ولا مادة يعاد باستراتيجية
+            # مختلفة (استعلام مراجَع أو أداة بديلة مسجلة)، والمصادقة/
+            # السياسة لا تعاد. كل قرار يبث حدثًا حيًا ويسجل في الأدلة.
             self._stop_requested(ctx, "implementer.plan_tools")
             calls = self._plan_tool_calls(task_payload)
             materials: dict[str, list] = {
                 "search_results": [], "pages": [], "data": [],
             }
-            failed_calls: list[str] = []
+            attempt = len(request.previous_attempts) + 1
+            attempted_queries: list[str] = []
+            failed_calls: list[dict] = []
+            available_urls: list[str] = [
+                str(a.get("url", "")) for a in calls if a.get("args", {}).get("url")
+            ]
+
             for call in calls[:8]:  # سقف صلب فوق تعليمات البرومبت
                 self._stop_requested(ctx, "implementer.tool_loop")
-                name = str(call.get("tool", ""))
-                args = dict(call.get("args", {}) or {})
-                try:
-                    value = run_tool(name, args, ctx)
-                except ToolError as error:
-                    failed_calls.append(f"{name}: {error}")
-                    ctx.emit({
-                        "kind": "tool.failed",
-                        "role": "implementer",
-                        "tool": name,
-                        "error": str(error)[:200],
-                    })
-                    continue
-                if name == "web_search":
-                    materials["search_results"].extend(
-                        value[:MAX_SEARCH_RESULTS]
-                    )
-                elif name == "fetch_page":
-                    materials["pages"].append(
-                        {"chars": len(value), "text": value[:6000]}
-                    )
-                elif name in DATA_TOOLS:
-                    # الأمر 003: ملخص محدود من مادة البيانات للتقرير —
-                    # الخام الكامل في data/ داخل الأدلة، لا في البرومبت.
-                    materials["data"].append({
-                        key: value.get(key)
-                        for key in ("tool", "series_id", "indicator", "url",
-                                    "rows", "count", "chars", "words",
-                                    "structure", "sample_rows", "first_300_words")
-                        if key in value
-                    })
+                run_with_recovery(
+                    ctx,
+                    str(call.get("tool", "")),
+                    dict(call.get("args", {}) or {}),
+                    attempt=attempt,
+                    attempted_queries=attempted_queries,
+                    available_urls=available_urls,
+                    materials=materials,
+                    failed_calls=failed_calls,
+                    max_results=MAX_SEARCH_RESULTS,
+                )
             if (
                 not materials["search_results"]
                 and not materials["pages"]
                 and not materials["data"]
             ):
+                # فشل مادة مصنَّف (§18): TOOL_FAILURE/tool/queries/attempts
+                # — لا «كل استدعاءات الأدوات فشلت» الغامضة.
+                primary = failed_calls[0] if failed_calls else {}
                 return ImplementerResult(
                     status=ImplementerStatus.FAILED,
                     stderr_truncated=(
-                        "كل استدعاءات الأدوات فشلت — لا مادة: "
-                        + "؛ ".join(failed_calls[:3])
+                        "لا مادة قابلة للتحليل وصلت المنفذ — "
+                        + (primary.get("message") or "بلا فشل أداة مسجل")
+                        + f" ({len(failed_calls)} فشل مصنَّف)"
                     )[:_TRUNCATE],
+                    failure={
+                        "class": "TOOL_FAILURE",
+                        "stage": primary.get("stage", "TOOL_RESULT"),
+                        "tool": primary.get("tool", ""),
+                        "reason": primary.get(
+                            "reason", "NO_ANALYZABLE_MATERIAL"
+                        ),
+                        "retryable": primary.get("retryable", True),
+                        "attempt": attempt,
+                        "max_attempts": 2,
+                        "queries": attempted_queries[:6],
+                        "failures": failed_calls[:6],
+                        "artifacts": 0,
+                    },
                 )
 
             # (2) التقرير من المادة المجلوبة

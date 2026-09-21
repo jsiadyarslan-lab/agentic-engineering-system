@@ -287,6 +287,26 @@ def provider_models(provider_id: int) -> dict:
     }
 
 
+@configurations_router.get("/{config_id}/models")
+def configuration_models(config_id: int, live: int = 0) -> dict:
+    """نماذج تكوين بعينه — المعلنة دائمًا + اكتشاف حي عند live=1.
+
+    (الأمر 008 §9+§35): الاكتشاف يدمج (مكتشف ∪ معلن) في القاعدة —
+    القائمة الكاملة (82 نموذجًا عند نفيديا مثلًا) تظهر كما هي، بلا
+    اقتطاع ولا قائمة ثابتة. فشل الاكتشاف = رسالة صادقة والمعلنة تبقى.
+    """
+    cfg = registry.get_configuration(_sessions(), config_id)
+    if cfg is None:
+        raise HTTPException(status_code=404, detail=f"تكوين غير معروف: {config_id}")
+    if not live:
+        return {
+            "ok": True, "source": "declared",
+            "model_ids": registry._cfg_models(cfg),
+            "models_count": len(registry._cfg_models(cfg)),
+        }
+    return registry.refresh_models(_sessions(), config_id)
+
+
 @router.post("/{provider_id}/models/refresh")
 def refresh_provider_models(provider_id: int) -> dict:
     """جلب النماذج حيًا من التكوين الأساسي (§12) — ليس شرطًا للتشغيل."""

@@ -1,8 +1,10 @@
-/* agent hub v2 — بطاقات التنفيذ: المهمة بمراحلها + المسارات المتقدمة.
- * الأمر 006 §9: بدل رموز الأدوار الخمسة كواجهة أساسية، المهمة تظهر
- * بطاقة واحدة أنيقة: التخطيط ✓ / المراجعة ✓ / التنفيذ جارٍ… / التحقق
- * بانتظار — والتفاصيل الكاملة (المزود/النموذج/الزمن/الأدلة) داخل
- * أقسام قابلة للفتح، لا شاشة طرفية.
+/* Agentic Engineering System — النشاط الحي للمهمة داخل المحادثة.
+ * الأمر 008 §12-§27: بطاقة مهمة بمراحلها وأزمنتها، بطاقة حية لكل دور
+ * (المزود/النموذج/المحاولة/الأداة الحالية)، نشاط أدوات مصنَّف
+ * (بدء/نجاح/فشل مع الاستعلام والتصنيف §14-§15)، قرارات تعافٍ (§12)，
+ * خط زمني قابل للطي (§20)، أخطاء مفهومة وHARD STOP منظّم (§22-§24)،
+ * درج تفاصيل الدور (§25)، والخلاصة مولَّدة من حالة الدورة (§27).
+ * كل شيء قابل لإعادة البناء من الأرشيف (§34) — الأحداث وحدها المصدر.
  */
 (function () {
   "use strict";
@@ -10,6 +12,7 @@
   if (!window.Hub) return;
   var Hub = window.Hub;
   var H = Hub.handlers;
+  var MD = window.MD;
 
   var STEP_DEFS = [
     { key: "thinker", label: "التخطيط" },
@@ -26,7 +29,15 @@
     user: "أنت", chat: "المحادثة"
   };
 
-  // ---------- أداة DOM ----------
+  var TOOL_LABELS = {
+    web_search: "بحث ويب", fetch_page: "جلب صفحة",
+    write_file: "كتابة ملف", read_file: "قراءة ملف",
+    generate_pdf_arabic: "توليد PDF عربي", verify_pdf_pages: "عدّ صفحات PDF",
+    http_get_text: "جلب نص", http_get_json: "جلب JSON",
+    page_to_text: "صفحة ← نص", fred_csv: "سلسلة FRED",
+    worldbank_indicator: "مؤشر البنك الدولي",
+  };
+
   function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -34,13 +45,18 @@
     return node;
   }
 
-  // ---------- بطاقة المهمة ----------
-  var card = null;          // عناصر بطاقة المهمة الجارية
-  var cardState = { lastRouterCall: null };
+  function clockOf(event) {
+    var stamp = event.timestamp ? new Date(event.timestamp) : new Date();
+    try {
+      return stamp.toLocaleTimeString("ar", { hour12: false });
+    } catch (e) { return stamp.toTimeString().slice(0, 8); }
+  }
+
+  // ---------- حالة البطاقة (قابلة لإعادة البناء من أي نقطة §34) ----------
+  var card = null;
 
   function beginTask() {
     card = null;
-    cardState.lastRouterCall = null;
   }
 
   function ensureCard(event) {
@@ -49,8 +65,8 @@
     root.id = "task-card-live";
 
     var head = el("div", "task-head");
-    var title = el("span", "task-title", "المهمة قيد التنفيذ");
     var spinner = el("span", "task-spinner");
+    var title = el("span", "task-title", "المهمة قيد التنفيذ");
     head.appendChild(spinner);
     head.appendChild(title);
     root.appendChild(head);
@@ -59,50 +75,68 @@
     STEP_DEFS.forEach(function (def, i) {
       var step = el("div", "step" + (i === 0 ? " active" : " pending"));
       step.setAttribute("data-step", def.key);
-      step.appendChild(el("span", "step-mark", i === 0 ? "◌" : "□"));
+      step.appendChild(el("span", "step-mark", i === 0 ? "●" : "○"));
       step.appendChild(el("span", "step-label", def.label));
       step.appendChild(el("span", "step-note", i === 0 ? "جارٍ…" : "بانتظار"));
       steps.appendChild(step);
     });
     root.appendChild(steps);
 
-    var rolesBox = el("div", "task-roles");
-    var rolesToggle = el("button", "task-fold", "تفاصيل الأدوار ▾");
-    var rolesList = el("div", "task-roles-list");
-    rolesList.hidden = true;
-    rolesToggle.addEventListener("click", function () {
-      rolesList.hidden = !rolesList.hidden;
-      rolesToggle.textContent = rolesList.hidden
-        ? "تفاصيل الأدوار ▾" : "تفاصيل الأدوار ▴";
-    });
-    rolesBox.appendChild(rolesToggle);
-    rolesBox.appendChild(rolesList);
-    root.appendChild(rolesBox);
+    var roles = el("div", "task-roles-live");
+    root.appendChild(roles);
 
-    var toolsBox = el("div", "task-tools");
-    var toolsToggle = el("button", "task-fold", "التنفيذ والأدوات ▾");
+    var tools = el("div", "task-tools");
+    var toolsToggle = el("button", "task-fold", "الأدوات ▾");
     var toolsList = el("div", "task-tools-list");
     toolsList.hidden = true;
     toolsToggle.addEventListener("click", function () {
       toolsList.hidden = !toolsList.hidden;
-      toolsToggle.textContent = toolsList.hidden
-        ? "التنفيذ والأدوات ▾" : "التنفيذ والأدوات ▴";
+      toolsToggle.textContent = toolsList.hidden ? "الأدوات ▾" : "الأدوات ▴";
     });
-    toolsBox.appendChild(toolsToggle);
-    toolsBox.appendChild(toolsList);
-    root.appendChild(toolsBox);
+    tools.appendChild(toolsToggle);
+    tools.appendChild(toolsList);
+    root.appendChild(tools);
+
+    var tl = el("div", "task-timeline");
+    var tlToggle = el("button", "task-fold", "الخط الزمني ▾");
+    var tlList = el("div", "timeline-list");
+    tlList.hidden = true;
+    tlToggle.addEventListener("click", function () {
+      tlList.hidden = !tlList.hidden;
+      tlToggle.textContent = tlList.hidden ? "الخط الزمني ▾" : "الخط الزمني ▴";
+    });
+    tl.appendChild(tlToggle);
+    tl.appendChild(tlList);
+    root.appendChild(tl);
 
     var actions = el("div", "task-actions");
     root.appendChild(actions);
 
-    card = { root: root, title: title, spinner: spinner, steps: steps,
-             rolesList: rolesList, toolsList: toolsList, actions: actions,
-             cycleId: event && event.cycle_id };
-    Hub.$("messages").appendChild(root);
+    card = {
+      root: root, title: title, spinner: spinner, steps: steps,
+      roles: roles, toolsList: toolsList, tlList: tlList, actions: actions,
+      cycleId: event && event.cycle_id,
+      roleModels: {}, roleCards: {}, toolRows: {},
+      roleTimeline: {},
+    };
+    Hub.insertAtEnd(root);
     Hub.scrollDown();
     return card;
   }
 
+  function timelineLine(event, mark, text) {
+    if (!card) return;
+    var line = el("div", "tl-line");
+    line.appendChild(el("span", "tl-time", clockOf(event)));
+    line.appendChild(el("span", "tl-mark", mark));
+    line.appendChild(el("span", "tl-text", text));
+    card.tlList.appendChild(line);
+    if (card.tlList.children.length > 400) {
+      card.tlList.removeChild(card.tlList.firstChild);  // سقف DOM (§32)
+    }
+  }
+
+  // ---------- المراحل ----------
   function stepNode(key) {
     return card && card.steps.querySelector('[data-step="' + key + '"]');
   }
@@ -116,8 +150,8 @@
   }
 
   function stepDone(key, note) { setStep(key, "✓", note || "اكتمل", "done"); }
-  function stepActive(key, note) { setStep(key, "◌", note || "جارٍ…", "active"); }
-  function stepPending(key) { setStep(key, "□", "بانتظار", "pending"); }
+  function stepActive(key, note) { setStep(key, "●", note || "جارٍ…", "active"); }
+  function stepPending(key) { setStep(key, "○", "بانتظار", "pending"); }
 
   function activateNextAfter(key) {
     var order = STEP_DEFS.map(function (d) { return d.key; });
@@ -131,70 +165,143 @@
     }
   }
 
-  // تسمية النموذج المُعرّف لكل دور من إعدادات الواجهة (ما أُرسل فعلًا)
-  function roleModelLine(roleKey) {
-    var cfg = Hub.state.modelsConfig;
-    if (!cfg || !cfg.roles) return "";
-    var found = cfg.roles.filter(function (r) { return r.key === roleKey; })[0];
-    return found ? found.selection.provider + " / " + found.selection.model : "";
+  // ---------- بطاقة الدور الحية (§13) ----------
+  function roleCard(roleKey) {
+    if (!card) return null;
+    if (card.roleCards[roleKey]) return card.roleCards[roleKey];
+    var meta = STEP_DEFS.filter(function (d) { return d.key === roleKey; })[0];
+    var box = el("div", "role-live");
+    box.setAttribute("data-role", roleKey);
+    var head = el("div", "rl-head");
+    var name = el("span", "rl-name", (meta ? meta.label : ROLE_LABELS[roleKey] || roleKey));
+    head.appendChild(name);
+    var modelLine = el("span", "rl-model");
+    head.appendChild(modelLine);
+    var status = el("span", "rl-status", "بانتظار");
+    head.appendChild(status);
+    var more = el("span", "details-link", "التفاصيل");
+    head.appendChild(more);
+    box.appendChild(head);
+    var body = el("div", "rl-body");
+    box.appendChild(body);
+    card.roles.appendChild(box);
+    var entry = {
+      box: box, head: head, name: name, model: modelLine, status: status,
+      body: body, state: {
+        attempts: 0, tools: 0, artifacts: 0, duration: 0,
+        lastNote: "", events: [],
+      },
+    };
+    more.addEventListener("click", function () { openRoleDrawer(roleKey, entry); });
+    card.roleCards[roleKey] = entry;
+    return entry;
   }
 
-  function addRoleDetail(event) {
-    if (!card) return;
-    var meta = STEP_DEFS.filter(function (d) { return d.key === event.role; })[0];
-    var roleKey = meta ? meta.key : event.role;
-    var entry = el("div", "role-detail");
-    var head = el("div", "role-detail-head");
-    head.appendChild(el("span", "rd-name",
-      (meta ? meta.label : ROLE_LABELS[event.role] || event.role)));
-    var modelLine = roleModelLine(roleKey);
-    if (modelLine) {
-      head.appendChild(el("span", "rd-model", modelLine));
+  function setRoleModel(roleKey) {
+    var entry = roleCard(roleKey);
+    if (!entry) return;
+    var found = card.roleModels[roleKey];
+    if (found) {
+      entry.model.textContent = found.provider + " / " + found.model;
+      entry.model.dir = "ltr";
     }
-    if (event.duration_ms) {
-      head.appendChild(el("span", "rd-time", Hub.fmtTime(event.duration_ms)));
-    }
-    var link = el("span", "details-link", "التفاصيل");
-    link.addEventListener("click", function () { Hub.openModal(event); });
-    head.appendChild(link);
-    entry.appendChild(head);
-    if (event.text) {
-      entry.appendChild(el("div", "rd-text", event.text));
-    }
-    card.rolesList.appendChild(entry);
   }
 
-  function addToolRow(event) {
-    if (!card) return;
-    var row = el("div", "tool-row");
+  function roleNote(roleKey, text, cls) {
+    var entry = roleCard(roleKey);
+    if (!entry) return;
+    var note = el("div", "rl-note" + (cls ? " " + cls : ""), text);
+    entry.body.appendChild(note);
+    if (entry.body.children.length > 12) entry.body.removeChild(entry.body.firstChild);
+    Hub.onLiveContent();
+  }
+
+  function openRoleDrawer(roleKey, entry) {
+    var drawer = document.createElement("div");
+    drawer.className = "drawer role-drawer";
+    drawer.hidden = false;
+    var head = el("div", "drawer-head");
+    head.appendChild(el("span", null, (ROLE_LABELS[roleKey] || roleKey) + " — التفاصيل"));
+    var close = el("button", "icon-btn", "✕");
+    head.appendChild(close);
+    drawer.appendChild(head);
+    var body = el("div", "drawer-body");
+    var s = entry.state;
+    var rows = [
+      ["المزود / النموذج", (card.roleModels[roleKey] || {}).provider
+        ? ((card.roleModels[roleKey] || {}).provider + " / " +
+           (card.roleModels[roleKey] || {}).model) : "—"],
+      ["الحالة", entry.status.textContent || "—"],
+      ["المحاولات", String(s.attempts || "—")],
+      ["الأدوات", String(s.tools)],
+      ["Artifacts", String(s.artifacts)],
+      ["المدة", Hub.fmtTime(s.duration || 0)],
+    ];
+    rows.forEach(function (pair) {
+      var row = el("div", "rd-row");
+      row.appendChild(el("span", "rd-k", pair[0]));
+      var v = el("span", "rd-v");
+      v.dir = "auto";
+      v.textContent = pair[1];
+      row.appendChild(v);
+      body.appendChild(row);
+    });
+    if (s.lastNote) body.appendChild(el("div", "rd-note", s.lastNote));
+    drawer.appendChild(body);
+    var backdrop = el("div", "drawer-backdrop open");
+    backdrop.hidden = false;
+    document.body.appendChild(backdrop);
+    document.body.appendChild(drawer);
+    function shut() { drawer.remove(); backdrop.remove(); }
+    close.addEventListener("click", shut);
+    backdrop.addEventListener("click", shut);
+  }
+
+  // ---------- صف الأداة (§14-§15+§21) ----------
+  function toolRow(event) {
+    if (!card) return null;
+    var id = event.tool_call_id || (event.tool + ":" + (event.query || ""));
+    if (card.toolRows[id]) return card.toolRows[id];
+    var row = el("div", "tool-row running");
     var head = el("div", "tool-head");
-    var site = event.execution_site === "substrate" ? "داخل الركيزة" : "معن خارجها";
-    head.appendChild(el("span", "tool-name", event.tool || event.kind));
-    head.appendChild(el("span", "tool-site", site));
-    if (event.duration_ms) {
-      head.appendChild(el("span", "tool-time", Hub.fmtTime(event.duration_ms)));
-    }
+    var mark = el("span", "tool-mark", "●");
+    var name = el("span", "tool-name",
+      TOOL_LABELS[event.tool] || event.tool || event.kind);
+    head.appendChild(mark);
+    head.appendChild(name);
+    var site = el("span", "tool-site",
+      event.execution_site === "substrate" ? "داخل الركيزة" : "معلن خارجها");
+    head.appendChild(site);
+    var time = el("span", "tool-time");
+    head.appendChild(time);
     var link = el("span", "details-link", "التفاصيل");
     link.addEventListener("click", function () { Hub.openModal(event); });
     head.appendChild(link);
     row.appendChild(head);
-    if (event.kind === "tool.failed") {
-      row.classList.add("failed");
-      row.appendChild(el("div", "tool-note", "فشلت: " + (event.error || "")));
-    } else if (event.args_summary) {
-      var a = event.args_summary;
-      var desc = a.results !== undefined
-        ? (a.results + " نتيجة" + (a.first ? " — " + a.first : ""))
-        : (a.pages !== undefined ? ("صفحات: " + a.pages)
-          : (a.chars !== undefined ? (a.chars + " حرفًا") : (a.path || "")));
-      row.appendChild(el("div", "tool-note", desc));
-    }
+    var note = el("div", "tool-note");
+    row.appendChild(note);
     card.toolsList.appendChild(row);
+    card.toolRows[id] = { row: row, mark: mark, note: note, time: time, id: id };
+    Hub.onLiveContent();
+    return card.toolRows[id];
+  }
+
+  function toolNoteText(event) {
+    var a = event.args_summary || {};
+    if (a.results !== undefined) {
+      return a.results + " نتيجة" + (a.first ? " — " + a.first : "");
+    }
+    if (a.pages !== undefined) return "صفحات: " + a.pages;
+    if (a.chars !== undefined) return a.chars + " حرفًا";
+    return a.path || "";
   }
 
   // ---------- أحداث المهمة ----------
   H["task.start"] = function (event) {
     ensureCard(event);
+    card.roleModels = (event.role_models || event.details?.role_models) || {};
+    STEP_DEFS.forEach(function (d) { setRoleModel(d.key); });
+    timelineLine(event, "▶", "بدأت المهمة");
   };
 
   var ROLE_STEP_EVENTS = {
@@ -211,75 +318,161 @@
     H[kind] = function (event) {
       ensureCard(event);
       var stepKey = ROLE_STEP_EVENTS[kind];
-      stepDone(stepKey, kind === "review_verdict" ? "تمت الموافقة" : "اكتمل");
-      activateNextAfter(stepKey);
-      addRoleDetail(event);
-      Hub.scrollDown();
+      var d = event.details || {};
+      var entry = roleCard(stepKey);
+      if (entry) {
+        if (d.attempt) entry.state.attempts = d.attempt;
+        if (d.artifacts) entry.state.artifacts = d.artifacts.length;
+        if (event.duration_ms) entry.state.duration += event.duration_ms;
+        entry.state.lastNote = event.text || "";
+        entry.status.textContent = d.status === "failed" ? "فشل" : "اكتمل";
+        if (d.attempt > 1) {
+          entry.status.textContent += " (محاولة " + d.attempt + ")";
+        }
+      }
+      var failed = d.status === "failed";
+      if (failed) {
+        setStep(stepKey, "✕", "فشل", "failed");
+      } else {
+        stepDone(stepKey, kind === "review_verdict" ? "تمت الموافقة" : "اكتمل");
+        activateNextAfter(stepKey);
+      }
+      if (event.text) roleNote(stepKey, event.text, failed ? "bad" : "");
+      timelineLine(event, failed ? "✕" : "✓",
+        (ROLE_LABELS[stepKey] || stepKey) + ": " + (event.text || kind).slice(0, 90));
+      Hub.onLiveContent();
     };
   });
 
   H["state_change"] = function (event) {
-    // تغيّر الحالة ينعكس على المراحل — سطر رفيع داخل البطاقة
-    if (!card) return;
+    ensureCard(event);
     var to = (event.details || {}).to || event.state;
     if (!to) return;
-    var note = el("div", "task-state-line", to);
-    card.toolsList.parentNode.insertBefore(note, card.toolsList.parentNode.firstChild);
+    timelineLine(event, "→", to);
+  };
+
+  H["tool.started"] = function (event) {
+    ensureCard(event);
+    var row = toolRow(event);
+    if (!row) return;
+    row.mark.textContent = "●";
+    row.mark.className = "tool-mark run";
+    row.row.className = "tool-row running";
+    if (event.query) {
+      row.note.textContent = "الاستعلام: " + String(event.query).slice(0, 120);
+    }
+    timelineLine(event, "●", (TOOL_LABELS[event.tool] || event.tool) +
+      (event.query ? " — " + String(event.query).slice(0, 60) : ""));
+    Hub.onLiveContent();
   };
 
   H["tool.call"] = function (event) {
     ensureCard(event);
-    addToolRow(event);
-    Hub.scrollDown();
-  };
-  H["tool.failed"] = function (event) {
-    ensureCard(event);
-    addToolRow(event);
-  };
-  H["tool.site_declared"] = function (event) {
-    ensureCard(event);
-    addToolRow(event);
+    var row = toolRow(event) || toolRow({ ...event, tool_call_id: "" });
+    if (row) {
+      row.mark.textContent = "✓";
+      row.mark.className = "tool-mark ok";
+      row.row.className = "tool-row done";
+      row.note.textContent = toolNoteText(event) +
+        (event.result_count !== undefined && event.tool === "web_search"
+          ? "" : "");
+      if (event.duration_ms) row.time.textContent = Hub.fmtTime(event.duration_ms);
+    }
+    var entry = roleCard("implementer");
+    if (entry) entry.state.tools += 1;
+    timelineLine(event, "✓", (TOOL_LABELS[event.tool] || event.tool) +
+      " — " + toolNoteText(event));
   };
 
-  // أحداث الموجّه داخل البطاقة — سطور رفيعة (المزود/النموذج/الزمن)
+  H["tool.failed"] = function (event) {
+    ensureCard(event);
+    var row = toolRow(event);
+    if (row) {
+      row.mark.textContent = "⚠";
+      row.mark.className = "tool-mark bad";
+      row.row.className = "tool-row failed";
+      row.note.textContent = (event.human || event.error || "فشلت") +
+        (event.failure_reason ? " · التصنيف: " + event.failure_class +
+          " / " + event.failure_reason : "") +
+        (event.attempt ? " · المحاولة " + event.attempt : "");
+    }
+    timelineLine(event, "⚠", (TOOL_LABELS[event.tool] || event.tool) +
+      " فشل — " + (event.failure_reason || event.error || "").toString().slice(0, 70));
+    Hub.onLiveContent();
+  };
+
+  H["tool.recovery"] = function (event) {
+    ensureCard(event);
+    var entry = roleCard("implementer");
+    if (entry) roleNote("implementer",
+      (event.action === "REVISE_QUERY" ? "↻ " : "⇄ ") + (event.reason || event.action));
+    timelineLine(event, "↻", (event.action || "") + " — " +
+      (event.reason || "").slice(0, 80));
+    Hub.onLiveContent();
+  };
+
+  H["tool.site_declared"] = function (event) {
+    ensureCard(event);
+    timelineLine(event, "·", (event.reason || "تنفيذ معلن خارج الركيزة"));
+  };
+
+  // أحداث الموجّه — أسطر رفيعة
   H["router.call.logged"] = function (event) {
-    cardState.lastRouterCall = event;
     if (!card) return;
     var d = event.details || event;
-    var line = el("div", "router-line");
-    line.textContent = "استدعاء: " + (d.provider || "?") + " / " +
-      (d.model || "?") + " · " + Hub.fmtTime(d.duration_ms || 0) +
-      (d.tokens ? " · ~" + d.tokens + " توكن" : "");
-    card.toolsList.appendChild(line);
+    timelineLine(event, "·", "استدعاء: " + (d.provider || "?") + " / " +
+      (d.model || "?") + " · " + Hub.fmtTime(d.duration_ms || 0));
   };
   H["rate_limit.wait"] = function (event) {
-    if (card) card.toolsList.appendChild(el("div", "router-line wait",
-      "انتظار حد المعدل: " + ((event.details || {}).wait_s || event.wait_seconds) + " ث"));
+    timelineLine(event, "⏳", "انتظار حد المعدل: " +
+      ((event.details || {}).wait_s || event.wait_seconds) + " ث");
   };
   H["cooling.cooldown"] = function (event) {
-    if (card) card.toolsList.appendChild(el("div", "router-line wait",
-      "تبريد اختناق…"));
+    timelineLine(event, "🧊", "تبريد اختناق…");
   };
   H["failover.logged"] = function (event) {
     var d = event.details || {};
-    if (card) card.toolsList.appendChild(el("div", "router-line",
-      "تبدّل المزود: " + (d.from || "?") + " ← " + (d.to || "?")));
+    timelineLine(event, "🔄", "تبدّل المزود: " + (d.from || "?") + " ← " + (d.to || "?"));
   };
   H["router.event"] = function (event) {
-    // نسخة مغلّفة من أحداث الموجّه في مسار المهمة
-    var inner = { kind: event.kind, role: "router", details: event, text: "" };
-    if (event.kind === "router.call.logged") H["router.call.logged"](inner);
+    var inner = { kind: event.kind, role: "router", details: event,
+                  text: "", timestamp: event.timestamp };
+    if (event.kind === "router.call.logged" && H["router.call.logged"]) {
+      H["router.call.logged"](inner);
+    }
   };
 
+  // ---------- إعداد ناقص ----------
   H["CONFIGURATION_REQUIRED"] = function (event) {
     Hub.removeWorking();
+    var d = event.details || {};
     var box = el("div", "config-card");
+    var isPreflight = !!d.preflight;
     box.appendChild(el("div", "config-title",
-      "لم تبدأ المهمة — إعداد المزودات مطلوب"));
+      isPreflight
+        ? "لم تبدأ المهمة — فحص البيئة المسبق وجد حواجز"
+        : "لم تبدأ المهمة — إعداد المزودات مطلوب"));
     var why = el("div", "config-why");
     why.textContent = event.text || "";
     box.appendChild(why);
-    var available = (event.details || {}).available_providers || [];
+    if (isPreflight && d.preflight.blocked) {
+      d.preflight.blocked.forEach(function (b) {
+        var row = el("div", "hs-row");
+        row.appendChild(el("span", "hs-k", b.name || b.capability_id));
+        var v = el("span", "hs-v");
+        v.dir = "auto";
+        v.textContent = b.status + (b.reason ? " — " + b.reason : "");
+        row.appendChild(v);
+        box.appendChild(row);
+        if (b.recovery) {
+          box.appendChild(el("div", "cap-meta", "الإجراء: " + b.recovery));
+        }
+        if (b.owner_action) {
+          box.appendChild(el("div", "cap-meta cap-reason", b.owner_action));
+        }
+      });
+    }
+    var available = d.available_providers || [];
     if (available.length) {
       box.appendChild(el("div", "config-note",
         "المزودات المتاحة الآن: " + available.join("، ")));
@@ -291,20 +484,18 @@
       document.dispatchEvent(open);
     });
     box.appendChild(btn);
-    Hub.$("messages").appendChild(box);
+    Hub.insertAtEnd(box);
     Hub.scrollDown();
     Hub.onTaskFinished();
   };
 
   H["cycle_error"] = function (event) {
     Hub.removeWorking();
-    var syscard = Hub.makeSystemCard(event);
-    syscard.classList.add("error");
-    Hub.$("messages").appendChild(syscard);
-    Hub.scrollDown();
+    Hub.showErrorCard(event);
     Hub.onTaskFinished();
   };
 
+  // ---------- إيقاف باستئناف ----------
   H["cycle.stopped"] = function (event) {
     if (card) {
       card.title.textContent = "أُوقفت المهمة بأمر";
@@ -314,7 +505,7 @@
     var d = event.details || {};
     var syscard = Hub.makeSystemCard(event);
     syscard.classList.add("stop-card");
-    Hub.insertBeforeWorking(syscard);
+    Hub.insertAtEnd(syscard);
     if (d.snapshot_path) {
       var resume = el("button", "btn ghost", "استئناف من نقطة الإيقاف");
       resume.addEventListener("click", function () {
@@ -330,53 +521,104 @@
   function resumeRun(cycleId) {
     Hub.state.activeRun = { kind: "task", cycleId: cycleId };
     Hub.addWorking("استئناف المهمة…");
+    beginTask();
     Hub.postStream("/api/cycle/resume", { cycle_id: cycleId })
       .then(Hub.onTaskFinished, function (err) {
-        var syscard = Hub.makeSystemCard({
+        Hub.showErrorCard({
           kind: "cycle_error", role: "coordinator",
           text: "تعذر الاستئناف: " + err.message
         });
-        Hub.$("messages").appendChild(syscard);
         Hub.onTaskFinished();
       });
   }
 
+  // ---------- الخاتمة (§24+§27): خلاصة مولَّدة + فشل منظّم ----------
   H["task_done"] = function (event) {
     Hub.removeWorking();
-    if (card) {
-      card.spinner.className = "task-spinner " +
-        (event.verdict === "PASS" ? "pass" : "fail");
-      card.title.textContent =
-        event.verdict === "PASS" ? "اكتملت المهمة بنجاح" :
-        event.verdict === "STOPPED" ? "أُوقفت المهمة" :
-        "توقفت المهمة عند حدّ صلب";
-    } else {
-      ensureCard(event);
-    }
-    STEP_DEFS.forEach(function (d) {
-      if (stepNode(d.key) && stepNode(d.key).classList.contains("active")) {
-        stepDone(d.key);
+    ensureCard(event);
+    var d = event.details || {};
+    var pass = event.verdict === "PASS";
+    var stopped = event.verdict === "STOPPED";
+
+    card.spinner.className = "task-spinner " +
+      (pass ? "pass" : stopped ? "stopped" : "fail");
+    card.title.textContent =
+      pass ? "اكتملت المهمة بنجاح" :
+      stopped ? "أُوقفت المهمة" :
+      "توقفت المهمة عند حدّ صلب";
+    STEP_DEFS.forEach(function (def) {
+      var node = stepNode(def.key);
+      if (node && node.classList.contains("active")) {
+        setStep(def.key, pass ? "✓" : "✕", pass ? "اكتمل" : "انتهى", pass ? "done" : "failed");
       }
     });
+    timelineLine(event, pass ? "✓" : "⛔", "الحكم: " + event.verdict);
 
-    var d = event.details || {};
-    var summary = el("div", "task-verdict " +
-      (event.verdict === "PASS" ? "pass" : "fail"));
-    summary.textContent =
-      (event.verdict === "PASS" ? "الحكم: اكتملت بأدلة كاملة" :
-        "الحكم: " + (event.verdict || "") + " — " + (event.text || ""));
+    // HARD STOP منظّم (§24): السبب/المرحلة/المحاولات/الأدلة/الإجراء
+    if (!pass && !stopped && d.failure) {
+      var f = d.failure;
+      var box = el("div", "hardstop-card");
+      box.appendChild(el("div", "hs-title", "⛔ توقفت المهمة"));
+      var rows = [
+        ["السبب المباشر", (f.tool ? (TOOL_LABELS[f.tool] || f.tool) + " — " : "") +
+          (f.reason || "")],
+        ["التصنيف", (f.class || "") + " / " + (f.stage || "")],
+        ["المحاولات", f.attempt ? (f.attempt + (f.max_attempts ? " / " + f.max_attempts : "")) : "—"],
+        ["Artifacts", String(f.artifacts !== undefined ? f.artifacts : (d.files_count || 0))],
+        ["الأدلة", d.evidence_quality === "NO_EVIDENCE" ? "لا أدلة تنفيذية" : (d.evidence_path || "—")],
+        ["الإجراء التالي", "مراجعة الخطة أو إعدادات الأدوات/المزودات"],
+      ];
+      rows.forEach(function (pair) {
+        var row = el("div", "hs-row");
+        row.appendChild(el("span", "hs-k", pair[0]));
+        var v = el("span", "hs-v");
+        v.dir = "auto";
+        v.textContent = pair[1];
+        row.appendChild(v);
+        box.appendChild(row);
+      });
+      if (f.queries && f.queries.length) {
+        var q = el("div", "hs-queries");
+        q.appendChild(el("div", "hs-k", "الاستعلامات المجربة:"));
+        f.queries.forEach(function (text) {
+          if (text) q.appendChild(el("div", "hs-query", text));
+        });
+        box.appendChild(q);
+      }
+      var details = document.createElement("details");
+      details.className = "he-tech";
+      details.innerHTML = "<summary>التفاصيل التقنية</summary>";
+      var pre = el("pre");
+      pre.dir = "ltr";
+      pre.textContent = JSON.stringify(f, null, 2);
+      details.appendChild(pre);
+      box.appendChild(details);
+      card.actions.appendChild(box);
+    }
+
+    // خلاصة المساعد المولَّدة من حالة الدورة (§27) — Markdown حقيقي
+    var summaryText = d.human_summary || "";
+    if (summaryText) {
+      var wrap = el("div", "bubble assistant task-summary");
+      var body = el("div", "bubble-body md-body");
+      body.innerHTML = MD ? MD.render(summaryText) : Hub.esc(summaryText);
+      wrap.appendChild(body);
+      card.actions.appendChild(wrap);
+    }
+
     var facts = el("div", "task-facts");
     facts.textContent =
       "الحالة النهائية: " + (d.final_state || "—") +
-      " · أدوات: " + (d.tool_calls_count !== undefined ? d.tool_calls_count : "—") +
+      " · أدوات: " + (d.tool_invocations_count !== undefined
+        ? d.tool_invocations_count + (d.failed_tool_calls
+          ? " (فشل " + d.failed_tool_calls + ")" : "")
+        : (d.tool_calls_count !== undefined ? d.tool_calls_count : "—")) +
+      (d.recovery_attempts ? " · تعافٍ: " + d.recovery_attempts : "") +
       " · ملفات: " + (d.files_count !== undefined ? d.files_count : "—") +
       " · المدة: " + Hub.fmtTime(d.duration_ms || 0);
-    if (card) {
-      card.actions.appendChild(summary);
-      card.actions.appendChild(facts);
-    }
+    card.actions.appendChild(facts);
 
-    if (event.verdict === "PASS" && d.cycle_id) {
+    if (pass && d.cycle_id) {
       var verify = el("button", "btn primary", "أوافق على النتيجة");
       verify.addEventListener("click", function () {
         verify.disabled = true;
@@ -389,22 +631,20 @@
             out.ok ? "✔ VERIFIED — موافقتك سُجّلت" : "تعذّرت الموافقة"));
         });
       });
-      if (card) card.actions.appendChild(verify);
+      card.actions.appendChild(verify);
     }
     if (d.evidence_path) {
       var note = el("div", "task-evidence");
       note.textContent = "الأدلة: " + d.evidence_path +
         (d.evidence_sha256 ? " · sha256: " + String(d.evidence_sha256).slice(0, 16) + "…" : "");
-      if (card) card.actions.appendChild(note);
+      card.actions.appendChild(note);
     }
     Hub.scrollDown();
     Hub.onTaskFinished();
   };
 
-  // ---------- المسارات المتقدمة (قسم تقني — يُفتح من الإعدادات) ----------
-
+  // ---------- المسارات المتقدمة (قسم تقني) ----------
   H["role:mission"] = function (event) {
-    // أحداث المهمة الحية المتخصصة (تقرير جيوسياسي + PDF)
     if (event.kind === "mission.start") {
       Hub.addWorking("المهمة الحية المتخصصة تعمل…");
       return;
@@ -416,21 +656,18 @@
         text: "الحكم: " + event.verdict + " — " + (event.text || ""),
         details: event.details
       });
-      Hub.$("messages").appendChild(syscard);
+      Hub.insertAtEnd(syscard);
       Hub.scrollDown();
       Hub.onTaskFinished();
       return;
     }
     if (event.kind === "mission_error") {
       Hub.removeWorking();
-      var errcard = Hub.makeSystemCard(event);
-      errcard.classList.add("error");
-      Hub.$("messages").appendChild(errcard);
+      Hub.showErrorCard(event);
       Hub.onTaskFinished();
       return;
     }
-    var generic = Hub.makeSystemCard(event);
-    Hub.insertBeforeWorking(generic);
+    Hub.insertAtEnd(Hub.makeSystemCard(event));
   };
 
   H["role:eoe"] = function (event) {
@@ -449,7 +686,7 @@
     });
     syscard.classList.add("eoe-card");
     if (event.kind === "hard_stop.fired") syscard.classList.add("error");
-    Hub.insertBeforeWorking(syscard);
+    Hub.insertAtEnd(syscard);
 
     if (event.kind === "grant.awaiting_owner" ||
         event.kind === "push.awaiting_owner") {
@@ -490,22 +727,19 @@
   }
 
   H["router.demo.start"] = H["router.demo.phase"] = function (event) {
-    var syscard = Hub.makeSystemCard(event);
-    Hub.insertBeforeWorking(syscard);
+    Hub.insertAtEnd(Hub.makeSystemCard(event));
   };
   H["router.demo.done"] = H["router.demo.error"] = function (event) {
     Hub.removeWorking();
-    var syscard = Hub.makeSystemCard(event);
-    Hub.$("messages").appendChild(syscard);
+    Hub.insertAtEnd(Hub.makeSystemCard(event));
     Hub.scrollDown();
     Hub.onTaskFinished();
   };
 
-  // مهمة البناء (textstats) — بطاقات موافقة داخلية
   H["approval.card"] = function (event) {
     var syscard = Hub.makeSystemCard(event);
     syscard.appendChild(buildApprovalCard(event));
-    Hub.insertBeforeWorking(syscard);
+    Hub.insertAtEnd(syscard);
   };
 
   function buildApprovalCard(event) {
@@ -524,7 +758,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ run_id: event.cycle_id, kind: kind, approved: approved })
-      }).then(function (out) {
+      }).then(function () {
         box.appendChild(el("div", "approval-result",
           approved ? "✔ وُافقت" : "✕ رُفضت — fail-closed"));
       });
@@ -574,15 +808,13 @@
 
     function failed(err) {
       Hub.removeWorking();
-      var syscard = Hub.makeSystemCard({
+      Hub.showErrorCard({
         kind: "cycle_error", role: "coordinator",
         text: "تعذر البث: " + err.message
       });
-      Hub.$("messages").appendChild(syscard);
       Hub.onTaskFinished();
     }
   };
 
-  // تصدير للوحدة
   window.TaskCards = { beginTask: beginTask };
 })();

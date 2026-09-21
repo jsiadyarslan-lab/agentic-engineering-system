@@ -93,8 +93,14 @@ def test_sources_registry_under_220_lines():
 
 
 def test_roles_tools_under_620_lines():
-    """الأمر 003: الموزّع كبر بتسجيل خمس أدوات — سقف جديد يراقبه."""
+    """الأمر 008: tools.py موزّع الأنحاف — التصنيف في tool_failures،
+    الويب في web_tools، الـPDF في pdf_tools، المانيفست في tool_manifest."""
     assert _count_lines("src/roles/tools.py") < 620
+    assert _count_lines("src/roles/tool_failures.py") < 420
+    assert _count_lines("src/roles/web_tools.py") < 180
+    assert _count_lines("src/roles/pdf_tools.py") < 80
+    assert _count_lines("src/roles/tool_manifest.py") < 60
+    assert _count_lines("src/roles/recovery.py") < 320
 
 
 def test_implementer_live_under_430_lines():
@@ -135,7 +141,10 @@ def test_tables_per_family_documented():
         if t in ("providers", "provider_configurations", "role_provider_mappings")
     }
     assert len(provider_tables) == 3
-    assert TABLE_COUNT_TOTAL == 17
+    # (الأمر 008/009) عائلة الجاهزية: سجل استدعاءات الأدوات + سجل القدرات
+    from readiness.models import READINESS_TABLES  # noqa: PLC0415
+    assert len(READINESS_TABLES) == 2
+    assert TABLE_COUNT_TOTAL == 19
 
 
 def test_cycle_structure_is_the_five_roles_in_order():

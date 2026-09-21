@@ -54,6 +54,9 @@ class ImplementerResult(BaseModel):
     stdout_truncated: str = ""
     stderr_truncated: str = Field(default="")
     evidence_refs: list[str] = Field(default_factory=list)
+    #: كتلة الفشل المنظمة (إضافة 008 §18) — class/stage/tool/reason؛
+    #: تصل المحكَّم والواجهة كما هي، لا سلسلة نصية غامضة.
+    failure: dict | None = None
 
 
 _SAFE_ID = re.compile(r"[^A-Za-z0-9_-]+")

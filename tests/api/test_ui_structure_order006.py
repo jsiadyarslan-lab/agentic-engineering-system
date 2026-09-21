@@ -91,7 +91,8 @@ def test_execution_card_steps_not_role_symbols():
     task_cards = (REPO / "src/ui/task-cards.js").read_text(encoding="utf-8")
     for step in ("التخطيط", "المراجعة", "التنفيذ", "التحقق", "التحكيم"):
         assert step in task_cards, f"مرحلة {step} مفقودة من بطاقة التنفيذ"
-    for mark in ("✓", "◌", "□"):
+    # (الأمر 008 §12) علامات المراحل: ✓ اكتمل / ● جارٍ / ○ بانتظار / ✕ فشل
+    for mark in ("✓", "●", "○", "✕"):
         assert mark in task_cards
 
 
@@ -117,14 +118,21 @@ def test_chat_and_task_stream_endpoints_wired():
 
 
 def test_versioned_assets_and_new_modules():
-    """أصول مرقمة بالإصدار + وحدات الواجهة الأربع محمّلة بالترتيب."""
-    assert "styles.css?v=3.0.0" in HTML
-    assert "app.js?v=3.0.0" in HTML
-    app_pos = HTML.index("app.js?v=3.0.0")
-    task_pos = HTML.index("task-cards.js?v=3.0.0")
-    settings_pos = HTML.index("settings.js?v=3.0.0")
-    projects_pos = HTML.index("projects.js?v=3.0.0")
-    assert app_pos < task_pos < settings_pos < projects_pos
+    """(الأمر 008) أصول مرقمة + الوحدات السبع بالترتيب — العارض قبل
+    النواة، والمحادثة المتدفقة والبطاقات قبل الإعدادات والبيئة."""
+    assert "styles.css?v=3.1.0" in HTML
+    assert "live.css?v=3.1.0" in HTML
+    assert "markdown.js?v=3.1.0" in HTML
+    md_pos = HTML.index("markdown.js?v=3.1.0")
+    app_pos = HTML.index("app.js?v=3.1.0")
+    chat_pos = HTML.index("chat-stream.js?v=3.1.0")
+    task_pos = HTML.index("task-cards.js?v=3.1.0")
+    picker_pos = HTML.index("model-picker.js?v=3.1.0")
+    settings_pos = HTML.index("settings.js?v=3.1.0")
+    env_pos = HTML.index("environment.js?v=3.1.0")
+    projects_pos = HTML.index("projects.js?v=3.1.0")
+    assert md_pos < app_pos < chat_pos < task_pos < picker_pos
+    assert picker_pos < settings_pos < env_pos < projects_pos
 
 
 def test_mode_chip_shows_current_selection():

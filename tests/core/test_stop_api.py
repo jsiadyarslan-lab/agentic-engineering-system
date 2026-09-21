@@ -121,6 +121,26 @@ def live_task_env(tmp_path, monkeypatch):
         return router_box["router"]
 
     monkeypatch.setattr(routes, "_test_router_factory", factory)
+
+    # (الأمر 009) مسبار preflight مضبوط — بيئة الاختبار معزولة عن
+    # الشبكة الحية عمدًا؛ الفحص الحقيقي له اختباراته في tests/readiness/.
+    from readiness import registry as readiness_registry
+    from readiness.probes import ProbeResult
+    import datetime as _dt
+
+    def fast_probe(sessions, capability_id, **_kwargs):
+        return readiness_registry.record_probe(
+            sessions, capability_id,
+            ProbeResult(
+                status="READY",
+                reason="مضبوط لبيئة الاختبار المعزولة",
+                checked_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+                ttl_seconds=3600,
+                details={"test_seam": True},
+            ),
+        )
+
+    monkeypatch.setattr(routes, "_preflight_probe_fn", fast_probe)
     yield router_box
 
 

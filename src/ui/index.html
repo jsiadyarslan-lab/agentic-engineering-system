@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic Engineering System</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.0.0">
-  <link rel="stylesheet" href="/static/styles.css?v=3.0.0">
-  <link rel="stylesheet" href="/static/projects.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.1.0">
+  <link rel="stylesheet" href="/static/styles.css?v=3.1.0">
+  <link rel="stylesheet" href="/static/projects.css?v=3.1.0">
+  <link rel="stylesheet" href="/static/live.css?v=3.1.0">
 </head>
 <body>
   <div class="app">
@@ -64,6 +65,9 @@
 
         <!-- الرسائل -->
         <div class="messages" id="messages"></div>
+
+        <!-- زر متابعة الأسفل — يظهر عند صعود المالك للقراءة (008 §5) -->
+        <button id="follow-btn" class="follow-btn" hidden title="العودة إلى آخر حدث">↓ متابعة</button>
       </div>
 
       <!-- عرض المشروع — يحل محل المحادثة عند فتح مشروع (وضع المشروع) -->
@@ -122,6 +126,19 @@
         <div id="providers-body"></div>
       </section>
 
+      <section class="drawer-section" id="section-environment">
+        <h3>البيئة والجاهزية</h3>
+        <p class="drawer-note">جرد حقيقي لقدرات النظام قبل أي مهمة — لا «جاهز» بلا مسبار فعلي، والجاهزية تنتهي صلاحيتها.</p>
+        <div class="env-summary" id="env-summary"></div>
+        <div class="pv-row">
+          <button class="pv-btn primary" id="env-run-all">فحص كامل للبيئة</button>
+          <button class="pv-btn" id="env-inventory">جرد البيئة (OS/شبكة/أدوات)</button>
+        </div>
+        <div class="env-note" id="env-note"></div>
+        <div class="env-inventory-body" id="env-inventory-body" hidden></div>
+        <div class="cap-grid" id="env-caps"></div>
+      </section>
+
       <section class="drawer-section advanced" id="section-advanced">
         <h3>أدوات متقدمة</h3>
         <p class="drawer-note">مسارات تشخيصية ومتخصصة للمستخدم المتقدم.</p>
@@ -141,15 +158,20 @@
     <div class="modal" role="dialog" aria-label="تفاصيل الحدث">
       <div class="modal-head">
         <span id="modal-title">تفاصيل الحدث</span>
+        <button id="modal-copy" class="btn ghost small" title="نسخ الـJSON الخام">نسخ JSON</button>
         <button id="modal-close" title="إغلاق">✕</button>
       </div>
       <pre id="modal-json" dir="ltr"></pre>
     </div>
   </div>
 
-  <script src="/static/app.js?v=3.0.0"></script>
-  <script src="/static/task-cards.js?v=3.0.0"></script>
-  <script src="/static/settings.js?v=3.0.0"></script>
-  <script src="/static/projects.js?v=3.0.0"></script>
+  <script src="/static/markdown.js?v=3.1.0"></script>
+  <script src="/static/app.js?v=3.1.0"></script>
+  <script src="/static/chat-stream.js?v=3.1.0"></script>
+  <script src="/static/task-cards.js?v=3.1.0"></script>
+  <script src="/static/model-picker.js?v=3.1.0"></script>
+  <script src="/static/settings.js?v=3.1.0"></script>
+  <script src="/static/environment.js?v=3.1.0"></script>
+  <script src="/static/projects.js?v=3.1.0"></script>
 </body>
 </html>

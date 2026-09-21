@@ -59,6 +59,25 @@ class ScriptedLiveRouter:
             model,
         )
 
+    def chat_live_stream(self, messages, *, provider_id=None, model=None,
+                         on_delta=None, **_kw):
+        """بث متدفق (الأمر 008 §3) — نفس رد chat_live مقطّعًا فعليًا."""
+        record = {"provider": str(provider_id), "model": str(model)}
+        self.calls.append(record)
+        user = messages[-1].content
+        if '"phase"' not in user and '"previous_reviews"' not in user:
+            self.chat_calls.append(record)
+        outcome = self.chat_live(
+            messages, provider_id=provider_id, model=model
+        )
+        text = outcome["text"]
+        step = max(1, len(text) // 3)
+        pieces = [text[i:i + step] for i in range(0, len(text), step)]
+        for piece in pieces:
+            if on_delta is not None:
+                on_delta(piece)
+        return {**outcome, "streamed": True}
+
     @staticmethod
     def _wrap(text, provider_id, model):
         return {
@@ -146,6 +165,28 @@ def api_env(tmp_path, monkeypatch):
         return router
 
     monkeypatch.setattr(routes, "_test_router_factory", factory)
+
+    # (الأمر 009) مسبار preflight مضبوط لاختبارات API — نفس مسار
+    # الكتابة الحقيقي (record_probe) بنتائج معلنة: بيئة الاختبار
+    # معزولة عن الشبكة الحية عمدًا، والفحص الحقيقي له اختباراته
+    # الخاصة (tests/readiness/) بمسبارات حقيقية.
+    from readiness import registry as readiness_registry
+
+    def fast_probe(sessions, capability_id, **_kwargs):
+        from readiness.probes import ProbeResult
+        import datetime as _dt
+        return readiness_registry.record_probe(
+            sessions, capability_id,
+            ProbeResult(
+                status="READY",
+                reason="مضبوط لبيئة الاختبار المعزولة",
+                checked_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+                ttl_seconds=3600,
+                details={"test_seam": True},
+            ),
+        )
+
+    monkeypatch.setattr(routes, "_preflight_probe_fn", fast_probe)
     yield {"router": router, "sessions": sessions}
 
 

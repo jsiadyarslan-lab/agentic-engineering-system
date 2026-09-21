@@ -402,6 +402,9 @@ class ModelRouter:
             or resolved[chain_head].get("model", "")
             or "gpt-4o-mini"
         )
+        # (الأمر 008 §3) مواصفات المزودين الحية — مسار البث المتدفق
+        # يبني نقله منها (streaming.py) بمعزل عن نقل الرد الكامل.
+        router._live_specs = dict(resolved)
         return router
 
     def chat_live(
@@ -434,6 +437,80 @@ class ModelRouter:
                 "AGenthubV2_LIVE_DEFAULT_MODEL في .env"
             )
         return self.chat(messages, provider_id=pid, model=chosen_model)
+
+    def chat_live_stream(
+        self,
+        messages: list[ChatMessage],
+        *,
+        provider_id: Provider | str | None = None,
+        model: str | None = None,
+        on_delta: Callable[[str], None] | None = None,
+    ) -> dict:
+        """استدعاء حي متدفق (الأمر 008 §3) — قطع فعلية لحظة وصولها.
+
+        نفس صراحة chat_live: لا سقوط إلى mock؛ فشل البث المتدفق
+        (مزود لا يدعم stream) يُعاد خطأً مصنَّفًا ليقرر المستدعي
+        التراجع الصريح إلى المسار الكامل — لا نجاح وهمي.
+        """
+        from router.streaming import stream_completion  # noqa: PLC0415
+
+        pid = (
+            provider_id.value
+            if isinstance(provider_id, Provider)
+            else str(provider_id or self.default_provider)
+        )
+        specs = getattr(self, "_live_specs", {})
+        if pid not in specs:
+            raise ProviderCallError(
+                f"لا مواصفة حية للمزود '{pid}' — البث المتدفق يُبنى عبر "
+                "ModelRouter.build_live()"
+            )
+        chosen_model = model or self._live_default_model
+        if not chosen_model:
+            raise ProviderCallError(
+                "لا نموذج محدد للاستدعاء الحي — مرره صراحة"
+            )
+        # بوابة حد المعدل نفسها (chat) — البث لا يتجاوزها أبدًا
+        est_tokens = self._estimate_tokens(messages)
+        allowed = False
+        for attempt in range(1, self._max_rate_waits + 1):
+            allowed, wait = self._limiter.acquire(pid, est_tokens)
+            if allowed:
+                break
+            self._emit({
+                "kind": "rate_limit.wait",
+                "provider": pid,
+                "wait_seconds": round(wait, 2),
+                "attempt": attempt,
+            })
+            self._sleeper(max(wait, 0.01))
+        if not allowed:
+            raise ProviderCallError(
+                f"حد المعدل ما زال مرفوعًا لمزود {pid} بعد "
+                f"{self._max_rate_waits} انتظارات"
+            )
+        started = time.monotonic()
+        try:
+            text = stream_completion(
+                dict(specs[pid]), chosen_model, messages, on_delta=on_delta
+            )
+        except ProviderCallError:
+            raise
+        except Exception as error:  # noqa: BLE001 — فشل صريح لا صامت
+            raise ProviderCallError(
+                f"البث المتدفق فشل مع {pid}: {error}", is_server_error=True
+            ) from error
+        duration_ms = int((time.monotonic() - started) * 1000)
+        self._emit({
+            "kind": "router.call.logged",
+            "provider": pid, "model": chosen_model, "tokens": None,
+            "duration_ms": duration_ms, "cooled": False,
+            "failed_over": False, "streamed": True,
+        })
+        return {
+            "text": text, "provider": pid, "model": chosen_model,
+            "tokens": None, "duration_ms": duration_ms, "streamed": True,
+        }
 
 
 def live_transport(provider_cfg: dict) -> Callable[[str, list[ChatMessage]], str]:

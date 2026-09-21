@@ -84,7 +84,7 @@ def test_live_chat_never_calls_mock_factory(client, api_env, monkeypatch):
     resp = client.post("/api/chat/stream", json={"message": "مرحبا"})
     assert resp.status_code == 200
     events = sse_events(resp)
-    assert [e["kind"] for e in events].count("chat.done") == 1
+    assert [e["kind"] for e in events].count("message_completed") == 1
     assert api_env["router"].chat_calls
 
 

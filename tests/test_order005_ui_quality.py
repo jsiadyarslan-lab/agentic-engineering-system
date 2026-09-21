@@ -154,17 +154,26 @@ def test_provider_cards_expose_known_models(client):
             assert cfg["default_model"] in cfg["models"]
 
 
-def test_models_without_key_falls_back_to_declared(client):
-    """بلا مفتاح محفوظ: القائمة المعلنة تُعرض بمصدر declared لا فراغ صامت."""
+def test_models_without_key_uses_public_endpoint_or_declared(client):
+    """(الأمر 008 §35) بلا مفتاح: /models العام (نفيديا موثقة) يُجلب
+    حيًا؛ فإن رُفض عاد للنماذج المعلنة برسالة صادقة — لا فراغ صامت.
+
+    نقطة النماذج لدى نفيديا عامة (HTTP 200 بلا مصادقة — تشخيص 007.1
+    الموثق: 82 نموذجًا)، فالمصدر هنا live أو declared حسب الشبكة
+    لحظة الاختبار — والقائمة الصحيحة حاضرة في الحالين.
+    """
     provider = _provider_by_name(client, "nvidia")
     cfg = _primary_config(provider)
     body = client.post(
         f"/api/providers/{provider['id']}/models/refresh"
     ).json()
-    assert body["source"] == "declared"
-    # المعلن في البذر: النسخة الصحيحة بالبادئة + القديمة (توافق)
+    assert body["source"] in ("declared", "live")
+    # المعلن في البذر: النسخة الصحيحة بالبادئة حاضرة في الحالين
     assert "nvidia/nemotron-3-ultra-550b-a55b" in body["model_ids"]
-    assert "لا مفتاح" in body["message"]
+    if body["source"] == "declared":
+        assert "تعذر" in body["message"] or "لا مفتاح" in body["message"]
+    else:
+        assert body["models_count"] >= 2
     assert cfg["models"]
 
 

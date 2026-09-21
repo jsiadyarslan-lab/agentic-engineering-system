@@ -955,12 +955,12 @@ def refresh_models(
 
     headers = {"Content-Type": "application/json"}
     if provider.auth_type == "bearer":
+        # (الأمر 008 §35) قوائم /models عامة لدى مزودين (نفيديا موثقة:
+        # 82 نموذجًا بلا مفتاح) — نجرب الجلب الحي دائمًا؛ فإن رُفضت
+        # المصادقة (401/403) نعود للنماذج المعلنة برسالة صادقة.
         key = secrets.get_key(provider.name)
-        if not key:
-            return {"ok": False, "source": "declared",
-                    "model_ids": _cfg_models(cfg),
-                    "message": "لا مفتاح محفوظ — النماذج المعلنة فقط"}
-        headers["Authorization"] = f"Bearer {key}"
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
     elif provider.auth_type == "config_file":
         resolved = _resolve_config_file_auth(cfg.config_file)
         if resolved is None:
@@ -989,6 +989,18 @@ def refresh_models(
     except Exception as error:  # noqa: BLE001 — فشل الجلب لا يكسر شيئًا
         return {"ok": False, "source": "declared", "model_ids": _cfg_models(cfg),
                 "message": f"تعذر الجلب الحي: {error} — النماذج المعلنة فقط"}
+
+
+def _models_endpoint_public(base_url: str, timeout: float) -> bool:
+    """فحص واحد خفيف: هل /models عام هنا؟ (نفيديا: نعم موثقة)."""
+    try:
+        status, _body = _http_fetch_real(
+            base_url + "/models", {"Content-Type": "application/json"},
+            timeout, method="GET",
+        )
+        return status == 200
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _cfg_models(cfg: ProviderConfiguration) -> list[str]:

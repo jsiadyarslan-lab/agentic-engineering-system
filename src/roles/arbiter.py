@@ -27,6 +27,10 @@ class ArbiterRequest(BaseModel):
     parties: list[str] = Field(default_factory=list)
     evidences: list[str] = Field(default_factory=list)
     history: list[str] = Field(default_factory=list)
+    #: سياق الفشل المنظم (إضافة 008 §14): لكل مهمة فاشلة كتلة
+    #: {class, stage, tool, reason, retryable, queries, artifacts,
+    #: evidence} — ليقرر المحكَّم على السبب الحقيقي لا على «فشل» عامة.
+    failure_context: dict = Field(default_factory=dict)
 
 
 class ArbiterResult(BaseModel):

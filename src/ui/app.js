@@ -1,7 +1,8 @@
-/* agent hub v2 — النواة: محادثة/مهمة + الشريط الجانبي + الـcomposer.
+/* Agentic Engineering System — النواة: محادثة/مهمة + الشريط الجانبي.
  * سقف دائم: <2000 سطر لكل ملف واجهة (tests/contracts/test_thinness.py).
- * الأمر 006: واجهة محادثة أولًا — زر ＋ يفصل «محادثة» (نموذج واحد)
- * عن «مهمة» (دورة الأدوار الخمسة الحية)، والإرسال يمين الصندوق بصريًا.
+ * الأمر 008: المحادثة والمهمة تجربة واحدة حية — مؤشرات صادقة من
+ * أحداث فعلية، تمرير ذكي (لا إجبار أثناء القراءة §5)، استرداد بعد
+ * refresh (§34)، وأي حدث خام يظل متاحًا من «التفاصيل» لا كعرض أساسي.
  */
 (function () {
   "use strict";
@@ -22,6 +23,7 @@
   var stopRunEl = $("stop-run");
   var taskSettingsEl = $("task-settings");
   var taskSettingsBodyEl = $("task-settings-body");
+  var followBtn = $("follow-btn");
 
   // ---------- الحالة ----------
   var state = {
@@ -30,16 +32,45 @@
     busy: false,
     activeRun: null,              // { kind: "task"|"mission"|"chat", cycleId }
     modelsConfig: null,           // آخر إعدادات نماذج (يملؤها settings.js)
+    lastSeq: 0,                   // آخر seq وصل — لإعادة الاتصال (§19)
   };
 
-  // معالجات الأحداث المتخصصة — يسجلها task-cards.js (فصل الوحدات)
-  var handlers = {};
+  var handlers = {};              // معالجات تسجلها الوحدات الشقيقة
 
-  // ---------- أدوات عامة ----------
-  function scrollDown() {
-    scrollEl.scrollTop = scrollEl.scrollHeight;
+  // ---------- تمرير ذكي (§5): أسفل = متابعة تلقائية، صعود = توقف ----------
+  var sticky = true;
+
+  function nearBottom() {
+    return scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 48;
   }
 
+  function updateSticky() {
+    var wasSticky = sticky;
+    sticky = nearBottom();
+    if (wasSticky && !sticky && followBtn) followBtn.hidden = false;
+    if (sticky && followBtn) followBtn.hidden = true;
+  }
+  scrollEl.addEventListener("scroll", updateSticky, { passive: true });
+
+  function scrollDown() {
+    scrollEl.scrollTop = scrollEl.scrollHeight;
+    sticky = true;
+    if (followBtn) followBtn.hidden = true;
+  }
+
+  if (followBtn) {
+    followBtn.addEventListener("click", function () {
+      scrollDown();
+      inputEl.focus();
+    });
+  }
+
+  function onLiveContent() {
+    // تحديث حي: تمرير فقط إن كان المالك في الأساس — لا إجبار (§5)
+    if (sticky) scrollEl.scrollTop = scrollEl.scrollHeight;
+  }
+
+  // ---------- أدوات عامة ----------
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -70,7 +101,37 @@
     updateSendState();
   }
 
-  // ---------- بث SSE عام ----------
+  // ---------- بث SSE عام + مضخة قابلة لإعادة الاستخدام (§19) ----------
+  function parseSSEChunk(bufferObj, chunkText, onEvent) {
+    bufferObj.buf += chunkText;
+    var parts = bufferObj.buf.split("\n\n");
+    bufferObj.buf = parts.pop();
+    parts.forEach(function (part) {
+      var line = part.split("\n")
+        .find(function (l) { return l.indexOf("data:") === 0; });
+      if (!line) return;
+      var event;
+      try { event = JSON.parse(line.slice(5).trim()); }
+      catch (e) { return; }
+      if (event.seq) state.lastSeq = Math.max(state.lastSeq, event.seq);
+      onEvent(event);
+    });
+  }
+
+  function pumpSSE(resp) {
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder("utf-8");
+    var bufferObj = { buf: "" };
+    function pump() {
+      return reader.read().then(function (chunk) {
+        if (chunk.done) return;
+        parseSSEChunk(bufferObj, decoder.decode(chunk.value, { stream: true }), renderEvent);
+        return pump();
+      });
+    }
+    return pump();
+  }
+
   function postStream(url, body) {
     return fetch(url, {
       method: "POST",
@@ -78,37 +139,25 @@
       body: JSON.stringify(body)
     }).then(function (resp) {
       if (!resp.ok) throw new Error("HTTP " + resp.status);
-      var reader = resp.body.getReader();
-      var decoder = new TextDecoder("utf-8");
-      var buffer = "";
+      return pumpSSE(resp);
+    });
+  }
 
-      function pump() {
-        return reader.read().then(function (chunk) {
-          if (chunk.done) return;
-          buffer += decoder.decode(chunk.value, { stream: true });
-          var parts = buffer.split("\n\n");
-          buffer = parts.pop();
-          parts.forEach(function (part) {
-            var line = part.split("\n")
-              .find(function (l) { return l.indexOf("data:") === 0; });
-            if (!line) return;
-            var event;
-            try { event = JSON.parse(line.slice(5).trim()); }
-            catch (e) { return; }
-            renderEvent(event);
-          });
-          return pump();
-        });
-      }
-      return pump();
+  /** بث GET قابل لإعادة الاتصال — after يكمل من آخر حدث (§19). */
+  function getStream(url) {
+    return fetch(url).then(function (resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return pumpSSE(resp);
     });
   }
 
   // ---------- توجيه الأحداث: النواة أو الوحدات المتخصصة ----------
   function renderEvent(event) {
+    if (event.kind === "stream.done") return;   // علامة تحكم لا رسالة
     if (state.activeRun && !state.activeRun.cycleId && event.cycle_id &&
         event.cycle_id.indexOf("chat-") !== 0) {
       state.activeRun.cycleId = event.cycle_id;
+      if (stopRunEl) stopRunEl.disabled = false;
     }
     var special = handlers[event.kind] || handlers["role:" + event.role];
     if (special) {
@@ -119,17 +168,17 @@
   }
 
   function defaultEvent(event) {
-    // أحداث عامة بلا معالج متخصص — بطاقة نظامية رفيعة بتفاصيل قابلة للفتح
+    // أحداث عامة بلا معالج متخصص — بطاقة رفيعة بتفاصيل قابلة للفتح
     var card = makeSystemCard(event);
-    insertBeforeWorking(card);
+    insertAtEnd(card);
   }
 
-  // ---------- بطاقة نظامية رفيعة (أحداث المحادثة والأخطاء) ----------
+  // ---------- بطاقة نظامية (أخطاء/إشعارات) بتفاصيل قابلة للطي (§21-§22) ----------
   function makeSystemCard(event) {
     var wrap = document.createElement("div");
-    wrap.className = "sys-card" +
-      (event.kind === "chat.error" || event.kind === "cycle_error" ||
-       event.kind === "CONFIGURATION_REQUIRED" ? " error" : "");
+    var isError = event.kind === "chat.error" || event.kind === "cycle_error" ||
+      event.kind === "CONFIGURATION_REQUIRED" || (event.status || "").indexOf("FAIL") === 0;
+    wrap.className = "sys-card" + (isError ? " error" : "");
     var head = document.createElement("div");
     head.className = "sys-head";
     var title = document.createElement("span");
@@ -150,25 +199,57 @@
     return wrap;
   }
 
-  // ---------- مؤشر العمل ----------
-  var workingEl = null;
+  /** بطاقة خطأ مفهومة (§22): السبب/الحالة/الإجراء + تفاصيل تقنية طيّة. */
+  function showErrorCard(event) {
+    var wrap = document.createElement("div");
+    wrap.className = "sys-card error human-error";
+    var box = document.createElement("div");
+    box.className = "he-body";
+    box.appendChild(el("div", "he-title", "⚠ تعذر إكمال الطلب"));
+    var d = event.details || {};
+    var reason = event.text || "";
+    box.appendChild(el("div", "he-row", "السبب: " + reason));
+    if (event.code || d.code) {
+      box.appendChild(el("div", "he-row", "الحالة: " + (event.code || d.code)));
+    }
+    box.appendChild(el("div", "he-row",
+      "الإجراء: لن يُعتبر الطلب ناجحًا — أعد المحاولة أو راجع الإعدادات."));
+    wrap.appendChild(box);
+    var details = document.createElement("details");
+    details.className = "he-tech";
+    details.innerHTML = "<summary>التفاصيل التقنية</summary>";
+    var pre = document.createElement("pre");
+    pre.dir = "ltr";
+    pre.textContent = JSON.stringify(event, null, 2);
+    details.appendChild(pre);
+    wrap.appendChild(details);
+    insertAtEnd(wrap);
+    scrollDown();
+  }
 
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  // ---------- مؤشر العمل ----------
   function addWorking(label) {
     removeWorking();
-    workingEl = document.createElement("div");
-    workingEl.className = "working";
-    workingEl.id = "working-indicator";
-    workingEl.innerHTML =
+    var indicator = document.createElement("div");
+    indicator.className = "working";
+    indicator.id = "working-indicator";
+    indicator.innerHTML =
       '<span class="typing"><i></i><i></i><i></i></span>' +
       '<span class="working-label">' + esc(label || "جارٍ العمل…") + "</span>";
-    messagesEl.appendChild(workingEl);
+    messagesEl.appendChild(indicator);
     scrollDown();
   }
 
   function removeWorking() {
     var indicator = $("working-indicator");
     if (indicator) indicator.remove();
-    workingEl = null;
   }
 
   function insertBeforeWorking(node) {
@@ -178,10 +259,15 @@
     } else {
       messagesEl.appendChild(node);
     }
-    scrollDown();
+    onLiveContent();
   }
 
-  // ---------- الرسائل: فقاعات حديثة ----------
+  function insertAtEnd(node) {
+    messagesEl.appendChild(node);
+    onLiveContent();
+  }
+
+  // ---------- الرسائل ----------
   function addUserMessage(text) {
     var wrap = document.createElement("div");
     wrap.className = "bubble user";
@@ -189,7 +275,7 @@
     body.className = "bubble-body";
     body.textContent = text;
     wrap.appendChild(body);
-    messagesEl.appendChild(wrap);
+    insertAtEnd(wrap);
     scrollDown();
   }
 
@@ -197,27 +283,32 @@
     var wrap = document.createElement("div");
     wrap.className = "bubble assistant";
     var body = document.createElement("div");
-    body.className = "bubble-body";
+    body.className = "bubble-body md-body";
     body.textContent = "";
     var foot = document.createElement("div");
     foot.className = "bubble-foot";
     wrap.appendChild(body);
     wrap.appendChild(foot);
-    messagesEl.appendChild(wrap);
+    insertAtEnd(wrap);
     scrollDown();
     return { root: wrap, body: body, foot: foot };
   }
 
   function addHistoryMessage(message) {
-    // إعادة عرض رسالة محفوظة من قاعدة البيانات عند فتح محادثة
     if (message.role === "user") {
       addUserMessage(message.content);
       return;
     }
     if (message.role === "assistant") {
-      // رسالة خلاصة مهمة محفوظة — نص عادي في فقاعة مساعد
       var bubble = addAssistantBubble();
-      bubble.body.textContent = message.content;
+      if (window.MD) {
+        bubble.body.innerHTML = window.MD.render(message.content);
+      } else {
+        bubble.body.textContent = message.content;
+      }
+      if (message.state_badge) {
+        bubble.foot.textContent = "الحكم: " + message.state_badge;
+      }
       return;
     }
     // أدوار أخرى (thinker/…) — لا تُعرض في التاريخ المختصر
@@ -227,6 +318,7 @@
   var modalBackdrop = $("modal-backdrop");
   var modalJson = $("modal-json");
   var modalTitle = $("modal-title");
+  var modalCopy = $("modal-copy");
 
   function openModal(event) {
     modalTitle.textContent = (event.role || "") + " — " + event.kind;
@@ -236,6 +328,13 @@
 
   function closeModal() { modalBackdrop.hidden = true; }
   $("modal-close").addEventListener("click", closeModal);
+  if (modalCopy) {
+    modalCopy.addEventListener("click", function () {
+      navigator.clipboard && navigator.clipboard.writeText(modalJson.textContent);
+      modalCopy.textContent = "نُسخ ✓";
+      setTimeout(function () { modalCopy.textContent = "نسخ JSON"; }, 1200);
+    });
+  }
   modalBackdrop.addEventListener("click", function (e) {
     if (e.target === modalBackdrop) closeModal();
   });
@@ -247,10 +346,13 @@
   });
 
   // ---------- الشريط الجانبي: محادثات حقيقية ----------
+  var _lastConversations = [];
+
   function loadConversations() {
     fetchJSON("/api/conversations").then(function (out) {
       if (!out.ok) return;
-      renderConversations(out.j.conversations || []);
+      _lastConversations = out.j.conversations || [];
+      renderConversations(_lastConversations);
     });
   }
 
@@ -279,6 +381,7 @@
 
   function openConversation(c) {
     state.conversationId = c.conversation_id;
+    state.lastSeq = 0;
     setMode(c.mode === "task" ? "task" : "chat", { silent: true });
     chatTitleEl.textContent = c.title;
     modeBadgeEl.hidden = false;
@@ -291,40 +394,47 @@
         (out.j.messages || []).forEach(addHistoryMessage);
         scrollDown();
       });
-    renderConversationsLast();
-  }
-
-  var _lastConversations = [];
-
-  function renderConversationsLast() {
     renderConversations(_lastConversations);
+    resumeActiveRun(c.conversation_id);   // (§34) استرداد التشغيل الحي
   }
 
-  // تغليف loadConversations ليتذكر القائمة (تحديث active بعد الفتح)
-  var _loadConversations = loadConversations;
-  loadConversations = function () {
-    fetchJSON("/api/conversations").then(function (out) {
-      if (!out.ok) return;
-      _lastConversations = out.j.conversations || [];
-      renderConversations(_lastConversations);
+  /** استرداد بعد refresh (§34): مهمة/توليد جارٍ يعاد تعليقه حيًا. */
+  function resumeActiveRun(conversationId) {
+    fetchJSON("/api/cycle/active").then(function (out) {
+      if (!out.ok || !out.j.running) {
+        if (window.ChatLive) window.ChatLive.resumeIfRunning(conversationId);
+        return;
+      }
+      if (out.j.conversation_id !== conversationId) {
+        if (window.ChatLive) window.ChatLive.resumeIfRunning(conversationId);
+        return;
+      }
+      // المهمة الجارية لهذه المحادثة — أعد بناء التجربة من الأرشيف (§19)
+      setBusy(true);
+      state.activeRun = { kind: "task", cycleId: out.j.cycle_id };
+      stopRunEl.hidden = false;
+      stopRunEl.disabled = false;
+      if (window.TaskCards) window.TaskCards.beginTask();
+      getStream("/api/cycle/events/" + out.j.cycle_id + "?after=0")
+        .then(onTaskFinished, function () { onTaskFinished(); });
     });
-  };
+  }
 
   function newChat() {
     state.conversationId = null;
+    state.lastSeq = 0;
     chatTitleEl.textContent = "محادثة جديدة";
     modeBadgeEl.hidden = true;
     messagesEl.textContent = "";
     if (welcomeEl) welcomeEl.style.display = "";
     setMode("chat");
     inputEl.focus();
-    renderConversationsLast();
+    renderConversations(_lastConversations);
   }
 
   $("new-chat").addEventListener("click", newChat);
 
   // ---------- طي الشريط الجانبي ----------
-  var sidebarEl = $("sidebar");
   function toggleSidebar() {
     document.body.classList.toggle("sidebar-collapsed");
   }
@@ -380,7 +490,6 @@
     });
   });
 
-  // اقتراحات شاشة البداية تضبط النمط أيضًا
   document.querySelectorAll(".suggestion").forEach(function (btn) {
     btn.addEventListener("click", function () {
       setMode(btn.getAttribute("data-mode"));
@@ -428,6 +537,7 @@
     updateSendState();
     hideWelcome();
     addUserMessage(text);
+    state.lastSeq = 0;
     if (state.mode === "task") {
       startTask(text);
     } else {
@@ -435,64 +545,39 @@
     }
   }
 
-  // ---------- المحادثة الحية ----------
+  // ---------- المحادثة الحية (المنطق في chat-stream.js — هنا التنسيق) ----------
   function startChat(text) {
     state.activeRun = { kind: "chat", cycleId: "" };
     setBusy(true);
-    var bubble = null;
-    var body = null;
-
     postStream("/api/chat/stream", {
       message: text,
       conversation_id: state.conversationId,
     }).then(finish, failed);
 
-    handlers["chat.start"] = function (event) {
-      state.conversationId = event.details.conversation_id;
-      chatTitleEl.textContent = chatTitleEl.textContent === "محادثة جديدة"
-        ? text.slice(0, 40) : chatTitleEl.textContent;
-      modeBadgeEl.hidden = false;
-      modeBadgeEl.textContent = "محادثة";
-      bubble = addAssistantBubble();
-      body = bubble.body;
-    };
-    handlers["chat.delta"] = function (event) {
-      if (!body) return;
-      body.textContent += (body.textContent ? " " : "") + event.text;
-      scrollDown();
-    };
-    handlers["chat.done"] = function (event) {
+    handlers["conversation.bind"] = function (event) {
       var d = event.details || {};
-      if (bubble) {
-        bubble.foot.textContent =
-          (d.provider || "") + " · " + (d.model || "") +
-          " · " + fmtTime(d.duration_ms || 0);
-      }
-      removeWorking();
-    };
-    handlers["chat.error"] = function (event) {
-      removeWorking();
-      var card = makeSystemCard(event);
-      messagesEl.appendChild(card);
-      scrollDown();
+      if (d.conversation_id) state.conversationId = d.conversation_id;
     };
 
     function failed(err) {
-      removeWorking();
-      var card = makeSystemCard({
+      showErrorCard({
         kind: "chat.error", role: "chat",
         text: "تعذر البث: " + err.message,
         details: { error: String(err.message) }
       });
-      messagesEl.appendChild(card);
       finish();
     }
 
     function finish() {
-      delete handlers["chat.start"];
-      delete handlers["chat.delta"];
-      delete handlers["chat.done"];
-      delete handlers["chat.error"];
+      state.activeRun = null;
+      setBusy(false);
+      loadConversations();
+    }
+  }
+
+  /** انتهت رسالة محادثة — تحرير الحالة (من chat-stream.js). */
+  function onChatDone() {
+    if (state.activeRun && state.activeRun.kind === "chat") {
       state.activeRun = null;
       setBusy(false);
       loadConversations();
@@ -511,29 +596,28 @@
     postStream("/api/cycle/stream", {
       goal: goal,
       conversation_id: state.conversationId,
-    }).then(finish, failed);
+    }).then(onTaskFinished, failed);
 
     function failed(err) {
       removeWorking();
-      var card = makeSystemCard({
+      showErrorCard({
         kind: "cycle_error", role: "coordinator",
         text: "تعذر البث: " + err.message,
         details: { error: String(err.message) }
       });
-      messagesEl.appendChild(card);
-      finish();
-    }
-
-    function finish() {
-      removeWorking();
-      state.activeRun = null;
-      setBusy(false);
-      stopRunEl.hidden = true;
-      loadConversations();
+      onTaskFinished();
     }
   }
 
-  // حدث المهمة يصل من البث — بطاقة التنفيذ تديرها task-cards.js
+  function onTaskFinished() {
+    removeWorking();
+    if (state.activeRun && state.activeRun.kind !== "task") return;
+    state.activeRun = null;
+    setBusy(false);
+    stopRunEl.hidden = true;
+    loadConversations();
+  }
+
   handlers["task.conversation"] = function (event) {
     state.conversationId = event.details.conversation_id;
     chatTitleEl.textContent =
@@ -567,7 +651,7 @@
         details: out.j || {}
       });
       card.classList.add("stop-card");
-      insertBeforeWorking(card);
+      insertAtEnd(card);
     });
   }
 
@@ -597,25 +681,27 @@
     handlers: handlers,
     $: $,
     esc: esc,
+    el: el,
     fmtTime: fmtTime,
     fetchJSON: fetchJSON,
     postStream: postStream,
+    getStream: getStream,
+    pumpSSE: pumpSSE,
     renderEvent: renderEvent,
     scrollDown: scrollDown,
+    onLiveContent: onLiveContent,
     addUserMessage: addUserMessage,
     makeSystemCard: makeSystemCard,
+    showErrorCard: showErrorCard,
+    insertAtEnd: insertAtEnd,
     insertBeforeWorking: insertBeforeWorking,
     removeWorking: removeWorking,
     addWorking: addWorking,
     openModal: openModal,
     setBusy: setBusy,
+    onChatDone: onChatDone,
     loadConversations: function () { loadConversations(); },
-    onTaskFinished: function () {
-      state.activeRun = null;
-      setBusy(false);
-      stopRunEl.hidden = true;
-      loadConversations();
-    },
+    onTaskFinished: onTaskFinished,
     stopButtonEnable: function (enabled) {
       stopRunEl.disabled = !enabled;
     },
