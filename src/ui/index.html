@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent Hub v2</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css">
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=2.1.0">
+  <link rel="stylesheet" href="/static/styles.css?v=2.1.0">
 </head>
 <body>
   <div class="app">
 
-    <!-- الشريط الجانبي: قائمة المحادثات فقط -->
+    <!-- الشريط الجانبي: قائمة المحادثات -->
     <aside class="sidebar">
       <div class="sidebar-head">
-        <span class="brand">◉ agent hub</span>
-        <span class="version">v2 · دورة + موجّه</span>
+        <span class="brand">agent hub</span>
+        <span class="version">v2.1</span>
       </div>
       <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
-        <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
+        <div class="conv-empty" id="conv-empty">لا محادثات بعد<br><span style="font-size:11.5px">اكتب هدفًا في الأسفل لتبدأ أول دورة</span></div>
       </nav>
       <div class="sidebar-foot">
         <span class="substrate-dot" id="substrate-dot" title=""></span>
@@ -25,14 +25,14 @@
       </div>
     </aside>
 
-    <!-- عمود المحادثة 780px متمركز -->
+    <!-- عمود المحادثة -->
     <main class="chat">
       <div class="chat-scroll" id="chat-scroll">
 
         <!-- شاشة البداية: الأدوار الخمسة وشارات الحالات -->
         <section class="welcome" id="welcome">
           <h1>agent hub <span class="thin">v2</span></h1>
-          <p class="tagline">اكتب هدفًا → دورة كاملة بين الأدوار الخمسة → قرارك الأخير</p>
+          <p class="tagline">هدف واحد يمرّ بخمسة أدوار — تفكير، تدقيق، تنفيذ معزول، إثبات، تحكيم — وقرار VERIFIED النهائي يبقى بيدك وحدك.</p>
 
           <div class="roles-row" id="roles-row">
             <span class="role-chip"><b>◆</b> المفكر</span>
@@ -49,14 +49,14 @@
             <span class="badge">⚖ ADJUDICATED</span>
             <span class="badge">✔ VERIFIED</span>
           </div>
-          <p class="hint">✔ VERIFIED لا تُمنح إلا بقرارك — لا دور يمنح النظام نجاحه بنفسه.</p>
+          <p class="hint">✔ VERIFIED لا تُمنح إلا بقرارك — لا دور يمنح النظام نجاحه بنفسه، وكل تنفيذ معزول أو معلن بوضوح.</p>
         </section>
 
         <!-- الرسائل -->
         <div class="messages" id="messages"></div>
       </div>
 
-      <!-- صندوق الإدخال السفلي الثابت -->
+      <!-- صندوق الإدخال -->
       <div class="composer">
         <div class="composer-inner">
           <textarea id="input" rows="1"
@@ -64,14 +64,13 @@
             aria-label="الهدف"></textarea>
           <button id="send" title="ابدأ الدورة">←</button>
         </div>
-        <div class="composer-note">
-          <span>الأمر الثالث: حزم الموجّه الثلاث منقولة من v1 (حد المعدل + التبريد + التبدّل) — نقل mock، لا استدعاءات LLM حقيقية بعد.</span>
-          <button id="router-demo" class="router-demo-btn" title="تشغيل الحزم الثلاث بنقل mock وأزمنة مضغوطة معلنة">⇄ عرض أحداث الموجّه</button>
-          <button id="providers-open" class="router-demo-btn" title="بطاقات المزودات: حفظ/حذف المفاتيح في مخزن الأسرار + اختبار اتصال + قائمة النماذج">⚙ المزودات والمفاتيح</button>
-          <button id="eoe-run" class="eoe-run-btn" title="تنفيذ أمر تنفيذي كامل (الأمر الرابع): المنح والدفع ينتظران موافقتك">⚡ نفّذ الأمر التنفيذي</button>
-          <button id="mission-run" class="eoe-run-btn" title="مهمة حية كاملة (الأمر السادس): نموذج حقيقي يجلب المصادر ويكتب التقرير ويولد PDF عربيًا">🚀 نفّذ المهمة الحية</button>
-          <button id="stop-run" class="stop-run-btn" disabled title="إيقاف فوري آمن للدورة/المهمة الجارية (الأمر 004) — يُكرّم عند أقرب حد آمن مع حفظ الحالة والأدلة الجزئية">⏹ إيقاف فوري</button>
-          <button id="build-run" class="eoe-run-btn" title="مهمة البناء الحقيقية (الأمر السادس المنقح): دورة كاملة تبني حزمة textstats وتدفعها إلى فرع mission/textstats ببطاقتي موافقة">🏗️ مهمة البناء textstats</button>
+        <div class="composer-actions">
+          <button id="providers-open" class="tool-btn" title="بطاقات المزودات: حفظ/حذف المفاتيح في مخزن الأسرار + اختبار اتصال + قائمة النماذج"><b>◈</b> المزودات والمفاتيح</button>
+          <button id="eoe-run" class="tool-btn" title="تنفيذ أمر تنفيذي كامل: المنح والدفع ينتظران موافقتك"><b>⚡</b> أمر تنفيذي</button>
+          <button id="mission-run" class="tool-btn" title="مهمة حية كاملة: نموذج حقيقي يجلب المصادر ويكتب التقرير ويولد PDF عربيًا"><b>✦</b> مهمة حية</button>
+          <button id="build-run" class="tool-btn" title="مهمة البناء: دورة كاملة تبني حزمة textstats وتدفعها إلى فرع mission/textstats ببطاقتي موافقة"><b>▣</b> مهمة بناء</button>
+          <button id="router-demo" class="tool-btn" title="عرض أحداث الموجّه: حد المعدل + التبريد + التبدّل"><b>⇄</b> أحداث الموجّه</button>
+          <button id="stop-run" class="tool-btn stop-btn" disabled title="إيقاف فوري آمن للدورة/المهمة الجارية — يُكرَّم عند أقرب حد آمن مع حفظ الحالة والأدلة الجزئية"><b>■</b> إيقاف فوري</button>
         </div>
       </div>
     </main>
@@ -89,17 +88,17 @@
     </div>
   </div>
 
-  <!-- نافذة المزودات والمفاتيح (الأمر السادس المنقح §1) -->
+  <!-- نافذة المزودات والمفاتيح -->
   <div class="modal-backdrop" id="providers-backdrop" hidden>
     <div class="modal" role="dialog" aria-label="المزودات والمفاتيح" style="max-width:640px">
       <div class="modal-head">
         <span>المزودات والمفاتيح</span>
-        <button id="providers-close" title="إغلاق">✕</button>
+        <button id="providers-close" class="pv-close" title="إغلاق">✕</button>
       </div>
-      <div id="providers-body" style="padding:14px;max-height:70vh;overflow:auto"></div>
+      <div id="providers-body" class="providers-body"></div>
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2.1.0"></script>
 </body>
 </html>

@@ -51,6 +51,23 @@ UI_DIR = Path(__file__).resolve().parents[1] / "ui"
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
+
+@app.middleware("http")
+async def _no_cache_ui(request, call_next):
+    """الأمر 005 (درس v1 الموثق): الصفحة والأصول لا تُخزَّن تخزينًا أعمى.
+
+    no-cache يسمح بالتحقق الرخيص (ETag يبقى فعّالًا ← 304) لكنه يمنع
+    المتصفح من استخدام نسخة app.js قديمة بعد git pull — السبب الجذري
+    الموثق لـ«الواجهة لا تستجيب بعد التحديث» في v1، منقول الآن إلى v2
+    مع الروابط المرقّمة في index.html (طبقتا دفاع مستقلتان).
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 _engine = build_engine(settings.db_path)
 init_db(_engine)
 _sessions = make_session_factory(_engine)

@@ -62,7 +62,7 @@
   function resetStopButton() {
     if (!stopRunEl) return;
     stopRunEl.disabled = true;
-    stopRunEl.textContent = "⏹ إيقاف فوري";
+    stopRunEl.innerHTML = "<b>■</b> إيقاف فوري";
   }
 
   function trackRun(event) {
@@ -74,11 +74,11 @@
   function requestStop() {
     if (!activeRun || !stopRunEl || stopRunEl.disabled) return;
     if (activeRun.kind === "cycle" && !activeRun.cycleId) {
-      stopRunEl.textContent = "⏹ انتظر أول حدث…";
+      stopRunEl.innerHTML = "<b>■</b> انتظر أول حدث…";
       return;
     }
     stopRunEl.disabled = true;
-    stopRunEl.textContent = "⏹ جارٍ طلب الإيقاف…";
+    stopRunEl.innerHTML = "<b>■</b> جارٍ طلب الإيقاف…";
     var isMission = activeRun.kind === "mission";
     var body = isMission
       ? { reason: "زر الإيقاف من الواجهة" }
@@ -98,7 +98,7 @@
           kind: "stop.receipt",
           state: "STOPPING",
           text: out.ok
-            ? "⏹ طلب الإيقاف قُبل (" + (r.requested_by || "owner") +
+            ? "■ طلب الإيقاف قُبل (" + (r.requested_by || "owner") +
               " عند " + (r.at || "?") +
               ") — يُكرّم عند أقرب حدّ آمن، واللقطة ستُكتب"
             : "تعذّر طلب الإيقاف: " + ((out.j && out.j.detail) || "خطأ غير معروف"),
@@ -663,7 +663,7 @@
     var d = event.details || {};
     var msg = makeRoleMessage(event);
     msg.root.classList.add("stop-card");
-    msg.body.textContent = "⏹ أُوقفت الدورة بأمر (" +
+    msg.body.textContent = "■ أُوقفت الدورة بأمر (" +
       (d.stopped_by || "المالك") + ") عند " +
       (d.honored_at_step || "؟") +
       " — الحالة والأدلة الجزئية محفوظة في " +
@@ -747,7 +747,7 @@
       msg.body.textContent = "✅ VERDICT: PASS — المهمة اكتملت بأدلة كاملة";
     } else if (event.verdict === "STOPPED") {
       msg.root.classList.add("mission-stopped");
-      msg.body.textContent = "⏹ VERDICT: STOPPED — أُوقفت بأمر والأدلة الجزئية محفوظة — " +
+      msg.body.textContent = "■ VERDICT: STOPPED — أُوقفت بأمر والأدلة الجزئية محفوظة — " +
         (event.text || "");
     } else {
       msg.body.classList.add("cycle-error");
@@ -769,7 +769,6 @@
     if (event.verdict === "STOPPED") {
       var resumeM = document.createElement("button");
       resumeM.className = "verify-btn";
-      resumeM.style.marginLeft = "8px";
       resumeM.textContent = "▶ استئناف المهمة من اللقطة";
       resumeM.addEventListener("click", function () {
         resumeM.disabled = true;
@@ -780,8 +779,7 @@
     }
     if (event.verdict === "PASS") {
       var openBtn = document.createElement("button");
-      openBtn.className = "verify-btn";
-      openBtn.style.marginLeft = "8px";
+      openBtn.className = "verify-btn ghost";
       openBtn.textContent = "📄 افتح التقرير";
       openBtn.addEventListener("click", function () {
         window.open("/api/mission/report", "_blank");
@@ -798,9 +796,7 @@
       }
     }
     var evLink = document.createElement("button");
-    evLink.className = "verify-btn";
-    evLink.style.background = "transparent";
-    evLink.style.color = "inherit";
+    evLink.className = "verify-btn ghost";
     evLink.textContent = "🧾 الأدلة (evidence.json)";
     evLink.addEventListener("click", function () {
       window.open("/api/mission/evidence", "_blank");
@@ -1155,6 +1151,45 @@
     });
   }
 
+  // ---------- بطاقات المزودات (الأمر 005: بلا inline styles + رقاقات نماذج بمصدر معلن) ----------
+
+  function pvModelsHtml(models, defaultModel, source) {
+    if (!Array.isArray(models) || !models.length) return "";
+    var chips = models.map(function (m) {
+      return '<span class="pv-chip' + (m === defaultModel ? " default" : "") + '">' +
+        esc(m) + (m === defaultModel ? " · الافتراضي" : "") + "</span>";
+    }).join("");
+    var srcLabel = source === "live"
+      ? '<span class="pv-src live">● جُلبت حيًا الآن</span>'
+      : '<span class="pv-src declared">◇ معلنة من البطاقة — بلا اتصال حي</span>';
+    return '<div class="pv-models">' + chips + srcLabel + "</div>";
+  }
+
+  function renderProviderModels(name, box) {
+    var result = box.querySelector('.pv-result[data-provider="' + name + '"]');
+    var modelsBox = box.querySelector('.pv-models-box[data-provider="' + name + '"]');
+    if (result) result.textContent = "…جلب قائمة النماذج";
+    fetch("/api/providers/" + name + "/models?refresh=1")
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var src = j.source || "live";
+        if (result) {
+          result.textContent = j.ok
+            ? "اتصال ناجح — " + (j.models_count || 0) + " نموذج (" +
+              (j.latency_ms || 0) + "ms)"
+            : (j.message || "تعذّر الجلب الحي — تُعرض النماذج المعلنة");
+        }
+        if (modelsBox) {
+          var card = box.querySelector('.pv-card[data-provider="' + name + '"]');
+          var def = card ? (card.getAttribute("data-default") || "") : "";
+          modelsBox.innerHTML = pvModelsHtml(j.model_ids, def, src);
+        }
+      })
+      .catch(function (err) {
+        if (result) result.textContent = "تعذّر الجلب: " + err.message;
+      });
+  }
+
   function loadProviders() {
     if (!providersBody) return;
     providersBody.textContent = "جارٍ التحميل…";
@@ -1164,40 +1199,42 @@
         var htmlParts = [];
         var store = data.store || {};
         htmlParts.push(
-          '<div style="font-size:12px;color:#888;margin-bottom:10px">' +
-          esc(store.warning || "المخزن: " + (store.file || "")) +
-          " | التشفير: " + (store.encryption_available ? "DPAPI (Windows)" : "صلاحيات 600") +
+          '<div class="pv-store"><b>المخزن المحلي:</b> ' +
+          esc(store.warning || store.file || "") +
+          " · التشفير: " +
+          (store.encryption_available ? "DPAPI (Windows)" : "صلاحيات 600") +
           "</div>"
         );
         (data.providers || []).forEach(function (p) {
           htmlParts.push(
-            '<div class="provider-card" style="border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:10px">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center">' +
-            "<b>" + esc(p.label) + "</b>" +
-            '<span style="font-size:12px;color:' + (p.has_key ? "#7aa874" : "#c2776f") + '">' +
-            (p.has_key ? "مفتاح محفوظ " + esc(p.key_masked) : "بلا مفتاح") +
+            '<div class="pv-card" data-provider="' + esc(p.id) + '" data-default="' + esc(p.model) + '">' +
+            '<div class="pv-head">' +
+            '<span class="pv-title">' + esc(p.label) + "</span>" +
+            '<span class="pv-status ' + (p.has_key ? "ok" : "none") + '">' +
+            (p.has_key ? ("مفتاح محفوظ " + esc(p.key_masked)) : (p.requires_key ? "بلا مفتاح" : "بلا مفتاح مطلوب")) +
             "</span></div>" +
-            '<div style="font-size:11px;color:#777;margin:4px 0">' + esc(p.base_url) +
-            " | النموذج: " + esc(p.model) + "</div>" +
-            '<div style="font-size:11px;color:#666;margin-bottom:8px">' + esc(p.note || "") + "</div>"
+            '<div class="pv-meta">' + esc(p.base_url) +
+            " · النموذج الافتراضي: " + esc(p.model) + "</div>" +
+            '<div class="pv-note">' + esc(p.note || "") + "</div>"
           );
           if (p.requires_key) {
             htmlParts.push(
-              '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-              '<input type="password" data-provider="' + esc(p.id) + '" class="prov-key-input" ' +
-              'placeholder="مفتاح API (يُخزَّن مشفرًا محليًا)" ' +
-              'style="flex:1;min-width:180px;background:#111;border:1px solid #333;border-radius:6px;color:#eee;padding:6px 10px">' +
-              '<button class="prov-save" data-provider="' + esc(p.id) + '">حفظ</button>' +
-              '<button class="prov-delete" data-provider="' + esc(p.id) + '">حذف</button>' +
+              '<div class="pv-row">' +
+              '<input type="password" data-provider="' + esc(p.id) + '" class="pv-input" ' +
+              'placeholder="مفتاح API — يُخزَّن مشفّرًا محليًا فقط">' +
+              '<button class="pv-btn primary prov-save" data-provider="' + esc(p.id) + '">حفظ المفتاح</button>' +
+              '<button class="pv-btn danger prov-delete" data-provider="' + esc(p.id) + '">حذف</button>' +
               "</div>"
             );
           }
           htmlParts.push(
-            '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">' +
-            '<button class="prov-test" data-provider="' + esc(p.id) + '">اختبار الاتصال</button>' +
-            '<button class="prov-models" data-provider="' + esc(p.id) + '">قائمة النماذج</button>' +
-            '<span class="prov-result" data-provider="' + esc(p.id) +
-            '" style="font-size:12px;color:#999"></span>' +
+            '<div class="pv-row" style="margin-top:8px">' +
+            '<button class="pv-btn prov-test" data-provider="' + esc(p.id) + '">اختبار الاتصال</button>' +
+            '<button class="pv-btn prov-models" data-provider="' + esc(p.id) + '">قائمة النماذج</button>' +
+            "</div>" +
+            '<div class="pv-result" data-provider="' + esc(p.id) + '"></div>' +
+            '<div class="pv-models-box" data-provider="' + esc(p.id) + '">' +
+            pvModelsHtml(p.known_models, p.model, "declared") +
             "</div></div>"
           );
         });
@@ -1206,8 +1243,9 @@
         providersBody.querySelectorAll(".prov-save").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var name = btn.getAttribute("data-provider");
-            var input = providersBody.querySelector('.prov-key-input[data-provider="' + name + '"]');
-            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
+            var input = providersBody.querySelector('.pv-input[data-provider="' + name + '"]');
+            var result = providersBody.querySelector('.pv-result[data-provider="' + name + '"]');
+            btn.disabled = true;
             fetch("/api/providers/" + name + "/key", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
@@ -1215,9 +1253,11 @@
             })
               .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
               .then(function (out) {
-                result.textContent = out.ok ? "✔ " + (out.j.key_masked || "حُفظ") : "✕ " + (out.j.detail || "فشل");
+                result.textContent = out.ok ? "✔ حُفظ (" + (out.j.key_masked || "") + ")" : "✕ " + (out.j.detail || "فشل الحفظ");
                 if (out.ok) { input.value = ""; loadProviders(); }
-              });
+              })
+              .catch(function (err) { result.textContent = "✕ " + err.message; })
+              .finally(function () { btn.disabled = false; });
           });
         });
         providersBody.querySelectorAll(".prov-delete").forEach(function (btn) {
@@ -1230,30 +1270,25 @@
         providersBody.querySelectorAll(".prov-test").forEach(function (btn) {
           btn.addEventListener("click", function () {
             var name = btn.getAttribute("data-provider");
-            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
-            result.textContent = "…اختبار";
+            var result = providersBody.querySelector('.pv-result[data-provider="' + name + '"]');
+            btn.disabled = true;
+            result.textContent = "…اختبار الاتصال";
             fetch("/api/providers/" + name + "/test", { method: "POST" })
               .then(function (r) { return r.json(); })
               .then(function (j) {
                 result.textContent = j.ok
                   ? "✔ اتصال ناجح (" + j.models_count + " نموذج، " + j.latency_ms + "ms)"
-                  : "✕ " + (j.message || "فشل");
-              });
+                  : "✕ " + (j.message || "فشل الاتصال");
+              })
+              .catch(function (err) { result.textContent = "✕ " + err.message; })
+              .finally(function () { btn.disabled = false; });
           });
         });
         providersBody.querySelectorAll(".prov-models").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            var name = btn.getAttribute("data-provider");
-            var result = providersBody.querySelector('.prov-result[data-provider="' + name + '"]');
-            result.textContent = "…جلب";
-            fetch("/api/providers/" + name + "/models?refresh=1")
-              .then(function (r) { return r.json(); })
-              .then(function (j) {
-                result.textContent = j.ok
-                  ? "✔ " + (j.model_ids || []).slice(0, 6).join(" · ") +
-                    ((j.model_ids || []).length > 6 ? " …" : "")
-                  : "✕ " + (j.message || "فشل");
-              });
+            btn.disabled = true;
+            renderProviderModels(btn.getAttribute("data-provider"), providersBody);
+            setTimeout(function () { btn.disabled = false; }, 800);
           });
         });
       });
@@ -1287,23 +1322,24 @@
     var payload = (ev.details && ev.details.payload) || {};
     var card = document.createElement("div");
     card.className = "approval-card";
-    card.style.cssText = "border:1px solid #d0a048;border-radius:10px;padding:12px;margin:8px 0;background:rgba(208,160,72,0.06)";
     var title = document.createElement("div");
+    title.className = "approval-title";
     title.textContent = "⚖ بطاقة موافقة — " + (kind === "push" ? "الدفع إلى mission/textstats" : "منحة المسار textstats/**");
-    title.style.fontWeight = "bold";
     card.appendChild(title);
     var info = document.createElement("div");
-    info.style.cssText = "font-size:12px;color:#999;margin:6px 0";
+    info.className = "approval-items";
     info.textContent = kind === "push"
       ? "commit: " + String(payload.commit_sha || "").slice(0, 12) + " | ملفات: " + (payload.files || []).join(", ")
       : "المسارات: " + (payload.paths || []).join(", ");
     card.appendChild(info);
     var row = document.createElement("div");
+    row.className = "approval-actions";
     var okBtn = document.createElement("button");
+    okBtn.className = "btn-approve";
     okBtn.textContent = "أوافق";
     var noBtn = document.createElement("button");
+    noBtn.className = "btn-deny";
     noBtn.textContent = "أرفض";
-    okBtn.style.marginLeft = "8px";
     row.appendChild(noBtn);
     row.appendChild(okBtn);
     card.appendChild(row);

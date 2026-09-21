@@ -12,7 +12,7 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 APP_NAME = "agent-hub-v2"
-APP_VERSION = "2.0.0a3"  # الأمر الثالث: حزم الموجّه الثلاث منقولة من v1
+APP_VERSION = "2.1.0"  # الأمر 005: جودة الواجهة + إصلاحات resource والنماذج والكاش
 
 
 class Settings(BaseSettings):

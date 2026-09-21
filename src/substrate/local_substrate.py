@@ -63,7 +63,6 @@ import errno as _errno
 import hashlib
 import json
 import os
-import resource
 import select
 import shutil
 import signal
@@ -74,6 +73,11 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+
+try:  # الأمر 005: unix-only — غيابه (Windows) لا يكسر الاستيراد
+    import resource
+except ImportError:  # pragma: no cover — يُختبر بمحاكاة الحراسة
+    resource = None  # type: ignore[assignment]
 
 from substrate.limits import (
     E1_LIMITS_DEFAULTS,
@@ -177,8 +181,10 @@ SCRATCH_MOUNT = "/tmp"
 
 #: Real uid/gid captured at import time of the SUPERVISOR process
 #: (never inside the sandbox, where identities are mapped).
-_REAL_UID = os.getuid()
-_REAL_GID = os.getgid()
+#: الأمر 005: os.getuid غير موجود على Windows — الحماية من الانهيار
+#: عند الاستيراد، والقيمة -1 لا تُستخدم إلا على منصات مدعومة أصلًا.
+_REAL_UID = os.getuid() if hasattr(os, "getuid") else -1
+_REAL_GID = os.getgid() if hasattr(os, "getgid") else -1
 
 _SUPPORTED_ARCH = sys.platform.startswith("linux") and os.uname().machine == "x86_64"
 
@@ -789,6 +795,8 @@ def _sandbox_init_sequence(config: dict, step) -> None:
     os.sched_setaffinity(0, set(pinned))
     # 11. resource limits (D-13 local mechanism semantics)
     step("setrlimits")
+    if resource is None:  # pragma: no cover — unix-only path by construction
+        raise RuntimeError("rlimits require the unix resource module")
     resource.setrlimit(resource.RLIMIT_NOFILE, (SANDBOX_NOFILE_LIMIT,) * 2)
     resource.setrlimit(resource.RLIMIT_AS, (limits.memory_bytes,) * 2)
     resource.setrlimit(resource.RLIMIT_FSIZE, (limits.max_output_bytes,) * 2)
@@ -877,7 +885,9 @@ class LocalSubstrateAdapter(SubstrateAdapter):
         base_dir: Path | str | None = None,
         self_check: bool = True,
     ) -> None:
-        if self_check:
+        # الأمر 005: على منصة غير مدعومة لا انهيار عند الإنشاء — كل
+        # طلب تنفيذ يُردّ عليه بسجل فشل صادق (fail-closed لكل طلب).
+        if self_check and _SUPPORTED_ARCH:
             capabilities = substrate_capabilities()
             if not capabilities["supported"]:
                 raise RuntimeError(
@@ -927,7 +937,8 @@ class LocalSubstrateAdapter(SubstrateAdapter):
         if not _SUPPORTED_ARCH:
             return self._failure_record(
                 request, SandboxTermination.FAILED_TO_START,
-                "local substrate requires linux/x86_64",
+                "local substrate requires linux/x86_64 — "
+                "على Windows استخدم WSL2؛ لن يُنفَّذ شيء على المضيف مباشرة",
             )
         if request.sandbox_id in self._executed_ids:
             return self._failure_record(

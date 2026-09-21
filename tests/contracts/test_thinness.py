@@ -110,6 +110,11 @@ def test_ui_js_under_2000_lines():
     assert _count_lines("src/ui/app.js") < 2000
 
 
+def test_styles_css_under_1200_lines():
+    """الأمر 005: ملف التنسيقات له سقفه — التصميم كثيف القيمة لا منتفخ."""
+    assert _count_lines("src/ui/styles.css") < 1200
+
+
 def test_tables_under_10():
     assert TABLE_COUNT < 10
 

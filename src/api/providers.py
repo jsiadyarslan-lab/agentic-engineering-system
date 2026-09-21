@@ -22,12 +22,16 @@ from secrets_store import store as secrets
 router = APIRouter(prefix="/api/providers", tags=["providers"])
 
 #: سجل المزودات — بطاقة لكل مزود (نفس بطاقات v1 §1.4: nvidia تظهر فورًا).
+#: الأمر 005: known_models لكل بطاقة = نماذج معلنة مجرّبة في هذا المشروع
+#: (البطاقة نفسها/الإثباتات الحية السابقة) — تُعرض عند تعذر الجلب الحي
+#: (بلا مفتاح أو منشأة بلا نقطة نماذج) بمصدر معلن "declared" لا ادعاء حي.
 PROVIDER_CARDS: dict[str, dict[str, Any]] = {
     "nvidia": {
         "label": "NVIDIA NIM",
         "base_url": "https://integrate.api.nvidia.com/v1",
         "requires_key": True,
         "model": "nemotron-3-ultra-550b-a55b",
+        "known_models": ["nemotron-3-ultra-550b-a55b"],
         "note": "المزود الافتراضي — مفتاحك يُحفظ في مخزن الأسرار (DPAPI على Windows)",
     },
     "openai_compatible": {
@@ -35,6 +39,7 @@ PROVIDER_CARDS: dict[str, dict[str, Any]] = {
         "base_url": "https://openrouter.ai/api/v1",
         "requires_key": True,
         "model": "anthropic/claude-haiku-3.5",
+        "known_models": ["anthropic/claude-haiku-3.5"],
         "note": "بديل اختياري — يُفعَّل بحفظ مفتاحه",
     },
     "zai_internal": {
@@ -42,6 +47,7 @@ PROVIDER_CARDS: dict[str, dict[str, Any]] = {
         "base_url": "https://internal-api.z.ai/v1",
         "requires_key": False,
         "model": "glm-4.6",
+        "known_models": ["glm-4.6"],
         "config_file": "/etc/.z-ai-config",
         "note": "منشأة اختبار معلنة داخل الحاوية — مصادقتها من ملف الإعدادات",
     },
@@ -63,6 +69,7 @@ def _card(name: str) -> dict:
         "base_url": card["base_url"],
         "requires_key": card["requires_key"],
         "model": card["model"],
+        "known_models": list(card.get("known_models", [])),
         "note": card["note"],
         "has_key": bool(key),
         "key_masked": secrets.mask(key) if key else None,
@@ -211,9 +218,30 @@ _models_cache: dict[str, tuple[float, dict]] = {}
 _MODELS_TTL = 300.0
 
 
+def _declared_models(name: str, reason: str, latency_ms: int) -> dict:
+    """تراجع صادق: تعذر الجلب الحي ← نماذج البطاقة المعلنة بمصدر معلن.
+
+    الأمر 005: القائمة لا تعود فارغة صامتة أبدًا — إما نماذج حية
+    (source=live) أو نماذج معلنة من البطاقة (source=declared) مع سبب
+    تعذر الحي، فلا يبقى الزر صامتًا ولا يُدّعى ما لم يُجلب فعلًا.
+    """
+    known = list(PROVIDER_CARDS[name].get("known_models", []))
+    return {
+        "ok": False,
+        "source": "declared",
+        "latency_ms": latency_ms,
+        "models_count": len(known),
+        "model_ids": known,
+        "message": (
+            f"الجلب الحي تعذر: {reason} — "
+            "تُعرض النماذج المعلنة في البطاقة (مجرّبة سابقًا، بلا اتصال الآن)"
+        ),
+    }
+
+
 @router.get("/{name}/models")
 def list_provider_models(name: str, refresh: bool = False) -> dict:
-    """جلب قائمة النماذج من المزود — تظهر في بطاقة الإعدادات (§1.1)."""
+    """جلب قائمة النماذج من المزود — حية إن أمكن، وإلا المعلنة بصدق."""
     if name not in PROVIDER_CARDS:
         raise HTTPException(status_code=404, detail=f"مزود غير معروف: {name}")
     cached = _models_cache.get(name)
@@ -223,7 +251,17 @@ def list_provider_models(name: str, refresh: bool = False) -> dict:
     try:
         api_key, headers = _provider_auth(name)
     except HTTPException as error:
-        return {"ok": False, "message": str(error.detail), "model_ids": []}
+        result = _declared_models(name, str(error.detail), 0)
+        _models_cache[name] = (now, result)
+        return {**result, "cached": False}
     result = _get_models(PROVIDER_CARDS[name]["base_url"], api_key, headers)
+    if result.get("ok"):
+        result["source"] = "live"
+    else:
+        # الأمر 005: 404/فشل شبكة ← التراجع المعلن بدل قائمة فارغة صامتة
+        result = _declared_models(
+            name, result.get("message", "سبب غير معروف"),
+            int(result.get("latency_ms", 0)),
+        )
     _models_cache[name] = (now, result)
     return {**result, "cached": False}
