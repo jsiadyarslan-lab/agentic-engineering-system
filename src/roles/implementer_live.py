@@ -61,8 +61,9 @@ class LiveImplementer(LiveRoleBase):
     PROMPT_NAME = "implementer"
     ROLE = "implementer"
 
-    def __init__(self, router, tools_ctx: ToolContext | None = None):
-        super().__init__(router)
+    def __init__(self, router, tools_ctx: ToolContext | None = None,
+                 selection=None):
+        super().__init__(router, selection=selection)
         self._ctx = tools_ctx
 
     def _stop_requested(self, ctx: ToolContext, at_step: str) -> None:
@@ -157,7 +158,7 @@ class LiveImplementer(LiveRoleBase):
         ]
         last_error: Exception | None = None
         for _attempt in (1, 2):
-            text = self._router.chat_live(messages)["text"]
+            text = self._live_call(messages)["text"]
             try:
                 return self._parse_tool_lines(text)
             except ValueError as error:
@@ -193,7 +194,7 @@ class LiveImplementer(LiveRoleBase):
                 content=json.dumps(payload, ensure_ascii=False)[:24000],
             ),
         ]
-        text = self._router.chat_live(messages)["text"]
+        text = self._live_call(messages)["text"]
         # تنظيف أسوار الكود إن أضافها النموذج رغم التعليمات
         text = re.sub(r"^```[a-zA-Z]*\s*|\s*```$", "", text.strip()).strip()
         if len(text) < 200:

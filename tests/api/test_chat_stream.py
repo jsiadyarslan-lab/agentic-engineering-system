@@ -1,0 +1,126 @@
+"""اختبارات المحادثة الحية (الأمر 006 §2 محادثة + §15 Chat).
+
+العقد: إنشاء محادثة، إرسال رسالة تصل فعلًا لاستدعاء حي بالنموذج
+المحدد، بث تطبيقي (chat.start ← chat.delta* ← chat.done)، حفظ الرسائل
+في المحادثة، ولا mock fallback أبدًا — تعذر المزود = chat.error
+بـ CONFIGURATION_REQUIRED صريح.
+"""
+
+from __future__ import annotations
+
+import pytest
+from fastapi.testclient import TestClient
+
+pytest.importorskip("httpx", reason="TestClient يتطلب httpx")
+
+from api import routes  # noqa: E402
+from conftest import sse_events  # noqa: E402
+
+
+@pytest.fixture()
+def client(api_env):
+    return TestClient(routes.app)
+
+
+def test_chat_creates_conversation_and_streams_reply(client, api_env):
+    """رسالة واحدة ← محادثة جديدة + رد حي بالنموذج المحدد + حفظ الرسالتين."""
+    resp = client.post("/api/chat/stream", json={
+        "message": "ما أسرع طريقة لتعلم البرمجة؟",
+        "provider": "zai-test",
+        "model": "glm-test-4.6",
+    })
+    assert resp.status_code == 200, resp.text[:300]
+    events = sse_events(resp)
+
+    start = [e for e in events if e["kind"] == "chat.start"]
+    deltas = [e for e in events if e["kind"] == "chat.delta"]
+    done = [e for e in events if e["kind"] == "chat.done"]
+    errors = [e for e in events if e["kind"] == "chat.error"]
+    assert start and len(done) == 1 and not errors, [
+        e.get("kind") for e in events
+    ]
+
+    # الاستدعاء وصل فعليًا بالنموذج المحدد — إثبات التمرير الصريح
+    assert api_env["router"].chat_calls, "لم يصل أي استدعاء محادثة للموجّه"
+    assert api_env["router"].chat_calls[-1] == {
+        "provider": "zai-test", "model": "glm-test-4.6"
+    }
+
+    conversation_id = start[0]["details"]["conversation_id"]
+    assert done[0]["details"]["provider"] == "zai-test"
+    assert done[0]["details"]["model"] == "glm-test-4.6"
+    assert done[0]["details"]["conversation_id"] == conversation_id
+
+    # بث تطبيقي: قطع متعددة يتجمع نصها في الرد الكامل
+    streamed = " ".join(d["text"] for d in deltas)
+    assert streamed.strip()
+
+    # المحادثة حقيقية: الرسالتان (المستخدم والمساعد) محفوظتان
+    history = client.get(f"/api/conversations/{conversation_id}/messages")
+    assert history.status_code == 200
+    roles_saved = [m["role"] for m in history.json()["messages"]]
+    assert roles_saved == ["user", "assistant"]
+
+
+def test_chat_continues_existing_conversation_with_history(client, api_env):
+    """رسالة ثانية في المحادثة نفسها — التاريخ يُبنى من الرسائل المحفوظة."""
+    first = sse_events(client.post("/api/chat/stream", json={
+        "message": "سؤال أول",
+    }))
+    conversation_id = first[0]["details"]["conversation_id"]
+
+    second = sse_events(client.post("/api/chat/stream", json={
+        "message": "سؤال ثانٍ",
+        "conversation_id": conversation_id,
+    }))
+    assert [e["kind"] for e in second].count("chat.done") == 1
+
+    history = client.get(
+        f"/api/conversations/{conversation_id}/messages"
+    ).json()["messages"]
+    assert [m["role"] for m in history] == [
+        "user", "assistant", "user", "assistant"
+    ]
+    assert history[0]["content"] == "سؤال أول"
+    assert history[2]["content"] == "سؤال ثانٍ"
+
+
+def test_chat_unknown_conversation_404(client, api_env):
+    resp = client.post("/api/chat/stream", json={
+        "message": "رسالة", "conversation_id": 9999,
+    })
+    assert resp.status_code == 404
+    assert "غير معروفة" in resp.json()["detail"]
+
+
+def test_chat_no_mock_fallback_when_provider_unavailable(
+    client, api_env, monkeypatch
+):
+    """لا سقوط إلى mock أبدًا (§15 Chat): مزود غير متاح = خطأ صريح."""
+    api_env["router"]._providers = {"nvidia"}  # zai-test غير متاح الآن
+
+    events = sse_events(client.post("/api/chat/stream", json={
+        "message": "رسالة بمزود غائب",
+        "provider": "zai-test",
+        "model": "glm-test-4.6",
+    }))
+    errors = [e for e in events if e["kind"] == "chat.error"]
+    assert errors, [e.get("kind") for e in events]
+    assert errors[0]["code"] == "CONFIGURATION_REQUIRED"
+    assert "zai-test" in errors[0]["text"]
+    # لا استدعاء حي حدث — ولا نجاح وهمي
+    assert not api_env["router"].chat_calls
+
+
+def test_chat_router_failure_is_error_not_silence(client, api_env):
+    """فشل الاستدعاء الحي = chat.error صريح بالسبب — لا صمت ولا وهم."""
+    def broken_chat_live(messages, **_kwargs):
+        raise RuntimeError("انقطاع شبكة مفاجئ")
+
+    api_env["router"].chat_live = broken_chat_live
+    events = sse_events(client.post("/api/chat/stream", json={
+        "message": "رسالة ستفشل",
+    }))
+    errors = [e for e in events if e["kind"] == "chat.error"]
+    assert errors
+    assert "انقطاع شبكة" in errors[0]["text"]

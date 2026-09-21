@@ -159,6 +159,23 @@ class ModelRouter:
         return PROVIDERS[name]
 
     # ------------------------------------------------------------ #
+    # المسبار العام — أي المزودات الحية متاحة (الأمر 006 §1)
+    # ------------------------------------------------------------ #
+
+    def has_live_provider(self, provider_id: str) -> bool:
+        """هل لهذا المزود نقل حي مسجّل؟ — فحص مقدّم صادق قبل الدورة.
+
+        يستخدمه مسار المهمة للإعلان المبكر عن أي دور لن يجد نموذجه،
+        بدل انفجار في منتصف الدورة (CONFIGURATION_REQUIRED صريح).
+        """
+        pid = provider_id.value if isinstance(provider_id, Provider) else str(provider_id)
+        return pid in self._transports
+
+    def live_providers(self) -> list[str]:
+        """أسماء المزودات الحية المحلولة — للعرض والإعلان الصادق."""
+        return sorted(self._transports)
+
+    # ------------------------------------------------------------ #
     # الاستدعاء الموحد — acquire → cool → failover → نقل
     # ------------------------------------------------------------ #
 
@@ -307,6 +324,7 @@ class ModelRouter:
         *,
         on_event: Callable[[dict], None] | None = None,
         sleeper: Callable[[float], None] = time.sleep,
+        require_default: bool = True,
     ) -> "ModelRouter":
         """بناء موجّه حي — كل مزود محلول بمفتاحه، بسلسلة تبدّل مرتّبة.
 
@@ -314,6 +332,12 @@ class ModelRouter:
         حدود كل مزود تُضبط في المحدد بإعداداته الخاصة (§1.4)، والتبريد
         والتبريد يعملان على أي مزود بنفس المنطق (§1.6). لا مزود محلول
         = ProviderCallError صريحة — لا mock ولا صمت.
+
+        require_default (الأمر 006 §1): مسار الأدوار صار اختياره الصريح
+        هو المصدر — فالفحص الأمامي لكل دور (has_live_provider) أصدق من
+        فحص المزود الافتراضي العام. بـ require_default=False يُبنى
+        الموجّه بكل المزودات المحلولة، وكل دور بلا مزوده يُسمّى صراحة
+        في CONFIGURATION_REQUIRED (لا تبدّل صامت أبدًا).
         """
         live_cfg = live_cfg or live_model_settings
         resolved = resolve_live_providers(live_cfg)
@@ -325,7 +349,7 @@ class ModelRouter:
             )
         default_provider = str(getattr(live_cfg, "default_provider", "nvidia"))
         default_model = str(getattr(live_cfg, "default_model", ""))
-        if default_provider not in resolved:
+        if default_provider not in resolved and require_default:
             # المزود الافتراضي بلا مفتاح: فشل صريح — لا نبدّل بصمت
             raise ProviderCallError(
                 f"المزود الافتراضي '{default_provider}' بلا مفتاح قابل "
@@ -335,8 +359,12 @@ class ModelRouter:
         transports = {
             name: live_transport(cfg) for name, cfg in resolved.items()
         }
-        chain_members = [default_provider] + [
-            name for name in resolved if name != default_provider
+        chain_head = (
+            default_provider if default_provider in resolved
+            else next(iter(resolved))
+        )
+        chain_members = [chain_head] + [
+            name for name in resolved if name != chain_head
         ]
         # حدود كل مزود بإعداداته الخاصة (§1.4) — rpm/min_interval/cooldown
         limiter = RateLimiter(provider_settings.as_dicts()["rate_limiter"])
@@ -366,7 +394,8 @@ class ModelRouter:
         )
         router._live_default_model = (
             default_model
-            or resolved[default_provider].get("model", "")
+            or resolved.get(default_provider, {}).get("model", "")
+            or resolved[chain_head].get("model", "")
             or "gpt-4o-mini"
         )
         return router

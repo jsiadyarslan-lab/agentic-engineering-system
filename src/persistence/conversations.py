@@ -1,0 +1,141 @@
+"""خدمة المحادثات والرسائل (الأمر 006 §14) — قائمة حقيقية لا وهمية.
+
+كل المحادثات والرسائل في SQLite الموجود (لا قاعدة جديدة): الإنشاء
+والإلحاق والقائمة والسجل — بلا منطق نقل (ذلك في api.routes).
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from sqlalchemy import select
+
+from persistence.models import Conversation, Message
+
+#: عنوان المحادثة من أول رسالة — مقتطع بنظافة (بلا قطع كلمة).
+_TITLE_MAX = 48
+
+
+def make_title(text: str) -> str:
+    """عنوان بسيط من أول رسالة (الأمر 006 §6) — سطر أول مقتطع."""
+    first_line = text.strip().splitlines()[0] if text.strip() else ""
+    if len(first_line) <= _TITLE_MAX:
+        return first_line or "محادثة جديدة"
+    cut = first_line[:_TITLE_MAX]
+    # لا نقطع كلمة نصفين إن أمكن — آخر فراغ قبل الحد
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut + "…"
+
+
+def create_conversation(
+    sessions, *, title: str, mode: str = "chat"
+) -> Conversation:
+    """إنشاء محادثة جديدة — النمط معلن من اللحظة الأولى."""
+    with sessions() as session:
+        conversation = Conversation(
+            title=make_title(title), mode=mode if mode in ("chat", "task") else "chat"
+        )
+        session.add(conversation)
+        session.commit()
+        session.refresh(conversation)
+        return conversation
+
+
+def get_conversation(sessions, conversation_id: int) -> Conversation | None:
+    with sessions() as session:
+        found = session.get(Conversation, int(conversation_id))
+        return found
+
+
+def touch_conversation(sessions, conversation_id: int) -> None:
+    """تحديث updated_at — ترتيب القائمة بالأحدث أولًا."""
+    from persistence.models import _utc_now
+
+    with sessions() as session:
+        found = session.get(Conversation, int(conversation_id))
+        if found is None:
+            return
+        found.updated_at = _utc_now()
+        session.commit()
+
+
+def list_conversations(sessions, limit: int = 100) -> list[dict]:
+    """قائمة المحادثات — الأحدث أولًا، بكل حقول العقد (§14)."""
+    with sessions() as session:
+        rows = session.scalars(
+            select(Conversation).order_by(
+                Conversation.updated_at.desc(), Conversation.id.desc()
+            ).limit(limit)
+        ).all()
+        return [
+            {
+                "conversation_id": row.id,
+                "title": row.title,
+                "mode": row.mode,
+                "created_at": row.created_at.isoformat(),
+                "updated_at": row.updated_at.isoformat(),
+            }
+            for row in rows
+        ]
+
+
+def append_message(
+    sessions,
+    conversation_id: int,
+    *,
+    role: str,
+    content: str,
+    state_badge: str | None = None,
+) -> Message:
+    """إلحاق رسالة + تحديث updated_at للمحادثة (ذرّيًا في جلسة واحدة)."""
+    from persistence.models import _utc_now
+
+    with sessions() as session:
+        conversation = session.get(Conversation, int(conversation_id))
+        if conversation is None:
+            raise KeyError(f"محادثة غير معروفة: {conversation_id}")
+        message = Message(
+            conversation_id=int(conversation_id),
+            role=role,
+            content=content,
+            state_badge=state_badge,
+        )
+        session.add(message)
+        conversation.updated_at = _utc_now()
+        session.commit()
+        session.refresh(message)
+        return message
+
+
+def conversation_messages(
+    sessions, conversation_id: int, limit: int = 200
+) -> list[dict]:
+    """سجل رسائل محادثة — الأقدم أولًا (لإعادة عرض التاريخ)."""
+    with sessions() as session:
+        rows = session.scalars(
+            select(Message)
+            .where(Message.conversation_id == int(conversation_id))
+            .order_by(Message.id.desc())
+            .limit(limit)
+        ).all()
+        return [
+            {
+                "id": row.id,
+                "role": row.role,
+                "content": row.content,
+                "state_badge": row.state_badge,
+                "created_at": row.created_at.isoformat(),
+            }
+            for row in reversed(rows)
+        ]
+
+
+__all__ = [
+    "append_message",
+    "conversation_messages",
+    "create_conversation",
+    "get_conversation",
+    "list_conversations",
+    "make_title",
+]

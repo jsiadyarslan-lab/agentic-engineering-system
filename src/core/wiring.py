@@ -1,12 +1,15 @@
-"""تركيب الدورة الافتراضية — نقطة التجميع الوحيدة للأدوار الخمسة.
+"""تركيب الدورة — نقطة التجميع الوحيدة للأدوار الخمسة.
 
 منفصلة عن المنسق (الذي يبقى نقّاءً تركيبيًا: لا يستورد تنفيذ دور) وعن
 api (طبقة النقل): كل مستدعٍ — الخادم أو الاختبارات — يجمّع الدورة
 نفسها أو يستبدل أي دور عبر overrides.
 
-الأمر السادس يضيف build_live_orchestrator: الأدوار الحية (LLM حقيقي
-عبر chat_live — لا mock في أي دور) للمهمة الحية حصرًا؛ الدورة
-الافتراضية للخادم تبقى mock حتى يجهز المالك مفتاح مزوده.
+الأمر 006 (فصل التركيب الصريح §12):
+- production wiring: build_live_orchestrator حصرًا — مسار الإنتاج
+  لا يستدعي build_mock_orchestrator أبدًا (يُرسّخ اختبار حارس في
+  tests/api/test_no_mock_in_production.py).
+- test wiring: build_mock_orchestrator للأدوار الحتمية في الاختبارات
+  فقط — الأدوار mock باقية عمدًا (roles/*.py) للاختبارات deterministic.
 """
 
 from __future__ import annotations
@@ -25,10 +28,11 @@ from roles.verifier import Verifier
 def build_mock_orchestrator(
     overrides: dict[RoleType, Any] | None = None,
 ) -> Orchestrator:
-    """منسق بالأدوار الخمسة (mock الأمر الثاني) — مع إحلالات اختيارية.
+    """منسق بالأدوار الخمسة الحتمية — TEST WIRING ONLY (الأمر 006 §12).
 
-    overrides يستبدل أي دور (مثل Reviewer(approve_after=None) لاختبار
-    مسار المحكَّم) — بقية الأدوار تبقى التركيبة الافتراضية نفسها.
+    لا يستدعيها مسار الإنتاج أبدًا (اختبار الحارس يمنع العودة للديمو
+    بالخطأ). overrides يستبدل أي دور (مثل Reviewer(approve_after=None)
+    لاختبار مسار المحكَّم) — بقية الأدوار تبقى التركيبة نفسها.
     """
     roles: dict[RoleType, Any] = {
         RoleType.THINKER: Thinker(),
@@ -52,6 +56,7 @@ def build_live_orchestrator(
     tools_ctx: Any = None,
     verifier_facts_builder: Any = None,
     stop_controller: Any = None,
+    role_config: dict[str, Any] | None = None,
 ) -> Orchestrator:
     """منسق بالأدوار الخمسة **الحية** (الأمر السادس §2).
 
@@ -60,21 +65,29 @@ def build_live_orchestrator(
     يلتقطه مشغّل المهمة ويسجّله system_fault).
     stop_controller (الأمر 004): متحكم الإيقاف الفوري — يُمرّر للمنسق
     وتُربط نقاط تفتيشه بسياق أدوات المنفذ الحي.
+    role_config (الأمر 006 §3+§4): اختيار مستقل لكل دور —
+    {role: RoleSelection(provider, model)}؛ الدور بلا اختيار يستخدم
+    افتراضات الموجّه المعلنة. لا دور يتلقى مزود دور آخر أبدًا.
     """
     from roles.implementer_live import LiveImplementer
     from roles.live import ArbiterLive, ReviewerLive, ThinkerLive, VerifierLive
 
-    verifier = VerifierLive(router)
+    def _pick(role_key: str) -> Any:
+        return (role_config or {}).get(role_key)
+
+    verifier = VerifierLive(router, selection=_pick("verifier"))
     if verifier_facts_builder is not None:
         verifier.facts_builder = verifier_facts_builder
 
     orchestrator = Orchestrator(stop_controller=stop_controller)
     for role, implementation in {
-        RoleType.THINKER: ThinkerLive(router),
-        RoleType.REVIEWER: ReviewerLive(router),
-        RoleType.IMPLEMENTER: LiveImplementer(router, tools_ctx=tools_ctx),
+        RoleType.THINKER: ThinkerLive(router, selection=_pick("thinker")),
+        RoleType.REVIEWER: ReviewerLive(router, selection=_pick("reviewer")),
+        RoleType.IMPLEMENTER: LiveImplementer(
+            router, tools_ctx=tools_ctx, selection=_pick("implementer")
+        ),
         RoleType.VERIFIER: verifier,
-        RoleType.ARBITER: ArbiterLive(router),
+        RoleType.ARBITER: ArbiterLive(router, selection=_pick("arbiter")),
     }.items():
         orchestrator.register_role(role, implementation)
     return orchestrator

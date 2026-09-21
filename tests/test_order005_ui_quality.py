@@ -70,18 +70,32 @@ def test_local_substrate_import_survives_missing_resource(monkeypatch):
 
 
 def test_unsupported_platform_fails_closed_per_request(monkeypatch):
-    """على منصة غير مدعومة: المدير يُنشأ، وكل تنفيذ يسجل فشلًا صادقًا."""
+    """على منصة غير مدعومة: لا صور افتراضية، وكل تنفيذ يسجل فشلًا صادقًا.
+
+    الأمر 006 §11 حدّث العقد: default_local_images تعيد {} (لا
+    ValueError خام من LocalImage أبدًا)، والمدير يُنشأ، وأي طلب تنفيذ
+    بصورة مسجلة يدويًا يفشل FAILED_TO_START بالسبب الكامل.
+    """
     import substrate.local_substrate as ls
 
     monkeypatch.setattr(ls, "_SUPPORTED_ARCH", False)
+    # العقد الجديد: بلا صور افتراضية — لا انفجار ValueError خام
+    assert ls.default_local_images() == {}
     manager = ls.local_sandbox_manager()  # لا RuntimeError — لا انهيار
     from substrate.limits import E1_LIMITS_DEFAULTS
     from substrate.sandbox import NetworkMode, SandboxRequest
 
-    image = next(iter(manager.image_allowlist))
+    # صورة مسجلة يدويًا: الرفض عند التنفيذ (FAILED_TO_START بالسبب)
+    # لا عند البناء — نفس مبدأ الأمر 005 محفوظًا
+    import sys
+
+    image = ls.LocalImage(
+        name="python", interpreter=sys.executable, read_only_roots=("/",)
+    )
+    manager = ls.local_sandbox_manager(images={"python": image})
     request = SandboxRequest(
-        sandbox_id="order005-unsupported-1",
-        image=image,
+        sandbox_id="order006-unsupported-1",
+        image="python",
         command=("python", "-c", "print(1)"),
         limits=E1_LIMITS_DEFAULTS,
         env_names=frozenset({"PATH"}),
@@ -98,6 +112,12 @@ def test_unsupported_platform_fails_closed_per_request(monkeypatch):
     assert "WSL2" in str(evidence.get("failure_reason", "")), \
         "الرسالة يجب أن توجه إلى WSL2"
     assert "linux/x86_64" in str(evidence.get("failure_reason", ""))
+
+    # وgit_image يرفض بوضوح لا بـValueError خام (§11)
+    import pytest as _pytest
+
+    with _pytest.raises(ls.SubstrateUnavailable):
+        ls.local_git_image()
 
 
 # ------------------------------------------------------------------ #

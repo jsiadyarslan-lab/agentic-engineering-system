@@ -1,21 +1,23 @@
-"""نقاط النهاية النحيفة — FastAPI (الأمر الثالث: حزم الموجّه + عرضها).
+"""نقاط النهاية النحيفة — FastAPI (الأمر 006: المحادثة والمهمة حيّتان).
 
 - GET  /                    الواجهة (index.html)
 - GET  /health              الحالة الصادقة (بما فيها توفر الركيزة)
-- GET  /api/conversations   قائمة المحادثات (عنصر شاغل في هذه المرحلة)
-- POST /api/cycle/stream    بث SSE لأحداث الدورة الكاملة لحظة حدوثها —
-                            الدورة تعمل في خيط وكل حدث دور يُدفَع إلى
-                            الطابور فور انبعاثه، ويُسجَّل في جدول events
+- GET  /api/conversations   قائمة المحادثات الحقيقية من SQLite (§14)
+- GET  /api/conversations/{id}/messages  سجل رسائل محادثة
+- POST /api/chat/stream     محادثة بنموذج واحد — SSE (§2 محادثة)
+- POST /api/cycle/stream    المهمة: دورة الأدوار الخمسة الحيّة — SSE (§2 مهمة)
+                            production wiring حي حصرًا: لا mock أبدًا؛
+                            لا مزود/مفتاح = CONFIGURATION_REQUIRED صريح
 - POST /api/cycle/verify    موافقة المستخدم — القناة الوحيدة إلى VERIFIED
-- POST /api/router/demo     بث SSE لأحداث الموجّه (الأمر الثالث): الحزم
-                            الثلاث الحقيقية بنقل mock وأزمنة مضغوطة
-                            معلنة — إثبات عملها لا ادعاء استدعاءات حية
-- POST /api/eoe/stream      بث SSE لتنفيذ أمر تنفيذي كامل (الأمر الرابع):
-                            المنح والدفع ينتظران موافقة المالك الحية
-- POST /api/eoe/approve     موافقة المالك على المنح أو الدفع — القناة
-                            الوحيدة لاستمرار التنفيذ (لا موافقة لا فعل)
+- POST /api/cycle/stop      الإيقاف الفوري الآمن (الأمر 004)
+- GET  /api/cycle/status    حالة المهمة + إمكان الاستئناف
+- POST /api/cycle/resume    استئناف من اللقطة (دورة جديدة تُحقن بها)
+- POST /api/router/demo     مسار عرض تشخيصي معلن لأحداث الموجه
+- POST /api/eoe/stream      بث تنفيذ أمر تنفيذي (الأمر الرابع)
+- POST /api/eoe/approve     موافقة المالك على المنح/الدفع
+- GET/PUT /api/models/config  اختيار النموذج لكل دور (§13)
 
-لا منطق أدوار هنا — الأدوار مجمعَّة في core.wiring والتنسيق كله في
+لا منطق أدوار هنا — الأدوار مجمّعة في core.wiring والتنسيق كله في
 core.orchestrator؛ هذه الطبقة نقل وتسجيل فقط.
 """
 
@@ -37,9 +39,10 @@ from pydantic import BaseModel, Field
 
 from core.config import settings
 from core.state import StateTransitionError
-from core.wiring import build_mock_orchestrator
+from persistence import conversations as convo
 from persistence.database import build_engine, init_db, make_session_factory
 from persistence.models import Event
+from router import role_config as rc
 from router.cooling_loop import CoolingLoop
 from router.failover_chain import FailoverChain
 from router.model_router import ChatMessage, ModelRouter, ProviderCallError
@@ -75,15 +78,35 @@ _sessions = make_session_factory(_engine)
 # ثوابت الواجهة: styles.css + app.js + الخطوط المضمنة محليًا
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
-#: الدورة الافتراضية — أدوار mock فوق الركيزة الحقيقية (الأمر الثاني).
-_orchestrator = build_mock_orchestrator()
+#: الأمر 006 §1+§12: مسار الإنتاج لا يبني orchestrator اشتراكيًا —
+#: كل مهمة تبني دورتها الحية بطلبها (اختيارات أدوار المهمة جزء منها)،
+#: والمحادثة تبني موجّهها بنموذجها. mock لا يُستورد هنا إطلاقًا —
+#: يرسّخ ذلك اختبار الحارس tests/api/test_no_mock_in_production.py.
 
-#: منفّذ الدورات — دورة واحدة في كل لحظة (المنسق يقفل داخليًا أيضًا).
+#: منفّذ المهام والدورات — واحدة في كل لحظة (المنسق يقفل داخليًا أيضًا).
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v2-cycle")
 
 #: منفّذ EOE مخصص — انتظار موافقة المالك (حتى 600ث) لا يحتجز منفّذ
 #: الدورة أبدًا، والعكس صحيح (الأمر الرابع).
 _eoe_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v2-eoe")
+
+#: فصل التركيب الصريح (§12): production يبني الموجّه الحي من مزودات
+#: المالك حصرًا. الاختبارات — وحدها — تحقن مصنعًا بديلًا عبر هذا
+#: الخطاف (نقلات حتمية للاختبار، لا يمر منه أي مسار إنتاج).
+_test_router_factory = None
+
+
+def _build_live_router(on_event=None) -> ModelRouter:
+    """الموجّه الحي — production wiring: مزودات المالك، لا mock أبدًا.
+
+    require_default=False (الأمر 006 §1): الأدوار تختار مزودها صراحة،
+    فالفحص الأمامي لكل دور في _stream_task_run هو الحكم الأصدق —
+    يُبنى الموجّه بكل المزودات المحلولة، وأي دور بلا مزوده يُسمّى
+    في CONFIGURATION_REQUIRED (لا تبدّل صامت ولا mock بديلًا).
+    """
+    if _test_router_factory is not None:
+        return _test_router_factory(on_event=on_event)
+    return ModelRouter.build_live(on_event=on_event, require_default=False)
 
 
 def _persist_event(event: dict) -> None:
@@ -112,10 +135,28 @@ def _persist_event(event: dict) -> None:
         logger.warning("تعذّر تسجيل الحدث %s في جدول events", event.get("kind"))
 
 
+class RoleSelectionBody(BaseModel):
+    """جسم اختيار نموذج دور واحد داخل طلب المهمة (§3)."""
+
+    provider: str = Field(min_length=1, max_length=64)
+    model: str = Field(min_length=1, max_length=200)
+
+
 class CycleStartIn(BaseModel):
-    """جسم بدء الدورة — الهدف."""
+    """جسم بدء المهمة — الهدف + المحادثة + اختيارات الأدوار (§2+§3)."""
 
     goal: str = Field(min_length=1)
+    conversation_id: int | None = None
+    roles: dict[str, RoleSelectionBody] | None = None
+
+
+class ChatStartIn(BaseModel):
+    """جسم رسالة محادثة — نموذج واحد بلا أدوار (§2 محادثة)."""
+
+    message: str = Field(min_length=1, max_length=32_000)
+    conversation_id: int | None = None
+    provider: str | None = None
+    model: str | None = None
 
 
 class CycleVerifyIn(BaseModel):
@@ -155,7 +196,7 @@ def health() -> dict:
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
-        "phase": "mock-cycle+router-packages+eoe",
+        "phase": "live-chat+live-task+role-models",
         "substrate": {
             "available": substrate_available,
             "isolation": "linux-namespaces+seccomp",
@@ -169,205 +210,461 @@ def health() -> dict:
 
 @app.get("/api/conversations")
 def conversations() -> dict:
-    """قائمة المحادثات — عنصر شاغر (السجل الحي في جدول events)."""
-    return {"conversations": []}
+    """قائمة المحادثات الحقيقية — SQLite، الأحدث أولًا (§14)."""
+    return {"conversations": convo.list_conversations(_sessions)}
 
 
-@app.post("/api/cycle/stream")
-async def cycle_stream(body: CycleStartIn) -> StreamingResponse:
-    """بث الدورة الكاملة لحظة حدوثها — SSE حقيقي لا رسالة جاهزة.
+@app.get("/api/conversations/{conversation_id}/messages")
+def conversation_messages(conversation_id: int) -> dict:
+    """سجل رسائل محادثة — 404 صريح إن لم تكن معروفة."""
+    if convo.get_conversation(_sessions, conversation_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"محادثة غير معروفة: {conversation_id}",
+        )
+    return {
+        "conversation_id": conversation_id,
+        "messages": convo.conversation_messages(_sessions, conversation_id),
+    }
 
-    الدورة تعمل في خيط المنفّذ؛ كل حدث ينبعث يُدفَع إلى طابور الحدث
-    (للبث) ويُسجَّل في قاعدة البيانات. نهاية الخيط إشارة ختام للبث.
-    """
-    loop = asyncio.get_running_loop()
-    queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
-    def sink(event: dict) -> None:
-        loop.call_soon_threadsafe(queue.put_nowait, event)
-        _persist_event(event)
+# ------------------------------------------------------------------ #
+# الأمر 006 — المهمة الحية (المسار الرئيسي) + المحادثة الحية
+# ------------------------------------------------------------------ #
 
-    def run_cycle_in_thread() -> None:
-        try:
-            _orchestrator.run_cycle(body.goal, on_event=sink)
-        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته صامتًا
-            loop.call_soon_threadsafe(
-                queue.put_nowait,
-                {
-                    "seq": 0,
-                    "cycle_id": "",
-                    "role": "coordinator",
-                    "kind": "cycle_error",
-                    "state": None,
-                    "text": f"الدورة فشلت قبل البدء: {error}",
-                    "duration_ms": 0,
-                    "details": {"error": str(error)},
-                },
+#: حالة المهمة الجارية (بنمط المهمة الحية) — واحدة في كل لحظة.
+_task_state: dict = {
+    "orchestrator": None,
+    "lock": threading.Lock(),
+    "active": None,
+    "last_state": None,
+    "last_result": None,
+}
+
+#: معرف الدورة الصالح حصرًا — fail-closed ضد اجتياز المسارات.
+_CYCLE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+
+#: أسماء الأدوار العربية — للرسائل الصادقة التي تسمي من فشل.
+ROLE_LABELS: dict[str, str] = {
+    "thinker": "المفكر",
+    "reviewer": "المدقق",
+    "implementer": "المنفذ",
+    "verifier": "المراجع",
+    "arbiter": "المحكَّم",
+    "chat": "المحادثة",
+}
+
+
+def _resolve_role_selections(
+    overrides: dict[str, RoleSelectionBody] | None,
+) -> dict[str, rc.RoleSelection]:
+    """دمج اختيارات الطلب فوق المحفوظة — كل دور باختياره المستقل (§3)."""
+    selections = rc.load_role_config()
+    for key, value in (overrides or {}).items():
+        if key not in rc.ROLE_KEYS:
+            raise HTTPException(
+                status_code=422, detail=f"دور غير معروف في الطلب: {key}"
             )
-        finally:
-            loop.call_soon_threadsafe(queue.put_nowait, None)  # خاتمة البث
+        selections[key] = rc.RoleSelection(
+            provider=value.provider, model=value.model
+        )
+    return selections
 
-    running = loop.run_in_executor(_executor, run_cycle_in_thread)
+
+def _config_required_event(
+    reason: str, *, cycle_id: str = "", details: dict | None = None
+) -> dict:
+    """حدث CONFIGURATION_REQUIRED — لا نجاح وهمي ولا mock بديلًا (§1)."""
+    return {
+        "seq": 0,
+        "cycle_id": cycle_id,
+        "role": "coordinator",
+        "kind": "CONFIGURATION_REQUIRED",
+        "state": "FAILED_TO_START",
+        "text": reason,
+        "duration_ms": 0,
+        "details": {"code": "CONFIGURATION_REQUIRED", **(details or {})},
+    }
+
+
+def _emit_single(event: dict):
+    """مولد SSE من حدث واحد — إعلان صريح ثم ختام البث."""
 
     async def generate():
-        while True:
-            event = await queue.get()
-            if event is None:  # خاتمة — الخيط انتهى
-                break
-            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
-        await running  # رفع أي استثناء متبقٍ (الكل ملتقط أعلاه)
+        yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
 
+    return generate()
+
+
+def _sse_response(generator) -> StreamingResponse:
     return StreamingResponse(
-        generate(),
+        generator,
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
-@app.post("/api/cycle/verify")
-def cycle_verify(body: CycleVerifyIn) -> dict:
-    """موافقة المستخدم على نتيجة الدورة — القناة الوحيدة إلى VERIFIED.
+async def _stream_task_run(
+    goal: str,
+    *,
+    conversation_id: int | None,
+    role_overrides: dict[str, RoleSelectionBody] | None,
+    resume_from: dict | None,
+    resume_workspace: Path | None,
+) -> StreamingResponse:
+    """بث مهمة حية (SSE) — الأدوار الخمسة الحية باختيارات مستقلة.
 
-    يرفض 404 لدورة غير معروفة و409 لانتقال غير مسموح (مثل طلب الموافقة
-    قبل بلوغ EVIDENCED/ADJUDICATED) — جدول الانتقالات والقاعدة الذهبية
-    يُفرضان في core/state.py لا هنا.
+    لا mock في هذا المسار أبدًا: تعذر حل المزودات أو نموذج أي دور
+    = حدث CONFIGURATION_REQUIRED صريح يسمي الدور والسبب (§1)،
+    ثم ينتهي البث — لا سقوط إلى أدوار وهمية ولا نجاح مزيف.
     """
-    try:
-        outcome = _orchestrator.user_verifies(body.cycle_id)
-    except KeyError:
-        raise HTTPException(
-            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
-        )
-    except StateTransitionError as error:
-        raise HTTPException(status_code=409, detail=str(error))
-    # الحدث يُسجَّل مرة واحدة عبر نقطة استقبال الدورة نفسها (sink) —
-    # لا يُعاد تسجيله هنا (كان يُكرر الصف قبل هذا التصحيح)
-    return {
-        "cycle_id": body.cycle_id,
-        "state": outcome["state"],
-        "badge": "✔ VERIFIED",
-        "event": outcome["event"],
-    }
+    from core.stop_controller import StopController
+    from tasks import run_task
 
-
-# ------------------------------------------------------------------ #
-# الأمر 004 — الإيقاف الفوري الآمن للدورة + الاستئناف من اللقطة
-# ------------------------------------------------------------------ #
-
-#: معرف الدورة الصالح حصرًا — fail-closed ضد اجتياز المسارات.
-_CYCLE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-
-
-def _cycle_snapshot_path(cycle_id: str) -> Path:
-    return Path("runtime") / "cycles" / cycle_id / "stop_snapshot.json"
-
-
-@app.post("/api/cycle/stop")
-def cycle_stop(body: CycleStopIn) -> dict:
-    """طلب إيقاف فوري للدورة — يُقبل فورًا ويُكرَّم عند حدّ آمن.
-
-    القبول يعني: العلم رُفع ذرّيًا والحالة STOPPING؛ التوقف الفعلي
-    عند أقرب نقطة تفتيش (أقصى الانتظار = استدعاء دور واحد).
-    """
-    outcome = _orchestrator.request_stop(
-        body.cycle_id, by="owner", reason=body.reason
-    )
-    if outcome["status"] == "unknown":
-        raise HTTPException(
-            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
-        )
-    if not outcome["accepted"]:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "الدورة ليست قيد التشغيل — حالتها النهائية: "
-                f"{outcome.get('final_state', 'منتهية')}"
-            ),
-        )
-    return {
-        "cycle_id": body.cycle_id,
-        "status": outcome["status"],
-        "receipt": outcome["receipt"],
-    }
-
-
-@app.get("/api/cycle/status/{cycle_id}")
-def cycle_status(cycle_id: str) -> dict:
-    """حالة الدورة لحظة الطلب — الخطة والتشغيل وإيصال الإيقاف."""
-    if not _CYCLE_ID_RE.match(cycle_id):
-        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
-    status = _orchestrator.cycle_status(cycle_id)
-    if status is None:
-        raise HTTPException(status_code=404, detail=f"دورة غير معروفة: {cycle_id}")
-    status["can_resume"] = _cycle_snapshot_path(cycle_id).is_file()
-    return status
-
-
-@app.post("/api/cycle/resume")
-async def cycle_resume(body: CycleResumeIn) -> StreamingResponse:
-    """استئناف دورة موقوفة من لقطتها — دورة جديدة بث SSE (الأمر 004).
-
-    الخطة الموقّعة تُحقن فتتخطى التفكير والمراجعة، والمهام المثبتة
-    لا تُعاد؛ مساحة العمل نفسها تُعاد الاستخدام حتى تبقى الأدلة متصلة.
-    """
-    from core.stop_controller import load_resume_point
-
-    if not _CYCLE_ID_RE.match(body.cycle_id):
-        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
-    path = _cycle_snapshot_path(body.cycle_id)
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="لا لقطة إيقاف لهذه الدورة")
-    try:
-        snapshot = json.loads(path.read_text(encoding="utf-8"))
-        load_resume_point(snapshot)
-    except ValueError as error:
-        raise HTTPException(status_code=409, detail=f"لقطة غير صالحة: {error}")
-    goal = str(snapshot.get("goal", ""))
     loop = asyncio.get_running_loop()
     queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
-    def sink(event: dict) -> None:
-        loop.call_soon_threadsafe(queue.put_nowait, event)
-        _persist_event(event)
+    selections = _resolve_role_selections(role_overrides)
+    role_config = {
+        key: value for key, value in selections.items() if key != "chat"
+    }
 
-    def run_resumed_in_thread() -> None:
-        try:
-            _orchestrator.run_cycle(
-                goal,
-                workspace_root=path.parent,  # مساحة العمل نفسها — الأدلة متصلة
-                on_event=sink,
-                resume_from=snapshot,
+    # المحادثة: إنشاء إن لم تعط — النمط مهمة (§14)
+    if conversation_id is None:
+        conversation = convo.create_conversation(
+            _sessions, title=goal, mode="task"
+        )
+        conversation_id = conversation.id
+    elif convo.get_conversation(_sessions, conversation_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"محادثة غير معروفة: {conversation_id}",
+        )
+    convo.append_message(_sessions, conversation_id, role="user", content=goal)
+
+    # الموجه الحي — فشل الحل = إعلان صريح لا mock (§1)
+    # أحداث الموجّه (حد معدل/تبريد/تبدل/سجل استدعاء) تبث في المحادثة
+    # نفسها — الواجهة ترى المزود والنموذج والزمن لكل استدعاء (§17).
+    router_events: list[dict] = []
+
+    def router_sink(event: dict) -> None:
+        router_events.append(event)
+
+    router_error: str | None = None
+    try:
+        router = _build_live_router(on_event=router_sink)
+    except Exception as error:  # noqa: BLE001 — بث الفشل لا موته
+        router_error = str(error)
+    if router_error is not None:
+        return _sse_response(_emit_single(
+            _config_required_event(
+                f"لا مزود حي قابل للحل — {router_error}",
+                details={"conversation_id": conversation_id},
             )
-        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته صامتًا
+        ))
+
+    # فحص مقدم: أي دور بلا نموذج متاح يسمى قبل بدء الدورة (§1)
+    missing_roles = [
+        f"{ROLE_LABELS[key]} (المزود {value.provider})"
+        for key, value in role_config.items()
+        if not router.has_live_provider(value.provider)
+    ]
+    if missing_roles:
+        return _sse_response(_emit_single(
+            _config_required_event(
+                "أدوار بلا نموذج متاح: " + "، ".join(missing_roles),
+                details={
+                    "missing_roles": missing_roles,
+                    "available_providers": router.live_providers(),
+                    "conversation_id": conversation_id,
+                },
+            )
+        ))
+
+    cycle_id = f"task-{uuid.uuid4().hex[:12]}"
+    stop = StopController()
+    done_event = threading.Event()
+
+    with _task_state["lock"]:
+        active = _task_state.get("active")
+        if active is not None and not active["done"].is_set():
+            raise HTTPException(status_code=409, detail="مهمة حية تعمل بالفعل")
+        _task_state["active"] = {
+            "cycle_id": cycle_id,
+            "stop": stop,
+            "done": done_event,
+            "conversation_id": conversation_id,
+        }
+        _task_state["last_state"] = None
+
+    task_seq = {"n": 0}
+
+    def sink(event: dict) -> None:
+        """تغليف كل حدث بذيل موحد — أحداث الأدوات بلا seq/cycle_id
+        كانت تضيع من جدول events (الأمر 006: سجل كامل لا فجوات)."""
+        task_seq["n"] += 1
+        envelope = {
+            "seq": event.get("seq") or task_seq["n"],
+            "cycle_id": event.get("cycle_id") or cycle_id,
+            "state": None,
+            "duration_ms": 0,
+            **event,
+        }
+        # أحداث الموجّه المجمعة تُضخ قبل حدث الدور — بترتيب حدوثها
+        while router_events:
+            router_event = router_events.pop(0)
+            router_envelope = {
+                "seq": task_seq["n"],
+                "cycle_id": cycle_id,
+                "role": "router",
+                "state": None,
+                "duration_ms": 0,
+                **router_event,
+            }
+            loop.call_soon_threadsafe(queue.put_nowait, router_envelope)
+            _persist_event(router_envelope)
+        loop.call_soon_threadsafe(queue.put_nowait, envelope)
+        _persist_event(envelope)
+        if envelope.get("kind") == "state_change":
+            _task_state["last_state"] = envelope.get("details", {}).get("to")
+
+    def run_task_in_thread() -> None:
+        try:
+            result = run_task(
+                goal,
+                router=router,
+                role_config=role_config,
+                workspace=resume_workspace,
+                on_event=sink,
+                cycle_id=cycle_id,
+                stop_controller=stop,
+                resume_from=resume_from,
+            )
+            with _task_state["lock"]:
+                _task_state["orchestrator"] = result.orchestrator
+                _task_state["last_result"] = {
+                    "cycle_id": result.cycle_id,
+                    "verdict": result.verdict,
+                    "reason": result.reason,
+                    "evidence_path": result.evidence_path,
+                }
+            # رسالة خلاصة في المحادثة — الحكم الصادق يحفظ مع التاريخ
+            convo.append_message(
+                _sessions, conversation_id,
+                role="assistant",
+                content=(
+                    f"[{result.verdict}] {result.reason} — "
+                    f"الحالة النهائية: {result.final_state or '—'} · "
+                    f"الأدلة: {result.evidence_path or '—'}"
+                ),
+                state_badge=result.verdict,
+            )
+        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
             loop.call_soon_threadsafe(
                 queue.put_nowait,
                 {
                     "seq": 0,
-                    "cycle_id": "",
+                    "cycle_id": cycle_id,
                     "role": "coordinator",
                     "kind": "cycle_error",
                     "state": None,
-                    "text": f"الاستئناف فشل: {error}",
+                    "text": f"المهمة فشلت قبل الدورة: {error}",
                     "duration_ms": 0,
                     "details": {"error": str(error)},
                 },
             )
         finally:
-            loop.call_soon_threadsafe(queue.put_nowait, None)
+            done_event.set()
+            loop.call_soon_threadsafe(queue.put_nowait, None)  # خاتمة البث
 
-    loop.run_in_executor(_executor, run_resumed_in_thread)
+    running = loop.run_in_executor(_executor, run_task_in_thread)
 
     async def generate():
         yield "data: " + json.dumps(
             {
                 "seq": 0,
-                "cycle_id": "",
+                "cycle_id": cycle_id,
                 "role": "coordinator",
-                "kind": "cycle.resume_requested",
+                "kind": "task.conversation",
                 "state": None,
-                "text": f"استئناف الدورة الموقوفة {body.cycle_id} من لقطتها",
+                "text": "",
                 "duration_ms": 0,
-                "details": {"from_cycle_id": body.cycle_id},
+                "details": {"conversation_id": conversation_id},
+            },
+            ensure_ascii=False,
+        ) + "\n\n"
+        while True:
+            event = await queue.get()
+            if event is None:  # خاتمة — الخيط انتهى
+                break
+            yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
+        await running
+
+    return _sse_response(generate())
+
+
+@app.post("/api/cycle/stream")
+async def cycle_stream(body: CycleStartIn) -> StreamingResponse:
+    """المهمة الحية (المسار الرئيسي) — دورة الأدوار الخمسة الحية (§2).
+
+    رسالة المستخدم تصل فعلًا إلى نماذج حقيقية عبر الموجه، بتمرير
+    اختيار كل دور المستقل، والتنفيذ داخل الركيزة عند الحاجة،
+    والأدلة والحالة تبث لحظة حدوثها وتسجل (الأمر 006 كله).
+    """
+    return await _stream_task_run(
+        body.goal,
+        conversation_id=body.conversation_id,
+        role_overrides=body.roles,
+        resume_from=None,
+        resume_workspace=None,
+    )
+
+
+# ------------------------------------------------------------------ #
+# المحادثة الحية — نموذج واحد بلا أدوار (§2 محادثة)
+# ------------------------------------------------------------------ #
+
+#: عدد رسائل التاريخ التي تبنى منها رسائل النموذج (نافذة سياق).
+_CHAT_HISTORY_LIMIT = 12
+
+#: حجم قطعة البث — كلمات لكل chat.delta (بث تطبيقي §2).
+_CHAT_DELTA_WORDS = 8
+
+
+def _chunk_text(text: str, words_per_chunk: int = _CHAT_DELTA_WORDS):
+    """تقسيم النص الجاهز إلى قطع بث تطبيقية — النقل غير متدفق."""
+    words = text.split(" ")
+    for start in range(0, len(words), words_per_chunk):
+        yield " ".join(words[start:start + words_per_chunk])
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(body: ChatStartIn) -> StreamingResponse:
+    """محادثة بنموذج واحد — SSE: chat.start ثم chat.delta* ثم chat.done.
+
+    بث تطبيقي صادق: النقل (urllib) غير متدفق، فالنص الجاهز يقسم
+    إلى قطع وتبث لحظة اكتمال الاستدعاء (مسموح صراحة §2). لا mock:
+    تعذر المزود = chat.error بـ CONFIGURATION_REQUIRED ثم ختام.
+    """
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+    # المحادثة: إنشاء إن لم تعط — نمط محادثة (§14)
+    if body.conversation_id is None:
+        conversation = convo.create_conversation(
+            _sessions, title=body.message, mode="chat"
+        )
+        conversation_id = conversation.id
+    elif convo.get_conversation(_sessions, body.conversation_id) is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"محادثة غير معروفة: {body.conversation_id}",
+        )
+    else:
+        conversation_id = body.conversation_id
+    convo.append_message(
+        _sessions, conversation_id, role="user", content=body.message
+    )
+
+    # اختيار النموذج: الطلب ثم المحفوظ ثم الافتراضي المعلن
+    saved = rc.load_role_config()["chat"]
+    provider = body.provider or saved.provider
+    model = body.model or saved.model
+
+    chat_seq = {"n": 0}
+
+    def put(event: dict) -> None:
+        """تغليف حدث المحادثة بذيل الأحداث الموحد — يسجل في جدول events."""
+        chat_seq["n"] += 1
+        envelope = {
+            "seq": chat_seq["n"],
+            "cycle_id": f"chat-{conversation_id}",
+            "state": None,
+            "role": "chat",
+            **event,
+        }
+        loop.call_soon_threadsafe(queue.put_nowait, envelope)
+        _persist_event(envelope)
+
+    def run_chat_in_thread() -> None:
+        try:
+            router = _build_live_router(on_event=lambda e: put({
+                "kind": "router.event", "role": "router", **e
+            }))
+            if not router.has_live_provider(provider):
+                put({
+                    "kind": "chat.error",
+                    "code": "CONFIGURATION_REQUIRED",
+                    "text": (
+                        f"المزود '{provider}' غير متاح للربط الحي — "
+                        f"المتاح: {router.live_providers()}. "
+                        "احفظ مفتاح المزود من الإعدادات أو اختر مزودًا متاحًا"
+                    ),
+                    "details": {
+                        "conversation_id": conversation_id,
+                        "provider": provider,
+                        "model": model,
+                    },
+                })
+                return
+            history = [
+                ChatMessage(role=m["role"], content=m["content"])
+                for m in convo.conversation_messages(
+                    _sessions, conversation_id, limit=_CHAT_HISTORY_LIMIT
+                )
+                if m["role"] in ("user", "assistant")
+            ]
+            outcome = router.chat_live(
+                history, provider_id=provider, model=model
+            )
+            for piece in _chunk_text(outcome["text"]):
+                put({
+                    "kind": "chat.delta",
+                    "text": piece,
+                    "details": {"conversation_id": conversation_id},
+                })
+            convo.append_message(
+                _sessions, conversation_id,
+                role="assistant", content=outcome["text"],
+            )
+            put({
+                "kind": "chat.done",
+                "text": "",
+                "details": {
+                    "conversation_id": conversation_id,
+                    "provider": outcome["provider"],
+                    "model": outcome["model"],
+                    "tokens": outcome["tokens"],
+                    "duration_ms": outcome["duration_ms"],
+                },
+            })
+        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
+            put({
+                "kind": "chat.error",
+                "code": "PROVIDER_CALL_FAILED",
+                "text": f"تعذر الاستدعاء الحي: {error}",
+                "details": {
+                    "conversation_id": conversation_id,
+                    "provider": provider,
+                    "model": model,
+                    "error": str(error),
+                },
+            })
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+
+    loop.run_in_executor(_executor, run_chat_in_thread)
+
+    async def generate():
+        yield "data: " + json.dumps(
+            {
+                "kind": "chat.start",
+                "text": "",
+                "details": {
+                    "conversation_id": conversation_id,
+                    "provider": provider,
+                    "model": model,
+                },
             },
             ensure_ascii=False,
         ) + "\n\n"
@@ -377,12 +674,162 @@ async def cycle_resume(body: CycleResumeIn) -> StreamingResponse:
                 break
             yield "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
 
-    return StreamingResponse(
-        generate(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return _sse_response(generate())
 
+
+@app.post("/api/cycle/verify")
+def cycle_verify(body: CycleVerifyIn) -> dict:
+    """موافقة المستخدم على نتيجة المهمة — القناة الوحيدة إلى VERIFIED.
+
+    يرفض 404 لدورة غير معروفة و409 لانتقال غير مسموح (مثل طلب الموافقة
+    قبل بلوغ EVIDENCED/ADJUDICATED) — جدول الانتقالات والقاعدة الذهبية
+    يفرضان في core/state.py لا هنا.
+    """
+    with _task_state["lock"]:
+        orchestrator = _task_state.get("orchestrator")
+        if orchestrator is None:
+            raise HTTPException(
+                status_code=404,
+                detail="لا مهمة منجزة بعد — شغل مهمة أولًا",
+            )
+    try:
+        outcome = orchestrator.user_verifies(body.cycle_id)
+    except KeyError:
+        raise HTTPException(
+            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
+        )
+    except StateTransitionError as error:
+        raise HTTPException(status_code=409, detail=str(error))
+    return {
+        "cycle_id": body.cycle_id,
+        "state": outcome["state"],
+        "badge": "VERIFIED",
+        "event": outcome["event"],
+    }
+
+
+# ------------------------------------------------------------------ #
+# الأمر 004 — الإيقاف الفوري الآمن للمهمة + الاستئناف من اللقطة
+# ------------------------------------------------------------------ #
+
+def _task_snapshot_dir(cycle_id: str) -> Path:
+    return Path("runtime") / "tasks" / cycle_id
+
+
+@app.post("/api/cycle/stop")
+def cycle_stop(body: CycleStopIn) -> dict:
+    """طلب إيقاف فوري للمهمة — يقبل فورًا ويكرم عند حد آمن.
+
+    القبول يعني: العلم رفع ذريًا والحالة STOPPING؛ التوقف الفعلي
+    عند أقرب نقطة تفتيش (أقصى الانتظار = استدعاء دور واحد).
+    """
+    with _task_state["lock"]:
+        active = _task_state.get("active")
+        if active is None:
+            raise HTTPException(
+                status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
+            )
+    if active["cycle_id"] != body.cycle_id:
+        raise HTTPException(
+            status_code=404, detail=f"دورة غير معروفة: {body.cycle_id}"
+        )
+    if active["done"].is_set():
+        raise HTTPException(
+            status_code=409,
+            detail="الدورة ليست قيد التشغيل — انتهت أصلًا",
+        )
+    receipt = active["stop"].request_stop(
+        body.cycle_id, by="owner", reason=body.reason
+    )
+    return {
+        "cycle_id": body.cycle_id,
+        "status": "STOPPING",
+        "receipt": {
+            "cycle_id": receipt.cycle_id,
+            "requested_by": receipt.requested_by,
+            "at": receipt.at,
+            "reason": receipt.reason,
+        },
+    }
+
+
+@app.get("/api/cycle/status/{cycle_id}")
+def cycle_status(cycle_id: str) -> dict:
+    """حالة المهمة لحظة الطلب — التشغيل وإيصال الإيقاف وإمكان الاستئناف."""
+    if not _CYCLE_ID_RE.match(cycle_id):
+        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
+    with _task_state["lock"]:
+        active = _task_state.get("active")
+        orchestrator = _task_state.get("orchestrator")
+    running = bool(
+        active is not None
+        and active["cycle_id"] == cycle_id
+        and not active["done"].is_set()
+    )
+    status: dict = {
+        "cycle_id": cycle_id,
+        "running": running,
+        "state": _task_state.get("last_state") if running else None,
+        "stop_requested": False,
+        "stop_receipt": None,
+    }
+    if active is not None and active["cycle_id"] == cycle_id:
+        receipt = active["stop"].receipt(cycle_id)
+        status["stop_requested"] = receipt is not None
+        if receipt is not None:
+            status["stop_receipt"] = {
+                "cycle_id": receipt.cycle_id,
+                "requested_by": receipt.requested_by,
+                "at": receipt.at,
+                "reason": receipt.reason,
+            }
+    if orchestrator is not None:
+        detail = orchestrator.cycle_status(cycle_id)
+    else:
+        detail = None
+    if detail is not None:
+        status.update(detail)
+    elif not running:
+        raise HTTPException(
+            status_code=404, detail=f"دورة غير معروفة: {cycle_id}"
+        )
+    status["can_resume"] = (_task_snapshot_dir(cycle_id) / "stop_snapshot.json").is_file()
+    return status
+
+
+@app.post("/api/cycle/resume")
+async def cycle_resume(body: CycleResumeIn) -> StreamingResponse:
+    """استئناف مهمة موقوفة من لقطتها — دورة جديدة ت حقن بها (الأمر 004).
+
+    الخطة الموقعة تحقن فتتخطى التفكير والمراجعة، والمهام المثبتة
+    لا تعاد؛ مساحة العمل نفسها تعاد الاستخدام حتى تبقى الأدلة متصلة.
+    """
+    from core.stop_controller import load_resume_point
+
+    if not _CYCLE_ID_RE.match(body.cycle_id):
+        raise HTTPException(status_code=422, detail="معرف دورة غير صالح")
+    snapshot_path = _task_snapshot_dir(body.cycle_id) / "stop_snapshot.json"
+    if not snapshot_path.is_file():
+        raise HTTPException(status_code=404, detail="لا لقطة إيقاف لهذه الدورة")
+    try:
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        load_resume_point(snapshot)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=f"لقطة غير صالحة: {error}")
+
+    with _task_state["lock"]:
+        active = _task_state.get("active")
+        if active is not None and not active["done"].is_set():
+            raise HTTPException(status_code=409, detail="مهمة حية تعمل بالفعل")
+        conversation_id = (active or {}).get("conversation_id")
+
+    return await _stream_task_run(
+        str(snapshot.get("goal", "")),
+        conversation_id=conversation_id,
+        role_overrides=None,
+        resume_from=snapshot,
+        resume_workspace=snapshot_path.parent,  # مساحة العمل نفسها — الأدلة متصلة
+    )
 
 # ------------------------------------------------------------------ #
 # الأمر الثالث — عرض أحداث الموجّه (الحزم الثلاث بنقل mock)
@@ -600,12 +1047,18 @@ def _eoe_event_shape(run_id: str, seq_box: list, kind: str, payload: dict) -> di
 def _build_eoe_engine(working_repo: str):
     from eoe.eoe_engine import EoeEngine
     from substrate.local_substrate import (
+        SubstrateUnavailable,
         default_local_images,
         local_git_image,
         local_sandbox_manager,
     )
 
-    images = {**default_local_images(), "git": local_git_image()}
+    # الأمر 006 §11: منصة غير مدعومة = إعلان صادق لا استثناء خام —
+    # المحرك يُبنى بلا صورة git، وكل قسم git سيفشل FAILED_TO_START بسبب واضح.
+    try:
+        images = {**default_local_images(), "git": local_git_image()}
+    except SubstrateUnavailable:
+        images = dict(default_local_images())
     manager = local_sandbox_manager(images=images)
     work_base = Path(settings.db_path).parent / "eoe-runs" / uuid.uuid4().hex[:8]
     work_base.mkdir(parents=True, exist_ok=True)
@@ -1029,9 +1482,11 @@ def mission_verify(body: MissionVerifyIn) -> dict:
 # الأمر السادس المنقح — المزودات (§1) + مهمة البناء textstats (§4+§5)
 # ------------------------------------------------------------------ #
 
+from api.models_config import router as models_config_router  # noqa: E402
 from api.providers import router as providers_router  # noqa: E402
 
 app.include_router(providers_router)
+app.include_router(models_config_router)
 
 #: تفعيل مرشح تقنيع المفاتيح على السجلات ([REDACTED] — §1.2).
 from secrets_store import install_log_redaction  # noqa: E402

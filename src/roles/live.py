@@ -25,6 +25,7 @@ from roles.reviewer import ReviewerRequest, ReviewerResult
 from roles.thinker import Plan, ThinkerRequest, ThinkerResult
 from roles.verifier import VerifierRequest, VerifierResult
 from router.model_router import ChatMessage, ModelRouter
+from router.role_config import RoleSelection
 
 #: جذر البرومبتات — نسبيًا لمستودع src/ (prompts/ في جذر المستودع).
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
@@ -60,16 +61,31 @@ def extract_json(text: str) -> dict:
 
 
 class LiveRoleBase:
-    """القاعدة المشتركة: برومبت ← chat_live ← تحقق ← إعادة واحدة ← فشل."""
+    """القاعدة المشتركة: برومبت ← chat_live ← تحقق ← إعادة واحدة ← فشل.
+
+    selection (الأمر 006 §3+§4): اختيار الدور المستقل — المزود
+    والنموذج المخصصان له حصرًا؛ غيابه = افتراضات الموجّه المعلنة.
+    """
 
     #: اسم البرومبت (prompts/<name>.md) — يضبطه كل دور.
     PROMPT_NAME = ""
     #: اسم الدور في الأحداث والتشخيص.
     ROLE = ""
 
-    def __init__(self, router: ModelRouter):
+    def __init__(self, router: ModelRouter, selection: RoleSelection | None = None):
         self._router = router
+        self._selection = selection
         self._system_prompt = load_prompt(self.PROMPT_NAME)
+
+    def _live_call(self, messages: list[ChatMessage]) -> dict:
+        """استدعاء حي واحد باختيار الدور — لا افتراض صامت لمزود آخر."""
+        if self._selection is None:
+            return self._router.chat_live(messages)
+        return self._router.chat_live(
+            messages,
+            provider_id=self._selection.provider,
+            model=self._selection.model,
+        )
 
     # ------------------------------------------------------------------ #
     # الاستدعاء + التحقق + إعادة المحاولة الواحدة (§2.3)
@@ -83,7 +99,7 @@ class LiveRoleBase:
         ]
         last_error: Exception | None = None
         for attempt in (1, 2):
-            outcome = self._router.chat_live(messages)
+            outcome = self._live_call(messages)
             text = outcome["text"]
             try:
                 data = extract_json(text)
@@ -189,8 +205,13 @@ class ArbiterLive(LiveRoleBase):
     PROMPT_NAME = "arbiter"
     ROLE = "arbiter"
 
-    def __init__(self, router: ModelRouter, max_retries: int = 2):
-        super().__init__(router)
+    def __init__(
+        self,
+        router: ModelRouter,
+        max_retries: int = 2,
+        selection: RoleSelection | None = None,
+    ):
+        super().__init__(router, selection=selection)
         self._max_retries = max_retries
 
     def run(self, request: ArbiterRequest) -> ArbiterResult:

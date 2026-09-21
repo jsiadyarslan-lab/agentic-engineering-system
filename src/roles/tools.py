@@ -202,14 +202,24 @@ def fetch_page(url: str, *, timeout: float = FETCH_TIMEOUT,
 
 def _run_in_substrate(ctx: ToolContext, code: str, workspace: Path,
                       artifacts: Path) -> tuple[int, str, str]:
-    """تنفيذ كود داخل الركيزة — نفس مسار المنفذ mock (SandboxManager)."""
+    """تنفيذ كود داخل الركيزة — نفس مسار المنفذ mock (SandboxManager).
+
+    الأمر 006 §11: فشل البدء (منصة غير مدعومة/صورة غائبة) يظهر سببه
+    الصادق (FAILED_TO_START + التفصيل) — لا سلسلة "-1/بلا سجل ركيزة"
+    غامضة ولا استثناء خام أبدًا.
+    """
     from substrate.limits import E1_LIMITS_DEFAULTS
     from substrate.local_substrate import local_sandbox_manager
-    from substrate.sandbox import NetworkMode, SandboxRequest
+    from substrate.sandbox import NetworkMode, SandboxRequest, SandboxTermination
     import uuid as uuid_mod
 
     manager = local_sandbox_manager()
-    image = next(iter(manager.image_allowlist))
+    image = next(iter(manager.image_allowlist), None)
+    if image is None:
+        return -1, "", (
+            "FAILED_TO_START: لا صورة تنفيذ متاحة — الركيزة المعزولة "
+            "تتطلب Linux/x86_64 (WSL2 على Windows)"
+        )
     sandbox_id = f"tool-{uuid_mod.uuid4().hex[:8]}"
     request = SandboxRequest(
         sandbox_id=sandbox_id,
@@ -225,6 +235,24 @@ def _run_in_substrate(ctx: ToolContext, code: str, workspace: Path,
     record = outcome.record
     if record is None:
         return -1, "", str(outcome.detail or "بلا سجل ركيزة")
+    if record.termination is not SandboxTermination.COMPLETED:
+        # السبب الحقيقي يسجله المحوّل في أدلة التنفيذ — نجلبه لا نكتفي
+        # بالتعميم "adapter reported failed execution" (صدق §11).
+        adapter = getattr(manager, "_substrate", None)
+        evidence = (
+            adapter.execution_evidence(sandbox_id)
+            if adapter is not None else {}
+        )
+        detail = str(
+            evidence.get("failure_reason")
+            or outcome.detail
+            or "بلا تفصيل إضافي"
+        )
+        return (
+            record.exit_code if record.exit_code is not None else -1,
+            "",
+            f"{record.termination.value}: {detail}",
+        )
     stdout = ""
     stderr = ""
     try:

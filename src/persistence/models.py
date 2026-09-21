@@ -3,7 +3,8 @@
 v1 حمل 13 جدولًا تراكمت عبر 19 مرحلة. v2 تبدأ بالحد الأدنى الصادق
 وتنمو مع الأوامر لا قبلها:
 
-- conversations: المحادثات (المحادثة هي التطبيق)
+- conversations: المحادثات (المحادثة هي التطبيق) — mode: chat|task
+  (الأمر 006 §14: قائمة حقيقية مرتبطة برسائلها)
 - messages: الرسائل — بوسم الدور وشارة الحالة الصادقة
 - events: سجل نشاط كل دور داخل كل دورة (الأمر الثاني) — مرجع التدقيق
   والواجهة: خطة/حكم مراجعة/تنفيذ مهمة/تحقق/قرار محكَّم/تغيير حالة.
@@ -28,12 +29,17 @@ class Base(DeclarativeBase):
 
 
 class Conversation(Base):
-    """محادثة — وعاء العمل اليومي للمستخدم."""
+    """محادثة — وعاء العمل اليومي للمستخدم.
+
+    mode (الأمر 006 §2+§14): "chat" محادثة بنموذج واحد أو "task"
+    مهمة بدورة الأدوار الخمسة — كل محادثة تعرف نمطها.
+    """
 
     __tablename__ = "conversations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(200), default="محادثة جديدة")
+    mode: Mapped[str] = mapped_column(String(10), default="chat")
     created_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
     updated_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
 

@@ -3,79 +3,125 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Hub v2</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=2.1.0">
-  <link rel="stylesheet" href="/static/styles.css?v=2.1.0">
+  <title>Agent Hub</title>
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=2.2.0">
+  <link rel="stylesheet" href="/static/styles.css?v=2.2.0">
 </head>
 <body>
   <div class="app">
 
-    <!-- الشريط الجانبي: قائمة المحادثات -->
-    <aside class="sidebar">
+    <!-- الشريط الجانبي: المحادثات -->
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
         <span class="brand">agent hub</span>
-        <span class="version">v2.1</span>
+        <button class="icon-btn" id="sidebar-collapse" title="طي الشريط">⟨</button>
       </div>
+
+      <button class="new-chat" id="new-chat" title="بدء محادثة جديدة">
+        <span class="new-chat-plus">＋</span> محادثة جديدة
+      </button>
+
       <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
-        <div class="conv-empty" id="conv-empty">لا محادثات بعد<br><span style="font-size:11.5px">اكتب هدفًا في الأسفل لتبدأ أول دورة</span></div>
+        <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
       </nav>
+
       <div class="sidebar-foot">
         <span class="substrate-dot" id="substrate-dot" title=""></span>
-        <span id="substrate-label">الركيزة: …</span>
+        <span class="substrate-label" id="substrate-label">الركيزة: …</span>
+        <button class="icon-btn gear" id="settings-open" title="الإعدادات: النماذج والمزودات">⚙</button>
       </div>
     </aside>
 
     <!-- عمود المحادثة -->
     <main class="chat">
+      <header class="chat-head">
+        <button class="icon-btn sidebar-toggle" id="sidebar-toggle" title="إظهار/إخفاء المحادثات">☰</button>
+        <span class="chat-title" id="chat-title">محادثة جديدة</span>
+        <span class="mode-badge" id="mode-badge" hidden></span>
+      </header>
+
       <div class="chat-scroll" id="chat-scroll">
 
-        <!-- شاشة البداية: الأدوار الخمسة وشارات الحالات -->
+        <!-- شاشة البداية: بسيطة واثقة — لا رموز تقنية -->
         <section class="welcome" id="welcome">
-          <h1>agent hub <span class="thin">v2</span></h1>
-          <p class="tagline">هدف واحد يمرّ بخمسة أدوار — تفكير، تدقيق، تنفيذ معزول، إثبات، تحكيم — وقرار VERIFIED النهائي يبقى بيدك وحدك.</p>
-
-          <div class="roles-row" id="roles-row">
-            <span class="role-chip"><b>◆</b> المفكر</span>
-            <span class="role-chip"><b>◇</b> المدقق</span>
-            <span class="role-chip"><b>▸</b> المنفذ</span>
-            <span class="role-chip"><b>✦</b> المراجع</span>
-            <span class="role-chip arbiter"><b>⚖</b> المُحكَّم</span>
+          <h1>كيف أساعدك اليوم؟</h1>
+          <p class="tagline">اكتب رسالة للمحادثة المباشرة، أو اختر «مهمة» من زر ＋ ليعمل فريق كامل على هدفك.</p>
+          <div class="suggestions">
+            <button class="suggestion" data-mode="chat">💬 محادثة سريعة بنموذج واحد</button>
+            <button class="suggestion" data-mode="task">🎯 مهمة كاملة: تخطيط وتنفيذ وإثبات</button>
           </div>
-
-          <div class="badges-legend">
-            <span class="badge">◌ DRAFT</span>
-            <span class="badge">✓ EXECUTED</span>
-            <span class="badge">✦ EVIDENCED</span>
-            <span class="badge">⚖ ADJUDICATED</span>
-            <span class="badge">✔ VERIFIED</span>
-          </div>
-          <p class="hint">✔ VERIFIED لا تُمنح إلا بقرارك — لا دور يمنح النظام نجاحه بنفسه، وكل تنفيذ معزول أو معلن بوضوح.</p>
         </section>
 
         <!-- الرسائل -->
         <div class="messages" id="messages"></div>
       </div>
 
-      <!-- صندوق الإدخال -->
+      <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
+      <div class="task-settings" id="task-settings" hidden>
+        <button class="task-settings-toggle" id="task-settings-toggle">إعدادات المهمة <span class="caret">▾</span></button>
+        <div class="task-settings-body" id="task-settings-body" hidden></div>
+      </div>
+
+      <!-- صندوق الإرسال -->
       <div class="composer">
         <div class="composer-inner">
-          <textarea id="input" rows="1"
-            placeholder="اكتب هدفًا لبدء دورة كاملة… (Enter للإرسال)"
-            aria-label="الهدف"></textarea>
-          <button id="send" title="ابدأ الدورة">←</button>
+          <button id="send" title="إرسال" aria-label="إرسال" disabled>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+          <textarea id="input" rows="1" placeholder="اكتب رسالتك… (Enter للإرسال · Shift+Enter لسطر جديد)" aria-label="رسالتك"></textarea>
+          <div class="plus-wrap">
+            <button id="plus" title="اختر النمط: محادثة أو مهمة" aria-label="اختيار النمط">＋</button>
+            <div class="plus-menu" id="plus-menu" hidden>
+              <button class="plus-option" data-mode="chat">💬 محادثة</button>
+              <button class="plus-option" data-mode="task">🎯 مهمة</button>
+            </div>
+          </div>
         </div>
-        <div class="composer-actions">
-          <button id="providers-open" class="tool-btn" title="بطاقات المزودات: حفظ/حذف المفاتيح في مخزن الأسرار + اختبار اتصال + قائمة النماذج"><b>◈</b> المزودات والمفاتيح</button>
-          <button id="eoe-run" class="tool-btn" title="تنفيذ أمر تنفيذي كامل: المنح والدفع ينتظران موافقتك"><b>⚡</b> أمر تنفيذي</button>
-          <button id="mission-run" class="tool-btn" title="مهمة حية كاملة: نموذج حقيقي يجلب المصادر ويكتب التقرير ويولد PDF عربيًا"><b>✦</b> مهمة حية</button>
-          <button id="build-run" class="tool-btn" title="مهمة البناء: دورة كاملة تبني حزمة textstats وتدفعها إلى فرع mission/textstats ببطاقتي موافقة"><b>▣</b> مهمة بناء</button>
-          <button id="router-demo" class="tool-btn" title="عرض أحداث الموجّه: حد المعدل + التبريد + التبدّل"><b>⇄</b> أحداث الموجّه</button>
-          <button id="stop-run" class="tool-btn stop-btn" disabled title="إيقاف فوري آمن للدورة/المهمة الجارية — يُكرَّم عند أقرب حد آمن مع حفظ الحالة والأدلة الجزئية"><b>■</b> إيقاف فوري</button>
+        <div class="composer-foot">
+          <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر ＋">محادثة</span>
+          <button id="stop-run" class="stop-btn" hidden title="إيقاف فوري آمن — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة">■ إيقاف</button>
         </div>
       </div>
     </main>
 
   </div>
+
+  <!-- لوحة الإعدادات الجانبية: نماذج الأدوار + المزودات والمفاتيح + أدوات متقدمة -->
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="settings-drawer" hidden aria-label="الإعدادات">
+    <div class="drawer-head">
+      <span>الإعدادات</span>
+      <button class="icon-btn" id="settings-close" title="إغلاق">✕</button>
+    </div>
+    <div class="drawer-body">
+
+      <section class="drawer-section" id="section-models">
+        <h3>إعدادات النماذج</h3>
+        <p class="drawer-note">لكل دور نموذجه المستقل — لا دور يرث مزود دور آخر.</p>
+        <div id="role-models"></div>
+        <button class="btn primary" id="models-save">حفظ اختيارات النماذج</button>
+        <div class="save-result" id="models-save-result"></div>
+      </section>
+
+      <section class="drawer-section" id="section-providers">
+        <h3>المزودات والمفاتيح</h3>
+        <p class="drawer-note">المفاتيح تُخزَّن مشفّرة محليًا فقط — ولا تُعاد من الخادم أبدًا.</p>
+        <div id="providers-body"></div>
+      </section>
+
+      <section class="drawer-section advanced" id="section-advanced">
+        <h3>أدوات متقدمة</h3>
+        <p class="drawer-note">مسارات تشخيصية ومتخصصة للمستخدم المتقدم.</p>
+        <div class="advanced-grid">
+          <button class="btn ghost" id="eoe-run" title="تنفيذ أمر تنفيذي كامل: المنح والدفع ينتظران موافقتك">تنفيذ أمر تنفيذي</button>
+          <button class="btn ghost" id="router-demo" title="عرض أحداث الموجّه: حد المعدل والتبريد والتبدل">أحداث الموجّه</button>
+          <button class="btn ghost" id="mission-run" title="المهمة الحية المتخصصة: تقرير جيوسياسي + PDF عربي">المهمة الحية المتخصصة</button>
+          <button class="btn ghost" id="build-run" title="مهمة البناء: حزمة textstats وتدفعها إلى فرعها ببطاقتي موافقة">مهمة البناء textstats</button>
+        </div>
+      </section>
+
+    </div>
+  </aside>
 
   <!-- نافذة تفاصيل الحدث: الـ JSON الكامل -->
   <div class="modal-backdrop" id="modal-backdrop" hidden>
@@ -88,17 +134,8 @@
     </div>
   </div>
 
-  <!-- نافذة المزودات والمفاتيح -->
-  <div class="modal-backdrop" id="providers-backdrop" hidden>
-    <div class="modal" role="dialog" aria-label="المزودات والمفاتيح" style="max-width:640px">
-      <div class="modal-head">
-        <span>المزودات والمفاتيح</span>
-        <button id="providers-close" class="pv-close" title="إغلاق">✕</button>
-      </div>
-      <div id="providers-body" class="providers-body"></div>
-    </div>
-  </div>
-
-  <script src="/static/app.js?v=2.1.0"></script>
+  <script src="/static/app.js?v=2.2.0"></script>
+  <script src="/static/task-cards.js?v=2.2.0"></script>
+  <script src="/static/settings.js?v=2.2.0"></script>
 </body>
 </html>

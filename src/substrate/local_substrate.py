@@ -310,12 +310,26 @@ def _interpreter_roots(interpreter: str) -> tuple[str, ...]:
     return _maximal_roots(tuple(roots))
 
 
+class SubstrateUnavailable(RuntimeError):
+    """The local substrate cannot run on this platform (Order 006 §11).
+
+    Raised instead of leaking raw ``LocalImage`` ValueErrors: the honest
+    reason (requires linux/x86_64) reaches the user as FAILED_TO_START
+    with a clear cause — never a raw Python traceback, never host fallback.
+    """
+
+
 def default_local_images() -> dict[str, LocalImage]:
     """The verified local images derived from the running interpreter.
 
     The image name records the interpreter family truthfully (no
     container-registry claim): ``local-python-<major>.<minor>``.
+    Order 006 §11: on an unsupported platform this returns ``{}`` — the
+    manager constructs fine and every execution fails honestly with
+    FAILED_TO_START (no raw ValueError ever leaks to the user).
     """
+    if not _SUPPORTED_ARCH:
+        return {}
     interpreter = sys.executable
     if not os.path.isabs(interpreter):  # pragma: no cover - defensive
         interpreter = os.path.abspath(interpreter)
@@ -353,6 +367,10 @@ _GIT_INTERPRETER = "/usr/bin/git"
 def local_git_image() -> LocalImage:
     """The E4 high-impact git image: the REAL ``/usr/bin/git`` binary.
 
+    Order 006 §11: on an unsupported platform this raises
+    SubstrateUnavailable with the honest reason — callers translate it
+    to FAILED_TO_START + clear cause (never a raw ValueError).
+
     E4 (order §6) executes real git commits INSIDE this substrate:
     the image interpreter is the host git binary, reached through
     the read-only ``/usr`` bind; the only writable path git can
@@ -364,6 +382,11 @@ def local_git_image() -> LocalImage:
     request commands starts with that alias and is execve'd
     directly (no shell, no caller-controlled argv[0]).
     """
+    if not _SUPPORTED_ARCH:
+        raise SubstrateUnavailable(
+            "الركيزة المعزولة غير متاحة — تتطلب Linux/x86_64 "
+            "(على Windows استخدم WSL2)؛ لن يبدأ أي تنفيذ"
+        )
     roots = _interpreter_roots(_GIT_INTERPRETER)
     bin_dir = os.path.dirname(_GIT_INTERPRETER)
     roots = _maximal_roots(tuple(roots) + (bin_dir,))
@@ -1349,6 +1372,7 @@ __all__ = [
     "DENIED_SYSCALLS",
     "DESCRIPTOR",
     "LocalImage",
+    "SubstrateUnavailable",
     "LocalSubstrateAdapter",
     "SANDBOX_HOSTNAME",
     "SANDBOX_NOFILE_LIMIT",
