@@ -50,6 +50,12 @@ from router.failover_chain import FailoverChain
 from router.model_router import ChatMessage, ModelRouter, ProviderCallError
 from router.rate_limiter import RateLimiter
 
+# (الأمر 010) عائلة التنفيذ + البحث — استيراد النماذج قبل init_db
+# (إنشاء الجداول) ثم تسجيل الموجهين بعد بناء التطبيق.
+from execution import models as execution_models  # noqa: F401
+from execution.api import router as execution_router
+from research.api import router as research_router
+
 logger = logging.getLogger("agent-hub-v2.api")
 
 UI_DIR = Path(__file__).resolve().parents[1] / "ui"
@@ -77,8 +83,16 @@ _engine = build_engine(settings.db_path)
 init_db(_engine)
 _sessions = make_session_factory(_engine)
 
+# (الأمر 010 §19) الجلسة الافتراضية لطبقة التنفيذ — المسبار والمنفذ
+# من resolve_executor() نفسه عبر هذه الجلسة.
+from execution import service as execution_service
+
+execution_service.set_default_sessions(_sessions)
+
 # ثوابت الواجهة: styles.css + app.js + الخطوط المضمنة محليًا
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
+app.include_router(execution_router)
+app.include_router(research_router)
 
 #: الأمر 006 §1+§12: مسار الإنتاج لا يبني orchestrator اشتراكيًا —
 #: كل مهمة تبني دورتها الحية بطلبها (اختيارات أدوار المهمة جزء منها)،
@@ -87,6 +101,11 @@ app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 
 #: منفّذ المهام والدورات — واحدة في كل لحظة (المنسق يقفل داخليًا أيضًا).
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="v2-cycle")
+
+#: (الأمر 010) منفّذ محادثات مستقل — المحادثة خفيفة وطبيعتها التزامن:
+#: جيل طويل من محادثة لا يحتجز رسائل محادثات أخرى خلفه (المهمات
+#: وحدها تبقى واحدة-في-اللحظة بقاعدة منتج معلنة).
+_chat_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="v2-chat")
 
 #: منفّذ EOE مخصص — انتظار موافقة المالك (حتى 600ث) لا يحتجز منفّذ
 #: الدورة أبدًا، والعكس صحيح (الأمر الرابع).
@@ -105,17 +124,23 @@ _test_router_factory = None
 _preflight_probe_fn = None
 
 
-def _build_live_router(on_event=None) -> ModelRouter:
+def _build_live_router(on_event=None, *, cooling_overrides=None) -> ModelRouter:
     """الموجّه الحي — production wiring: مزودات المالك، لا mock أبدًا.
 
     require_default=False (الأمر 006 §1): الأدوار تختار مزودها صراحة،
     فالفحص الأمامي لكل دور في _stream_task_run هو الحكم الأصدق —
     يُبنى الموجّه بكل المزودات المحلولة، وأي دور بلا مزوده يُسمّى
     في CONFIGURATION_REQUIRED (لا تبدّل صامت ولا mock بديلًا).
+
+    cooling_overrides (الأمر 010 §6): صبر أقصر للمحادثة التفاعلية —
+    خطأ مفهوم بعد ~دقيقة لا انتظار 42 دقيقة.
     """
     if _test_router_factory is not None:
         return _test_router_factory(on_event=on_event)
-    return ModelRouter.build_live(on_event=on_event, require_default=False)
+    return ModelRouter.build_live(
+        on_event=on_event, require_default=False,
+        cooling_overrides=cooling_overrides,
+    )
 
 
 def _persist_event(event: dict) -> None:
@@ -221,6 +246,24 @@ def health() -> dict:
 def conversations() -> dict:
     """قائمة المحادثات الحقيقية — SQLite، الأحدث أولًا (§14)."""
     return {"conversations": convo.list_conversations(_sessions)}
+
+
+@app.get("/api/conversations/{conversation_id}")
+def conversation_meta(conversation_id: int) -> dict:
+    """بيانات محادثة واحدة (010 §2) — للتنقل الدائم واستعادة التوجيه."""
+    found = convo.get_conversation(_sessions, conversation_id)
+    if found is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"محادثة غير معروفة: {conversation_id}",
+        )
+    return {
+        "conversation_id": found.id,
+        "title": found.title,
+        "mode": found.mode,
+        "created_at": found.created_at.isoformat(),
+        "updated_at": found.updated_at.isoformat(),
+    }
 
 
 @app.get("/api/conversations/{conversation_id}/messages")
@@ -347,6 +390,7 @@ async def _stream_task_run(
     }
 
     # المحادثة: إنشاء إن لم تعط — النمط مهمة (§14)
+    conversation_created = conversation_id is None
     if conversation_id is None:
         conversation = convo.create_conversation(
             _sessions, title=goal, mode="task"
@@ -408,6 +452,21 @@ async def _stream_task_run(
 
     cycle_id = f"task-{uuid.uuid4().hex[:12]}"
     preflight_seq = {"n": 0}
+
+    # (الأمر 010 §1) ربط المحادثة قبل الفحص المسبق — حتى المهمة
+    # المحجوبة تعرف الواجهة محادثتها فلا تنشئ محادثة لكل رسالة.
+    preflight_seq["n"] += 1
+    normalize_and_announce = normalize_event({
+        "seq": preflight_seq["n"], "cycle_id": cycle_id,
+        "role": "coordinator", "kind": "task.conversation",
+        "state": None, "text": "", "duration_ms": 0,
+        "details": {
+            "conversation_id": conversation_id,
+            "created": conversation_created,
+        },
+    }, stream=cycle_id)
+    _persist_event(normalize_and_announce)
+    BUS.publish(normalize_and_announce)
 
     def preflight_emit(kind: str, text: str, details: dict) -> None:
         preflight_seq["n"] += 1
@@ -499,18 +558,6 @@ async def _stream_task_run(
     # تيار واحد رتيب: عداد واحد مشترك للفحص المسبق وأحداث الموجّه
     # وأحداث الأدوار — لا seq مكرر أبدًا (§19 replay يفترض الرتابة).
     task_seq = preflight_seq
-
-    # حدث الربط: الواجهة تعرف المحادثة صاحبة المهمة (§26 تجربة واحدة)
-    normalize_and_announce = normalize_event({
-        "seq": 0, "cycle_id": cycle_id, "role": "coordinator",
-        "kind": "task.conversation", "state": None, "text": "",
-        "duration_ms": 0,
-        "details": {"conversation_id": conversation_id},
-    }, stream=cycle_id)
-    task_seq["n"] += 1
-    normalize_and_announce["seq"] = task_seq["n"]
-    _persist_event(normalize_and_announce)
-    BUS.publish(normalize_and_announce)
 
     def sink(event: dict) -> None:
         """النشر الموحد: تسلسل ← دائمة ← ناقل حي (§42) — انقطاع SSE
@@ -714,6 +761,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
     message_id = f"msg-{uuid.uuid4().hex[:10]}"
     stream_key = f"chat-{conversation_id}"
     chat_seq = {"n": next_seq_base(_sessions, stream_key)}
+    after_base = chat_seq["n"]  # البث يبدأ قبل حدث الربط فيصله أيضًا
     done_event = threading.Event()
     _chat_active[message_id] = {"done": done_event, "stream": stream_key}
 
@@ -729,11 +777,32 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
         _persist_event(envelope)
         BUS.publish(envelope)
 
+    # (الأمر 010 §1) ربط المحادثة أول حدث على الإطلاق — هوية الجلسة
+    # قبل أي عرض: الواجهة تعرف conversation_id فور البدء فلا تنشئ
+    # محادثة جديدة لكل رسالة (الجذر الأول للمشكلة الحرجة).
+    put({
+        "kind": "conversation.bind",
+        "message_id": message_id,
+        "status": None,
+        "text": "",
+        "details": {
+            "conversation_id": conversation_id,
+            "mode": "chat",
+            "created": body.conversation_id is None,
+        },
+    })
+
     def run_chat_in_thread() -> None:
         try:
-            router = _build_live_router(on_event=lambda e: put({
-                "kind": "router.event", "role": "router", **e
-            }))
+            router = _build_live_router(
+                on_event=lambda e: put({
+                    "kind": "router.event", "role": "router", **e
+                }),
+                cooling_overrides={
+                    "max_waits": settings.chat_cooling_max_waits,
+                    "budget_seconds": settings.chat_cooling_budget_seconds,
+                },
+            )
             if not router.has_live_provider(provider):
                 put({
                     "kind": "chat.error",
@@ -848,14 +917,14 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
         return not done_event.is_set()
 
     loop = asyncio.get_running_loop()
-    loop.run_in_executor(_executor, run_chat_in_thread)
+    loop.run_in_executor(_chat_executor, run_chat_in_thread)
 
     from api.streaming import live_stream
 
     async def generate():
         async for chunk in live_stream(
             _sessions, stream_key,
-            after=chat_seq["n"],
+            after=after_base,
             is_running=is_running,
             done_kinds=("message_completed", "chat.error"),
         ):

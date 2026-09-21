@@ -1,139 +1,86 @@
-"""أدوات الويب (مستخرجة من roles/tools.py — عقد نحافة الأمر 008).
+"""أدوات الويب (عقد نحافة الأمر 008 + الأمر 010 §25).
 
-web_search/fetch_page بفشل مصنَّف (إضافة 008 §3): النقل (شبكة/مهلة/
-مزود) منفصل عن التحليل (صفحة وصلت بلا مادة قابلة للتحليل) — «لا
-نتائج» غير «نتائج غير قابلة للتحليل» غير «خطأ مزود».
+المنطق انتقل إلى طبقة البحث (research/) — البحث عبر مزودين قابلين
+للتوفير (ddg/searx/api) لا DDG حصرًا، والجلب بنفس العقد القديم.
+هذا الملف واجهة الأدوات: يمرر الاستدعاء ويحافظ على التواقيع.
 
 الموقع: معلن خارج الركيزة (E1 مجمّدة على NetworkMode.NONE).
 """
 
 from __future__ import annotations
 
-import html as html_lib
-import re
-import urllib.parse
-import urllib.request
-
-from roles.tool_failures import ToolFailure, classify_transport_error
+from roles.tool_failures import ToolFailure, classify_transport_error  # noqa: F401 — عقد قائم
 
 #: حدود مستحضرة — لا احتجاز ذاكرة.
 MAX_SEARCH_RESULTS = 8
 MAX_PAGE_BYTES = 400_000
 FETCH_TIMEOUT = 20.0
 
-_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-)
-
-_RESULT_LINK = re.compile(
-    r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
-    re.DOTALL,
-)
-_RESULT_SNIPPET = re.compile(
-    r'<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>', re.DOTALL
-)
-_TAG = re.compile(r"<[^>]+>")
+#: ثوابت متاحة لمن يستوردها من هنا (عقد قائم — data_tools)
+from research.providers import _USER_AGENT  # noqa: E402,F401 — إعادة تصدير
 
 
-def _ddg_redirect_url(raw: str) -> str:
-    """فك روابط توجيه DuckDuckGo (//duckduckgo.com/l/?uddg=…)."""
-    try:
-        if "uddg=" in raw:
-            query = urllib.parse.urlparse(raw).query
-            value = urllib.parse.parse_qs(query).get("uddg", [""])[0]
-            return urllib.parse.unquote(value) if value else raw
-    except ValueError:
-        pass
-    return raw
+def web_search(query: str, *, endpoint: str = "", timeout: float = FETCH_TIMEOUT,
+               sessions=None) -> list[dict]:
+    """بحث عبر طبقة المزودين (010 §25) — أول مزود جاهز يُجيب.
 
-
-def web_search(query: str, *, endpoint: str = "https://html.duckduckgo.com/html/",
-               timeout: float = FETCH_TIMEOUT) -> list[dict]:
-    """بحث ويب عبر DuckDuckGo HTML — POST بصيغة نموذج، بلا مفاتيح.
-
-    الفشل مصنَّف (§3): classify_transport_error للنقل، وRESULTS_NOT_
-    ANALYZABLE عند ورود الصفحة بلا مادة — مع عدادات الاستخلاص.
+    sessions=None (بلا قاعدة): المزود الافتراضي DDG مباشرة — نفس
+    سلوك الأمر 008. مع القاعدة: كل المزودين الممكنين بالترتيب،
+    والفشل يعاد مفصلًا لكل مزود (لا «الإنترنت مقطوع»).
     """
     if not query.strip():
         raise ToolFailure(
             "web_search", "استعلام بحث فارغ", failure_class="INPUT_FAILURE",
             reason="INVALID_QUERY", stage="TOOL_START", retryable=False,
         )
-    body = urllib.parse.urlencode({"q": query}).encode("utf-8")
-    request = urllib.request.Request(
-        endpoint, data=body, method="POST",
-        headers={"User-Agent": _USER_AGENT,
-                 "Content-Type": "application/x-www-form-urlencoded"},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            page = response.read().decode("utf-8", "replace")
-    except Exception as error:  # noqa: BLE001 — تصنيف صريح واحد
-        raise classify_transport_error("web_search", error, query=query) \
-            from error
+    from research import providers as research_providers
 
-    links = _RESULT_LINK.findall(page)
-    snippets = [s for s in _RESULT_SNIPPET.findall(page)]
-    results: list[dict] = []
-    for index, (raw_url, title_html) in enumerate(links[:MAX_SEARCH_RESULTS]):
-        title = html_lib.unescape(_TAG.sub("", title_html)).strip()
-        url = _ddg_redirect_url(html_lib.unescape(raw_url))
-        snippet = ""
-        if index < len(snippets):
-            snippet = html_lib.unescape(
-                _TAG.sub("", snippets[index])
-            ).strip()[:300]
-        if title and url.startswith("http"):
-            results.append({"title": title, "url": url, "snippet": snippet})
-    if not results:
-        # النقل نجح لكن لا مادة — التمييز الإلزامي (§3+§5).
-        raise ToolFailure(
-            "web_search",
-            f"البحث لم يُعد نتائج قابلة للتحليل ({query[:60]})",
-            failure_class="TOOL_FAILURE",
-            reason="RESULTS_NOT_ANALYZABLE",
-            stage="TOOL_RESULT",
-            retryable=False,
-            details={
-                "query": query[:200], "transport": "SUCCESS",
-                "page_chars": len(page), "links_extracted": len(links),
-                "snippets_extracted": len(snippets),
-            },
+    if sessions is None:
+        provider = research_providers.DuckDuckGoSearchProvider(
+            endpoint=endpoint or "https://html.duckduckgo.com/html/",
         )
-    return results
+        try:
+            return provider.search(query, timeout=timeout)
+        except research_providers.ProviderNotReady as error:
+            # النقل منفصل عن التحليل (إضافة 008 §3 محفوظة): صفحة وصلت
+            # بلا مادة = TOOL_FAILURE/RESULTS_NOT_ANALYZABLE، غيره اعتماد.
+            analyzable = error.reason == "RESULTS_NOT_ANALYZABLE"
+            raise ToolFailure(
+                "web_search", error.detail,
+                failure_class="TOOL_FAILURE" if analyzable
+                else "DEPENDENCY_FAILURE",
+                reason=error.reason,
+                stage="TOOL_RESULT" if analyzable
+                else "PROVIDER_RESOLUTION",
+                retryable=False,
+                details={
+                    "provider": "ddg", "query": query[:200],
+                    "transport": "SUCCESS" if analyzable else "FAILED",
+                    **error.details,
+                },
+            ) from error
+    from research import service as research_service
+
+    outcome = research_service.search(sessions, query)
+    return outcome["results"]
 
 
 def fetch_page(url: str, *, timeout: float = FETCH_TIMEOUT,
                max_bytes: int = MAX_PAGE_BYTES) -> str:
-    """جلب صفحة واستخلاص نصها الخام — فشل مصنَّف (مهلة/شبكة/فراغ)."""
-    if not url.startswith(("http://", "https://")):
-        raise ToolFailure(
-            "fetch_page", f"رابط غير مدعوم: {url[:80]}",
-            failure_class="INPUT_FAILURE", reason="INVALID_QUERY",
-            stage="TOOL_START", retryable=False,
-        )
-    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    """جلب صفحة واستخلاص نصها — التنفيذ في research.providers."""
+    from research.providers import fetch_page as _fetch
+
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read(max_bytes + 1)
-    except Exception as error:  # noqa: BLE001 — تصنيف صريح واحد
-        raise classify_transport_error("fetch_page", error, query=url) \
-            from error
-    if len(raw) > max_bytes:
-        raw = raw[:max_bytes]
-    text = raw.decode("utf-8", "replace")
-    text = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", text, flags=re.DOTALL | re.I)
-    text = _TAG.sub(" ", text)
-    text = html_lib.unescape(text)
-    text = re.sub(r"\s+", " ", text).strip()
-    if len(text) < 120:
+        return _fetch(url, timeout=timeout, max_bytes=max_bytes)
+    except ValueError as error:
         raise ToolFailure(
-            "fetch_page",
-            f"الصفحة شبه فارغة بعد الاستخلاص: {url[:80]}",
-            failure_class="TOOL_FAILURE", reason="PAGE_EMPTY",
-            stage="TOOL_RESULT", retryable=False,
-            details={"url": url[:200], "transport": "SUCCESS",
-                     "raw_bytes": len(raw), "text_chars": len(text)},
-        )
-    return text
+            "fetch_page", str(error),
+            failure_class="INPUT_FAILURE" if "غير مدعوم" in str(error)
+            else "TOOL_FAILURE",
+            reason="INVALID_QUERY" if "غير مدعوم" in str(error)
+            else "PAGE_EMPTY",
+            stage="TOOL_START" if "غير مدعوم" in str(error)
+            else "TOOL_RESULT",
+            retryable=False,
+            details={"url": url[:200]},
+        ) from error

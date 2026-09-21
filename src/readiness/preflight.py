@@ -1,12 +1,16 @@
-"""فحص المهمة المسبق (الأمر 009 §16-§17) — قبل أن تبدأ لا بعدها.
+"""فحص المهمة المسبق (الأمر 009 §16-§17 + الأمر 010 §18+§26-§30).
 
     Task → Plan → Capability Analysis → Required Capabilities
-         → Environment Preflight → PASS (ابدأ) / BLOCKED (لا تبدأ)
+         → Environment Selection → Environment Preflight
+         → PASS (ابدأ) / BLOCKED (لا تبدأ + مصفوفة + إجراء مالك)
 
 القدرة المطلوبة غير الجاهزة = BLOCKED بسبب معروف وخطة استرداد
-ومسار مالك إن لزم (§25) — لا بدء مهمة تموت بعد دقائق بسبب كان
+ومسار مالك إن لزم (§25+§30) — لا بدء مهمة تموت بعد دقائق بسبب كان
 قابلًا للكشف مسبقًا. الجاهزية المنتهية (STALE) تُعاد فحصها قبل
 الاعتماد (§24)؛ والقدرة الاختيارية الغائبة لا تحجب (§28 preflight).
+
+مصفوفة القدرات (010 §26): Required/Available/Decision لكل قدرة —
+القرار ✓ أو BLOCK، مع البيئة المختارة وإجراء المالك الصريح.
 """
 
 from __future__ import annotations
@@ -28,9 +32,9 @@ _RESEARCH_HINTS = (
 def required_capabilities(goal: str) -> list[str]:
     """القدرات المطلوبة لهذه المهمة — من الجرد المعلن حصرًا.
 
-    الأساس الدائم للمسار الحي: LLM (الأدوار) + ركيزة (ملفات الأدلة)
-    + ملفات + شبكة + قشدة + قاعدة. البحث الخارجي مطلوب فقط حين
-    يعتمد عليه الهدف جوهريًا (كلمات بحث صريحة).
+    الأساس الدائم للمسار الحي: LLM (الأدوار) + بيئة تنفيذ (ملفات
+    الأدلة وتنفيذ الكود) + ملفات + شبكة + قشدة + قاعدة. البحث
+    الخارجي مطلوب فقط حين يعتمد عليه الهدف جوهريًا (كلمات صريحة).
     """
     base = ["llm", "sandbox", "filesystem",
             "network_dns", "network_https", "shell", "persistence"]
@@ -42,13 +46,14 @@ def required_capabilities(goal: str) -> list[str]:
 
 def _recovery_hint(capability_id: str) -> str:
     hints = {
-        "llm": "اربط الأدوار بمزود جاهز من ⚙ الإعدادات واحفظ مفتاحه",
-        "web_search": "تحقق من الاتصال الخارجي أو أعد المحاولة لاحقًا — "
-                      "البحث مادة المنفذ الأساسية",
-        "sandbox": "الركيزة تتطلب Linux/x86_64 (WSL2 على Windows) — "
-                   "أو اختر بيئة تدعم العزل",
+        "llm": "اربط الأدوار بمزود جاهز من ⚙ الإعدادات ← المزودون واحفظ مفتاحه",
+        "web_search": "جهّز مزود بحث من ⚙ الإعدادات ← البحث: مثيل SearXNG "
+                      "أو Search API بمفتاح — أو شغّل النظام حيث DDG متاح",
+        "sandbox": "أضف بيئة تنفيذ من ⚙ الإعدادات ← بيئات التنفيذ "
+                   "(عامل Linux/WSL2) ← تحقق ← أعد المهمة",
         "network_dns": "افحص إعدادات الشبكة/DNS في البيئة المضيفة",
         "network_https": "افحص الوصول الخارجي (جدار/بروكسي)",
+        "network_http": "افحص الوصول لمنفذ 80 (جدار/بروكسي)",
         "filesystem": "تحقق من صلاحيات الكتابة في مجلد المشروع",
         "shell": "تحقق من تثبيت Python في PATH",
         "persistence": "تحقق من صلاحية ملف قاعدة البيانات (قراءة/كتابة)",
@@ -56,8 +61,8 @@ def _recovery_hint(capability_id: str) -> str:
     return hints.get(capability_id, "افحص هذه القدرة من لوحة البيئة")
 
 
-def _owner_action(capability_id: str, failure_class: str) -> str | None:
-    """متى يستلزم تدخل المالك (§25) — مفاتيح/إعدادات غائبة."""
+def _owner_action(sessions, capability_id: str, failure_class: str) -> str | None:
+    """متى يستلزم تدخل المالك (§25+§30) — مفاتيح/بيئات/مزودون غائبون."""
     if capability_id == "llm" and failure_class in (
         "AUTH_FAILURE", "INVALID_CONFIGURATION",
     ):
@@ -66,9 +71,15 @@ def _owner_action(capability_id: str, failure_class: str) -> str | None:
             "المزودون، أو اربط الأدوار بمزود متاح"
         )
     if capability_id == "sandbox":
+        from execution import service as execution_service
+
+        return execution_service.owner_action_for_missing_environment(sessions)
+    if capability_id == "web_search":
         return (
-            "بيئة التنفيذ المعزولة غير متاحة في هذه المنصة — قراراتك: "
-            "تشغيل على Linux/WSL2 أو قبول النظام بلا عزل معلن"
+            "OWNER ACTION REQUIRED — البحث غير جاهز: افحص حالة كل مزود "
+            "من ⚙ الإعدادات ← البحث. جهّز مثيل SearXNG (رابط) أو Search "
+            "API (نقطة+مفتاح) ثم افحصهما — الجلب (web_fetch) قد يكون "
+            "جاهزًا بالتوازي فالمهمات التي لا تحتاج البحث تستمر"
         )
     return None
 
@@ -108,7 +119,7 @@ def task_preflight(
                 "latency_ms": 0,
                 "recovery": "" if ok else _recovery_hint("llm"),
                 "owner_action": (None if ok else _owner_action(
-                    "llm", "AUTH_FAILURE")),
+                    sessions, "llm", "AUTH_FAILURE")),
             }
             if llm_detail:
                 entry["detail"] = llm_detail
@@ -146,11 +157,21 @@ def task_preflight(
             "latency_ms": current.get("probe_latency_ms", 0),
             "recovery": "" if ok else _recovery_hint(capability_id),
             "owner_action": (None if ok else _owner_action(
-                capability_id, current.get("failure_class", ""))),
+                sessions, capability_id, current.get("failure_class", ""))),
         }
         capabilities.append(entry)
         if not ok:
             blocked.append(entry)
+
+    # (010 §18) اختيار بيئة التنفيذ قبل القرار — لا بيئة افتراضية
+    # غير موجودة: البيئة المختارة تُسمّى في النتيجة، وغيابها سبب معلن.
+    environment: dict | None = None
+    try:
+        from execution import service as execution_service
+
+        environment = execution_service.select_environment(sessions)
+    except Exception:  # noqa: BLE001 — بلا قاعدة تنفيذ في هذا السياق
+        environment = None
 
     verdict = "PASS" if not blocked else "BLOCKED"
     result = {
@@ -159,6 +180,8 @@ def task_preflight(
         "required": required,
         "capabilities": capabilities,
         "blocked": blocked,
+        "environment": environment,
+        "matrix": _matrix(capabilities),
     }
     if blocked:
         from readiness import metrics
@@ -172,12 +195,30 @@ def task_preflight(
     else:
         result["summary"] = (
             "كل القدرات المطلوبة جاهزة بمسبارات حقيقية — يمكن البدء"
+            + (
+                f" عبر بيئة: {environment['name']}"
+                if environment else ""
+            )
         )
     return result
 
 
+def _matrix(capabilities: list[dict]) -> list[dict]:
+    """مصفوفة القدرات (§26): Required/Available/Decision لكل قدرة."""
+    return [
+        {
+            "capability": entry.get("name") or entry["capability_id"],
+            "capability_id": entry["capability_id"],
+            "required": "مطلوبة",
+            "available": entry["status"],
+            "decision": "PROCEED" if entry.get("ok") else "BLOCK",
+        }
+        for entry in capabilities
+    ]
+
+
 def preflight_events(result: dict) -> list[dict]:
-    """أحداث حية للفحص المسبق — تُبث في تيار المهمة (§16)."""
+    """أحداث حية للفحص المسبق — تُبث في تيار المهمة (§16+§29)."""
     events = [{
         "kind": "preflight.started",
         "role": "coordinator",
@@ -185,6 +226,7 @@ def preflight_events(result: dict) -> list[dict]:
         "details": {"required": result["required"]},
     }]
     if result["verdict"] == "PASS":
+        environment = result.get("environment")
         events.append({
             "kind": "preflight.passed",
             "role": "coordinator",
@@ -195,6 +237,13 @@ def preflight_events(result: dict) -> list[dict]:
                      "status": c["status"]}
                     for c in result["capabilities"]
                 ],
+                "environment": (
+                    {"id": environment["id"], "name": environment["name"],
+                     "backend": environment["backend"],
+                     "sandboxed": environment["sandboxed"]}
+                    if environment else None
+                ),
+                "matrix": result.get("matrix", []),
             },
         })
     else:
@@ -204,6 +253,8 @@ def preflight_events(result: dict) -> list[dict]:
             "text": result["summary"],
             "details": {
                 "blocked": result["blocked"],
+                "matrix": result.get("matrix", []),
+                "environment": result.get("environment"),
                 "recovery": [
                     {"capability_id": b["capability_id"],
                      "recovery": b["recovery"],

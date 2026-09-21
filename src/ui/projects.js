@@ -53,11 +53,20 @@
 
   function enterProjectMode() {
     document.body.classList.add("mode-project");
+    // (الأمر 010 §15) جذر الصفحة السوداء: #project-view يحمل hidden
+    // في HTML وقاعدة [hidden]{display:none!important} تتغلب على
+    // body.mode-project .project-view{display:flex} غير المهمة —
+    // فكان كل المحتوى مخفيًا. الحل من المصدر: إزالة hidden عند الدخول.
+    view.hidden = false;
   }
 
   function exitProjectMode() {
     document.body.classList.remove("mode-project");
+    view.hidden = true;
     state.projectId = null;
+    if ((location.hash || "").indexOf("#/project/") === 0) {
+      location.hash = "";
+    }
     loadProjects();
   }
 
@@ -65,7 +74,14 @@
 
   function loadProjects() {
     Hub.fetchJSON("/api/projects").then(function (out) {
-      if (!out.ok) return;
+      if (!out.ok) {
+        projectsList.innerHTML =
+          '<div class="pj-empty">تعذر تحميل المشاريع — ' +
+          '<button class="pj-retry" id="pj-list-retry">إعادة</button></div>';
+        var retryBtn = document.getElementById("pj-list-retry");
+        if (retryBtn) retryBtn.addEventListener("click", loadProjects);
+        return;
+      }
       var projects = out.j.projects || [];
       var html = "";
       if (!projects.length) {
@@ -91,17 +107,59 @@
   // ---------- فتح مشروع ----------
 
   function openProject(id) {
+    if (state.projectId === id && !view.hidden
+        && view.querySelector(".pj-head")) {
+      return;   // تراجعي: نفس المشروع معروض بالفعل
+    }
     state.projectId = id;
     enterProjectMode();
-    render("جارٍ التحميل…");
+    if ((location.hash || "") !== "#/project/" + id) {
+      location.hash = "#/project/" + id;   // توجيه دائم (010 §14)
+    }
+    render("جارٍ تحميل المشروع…");
     Hub.fetchJSON("/api/projects/" + id).then(function (out) {
-      if (!out.ok) { render("تعذر تحميل المشروع"); return; }
+      if (!out.ok) {
+        renderError("تعذر تحميل المشروع #" + id,
+          out.j && out.j.detail, function () { openProject(id); });
+        return;
+      }
       renderProject(out.j);
       loadProjects();
+    }, function () {
+      renderError("تعذر الوصول للخدمة", "تحقق من اتصال الخادم ثم أعد المحاولة",
+        function () { openProject(id); });
     });
   }
 
-  window.HubProjects = { openProject: openProject, loadProjects: loadProjects };
+  /** حالة خطأ كاملة (010 §31): السبب + إعادة المحاولة + عودة آمنة. */
+  function renderError(title, detail, retryFn) {
+    view.innerHTML = "";
+    var box = el("div", "pj-error");
+    box.appendChild(el("div", "pj-error-title", "⚠ " + title));
+    if (detail) box.appendChild(el("div", "pj-error-detail", String(detail).slice(0, 300)));
+    var actions = el("div", "pj-error-actions");
+    var retry = el("button", "pv-btn primary", "إعادة المحاولة");
+    retry.addEventListener("click", retryFn);
+    var back = el("button", "pv-btn", "عودة للمحادثة");
+    back.addEventListener("click", exitProjectMode);
+    actions.appendChild(retry);
+    actions.appendChild(back);
+    box.appendChild(actions);
+    view.appendChild(box);
+  }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  window.HubProjects = {
+    openProject: openProject,
+    loadProjects: loadProjects,
+    exitProjectMode: exitProjectMode,
+  };
 
   function render(text) {
     view.innerHTML = '<div class="pj-loading">' + esc(text) + "</div>";
@@ -159,8 +217,14 @@
       if ((plan.risks || []).length) html += listBlock("المخاطر", plan.risks);
       html += "</div>";
     } else if (p.status === "DRAFT") {
-      html += '<div class="pj-plan empty">لا خطة بعد — ولّد الخطة الأولى' +
-        ' (استدعاء حقيقي لنموذج المفكر).</div>';
+      // (010 §13) مسودة ≠ صفحة فارغة: الهدف والحالة والإجراء التالي
+      html += '<div class="pj-draft-card">' +
+        '<h3>مشروع مسودة</h3>' +
+        '<div class="pj-draft-row"><b>الهدف:</b> ' + esc(p.objective) + "</div>" +
+        '<div class="pj-draft-row"><b>الخطة:</b> لا خطة بعد — لم تُعتمد بعد</div>' +
+        '<div class="pj-draft-row"><b>الإجراء التالي:</b> ' +
+        'ولّد الخطة الأولى (استدعاء حقيقي لنموذج المفكر) ثم اعتمدها</div>' +
+        "</div>";
     }
 
     // المراحل والخطوات

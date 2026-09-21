@@ -15,7 +15,7 @@ APP_NAME = "Agentic Engineering System"
 #: (الأمر 007 §1) الاسم الرسمي تغيّر من «Agent Hub v2» — مسارات الكود
 #: (agent-hub-v2/، حزمة src) تبقى كما هي عمدًا: تغيير المسارات بلا
 #: ضرورة يكسر الاستيرادات والنصوص البرمجية القائمة.
-APP_VERSION = "3.1.0"  # الأمر 008+009: تجربة حية متدفقة + تشخيص فشل الأدوات + طبقة الجاهزية
+APP_VERSION = "3.2.0"  # الأمر 010: بيئات تنفيذ حقيقية + استمرارية المحادثة + معمارية الواجهة
 
 
 class Settings(BaseSettings):
@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8010
     db_path: Path = Path("runtime") / "agent_hub_v2.db"
+
+    # (الأمر 010 §6) صبر المحادثة التفاعلية — مستوى التشغيل:
+    # خطأ مفهوم بعد ~دقيقة انتظار تبريد لا صمت 42 دقيقة.
+    chat_cooling_max_waits: int = 1
+    chat_cooling_budget_seconds: int = 90
 
     model_config = {"env_prefix": "AGenthubV2_", "env_file": ".env", "extra": "ignore"}
 

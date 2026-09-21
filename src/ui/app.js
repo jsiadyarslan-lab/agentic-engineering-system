@@ -273,6 +273,7 @@
     wrap.className = "bubble user";
     var body = document.createElement("div");
     body.className = "bubble-body";
+    body.dir = "auto";   // (010 §4) الاتجاه من المحتوى: عربي RTL / إنجليزي LTR
     body.textContent = text;
     wrap.appendChild(body);
     insertAtEnd(wrap);
@@ -284,6 +285,7 @@
     wrap.className = "bubble assistant";
     var body = document.createElement("div");
     body.className = "bubble-body md-body";
+    body.dir = "auto";   // (010 §4) الجملة العربية تبدأ يمينًا — والكود/الجداول LTR داخل العارض
     body.textContent = "";
     var foot = document.createElement("div");
     foot.className = "bubble-foot";
@@ -347,18 +349,53 @@
 
   // ---------- الشريط الجانبي: محادثات حقيقية ----------
   var _lastConversations = [];
+  var _conversationsState = "idle";   // idle | loading | success | error
 
   function loadConversations() {
+    if (_conversationsState !== "loading") renderConversationsLoading();
+    _conversationsState = "loading";
     fetchJSON("/api/conversations").then(function (out) {
-      if (!out.ok) return;
+      if (!out.ok) {
+        _conversationsState = "error";
+        renderConversationsError(out.j && out.j.detail);
+        return;
+      }
+      _conversationsState = "success";
       _lastConversations = out.j.conversations || [];
       renderConversations(_lastConversations);
+    }, function () {
+      _conversationsState = "error";
+      renderConversationsError();
     });
+  }
+
+  function renderConversationsLoading() {
+    var empty = $("conv-empty");
+    if (empty) empty.textContent = "جارٍ تحميل المحادثات…";
+  }
+
+  function renderConversationsError(detail) {
+    var empty = $("conv-empty");
+    if (empty) {
+      empty.innerHTML = "";
+      empty.appendChild(el("div", "conv-err", "تعذر تحميل المحادثات"));
+      if (detail) empty.appendChild(el("div", "conv-err-detail", String(detail).slice(0, 120)));
+      var retry = el("button", "conv-retry", "إعادة المحاولة");
+      retry.addEventListener("click", function () { loadConversations(); });
+      empty.appendChild(retry);
+      empty.style.display = "";
+    }
   }
 
   function renderConversations(list) {
     var empty = $("conv-empty");
-    if (empty && list.length) empty.remove();
+    if (empty) {
+      if (list.length) empty.remove();
+      else {
+        empty.textContent = "لا محادثات بعد";
+        empty.style.display = "";
+      }
+    }
     conversationsEl.querySelectorAll(".conv-item").forEach(function (n) { n.remove(); });
     if (!list.length) return;
     var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -379,20 +416,61 @@
     });
   }
 
+  /** فتح محادثة من معرفها وحدها (010 §2) — للتوجيه الدائم والاسترداد. */
+  function openConversationById(id) {
+    fetchJSON("/api/conversations/" + id).then(function (out) {
+      if (!out.ok) {
+        showErrorCard({
+          kind: "conversation.error", role: "system",
+          text: "تعذر تحميل المحادثة #" + id +
+            (out.j && out.j.detail ? " — " + out.j.detail : ""),
+          details: out.j || {},
+        });
+        return;
+      }
+      openConversation(out.j);
+    }, function () {
+      showErrorCard({
+        kind: "conversation.error", role: "system",
+        text: "تعذر الوصول للخدمة لتحميل المحادثة #" + id,
+        details: {},
+      });
+    });
+  }
+
   function openConversation(c) {
     state.conversationId = c.conversation_id;
     state.lastSeq = 0;
+    saveActiveConversation(c.conversation_id);
+    setHashQuietly("#/chat/" + c.conversation_id);
     setMode(c.mode === "task" ? "task" : "chat", { silent: true });
     chatTitleEl.textContent = c.title;
     modeBadgeEl.hidden = false;
     modeBadgeEl.textContent = c.mode === "task" ? "مهمة" : "محادثة";
     messagesEl.textContent = "";
     hideWelcome();
+    var loadingCard = el("div", "history-loading", "جارٍ تحميل الرسائل…");
+    messagesEl.appendChild(loadingCard);
     fetchJSON("/api/conversations/" + c.conversation_id + "/messages")
       .then(function (out) {
-        if (!out.ok) return;
+        loadingCard.remove();
+        if (!out.ok) {
+          showErrorCard({
+            kind: "conversation.error", role: "system",
+            text: "تعذر تحميل رسائل المحادثة" +
+              (out.j && out.j.detail ? " — " + out.j.detail : ""),
+            details: out.j || {},
+          });
+          return;
+        }
         (out.j.messages || []).forEach(addHistoryMessage);
         scrollDown();
+      }, function () {
+        loadingCard.remove();
+        showErrorCard({
+          kind: "conversation.error", role: "system",
+          text: "تعذر الوصول للخدمة لتحميل الرسائل", details: {},
+        });
       });
     renderConversations(_lastConversations);
     resumeActiveRun(c.conversation_id);   // (§34) استرداد التشغيل الحي
@@ -423,6 +501,8 @@
   function newChat() {
     state.conversationId = null;
     state.lastSeq = 0;
+    saveActiveConversation(null);
+    setHashQuietly("");
     chatTitleEl.textContent = "محادثة جديدة";
     modeBadgeEl.hidden = true;
     messagesEl.textContent = "";
@@ -528,6 +608,102 @@
   });
   sendEl.addEventListener("click", send);
 
+  // ---------- توجيه دائم (010 §2): #/chat/{id} و #/project/{id} ----------
+  var _applyingRoute = false;
+
+  function saveActiveConversation(id) {
+    try {
+      if (id === null) localStorage.removeItem("hub:active-conversation");
+      else localStorage.setItem("hub:active-conversation", String(id));
+    } catch (e) { /* تخزين غير متاح — التوجيه يكفي */ }
+  }
+
+  function savedActiveConversation() {
+    try { return localStorage.getItem("hub:active-conversation"); }
+    catch (e) { return null; }
+  }
+
+  function setHashQuietly(hash) {
+    if (location.hash === hash) return;
+    _applyingRoute = true;
+    try { location.hash = hash; } catch (e) { /* ignore */ }
+    // الحدث يصل غير متزامن — العلم يمنع أي دوران متزامن فقط،
+    // وapplyRoute نفسه تراجعي (idempotent) فلا دوران غير متزامن.
+    setTimeout(function () { _applyingRoute = false; }, 0);
+  }
+
+  /** تطبيق المسار الحالي: محادثة أو مشروع أو بداية جديدة. */
+  var _routeTries = 0;
+
+  function applyRoute() {
+    if (_applyingRoute) return;
+    var hash = location.hash || "";
+    var chatMatch = hash.match(/^#\/chat\/(\d+)$/);
+    var projectMatch = hash.match(/^#\/project\/(\d+)$/);
+    if (chatMatch) {
+      var id = parseInt(chatMatch[1], 10);
+      if (state.conversationId !== id) openConversationById(id);
+      return;
+    }
+    if (projectMatch) {
+      var projectId = parseInt(projectMatch[1], 10);
+      if (window.HubProjects) {
+        _routeTries = 0;
+        window.HubProjects.openProject(projectId);
+      } else if (_routeTries < 40) {
+        // (010 §14) projects.js يُحمّل بعد app.js — أعد المحاولة حتى
+        // يجهز (التحديث المباشر على #/project/{id} يعمل من أول مرة).
+        _routeTries += 1;
+        setTimeout(applyRoute, 150);
+      }
+      return;
+    }
+    // لا مسار: محادثة محفوظة سابقًا (استرداد بعد refresh §1) أو بداية
+    if (document.body.classList.contains("mode-project")) {
+      if (window.HubProjects) window.HubProjects.exitProjectMode();
+      return;
+    }
+    var saved = savedActiveConversation();
+    if (saved && !state.conversationId
+        && chatTitleEl.textContent === "محادثة جديدة") {
+      openConversationById(parseInt(saved, 10));
+    }
+  }
+
+  window.addEventListener("hashchange", applyRoute);
+
+  // ---------- هوية المحادثة (010 §1): الربط حدث أول لا حالة ضمنية ----------
+  handlers["conversation.bind"] = function (event) {
+    var d = event.details || {};
+    if (d.conversation_id) {
+      var changed = state.conversationId !== d.conversation_id;
+      state.conversationId = d.conversation_id;
+      saveActiveConversation(d.conversation_id);
+      setHashQuietly("#/chat/" + d.conversation_id);
+      if (changed) {
+        loadConversations();   // عنصر واحد في القائمة — لا عنصر لكل رسالة
+        if (d.mode === "chat" && chatTitleEl.textContent === "محادثة جديدة") {
+          // العنوان يأتي من أول رسالة — القائمة ستجلب
+        }
+      }
+    }
+  };
+
+  handlers["task.conversation"] = function (event) {
+    var d = event.details || {};
+    if (d.conversation_id) {
+      state.conversationId = d.conversation_id;
+      saveActiveConversation(d.conversation_id);
+      setHashQuietly("#/chat/" + d.conversation_id);
+      loadConversations();
+    }
+    chatTitleEl.textContent =
+      chatTitleEl.textContent === "محادثة جديدة"
+        ? "مهمة جديدة" : chatTitleEl.textContent;
+    modeBadgeEl.hidden = false;
+    modeBadgeEl.textContent = "مهمة";
+  };
+
   // ---------- الإرسال: توزيع حسب النمط ----------
   function send() {
     var text = inputEl.value.trim();
@@ -553,11 +729,6 @@
       message: text,
       conversation_id: state.conversationId,
     }).then(finish, failed);
-
-    handlers["conversation.bind"] = function (event) {
-      var d = event.details || {};
-      if (d.conversation_id) state.conversationId = d.conversation_id;
-    };
 
     function failed(err) {
       showErrorCard({
@@ -617,15 +788,6 @@
     stopRunEl.hidden = true;
     loadConversations();
   }
-
-  handlers["task.conversation"] = function (event) {
-    state.conversationId = event.details.conversation_id;
-    chatTitleEl.textContent =
-      chatTitleEl.textContent === "محادثة جديدة"
-        ? "مهمة جديدة" : chatTitleEl.textContent;
-    modeBadgeEl.hidden = false;
-    modeBadgeEl.textContent = "مهمة";
-  };
 
   // ---------- الإيقاف الفوري (الأمر 004) ----------
   function requestStop() {
@@ -711,5 +873,6 @@
   // ---------- الإقلاع ----------
   setMode("chat");
   loadConversations();
+  applyRoute();               // التوجيه الدائم: استرداد المحادثة/المشروع
   inputEl.focus();
 })();

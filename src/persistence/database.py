@@ -36,7 +36,19 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
 
 
 def init_db(engine) -> None:
-    """إنشاء الجداول إن لم تكن موجودة + ترحيلات معلنة — آمن للتكرار."""
+    """إنشاء الجداول إن لم تكن موجودة + ترحيلات معلنة — آمن للتكرار.
+
+    (الأمر 010) تسجيل عائلات الجداول في الـmetadata هنا حصرًا — المكان
+    الوحيد الموثق الذي يضمن create_all يرى كل العائلات الأربع:
+    المنتج اليومي (هذا الملف) + workflow + providers_registry +
+    readiness + execution. الاستيراد من persistence/models كان يسقط
+    دورانًا استيراديًا مع العائلات التي تستورد Base منه.
+    """
+    import execution.models  # noqa: F401,E402 — تسجيل عائلة التنفيذ
+    import providers_registry.models  # noqa: F401,E402
+    import readiness.models  # noqa: F401,E402
+    import workflow.models  # noqa: F401,E402
+
     Base.metadata.create_all(engine)
     inspector = inspect(engine)
     columns = {

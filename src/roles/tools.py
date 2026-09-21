@@ -83,7 +83,7 @@ class ToolContext:
 
     def __init__(self, grant_root: Path, on_event=None, search_results=None,
                  fetched_urls=None, data_urls=None, stop_check=None,
-                 tool_records=None):
+                 tool_records=None, sessions=None):
         self.grant_root = grant_root
         self.on_event = on_event
         self.search_results = search_results if search_results is not None else []
@@ -91,6 +91,9 @@ class ToolContext:
         self.data_urls = data_urls if data_urls is not None else []
         self.stop_check = stop_check
         self.tool_records = tool_records if tool_records is not None else []
+        # (الأمر 010 §19) جلسة القاعدة للتنفيذ الموحد عبر بيئة التنفيذ
+        # المختارة — المسبار والمنفذ من resolve_executor() نفسه.
+        self.sessions = sessions
 
     def emit(self, event: dict) -> None:
         if self.on_event is not None:
@@ -123,61 +126,22 @@ def _bounded_path(grant_root: Path, relative: str) -> Path:
 
 def _run_in_substrate(ctx: ToolContext, code: str, workspace: Path,
                       artifacts: Path) -> tuple[int, str, str]:
-    """تنفيذ كود داخل الركيزة — فشل البدء صادق مفصّل (006 §11)."""
-    from substrate.limits import E1_LIMITS_DEFAULTS
-    from substrate.local_substrate import local_sandbox_manager
-    from substrate.sandbox import NetworkMode, SandboxRequest, SandboxTermination
-    import uuid as uuid_mod
+    """تنفيذ كود عبر بيئة التنفيذ الموحدة (006 §11 + 010 §19).
 
-    manager = local_sandbox_manager()
-    image = next(iter(manager.image_allowlist), None)
-    if image is None:
-        return -1, "", (
-            "FAILED_TO_START: لا صورة تنفيذ متاحة — الركيزة المعزولة "
-            "تتطلب Linux/x86_64 (WSL2 على Windows)"
-        )
-    sandbox_id = f"tool-{uuid_mod.uuid4().hex[:8]}"
-    request = SandboxRequest(
-        sandbox_id=sandbox_id,
-        image=image,
-        command=("python", "-c", code),
-        limits=E1_LIMITS_DEFAULTS,
-        env_names=frozenset({"PATH"}),
-        network=NetworkMode.NONE,
-        workspace_root=str(workspace),
-        artifacts_dir=str(artifacts),
+    المصدر الوحيد: execution.service.run_code_unified — نفس الخلفية
+    التي يمر بها مسبار sandbox، فلا «مسبار READY ومنفذ UNAVAILABLE»
+    بلا تفسير. فشل البدء يظهر بسببه الكامل لا برسالة خام.
+    """
+    from execution.service import run_code_unified
+
+    outcome = run_code_unified(
+        getattr(ctx, "sessions", None), code,
+        workspace=workspace, artifacts=artifacts,
     )
-    outcome = manager.execute(request)
-    record = outcome.record
-    if record is None:
-        return -1, "", str(outcome.detail or "بلا سجل ركيزة")
-    if record.termination is not SandboxTermination.COMPLETED:
-        adapter = getattr(manager, "_substrate", None)
-        evidence = (
-            adapter.execution_evidence(sandbox_id)
-            if adapter is not None else {}
-        )
-        detail = str(
-            evidence.get("failure_reason")
-            or outcome.detail
-            or "بلا تفصيل إضافي"
-        )
-        return (
-            record.exit_code if record.exit_code is not None else -1,
-            "",
-            f"{record.termination.value}: {detail}",
-        )
-    stdout = ""
-    stderr = ""
-    try:
-        stdout = Path(record.stdout_reference).read_text(encoding="utf-8", errors="replace") if record.stdout_reference else ""
-    except OSError:
-        pass
-    try:
-        stderr = Path(record.stderr_reference).read_text(encoding="utf-8", errors="replace") if record.stderr_reference else ""
-    except OSError:
-        pass
-    return record.exit_code if record.exit_code is not None else -1, stdout, stderr
+    stderr = outcome.stderr
+    if outcome.termination != "COMPLETED":
+        stderr = f"{outcome.termination}: {outcome.detail}"
+    return outcome.exit_code, outcome.stdout, stderr
 
 
 def _substrate_failure(tool: str, path: str, stderr: str) -> ToolFailure:
@@ -486,7 +450,7 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
 
     try:
         if name == "web_search":
-            value = web_search(**args)
+            value = web_search(**args, sessions=getattr(ctx, "sessions", None))
             ctx.search_results.extend(value)
             digest = _sha256_text(json.dumps(value, ensure_ascii=False))
             finalize(record)

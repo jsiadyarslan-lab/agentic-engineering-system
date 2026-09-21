@@ -17,6 +17,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from roles import web_tools
+from research import providers as research_providers
 from roles.recovery import plan_recovery, revise_query, run_with_recovery
 from roles.tool_failures import (
     NEEDS_STRATEGY_CHANGE,
@@ -47,13 +48,13 @@ def test_web_search_no_analyzable_results_is_classified(tmp_path):
         def __exit__(self, *args):
             return False
 
-    original = web_tools.urllib.request.urlopen
-    web_tools.urllib.request.urlopen = lambda *a, **k: EmptyResponse()
+    original = research_providers.urllib.request.urlopen
+    research_providers.urllib.request.urlopen = lambda *a, **k: EmptyResponse()
     try:
         with pytest.raises(ToolFailure) as caught:
             web_tools.web_search("أفضل ممارسات بناء منصة OSINT متقدمة")
     finally:
-        web_tools.urllib.request.urlopen = original
+        research_providers.urllib.request.urlopen = original
 
     failure = caught.value
     assert failure.failure_class == "TOOL_FAILURE"
@@ -92,15 +93,15 @@ def test_run_tool_failure_creates_durable_record(tmp_path):
         def __exit__(self, *args):
             return False
 
-    original = web_tools.urllib.request.urlopen
-    web_tools.urllib.request.urlopen = lambda *a, **k: EmptyResponse()
+    original = research_providers.urllib.request.urlopen
+    research_providers.urllib.request.urlopen = lambda *a, **k: EmptyResponse()
     ctx = ToolContext(grant_root=tmp_path)
     try:
         with pytest.raises(ToolFailure) as caught:
             run_tool("web_search",
                      {"query": "zzqqxx obscureterm-notfound-123"}, ctx)
     finally:
-        web_tools.urllib.request.urlopen = original
+        research_providers.urllib.request.urlopen = original
     failure = caught.value
     assert failure.reason == "RESULTS_NOT_ANALYZABLE"
     records = ctx.tool_records
@@ -131,8 +132,8 @@ def test_http_200_is_not_tool_success_without_usable_result():
         def __exit__(self, *args):
             return False
 
-    original = web_tools.urllib.request.urlopen
-    web_tools.urllib.request.urlopen = lambda *a, **k: OkButEmpty()
+    original = research_providers.urllib.request.urlopen
+    research_providers.urllib.request.urlopen = lambda *a, **k: OkButEmpty()
     grant = Path("/tmp/tf-http200")
     grant.mkdir(parents=True, exist_ok=True)
     ctx = ToolContext(grant_root=grant)
@@ -140,7 +141,7 @@ def test_http_200_is_not_tool_success_without_usable_result():
         with pytest.raises(ToolFailure):
             run_tool("web_search", {"query": "anything"}, ctx)
     finally:
-        web_tools.urllib.request.urlopen = original
+        research_providers.urllib.request.urlopen = original
     record = ctx.tool_records[0]
     assert record.transport_status == "SUCCESS"
     assert record.result_status == "NOT_USABLE"

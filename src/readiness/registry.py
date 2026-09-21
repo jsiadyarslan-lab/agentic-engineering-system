@@ -29,7 +29,8 @@ CAPABILITY_INVENTORY: tuple[dict, ...] = (
      "description": "توكن واحد حقيقي عبر التكوين الأساسي — /models وحده لا يكفي (§10)",
      "category": "LLM", "required": False, "probe": "model_inference"},
     {"capability_id": "web_search", "name": "بحث الويب",
-     "description": "بحث DuckDuckGo حقيقي بنتائج قابلة للتحليل",
+     "description": "مزود بحث جاهز (ddg/searx/api) بنتائج قابلة للتحليل — "
+     "قدرة قابلة للتوفير (010 §24-§25)",
      "category": "RESEARCH", "required": True, "probe": "web_search"},
     {"capability_id": "web_fetch", "name": "جلب صفحات الويب",
      "description": "جلب صفحة موثوقة واستخلاص نصها", "category": "WEB",
@@ -40,8 +41,12 @@ CAPABILITY_INVENTORY: tuple[dict, ...] = (
     {"capability_id": "network_https", "name": "اتصال HTTPS",
      "description": "اتصال TLS حقيقي لمصدر موثوق", "category": "NETWORK",
      "required": True, "probe": "https"},
-    {"capability_id": "sandbox", "name": "ركيزة التنفيذ المعزولة",
-     "description": "إقلاع/كتابة/قراءة/تنفيذ/التقاط مخرجات داخل العزل",
+    {"capability_id": "network_http", "name": "اتصال HTTP مباشر",
+     "description": "HTTP GET مباشر (منفذ 80) — منفصل عن HTTPS (010 §23)",
+     "category": "NETWORK", "required": False, "probe": "http_get"},
+    {"capability_id": "sandbox", "name": "بيئة التنفيذ",
+     "description": "بيئة تنفيذ مختارة تجتاز الإقلاع/الكتابة/التنفيذ/التقاط "
+     "— المسبار والمنفذ من مصدر واحد (010 §19)",
      "category": "SANDBOX", "required": True, "probe": "sandbox"},
     {"capability_id": "filesystem", "name": "نظام الملفات والأدلة",
      "description": "إنشاء/قراءة/تعديل/حذف والتقاط أدلة",
@@ -235,15 +240,56 @@ def run_probe(sessions, capability_id: str, *,
         return record_probe(sessions, capability_id, result)
 
     if probe_name == "web_search":
-        result = probes.probe_web_search(search_fn=search_fn)
+        # (010 §24-§25) البحث قدرة مجمعة: كل مزود يُفحص فعليًا ثم
+        # تجمَّع الحالة — DDG مهلة ≠ الإنترنت مقطوعًا.
+        if search_fn is not None:
+            result = probes.probe_web_search(search_fn=search_fn)
+        else:
+            from research import service as research_service
+
+            per_provider = research_service.probe_all(sessions)
+            aggregate = research_service.aggregate_capability(sessions)
+            ready_providers = [
+                p for p in per_provider if p.get("status") == "READY"
+            ]
+            result = probes.ProbeResult(
+                status=aggregate["status"],
+                reason=aggregate["reason"],
+                checked_at=probes._utc_now().isoformat(),
+                ttl_seconds=probes.TTL_DEFAULTS["WEB"],
+                failure_class="" if ready_providers
+                else "DEPENDENCY_FAILURE",
+                failure_stage="" if ready_providers
+                else "PROVIDER_RESOLUTION",
+                details={
+                    "per_provider": per_provider,
+                    "ready_provider": ready_providers[0]["name"]
+                    if ready_providers else "",
+                },
+            )
     elif probe_name == "web_fetch":
         result = probes.probe_web_fetch(fetch_fn=fetch_fn)
     elif probe_name == "dns":
         result = probes.probe_dns()
     elif probe_name == "https":
         result = probes.probe_https(fetch=https_fn)
+    elif probe_name == "http_get":
+        result = probes.probe_http_get()
     elif probe_name == "sandbox":
-        result = probes.probe_sandbox()
+        # (010 §19) المسبار من مصدر المنفذ نفسه: execution.service —
+        # يحمل هوية البيئة فلا تناقض بلا تفسير.
+        from execution import service as execution_service
+
+        unified = execution_service.sandbox_probe_result(sessions)
+        result = probes.ProbeResult(
+            status=unified["status"],
+            reason=unified["reason"],
+            checked_at=probes._utc_now().isoformat(),
+            ttl_seconds=unified.get("ttl_seconds", 300),
+            failure_class=unified.get("failure_class", ""),
+            failure_stage=unified.get("failure_stage", ""),
+            details=unified.get("details", {}),
+        )
     elif probe_name == "filesystem":
         result = probes.probe_filesystem()
     elif probe_name == "git":

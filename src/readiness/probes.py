@@ -28,6 +28,7 @@ from typing import Any, Callable
 #: عناوين الفحص — مصادر موثوقة مستقرة، لا خدمة خاصة.
 DNS_PROBE_HOST = "example.com"
 HTTPS_PROBE_URL = "https://example.com"
+HTTP_PROBE_URL = "http://example.com"
 WEB_SEARCH_PROBE_QUERY = "open source python"
 
 #: مهل المسبارات (ثوان) — قصيرة: الفحص خفيف أو مفشَّل سريعًا.
@@ -127,6 +128,32 @@ def probe_https(url: str = HTTPS_PROBE_URL,
                        started, TTL_DEFAULTS["NETWORK"],
                        failure_class="NETWORK_FAILURE",
                        failure_stage="TOOL_EXECUTION", details={"url": url})
+
+
+def probe_http_get(url: str = HTTP_PROBE_URL,
+                   fetch: Callable[..., Any] | None = None) -> ProbeResult:
+    """HTTP GET مباشر (منفذ 80) — منفصل عن HTTPS (010 §23).
+
+    البنية قد تسمح بأحدهما دون الآخر (جدار يقطع 80 لا 443) —
+    فالقدرتان مستقلتان لا «شبكة» واحدة.
+    """
+    started = time.monotonic()
+    getter = fetch or urllib.request.urlopen
+    try:
+        with getter(url, timeout=PROBE_TIMEOUT) as response:  # type: ignore[call-arg]
+            body = response.read(1024)
+            return _finish(
+                "READY", f"HTTP {response.status} · {len(body)} بايت",
+                started, TTL_DEFAULTS["NETWORK"],
+                details={"url": url, "http_status": response.status},
+            )
+    except Exception as error:  # noqa: BLE001
+        return _finish(
+            "NOT_READY", f"تعذر HTTP المباشر إلى {url}: {error}",
+            started, TTL_DEFAULTS["NETWORK"],
+            failure_class="NETWORK_FAILURE", failure_stage="TOOL_EXECUTION",
+            details={"url": url},
+        )
 
 
 def probe_web_search(search_fn: Callable[[str], list] | None = None) -> ProbeResult:

@@ -84,6 +84,7 @@ def test_generate_pdf_arabic_one_page(tmp_path):
 def test_web_search_parses_ddg_html():
     """محلل نتائج DDG — على HTML حقيقي مجمد (بدون شبكة)."""
     import roles.web_tools as web_tools
+    import research.providers as research_providers
 
     frozen = """
     <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fa&amp;rut=xyz">عنوان النتيجة الأولى</a>
@@ -91,7 +92,7 @@ def test_web_search_parses_ddg_html():
     <a rel="nofollow" class="result__a" href="https://example.org/b">Second result</a>
     <a class="result__snippet" href="">snippet two</a>
     """
-    original = web_tools.urllib.request.urlopen
+    original = research_providers.urllib.request.urlopen
 
     class FakeResponse:
         def __init__(self, body: bytes):
@@ -110,11 +111,11 @@ def test_web_search_parses_ddg_html():
         assert request.get_method() == "POST"  # POST لا GET
         return FakeResponse(frozen.encode("utf-8"))
 
-    web_tools.urllib.request.urlopen = fake_urlopen
+    research_providers.urllib.request.urlopen = fake_urlopen
     try:
         results = web_search("الشرق الأوسط")
     finally:
-        web_tools.urllib.request.urlopen = original
+        research_providers.urllib.request.urlopen = original
     assert len(results) == 2
     # فُكّ رابط التوجيه إلى الأصل
     assert results[0]["url"] == "https://example.com/a"

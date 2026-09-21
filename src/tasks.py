@@ -209,7 +209,7 @@ def run_task(
         "role_models": _role_models_block(role_config),
     })
 
-    ctx = ToolContext(grant_root=target)
+    ctx = ToolContext(grant_root=target, sessions=sessions)
 
     def tool_event_sink(event: dict) -> None:
         sink({"role": "implementer", **event})

@@ -129,7 +129,6 @@ def test_tables_per_family_documented():
     — فالعائلات الثلاث بأعداد مقفلة، وأي جدول جديد قرار يحدّث هذا
     الاختبار معه.
     """
-    from persistence.models import TABLE_COUNT_TOTAL
     from providers_registry import models as provider_models
     from workflow.models import WORKFLOW_TABLES
 
@@ -144,7 +143,14 @@ def test_tables_per_family_documented():
     # (الأمر 008/009) عائلة الجاهزية: سجل استدعاءات الأدوات + سجل القدرات
     from readiness.models import READINESS_TABLES  # noqa: PLC0415
     assert len(READINESS_TABLES) == 2
-    assert TABLE_COUNT_TOTAL == 19
+    # (الأمر 010 §16-§21) عائلة التنفيذ: بيئات التنفيذ + مزودو البحث —
+    # قرار معماري موثق: البيئة والبحث كيانات قابلة للتوفير لا حالات
+    # عابرة، فالقاعدة مصدر حقيقتها الدائم (المسبار والمنفذ مصدر واحد).
+    from execution.models import EXECUTION_TABLES  # noqa: PLC0415
+    assert len(EXECUTION_TABLES) == 2
+    total = 3 + len(WORKFLOW_TABLES) + len(provider_tables) \
+        + len(READINESS_TABLES) + len(EXECUTION_TABLES)
+    assert total == 21
 
 
 def test_cycle_structure_is_the_five_roles_in_order():

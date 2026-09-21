@@ -1,0 +1,541 @@
+/* Agentic Engineering System — قشرة التطبيق (الأمر 010 §3-§4+§8+§28-§32).
+ *
+ * منفصل عن styles.css عمدًا (سقف 1200 هناك مكتمل): عائلة التخطيط
+ * الجديدة — تدفق الرسائل بعرض مريح، تبويبات الإعدادات، بيئات التنفيذ،
+ * حدود الأخطاء، شاشة جاهزية المهمة، وحالات التحميل/الخطأ/الفراغ.
+ */
+
+/* ---------- (§3) تدفق الرسائل: كامل المساحة المتاحة بعرض مريح ---------- */
+
+.chat-scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  width: 100%;
+  max-width: 920px;          /* §3: 820-960 — قراءة مريحة لا ضغط */
+  margin: 0 auto;
+  padding: 18px 18px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.bubble {
+  max-width: 100%;
+  min-width: 0;              /* لا انكماش عشوائي داخل flex */
+}
+
+.bubble .bubble-body {
+  width: 100%;
+  line-height: 1.85;
+  font-size: 15px;
+}
+
+/* فقاعة المستخدم أضيق قليلًا — إيقاع محادثة لا مستند */
+.bubble.user {
+  align-self: flex-start;
+  max-width: min(78%, 720px);
+}
+
+.bubble.assistant {
+  align-self: stretch;
+}
+
+/* العارض: عناوين وفقرات وقوائم بمساحة تتنفس (§5) */
+.md-body h1, .md-body h2, .md-body h3 {
+  margin: 18px 0 8px;
+  line-height: 1.5;
+}
+.md-body h1 { font-size: 1.35em; }
+.md-body h2 { font-size: 1.2em; }
+.md-body h3 { font-size: 1.08em; }
+.md-body p { margin: 8px 0; }
+.md-body ul, .md-body ol { margin: 8px 24px; padding: 0; }
+.md-body li { margin: 4px 0; }
+.md-body blockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-inline-start: 3px solid var(--line, #2a2a33);
+  opacity: 0.9;
+}
+.md-body .md-table-wrap { margin: 10px 0; }
+.md-body .md-pre {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* حالة تحميل التاريخ (§31) */
+.history-loading {
+  text-align: center;
+  padding: 26px;
+  color: var(--muted, #9a9aa8);
+  font-size: 14px;
+}
+
+/* ---------- (§8) تبويبات الإعدادات ---------- */
+
+.settings-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line, #2a2a33);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.settings-tab {
+  background: none;
+  border: none;
+  color: var(--muted, #9a9aa8);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.settings-tab:hover { color: var(--fg, #e8e8ef); }
+
+.settings-tab.active {
+  color: var(--fg, #e8e8ef);
+  border-bottom-color: var(--accent, #6c8cff);
+}
+
+.tab-panel { padding-top: 6px; }
+
+/* ---------- تبويب «عام» ---------- */
+
+.general-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gen-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.gen-row span { color: var(--muted, #9a9aa8); }
+.gen-row b { font-weight: 600; text-align: end; }
+.gen-row.warn { border-color: #a9553f66; }
+.gen-row.warn b { color: #e8906e; }
+
+.gen-hint {
+  font-size: 12px;
+  color: var(--muted, #9a9aa8);
+  padding: 6px 2px;
+}
+
+/* ---------- (§28) بيئات التنفيذ ---------- */
+
+.env-card {
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.env-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.env-name { font-weight: 700; font-size: 14px; }
+
+.env-badge {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: #2a2a33;
+}
+.env-badge.ok { background: #1d3a2a; color: #7fd8a4; }
+.env-badge.bad { background: #3a1d1d; color: #e8906e; }
+.env-badge.wait { color: var(--muted, #9a9aa8); }
+
+.env-default {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--accent, #6c8cff);
+  color: var(--accent, #6c8cff);
+}
+
+.env-rows { display: flex; flex-direction: column; gap: 4px; }
+
+.env-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.env-row span:first-child { color: var(--muted, #9a9aa8); }
+
+.env-reason {
+  font-size: 12px;
+  color: #e8906e;
+  padding: 6px 10px;
+  background: #3a1d1d44;
+  border-radius: 8px;
+  line-height: 1.7;
+}
+
+.env-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.env-result {
+  border-top: 1px dashed var(--line, #2a2a33);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.env-result pre {
+  background: #14141b;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  overflow-x: auto;
+  direction: ltr;
+  text-align: left;
+  margin: 0;
+}
+
+.env-verify-head { font-size: 13px; font-weight: 600; }
+.env-verify-head.ok { color: #7fd8a4; }
+.env-check { font-size: 12.5px; }
+.env-check.ok { color: #7fd8a4; }
+.env-check.bad { color: #e8906e; }
+
+.env-loading, .env-empty, .env-err {
+  font-size: 13px;
+  color: var(--muted, #9a9aa8);
+  padding: 10px 2px;
+}
+.env-err { color: #e8906e; }
+
+.exec-env-add {
+  border-top: 1px solid var(--line, #2a2a33);
+  margin-top: 6px;
+  padding-top: 12px;
+}
+
+.env-add-head { font-weight: 700; font-size: 13.5px; margin-bottom: 10px; }
+
+.env-add-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.env-add-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted, #9a9aa8);
+}
+
+.env-add-grid input, .env-add-grid select {
+  background: #14141b;
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 8px;
+  color: var(--fg, #e8e8ef);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.env-add-grid input:disabled, .env-add-grid select:disabled { opacity: 0.45; }
+
+.env-add-check { flex-direction: row !important; align-items: center; gap: 8px !important; }
+
+.env-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.env-add-hint {
+  font-size: 11.5px;
+  color: var(--muted, #9a9aa8);
+  direction: ltr;
+  text-align: left;
+  font-family: ui-monospace, monospace;
+}
+
+.env-add-result { font-size: 12.5px; margin-top: 8px; }
+
+/* ---------- مزودو البحث (§24) ---------- */
+
+.research-head { margin-top: 16px; }
+
+.rp-card {
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rp-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-name { font-weight: 700; font-size: 13.5px; }
+
+.rp-status { font-size: 11px; padding: 3px 9px; border-radius: 99px; background: #2a2a33; }
+.rp-status.ok { background: #1d3a2a; color: #7fd8a4; }
+.rp-status.bad { background: #3a1d1d; color: #e8906e; }
+
+.rp-off { font-size: 11px; color: var(--muted, #9a9aa8); }
+
+.rp-config { display: flex; flex-direction: column; gap: 8px; }
+
+.rp-config label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted, #9a9aa8);
+}
+
+.rp-config input, .rp-config select {
+  background: #14141b;
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 8px;
+  color: var(--fg, #e8e8ef);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.rp-actions { display: flex; gap: 8px; }
+
+.rp-result {
+  border-top: 1px dashed var(--line, #2a2a33);
+  padding-top: 8px;
+}
+
+/* ---------- (§29) شاشة جاهزية المهمة ---------- */
+
+.readiness-card {
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #17171f;
+}
+
+.rd-title { font-weight: 700; font-size: 14.5px; }
+.rd-text { font-size: 13px; line-height: 1.8; }
+
+.mx-table {
+  border: 1px solid var(--line, #2a2a33);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mx-head, .mx-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.7fr;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  align-items: center;
+}
+
+.mx-head {
+  background: #1d1d27;
+  color: var(--muted, #9a9aa8);
+  font-weight: 600;
+}
+
+.mx-row { border-top: 1px solid var(--line, #2a2a33); }
+.mx-row.bad { background: #3a1d1d33; }
+
+.mx-cap { font-weight: 600; }
+.mx-status { direction: ltr; text-align: start; font-family: ui-monospace, monospace; font-size: 11.5px; }
+.mx-decision { text-align: end; }
+.mx-row:not(.bad) .mx-decision { color: #7fd8a4; }
+.mx-row.bad .mx-decision { color: #e8906e; }
+
+.rd-env {
+  font-size: 12.5px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #1d2a3a55;
+}
+.rd-env.warn { background: #3a2a1d55; color: #e8c26e; }
+
+.owner-action {
+  border: 1px solid #a9553f66;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #2a1a1a44;
+}
+
+.owner-action-title {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #e8906e;
+  direction: ltr;
+  text-align: left;
+}
+
+.owner-action-body { font-size: 12.5px; line-height: 1.8; }
+
+/* ---------- (§32) حدود الأخطاء العامة ---------- */
+
+.error-boundary {
+  position: fixed;
+  bottom: 0;
+  inset-inline: 0;
+  z-index: 300;
+  background: #2a1212f2;
+  border-top: 1px solid #a9553f;
+  padding: 10px 16px 12px;
+  max-height: 40vh;
+  overflow-y: auto;
+  font-size: 13px;
+}
+
+.eb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.eb-title { font-weight: 700; color: #e8906e; }
+
+.eb-actions { display: flex; gap: 8px; }
+
+.eb-btn {
+  background: #a9553f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.eb-btn.ghost { background: transparent; border: 1px solid #a9553f88; color: #e8906e; }
+
+.eb-body { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.eb-msg { line-height: 1.7; }
+.eb-rid { font-family: ui-monospace, monospace; font-size: 11.5px; opacity: 0.8; }
+
+.eb-details summary {
+  cursor: pointer;
+  color: var(--muted, #9a9aa8);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.eb-details pre {
+  background: #14141b;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  overflow-x: auto;
+  margin: 6px 0 0;
+}
+
+/* ---------- (§31) حالات المحادثة في الشريط ---------- */
+
+.conv-err { color: #e8906e; font-size: 12.5px; padding: 6px 4px; }
+.conv-err-detail { font-size: 11.5px; color: var(--muted, #9a9aa8); padding: 2px 4px 6px; }
+
+.conv-retry {
+  background: none;
+  border: 1px solid var(--line, #2a2a33);
+  color: var(--fg, #e8e8ef);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 4px;
+  font-family: inherit;
+}
+
+/* ---------- حالة خطأ المشروع (§31) ---------- */
+
+.pj-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px;
+  margin: 20px auto;
+  max-width: 560px;
+  border: 1px solid #a9553f66;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.pj-error-title { font-weight: 700; font-size: 15px; color: #e8906e; }
+.pj-error-detail { font-size: 13px; color: var(--muted, #9a9aa8); line-height: 1.8; }
+.pj-error-actions { display: flex; gap: 10px; justify-content: center; }
+
+.pj-retry {
+  background: none;
+  border: none;
+  color: var(--accent, #6c8cff);
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* بطاقة المسودة (§13) */
+.pj-draft-card {
+  border: 1px dashed var(--line, #2a2a33);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pj-draft-card h3 { margin: 0 0 4px; }
+.pj-draft-row { font-size: 13.5px; line-height: 1.8; }
+.pj-draft-row b { color: var(--accent, #6c8cff); }
+
+@media (max-width: 720px) {
+  .messages { padding: 12px 10px 20px; }
+  .bubble.user { max-width: 92%; }
+  .mx-head, .mx-row { grid-template-columns: 1fr 0.8fr 0.6fr; font-size: 11.5px; }
+}
+
+/* ---------- محاذاة الـcomposer مع تدفق الرسائل (§3) ---------- */
+
+.composer {
+  max-width: 952px;   /* 920 + padding الرسائل — خط واحد بصريًا */
+}

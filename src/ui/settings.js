@@ -24,6 +24,9 @@
     backdrop.hidden = false;
     loadModelsConfig();
     loadProviders();
+    loadGeneral();
+    if (window.ExecutionEnv) window.ExecutionEnv.load();
+    if (window.ResearchUI) window.ResearchUI.load();
   }
 
   function closeDrawer() {
@@ -35,6 +38,93 @@
   $("settings-close").addEventListener("click", closeDrawer);
   backdrop.addEventListener("click", closeDrawer);
   document.addEventListener("hub:open-settings", openDrawer);
+
+  // ---------- (010 §8) التبويبات: أقسام منظمة لا كومة حقول ----------
+
+  function activateTab(name) {
+    drawer.querySelectorAll(".settings-tab").forEach(function (btn) {
+      btn.classList.toggle("active", btn.getAttribute("data-tab") === name);
+    });
+    drawer.querySelectorAll(".tab-panel").forEach(function (panel) {
+      panel.hidden = panel.id !== "tab-" + name;
+    });
+  }
+
+  drawer.querySelectorAll(".settings-tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      activateTab(btn.getAttribute("data-tab"));
+    });
+  });
+
+  /** فتح تبويب محدد برمجيًا (أزرار إجراء المالك تنادي هذا). */
+  window.HubSettings = {
+    openTab: function (name) {
+      openDrawer();
+      activateTab(name);
+    },
+  };
+
+  // ---------- (010 §8) تبويب «عام»: حالة النظام والركيزة والبيئة الفعالة ----------
+
+  function loadGeneral() {
+    var body = document.getElementById("general-body");
+    if (!body) return;
+    body.innerHTML = '<div class="gen-loading">جارٍ التحميل…</div>';
+    Hub.fetchJSON("/health").then(function (healthOut) {
+      Hub.fetchJSON("/api/execution/environments").then(function (envOut) {
+        renderGeneral(
+          healthOut.ok ? healthOut.j : null,
+          envOut.ok ? envOut.j : null,
+        );
+      }, function () { renderGeneral(healthOut.ok ? healthOut.j : null, null); });
+    }, function () { renderGeneral(null, null); });
+  }
+
+  function renderGeneral(health, envData) {
+    var body = document.getElementById("general-body");
+    if (!body) return;
+    body.textContent = "";
+    if (!health) {
+      body.appendChild(gRow("حالة الخدمة", "تعذر قراءة الحالة", true));
+      return;
+    }
+    body.appendChild(gRow("النظام", health.app + " — " + health.version));
+    var sub = health.substrate || {};
+    body.appendChild(gRow(
+      "الركيزة المحلية",
+      sub.available ? "معزولة (Linux namespaces + seccomp)" : "غير معزولة على هذه المنصة — وضع متوافق معلن",
+      !sub.available,
+    ));
+    var environments = (envData && envData.environments) || [];
+    var ready = environments.filter(function (e) { return e.status === "READY"; });
+    var active = null;
+    environments.forEach(function (e) { if (e.is_default) active = e; });
+    if (!active && ready.length) active = ready[0];
+    body.appendChild(gRow(
+      "بيئة التنفيذ الفعالة",
+      active
+        ? active.name + " (" + active.backend + ")" +
+          (active.status === "READY" ? " — جاهزة" : " — " + active.status)
+        : "لا بيئة جاهزة — أضف بيئة من تبويب بيئات التنفيذ",
+      !active,
+    ));
+    body.appendChild(gRow(
+      "بيئات مسجلة",
+      environments.length + " (" + ready.length + " جاهزة)",
+    ));
+    var hint = document.createElement("div");
+    hint.className = "gen-hint";
+    hint.textContent = "المسبار والمنفذ من مصدر واحد — لا «جاهز» بلا فحص حقيقي.";
+    body.appendChild(hint);
+  }
+
+  function gRow(label, value, warn) {
+    var row = document.createElement("div");
+    row.className = "gen-row" + (warn ? " warn" : "");
+    row.innerHTML = "<span>" + Hub.esc(label) + "</span><b>" +
+      Hub.esc(value) + "</b>";
+    return row;
+  }
 
   // ---------- إعدادات النماذج: دور × مزود × تكوين × نموذج ----------
 

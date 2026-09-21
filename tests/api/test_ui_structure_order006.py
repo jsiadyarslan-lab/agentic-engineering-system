@@ -98,8 +98,8 @@ def test_execution_card_steps_not_role_symbols():
 
 def test_no_internal_names_in_primary_ui():
     """لا أسماء داخلية في الواجهة الأساسية — حصرًا في القسم التقني (§6)."""
-    # القسم التقني المعلن
-    tech_section = HTML.split('id="section-advanced"')[1].split("</section>")[0]
+    # القسم التقني المعلن (010: قسم «متقدم» في التبويبات)
+    tech_section = HTML.split('id="tab-advanced"')[1].split("</section>")[0]
     # الواجهة الأساسية = كل HTML ما عدا القسم التقني
     primary = HTML.replace(tech_section, "")
     for internal in ("EOE", "router demo", "mock", "build demo", "textstats"):
@@ -118,21 +118,26 @@ def test_chat_and_task_stream_endpoints_wired():
 
 
 def test_versioned_assets_and_new_modules():
-    """(الأمر 008) أصول مرقمة + الوحدات السبع بالترتيب — العارض قبل
-    النواة، والمحادثة المتدفقة والبطاقات قبل الإعدادات والبيئة."""
-    assert "styles.css?v=3.1.0" in HTML
-    assert "live.css?v=3.1.0" in HTML
-    assert "markdown.js?v=3.1.0" in HTML
-    md_pos = HTML.index("markdown.js?v=3.1.0")
-    app_pos = HTML.index("app.js?v=3.1.0")
-    chat_pos = HTML.index("chat-stream.js?v=3.1.0")
-    task_pos = HTML.index("task-cards.js?v=3.1.0")
-    picker_pos = HTML.index("model-picker.js?v=3.1.0")
-    settings_pos = HTML.index("settings.js?v=3.1.0")
-    env_pos = HTML.index("environment.js?v=3.1.0")
-    projects_pos = HTML.index("projects.js?v=3.1.0")
+    """(الأمر 008+010) أصول مرقمة + الوحدات بالترتيب — العارض قبل
+    النواة، وحدود الأخطاء قبل الإعدادات، والبحث وبيئات التنفيذ قبل
+    المشاريع."""
+    assert "styles.css?v=3.2.0" in HTML
+    assert "app-shell.css?v=3.2.0" in HTML
+    assert "markdown.js?v=3.2.0" in HTML
+    md_pos = HTML.index("markdown.js?v=3.2.0")
+    app_pos = HTML.index("app.js?v=3.2.0")
+    chat_pos = HTML.index("chat-stream.js?v=3.2.0")
+    task_pos = HTML.index("task-cards.js?v=3.2.0")
+    picker_pos = HTML.index("model-picker.js?v=3.2.0")
+    boundary_pos = HTML.index("error-boundary.js?v=3.2.0")
+    settings_pos = HTML.index("settings.js?v=3.2.0")
+    env_pos = HTML.index("environment.js?v=3.2.0")
+    research_pos = HTML.index("research-ui.js?v=3.2.0")
+    exec_pos = HTML.index("execution-env.js?v=3.2.0")
+    projects_pos = HTML.index("projects.js?v=3.2.0")
     assert md_pos < app_pos < chat_pos < task_pos < picker_pos
-    assert picker_pos < settings_pos < env_pos < projects_pos
+    assert picker_pos < boundary_pos < settings_pos < env_pos
+    assert env_pos < research_pos < exec_pos < projects_pos
 
 
 def test_mode_chip_shows_current_selection():

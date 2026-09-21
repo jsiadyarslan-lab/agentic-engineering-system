@@ -325,6 +325,7 @@ class ModelRouter:
         on_event: Callable[[dict], None] | None = None,
         sleeper: Callable[[float], None] = time.sleep,
         require_default: bool = True,
+        cooling_overrides: dict | None = None,
     ) -> "ModelRouter":
         """بناء موجّه حي — كل مزود محلول بمفتاحه، بسلسلة تبدّل مرتّبة.
 
@@ -389,7 +390,8 @@ class ModelRouter:
                 on_event=on_event,
             ),
             cooling_loop=CoolingLoop(
-                provider_settings.as_dicts()["cooling"], on_event=on_event
+                {**provider_settings.as_dicts()["cooling"],
+                 **(cooling_overrides or {})}, on_event=on_event,
             ),
             default_provider=default_provider,
             transports=transports,

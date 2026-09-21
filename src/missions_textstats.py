@@ -111,7 +111,7 @@ def _sha256_file(path: Path) -> str:
 def _sweep_stdio(root: Path) -> None:
     """إزالة ملفات stdio التي تُسقطها الركيزة في جذر مساحة العمل —
     وإلا دخلت التزام git خارج نطاق منحة textstats فرُفضت (حدود الانفجار)."""
-    for pattern in ("stdout-tool-*.txt", "stderr-tool-*.txt"):
+    for pattern in ("stdout-*.txt", "stderr-*.txt"):  # (010) أي خلفية كانت
         for leftover in root.glob(pattern):
             try:
                 leftover.unlink()

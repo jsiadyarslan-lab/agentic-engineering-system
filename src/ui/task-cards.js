@@ -442,46 +442,118 @@
     }
   };
 
+  // ---------- (010 §29) شاشة جاهزية المهمة: مصفوفة القدرات قبل البدء ----------
+
+  function matrixRow(entry) {
+    var row = el("div", "mx-row" + (entry.decision === "BLOCK" ? " bad" : ""));
+    row.appendChild(el("span", "mx-cap", entry.capability));
+    var status = el("span", "mx-status");
+    status.textContent = entry.available;
+    row.appendChild(status);
+    var decision = el("span", "mx-decision",
+      entry.decision === "PROCEED" ? "✓" : "⛔ حجب");
+    row.appendChild(decision);
+    return row;
+  }
+
+  function renderReadinessCard(kind, text, details) {
+    Hub.removeWorking();
+    var box = el("div", "readiness-card");
+    var titleMap = {
+      "preflight.started": "فحص البيئة قبل البدء…",
+      "preflight.passed": "كل القدرات المطلوبة جاهزة — بدء التنفيذ",
+      "preflight.blocked": "فحص البيئة منع البدء — مصفوفة القدرات",
+    };
+    box.appendChild(el("div", "rd-title",
+      titleMap[kind] || "جاهزية المهمة"));
+    if (text) {
+      var why = el("div", "rd-text");
+      why.dir = "auto";
+      why.textContent = text;
+      box.appendChild(why);
+    }
+    var matrix = (details && details.matrix) || [];
+    if (matrix.length) {
+      var table = el("div", "mx-table");
+      table.appendChild(el("div", "mx-head",
+        "المطلوبة · المتاحة · القرار"));
+      matrix.forEach(function (entry) { table.appendChild(matrixRow(entry)); });
+      box.appendChild(table);
+    }
+    var env = details && details.environment;
+    if (env) {
+      box.appendChild(el("div", "rd-env",
+        "بيئة التنفيذ المختارة: " + env.name + " (" + env.backend +
+        (env.sandboxed ? " · معزولة" : " · بلا عزل معلنة") + ")"));
+    } else if (kind === "preflight.blocked") {
+      var noEnv = el("div", "rd-env warn");
+      noEnv.textContent = "لا بيئة تنفيذ جاهزة مختارة";
+      box.appendChild(noEnv);
+    }
+    // إجراء المالك: أزرار تفتح التبويب الصحيح مباشرة (§30)
+    var blocked = (details && details.blocked) || [];
+    var seen = {};
+    blocked.forEach(function (b) {
+      if (!b.owner_action) return;
+      var key = b.capability_id;
+      if (seen[key]) return;
+      seen[key] = true;
+      var action = el("div", "owner-action");
+      action.appendChild(el("div", "owner-action-title",
+        "OWNER ACTION REQUIRED — " + (b.name || key)));
+      var bodyEl = el("div", "owner-action-body");
+      bodyEl.dir = "auto";
+      bodyEl.textContent = b.owner_action;
+      action.appendChild(bodyEl);
+      var btn = el("button", "btn primary small", "افتح الإعدادات");
+      btn.addEventListener("click", function () {
+        var tab = (key === "sandbox") ? "execution"
+          : (key === "web_search") ? "tools"
+          : (key === "llm") ? "providers" : "tools";
+        if (window.HubSettings) window.HubSettings.openTab(tab);
+        else document.dispatchEvent(new Event("hub:open-settings"));
+      });
+      action.appendChild(btn);
+      box.appendChild(action);
+    });
+    Hub.insertAtEnd(box);
+    Hub.scrollDown();
+    if (kind === "preflight.blocked") Hub.onTaskFinished();
+  }
+
+  ["preflight.started", "preflight.passed", "preflight.blocked"].forEach(
+    function (kind) {
+      H[kind] = function (event) {
+        renderReadinessCard(kind, event.text, event.details);
+      };
+    }
+  );
+
   // ---------- إعداد ناقص ----------
   H["CONFIGURATION_REQUIRED"] = function (event) {
     Hub.removeWorking();
     var d = event.details || {};
+    // (010 §29) حاجز preflight له بطاقته الكاملة (مصفوفة + إجراء مالك)
+    // في معالج preflight.blocked — لا تكرار هنا.
+    if (d.preflight) {
+      Hub.onTaskFinished();
+      return;
+    }
     var box = el("div", "config-card");
-    var isPreflight = !!d.preflight;
     box.appendChild(el("div", "config-title",
-      isPreflight
-        ? "لم تبدأ المهمة — فحص البيئة المسبق وجد حواجز"
-        : "لم تبدأ المهمة — إعداد المزودات مطلوب"));
+      "لم تبدأ المهمة — إعداد المزودات مطلوب"));
     var why = el("div", "config-why");
     why.textContent = event.text || "";
     box.appendChild(why);
-    if (isPreflight && d.preflight.blocked) {
-      d.preflight.blocked.forEach(function (b) {
-        var row = el("div", "hs-row");
-        row.appendChild(el("span", "hs-k", b.name || b.capability_id));
-        var v = el("span", "hs-v");
-        v.dir = "auto";
-        v.textContent = b.status + (b.reason ? " — " + b.reason : "");
-        row.appendChild(v);
-        box.appendChild(row);
-        if (b.recovery) {
-          box.appendChild(el("div", "cap-meta", "الإجراء: " + b.recovery));
-        }
-        if (b.owner_action) {
-          box.appendChild(el("div", "cap-meta cap-reason", b.owner_action));
-        }
-      });
-    }
     var available = d.available_providers || [];
     if (available.length) {
       box.appendChild(el("div", "config-note",
         "المزودات المتاحة الآن: " + available.join("، ")));
     }
-    var btn = el("button", "btn primary", "افتح الإعدادات");
+    var btn = el("button", "btn primary", "افتح الإعدادات ← المزودون");
     btn.addEventListener("click", function () {
-      var open = document.createEvent("Event");
-      open.initEvent("hub:open-settings", true, true);
-      document.dispatchEvent(open);
+      if (window.HubSettings) window.HubSettings.openTab("providers");
+      else document.dispatchEvent(new Event("hub:open-settings"));
     });
     box.appendChild(btn);
     Hub.insertAtEnd(box);

@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic Engineering System</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.1.0">
-  <link rel="stylesheet" href="/static/styles.css?v=3.1.0">
-  <link rel="stylesheet" href="/static/projects.css?v=3.1.0">
-  <link rel="stylesheet" href="/static/live.css?v=3.1.0">
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.2.0">
+  <link rel="stylesheet" href="/static/styles.css?v=3.2.0">
+  <link rel="stylesheet" href="/static/projects.css?v=3.2.0">
+  <link rel="stylesheet" href="/static/live.css?v=3.2.0">
+  <link rel="stylesheet" href="/static/app-shell.css?v=3.2.0">
 </head>
 <body>
   <div class="app">
@@ -39,7 +40,7 @@
       <div class="sidebar-foot">
         <span class="substrate-dot" id="substrate-dot" title=""></span>
         <span class="substrate-label" id="substrate-label">الركيزة: …</span>
-        <button class="icon-btn gear" id="settings-open" title="الإعدادات: النماذج والمزودات">⚙</button>
+        <button class="icon-btn gear" id="settings-open" title="الإعدادات: المزودون والنماذج والقدرات وبيئات التنفيذ">⚙</button>
       </div>
     </aside>
 
@@ -103,16 +104,41 @@
 
   </div>
 
-  <!-- لوحة الإعدادات الجانبية: نماذج الأدوار + المزودات والمفاتيح + أدوات متقدمة -->
+  <!-- حدود الأخطاء العامة (010 §32): فشل JS لا يحوّل مساحة العمل صفحة سوداء -->
+  <div class="error-boundary" id="error-boundary" hidden></div>
+
+  <!-- لوحة الإعدادات الجانبية (010 §8): تبويبات منظمة لا كومة حقول -->
   <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
   <aside class="drawer" id="settings-drawer" hidden aria-label="الإعدادات">
     <div class="drawer-head">
       <span>الإعدادات</span>
       <button class="icon-btn" id="settings-close" title="إغلاق">✕</button>
     </div>
+
+    <nav class="settings-tabs" id="settings-tabs" aria-label="أقسام الإعدادات">
+      <button class="settings-tab active" data-tab="general">عام</button>
+      <button class="settings-tab" data-tab="providers">المزودون</button>
+      <button class="settings-tab" data-tab="models">النماذج</button>
+      <button class="settings-tab" data-tab="tools">الأدوات والقدرات</button>
+      <button class="settings-tab" data-tab="execution">بيئات التنفيذ</button>
+      <button class="settings-tab" data-tab="advanced">متقدم</button>
+    </nav>
+
     <div class="drawer-body">
 
-      <section class="drawer-section" id="section-models">
+      <section class="drawer-section tab-panel active" id="tab-general">
+        <h3>عام</h3>
+        <p class="drawer-note">حالة النظام والركيزة وبيئة التنفيذ الفعالة — بلا أسرار.</p>
+        <div id="general-body" class="general-body"></div>
+      </section>
+
+      <section class="drawer-section tab-panel" id="tab-providers" hidden>
+        <h3>المزودون والاتصال</h3>
+        <p class="drawer-note">إدارة كاملة من هنا: أضف مزودًا، عدّل Base URL، أضف تكوينات، واختبر الاتصال — المفاتيح محلية ولا تُعاد أبدًا.</p>
+        <div id="providers-body"></div>
+      </section>
+
+      <section class="drawer-section tab-panel" id="tab-models" hidden>
         <h3>إعدادات النماذج</h3>
         <p class="drawer-note">لكل دور نموذجه المستقل — لا دور يرث مزود دور آخر.</p>
         <div id="role-models"></div>
@@ -120,15 +146,9 @@
         <div class="save-result" id="models-save-result"></div>
       </section>
 
-      <section class="drawer-section" id="section-providers">
-        <h3>المزودون والاتصال</h3>
-        <p class="drawer-note">إدارة كاملة من هنا: أضف مزودًا، عدّل Base URL، أضف تكوينات، واختبر الاتصال — المفاتيح محلية ولا تُعاد أبدًا.</p>
-        <div id="providers-body"></div>
-      </section>
-
-      <section class="drawer-section" id="section-environment">
-        <h3>البيئة والجاهزية</h3>
-        <p class="drawer-note">جرد حقيقي لقدرات النظام قبل أي مهمة — لا «جاهز» بلا مسبار فعلي، والجاهزية تنتهي صلاحيتها.</p>
+      <section class="drawer-section tab-panel" id="tab-tools" hidden>
+        <h3>الأدوات والقدرات</h3>
+        <p class="drawer-note">جرد حقيقي لقدرات النظام قبل أي مهمة — لا «جاهز» بلا مسبار فعلي، والجاهزية تنتهي صلاحيتها. البحث قدرة قابلة للتوفير: DDG مهلة ≠ الإنترنت مقطوع.</p>
         <div class="env-summary" id="env-summary"></div>
         <div class="pv-row">
           <button class="pv-btn primary" id="env-run-all">فحص كامل للبيئة</button>
@@ -137,9 +157,19 @@
         <div class="env-note" id="env-note"></div>
         <div class="env-inventory-body" id="env-inventory-body" hidden></div>
         <div class="cap-grid" id="env-caps"></div>
+        <h4 class="research-head">مزودو البحث</h4>
+        <p class="drawer-note">ابحث عبر أول مزود جاهز — جهّز SearXNG (رابط) أو Search API (نقطة+مفتاح) عند تعطل DDG.</p>
+        <div id="research-providers"></div>
       </section>
 
-      <section class="drawer-section advanced" id="section-advanced">
+      <section class="drawer-section tab-panel" id="tab-execution" hidden>
+        <h3>بيئات التنفيذ</h3>
+        <p class="drawer-note">المسبار والمنفذ من مصدر واحد — بيئة جاهزة فقط بعد فحوص إقلاع/كتابة/تنفيذ/التقاط حقيقية. للتنفيذ على Linux/WSL2: شغّل العامل ثم أضف بيئة REMOTE_WORKER.</p>
+        <div id="exec-env-body"></div>
+        <div id="exec-env-add" class="exec-env-add"></div>
+      </section>
+
+      <section class="drawer-section tab-panel advanced" id="tab-advanced" hidden>
         <h3>أدوات متقدمة</h3>
         <p class="drawer-note">مسارات تشخيصية ومتخصصة للمستخدم المتقدم.</p>
         <div class="advanced-grid">
@@ -165,13 +195,16 @@
     </div>
   </div>
 
-  <script src="/static/markdown.js?v=3.1.0"></script>
-  <script src="/static/app.js?v=3.1.0"></script>
-  <script src="/static/chat-stream.js?v=3.1.0"></script>
-  <script src="/static/task-cards.js?v=3.1.0"></script>
-  <script src="/static/model-picker.js?v=3.1.0"></script>
-  <script src="/static/settings.js?v=3.1.0"></script>
-  <script src="/static/environment.js?v=3.1.0"></script>
-  <script src="/static/projects.js?v=3.1.0"></script>
+  <script src="/static/markdown.js?v=3.2.0"></script>
+  <script src="/static/app.js?v=3.2.0"></script>
+  <script src="/static/chat-stream.js?v=3.2.0"></script>
+  <script src="/static/task-cards.js?v=3.2.0"></script>
+  <script src="/static/model-picker.js?v=3.2.0"></script>
+  <script src="/static/error-boundary.js?v=3.2.0"></script>
+  <script src="/static/settings.js?v=3.2.0"></script>
+  <script src="/static/environment.js?v=3.2.0"></script>
+  <script src="/static/research-ui.js?v=3.2.0"></script>
+  <script src="/static/execution-env.js?v=3.2.0"></script>
+  <script src="/static/projects.js?v=3.2.0"></script>
 </body>
 </html>
