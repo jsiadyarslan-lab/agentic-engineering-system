@@ -307,6 +307,41 @@
           esc(out.j && out.j.detail || "") + "</div>");
         return;
       }
+      var j = out.j || {};
+      var failure = j.failure || {};
+      // (013.3 §14) فشل مساحة عمل مُشخَّص — بطاقة صادقة بفعل مالك،
+      // والتفاصيل التقنية مطوية لا سائدة (جذر WinError 267 عولج).
+      if (failure.code === "RUNTIME_WORKSPACE_INVALID") {
+        var ev = j.evidence || {};
+        var card =
+          '<div class="env-ws-invalid">' +
+          '<div class="env-ws-head">⚠️ بيئة التنفيذ لم تبدأ</div>' +
+          '<div class="env-ws-body">تعذر تشغيل العامل لأن مساحة العمل ' +
+          "غير صالحة.</div>" +
+          '<div class="env-ws-row"><span>المضيف:</span> ' +
+          esc(ev.host_os || failure.host || "؟") + "</div>" +
+          '<div class="env-ws-row" dir="ltr"><span>cwd:</span> ' +
+          esc(failure.cwd || ev.host_cwd || "؟") + "</div>" +
+          '<div class="env-ws-row"><span>الحد:</span> ' +
+          esc(ev.execution_boundary || failure.execution_mode || "؟") +
+          "</div>" +
+          '<div class="env-ws-row"><span>الحالة:</span> لم يبدأ التنفيذ</div>' +
+          '<button class="env-reprovision-btn" data-id="' + id +
+          '">إعادة تجهيز البيئة</button>' +
+          '<details class="env-ws-tech"><summary>التفاصيل التقنية</summary>' +
+          '<pre dir="ltr">' +
+          esc("RUNTIME_WORKSPACE_INVALID/" + (failure.reason || "") +
+              "\nwinerror=" + (failure.winerror || "—") +
+              "\ncwd=" + (failure.cwd || "—") +
+              "\nenvironment_id=" + (ev.environment_id || "—") +
+              "\nworker_id=" + (ev.worker_id || failure.worker_id || "—") +
+              "\nexecution_mode=" +
+              (failure.execution_mode || ev.execution_boundary || "—")) +
+          "</pre></details></div>";
+        showResult(id, card);
+        bindReprovision();
+        return;
+      }
       var pre = document.createElement("pre");
       pre.setAttribute("dir", "ltr");
       pre.textContent = out.j.stdout || out.j.stderr || out.j.detail || "(بلا مخرجات)";
@@ -316,6 +351,35 @@
       var box = document.getElementById("env-result-" + id);
       if (box) box.appendChild(pre);
     });
+  }
+
+  function bindReprovision() {
+    // (013.3 §14) زر إعادة التجهيز — دورة تجهيز كاملة لا إخفاء خطأ
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".env-reprovision-btn"), function (b) {
+        if (b.dataset.bound) return;
+        b.dataset.bound = "1";
+        b.addEventListener("click", function () {
+          b.disabled = true;
+          b.textContent = "…جارٍ إعادة التجهيز";
+          Hub.fetchJSON("/api/environment/provision",
+            { method: "POST",
+              body: JSON.stringify({ policy: "STRICT_ISOLATED" }) })
+            .then(function (out) {
+              b.disabled = false;
+              b.textContent = "إعادة تجهيز البيئة";
+              var state = out.j && out.j.state || "";
+              showResult(b.getAttribute("data-id"),
+                '<div class="env-verify-head' +
+                (state === "READY" ? " ok" : "") + '">إعادة التجهيز: ' +
+                esc(state) + " — " +
+                esc(out.j && out.j.reason || "") + "</div>");
+            }, function () {
+              b.disabled = false;
+              b.textContent = "إعادة تجهيز البيئة";
+            });
+        });
+      });
   }
 
   window.ExecutionEnv = { load: load };

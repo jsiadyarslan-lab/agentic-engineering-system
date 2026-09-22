@@ -214,23 +214,37 @@ def classify_transport_error(
 def classify_sandbox_failure(
     tool: str, stderr: str,
 ) -> ToolFailure | None:
-    """تصنيف فشل الركيزة (§16+§23) — FAILED_TO_START ليس فشل منفذ.
+    """تصنيف فشل الركيزة (§16+§23 + 013.3 §9) — FAILED_TO_START ليس فشل منفذ.
 
     الحالة التاريخية الموثقة: «FAILED_TO_START: لا صورة تنفيذ متاحة —
     الركيزة المعزولة تتطلب Linux/x86_64» — هذه SANDBOX_FAILURE في
     مرحلة STARTUP، لا فشل كود المنفذ نفسه.
+
+    (013.3 §9) RUNTIME_WORKSPACE_INVALID (مسار عمل غير صالح — جذر
+    WinError 267): فشل مساحة عمل مُشخَّص في مرحلة STARTUP؛ إعادة
+    المحاولة عبر إصلاح مساحة العمل مرة واحدة فقط (repair) لا حلقة.
     """
     head = (stderr or "").strip()[:400]
     if not head:
         return None
     if head.startswith(SANDBOX_STARTUP_PREFIX):
+        reason = "NO_EXECUTION_IMAGE"
+        retryable = False
+        message = f"بيئة التنفيذ المعزولة لم تبدأ: {head}"
+        if "RUNTIME_WORKSPACE_INVALID" in head:
+            reason = "RUNTIME_WORKSPACE_INVALID"
+            retryable = True  # إصلاح مساحة عمل واحد ثم إعادة واحدة
+            message = (
+                "تعذر تشغيل بيئة التنفيذ: مساحة العمل غير صالحة "
+                f"(مُشخَّص): {head[:300]}"
+            )
         return ToolFailure(
             tool,
-            f"بيئة التنفيذ المعزولة لم تبدأ: {head}",
+            message,
             failure_class="SANDBOX_FAILURE",
-            reason="NO_EXECUTION_IMAGE",
+            reason=reason,
             stage="STARTUP",
-            retryable=False,
+            retryable=retryable,
             details={"stderr_head": head[:200]},
         )
     if "import" in head.lower() and "error" in head.lower():

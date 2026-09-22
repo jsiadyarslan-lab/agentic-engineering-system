@@ -28,6 +28,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+#: (013.3) عقد مساحة العمل الموحد — كل مطلق عملية يستهلكه حصرًا.
+from execution.workspace import (  # noqa: F401 — re-export للعقد
+    ExecutionWorkspace as ExecutionWorkspace,
+    host_os_detected,
+)
+
 #: مهلة HTTP للعامل البعيد (تحقق/تنفيذ محدود)
 WORKER_HTTP_TIMEOUT = 240.0
 
@@ -74,6 +80,10 @@ class ExecutionOutcome:
     detail: str = ""
     artifacts: dict[str, str] = field(default_factory=dict)
     duration_ms: int = 0
+    #: (013.3 §9) فشل مساحة عمل مُشخّص — RUNTIME_WORKSPACE_INVALID
+    #: بتقرير مهيكل (host/runtime/cwd/environment_id/worker_id/mode)،
+    #: ليس «فشل تنفيذ» عامًا. فارغ = لا فشل مساحة عمل.
+    failure: dict = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -319,6 +329,16 @@ class LocalSandboxBackend:
         "collect_artifacts", "cleanup",
     )
 
+    def create_workspace(self, root: Path) -> tuple[Path, Path]:
+        """(013.3 §6) إنشاء فعلي قبل أي إطلاق — العقد المعلن نفسه:
+        مساحة عمل + دليل أدلة على مضيف التحكم (الركيزة تحجز
+        artifacts عبر الربط، وscratch داخلها tmpfs مستقل)."""
+        workspace = root / "ws"
+        artifacts = root / "art"
+        workspace.mkdir(parents=True, exist_ok=True)
+        artifacts.mkdir(parents=True, exist_ok=True)
+        return workspace, artifacts
+
     def describe(self) -> dict:
         from substrate.local_substrate import substrate_capabilities
 
@@ -329,6 +349,8 @@ class LocalSandboxBackend:
             "environment_id": self.environment_id,
             "backend": "LOCAL",
             "isolation": "SANDBOXED",
+            "execution_mode": "POSIX_PROCESS",
+            "worker_id": f"local-sandbox:{self.environment_id}",
             "host_platform": host_platform_label(truth),
             "os": truth["os"],
             "architecture": truth["architecture"],
@@ -622,10 +644,16 @@ class LocalProcessBackend:
 
     def describe(self) -> dict:
         truth = runtime_truth()
+        from execution.workspace import execution_mode_of_environment
+
         return {
             "environment_id": self.environment_id,
             "backend": "LOCAL",
             "isolation": "NONE",
+            "execution_mode": execution_mode_of_environment(
+                self._environment_view()
+            ),
+            "worker_id": f"local-process:{self.environment_id}",
             "host_platform": host_platform_label(truth),
             "os": truth["os"],
             "architecture": truth["architecture"],
@@ -649,30 +677,72 @@ class LocalProcessBackend:
             "runtime_truth": truth,
         }
 
+    def _environment_view(self) -> dict:
+        """رؤية البيئة لعقد حل المسار (013.3 §7) — الخلفية المحلية
+        المتوافقة: LOCAL بلا عزل؛ وضع التنفيذ يقرره المضيف الفعلي."""
+        return {
+            "id": self.environment_id, "backend": "LOCAL",
+            "sandboxed": False,
+        }
+
+    def _resolve_workspace(self, workspace: Path) -> "ExecutionWorkspace":
+        """(013.3 §6+§7) CREATE WORKSPACE ← VERIFY قبل أي إطلاق — عبر
+        العقد الموحد حصرًا؛ مسار Linux على مضيف Windows يُرفض هنا قبل
+        CreateProcess (هذا جذر WinError 267 الذي عولج)."""
+        from execution import workspace as workspace_contract
+
+        return workspace_contract.resolve_execution_workspace(
+            self._environment_view(), workspace=workspace,
+        )
+
     def _run(self, code: str, args: list[str], *,
-             workspace: Path, timeout_s: float) -> tuple[int, str, str, str]:
+             workspace: Path, timeout_s: float) -> tuple[int, str, str, str, dict]:
+        """إطلاق العملية — الخطأ التشغيلي يُصنّف لا يُبتلع (013.3 §9).
+
+        الخامس في الرجوع: تقرير فشل مساحة العمل المهيكل إن كان الخطأ
+        من عائلة cwd (WinError 267/ENOTDIR/ENOENT-on-cwd)، وإلا {}.
+        """
         import sys
         import time as _time
 
+        cwd = str(workspace)
         started = _time.monotonic()
         try:
             proc = subprocess.run(
                 [sys.executable, "-c", code, *args],
                 capture_output=True, text=True, timeout=timeout_s,
-                cwd=str(workspace),
+                cwd=cwd,
             )
             elapsed = int((_time.monotonic() - started) * 1000)
             return (
                 proc.returncode, proc.stdout or "", proc.stderr or "",
-                f"{elapsed}ms",
+                f"{elapsed}ms", {},
             )
         except subprocess.TimeoutExpired as error:
             return (
                 -1, (error.stdout or "") if isinstance(error.stdout, str) else "",
-                f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ", "timeout",
+                f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ", "timeout", {},
             )
         except OSError as error:
-            return -1, "", f"FAILED_TO_START: {error}", "startup"
+            from execution.workspace import classify_process_oserror
+
+            failure = classify_process_oserror(
+                error, cwd=cwd,
+                environment_id=self.environment_id,
+                execution_mode="WINDOWS_PROCESS"
+                if host_os_detected() == "Windows" else "POSIX_PROCESS",
+            )
+            detail = f"FAILED_TO_START: {error}"
+            if failure:
+                # (§9) التشخيص المسماة يرافق السبب الخام — لا «فشل عام»
+                detail = (
+                    f"FAILED_TO_START: {error} — {failure['code']}/"
+                    f"{failure['reason']}: cwd={cwd} host="
+                    f"{failure['host']} execution_mode="
+                    f"{failure['execution_mode']} environment_id="
+                    f"{self.environment_id}"
+                )
+            return -1, "", detail, "startup", failure
 
     def verify(self) -> VerifyResult:
         import tempfile
@@ -683,7 +753,21 @@ class LocalProcessBackend:
         started = _time.monotonic()
         with tempfile.TemporaryDirectory(prefix="env-compat-") as tmp:
             workspace, artifacts = self.create_workspace(Path(tmp))
-            exit_code, stdout, stderr, detail = self._run(
+            # (013.3 §8) اختبار العملية المصغّر قبل الحكم — بنفس حد
+            # التنفيذ: إطلاق فعلي بـ cwd مطبوع + كتابة/قراءة/حذف ملف.
+            from execution.workspace import preflight_process_test
+
+            pre = preflight_process_test(cwd=workspace, timeout_s=30.0)
+            checks.append({
+                "name": "preflight",
+                "ok": "FAILED_TO_START" not in str(pre.get("error", ""))
+                and pre.get("exit_code") == 0,
+                "detail": f"preflight exit={pre.get('exit_code')} "
+                          f"cwd={pre.get('cwd') or '؟'} "
+                          f"write_read_delete="
+                          f"{pre.get('write_read_delete')}",
+            })
+            exit_code, stdout, stderr, detail, _failure = self._run(
                 _COMPAT_PROBE_CODE, [str(artifacts / "probe.txt")],
                 workspace=workspace, timeout_s=60.0,
             )
@@ -751,16 +835,63 @@ class LocalProcessBackend:
         self, code: str, *, workspace: Path, artifacts: Path,
         timeout_s: float = 120.0,
     ) -> ExecutionOutcome:
+        """تنفيذ محلي متوافق — بالتسلسل الإلزامي (013.3 §6+§10):
+
+        CREATE WORKSPACE ← VERIFY ← START، وإن صنّف الإطلاق فشل مساحة
+        عمل (RUNTIME_WORKSPACE_INVALID): DIAGNOSE ← REPAIR ← retry مرة
+        واحدة — ثم فشل نهائي مسمّى لا حلقة إعادة. مسار Linux على
+        مضيف Windows يُرفض قبل أي CreateProcess (جذر WinError 267).
+        """
         import time as _time
+
+        from execution.workspace import (
+            WorkspaceInvalid, repair_workspace,
+        )
 
         profile = self.describe()
         started = _time.monotonic()
-        exit_code, stdout, stderr, detail = self._run(
-            code, [], workspace=workspace, timeout_s=timeout_s,
+
+        # (§6) العقد الموحد أولًا — إنشاء وتحقق قبل الإطلاق
+        try:
+            resolved = self._resolve_workspace(workspace)
+        except WorkspaceInvalid as invalid:
+            return self._workspace_invalid_outcome(
+                invalid.report, profile, started,
+            )
+
+        exit_code, stdout, stderr, detail, failure = self._run(
+            code, [], workspace=Path(resolved.host_path),
+            timeout_s=timeout_s,
         )
+
+        # (§10) فشل مساحة عمل ← إصلاح واحد ← إعادة واحدة — لا أكثر
+        repaired: dict = {}
+        if failure:
+            try:
+                resolved = repair_workspace(
+                    self._environment_view(),
+                    workspace=Path(resolved.host_path),
+                )
+                repaired = {"repaired": True, **resolved.preflight}
+                exit_code, stdout, stderr, detail, failure = self._run(
+                    code, [], workspace=Path(resolved.host_path),
+                    timeout_s=timeout_s,
+                )
+                if failure:
+                    # الإصلاح أُجرِط والفشل باقٍ — نهائي معلن (لا حلقة)
+                    failure = {
+                        **failure,
+                        "repaired_attempted": True,
+                        "repair_result": repaired,
+                    }
+            except WorkspaceInvalid as invalid:
+                return self._workspace_invalid_outcome(
+                    invalid.report, profile, started, repaired=True,
+                )
+
         captured: dict[str, str] = {}
-        if artifacts.is_dir():
-            for path in sorted(artifacts.rglob("*")):
+        if artifacts is not None and Path(artifacts).is_dir():
+            for path in sorted(Path(artifacts).rglob("*")):
                 if path.is_file():
                     captured[str(path.relative_to(artifacts))] = _read_text(
                         path, limit=100_000
@@ -771,19 +902,70 @@ class LocalProcessBackend:
                   else "FAILED_TO_START" if detail == "startup"
                   else "COMPLETED")
         )
+        final_detail = (
+            f"[COMPATIBLE MODE — بلا عزل، معلن] {detail}"
+            if detail else
+            "[COMPATIBLE MODE — بلا عزل، معلن] host="
+            f"{profile['host_platform']}"
+        )
+        if repaired:
+            final_detail += f" [REPAIR_WORKSPACE: {repaired}]"
+        if failure:
+            # (013.3 §9) الرمز المسمّى ظاهر في التفصيل نفسه — لا بحث
+            final_detail += (
+                f" [{failure['code']}/{failure.get('reason', '')}"
+                f" cwd={failure.get('cwd', '')}]"
+            )
         return ExecutionOutcome(
             environment_id=self.environment_id,
             backend="LOCAL",
             exit_code=exit_code, stdout=stdout, stderr=stderr,
             termination=termination,
-            detail=(
-                f"[COMPATIBLE MODE — بلا عزل، معلن] {detail}"
-                if detail else
-                "[COMPATIBLE MODE — بلا عزل، معلن] host="
-                f"{profile['host_platform']}"
-            ),
+            detail=final_detail,
             artifacts=captured,
             duration_ms=int((_time.monotonic() - started) * 1000),
+            failure=failure,
+        )
+
+    def _workspace_invalid_outcome(
+        self, report: dict, profile: dict, started: float,
+        *, repaired: bool = False,
+    ) -> ExecutionOutcome:
+        """نتيجة فشل مساحة عمل (§9) — تشخيص مهيكل لا فشل عام.
+
+        الإخراج يحمل: السبب المسماة، المضيف، cwd، environment_id،
+        execution_mode، وفعل المالك (إصلاح/إعادة تجهيز البيئة).
+        """
+        from execution.workspace import WORKSPACE_REASONS
+
+        reason = report.get("reason", "")
+        text = report.get("reason_text") or WORKSPACE_REASONS.get(reason, "")
+        action = (
+            "إعادة تجهيز البيئة (زر إعادة التجهيز) — تُنشأ مساحة عمل "
+            "صالحة ويُعاد الإطلاق مرة واحدة"
+        )
+        detail = (
+            f"FAILED_TO_START: RUNTIME_WORKSPACE_INVALID/{reason} — {text}؛ "
+            f"cwd={report.get('cwd', '')}؛ host={report.get('host', '')}؛ "
+            f"execution_mode={report.get('execution_mode', '')}؛ "
+            f"environment_id={self.environment_id}؛ "
+            f"worker_id={report.get('worker_id', '')}؛ "
+            f"الإجراء: {action}"
+        )
+        if repaired:
+            detail = (
+                "REPAIR_WORKSPACE فشل بعد محاولة إصلاح واحدة — " + detail
+            )
+        return ExecutionOutcome(
+            environment_id=self.environment_id,
+            backend="LOCAL",
+            exit_code=-1, stdout="", stderr=detail,
+            termination="FAILED_TO_START",
+            detail=detail,
+            failure={**report, "owner_action": action,
+                     "repaired_attempted": repaired},
+            duration_ms=int(((__import__('time')).monotonic() - started)
+                            * 1000),
         )
 
 
@@ -907,6 +1089,12 @@ class RemoteWorkerBackend:
         caps["backend"] = "REMOTE_WORKER"
         caps["isolation"] = "REMOTE" if caps.get("sandboxed") else "NONE"
         caps["endpoint"] = self.endpoint
+        caps["execution_mode"] = "REMOTE_PROCESS"
+        caps["worker_id"] = (
+            f"remote-worker:pid={caps['worker_pid']}"
+            if caps.get("worker_pid")
+            else f"remote-worker:{self.endpoint}"
+        )
         caps["host_platform"] = (
             f"{caps.get('os', '?')}/{caps.get('architecture', '?')}"
         )

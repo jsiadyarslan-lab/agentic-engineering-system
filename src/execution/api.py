@@ -173,22 +173,61 @@ def make_default(environment_id: int) -> dict:
 
 @router.post("/environments/{environment_id}/test-run")
 def test_run(environment_id: int) -> dict:
-    """تنفيذ فعلي قصير في البيئة — إثبات المنفذ لا المسبار وحده (§40)."""
+    """تنفيذ فعلي قصير في البيئة — إثبات المنفذ لا المسبار وحده (§40).
+
+    (013.3 §12) نفس الإطلاق الذي تستخدمه التطبيق فعليًا: مساحة العمل
+    تُنشأ عبر عقد الخلفية نفسها (create_workspace) لا يدويًا — هذا
+    بالضبط ما أنتج WinError 267 سابقًا (دليل ‎ws كان يُمرَّر بلا إنشاء).
+    الاستجابة تحمل أدلة 013.3 §17 كاملة: وضع التنفيذ، المضيف، cwd
+    المحلول (مضيفًا وruntime)، برهان وجود مساحة العمل، أمر الإطلاق،
+    نبضة العامل، ومخرجات العملية الفعلية.
+    """
+    from execution.workspace import (
+        RUNTIME_WORKSPACE_INVALID, resolve_execution_workspace,
+    )
+
     environment = service._get_environment_full(_sessions(), environment_id)
     if environment is None:
         raise HTTPException(status_code=404, detail="بيئة غير معروفة")
     backend = service.build_backend(environment)
     code = (
-        "import platform, sys\n"
+        "import os, platform, sys\n"
         "print('os:', platform.system())\n"
         "print('arch:', platform.machine())\n"
         "print('python:', sys.version_info[:3])\n"
+        "print('cwd:', os.getcwd())\n"
+        "# (013.3 §8) عملية ملف حقيقية داخل نفس الحد — كتابة/قراءة/حذف\n"
+        "p = __import__('pathlib').Path('test-run-0133.txt')\n"
+        "p.write_text('ok', encoding='utf-8')\n"
+        "print('file_write_read_delete:',\n"
+        "      p.read_text(encoding='utf-8') == 'ok')\n"
+        "p.unlink()\n"
+        "print('file_gone:', not p.exists())\n"
     )
-    with tempfile.TemporaryDirectory(prefix="env-test-") as tmp:
+
+    # (§4) العامل البعيد يدير cwd بنفسه لكل تشغيل — لا مسار مضيف محلي
+    if getattr(backend, "backend_kind", "") == "REMOTE_WORKER":
         outcome = backend.run_code(
-            code, workspace=Path(tmp) / "ws",
-            artifacts=Path(tmp) / "art", timeout_s=60.0,
+            code, workspace=Path("."), artifacts=Path("."),
+            timeout_s=60.0,
         )
+        workspace_evidence = resolve_execution_workspace(
+            environment, workspace=None,
+        ).to_dict()
+    else:
+        with tempfile.TemporaryDirectory(prefix="env-test-") as tmp:
+            # (§6+§12) عقد الخلفية نفسه الذي يستخدمه verify — لا بناء
+            # يدوي لمسارات لم تُنشأ (جذر WinError 267)
+            workspace, artifacts = backend.create_workspace(Path(tmp))
+            outcome = backend.run_code(
+                code, workspace=workspace, artifacts=artifacts,
+                timeout_s=60.0,
+            )
+            workspace_evidence = resolve_execution_workspace(
+                environment, workspace=workspace, artifacts=artifacts,
+            ).to_dict()
+
+    describe = backend.describe()
     return {
         "environment": environment["name"],
         "status": environment["status"],
@@ -199,4 +238,26 @@ def test_run(environment_id: int) -> dict:
         "stderr": outcome.stderr[:500],
         "detail": outcome.detail[:500],
         "duration_ms": outcome.duration_ms,
+        # (013.3 §17) أدلة الحدود والمسار — المسألة ليست «نجح/فشل»
+        "evidence": {
+            "environment_id": environment["id"],
+            "runtime_type": environment["backend"],
+            "execution_boundary": workspace_evidence.get("execution_mode"),
+            "host_os": describe.get("os", ""),
+            "architecture": describe.get("architecture", ""),
+            "worker_id": describe.get("worker_id", ""),
+            "host_cwd": workspace_evidence.get("host_path", ""),
+            "runtime_cwd": workspace_evidence.get("runtime_path", ""),
+            "workspace_exists": bool(
+                workspace_evidence.get("preflight", {}).get(
+                    "cwd_exists", ""
+                ) or workspace_evidence.get("execution_mode")
+                == "REMOTE_PROCESS"
+            ),
+            "launch_command": [describe.get("runtime", "python"),
+                                "-c", "<test-run-0133>"],
+            "failure_code": outcome.failure.get("code", ""),
+            "failure_reason": outcome.failure.get("reason", ""),
+        },
+        "failure": outcome.failure or None,
     }

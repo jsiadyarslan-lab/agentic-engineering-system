@@ -3,15 +3,21 @@
 > الأمر 010: النظام يفصل بين **كشف** القدرة و**توفيرها**. هذه الصفحة
 > توثق المسار الهندسي الحقيقي لتوفير بيئة تنفيذ صالحة ثم استئناف
 > العمل — لا رسائل «غير متاح» بلا مخرج.
+>
+> الأمر 013.3: **عقد مساحة العمل وحد التشغيل** — مصدر واحد لحل
+> المسارات قبل أي إطلاق عملية (انظر «عقد حل مساحة العمل 013.3»).
 
 ## المعمارية
 
 ```
 Control Plane (Agentic Engineering System)
         ↓ resolve_executor()  ← المسبار والمنفذ من مصدر واحد
+        ↓ resolve_execution_workspace()  ← 013.3: حل مسار موحد قبل أي إطلاق
 ExecutionBackend
 ├── LOCAL          ركيزة Linux/x86_64 المحلية (namespaces+seccomp)
+│                  WINDOWS_PROCESS (على Windows) أو POSIX_PROCESS
 └── REMOTE_WORKER  عامل حقيقي عبر HTTP (scripts/execution_worker.py)
+                   REMOTE_PROCESS — cwd يُحل لدى العامل
 ```
 
 - **لا خلفية وهمية**: DOCKER/SANDBOX/REMOTE عامة غير مدرجة في خيارات
@@ -21,6 +27,43 @@ ExecutionBackend
 - **المسبار = المنفذ**: كلاهما يمر عبر `resolve_executor()`؛ كل نتيجة
   تحمل `environment_id`، وفشل بدء بعد READY يوسم `ENVIRONMENT_MISMATCH`
   باسم البيئة وزمن تحققها — لا تناقض بلا تفسير.
+
+## عقد حل مساحة العمل (013.3 §7) — جذر WinError 267 الذي عولج
+
+قبل أي إطلاق عملية، يمر كل مسار عبر `execution/workspace.py`:
+
+| وضع التنفيذ | host_path | runtime_path | القاعدة |
+|---|---|---|---|
+| `WINDOWS_PROCESS` | مسار Windows مطلق **موجود** | نفسه | مسار Linux (`/workspace`…) على Windows = **رفض قبل CreateProcess** |
+| `POSIX_PROCESS` | مسار POSIX موجود | نفسه | إنشاء ← تحقق ← إطلاق |
+| `WSL_PROCESS` | مسار Windows | يُحل **داخل WSL** عبر `wslpath` | عملية `wsl.exe` بلا cwd بنمط Linux أبدًا |
+| `REMOTE_PROCESS` | (فارغ) | يُدار لدى العامل | يُبرهن عبر سلم `/probe` |
+
+- **التسلسل الإلزامي**: SELECT RUNTIME ← CREATE WORKSPACE ← VERIFY ←
+  START WORKER ← HEALTH_CHECK ← READY — لا «إطلاق ثم رجاء أن cwd موجود».
+- **WinError 267 ونظائره** (`ENOTDIR`/`ENOENT` على cwd) ليست «فشل تنفيذ»
+  عامًا بل `RUNTIME_WORKSPACE_INVALID` بتقرير مهيكل (host/cwd/
+  environment_id/worker_id/execution_mode) — ثم **إصلاح واحد وإعادة
+  محاولة واحدة**، لا حلقة إعادة (`tests/execution/test_workspace_0133.py`).
+- زر «إعادة تجهيز البيئة» في بطاقة الفشل يعيد دورة التجهيز كاملة.
+
+## عامل WSL2 التلقائي (013.3 §3) — لمضيف Windows تحت عزل صارم
+
+عند التجهيز على Windows بسياسة STRICT_ISOLATED: يكتشف النظام WSL2
+فعليًا (`wsl.exe ← uname ← python3`)، وإن وُجد يعبر الحد الصريح:
+
+```
+Windows ← wsl.exe ← Linux ← python scripts/execution_worker.py ← HTTP
+```
+
+- المسار يُحل **داخل WSL** (`wslpath`) ويُتحقق داخله (pwd/test -d/
+  python3) قبل الإطلاق — لا تخمين ترجمة أبدًا.
+- البيئة تُسجل باسم `wsl2-linux` (REMOTE_WORKER على 127.0.0.1:8901)
+  وتخضع لسلم الجاهزية الكامل — READY فقط عبر فحوص حقيقية.
+- إن كان العامل داخل WSL يعلن `sandboxed: false` (توزيعة بلا user
+  namespaces) — يُعلن ذلك بسببه الحرفي، لا READY كاذبة.
+- لا WSL2؟ التوقف الصادق `ENVIRONMENT_UNAVAILABLE` بالفجوة والفعل
+  (host/required/available/missing/action).
 
 ## تشغيل عامل على Linux/WSL2 (المسار الحقيقي لغير Linux)
 

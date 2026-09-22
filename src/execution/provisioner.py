@@ -209,23 +209,74 @@ def provision(sessions, *, policy: str = "STRICT_ISOLATED",
     has_containers = bool(host.get("container_runtimes"))
     if strict and not (can_isolate_locally or has_remote_worker
                        or has_containers):
+        host_is_windows = str(host.get("os", "")).lower() == "windows"
+        wsl_detection: dict = {}
+        if host_is_windows:
+            # (013.3 §3+§5) حد WSL2 الصريح قبل إعلان الاستحالة:
+            # Windows ← wsl.exe ← Linux ← عامل داخل WSL — لا إطلاق
+            # عامل Linux كعملية Windows بمسار Linux أبدًا (جذر WinError 267)
+            wsl_result = _provision_wsl_worker(
+                sessions, policy=policy, steps=steps, started=started,
+            )
+            if wsl_result is not None:
+                return wsl_result
+            wsl_detection = _LAST_WSL_DETECTION
         actual = runtime_state.canonical_state(sessions, policy)
-        missing = actual.get("missing") or []
+        missing = list(actual.get("missing") or [])
+        # (013.3 §5) فجوة WSL2 بالتفصيل الفعلي — لا «لا شيء متاح» عام
+        if host_is_windows and wsl_detection:
+            missing.append({
+                "need": "WSL2 يعمل عليه python3 (حد تنفيذ Linux صريح)",
+                "detected": (
+                    "wsl.exe: "
+                    + str(wsl_detection.get("steps", {}).get("wsl_exe"))
+                    + "؛ uname: "
+                    + str(wsl_detection.get("steps", {}).get("uname", ""))
+                    + "؛ python3: "
+                    + str(wsl_detection.get("steps", {}).get("python3", ""))
+                ),
+                "action": "فعّل WSL2 (wsl --install) مع توزيعة فيها "
+                          "python3، أو سجّل عامل Linux بعيد",
+            })
         reason = (
             f"المضيف {host['os']}/{host['arch']} لا يستطيع توفير عزل "
             "فعلي: لا ركيزة Linux محلية، لا حاويات Docker/Podman، "
-            "لا عامل بعيد مسجل — والسياسة ترفض التنفيذ بلا عزل"
+            "لا عامل بعيد مسجل"
+            + (
+                "، وWSL2 غير متاح فعليًا"
+                if host_is_windows else ""
+            )
+            + " — والسياسة ترفض التنفيذ بلا عزل"
         )
         runtime_state.record_state(
             sessions, policy, "UNAVAILABLE", reason=reason,
-            missing=missing, evidence={"host": host}, progress=0,
+            missing=missing, evidence={"host": host,
+                                       "wsl_detection": wsl_detection},
+            progress=0,
         )
         _step(steps, "DISCOVERING", False, reason,
               host=host, substrate_available=substrate_ok)
         result = _unavailable(sessions, steps, started, reason,
                               requirement=execution_policy
                               .requirement_text(policy))
-        result["missing"] = missing
+        # (013.3 §5) العقد الحرفي: ENVIRONMENT_UNAVAILABLE بحقول
+        # host/required/available/missing/action — لا يُحاول بعدها
+        # تشغيل العامل كعملية Windows أبدًا
+        result.update({
+            "code": "ENVIRONMENT_UNAVAILABLE",
+            "host": {
+                "os": host.get("os", ""), "arch": host.get("arch", ""),
+            },
+            "required": "Linux x86_64 + STRICT_ISOLATED",
+            "available": "LOCAL_WINDOWS (وضع متوافق بلا عزل — لا يوافق "
+                         "السياسة)",
+            "missing": missing,
+            "action": (
+                "جهّز WSL2 (wsl --install) أو سجّل عامل Linux بعيد "
+                "(python scripts/execution_worker.py) — أو خفّض السياسة "
+                "صراحة إلى COMPATIBLE_LOCAL من إعدادات المشروع"
+            ),
+        })
         result["policy"] = policy
         return result
 
@@ -382,6 +433,237 @@ def provision(sessions, *, policy: str = "STRICT_ISOLATED",
         "owner_action": "راجع فحوص الإقلاع/الكتابة/التنفيذ/التقاط في "
                         "الخطوات أعلاه — السبب الحرفي معلن",
     }
+
+
+#: آخر كشف WSL2 (013.3 §5) — للفجوة الدقيقة في رسالة الاستحالة.
+_LAST_WSL_DETECTION: dict = {}
+
+
+def _provision_wsl_worker(sessions, *, policy: str, steps: list[dict],
+                          started: float) -> dict | None:
+    """تجهيز عامل داخل WSL2 (013.3 §3+§5+§6) — حد تنفيذ صريح.
+
+    Windows ← wsl.exe ← Linux ← python execution_worker.py ← HTTP.
+    يعيد None إن لم يكن WSL2 متاحًا فعليًا (فيكمل المسار إعلان
+    الاستحالة بفجوة WSL2 الدقيقة)، أو نتيجة التجهيز الكاملة عند
+    توفره: فشل كل درجة مسمّى وصادق — لا READY كاذبة أبدًا.
+    """
+    import secrets as _secrets
+    from pathlib import Path
+
+    from execution import runtime_state
+    from execution import service as execution_service
+    from execution import wsl as wsl_mod
+
+    global _LAST_WSL_DETECTION  # noqa: PLW0603 — الفجوة تُقرأ لاحقًا
+
+    # ---- DISCOVERING: كشف WSL2 الفعلي — لا افتراض أبدًا (§5) ----
+    runtime_state.record_state(
+        sessions, policy, "DISCOVERING",
+        reason="كشف WSL2 الفعلي (wsl.exe ← uname ← python3)…", progress=15,
+    )
+    detection = wsl_mod.wsl_available()
+    _LAST_WSL_DETECTION = detection
+    if not detection["available"]:
+        return None  # الاستحالة البنيوية — مع الفجوة المسماة أعلاه
+
+    # ---- PROVISIONING: بيئة العامل (إعادة استخدام أو تسجيل) ----
+    runtime_state.record_state(
+        sessions, policy, "PROVISIONING",
+        reason=f"WSL2 متاح ({detection['detail']}) — تجهيز عامل Linux "
+                "داخله عبر الحد الصريح…",
+        progress=35,
+    )
+    existing = next(
+        (env for env in execution_service.list_environments(sessions)
+         if env["name"] == wsl_mod.WSL_ENVIRONMENT_NAME), None,
+    )
+    if existing is not None:
+        environment = existing
+        port = int(environment["endpoint"].rsplit(":", 1)[-1]
+                   or wsl_mod.WSL_WORKER_DEFAULT_PORT)
+        token = ""
+        if environment.get("token_ref"):
+            from secrets_store import store as secrets_store
+
+            token = secrets_store.get_key(environment["token_ref"]) or ""
+    else:
+        port = wsl_mod.WSL_WORKER_DEFAULT_PORT
+        token = _secrets.token_urlsafe(24)
+        environment = execution_service.add_environment(
+            sessions, name=wsl_mod.WSL_ENVIRONMENT_NAME,
+            backend="REMOTE_WORKER",
+            endpoint=f"http://127.0.0.1:{port}", token=token,
+        )
+    _step(steps, "PROVISIONING", True,
+          f"بيئة العامل «{wsl_mod.WSL_ENVIRONMENT_NAME}» مسجلة "
+          f"({environment['endpoint']}) — حد التنفيذ: Windows ← wsl.exe "
+          "← Linux ← عامل",
+          environment_id=environment["id"])
+
+    # ---- BOOTING: العامل حي أصلًا؟ وإلا يُطلق داخل WSL (§6) ----
+    runtime_state.record_state(
+        sessions, policy, "BOOTING",
+        reason="إطلاع العامل داخل WSL2 (بعد حل المسار داخل WSL نفسه)…",
+        progress=45, environment_id=environment["id"],
+    )
+    from execution.backends import RemoteWorkerBackend
+
+    worker_alive = False
+    try:
+        RemoteWorkerBackend(environment["endpoint"], token=token).health()
+        worker_alive = True
+    except Exception:  # noqa: BLE001 — أي عائق = يحتاج إطلاقًا
+        worker_alive = False
+
+    launch_evidence: dict = {"already_running": worker_alive}
+    if not worker_alive:
+        repo_root = Path(__file__).resolve().parents[2]
+        launch = wsl_mod.launch_wsl_worker(
+            repo_windows_root=repo_root, port=port, token=token,
+        )
+        launch_evidence = launch
+        if not launch.get("ok"):
+            reason = (
+                f"فشل إطلاق العامل داخل WSL2 ({launch.get('stage')}/"
+                f"{launch.get('reason')}): {launch.get('detail')}"
+            )
+            runtime_state.record_state(
+                sessions, policy, "FAILED", reason=reason,
+                environment_id=environment["id"],
+                evidence={"wsl_launch": launch}, progress=0,
+            )
+            _step(steps, "BOOTING", False, reason,
+                  environment_id=environment["id"])
+            return {
+                "state": "FAILED", "steps": steps, "policy": policy,
+                "environment": environment, "reason": reason,
+                "duration_ms": int((time.monotonic() - started) * 1000),
+                "owner_action": launch.get("detail", ""),
+                "wsl_evidence": launch,
+            }
+        # مهلة إقلاع قصيرة صادقة — العامل يستمع داخل WSL
+        deadline = time.monotonic() + 20.0
+        while time.monotonic() < deadline:
+            try:
+                RemoteWorkerBackend(
+                    environment["endpoint"], token=token,
+                ).health()
+                worker_alive = True
+                break
+            except Exception:  # noqa: BLE001 — لم يقلع بعد
+                time.sleep(0.5)
+        if not worker_alive:
+            reason = (
+                "أُطلق العامل داخل WSL2 لكنه لم يستجب على "
+                f"{environment['endpoint']} خلال 20ث — تحقق من python3 "
+                "والمنفذ داخل WSL"
+            )
+            runtime_state.record_state(
+                sessions, policy, "FAILED", reason=reason,
+                environment_id=environment["id"],
+                evidence={"wsl_launch": launch}, progress=0,
+            )
+            _step(steps, "BOOTING", False, reason,
+                  environment_id=environment["id"])
+            return {
+                "state": "FAILED", "steps": steps, "policy": policy,
+                "environment": environment, "reason": reason,
+                "duration_ms": int((time.monotonic() - started) * 1000),
+                "owner_action": reason,
+                "wsl_evidence": launch,
+            }
+    _step(steps, "BOOTING", True,
+          "العامل يعمل داخل WSL2 (نبضة HTTP حقيقية)"
+          if worker_alive else "…",
+          environment_id=environment["id"])
+
+    # ---- HEALTH_CHECK: سلم الجاهزية الحقيقي عبر HTTP (§6+§8) ----
+    runtime_state.record_state(
+        sessions, policy, "HEALTH_CHECK",
+        reason="سلم جاهزية العامل: connectivity←auth←heartbeat←env←"
+                "workspace←execute←artifact…",
+        progress=70, environment_id=environment["id"],
+    )
+    verified_full = execution_service.verify_environment(
+        sessions, environment["id"]
+    )
+    verified = verified_full.get("verify") or {}
+    satisfies = _satisfies(verified_full, policy)
+
+    if bool(verified.get("ok")) and satisfies:
+        _step(steps, "HEALTH_CHECK", True,
+              "فحوص العامل الحقيقية اجتازت داخل WSL2",
+              environment_id=environment["id"],
+              checks=[
+                  {"name": c.get("name"), "ok": c.get("ok"),
+                   "detail": str(c.get("detail", ""))[:120]}
+                  for c in verified.get("checks", [])
+              ])
+        _step(steps, "READY", True,
+              "بيئة Linux معزولة جاهزة عبر WSL2 — العامل يعلن ركيزة "
+              "العزل من داخل Linux نفسه")
+        runtime_state.record_state(
+            sessions, policy, "READY",
+            reason="عامل WSL2 اجتاز سلم الجاهزية ويعلن الركيزة المعزولة",
+            environment_id=environment["id"],
+            evidence={
+                "checks": verified.get("checks", [])[:10],
+                "wsl": launch_evidence,
+                "verified_at": verified_full.get("last_verified_at"),
+            },
+            progress=100,
+        )
+        return {
+            "state": "READY", "steps": steps, "policy": policy,
+            "environment": {
+                key: verified_full.get(key)
+                for key in ("id", "name", "backend", "status",
+                            "isolation", "sandboxed")
+            },
+            "reason": "بيئة Linux معزولة عبر WSL2 — عامل حقيقي بفحوص "
+                      "حقيقية",
+            "duration_ms": int((time.monotonic() - started) * 1000),
+            "execution_boundary": "Windows ← wsl.exe ← Linux ← worker",
+            "wsl_evidence": launch_evidence,
+        }
+
+    # فشل الصحة أو عدم موافقة السياسة — السبب الحرفي المسماة
+    if bool(verified.get("ok")) and not satisfies:
+        reason = (
+            "عامل WSL2 يعمل واجتاز الفحوص لكنه يعلن تنفيذًا بلا ركيزة "
+            "عزل (subprocess mode داخل WSL) — السياسة "
+            f"{policy} لا تقبله. فعّل user namespaces داخل توزيعة WSL "
+            "أو استخدم عامل Linux كامل"
+        )
+    else:
+        reason = str(verified.get("reason")
+                     or verified.get("status")
+                     or "فشل سلم جاهزية عامل WSL2")[:300]
+    runtime_state.record_state(
+        sessions, policy, "UNAVAILABLE", reason=reason,
+        environment_id=environment["id"],
+        evidence={"checks": verified.get("checks", [])[:10],
+                  "wsl": launch_evidence},
+        progress=0,
+    )
+    _step(steps, "HEALTH_CHECK", False, reason,
+          environment_id=environment["id"])
+    return {
+        "state": "PROVISIONING_UNAVAILABLE", "steps": steps,
+        "policy": policy, "environment": environment, "reason": reason,
+        "requirement": execution_policy.requirement_text(policy),
+        "duration_ms": int((time.monotonic() - started) * 1000),
+        "owner_action": reason,
+        "wsl_evidence": launch_evidence,
+    }
+
+
+def _satisfies(environment: dict, policy: str) -> bool:
+    """environment_satisfies عبر الاستيراد المتأخر (تقاطع استيراد)."""
+    from execution.policy import environment_satisfies
+
+    return environment_satisfies(environment, policy)
 
 
 def _failed(sessions, steps: list[dict], started: float, reason: str,

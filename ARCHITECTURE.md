@@ -905,12 +905,22 @@ Workflow/Chat Event → Event Store (events) → Live Event Bus → SSE → UI P
 - `research_providers`: مزودو البحث (ddg/searx/api) — البحث قدرة قابلة
   للتوفير لا علمًا واحدًا: DDG مهلة ≠ الإنترنت مقطوع.
 
-### حزمة execution/ (§16-§21)
+### حزمة execution/ (§16-§21 + 013.3)
 
 - `backends.py`: `ExecutionBackend` (describe/verify/run_code) مع
   خلفيتين حقيقيتين فقط: `LocalLinuxBackend` (ركيزة E1 نفسها) و
   `RemoteWorkerBackend` (عميل HTTP لبروتوكول العامل). لا implementation
   وهمية — DOCKER مثلًا مرفوض من الإضافة برسالة تسمي المدعوم.
+- `workspace.py` (013.3 §7): عقد حل مساحة العمل الموحد —
+  `resolve_execution_workspace` هو المصدر الوحيد لكل cwd قبل أي إطلاق
+  عملية: WINDOWS_PROCESS (رفض مسارات Linux قبل CreateProcess — جذر
+  WinError 267 عولج)/POSIX_PROCESS/WSL_PROCESS/REMOTE_PROCESS، مع
+  `classify_process_oserror` (WinError 267 ← RUNTIME_WORKSPACE_INVALID
+  بتقرير مهيكل) و`repair_workspace` (إصلاح واحد + إعادة واحدة).
+- `wsl.py` (013.3 §3): حد تنفيذ WSL2 الصريح — كشف فعلي (wsl.exe ←
+  uname ← python3)، ترجمة المسار داخل WSL عبر wslpath (لا تخمين)،
+  تحقق داخل WSL قبل الإطلاق، وإطلاق العامل عبر wsl.exe **بلا cwd بنمط
+  Linux لعملية Windows أبدًا**.
 - `service.py`: السجل والتحقق والاختيار (§18: الافتراضية الجاهزة ثم أي
   جاهزة، ولا بيئة افتراضية غير موجودة) والتنفيذ الموحد وإجراء المالك
   الذي يسمي المسار الحقيقي (`execution_worker.py`).
