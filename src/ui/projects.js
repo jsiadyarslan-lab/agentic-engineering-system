@@ -16,7 +16,9 @@
   var projectsList = $("projects-list");
   if (!view || !projectsList) return;
 
-  var state = { projectId: null, streaming: false, snapshot: null };
+  var state = { projectId: null, streaming: false, snapshot: null,
+                runtime: null, activeTab: "conversation",
+                runtimeTimer: null };
   var liveOff = null;
 
   /* توجيه هادئ: يغير الـhash دون إطلاق hashchange (استيراد دوري مع
@@ -55,6 +57,7 @@
       var item = document.createElement("button");
       item.className = "pj-item" +
         (p.id === state.projectId ? " active" : "");
+      item.setAttribute("data-project-id", String(p.id));
       var status = document.createElement("span");
       status.className = "pj-dot " + dotClass(p.status);
       status.title = STATUS_LABELS[p.status] || p.status;
@@ -87,9 +90,14 @@
     if (chat) chat.style.display = "none";
     var composer = document.querySelector(".composer");
     if (composer) composer.style.display = "none";
+    // (013.4 §9) إخفاء أسطح مركز التحكم داخل وضع المشروع — بلا
+    // استدعاء showView (كان يخرج من وضع المشروع فورًا = دوران)
+    if (window.ControlCenter) ControlCenter.hideSurfaces();
     setHashQuietly("#/project/" + projectId);
     attachLive();            // (013.1 §2) مستهلك فقط — البث على مستوى التطبيق
+    setActiveTab(state.activeTab || "conversation");
     reconcile();
+    startRuntimePolling();   // (013.4 §8) اللقطة القانونية حيّة
     loadProjects();
     if (window.LiveEvents) LiveEvents.connect();
   }
@@ -97,6 +105,7 @@
   function exitProjectMode() {
     state.projectId = null;
     state.snapshot = null;
+    stopRuntimePolling();
     document.body.classList.remove("mode-project");
     view.hidden = true;
     var chat = document.querySelector(".chat-scroll");
@@ -170,6 +179,11 @@
     if (!window.ProjectLive) return;
     var container = $("pl-scene");
     if (!container) return;
+    // (013.4 §3) اللقطة القانونية تُغذي بطاقة التخطيط الحي — نفس
+    // المصدر الذي تقرأه كل الواجهة (§8) لا اشتقاقًا موازيًا
+    if (state.runtime && state.runtime.planning) {
+      snapshot.planning = state.runtime.planning;
+    }
     if (!snapshot.plan && snapshot.status === "DRAFT") {
       renderDraftCard(snapshot, container);
       return;
@@ -185,12 +199,12 @@
       },
       recheckUrl: "/api/projects/" + snapshot.id + "/preflight",
       verifyUrl: "/api/projects/" + snapshot.id + "/verify",
+      retryUrl: "/api/projects/" + snapshot.id + "/retry",
       viewPlan: function () {
         togglePlanDetails(snapshot);
       },
     });
     if (running && !state.streaming) attachRun(snapshot.id, 0);
-    updateHeader(snapshot);
   }
 
   /* (010 §13) المسودة ليست صفحة فارغة: الهدف والإجراء التالي ظاهران */
@@ -213,17 +227,24 @@
     generate.textContent = "توليد الخطة";
     generate.addEventListener("click", function () {
       generate.disabled = true;
-      generate.textContent = "…جاري التوليد (استدعاء حقيقي)";
+      generate.textContent = "…بدأ التوليد (خلفي محدود)";
       Hub.fetchJSON("/api/projects/" + snapshot.id + "/plan/generate",
                      { method: "POST" })
         .then(function (out) {
           if (!out.ok) {
             generate.disabled = false;
             generate.textContent = "توليد الخطة";
-            alert((out.j && out.j.detail) || "فشل توليد الخطة");
+            Hub.showErrorCard({
+              kind: "planning.error", role: "system",
+              text: "فشل بدء التوليد — " +
+                ((out.j && out.j.detail) || ""),
+              details: out.j || {},
+            });
             return;
           }
+          // (013.4 §1) الأمر خلفي — البطاقة الحية واللقطة يتكفلان
           reconcile();
+          fetchRuntime();
         });
     });
     card.appendChild(title); card.appendChild(objective);
@@ -413,18 +434,31 @@
       }),
     }).then(function (out) {
       if (!out.ok) {
-        alert((out.j && out.j.detail) || "فشل إنشاء المشروع");
+        Hub.showErrorCard({
+          kind: "project.error", role: "system",
+          text: "فشل إنشاء المشروع — " +
+            ((out.j && out.j.detail) || ""),
+          details: out.j || {},
+        });
         return;
       }
       openProject(out.j.id);
-      // توليد الخطة تلقائيًا — ثم البث يحمل البطاقات بلا refresh
+      // (013.4 §1) التوليد أمر خلفي: يعيد فورًا وصف الجلسة — الخطة
+      // تصل عبر التيار (PLANNING_* ← PLAN_CREATED) واللقطة الحية
+      // تجدد المشهد بلا refresh؛ الفشل مصنّف يظهر ببطاقته الصادقة.
       Hub.fetchJSON("/api/projects/" + out.j.id + "/plan/generate",
                      { method: "POST" })
         .then(function (gen) {
           if (!gen.ok) {
-            alert((gen.j && gen.j.detail) || "فشل توليد الخطة");
+            Hub.showErrorCard({
+              kind: "planning.error", role: "system",
+              text: "فشل بدء توليد الخطة — " +
+                ((gen.j && gen.j.detail) || ""),
+              details: gen.j || {},
+            });
           }
           reconcile();
+          fetchRuntime();
         });
     });
   }
@@ -461,12 +495,282 @@
     }
   });
 
+  /* ---------- (013.4 §8+§10) اللقطة القانونية حيّة + رأس المشروع ---------- */
+
+  function startRuntimePolling() {
+    stopRuntimePolling();
+    fetchRuntime();
+    state.runtimeTimer = setInterval(fetchRuntime, 3000);
+  }
+
+  function stopRuntimePolling() {
+    if (state.runtimeTimer) {
+      clearInterval(state.runtimeTimer);
+      state.runtimeTimer = null;
+    }
+  }
+
+  function fetchRuntime() {
+    if (state.projectId == null) return;
+    Hub.fetchJSON("/api/projects/" + state.projectId + "/runtime")
+      .then(function (out) {
+        if (state.projectId == null) return;
+        if (!out.ok) return;
+        var previousPlanning = (state.runtime || {}).planning || {};
+        var nextPlanning = out.j.planning || {};
+        state.runtime = out.j;
+        updateHeader(out.j);
+        renderActiveTabContent();
+        if (window.ControlCenter) ControlCenter.refreshRuns();
+        // (013.4 §3) تغيّر حالة التخطيط (بدأ/انتهى/فشل) يُجدّد مشهد
+        // المحادثة فورًا — بطاقة التخطيط الحي تظهر من اللقطة لا من
+        // توقيت الأحداث وحده (لا سباق يخفيها)
+        var changed = previousPlanning.state !== nextPlanning.state ||
+          previousPlanning.active !== nextPlanning.active;
+        if (changed && state.activeTab === "conversation") {
+          reconcile();
+        }
+      });
+  }
+
+  /** رأس المشروع (§10): الحالة + المرحلة/الخطوة/البيئة/العامل + أزرار. */
+  function updateHeader(runtime) {
+    var meta = $("pl-head-meta");
+    if (meta) {
+      var parts = [];
+      if (runtime.stage) {
+        parts.push("المرحلة: " + (runtime.stage_labels
+          ? (runtime.stage_labels[runtime.stage] || runtime.stage)
+          : runtime.stage));
+      }
+      if (runtime.progress && runtime.progress.current_step) {
+        parts.push("الخطوة: " +
+          String(runtime.progress.current_step.objective || "")
+            .slice(0, 40));
+      }
+      if (runtime.environment && runtime.environment.state === "READY") {
+        parts.push("البيئة ✓");
+      }
+      if (runtime.worker) parts.push("العامل ✓");
+      if (runtime.elapsed_s != null &&
+          ["RUNNING", "PLANNING", "REVISING"].indexOf(
+            runtime.status) !== -1) {
+        parts.push("مضى " + Math.round(runtime.elapsed_s) + "ث");
+      }
+      meta.textContent = parts.join(" · ");
+    }
+    renderActions(runtime);
+  }
+
+  /** الأزرار الحقيقية (§11): كل زر أمر API دائم — لا زر يغير الواجهة فقط.
+   * يُعاد البناء عند تغيّر الأفعال المتاحة فقط — لا تمزيق DOM كل نبضة
+   * (النقرة قد تقع على زر فُصل للتو = سباق حي حقيقي). */
+  var _lastActionsKey = "";
+
+  function renderActions(runtime) {
+    var bar = $("pl-actions");
+    if (!bar) return;
+    var available = runtime.available_actions || [];
+    var key = state.projectId + "|" + available.join(",");
+    if (key === _lastActionsKey && bar.children.length) return;
+    _lastActionsKey = key;
+    bar.textContent = "";
+
+    function actionBtn(label, title, cls, onClick, confirmText) {
+      var btn = document.createElement("button");
+      btn.className = "pl-act-btn " + (cls || "");
+      btn.textContent = label;
+      btn.title = title;
+      btn.addEventListener("click", function () {
+        if (confirmText && !window.confirm(confirmText)) return;
+        btn.disabled = true;
+        btn.textContent = "…";
+        onClick(function ok() {
+          btn.disabled = false;
+          btn.textContent = label;
+          reconcile();
+          fetchRuntime();
+          loadProjects();
+        });
+      });
+      return btn;
+    }
+
+    function post(url, body) {
+      return function (done) {
+        Hub.fetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body || {}),
+        }).then(function (out) {
+          done();
+          if (!out.ok && window.Hub) {
+            Hub.showErrorCard({
+              kind: "action.error", role: "system",
+              text: "تعذر الأمر: " +
+                ((out.j && out.j.detail) || url),
+              details: out.j || {},
+            });
+          }
+        }, done);
+      };
+    }
+
+    if (available.indexOf("pause") !== -1) {
+      bar.appendChild(actionBtn("⏸ إيقاف مؤقت",
+        "إيقاف مؤقت قابل للاستئناف من نفس الوظيفة (013.4 §13)",
+        "", post("/api/projects/" + state.projectId + "/pause",
+                 { reason: "زر الإيقاف المؤقت" })));
+    }
+    if (available.indexOf("resume") !== -1) {
+      bar.appendChild(actionBtn("▶ استئناف",
+        "استئناف من آخر نقطة حفظ — نفس الوظيفة الدائمة",
+        "primary", post("/api/projects/" + state.projectId +
+                         "/resume", {})));
+    }
+    if (available.indexOf("run") !== -1) {
+      bar.appendChild(actionBtn("▶ تشغيل",
+        "تشغيل الحلقة الذاتية للخطة", "primary",
+        post("/api/projects/" + state.projectId +
+             "/preflight", {})));
+    }
+    if (available.indexOf("stop") !== -1) {
+      bar.appendChild(actionBtn("■ إيقاف",
+        "إيقاف نهائي دائم — كل الأحداث والأدلة تبقى محفوظة (§12)",
+        "danger",
+        post("/api/projects/" + state.projectId + "/stop",
+             { reason: "زر الإيقاف", final: true }),
+        "إيقاف نهائي؟ كل الأدلة والتاريخ تبقى محفوظة — والاستئناف غير متاح بعد الإيقاف النهائي."));
+    }
+    if (available.indexOf("retry") !== -1) {
+      bar.appendChild(actionBtn("↻ إعادة",
+        "إعادة آخر فشل — التخطيط أو الخطوة (§11)", "",
+        post("/api/projects/" + state.projectId + "/retry", {})));
+    }
+    // قائمة ⋯: أفعال ثانوية (§31: الفعل الواحد أساسي والبقية في قائمة)
+    var more = document.createElement("button");
+    more.className = "pl-act-btn more";
+    more.textContent = "⋯";
+    more.title = "أفعال إضافية";
+    var menu = document.createElement("div");
+    menu.className = "pl-more-menu";
+    menu.hidden = true;
+    more.addEventListener("click", function (e) {
+      e.stopPropagation();
+      menu.hidden = !menu.hidden;
+    });
+    document.addEventListener("click", function () {
+      menu.hidden = true;
+    });
+
+    function menuItem(label, onClick) {
+      var item = document.createElement("button");
+      item.textContent = label;
+      item.addEventListener("click", function () {
+        menu.hidden = true;
+        onClick();
+      });
+      menu.appendChild(item);
+      return item;
+    }
+
+    menuItem("نسخة جديدة (Duplicate)", function () {
+      Hub.fetchJSON("/api/projects/" + state.projectId + "/duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).then(function (out) {
+        if (out.ok) openProject(out.j.id);
+      });
+    });
+    menuItem("إعادة تسمية", function () {
+      var name = window.prompt("الاسم الجديد:", runtime.name || "");
+      if (!name) return;
+      Hub.fetchJSON("/api/projects/" + state.projectId + "/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name }),
+      }).then(function () {
+        reconcile();
+        loadProjects();
+      });
+    });
+    if (available.indexOf("archive") !== -1) {
+      menuItem("أرشفة (قابلة للاسترجاع)", function () {
+        Hub.fetchJSON("/api/projects/" + state.projectId + "/archive", {
+          method: "POST",
+        }).then(function (out) {
+          if (out.ok) {
+            exitProjectMode();
+            loadProjects();
+          }
+        });
+      });
+    }
+    var moreWrap = document.createElement("span");
+    moreWrap.className = "pl-more-wrap";
+    moreWrap.appendChild(more);
+    moreWrap.appendChild(menu);
+    bar.appendChild(moreWrap);
+  }
+
+  /* ---------- (013.4 §9) تبويبات المشروع ---------- */
+
+  function setActiveTab(tab) {
+    state.activeTab = tab;
+    document.querySelectorAll(".pl-tab").forEach(function (btn) {
+      btn.classList.toggle("active",
+        btn.getAttribute("data-tab") === tab);
+    });
+    var scene = $("pl-scene");
+    var body = $("pl-tab-body");
+    var isConversation = tab === "conversation";
+    if (scene) scene.hidden = !isConversation;
+    if (body) body.hidden = isConversation;
+    renderActiveTabContent();
+  }
+
+  function renderActiveTabContent() {
+    if (state.projectId == null) return;
+    var body = $("pl-tab-body");
+    if (!body || state.activeTab === "conversation") return;
+    if (!window.WorkflowView || !state.runtime) return;
+    var wv = window.WorkflowView;
+    var tab = state.activeTab;
+    // لا نعيد بناء المحتوى كل نبضة إلا لسير العمل والنظرة (بيانات حية)
+    if (tab === "workflow") {
+      wv.renderWorkflowTab(body, state.runtime);
+    } else if (tab === "overview") {
+      wv.renderOverviewTab(body, state.runtime, state.snapshot);
+    } else if (body.getAttribute("data-rendered") !==
+               tab + ":" + state.projectId) {
+      // تبويبات القراءة (الأدلة/المخرجات/التاريخ) تُبنى مرة عند الفتح
+      body.setAttribute("data-rendered", tab + ":" + state.projectId);
+      if (tab === "evidence") {
+        wv.renderEvidenceTab(body, state.projectId);
+      } else if (tab === "artifacts") {
+        wv.renderArtifactsTab(body, state.projectId);
+      } else if (tab === "history") {
+        wv.renderHistoryTab(body, state.projectId);
+      }
+    }
+  }
+
+  document.querySelectorAll(".pl-tab").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var body = $("pl-tab-body");
+      if (body) body.setAttribute("data-rendered", "");
+      setActiveTab(btn.getAttribute("data-tab"));
+    });
+  });
+
   window.HubProjects = {
     openProject: openProject,
     exitProjectMode: exitProjectMode,
     reconcile: reconcile,
     createProjectFromObjective: createProjectFromObjective,
     loadProjects: loadProjects,
+    fetchRuntime: fetchRuntime,
   };
 
   attachLive();

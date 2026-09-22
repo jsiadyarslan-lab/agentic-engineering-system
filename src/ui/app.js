@@ -154,6 +154,9 @@
   // ---------- توجيه الأحداث: النواة أو الوحدات المتخصصة ----------
   function renderEvent(event) {
     if (event.kind === "stream.done") return;   // علامة تحكم لا رسالة
+    // (013.4) علامة خاتمة الخيط الداخلية — تصل الآن مع البث (ضمان
+    // ترتيب الاكتمال قبل إغلاق التيار) ولا تُعرض كرسالة
+    if (event.kind === "task.thread_done") return;
     if (state.activeRun && !state.activeRun.cycleId && event.cycle_id &&
         event.cycle_id.indexOf("chat-") !== 0) {
       state.activeRun.cycleId = event.cycle_id;
@@ -759,12 +762,32 @@
   }
 
   // ---------- المحادثة الحية (المنطق في chat-stream.js — هنا التنسيق) ----------
+  var WEB_MODES = ["auto", "on", "off"];
+  var WEB_TITLES = {
+    auto: "البحث في الويب: تلقائي — يبحث عند الحاجة (013.4 §26)",
+    on: "البحث في الويب: مفعّل دائمًا",
+    off: "البحث في الويب: معطّل",
+  };
+  var webMode = "auto";
+  var webToggle = $("web-toggle");
+  if (webToggle) {
+    webToggle.addEventListener("click", function () {
+      webMode = WEB_MODES[(WEB_MODES.indexOf(webMode) + 1) %
+        WEB_MODES.length];
+      webToggle.className = "web-toggle " + webMode;
+      webToggle.title = WEB_TITLES[webMode];
+      webToggle.classList.toggle("active", webMode === "on");
+      webToggle.classList.toggle("off", webMode === "off");
+    });
+  }
+
   function startChat(text) {
     state.activeRun = { kind: "chat", cycleId: "" };
     setBusy(true);
     postStream("/api/chat/stream", {
       message: text,
       conversation_id: state.conversationId,
+      web: webMode,
     }).then(finish, failed);
 
     function failed(err) {

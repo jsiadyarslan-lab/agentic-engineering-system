@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/static/live.css?v=3.6.0">
   <link rel="stylesheet" href="/static/app-shell.css?v=3.6.0">
   <link rel="stylesheet" href="/static/project-live.css?v=3.6.0">
+  <link rel="stylesheet" href="/static/control-center.css?v=3.6.0">
 </head>
 <body>
   <div class="app">
@@ -25,6 +26,13 @@
       <button class="new-chat" id="new-chat" title="بدء محادثة جديدة">
         <span class="new-chat-plus">＋</span> محادثة جديدة
       </button>
+
+      <!-- (013.4 §9+§32) التنقل الأساسي: محادثة/تشغيلات/أرشيف -->
+      <nav class="side-nav" id="side-nav" aria-label="التنقل الأساسي">
+        <button class="side-nav-item" data-nav="chat" title="المحادثات">💬 <span>المحادثات</span></button>
+        <button class="side-nav-item" data-nav="runs" title="التشغيلات النشطة">● <span>التشغيلات</span> <em class="nav-badge" id="runs-badge" hidden></em></button>
+        <button class="side-nav-item" data-nav="archive" title="المشاريع المؤرشفة">🗂 <span>الأرشيف</span></button>
+      </nav>
 
       <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
         <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
@@ -79,10 +87,43 @@
           <button class="icon-btn" id="pl-back" title="عودة للمحادثة">→</button>
           <span class="pl-head-title" id="pl-head-title">مشروع</span>
           <span class="pl-head-status dim" id="pl-head-status">…</span>
+          <!-- (013.4 §10) رأس المشروع: المرحلة/الخطوة/البيئة/العامل + الأزرار -->
+          <span class="pl-head-meta" id="pl-head-meta"></span>
+          <span class="pl-actions" id="pl-actions"></span>
         </header>
+        <!-- (013.4 §9) تبويبات المشروع: المحادثة/النظرة/سير العمل/الأدلة/المخرجات/التاريخ -->
+        <nav class="pl-tabs" id="pl-tabs" aria-label="أقسام المشروع">
+          <button class="pl-tab active" data-tab="conversation">المحادثة</button>
+          <button class="pl-tab" data-tab="overview">النظرة العامة</button>
+          <button class="pl-tab" data-tab="workflow">سير العمل</button>
+          <button class="pl-tab" data-tab="evidence">الأدلة</button>
+          <button class="pl-tab" data-tab="artifacts">المخرجات</button>
+          <button class="pl-tab" data-tab="history">التاريخ</button>
+        </nav>
         <div class="pl-scroll">
           <div class="pl-scene" id="pl-scene"></div>
+          <div class="pl-tab-body" id="pl-tab-body" hidden></div>
         </div>
+      </section>
+
+      <!-- (013.4 §9+§32) مركز التحكم: التشغيلات النشطة -->
+      <section class="cc-view" id="runs-view" hidden>
+        <header class="cc-head">
+          <button class="icon-btn" id="runs-back" title="عودة للمحادثة">→</button>
+          <span class="cc-title">التشغيلات النشطة</span>
+          <span class="cc-sub">العمل المستمر مرئي حتى بعد مغادرة المشروع</span>
+        </header>
+        <div class="cc-scroll"><div class="cc-body" id="runs-body"></div></div>
+      </section>
+
+      <!-- (013.4 §45) الأرشيف: مشاريع قابلة للاسترجاع — الأرشفة ليست حذفًا -->
+      <section class="cc-view" id="archive-view" hidden>
+        <header class="cc-head">
+          <button class="icon-btn" id="archive-back" title="عودة للمحادثة">→</button>
+          <span class="cc-title">الأرشيف</span>
+          <span class="cc-sub">المشاريع المؤرشفة تبقى كاملة وقابلة للاسترجاع</span>
+        </header>
+        <div class="cc-scroll"><div class="cc-body" id="archive-body"></div></div>
       </section>
 
       <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
@@ -106,6 +147,8 @@
               <button class="plus-option" data-mode="project">🏗️ مشروع</button>
             </div>
           </div>
+          <!-- (013.4 §26) مفتاح الويب: auto كاشف النية / on بحث صريح / off -->
+          <button id="web-toggle" class="web-toggle auto" title="البحث في الويب: تلقائي — يتغير لكشف نية الرسالة">🌐</button>
         </div>
         <div class="composer-foot">
           <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر ＋">محادثة</span>
@@ -221,6 +264,8 @@
   <script src="/static/harness.js?v=3.6.0"></script>
   <script src="/static/live-events.js?v=3.6.0"></script>
   <script src="/static/project-live.js?v=3.6.0"></script>
+  <script src="/static/workflow-view.js?v=3.6.0"></script>
+  <script src="/static/control-center.js?v=3.6.0"></script>
   <script src="/static/projects.js?v=3.6.0"></script>
 </body>
 </html>

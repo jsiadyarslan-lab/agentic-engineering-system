@@ -911,6 +911,79 @@
 
   var ACTIVITY_LIMIT = 24;
 
+  /* (013.4 §3+§36) بطاقة التخطيط الحي — ماذا ينتظر حرفيًا:
+   * المزود/النموذج/الطلب/المحاولة/المضي — لا «Planning…» صامتة أبدًا،
+   * والفشل يظهر مصنّفه مع زر إعادة صريح. */
+  function renderPlanningCard(state, actions) {
+    var planning = state.planning || {};
+    var detail = planning.detail || {};
+    var waiting = planning.waiting_for || {};
+    var wrap = msgRow("assistant");
+    var card = el("div", "pl-card pl-plan-live");
+
+    if (planning.active) {
+      card.classList.add("live");
+      var head = el("div", "pl-title");
+      head.appendChild(el("span", "pl-exec-dot", "●"));
+      head.appendChild(el("span", null,
+        " توليد الخطة جارٍ — ما يُنتظر معلن"));
+      card.appendChild(head);
+      var rows = el("div", "pl-env-rows");
+      function prow(label, value) {
+        if (!value) return;
+        var row = el("div", "pl-env-row");
+        row.appendChild(el("span", "pl-env-k", label + ": "));
+        row.appendChild(el("span", "pl-env-v", String(value)));
+        rows.appendChild(row);
+      }
+      prow("المزود", waiting.provider);
+      prow("النموذج", waiting.model);
+      prow("الطلب", waiting.request_id);
+      prow("المحاولة", waiting.attempt);
+      prow("مضى", (detail.elapsed_s || 0) + " ثانية");
+      prow("آخر نبضة", detail.last_activity_at
+        ? new Date(detail.last_activity_at).toLocaleTimeString("ar")
+        : "");
+      card.appendChild(rows);
+      var note = el("div", "pl-note",
+        "الجلسة بنبضة وإيجار: إن توقفت العملية وسمها الكلب منقطعة " +
+        "وتظهر ببطاقتها — لا انتظار أبدي.");
+      card.appendChild(note);
+    } else if (planning.state === "FAILED" ||
+               planning.state === "INTERRUPTED") {
+      card.classList.add("error");
+      card.appendChild(el("div", "pl-title",
+        "⚠ فشل توليد الخطة [" +
+        (detail.error_class || planning.state) + "]"));
+      var reason = el("div", "pl-objective");
+      reason.dir = "auto";
+      reason.textContent = detail.error_detail ||
+        "انقطع التوليد — العملية المولّدة ماتت";
+      card.appendChild(reason);
+      if (actions && actions.retryUrl) {
+        var retry = el("button", "pl-btn primary", "↻ إعادة المحاولة");
+        retry.addEventListener("click", function () {
+          retry.disabled = true;
+          retry.textContent = "…جارٍ الطلب";
+          Hub.fetchJSON(actions.retryUrl, { method: "POST" })
+            .then(function (out) {
+              if (!out.ok) {
+                retry.disabled = false;
+                retry.textContent = "تعذر — أعد المحاولة";
+                return;
+              }
+              if (window.HubProjects) window.HubProjects.reconcile();
+            });
+        });
+        card.appendChild(retry);
+      }
+    } else {
+      return { row: null };
+    }
+    wrap.flow.appendChild(card);
+    return { row: wrap.row };
+  }
+
   function activityLine(kind, payload) {
     var line = el("div", "pl-act");
     var icon = el("span", "pl-act-icon");
@@ -952,6 +1025,77 @@
     } else if (kind === "RETRY_REQUESTED") {
       icon.textContent = "↻";
       text.textContent = "إعادة محاولة — " + (payload.decision || "");
+    } else if (kind === "PLANNING_STARTED") {
+      icon.textContent = "🧭";
+      text.textContent = "بدأ توليد الخطة" +
+        (payload.reason ? " — " + payload.reason : "");
+    } else if (kind === "PLAN_GENERATING") {
+      icon.textContent = "⏳";
+      text.textContent = "استدعاء نموذج التخطيط" +
+        (payload.model ? " — " + payload.model : "");
+    } else if (kind === "MODEL_CALL_STARTED") {
+      icon.textContent = "⏳";
+      text.textContent = "طلب النموذج بدأ — " +
+        (payload.request_id || "");
+    } else if (kind === "MODEL_CALL_COMPLETED") {
+      icon.textContent = "✓";
+      text.textContent = "رد النموذج وصل" +
+        (payload.duration_ms
+          ? " (" + Math.round(payload.duration_ms / 100) / 10 + "ث)" : "");
+    } else if (kind === "MODEL_CALL_FAILED") {
+      icon.textContent = "⚠";
+      line.className += " err";
+      text.textContent = "فشل استدعاء النموذج [" +
+        (payload.error_class || "؟") + "]";
+    } else if (kind === "PLAN_CREATED") {
+      icon.textContent = "📋";
+      text.textContent = "وُلدت الخطة — " +
+        (payload.phases || "؟") + " مرحلة، تنتظر اعتمادك";
+    } else if (kind === "PLANNING_FAILED") {
+      icon.textContent = "⚠";
+      line.className += " err";
+      text.textContent = "فشل توليد الخطة [" +
+        (payload.error_class || "؟") + "] — الإعادة متاحة";
+    } else if (kind === "PLANNING_INTERRUPTED") {
+      icon.textContent = "⚠";
+      line.className += " err";
+      text.textContent = "انقطع توليد الخطة — ماتت العملية المولّدة";
+    } else if (kind === "PLANNING_RETRY") {
+      icon.textContent = "↻";
+      text.textContent = "إعادة آلية للتوليد — جلسة جديدة";
+    } else if (kind === "OWNER_STOP_REQUESTED") {
+      icon.textContent = "■";
+      text.textContent = "طلبت الإيقاف النهائي — يُكرَّم عند أقرب حدّ آمن";
+    } else if (kind === "PROJECT_STOPPED") {
+      icon.textContent = "■";
+      text.textContent = "أُوقف المشروع نهائيًا — كل شيء محفوظ";
+    } else if (kind === "PROJECT_ARCHIVED") {
+      icon.textContent = "🗂";
+      text.textContent = "أُرشف المشروع — قابل للاسترجاع دائمًا";
+    } else if (kind === "PROJECT_RESTORED") {
+      icon.textContent = "📂";
+      text.textContent = "استُرجع المشروع من الأرشيف";
+    } else if (kind === "WORKFLOW_DIAGNOSED") {
+      icon.textContent = "🔍";
+      text.textContent = "تشخيص سير العمل — " + (payload.kind || "");
+    } else if (kind === "STEP_STARTED") {
+      icon.textContent = "●";
+      text.textContent = "بدأت خطوة" +
+        (payload.objective
+          ? ": " + String(payload.objective).slice(0, 80) : "");
+    } else if (kind === "STEP_COMPLETED") {
+      icon.textContent = "✓";
+      text.textContent = "اكتملت خطوة" +
+        (payload.attempts ? " (بعد " + payload.attempts + " محاولة)" : "");
+    } else if (kind === "EXECUTION_COMPLETED") {
+      icon.textContent = "✓";
+      text.textContent = "اكتمل تنفيذ";
+    } else if (kind === "EXECUTION_FAILED") {
+      icon.textContent = "⚠";
+      line.className += " err";
+      text.textContent = "فشل تنفيذ" +
+        (payload.reason
+          ? " — " + String(payload.reason).slice(0, 90) : "");
     } else {
       return null;
     }
@@ -1080,6 +1224,13 @@
       container.appendChild(planCard.row);
     }
 
+    // (013.4 §3+§36) بطاقة التخطيط الحي — قبل أي اعتماد: ماذا ينتظر
+    // حرفيًا (مزود/نموذج/طلب/مضي)، والفشل مصنّفه مع زر الإعادة
+    var planningCard = renderPlanningCard(state, actions);
+    if (planningCard && planningCard.row) {
+      container.appendChild(planningCard.row);
+    }
+
     if (state.status === "AWAITING_OWNER_APPROVAL" ||
         (state.gates || []).some(function (g) {
           return g.status === "PENDING";
@@ -1158,6 +1309,13 @@
     "PROVISIONING_STARTED", "PROVISIONING_COMPLETED",
     "PROVISIONING_FAILED", "PROVISIONING_UNAVAILABLE",
     "ENVIRONMENT_HEARTBEAT", "WORKER_READY",
+    // (013.4 §1) أحداث التخطيط الخلفي — كل انتقال يحدّث المشهد
+    "PLANNING_STARTED", "PLAN_GENERATING", "PLANNING_FAILED",
+    "PLANNING_INTERRUPTED", "PLANNING_RETRY", "STEP_STARTED",
+    "STEP_COMPLETED", "PHASE_STARTED", "PHASE_COMPLETED",
+    "EXECUTION_STARTED", "EXECUTION_COMPLETED", "EXECUTION_FAILED",
+    "EVIDENCE_CREATED", "AUDIT_COMPLETED", "OWNER_STOP_REQUESTED",
+    "PROJECT_ARCHIVED", "PROJECT_RESTORED", "WORKFLOW_DIAGNOSED",
   ];
 
   function isSceneChange(kind) {
