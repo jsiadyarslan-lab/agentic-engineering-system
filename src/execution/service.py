@@ -1,4 +1,4 @@
-"""خدمة بيئات التنفيذ (الأمر 010 §17-§20+§27-§28) — ما بعد الكشف.
+"""خدمة بيئات التنفيذ (الأمر 010 §17-§20+§27-§28 + الأمر 011 §4+§18).
 
 المسبار والمنفذ من مصدر واحد (§19): resolve_executor() هو الطريق
 الوحيد للحصول على خلفية تنفيذ — تستعمله probes.sandbox (المسبار)
@@ -8,8 +8,11 @@
 - فشل تنفيذ بعد مسبار READY يرفع ENVIRONMENT_MISMATCH مع الهوية
   والزمن — يُشرح ولا يُخفى (§42).
 
-الاختيار (§18): Task → Required → Environment Selection → Preflight
-→ Execution — select_environment() تختار الجاهزة الافتراضية أولًا.
+الحقيقة التشغيلية (011 §4-§5): اسم البيئة المحلية وعزلها من
+runtime الفعلي (runtime_truth) — لا ``local-linux`` على مضيف
+Windows، ولا ادعاء عزل حيث لا ركيزة. الاختيار (§18+§26) صار
+policy-aware: STRICT_ISOLATED تطلب معزولة، COMPATIBLE_LOCAL تقبل
+المعلنة غير المعزولة.
 """
 
 from __future__ import annotations
@@ -22,16 +25,21 @@ from sqlalchemy import select
 
 from execution.backends import (
     ExecutionOutcome,
-    LocalLinuxBackend,
+    LocalProcessBackend,
+    LocalSandboxBackend,
     RemoteWorkerBackend,
     VerifyResult,
+    host_platform_label,
+    local_environment_name,
+    runtime_truth,
 )
 from execution.models import (
     ENVIRONMENT_STATUSES,
     ExecutionEnvironment,
 )
+from execution import policy as execution_policy
 
-_DEFAULT_LOCAL_NAME = "local-linux"
+_LEGACY_LOCAL_NAME = "local-linux"
 
 
 _DEFAULT_SESSIONS = None
@@ -55,13 +63,27 @@ def _utc_now() -> _dt.datetime:
 
 def _row_to_dict(row: ExecutionEnvironment, *, include_refs: bool = False) -> dict:
     """سجل بيئة كقاموس — token_ref (اسم المرجع لا السر) داخلي حصرًا."""
+    profile = _json_loads(row.profile_json, {})
+    sandboxed = bool(row.sandboxed)
     out = {
         "id": row.id,
         "name": row.name,
         "backend": row.backend,
         "status": row.status,
-        "profile": _json_loads(row.profile_json, {}),
-        "sandboxed": bool(row.sandboxed),
+        "profile": profile,
+        "sandboxed": sandboxed,
+        #: 011 §4: العزل مفهوم مستقل معلن — SANDBOXED | NONE | WORKER_DECLARED
+        "isolation": (
+            "WORKER_DECLARED" if row.backend == "REMOTE_WORKER"
+            else ("SANDBOXED" if sandboxed else "NONE")
+        ),
+        #: 011 §4: منصة المضيف الحقيقية (من runtime لا من الاسم)
+        "host_platform": profile.get("host_platform") or (
+            "remote" if row.backend == "REMOTE_WORKER" else host_platform_label()
+        ),
+        "compatibility_mode": (
+            row.backend == "LOCAL" and not sandboxed
+        ),
         "is_default": bool(row.is_default),
         "endpoint": row.endpoint,
         "failure_reason": row.failure_reason,
@@ -83,21 +105,83 @@ def _json_loads(raw: str, default):
         return default
 
 
-def ensure_local_registered(sessions) -> dict:
-    """تسجيل البيئة المحلية تلقائيًا عند أول إقلاع — حالة صادقة أولًا.
+def _substrate_available() -> bool:
+    """هل الركيزة المعزولة متاحة على هذا المضيف فعلًا؟ (011 §4)"""
+    try:
+        from substrate.local_substrate import default_local_images
 
+        return bool(default_local_images())
+    except Exception:  # noqa: BLE001 — أي عائق = غير متاحة بلا ادعاء
+        return False
+
+
+def ensure_local_registered(sessions) -> dict:
+    """تسجيل البيئة المحلية عند أول إقلاع — هويتها من runtime الفعلي.
+
+    (011 §4-§5) الاسم والعزل من المضيف الحقيقي: ``local-linux`` حكر
+    على مضيف Linux فعلي؛ مضيف Windows يسجل ``local-windows`` بعزل
+    NONE (وضع متوافق معلن — لا ادعاء عزل). قاعدة قديمة سمّت بيئة
+    محلية «local-linux» على مضيف غير Linux تُصحَّح بالاسم والحقيقة
+    (نفس المعرف يحفظ الهوية التاريخية للتنفيذات).
     لا تفترض جاهزية (§20): تُسجل UNKNOWN ثم verify() يقرر.
     """
+    correct_name = local_environment_name()
+    sandboxed = 1 if _substrate_available() else 0
     with sessions() as session:
         found = session.scalars(
             select(ExecutionEnvironment)
-            .where(ExecutionEnvironment.name == _DEFAULT_LOCAL_NAME)
+            .where(ExecutionEnvironment.name.in_(
+                (correct_name, _LEGACY_LOCAL_NAME)
+            ))
         ).first()
         if found is not None:
+            # تصحيح الكذبة التاريخية: بيئة محلية باسم لينكس على مضيف
+            # غير لينكس — الاسم والعزل من الحقيقة لا من السجل القديم
+            if (found.name == _LEGACY_LOCAL_NAME
+                    and correct_name != _LEGACY_LOCAL_NAME):
+                found.name = correct_name
+                found.sandboxed = sandboxed
+                found.failure_reason = (
+                    "صُحح اسم البيئة من local-linux — المضيف الفعلي "
+                    + host_platform_label()
+                )
+                found.updated_at = _utc_now()
+                session.commit()
+                session.refresh(found)
+            # عزل البيئة المحلية يتبع توفر الركيزة الآن (WSL2 مثلا)
+            if bool(found.sandboxed) != bool(sandboxed):
+                found.sandboxed = sandboxed
+                found.updated_at = _utc_now()
+                session.commit()
+                session.refresh(found)
+            if not _json_loads(found.profile_json, {}).get("host_platform"):
+                truth = runtime_truth()
+                profile = _json_loads(found.profile_json, {})
+                profile.update({
+                    "host_platform": host_platform_label(truth),
+                    "os": truth["os"],
+                    "architecture": truth["architecture"],
+                    "kernel": truth["kernel"],
+                    "runtime": f"python {truth['python']}",
+                    "sandboxed": bool(sandboxed),
+                })
+                found.profile_json = json.dumps(
+                    profile, ensure_ascii=False, default=str
+                )
+                found.updated_at = _utc_now()
+                session.commit()
+                session.refresh(found)
             return _row_to_dict(found)
         row = ExecutionEnvironment(
-            name=_DEFAULT_LOCAL_NAME, backend="LOCAL", status="UNKNOWN",
-            endpoint="", is_default=1,
+            name=correct_name, backend="LOCAL", status="UNKNOWN",
+            endpoint="", is_default=1, sandboxed=sandboxed,
+            profile_json=json.dumps({
+                "host_platform": host_platform_label(),
+                "os": runtime_truth()["os"],
+                "architecture": runtime_truth()["architecture"],
+                "sandboxed": bool(sandboxed),
+                "compatibility_mode": not sandboxed,
+            }, ensure_ascii=False, default=str),
         )
         session.add(row)
         session.commit()
@@ -131,14 +215,19 @@ def _get_environment_full(sessions, environment_id: int) -> dict | None:
         return _row_to_dict(row, include_refs=True) if row is not None else None
 
 
-def build_backend(environment: dict) -> LocalLinuxBackend | RemoteWorkerBackend:
-    """بناء الخلفية الحقيقية لبيئة مسجلة — الخياران المدعومان فقط.
+def build_backend(environment: dict):
+    """بناء الخلفية الحقيقية لبيئة مسجلة — العزل يحدد الصنف (011 §4).
 
+    LOCAL + sandboxed → LocalSandboxBackend (الركيزة المعزولة)؛
+    LOCAL + بلا عزل → LocalProcessBackend (وضع متوافق معلن)؛
+    REMOTE_WORKER → RemoteWorkerBackend (بروتوكول HTTP).
     environment بقراءة كاملة (token_ref حاضر) — من _get_environment_full
     أو قائمة داخلية؛ المرجع يقرأ توكنه من مخزن الأسرار لحظتها.
     """
     if environment["backend"] == "LOCAL":
-        return LocalLinuxBackend(environment_id=str(environment["id"]))
+        if environment.get("sandboxed"):
+            return LocalSandboxBackend(environment_id=str(environment["id"]))
+        return LocalProcessBackend(environment_id=str(environment["id"]))
     if environment["backend"] == "REMOTE_WORKER":
         token = ""
         if environment.get("token_ref"):
@@ -208,7 +297,7 @@ def delete_environment(sessions, environment_id: int) -> bool:
         row = session.get(ExecutionEnvironment, int(environment_id))
         if row is None:
             return False
-        if row.name == _DEFAULT_LOCAL_NAME:
+        if row.name == _LEGACY_LOCAL_NAME:
             raise ValueError("البيئة المحلية الافتراضية لا تُحذف")
         if row.token_ref:
             from secrets_store import store
@@ -262,16 +351,42 @@ def verify_environment(sessions, environment_id: int) -> dict:
         session.commit()
     out = get_environment(sessions, environment_id)
     out["verify"] = result.to_dict()
+    if result.status == "READY":
+        _notify_environment_ready(out)
     return out
 
 
-def select_environment(sessions) -> dict | None:
-    """اختيار بيئة التنفيذ (§18) — الافتراضية الجاهزة، وإلا أي جاهزة.
+#: خطاف «بيئة أصبحت جاهزة» (011 §21) — تسجله routes لنشر حدث
+#: WORKER_READY على تيار المشاريع كي تتزامن الشريط الجانبي والصفحات.
+_READY_LISTENERS: list = []
 
-    لا تعيد بيئة غير جاهزة أبدًا؛ عدم وجود جاهزة = None والسبب يعرضه
-    preflight (لا بيئة افتراضية غير موجودة §18).
+
+def on_environment_ready(callback) -> None:
+    """تسجيل مستمع جاهزية البيئة — تستدعيه verify عند READY."""
+    _READY_LISTENERS.append(callback)
+
+
+def _notify_environment_ready(environment: dict) -> None:
+    for callback in list(_READY_LISTENERS):
+        try:
+            callback(environment)
+        except Exception:  # noqa: BLE001 — مستمع لا يكسر التحقق
+            pass
+
+
+def select_environment(sessions, *, policy: str | None = None) -> dict | None:
+    """اختيار بيئة التنفيذ (§18+011 §26) — وفق سياسة المهمة.
+
+    سياسة معطاة → environment تفي بها حصرًا (STRICT_ISOLATED تطلب
+    المعزولة). بلا سياسة (السلوك التاريخي للمسار العام): الافتراضية
+    الجاهزة وإلا أي جاهزة. لا تعيد بيئة غير جاهزة أبدًا؛ غياب
+    الموافق = None والسبب يعرضه preflight.
     """
     environments = list_environments(sessions)
+    if policy is not None:
+        return execution_policy.select_environment_for_policy(
+            environments, policy
+        )
     ready = [env for env in environments if env["status"] == "READY"]
     if not ready:
         return None
@@ -281,16 +396,16 @@ def select_environment(sessions) -> dict | None:
     return ready[0]
 
 
-def resolve_executor(sessions):
+def resolve_executor(sessions, *, policy: str | None = None):
     """المصدر الموحد (§19): (بيئة، خلفية) التي يستعملها المسبار والمنفذ.
 
-    تفضل الجاهزة المختارة؛ إن لم توجد بيئة جاهزة تعيد الافتراضية
-    (المحلية عادة) بوضعها الفعلي — المتصل يفحص status بنفسه لأن
-    الصدق هنا أهم من الراحة.
+    تفضل الجاهزة المختارة وفق السياسة؛ إن لم توجد بيئة جاهزة تعيد
+    الافتراضية (المحلية عادة) بوضعها الفعلي — المتصل يفحص status
+    بنفسه لأن الصدق هنا أهم من الراحة.
     """
     environments_full = list_environments(sessions, include_refs=True)
     by_id = {env["id"]: env for env in environments_full}
-    selected = select_environment(sessions)   # قاموس عام بلا مراجع
+    selected = select_environment(sessions, policy=policy)
     if selected is not None:
         full = by_id.get(selected["id"], selected)
         return selected, build_backend(full)
@@ -317,7 +432,9 @@ def run_code_unified(
     والزمن — التفسير إلزامي لا الاختفاء (§42).
     """
     if sessions is None:
-        backend = LocalLinuxBackend()
+        # أداة «داخل الركيزة» تعد بعزل — لا تراجع متوافق هنا: منصة
+        # بلا ركيزة = FAILED_TO_START بسببها الصادق (011 §28).
+        backend = LocalSandboxBackend()
         return backend.run_code(
             code, workspace=workspace, artifacts=artifacts,
             timeout_s=timeout_s,
@@ -358,13 +475,14 @@ def _mark_stale(sessions, environment_id: int) -> None:
             session.commit()
 
 
-def sandbox_probe_result(sessions) -> dict:
+def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
     """نتيجة مسبار sandbox الموحد (§19): المسبار = التحقق من البيئة.
 
     يحمل environment_id/المنصة/الزمن في details — لو اختلف المنفذ
-    لاحقًا عُرف أي بيئة قالت READY ومتى.
+    لاحقًا عُرف أي بيئة قالت READY ومتى. policy (011 §26) يجعل
+    المسبار يفحص البيئة التي ستُختار فعلًا لهذه السياسة.
     """
-    environment, backend = resolve_executor(sessions)
+    environment, backend = resolve_executor(sessions, policy=policy)
     if backend is None:
         return {
             "status": "UNAVAILABLE",
@@ -420,26 +538,43 @@ def sandbox_probe_result(sessions) -> dict:
     }
 
 
-def owner_action_for_missing_environment(sessions) -> str:
-    """نص إجراء المالك (§30) عند غياب بيئة تنفيذ جاهزة — تشخيص دقيق."""
+def owner_action_for_missing_environment(
+    sessions, policy: str | None = None,
+) -> str:
+    """نص إجراء المالك (§30+011 §3+§27) عند غياب بيئة موافقة — دقيق.
+
+    يسمي السياسة والمطلوب الحقيقي (Linux/x86_64 worker للعزل الصارم)
+    والإجراء المرتب: إضافة بيئة ← تحقق ← إعادة الفحص ← استئناف.
+    """
     environments = list_environments(sessions)
-    ready = [e for e in environments if e["status"] == "READY"]
-    if ready:
-        return ""
-    if not environments:
-        return (
-            "لا بيئة تنفيذ مسجلة — أضف بيئة من الإعدادات ← بيئات التنفيذ"
-        )
+    if policy is not None and execution_policy.is_valid_policy(policy):
+        satisfying = [
+            e for e in environments
+            if execution_policy.environment_satisfies(e, policy)
+        ]
+        if satisfying:
+            return ""
+    else:
+        ready = [e for e in environments if e["status"] == "READY"]
+        if ready:
+            return ""
+    required = (
+        execution_policy.requirement_text(policy)
+        if policy is not None else "بيئة تنفيذ جاهزة"
+    )
     reasons = "؛ ".join(
-        f"{e['name']} ({e['backend']}): {e['status']}"
+        f"{e['name']} ({e['backend']}"
+        + ("/معزولة" if e["sandboxed"] else "/بلا عزل")
+        + f"): {e['status']}"
         + (f" — {e['failure_reason'][:120]}" if e["failure_reason"] else "")
         for e in environments
-    )
+    ) or "لا بيئة تنفيذ مسجلة"
     return (
-        "OWNER ACTION REQUIRED — لا بيئة تنفيذ جاهزة. الحالة الحالية: "
-        f"{reasons}. الإجراء: شغّل عاملًا على Linux/WSL2 "
-        "(python scripts/execution_worker.py) ← الإعدادات ← بيئات التنفيذ "
-        "← إضافة بيئة (REMOTE_WORKER برابط العامل) ← تحقق ← أعد المهمة"
+        "OWNER ACTION REQUIRED — لا بيئة تنفيذ جاهزة توافق السياسة. "
+        f"المطلوب: {required}. الحالة الحالية: {reasons}. "
+        "الإجراء: بيئات التنفيذ ← إضافة بيئة (REMOTE_WORKER برابط عامل "
+        "على Linux/WSL2: python scripts/execution_worker.py) ← تحقق "
+        "حقيقي ← إعادة الفحص ← استئناف المهمة بلا إعادة اعتماد"
     )
 
 
@@ -450,6 +585,7 @@ __all__ = [
     "ensure_local_registered",
     "get_environment",
     "list_environments",
+    "on_environment_ready",
     "owner_action_for_missing_environment",
     "resolve_executor",
     "run_code_unified",

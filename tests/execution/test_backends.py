@@ -144,11 +144,16 @@ def test_remote_worker_protocol_real_over_http():
         assert caps["os"] and caps["architecture"] and caps["runtime"]
         assert isinstance(caps["sandboxed"], bool)
         assert caps["available"] is True
-        # التحقق: فحوص حقيقية عبر HTTP
+        # التحقق: سلم الجاهزية الكامل (011 §10) — درجات مسماة
         verify = good.verify()
-        assert verify.status == "READY"
+        assert verify.status == "READY", verify.reason
         names = {c["name"] for c in verify.checks}
-        assert "capture" in names and "boot" in names
+        assert names >= {
+            "connectivity", "authentication", "heartbeat",
+            "environment_probe", "workspace_probe", "execute_probe",
+            "artifact_probe",
+        }
+        assert all(c["ok"] for c in verify.checks)
         # التنفيذ الفعلي عبر العامل + التقاط artifact
         # (اصطلاح الأدلة داخل الركيزة: ‎/artifacts مطلق — معلن في capabilities)
         code = (

@@ -32,6 +32,19 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
         "ALTER TABLE conversations ADD COLUMN mode VARCHAR(10) "
         "DEFAULT 'chat' NOT NULL",
     ),
+    # (011 §26) سياسة تنفيذ المشروع — STRICT_ISOLATED الافتراضية
+    (
+        "projects.execution_policy",
+        "ALTER TABLE projects ADD COLUMN execution_policy VARCHAR(40) "
+        "DEFAULT 'STRICT_ISOLATED' NOT NULL",
+    ),
+)
+
+#: ترحيلات بيانات معلنة (011 §1-§2): بوابات «OPEN» قبل 011 صارت
+#: «PENDING» — نفس المعنى (تنتظر المالك) بمفردات الآلة الجديدة.
+_DATA_MIGRATIONS: tuple[tuple[str, str, str, str], ...] = (
+    # (جدول، عمود، من، إلى)
+    ("owner_gates", "status", "OPEN", "PENDING"),
 )
 
 
@@ -51,16 +64,26 @@ def init_db(engine) -> None:
 
     Base.metadata.create_all(engine)
     inspector = inspect(engine)
-    columns = {
-        col["name"] for col in inspector.get_columns("conversations")
-    }
     with engine.begin() as connection:
         for name, sql in _MIGRATIONS:
             table, column = name.split(".")
-            if column in columns:
+            if table not in inspector.get_table_names():
                 continue
+            existing = {
+                col["name"] for col in inspector.get_columns(table)
+            }
+            if column in existing:
+                continue
+            connection.execute(text(sql))
+
+    # (011 §1-§2) ترحيل بيانات البوابات: OPEN → PENDING — آمن للتكرار
+    with engine.begin() as connection:
+        for table, column, old, new in _DATA_MIGRATIONS:
             if table in inspector.get_table_names():
-                connection.execute(text(sql))
+                connection.execute(text(
+                    f"UPDATE {table} SET {column} = :new "
+                    f"WHERE {column} = :old"
+                ), {"new": new, "old": old})
 
 
 def make_session_factory(engine) -> type[Session]:

@@ -1,7 +1,13 @@
-/* Agentic Engineering System — واجهة المشاريع (الأمر 007).
+/* Agentic Engineering System — واجهة المشاريع (007 + 011).
  * المشروع كيان أول: خطة رئيسية تُعتمد، حلقة ذاتية تعمل وتُرى لحظيًا،
- * مراحل وخطوات بحالات صادقة، بوابات مالك تُحل، وتحقق نهائي للمالك —
- * كل حالة من السجل الدائم عبر API نحيف.
+ * مراحل وخطوات بحالات صادقة، بوابات مالك تُحل، وتحقق نهائي للمالك.
+ *
+ * (011 §1-§3) بوابة التنفيذ مفصولة عن قرار الاعتماد: بطاقة حالة
+ * مشتقة (OPEN / APPROVED_BUT_BLOCKED مع السبب والمطلوب وإجراء
+ * المالك) — لا رسالة غامضة عن بوابة مغلقة أبدًا. (§19) إعادة الفحص بعد
+ * التوفير تفتح التنفيذ بلا إعادة اعتماد. (§21) تيار أحداث عام
+ * يزامن الشريط والصفحة بلا refresh يدوي. (§26) سياسة التنفيذ قرار
+ * مالك ظاهر.
  */
 (function () {
   "use strict";
@@ -19,6 +25,17 @@
     projectId: null,
     streaming: false,
     eventsBuffer: []
+  };
+
+  var GATE_STATUS_LABELS = {
+    PENDING: "تنتظر قرارك", APPROVED: "معتمدة", REJECTED: "مرفوضة",
+    BLOCKED: "محجوبة — تنتظر توفيرًا", CANCELLED: "ملغاة",
+    EXPIRED: "منتهية",
+  };
+
+  var POLICY_LABELS = {
+    STRICT_ISOLATED: "عزل صارم",
+    COMPATIBLE_LOCAL: "توافق محلي (بلا عزل)",
   };
 
   var STATUS_LABELS = {
@@ -174,27 +191,53 @@
       '<div class="pj-objective">' + esc(p.objective) + "</div>" +
       '<div class="pj-actions">' + actionsHtml(p) + "</div></div>";
 
+    // (011 §1-§3) بطاقة بوابة التنفيذ — الحالة المشتقة الصادقة:
+    // «الخطة معتمدة ✓ / التنفيذ محجوب مؤقتًا + السبب + المطلوب +
+    // الإجراء» — لا رسالة غامضة عن بوابة مغلقة أبدًا.
+    if (p.execution_gate) {
+      html += executionGateHtml(p);
+    }
+
+    // سياسة التنفيذ — قرار المالك الظاهر (011 §26)
+    if (p.status !== "RUNNING") {
+      html += policyHtml(p);
+    }
+
     // بوابات المالك المفتوحة — القرار الجوهري هنا
     var openGates = (p.gates || []).filter(function (g) {
-      return g.status === "OPEN";
+      return g.status === "PENDING" || g.status === "BLOCKED";
     });
     if (openGates.length) {
-      html += '<div class="pj-gates"><h3>قرارات تنتظرك</h3>';
+      html += '<div class="pj-gates"><h3>قرارات وبوابات تنتظرك</h3>';
       openGates.forEach(function (g) {
-        html += '<div class="pj-gate" data-gate="' + g.id + '">' +
-          '<div class="pj-gate-kind">' + gateLabel(g.kind) + "</div>" +
-          '<div class="pj-gate-reason">' + esc(g.reason) + "</div>" +
-          '<div class="pj-gate-actions">' +
-          (g.kind === "PLAN_APPROVAL"
-            ? '<button class="pv-btn primary gate-approve" data-gate="' + g.id +
-              '">اعتماد الخطة</button>' +
-              '<button class="pv-btn danger gate-reject" data-gate="' + g.id +
-              '">رفض وإعادة التوليد</button>'
-            : '<button class="pv-btn primary gate-approve" data-gate="' + g.id +
-              '">موافقة ومتابعة</button>' +
-              '<button class="pv-btn danger gate-reject" data-gate="' + g.id +
-              '">رفض</button>') +
-          "</div></div>";
+        var isDecision = g.status === "PENDING";
+        html += '<div class="pj-gate' + (isDecision ? "" : " provisioning") +
+          '" data-gate="' + g.id + '">' +
+          '<div class="pj-gate-kind">' + gateLabel(g.kind) +
+          ' <span class="pj-gate-status">(' +
+          esc(GATE_STATUS_LABELS[g.status] || g.status) + ")</span></div>" +
+          '<div class="pj-gate-reason">' + esc(g.reason) + "</div>";
+        if (isDecision) {
+          html += '<div class="pj-gate-actions">' +
+            (g.kind === "PLAN_APPROVAL"
+              ? '<button class="pv-btn primary gate-approve" data-gate="' + g.id +
+                '">اعتماد الخطة</button>' +
+                '<button class="pv-btn danger gate-reject" data-gate="' + g.id +
+                '">رفض وإعادة التوليد</button>'
+              : '<button class="pv-btn primary gate-approve" data-gate="' + g.id +
+                '">موافقة ومتابعة</button>' +
+                '<button class="pv-btn danger gate-reject" data-gate="' + g.id +
+                '">رفض</button>') +
+            "</div>";
+        } else {
+          // بوابة توفير: زر إعادة الفحص هو طريقها (011 §19) — لا قرار
+          html += '<div class="pj-gate-actions">' +
+            '<button class="pv-btn primary gate-recheck" data-gate="' + g.id +
+            '">إعادة الفحص (بلا إعادة اعتماد)</button>' +
+            '<button class="pv-btn gate-open-envs">بيئات التنفيذ</button>' +
+            "</div>";
+        }
+        html += "</div>";
       });
       html += "</div>";
     }
@@ -258,10 +301,94 @@
       PLAN_APPROVAL: "اعتماد الخطة",
       PLAN_REVISION_APPROVAL: "مراجعة الخطة بعد فشل",
       PROVIDER_ACTION_REQUIRED: "مزود غير جاهز — إجراء مطلوب",
+      PREFLIGHT_BLOCKED: "التنفيذ محجوب — توفير مطلوب (يُحل بإعادة الفحص)",
       ESCALATION: "تصعيد",
       FINAL_VERIFICATION: "التحقق النهائي",
       OBJECTIVE_CHANGE: "تغيير الهدف"
     }[kind] || kind;
+  }
+
+  /** بطاقة بوابة التنفيذ (011 §3) — النص المطلوب حرفيًا. */
+  function executionGateHtml(p) {
+    var gate = p.execution_gate || {};
+    var plan = p.plan || {};
+    var st = gate.state || "";
+    var cls = st === "OPEN" ? "open"
+      : st === "APPROVED_BUT_BLOCKED" ? "blocked" : "wait";
+    var html = '<div class="pj-exec-gate ' + cls + '" id="pj-exec-gate">' +
+      '<div class="pjeg-row plan">' +
+      (plan.approved_by_owner
+        ? "الخطة معتمدة ✓"
+        : "الخطة بانتظار اعتمادك") +
+      "</div>";
+    if (st === "OPEN") {
+      html += '<div class="pjeg-row state ok">التنفيذ مفتوح — ' +
+        esc(gate.reason || "") + "</div>";
+    } else if (st === "APPROVED_BUT_BLOCKED") {
+      html += '<div class="pjeg-row state">التنفيذ محجوب مؤقتًا</div>' +
+        '<div class="pjeg-block"><b>السبب:</b> ' +
+        esc(gate.reason || "لا توجد بيئة تنفيذ متوافقة وجاهزة.") +
+        "</div>" +
+        '<div class="pjeg-block"><b>المطلوب:</b> ' +
+        esc(gate.required || "Linux/x86_64 Execution Worker") + "</div>" +
+        '<div class="pjeg-block"><b>الإجراء:</b> ' +
+        esc(gate.owner_action ||
+          ("إضافة بيئة تنفيذ ← التحقق منها ← إعادة الفحص ← " +
+           "استئناف المهمة")) + "</div>" +
+        '<div class="pjeg-actions">' +
+        '<button class="pv-btn primary" id="pj-recheck">إعادة الفحص</button>' +
+        '<button class="pv-btn" id="pj-open-envs">بيئات التنفيذ</button>' +
+        "</div>";
+    } else if (st === "PENDING_PREFLIGHT") {
+      html += '<div class="pjeg-row state">' + esc(gate.reason || "") +
+        "</div>" +
+        '<div class="pjeg-actions">' +
+        '<button class="pv-btn primary" id="pj-recheck">فحص ما قبل التنفيذ</button>' +
+        "</div>";
+    } else {
+      html += '<div class="pjeg-row state">' + esc(gate.reason || "") +
+        "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  /** سياسة التنفيذ (011 §26) — ظاهرة وقابلة للتغيير بقرار معلن. */
+  function policyHtml(p) {
+    var current = p.execution_policy || "STRICT_ISOLATED";
+    return '<div class="pj-policy">' +
+      '<span class="pj-policy-label">سياسة التنفيذ:</span>' +
+      '<select id="pj-policy-select">' +
+      Object.keys(POLICY_LABELS).map(function (k) {
+        return '<option value="' + k + '"' +
+          (k === current ? " selected" : "") + ">" +
+          esc(POLICY_LABELS[k]) + "</option>";
+      }).join("") + "</select>" +
+      '<span class="pj-policy-hint">' +
+      (current === "STRICT_ISOLATED"
+        ? "المهام تنفذ في بيئة معزولة حصرًا"
+        : "يقبل التنفيذ المحلي بلا عزل — معلن في كل نتيجة") + "</span>" +
+      "</div>";
+  }
+
+  /** إعادة الفحص (011 §19) — بعد التوفير؛ نجاح = فتح بلا إعادة اعتماد. */
+  function recheck(id) {
+    var gate = document.getElementById("pj-exec-gate");
+    if (gate) gate.classList.add("probing");
+    var btn = document.getElementById("pj-recheck");
+    if (btn) { btn.disabled = true; btn.textContent = "…إعادة فحص فعلية"; }
+    Hub.fetchJSON("/api/projects/" + id + "/preflight", { method: "POST" })
+      .then(function (out) {
+        if (btn) { btn.disabled = false; btn.textContent = "إعادة الفحص"; }
+        if (!out.ok) {
+          alert(out.j && out.j.detail || "تعذر إعادة الفحص");
+          return;
+        }
+        openProject(id);   // إعادة رسم كاملة بالحالة الجديدة
+      }, function () {
+        if (btn) { btn.disabled = false; btn.textContent = "إعادة الفحص"; }
+        alert("تعذر الوصول للخدمة");
+      });
   }
 
   function actionsHtml(p) {
@@ -398,6 +525,37 @@
         resolveGate(id, parseInt(btn.getAttribute("data-gate"), 10), false);
       });
     });
+    // (011 §19) بوابات التوفير تُحل بإعادة الفحص — لا بقرار موافقة
+    view.querySelectorAll(".gate-recheck").forEach(function (btn) {
+      btn.addEventListener("click", function () { recheck(id); });
+    });
+    var openEnvs = function () {
+      window.HubSettings && window.HubSettings.openTab("execution");
+    };
+    view.querySelectorAll(".gate-open-envs").forEach(function (btn) {
+      btn.addEventListener("click", openEnvs);
+    });
+    var envsBtn = $("pj-open-envs");
+    if (envsBtn) envsBtn.addEventListener("click", openEnvs);
+    var recheckBtn = $("pj-recheck");
+    if (recheckBtn) recheckBtn.addEventListener("click", function () {
+      recheck(id);
+    });
+    var policySel = $("pj-policy-select");
+    if (policySel) {
+      policySel.addEventListener("change", function () {
+        Hub.fetchJSON("/api/projects/" + id + "/execution-policy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ policy: policySel.value }),
+        }).then(function (out) {
+          if (!out.ok) {
+            alert(out.j && out.j.detail || "تعذر تغيير السياسة");
+            openProject(id);
+          }
+        });
+      });
+    }
   }
 
   function resolveGate(projectId, gateId, approved) {
@@ -505,6 +663,58 @@
     }
   });
 
+  // ---------- (011 §21) تيار أحداث عام — تزامن بلا refresh يدوي ----------
+  // بعد أي انتقال مهم (اعتماد/تشغيل/حجب/توفير/استئناف) يصل الحدث
+  // للشريط الجانبي وصفحة المشروع المفتوحة فورًا — الحالة المعروضة
+  // لا تتخلف عن القاعدة أبدًا.
+
+  var liveEvents = { source: null, sidebarTimer: null, projectTimer: null };
+  var REFRESH_KINDS = [
+    "PLAN_APPROVED", "PLAN_REJECTED", "PREFLIGHT_PASS",
+    "PREFLIGHT_BLOCKED", "PREFLIGHT_RECHECKED", "GATE_AUTO_RESOLVED",
+    "EXECUTION_BLOCKED", "OWNER_GATE_REQUIRED", "OWNER_GATE_RESOLVED",
+    "WORKER_READY", "PROJECT_PAUSED", "PROJECT_STOPPED",
+    "PROJECT_RESUMED", "PROJECT_COMPLETION_CANDIDATE",
+    "PROJECT_VERIFIED", "EXECUTION_POLICY_CHANGED",
+    "PHASE_STARTED", "PHASE_COMPLETED", "PROJECT_CREATED",
+  ];
+
+  function subscribeProjectEvents() {
+    if (liveEvents.source) return;   // اشتراك واحد فقط
+    try {
+      liveEvents.source = new EventSource("/api/projects/events/stream");
+    } catch (err) {
+      return;   // متصفح بلا EventSource — الاستطلاع الدوري يبقى
+    }
+    liveEvents.source.onmessage = function (message) {
+      var event;
+      try { event = JSON.parse(message.data); }
+      catch (err) { return; }
+      if (!event || !event.kind || event.kind.indexOf("stream.") === 0) return;
+      if (REFRESH_KINDS.indexOf(event.kind) === -1) return;
+      // الشريط الجانبي: تحديث فوري مضبوط (لا عصفرة بكل حدث)
+      if (liveEvents.sidebarTimer) clearTimeout(liveEvents.sidebarTimer);
+      liveEvents.sidebarTimer = setTimeout(loadProjects, 250);
+      // صفحة المشروع المفتوحة: أعِد رسمها إن كان الحدث لها
+      if (state.projectId !== null && event.project_id === state.projectId
+          && !state.streaming) {
+        if (liveEvents.projectTimer) clearTimeout(liveEvents.projectTimer);
+        liveEvents.projectTimer = setTimeout(function () {
+          openProject(state.projectId);
+        }, 400);
+      }
+    };
+    liveEvents.source.onerror = function () {
+      // انقطاع التيار: أعد الاشتراك بعد مهلة (الخادم مصدر الحقيقة)
+      if (liveEvents.source) {
+        liveEvents.source.close();
+        liveEvents.source = null;
+      }
+      setTimeout(subscribeProjectEvents, 4000);
+    };
+  }
+
   loadProjects();
   setInterval(loadProjects, 15000);
+  subscribeProjectEvents();
 })();

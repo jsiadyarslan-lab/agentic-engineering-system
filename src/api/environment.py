@@ -35,19 +35,21 @@ class ProbeIn(BaseModel):
 
 @router.get("/readiness")
 def readiness_state() -> dict:
-    """آخر قراءة معروفة لكل قدرة — قراءة صرفة، بلا فحش."""
-    caps = registry.get_capabilities(_sessions())
-    summary = {
-        "READY": 0, "DEGRADED": 0, "NOT_READY": 0, "UNAVAILABLE": 0,
-        "DISABLED": 0, "STALE": 0, "UNKNOWN": 0,
-    }
-    for cap in caps:
-        summary[cap["readiness_status"]] = \
-            summary.get(cap["readiness_status"], 0) + 1
+    """القدرات بالعرض المشتق الموحد (011 §14) — مصدر واحد لا تناقض.
+
+    القدرات المجمعة (web_search من مزوديها، sandbox من بيئاتها)
+    تُشتق من مصادرها الحقيقية لحظة القراءة — فلا يمكن لمزود أن
+    يقول جاهز والقدرة تقول منتهية في نفس الرد أبدًا.
+    """
+    from readiness import service as readiness_service
+
+    caps = readiness_service.capabilities_view(_sessions())
+    summary = readiness_service.summary(_sessions())
     return {
         "capabilities": caps,
         "summary": summary,
-        "note": "READY بمسبار حقيقي فقط — الجاهزية تنتهي صلاحيتها (STALE)",
+        "note": "مصدر واحد للحقيقة — المجمعة تُشتق من مزوديها/بيئاتها "
+                "بصلاحية موحدة؛ READY بمسبار حقيقي فقط",
     }
 
 

@@ -263,8 +263,11 @@ def run_probe(sessions, capability_id: str, *,
                 else "PROVIDER_RESOLUTION",
                 details={
                     "per_provider": per_provider,
-                    "ready_provider": ready_providers[0]["name"]
-                    if ready_providers else "",
+                    "ready_provider": (
+                        (ready_providers[0].get("provider") or {}).get(
+                            "name", ""
+                        ) or ready_providers[0].get("name", "")
+                    ) if ready_providers else "",
                 },
             )
     elif probe_name == "web_fetch":

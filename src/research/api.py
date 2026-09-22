@@ -36,9 +36,17 @@ class SearchIn(BaseModel):
 
 @router.get("/providers")
 def providers() -> dict:
+    """المزودون بحالتهم المشتقة الموحدة (011 §12-§14).
+
+    effective_status تطبق الصلاحية: مسبار READY قديم = STALE — فلا
+    يمكن أن يقول المزود «جاهز» والقدرة «منتهية» في نفس اللحظة.
+    """
+    from readiness.service import research_providers_view
+
     return {
-        "providers": service.list_providers(_sessions()),
-        "note": "البحث قدرة قابلة للتوفير — DDG مهلة ≠ الإنترنت مقطوع",
+        "providers": research_providers_view(_sessions()),
+        "note": "البحث قدرة قابلة للتوفير — DDG مهلة ≠ الإنترنت مقطوع؛ "
+                "الحالة المعروضة موحدة الصلاحية مع قدرة web_search",
     }
 
 
@@ -54,11 +62,17 @@ def probe(provider_id: int) -> dict:
 
 @router.post("/providers/{provider_id}/configure")
 def configure(provider_id: int, body: ConfigureIn) -> dict:
+    """حفظ ← فحص حقيقي ← جاهزية محدثة (011 §16) — لا save فقط."""
     try:
-        return service.configure_provider(
+        record = service.configure_provider(
             _sessions(), provider_id, config=body.config,
             enabled=body.enabled, api_key=body.api_key,
         )
+        from readiness.service import provider_effective_state
+
+        state = provider_effective_state(record)
+        return {**record, "effective_status": state["status"],
+                "state_reason": state["reason"]}
     except KeyError as error:
         raise HTTPException(
             status_code=404, detail=str(error.args[0] or error)

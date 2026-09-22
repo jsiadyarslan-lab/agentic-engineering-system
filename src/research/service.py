@@ -146,8 +146,15 @@ def probe_all(sessions) -> list[dict]:
 def configure_provider(
     sessions, provider_id: int, *, config: dict | None = None,
     enabled: bool | None = None, api_key: str = "",
+    probe_after: bool = True,
 ) -> dict:
-    """تعديل تكوين مزود (§28 مسار التوفير) — المفتاح للمخزن لا القاعدة."""
+    """تعديل تكوين مزود (§28 + 011 §16) — حفظ ← فحص ← جاهزية محدثة.
+
+    حفظ التكوين وحده لا يكفي (011 §16): الزر يعني أن المالك يريد
+    مزودًا يعمل — لذا يُفحص فورًا بعد الحفظ وتُحدَّث حالته، والنتيجة
+    (نجاح/فشل مع السبب) تعاد إليه. probe_after=False لمن يريد
+    الحفظ الصامت فقط.
+    """
     config = config or {}
     with sessions() as session:
         row = session.get(ResearchProvider, int(provider_id))
@@ -169,7 +176,17 @@ def configure_provider(
         row.updated_at = _utc_now()
         session.commit()
         session.refresh(row)
-        return _row_to_dict(row)
+        record = _row_to_dict(row)
+    if probe_after and enabled is not False:
+        # (011 §16) حفظ ← فحص حقيقي ← تحديث الجاهزية — لا save فقط
+        try:
+            probe_provider(sessions, provider_id)
+        except Exception:  # noqa: BLE001 — الفحص يفشل بحالته الصادقة
+            pass
+        with sessions() as session:
+            row = session.get(ResearchProvider, int(provider_id))
+            record = _row_to_dict(row) if row is not None else record
+    return record
 
 
 def search(sessions, query: str) -> dict:
@@ -210,33 +227,30 @@ def search(sessions, query: str) -> dict:
 
 
 def aggregate_capability(sessions) -> dict:
-    """قراءة قدرة web_search المجمعة (§23-§24) — للجرد وpreflight.
+    """قراءة قدرة web_search المجمعة (§23-§24 + 011 §12) — مصدر واحد.
 
-    READY فقط إن كان مزود بحث واحد على الأقل جاهزًا بمسبار صالح —
-    والتفصيل لكل مزود يبقى في details فلا إجمال مخل.
+    الاشتقاق كله في readiness.service (حالة المزود تطبق الصلاحية
+    فيستحيل «مزود جاهز/قدرة منتهية») — هذه دالة توافق تعيد الشكل
+    الذي يستهلكه الجرد القديم من المصدر نفسه.
     """
-    records = list_providers(sessions)
-    per_provider: list[dict] = []
-    ready_any = False
-    for record in records:
-        if not record["enabled"]:
-            per_provider.append({
-                "provider": record["name"], "status": "DISABLED",
-            })
-            continue
-        status = record["last_probe_status"]
-        if status == "READY":
-            ready_any = True
-        per_provider.append({
-            "provider": record["name"], "status": status,
-            "reason": record["failure_reason"][:150],
-        })
+    from readiness.service import research_providers_view
+
+    providers = research_providers_view(sessions)
+    per_provider = [
+        {
+            "provider": p["name"],
+            "status": p["effective_status"],
+            "reason": (p.get("state_reason") or "")[:150],
+        }
+        for p in providers
+    ]
+    ready_any = any(p["effective_status"] == "READY" for p in providers)
     return {
         "status": "READY" if ready_any else "NOT_READY",
         "reason": (
-            "مزود بحث جاهز بمسبار حقيقي" if ready_any else
-            "كل مزودي البحث غير جاهزين — DDG مهلة/محجوب لا يعني الإنترنت "
-            "مقطوعًا؛ جهّز SearXNG أو Search API من الإعدادات ← البحث"
+            "مزود بحث جاهز بمسبار حقيقي حديث" if ready_any else
+            "لا مزود بحث جاهز بمسبار صالح — DDG مهلة/محجوب لا يعني "
+            "الإنترنت مقطوعًا؛ جهّز SearXNG أو Search API من الإعدادات ← البحث"
         ),
         "per_provider": per_provider,
         "note": "web_fetch قد يكون READY والبحث معطلًا — قدرات منفصلة",

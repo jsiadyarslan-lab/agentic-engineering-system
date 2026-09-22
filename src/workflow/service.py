@@ -42,10 +42,25 @@ def _jload(raw: str, default: Any) -> Any:
 # المشروع
 # ------------------------------------------------------------------ #
 
-def create_project(sessions, *, name: str, objective: str) -> dict:
-    """إنشاء مشروع DRAFT — الحالة الصادقة من اللحظة الأولى (§3)."""
+def create_project(sessions, *, name: str, objective: str,
+                   execution_policy: str = "STRICT_ISOLATED") -> dict:
+    """إنشاء مشروع DRAFT — الحالة الصادقة من اللحظة الأولى (§3).
+
+    execution_policy (011 §26): STRICT_ISOLATED (الافتراضية) أو
+    COMPATIBLE_LOCAL — تُخزن منذ الإنشاء فلا قرار لاحق خفي.
+    """
+    from execution import policy as execution_policy_mod
+
+    if not execution_policy_mod.is_valid_policy(execution_policy):
+        raise ValueError(
+            f"سياسة تنفيذ غير معروفة: {execution_policy} — المدعوم: "
+            + "، ".join(execution_policy_mod.POLICIES)
+        )
     with sessions() as session:
-        project = Project(name=name or "مشروع جديد", objective=objective or "")
+        project = Project(
+            name=name or "مشروع جديد", objective=objective or "",
+            execution_policy=execution_policy,
+        )
         session.add(project)
         session.commit()
         session.refresh(project)
@@ -77,6 +92,7 @@ def _project_dict(project: Project) -> dict:
         "stop_requested": project.stop_requested,
         "completion_state": project.completion_state,
         "last_error": project.last_error,
+        "execution_policy": project.execution_policy or "STRICT_ISOLATED",
     }
 
 
@@ -582,12 +598,17 @@ def latest_checkpoint(sessions, project_id: int) -> dict | None:
 # ------------------------------------------------------------------ #
 
 def open_gate(sessions, project_id: int, kind: str, reason: str,
-              details: dict | None = None) -> int:
+              details: dict | None = None, *, status: str = "PENDING") -> int:
+    """فتح بوابة — PENDING للقرار (الافتراضي) أو BLOCKED للتوفير (011 §2)."""
+    from workflow.gates import GATE_STATUSES
+
+    if status not in GATE_STATUSES:
+        raise ValueError(f"حالة بوابة غير معروفة: {status}")
     with sessions() as session:
         gate = OwnerGate(
             project_id=int(project_id), kind=kind, reason=reason,
             details=json.dumps(details or {}, ensure_ascii=False),
-            status="OPEN",
+            status=status,
         )
         session.add(gate)
         session.commit()
@@ -595,14 +616,75 @@ def open_gate(sessions, project_id: int, kind: str, reason: str,
         return gate.id
 
 
-def resolve_gate(sessions, gate_id: int, *, approved: bool) -> dict:
+def auto_resolve_gate(sessions, gate_id: int, *, note: str = "") -> dict:
+    """حل آلي لبوابة توفير BLOCKED (011 §19) — بعد إعادة فحص ناجحة.
+
+    بوابات التوفير لا تنتظر قرار المالك بل توفيره — حين ينجح الفحص
+    تُحل آليًا (APPROVED + أثر) دون مساس أي قرار جوهري: الخطة
+    المعتمدة تبقى معتمدة، ولا إعادة اعتماد أبدًا ما لم تتغير الخطة.
+    """
+    from workflow.gates import state_label
+
     with sessions() as session:
         gate = session.get(OwnerGate, int(gate_id))
         if gate is None:
             raise KeyError(f"بوابة غير معروفة: {gate_id}")
-        if gate.status != "OPEN":
-            raise ValueError(f"البوابة ليست مفتوحة (حالتها: {gate.status})")
-        gate.status = "APPROVED" if approved else "REJECTED"
+        if gate.status != "BLOCKED":
+            return {
+                "id": gate.id, "project_id": gate.project_id,
+                "kind": gate.kind, "status": gate.status,
+                "already_resolved": True,
+                "note": f"حالتها {state_label(gate.status)} — لا أثر",
+            }
+        details = _jload(gate.details, {})
+        details["auto_resolved"] = True
+        if note:
+            details["auto_resolution_note"] = note
+        gate.status = "APPROVED"
+        gate.details = json.dumps(details, ensure_ascii=False)
+        gate.resolved_at = _utc_now()
+        session.commit()
+        return {
+            "id": gate.id, "project_id": gate.project_id,
+            "kind": gate.kind, "status": gate.status,
+            "auto_resolved": True,
+        }
+
+
+def resolve_gate(sessions, gate_id: int, *, approved: bool) -> dict:
+    """حل بوابة مالك — idempotent للقرار نفسه (011 §1 إصلاح الجذر).
+
+    كان الحل المتكرر يرفع «البوابة ليست مفتوحة (حالتها: APPROVED)»
+    فتظهر للواجهة كأن النظام متناقض. الآن: إعادة نفس القرار = نجاح
+    بلا أثر (idempotent)؛ عكس القرار يحتاج بوابة جديدة (القرار
+    الجوهري لا يُنقض بالنقر مرتين)؛ وبوابات التوفير BLOCKED تُحل
+    بإعادة الفحص (engine.recheck_preflight) لا من هنا.
+    """
+    from workflow.gates import can_transition, state_label
+
+    with sessions() as session:
+        gate = session.get(OwnerGate, int(gate_id))
+        if gate is None:
+            raise KeyError(f"بوابة غير معروفة: {gate_id}")
+        target = "APPROVED" if approved else "REJECTED"
+        if gate.status == target:
+            return {
+                "id": gate.id, "project_id": gate.project_id,
+                "kind": gate.kind, "status": gate.status,
+                "already_resolved": True,
+                "note": f"القرار نفسه ({state_label(gate.status)}) — لا أثر",
+            }
+        if gate.status == "BLOCKED":
+            raise ValueError(
+                "هذه بوابة توفير محجوبة — تُحل بإعادة الفحص بعد توفير "
+                "البيئة/المزود (زر إعادة الفحص)، لا بقرار موافقة"
+            )
+        if not can_transition(gate.status, target):
+            raise ValueError(
+                f"لا يمكن حل بوابة حالتها {state_label(gate.status)} "
+                f"إلى {target} — القرار السابق قائم"
+            )
+        gate.status = target
         gate.resolved_at = _utc_now()
         session.commit()
         return {
@@ -627,7 +709,15 @@ def list_gates(sessions, project_id: int) -> list[dict]:
 
 
 def open_gates(sessions, project_id: int) -> list[dict]:
-    return [g for g in list_gates(sessions, project_id) if g["status"] == "OPEN"]
+    """البوابات التي تنتظر المالك — PENDING (011 §2) + BLOCKED للعرض.
+
+    BLOCKED تُعاد أيضًا كي تراها الواجهة مع زر إعادة الفحص، لكنها
+    لا تمنع الاستئناف بعد إعادة فحص ناجحة (engine يفصل).
+    """
+    return [
+        g for g in list_gates(sessions, project_id)
+        if g["status"] in ("PENDING", "BLOCKED")
+    ]
 
 
 # ------------------------------------------------------------------ #
@@ -659,3 +749,23 @@ def list_events(sessions, project_id: int, limit: int = 100) -> list[dict]:
             "payload": _jload(r.payload, {}),
             "created_at": r.created_at.isoformat() if r.created_at else None,
         } for r in reversed(rows)]
+
+
+def list_recent_events(sessions, after_id: int = 0,
+                       limit: int = 100) -> list[dict]:
+    """أحدث الأحداث عبر كل المشاريع بعد معرف (011 §21) — لتيار التزامن.
+
+    مصدر واحد للشريط الجانبي وصفحة المشروع وخط الزمن: كل انتقال
+    مهم يصل الجميع بلا refresh يدوي.
+    """
+    with sessions() as session:
+        rows = session.scalars(
+            select(ProjectEvent)
+            .where(ProjectEvent.id > int(after_id))
+            .order_by(ProjectEvent.id).limit(limit)
+        ).all()
+        return [{
+            "id": r.id, "project_id": r.project_id, "kind": r.kind,
+            "payload": _jload(r.payload, {}),
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        } for r in rows]

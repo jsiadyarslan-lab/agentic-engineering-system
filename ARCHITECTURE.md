@@ -957,3 +957,116 @@ Workflow/Chat Event → Event Store (events) → Live Event Bus → SSE → UI P
   تنفيذ حقيقي في البيئتين، git، اختبارات).
 - مزودو البحث من هذه الشبكة: DDG مهلة، مثيلات searx العامة 429/بلا
   JSON — المسار: مثيل SearXNG للمالك أو Search API بمفتاح.
+
+## §25 — الأمر التنفيذي 011: حقيقة التشغيل + آلة بوابة الخطة + توفير التنفيذ الحقيقي
+
+الجرائم الأربعة التي أصلحها هذا الأمر (كلها مثبتة حية قبل الإصلاح):
+
+1. **بوابة معتمدة ثم «ليست مفتوحة»** — `workflow/service.resolve_gate`
+   كانت تنفجر عند حل بوابة محلولة (`البوابة ليست مفتوحة (حالتها:
+   APPROVED)`) فتبدو الواجهة متناقضة. الجذر: خلط قرار المالك مع فتح
+   التنفيذ في مفهوم واحد.
+2. **`local-linux` على مضيف Windows** — اسم البيئة كان ثابتًا بلا أي
+   علاقة بالـruntime الفعلي؛ ولا فصل بين Host Platform وExecution
+   Backend وIsolation.
+3. **«بحث الويب EXPIRED» مقابل «DuckDuckGo جاهز»** — للمزود جدول
+   بلا صلاحية وللقدرة سجل بصلاحية؛ كل شاشة اشتقت حالتها بطريقتها.
+4. **لا مسار توفير** — الحجب كان نهاية الطريق؛ لا إعادة فحص تفتح
+   التنفيذ بلا إعادة اعتماد.
+
+### آلة بوابة الخطة (§1-§3+§18-§19) — `workflow/gates.py`
+
+- `gate.status` (قرار المالك): `PENDING → APPROVED | REJECTED`،
+  و`BLOCKED` (توفير)، و`CANCELLED/EXPIRED` — انتقالات مقفلة في
+  `GATE_TRANSITIONS`.
+- `open_for_execution` **مشتق لا مخزن**: `plan_execution_state()` تعيد
+  `AWAITING_APPROVAL | PENDING_PREFLIGHT | OPEN | APPROVED_BUT_BLOCKED`
+  مع السبب والمطلوب وإجراء المالك نصًا حرفيًا.
+- الحل idempotent: نفس القرار مرتين = نجاح بلا أثر؛ عكسه مرفوض؛
+  بوابات التوفير تُحل بإعادة الفحص (`auto_resolve_gate` +
+  `GATE_AUTO_RESOLVED`) لا بموافقة.
+- ترحيل بيانات معلن: `OPEN` التاريخية → `PENDING`.
+- مسار §19 كاملًا: BLOCKED ← (المالك يوفر) ← RECHECK ← READY ← OPEN ←
+  استئناف **بلا إعادة اعتماد** — `tick` يعيد الفحص تلقائيًا عند بوابات
+  توفير بلا قرار، و`resume` كذلك.
+
+### الحقيقة التشغيلية (§4-§5) — `execution/backends.py`
+
+- `runtime_truth()`: جرد فعلي (OS/نواة/arch/Python/Git/Node/قشدة/
+  container/WSL/Docker/CPU/ذاكرة/قرص) بكاش 60ث — لا اعتماد على
+  `configuration.name` أبدًا.
+- `local_environment_name()`: `local-linux` حكر على مضيف Linux فعلي
+  (و`local-windows`/`local-darwin`)؛ `ensure_local_registered` يصحح
+  الكذبة التاريخية ويزامن العزل مع توفر الركيزة الفعلي.
+- كل بيئة تحمل `host_platform` و`isolation` (`SANDBOXED | NONE |
+  WORKER_DECLARED`) و`compatibility_mode` — منفصلة عن الخلفية.
+
+### الخلفيات (§6-§7+§25-§26)
+
+- `LocalSandboxBackend` (الركيزة المعزولة — Linux/x86_64 حصرًا) و
+  `LocalProcessBackend` (**وضع متوافق بلا عزل معلن في كل نتيجة**) و
+  `RemoteWorkerBackend` — بلا أي implementation وهمية؛ العملية غير
+  المدعومة ترفع `BackendNotSupported` (NOT_SUPPORTED).
+- `execution/policy.py`: `STRICT_ISOLATED` (الافتراضية — تطلب معزولة)
+  مقابل `COMPATIBLE_LOCAL` (قرار مالك صريح)؛ `select_environment`
+  و`resolve_executor` و`owner_action_for_missing_environment` كلها
+  policy-aware. لا خفض للسقف أبدًا (§28).
+
+### سلم جاهزية العامل (§9-§10)
+
+`RemoteWorkerBackend.verify()`: connectivity → authentication →
+heartbeat → environment_probe → workspace_probe → execute_probe →
+artifact_probe — أي درجة تفشل توقف السلم بسببها المسمى؛ READY لا
+تُمنح بمجرد التسجيل. 401/403 يفصلان عن انعدام الوصول عبر
+`WorkerHttpError` (يرث ConnectionError — عقد 010 محفوظ).
+
+### مصدر واحد للحقيقة (§12-§14) — `readiness/service.py`
+
+- `provider_effective_state`: NOT_CONFIGURED (غير معد) | DISABLED |
+  UNKNOWN | READY (حديث) | **STALE** (مسبار ناجح انتهت صلاحيته —
+  TTL موحد 600ث) | NOT_READY — القدرة والمزود من الاشتقاق نفسه
+  فاستحال «مزود جاهز/قدرة منتهية».
+- `capability_view`: web_search من مزوديها حصرًا (والقدرة تسمي
+  مزودها المنتهي)، sandbox من سجل البيئات (نفس مصدر المسبار والمنفذ
+  §19-010)؛ `capabilities_view` + `summary` للجميع — UI وpreflight
+  والplanner يقرؤون من هنا لا يعيد كلٌ الحساب.
+- `EXPIRED → PROBING → READY`: الفحص الحقيقي يحدّث المصدر فتتحدث كل
+  النظم معًا (§13).
+
+### البحث (§15-§16)
+
+`research/service.configure_provider(probe_after=True)`: حفظ ← فحص
+حقيقي فورًا ← جاهزية محدّة — لا save فقط. الواجهة تعرض
+`effective_status` الموحدة (STALE/NOT_CONFIGURED معلنة).
+
+### المحرك والفحص (§17-§19+§27)
+
+- `tick` عند READY يمر بحاجز `_preflight_gate`: PASS → OPEN، BLOCKED →
+  بوابة توفير `PREFLIGHT_BLOCKED` (status=BLOCKED) بتفاصيل كاملة
+  (المصفوفة + required_environment + owner_action).
+- المزود غير الجاهز وحده يبقى في مسار 007.1 §17 الأصيل (دليل
+  EXECUTION_BLOCKED + بوابة PROVIDER_ACTION_REQUIRED) — لا مسار موازٍ.
+- `task_preflight(policy=...)`: المصفوفة تتصدرها سياسة التنفيذ والبيئة
+  المختارة؛ «المطلوب» نص حرفي لكل قدرة (لا افتراض عامل لينكس والحاجز
+  بحث).
+- أحداث جديدة: PREFLIGHT_PASS/BLOCKED/RECHECKED + GATE_AUTO_RESOLVED +
+  EXECUTION_POLICY_CHANGED.
+
+### API والواجهة (§20-§25)
+
+- `POST /api/projects/{id}/preflight` (إعادة الفحص)،
+  `POST /api/projects/{id}/execution-policy`،
+  `GET /api/projects/events/stream` (SSE عام — تزامن الشريط والصفحة
+  بلا refresh، إعادة اتصال تلقائية)، `GET /api/execution/host-truth`.
+- بطاقة بوابة التنفيذ في صفحة المشروع: النص الحرفي §3 («الخطة معتمدة
+  ✓ / التنفيذ محجوب مؤقتًا / السبب / المطلوب / الإجراء» + زرا إعادة
+  الفحص وبيئات التنفيذ) — لا رسالة غامضة أبدًا.
+- محدد سياسة التنفيذ في رأس المشروع؛ لوحة «حقيقة المضيف» أول تبويب
+  بيئات التنفيذ؛ أعمدة المضيف/العزل/الشبكة/القدرات لكل بيئة.
+- الشريط الجانبي يتزامن لحظيًا عبر تيار الأحداث (REFRESH_KINDS).
+
+### الانحدار (§30) — الحالات المستحيلة الخمس
+
+اختبارات `tests/regression/test_order011_regressions.py` تمنع بنيويًا:
+APPROVED+«ليست مفتوحة»؛ مزود جاهز/قدرة منتهية؛ بيئة جاهزة/منفذ غائب؛
+شريط متخلف عن المشروع؛ بحث جاهز/قدرة منتهية بلا تفسير.

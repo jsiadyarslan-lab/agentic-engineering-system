@@ -94,12 +94,17 @@ class ProjectEngine:
     # العمليات العليا — يستدعيها الـAPI
     # ------------------------------------------------------------------ #
 
-    def create_project(self, name: str, objective: str) -> dict:
+    def create_project(self, name: str, objective: str,
+                        execution_policy: str = "STRICT_ISOLATED") -> dict:
         if not objective or not objective.strip():
             raise EngineError("الهدف مطلوب — المشروع بلا هدف لا معنى له")
-        return service.create_project(
-            self._sessions, name=name.strip(), objective=objective.strip()
-        )
+        try:
+            return service.create_project(
+                self._sessions, name=name.strip(), objective=objective.strip(),
+                execution_policy=execution_policy,
+            )
+        except ValueError as error:
+            raise EngineError(str(error)) from error
 
     def generate_plan(self, project_id: int) -> dict:
         """توليد الخطة (§4) — حي حصرًا: فشل النموذج = فشل صريح لا خطة ملفقة."""
@@ -165,7 +170,7 @@ class ProjectEngine:
                 f"الخطة v{plan['version']} في حالة {plan['status']} — لا قرار"
             )
         gate = self._gate_of_plan(project_id, plan["id"])
-        if gate is not None and gate["status"] == "OPEN":
+        if gate is not None and gate["status"] == "PENDING":
             service.resolve_gate(self._sessions, gate["id"], approved=approved)
             self._emit(project_id, "OWNER_GATE_RESOLVED",
                        {"gate_id": gate["id"], "approved": approved})
@@ -191,7 +196,7 @@ class ProjectEngine:
     def _gate_of_plan(self, project_id: int, plan_id: int) -> dict | None:
         for gate in service.list_gates(self._sessions, project_id):
             if (gate["kind"] == "PLAN_APPROVAL"
-                    and gate["status"] == "OPEN"
+                    and gate["status"] == "PENDING"
                     and gate["details"].get("plan_id") == plan_id):
                 return gate
         return None
@@ -244,11 +249,21 @@ class ProjectEngine:
             )
         if project["status"] == "BLOCKED":
             gates = service.open_gates(self._sessions, project_id)
-            if gates:
+            pending = [g for g in gates if g["status"] == "PENDING"]
+            if pending:
                 raise EngineError(
-                    "بوابات مالك مفتوحة تمنع الاستئناف — عالجها أولًا: "
-                    + "؛ ".join(g["kind"] for g in gates)
+                    "بوابات قرار تنتظرك — عالجها أولًا: "
+                    + "؛ ".join(g["kind"] for g in pending)
                 )
+            # (011 §19) بوابات توفير فقط: الاستئناف يعيد الفحص —
+            # نجح = استمر بلا إعادة اعتماد؛ فشل = السبب الحقيقي.
+            if gates:
+                recheck = self.recheck_preflight(project_id)
+                if recheck["verdict"] != "PASS":
+                    raise EngineError(
+                        "الاستئناف ممكن بعد توفير المتطلبات — "
+                        + recheck["summary"]
+                    )
         service.update_project(self._sessions, project_id,
                                stop_requested=False, status="RUNNING")
         self._emit(project_id, "PROJECT_RESUMED",
@@ -323,8 +338,26 @@ class ProjectEngine:
                     "reason": "متوقف مؤقتًا — الاستئناف قرار صريح"}
         if status == "BLOCKED":
             gates = service.open_gates(self._sessions, project_id)
+            pending = [g for g in gates if g["status"] == "PENDING"]
+            provisioning = [g for g in gates if g["status"] == "BLOCKED"]
+            if provisioning and not pending:
+                # (011 §19) BLOCKED ← RECHECK ← READY ← OPEN: التوفير
+                # اكتمل؟ أعد الفحص تلقائيًا — بلا إعادة اعتماد الخطة.
+                recheck = self.recheck_preflight(project_id)
+                if recheck["verdict"] == "PASS":
+                    return self.tick(project_id)
+                return {
+                    "action": "blocked", "blocked_kind": "preflight",
+                    "reason": recheck["summary"],
+                    "gates": [g["kind"] for g in gates],
+                    "preflight": {
+                        "verdict": recheck["verdict"],
+                        "summary": recheck["summary"],
+                        "matrix": recheck.get("matrix", []),
+                    },
+                }
             return {"action": "blocked",
-                    "reason": "بوابة مالك مفتوحة",
+                    "reason": "بوابة قرار تنتظر المالك",
                     "gates": [g["kind"] for g in gates]}
         if status == "AWAITING_OWNER_APPROVAL":
             return {"action": "wait_owner",
@@ -348,6 +381,13 @@ class ProjectEngine:
             return {"action": "wait_owner",
                     "reason": "خطة جديدة تنتظر الاعتماد",
                     "plan_id": plan["id"]}
+
+        # (011 §2+§27) عند الجاهزية: حاجز الفحص قبل أول خطوة —
+        # APPROVED + PASS = OPEN؛ APPROVED + BLOCKED = بوابة توفير
+        if status == "READY":
+            blocked = self._preflight_gate(project, plan)
+            if blocked is not None:
+                return blocked
 
         # خطة معتمدة + جاهز/يعمل ← حدد المرحلة الحالية
         phases = service.active_phases(self._sessions, plan["id"])
@@ -393,6 +433,227 @@ class ProjectEngine:
         return last
 
     # ------------------------------------------------------------------ #
+    # فحص ما قبل التنفيذ (011 §2+§17-§19+§27) — policy-aware
+    # ------------------------------------------------------------------ #
+
+    def _unready_roles(self, role_selections=None, router=None) -> list[dict]:
+        """الأدوار بلا مزود قابل للحل — نفس فحص 007.1 §17 مستخرجًا."""
+        role_selections = role_selections or self._role_selections()
+        router = router or self._router_factory()
+        unready: list[dict] = []
+        for role in PROJECT_ROLES:
+            selection = role_selections.get(role)
+            if selection is None:
+                continue
+            key = selection.transport_key()
+            if not getattr(router, "has_live_provider", lambda _p: False)(key):
+                unready.append({
+                    "role": role, "provider": selection.provider,
+                    "configuration": selection.configuration,
+                    "model": selection.model,
+                    "reason": f"لا نقل حي قابل للحل للمزود '{key}'",
+                })
+        return unready
+
+    def _preflight_goal(self, project: dict, plan: dict) -> str:
+        """هدف الفحص — الهدف الكامل بمعايير قبول الخطة (011 §17)."""
+        goal = project["objective"]
+        criteria = plan.get("acceptance_criteria") or []
+        if criteria:
+            goal += "\nمعايير القبول:\n- " + "\n- ".join(criteria[:6])
+        return goal
+
+    def _run_preflight(self, project: dict, plan: dict, *,
+                       force: bool = False) -> dict:
+        """تنفيذ الفحص المسبق الفعلي — policy من المشروع (011 §26)."""
+        from readiness import preflight as preflight_mod
+
+        unready = self._unready_roles()
+        return preflight_mod.task_preflight(
+            self._sessions, self._preflight_goal(project, plan),
+            policy=project.get("execution_policy") or "STRICT_ISOLATED",
+            force=force,
+            llm_ready=not unready,
+            llm_detail={"unready_roles": unready} if unready else None,
+        )
+
+    def _emit_preflight(self, project_id: int, result: dict) -> None:
+        """أحداث الفحص — المصفوفة كاملة تصل الواجهة (011 §17)."""
+        kind = "PREFLIGHT_PASS" if result["verdict"] == "PASS" \
+            else "PREFLIGHT_BLOCKED"
+        self._emit(project_id, kind, {
+            "verdict": result["verdict"],
+            "summary": result["summary"],
+            "policy": result.get("policy"),
+            "matrix": result.get("matrix", []),
+            "blocked": [
+                {
+                    "capability_id": b["capability_id"],
+                    "status": b["status"],
+                    "reason": (b.get("reason") or "")[:300],
+                    "required_environment": b.get("required_environment", ""),
+                    "owner_action": b.get("owner_action"),
+                    "recovery": b.get("recovery", ""),
+                }
+                for b in result["blocked"]
+            ],
+            "environment": (
+                {"id": result["environment"]["id"],
+                 "name": result["environment"]["name"],
+                 "isolation": result["environment"].get("isolation", "")}
+                if result.get("environment") else None
+            ),
+        })
+
+    def _preflight_gate(self, project: dict, plan: dict) -> dict | None:
+        """حاجز الجاهزية عند READY (011 §2+§27) — PASS=None، BLOCKED=بوابة.
+
+        APPROVED + preflight BLOCKED = APPROVED_BUT_BLOCKED: بوابة توفير
+        (status=BLOCKED) تُحل بإعادة الفحص بعد التوفير — لا إعادة
+        اعتماد الخطة أبدًا ما لم تتغير (§19).
+        """
+        result = self._run_preflight(project, plan)
+        self._emit_preflight(project["id"], result)
+        if result["verdict"] == "PASS":
+            return None
+        blocked = result["blocked"]
+        # (007.1 §17 يبقى سليمًا) المزود غير الجاهز وحده يعالجه حاجز
+        # الخطوة بدليل EXECUTION_BLOCKED وبوابة PROVIDER_ACTION_REQUIRED —
+        # لا نبني مسارًا موازيًا يكسر عقد الدليل. الفحص المسبق يكتفي
+        # ببث المصفوفة (حدث PREFLIGHT_BLOCKED أعلاه).
+        if blocked and all(b["capability_id"] == "llm" for b in blocked):
+            return None
+        reason = "؛ ".join(
+            f"{b['capability_id']} ({b['status']})" for b in blocked
+        )
+        owner_action = next(
+            (b.get("owner_action") for b in blocked if b.get("owner_action")),
+            "",
+        )
+        required_env = next(
+            (b.get("required_environment")
+             for b in blocked if b.get("required_environment")),
+            "",
+        )
+        gate_id = service.open_gate(
+            self._sessions, project["id"], "PREFLIGHT_BLOCKED", reason,
+            {
+                "matrix": result.get("matrix", []),
+                "blocked": [
+                    {"capability_id": b["capability_id"],
+                     "status": b["status"],
+                     "owner_action": b.get("owner_action")}
+                    for b in blocked
+                ],
+                "policy": result.get("policy"),
+                "required_environment": required_env,
+                "owner_action": owner_action,
+                "recheck_hint": "أعد الفحص بعد التوفير — لا إعادة اعتماد",
+            },
+            status="BLOCKED",
+        )
+        service.update_project(
+            self._sessions, project["id"], status="BLOCKED",
+            last_error=result["summary"][:800],
+        )
+        return {
+            "action": "blocked", "blocked_kind": "preflight",
+            "reason": result["summary"], "gate_id": gate_id,
+            "preflight": {
+                "verdict": result["verdict"], "summary": result["summary"],
+                "matrix": result.get("matrix", []),
+                "blocked": [
+                    {"capability_id": b["capability_id"],
+                     "status": b["status"],
+                     "required_environment": b.get("required_environment", ""),
+                     "owner_action": b.get("owner_action")}
+                    for b in blocked
+                ],
+            },
+        }
+
+    def recheck_preflight(self, project_id: int) -> dict:
+        """إعادة الفحص بعد توفير (011 §19) — RECHECK ← READY ← OPEN.
+
+        النجاح يحل بوابات التوفير آليًا (GATE_AUTO_RESOLVED) ويعيد
+        المشروع READY — دون مساس قرار الاعتماد: الخطة لم تتغير.
+        الفشل يبقي الحجب ويحدّث سببه بالنتيجة الحالية.
+        """
+        project = self._project(project_id)
+        plan = self._active_plan(project)
+        if plan is None:
+            raise EngineError("لا خطة معتمدة تُعاد فحص جاهزيتها")
+        result = self._run_preflight(project, plan, force=True)
+        # نفس شكل تفاصيل _emit_preflight — السبب الحقيقي يصل الواجهة
+        # حرفيًا (011 §3: سبب دقيق لا placeholder)
+        self._emit(project_id, "PREFLIGHT_RECHECKED", {
+            "verdict": result["verdict"], "summary": result["summary"],
+            "policy": result.get("policy"),
+            "matrix": result.get("matrix", []),
+            "blocked": [
+                {
+                    "capability_id": b["capability_id"],
+                    "status": b["status"],
+                    "reason": (b.get("reason") or "")[:300],
+                    "required_environment": b.get("required_environment", ""),
+                    "owner_action": b.get("owner_action"),
+                    "recovery": b.get("recovery", ""),
+                }
+                for b in result["blocked"]
+            ],
+            "environment": (
+                {"id": result["environment"]["id"],
+                 "name": result["environment"]["name"],
+                 "isolation": result["environment"].get("isolation", "")}
+                if result.get("environment") else None
+            ),
+        })
+        if result["verdict"] == "PASS":
+            for gate in service.open_gates(self._sessions, project_id):
+                if gate["status"] == "BLOCKED":
+                    service.auto_resolve_gate(
+                        self._sessions, gate["id"],
+                        note="إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح",
+                    )
+                    self._emit(project_id, "GATE_AUTO_RESOLVED", {
+                        "gate_id": gate["id"], "kind": gate["kind"],
+                        "note": "إعادة فحص ناجحة — لا إعادة اعتماد مطلوبة",
+                    })
+            if project["status"] == "BLOCKED":
+                service.update_project(
+                    self._sessions, project_id, status="READY",
+                    last_error="",
+                )
+            self._emit(project_id, "PREFLIGHT_PASS", {
+                "summary": result["summary"],
+                "matrix": result.get("matrix", []),
+            })
+        return result
+
+    def set_execution_policy(self, project_id: int, policy: str) -> dict:
+        """سياسة تنفيذ المشروع (011 §26) — قرار مالك صريح مسجل."""
+        from execution import policy as policy_mod
+
+        if not policy_mod.is_valid_policy(policy):
+            raise EngineError(
+                f"سياسة تنفيذ غير مدعومة: {policy} — المدعوم: "
+                + "، ".join(policy_mod.POLICIES)
+            )
+        project = self._project(project_id)
+        if project["status"] == "RUNNING":
+            raise EngineError(
+                "لا تغيير سياسة أثناء تشغيل الحلقة — أوقف المشروع أولًا"
+            )
+        service.update_project(
+            self._sessions, project_id, execution_policy=policy
+        )
+        self._emit(project_id, "EXECUTION_POLICY_CHANGED", {
+            "from": project.get("execution_policy"), "to": policy,
+            "note": policy_mod.policy_note(policy),
+        })
+        return service.get_project(self._sessions, project_id)
+
+    # ------------------------------------------------------------------ #
     # تنفيذ الخطوة (§6+§7+§8) — readiness ← execution ← evidence ← audit
     # ------------------------------------------------------------------ #
 
@@ -407,19 +668,7 @@ class ProjectEngine:
         #    ← النموذج ← فحص قبل أي تنفيذ. لا نموذج = EXECUTION_BLOCKED.
         role_selections = self._role_selections()
         router = self._router_factory()
-        unready: list[dict] = []
-        for role in PROJECT_ROLES:
-            selection = role_selections.get(role)
-            if selection is None:
-                continue
-            key = selection.transport_key()
-            if not getattr(router, "has_live_provider", lambda _p: False)(key):
-                unready.append({
-                    "role": role, "provider": selection.provider,
-                    "configuration": selection.configuration,
-                    "model": selection.model,
-                    "reason": f"لا نقل حي قابل للحل للمزود '{key}'",
-                })
+        unready = self._unready_roles(role_selections, router)
         if unready:
             return self._block_on_providers(project, plan, phase, step,
                                             unready)

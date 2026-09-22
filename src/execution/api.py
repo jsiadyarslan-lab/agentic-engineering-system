@@ -37,6 +37,49 @@ class EnvironmentIn(BaseModel):
     make_default: bool = False
 
 
+@router.get("/host-truth")
+def host_truth() -> dict:
+    """جرد المضيف الفعلي (011 §4-§5+§24-§25) — من runtime لا أسماء.
+
+    Host Platform منفصل عن Backend منفصل عن Isolation: مضيف
+    Windows + لا ركيزة = وضع متوافق معلن، والمسار الحقيقي لعامل
+    Linux بعيد معلن نصًا.
+    """
+    from execution import policy as execution_policy
+    from execution.backends import (
+        host_platform_label, local_environment_name, runtime_truth,
+    )
+
+    truth = runtime_truth()
+    from execution import service as execution_service
+
+    local = execution_service.ensure_local_registered(_sessions())
+    substrate_available = bool(local.get("sandboxed"))
+    return {
+        "runtime_truth": truth,
+        "host_platform": host_platform_label(truth),
+        "local_environment_name": local_environment_name(),
+        "local_execution": "AVAILABLE" if substrate_available
+        else "AVAILABLE_COMPATIBLE_ONLY",
+        "isolation": "SANDBOXED" if substrate_available else "UNAVAILABLE",
+        "platform_compatibility_mode": not substrate_available,
+        "compatibility_note": (
+            "التنفيذ المحلي المتوافق متاح بلا عزل (معلن) — العزل الصارم "
+            "يتطلب عاملًا بعيدًا على Linux/WSL2"
+            if not substrate_available else
+            "الركيزة المعزولة متاحة محليًا على هذا المضيف"
+        ),
+        "remote_worker_required_for": "isolated execution"
+        if not substrate_available else "horizontal scale",
+        "policies": [
+            {"policy": p, "label": execution_policy.POLICY_LABELS[p]}
+            for p in execution_policy.POLICIES
+        ],
+        "worker_command": "python scripts/execution_worker.py "
+                          "--port 8900 --token <سر-مشترك>",
+    }
+
+
 @router.get("/environments")
 def environments() -> dict:
     return {

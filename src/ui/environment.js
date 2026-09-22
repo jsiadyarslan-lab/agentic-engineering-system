@@ -23,7 +23,7 @@
     return {
       READY: "جاهز", DEGRADED: "متدهور", NOT_READY: "غير جاهز",
       UNAVAILABLE: "غير متاح", DISABLED: "معطّل", STALE: "منتهي الصلاحية",
-      UNKNOWN: "غير مفحوص",
+      NOT_CONFIGURED: "غير معد", UNKNOWN: "غير مفحوص",
     }[status] || status;
   }
 
@@ -31,12 +31,14 @@
     var box = document.getElementById("env-summary");
     if (!box) return;
     box.textContent = "";
-    ["READY", "DEGRADED", "NOT_READY", "UNAVAILABLE", "STALE", "UNKNOWN"]
+    ["READY", "DEGRADED", "NOT_READY", "UNAVAILABLE", "STALE",
+        "NOT_CONFIGURED", "UNKNOWN"]
       .forEach(function (key) {
         var value = summary[key] || 0;
         if (!value) return;
         var chip = el("span", "env-chip " +
-          (key === "READY" ? "ok" : (key === "DEGRADED" || key === "STALE")
+          (key === "READY" ? "ok" : (key === "DEGRADED" || key === "STALE"
+            || key === "NOT_CONFIGURED" || key === "UNKNOWN")
             ? "" : "bad"));
         chip.innerHTML = "<b>" + value + "</b> " + statusLabel(key);
         box.appendChild(chip);

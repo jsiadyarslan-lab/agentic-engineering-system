@@ -62,14 +62,22 @@ EXECUTION_STATES: tuple[str, ...] = (
     "RUNNING", "COMPLETED", "FAILED", "BLOCKED", "STOPPED",
 )
 
-#: أنواع بوابات المالك (§14) — التدخل عند القرارات الجوهرية حصرًا.
+#: أنواع بوابات المالك (§14 + 011 §27) — التدخل عند القرارات الجوهرية.
 GATE_KINDS: tuple[str, ...] = (
     "PLAN_APPROVAL",            # اعتماد Master Plan
     "PLAN_REVISION_APPROVAL",   # خطة جديدة بعد فشل جوهري
     "PROVIDER_ACTION_REQUIRED", # مزود غير جاهز يتطلب تدخلًا (007.1 §18)
+    "PREFLIGHT_BLOCKED",        # حاجب توفير قبل التنفيذ (011 §2+§27) —
+                                # يُحل بإعادة الفحص لا بإعادة الاعتماد
     "ESCALATION",               # تصعيد بعد ركود
     "FINAL_VERIFICATION",       # التحقق النهائي (§16)
     "OBJECTIVE_CHANGE",         # تغيير جوهري في الهدف
+)
+
+#: حالات البوابة (011 §1-§2) — القرار مفصول عن فتح التنفيذ؛ المفردات
+#: والانتقالات في workflow/gates.py (المصدر الوحيد لها).
+GATE_STATUS_VALUES: tuple[str, ...] = (
+    "PENDING", "APPROVED", "REJECTED", "BLOCKED", "CANCELLED", "EXPIRED",
 )
 
 #: أحداث المشروع الدائمة (§17) — كل انتقال مهم سجلٌ باقٍ.
@@ -101,6 +109,11 @@ PROJECT_EVENT_KINDS: tuple[str, ...] = (
     "PROJECT_VERIFIED",
     "RECOVERY_ASSESSED",        # §19: تقييم الاسترداد عند الإقلاع
     "EXECUTION_BLOCKED",        # 007.1 §17: مزود غير جاهز
+    "PREFLIGHT_PASS",           # 011 §2: فحص ما قبل التنفيذ نجح
+    "PREFLIGHT_BLOCKED",        # 011 §2+§27: حاجب توفير قبل التنفيذ
+    "PREFLIGHT_RECHECKED",      # 011 §19: المالك أعاد الفحص بعد توفير
+    "GATE_AUTO_RESOLVED",       # 011 §19: بوابة حُلّت آليًا بعد recheck
+    "EXECUTION_POLICY_CHANGED", # 011 §26: المالك غيّر سياسة التنفيذ
 )
 
 
@@ -121,6 +134,11 @@ class Project(Base):
     stop_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     completion_state: Mapped[str] = mapped_column(String(40), default="")
     last_error: Mapped[str] = mapped_column(Text, default="")
+    #: سياسة التنفيذ (011 §26): STRICT_ISOLATED (الافتراضية) أو
+    #: COMPATIBLE_LOCAL — قرار المالك، لا تخمين النظام.
+    execution_policy: Mapped[str] = mapped_column(
+        String(40), default="STRICT_ISOLATED"
+    )
 
 
 class Plan(Base):

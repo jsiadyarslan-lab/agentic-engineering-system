@@ -11,9 +11,12 @@
 - POST   /api/projects/{id}/run/stream      تشغيل الحلقة الذاتية — SSE
 - POST   /api/projects/{id}/stop            إيقاف بلقطة قابلة للاستئناف
 - POST   /api/projects/{id}/resume          استئناف صريح (بعد restart أيضًا)
-- POST   /api/projects/{id}/gates/{gid}     حل بوابة مالك
+- POST   /api/projects/{id}/gates/{gid}     حل بوابة مالك (idempotent 011)
+- POST   /api/projects/{id}/preflight       إعادة الفحص بعد التوفير (011 §19)
+- POST   /api/projects/{id}/execution-policy سياسة التنفيذ (011 §26)
 - POST   /api/projects/{id}/verify          التحقق النهائي — المالك وحده
 - GET    /api/projects/{id}/phases|steps|executions|evidence|audit|events
+- GET    /api/projects/events               تيار أحداث عام (011 §21) — SSE
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from providers_registry import registry
+from workflow import gates as gate_machine
 from workflow import service
 from workflow.engine import EngineError, ProjectEngine
 
@@ -68,10 +72,14 @@ def _build_engine(on_event=None) -> ProjectEngine:
 
 
 class ProjectCreateIn(BaseModel):
-    """إنشاء مشروع — الاسم والهدف."""
+    """إنشاء مشروع — الاسم والهدف (+ سياسة التنفيذ 011 §26)."""
 
     name: str = Field(min_length=1, max_length=200)
     objective: str = Field(min_length=3)
+    execution_policy: str = Field(
+        default="STRICT_ISOLATED",
+        pattern="^(STRICT_ISOLATED|COMPATIBLE_LOCAL)$",
+    )
 
 
 class PlanDecisionIn(BaseModel):
@@ -94,6 +102,12 @@ class ProjectStopIn(BaseModel):
     reason: str = Field(default="", max_length=500)
 
 
+class ExecutionPolicyIn(BaseModel):
+    """سياسة التنفيذ (011 §26) — قرار مالك صريح."""
+
+    policy: str = Field(pattern="^(STRICT_ISOLATED|COMPATIBLE_LOCAL)$")
+
+
 def _http(error: Exception) -> HTTPException:
     if isinstance(error, EngineError):
         return HTTPException(status_code=409, detail=str(error))
@@ -111,11 +125,67 @@ def _project_or_404(project_id: int) -> dict:
     return project
 
 
+def _execution_gate(project: dict, plan: dict | None) -> dict:
+    """حالة بوابة التنفيذ المشتقة (011 §1+§3) — مفصولة عن قرار البوابة.
+
+    المشتق من: اعتماد الخطة + آخر فحص مسبق (PREFLIGHT_* حدث دائم) —
+    لا «البوابة ليست مفتوحة» أبدًا: OPEN أو APPROVED_BUT_BLOCKED
+    مع السبب والمطلوب وإجراء المالك نصًا.
+    """
+    plan_approved = None
+    if plan is not None:
+        plan_approved = bool(plan.get("approved_by_owner"))
+    verdict = None
+    blocked_reason = required_env = owner_action = ""
+    # الأحدث أولًا: list_events تعيد تصاعديًا — نقرأ عكسيًا كي نأخذ
+    # آخر فحص لا أوله (الحالة الحقيقية الآن)
+    for event in reversed(service.list_events(
+            _sessions(), project["id"], limit=50)):
+        payload = event.get("payload") or {}
+        if event["kind"] == "PREFLIGHT_PASS":
+            verdict = "PASS"
+            break
+        if event["kind"] in ("PREFLIGHT_BLOCKED", "PREFLIGHT_RECHECKED"):
+            # RECHECKED يحمل الحكم نفسه بعد إعادة الفحص (011 §19)
+            event_verdict = payload.get("verdict")
+            if event["kind"] == "PREFLIGHT_RECHECKED" \
+                    and event_verdict != "BLOCKED":
+                continue
+            verdict = event_verdict or "BLOCKED"
+            if verdict != "BLOCKED":
+                break
+            blocked_caps = payload.get("blocked") or []
+            reasons = [
+                f"{b.get('capability_id')}: {b.get('reason', '')[:120]}"
+                for b in blocked_caps if b.get("capability_id") != "llm"
+            ] or ["لا توجد بيئة تنفيذ متوافقة وجاهزة."]
+            blocked_reason = "؛ ".join(reasons)
+            required_env = next(
+                (b.get("required_environment") for b in blocked_caps
+                 if b.get("required_environment")), "",
+            )
+            owner_action = next(
+                (b.get("owner_action") for b in blocked_caps
+                 if b.get("owner_action")), "",
+            )
+            break
+    if project["status"] == "RUNNING":
+        verdict = "PASS"   # التنفيذ الجاري برهان على الفتح
+    return gate_machine.plan_execution_state(
+        plan_approved=plan_approved, preflight_verdict=verdict,
+        blocked_reason=blocked_reason,
+        required_environment=required_env, owner_action=owner_action,
+    )
+
+
 @router.post("", status_code=201)
 def create_project(body: ProjectCreateIn) -> dict:
     """إنشاء مشروع DRAFT — هدف دائم بحالة صادقة (§3)."""
     try:
-        return _build_engine().create_project(body.name, body.objective)
+        return _build_engine().create_project(
+            body.name, body.objective,
+            execution_policy=body.execution_policy,
+        )
     except Exception as error:  # noqa: BLE001 — خطأ صريح لا انهيار
         raise _http(error) from error
 
@@ -132,12 +202,16 @@ def list_projects() -> dict:
     for project in unfinished:
         checkpoint = service.latest_checkpoint(_sessions(), project["id"])
         gates = service.open_gates(_sessions(), project["id"])
+        decision_gates = [g for g in gates if g["status"] == "PENDING"]
         recovery.append({
             "project_id": project["id"],
             "status": project["status"],
             "checkpoint": checkpoint["id"] if checkpoint else None,
             "open_gates": [g["kind"] for g in gates],
-            "resumable": project["status"] == "PAUSED" and not gates,
+            # (011 §19) بوابات التوفير لا تمنع الاستئناف — إعادة الفحص
+            # تكفي؛ القرار وحده (PENDING) يمنع
+            "resumable": project["status"] in ("PAUSED", "BLOCKED")
+            and not decision_gates,
         })
     return {"projects": projects, "recovery": recovery,
             "active_run": _active_run_id()}
@@ -149,6 +223,39 @@ def _active_run_id() -> int | None:
         if active is not None and not active["done"].is_set():
             return active["project_id"]
     return None
+
+
+@router.get("/events/stream")
+async def projects_events_stream(after_id: int = 0) -> StreamingResponse:
+    """تيار أحداث عام (011 §21) — كل انتقال مهم يصل بلا refresh يدوي.
+
+    استطلاع خفيف للسجل الدائم (1.2ث) بترتيب معرف رتيب — نفس مصدر
+    الحقيقة الذي تقرأ منه الصفحات؛ الشريط الجانبي وصفحة المشروع
+    وخط الزمن يشتركون فيه.
+    """
+    state = {"last_id": int(after_id)}
+
+    async def generate():
+        yield "data: " + json.dumps(
+            {"kind": "stream.start", "last_id": state["last_id"]},
+            ensure_ascii=False,
+        ) + "\n\n"
+        while True:
+            events = service.list_recent_events(
+                _sessions(), state["last_id"], limit=100
+            )
+            for event in events:
+                state["last_id"] = max(state["last_id"], event["id"])
+                yield "data: " + json.dumps(
+                    event, ensure_ascii=False
+                ) + "\n\n"
+            await asyncio.sleep(1.2)
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/{project_id}")
@@ -167,6 +274,7 @@ def project_detail(project_id: int) -> dict:
         "gates": gates,
         "events": events,
         "executions": executions,
+        "execution_gate": _execution_gate(project, plan),
         "active_run": _active_run_id() == project_id,
     }
 
@@ -303,6 +411,41 @@ def resume_project(project_id: int) -> dict:
     _project_or_404(project_id)
     try:
         return _build_engine().resume(project_id)
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.post("/{project_id}/preflight")
+def recheck_preflight(project_id: int) -> dict:
+    """إعادة الفحص بعد التوفير (011 §19) — نجاح = فتح دون إعادة اعتماد."""
+    _project_or_404(project_id)
+    try:
+        result = _build_engine().recheck_preflight(project_id)
+        project = service.get_project(_sessions(), project_id)
+        return {
+            "project": project,
+            "preflight": {
+                "verdict": result["verdict"],
+                "summary": result["summary"],
+                "matrix": result.get("matrix", []),
+                "blocked": result.get("blocked", []),
+                "environment": result.get("environment"),
+                "policy": result.get("policy"),
+            },
+            "execution_gate": _execution_gate(
+                project, service.latest_plan(_sessions(), project_id)
+            ),
+        }
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.post("/{project_id}/execution-policy")
+def set_execution_policy(project_id: int, body: ExecutionPolicyIn) -> dict:
+    """سياسة التنفيذ (011 §26) — STRICT_ISOLATED أو COMPATIBLE_LOCAL."""
+    _project_or_404(project_id)
+    try:
+        return _build_engine().set_execution_policy(project_id, body.policy)
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 

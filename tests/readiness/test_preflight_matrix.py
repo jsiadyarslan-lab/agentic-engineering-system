@@ -23,6 +23,39 @@ from persistence.database import (  # noqa: E402
 )
 from readiness import preflight, registry  # noqa: E402
 from readiness.probes import ProbeResult  # noqa: E402
+from sqlalchemy import select as sa_select  # noqa: E402
+
+
+def _env_ready(sessions):
+    """بيئة معزولة جاهزة في السجل — مصدر sandbox الحقيقي (011 §14)."""
+    from execution import service as execution_service
+    from execution.models import ExecutionEnvironment
+
+    execution_service.ensure_local_registered(sessions)
+    with sessions() as s:
+        row = s.scalars(sa_select(ExecutionEnvironment).where(
+            ExecutionEnvironment.backend == "LOCAL")).first()
+        row.status = "READY"
+        row.sandboxed = 1
+        s.commit()
+
+
+def _ddg(sessions, status, reason=""):
+    """حالة DDG من مصدره (سجل المزود) — 011 §12."""
+    from execution.models import ResearchProvider
+    from research import service as research_service
+
+    research_service.ensure_seeded(sessions)
+    with sessions() as s:
+        row = s.scalars(sa_select(ResearchProvider).where(
+            ResearchProvider.kind == "search_ddg")).first()
+        row.last_probe_status = status
+        row.failure_reason = "" if status == "READY" else reason
+        row.last_probe_at = (
+            _dt.datetime.now(_dt.timezone.utc)
+            if status in ("READY", "NOT_READY") else None
+        )
+        s.commit()
 
 
 @pytest.fixture()
@@ -61,7 +94,7 @@ def _use_seamed(**statuses):
 
 
 def test_matrix_has_required_available_decision(sessions):
-    _set_status(sessions, "sandbox", "READY")
+    _env_ready(sessions)
     _set_status(sessions, "filesystem", "READY")
     _set_status(sessions, "network_dns", "READY")
     _set_status(sessions, "network_https", "READY")
@@ -115,12 +148,12 @@ def test_environment_selection_appears_in_result(sessions):
 
 def test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds(sessions):
     """§39.8 الجوهر: البحث معطل ≠ الإنترنت مقطوع — مهمة الجلب تستمر."""
-    # شبكة وجلب وملفات جاهزة؛ البحث معطل (كل المزودين)
-    for cap in ("sandbox", "filesystem", "network_dns", "network_https",
+    # شبكة وجلب وملفات جاهزة؛ البحث معطل (المزود في مصدره — 011 §12)
+    _env_ready(sessions)
+    for cap in ("filesystem", "network_dns", "network_https",
                 "shell", "persistence"):
         _set_status(sessions, cap, "READY")
-    _set_status(sessions, "web_search", "NOT_READY",
-                "كل مزودي البحث غير جاهزين")
+    _ddg(sessions, "NOT_READY", "كل مزودي البحث غير جاهزين")
     _set_status(sessions, "web_fetch", "READY")
 
     # هدف OSINT (يطلب البحث جوهريًا) → BLOCKED بقرار واعٍ
@@ -162,7 +195,8 @@ def test_owner_action_names_real_paths(sessions):
 
 def test_preflight_events_carry_matrix_and_environment(sessions):
     """§29: الأحداث الحية تحمل المصفوفة — الواجهة تعرضها بلا طلب إضافي."""
-    for cap in ("sandbox", "filesystem", "network_dns", "network_https",
+    _env_ready(sessions)
+    for cap in ("filesystem", "network_dns", "network_https",
                 "shell", "persistence"):
         _set_status(sessions, cap, "READY")
     result = preflight.task_preflight(

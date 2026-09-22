@@ -56,6 +56,23 @@ def sessions(tmp_path):
     return factory
 
 
+def _sandbox_env_ready(sessions):
+    """(011 §14) قدرة sandbox تُشتق من سجل البيئات — بذر بيئة معزولة
+    جاهزة كي يبقى اختبار الانحدار 8 محصورًا بعقد البحث وحده."""
+    from execution import service as execution_service
+    from execution.models import ExecutionEnvironment
+    from sqlalchemy import select as sa_select
+
+    execution_service.ensure_local_registered(sessions)
+    with sessions() as s:
+        row = s.scalars(sa_select(ExecutionEnvironment).where(
+            ExecutionEnvironment.name.in_(("local-linux",
+                                           "local-windows")))).first()
+        row.status = "READY"
+        row.sandboxed = 1
+        s.commit()
+
+
 def _seamed(**statuses):
     def probe(sessions_, capability_id, **_kw):
         return registry.record_probe(
@@ -198,6 +215,21 @@ def test_regression_unavailable_environment_clear_blocked_state(sessions):
 # ---------- (8) بحث معطل + جلب متاح → قرار واعٍ ----------
 
 def test_regression_search_down_fetch_up_capability_aware(sessions):
+    from research import service as research_service
+    from execution.models import ResearchProvider
+
+    _sandbox_env_ready(sessions)
+    # (011 §12) البحث من مزوديه: DDG فاشل بمسبار حقيقي مسجل
+    research_service.ensure_seeded(sessions)
+    with sessions() as s:
+        from sqlalchemy import select as sa_select
+
+        row = s.scalars(sa_select(ResearchProvider).where(
+            ResearchProvider.kind == "search_ddg")).first()
+        row.last_probe_status = "NOT_READY"
+        row.failure_reason = "مهلة من هذه الشبكة"
+        row.last_probe_at = _dt.datetime.now(_dt.timezone.utc)
+        s.commit()
     result = preflight.task_preflight(
         sessions, "منصة OSINT بمصادر مفتوحة", llm_ready=True,
         run_probe_fn=_seamed(web_search="NOT_READY"),

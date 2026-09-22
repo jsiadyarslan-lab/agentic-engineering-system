@@ -390,3 +390,82 @@ body.mode-project .project-view {
 
 .role-config-row { gap: 6px; }
 .role-config-row select { min-width: 0; flex: 1; }
+
+/* ============ الأمر 011 — بوابة التنفيذ والسياسة والتزامن ============ */
+
+/* بطاقة بوابة التنفيذ المشتقة (011 §1-§3) — لا «البوابة ليست مفتوحة» */
+.pj-exec-gate {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pj-exec-gate.open { border-color: rgba(52, 211, 153, 0.45); }
+.pj-exec-gate.blocked { border-color: rgba(251, 191, 36, 0.5); }
+.pj-exec-gate.probing { opacity: 0.7; }
+.pjeg-row.plan { font-weight: 700; font-size: 14px; }
+.pjeg-row.state { font-size: 13.5px; }
+.pjeg-row.state.ok { color: #34d399; font-weight: 700; }
+.pjeg-block { font-size: 13px; line-height: 1.8; color: var(--ink, #e6e6ef); }
+.pjeg-block b { color: #fbbf24; }
+.pjeg-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+/* سياسة التنفيذ (011 §26) — قرار ظاهر */
+.pj-policy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  margin: 6px 0 10px;
+}
+.pj-policy-label { font-weight: 700; }
+.pj-policy select {
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12.5px;
+}
+.pj-policy-hint { color: var(--muted, #9a9aa8); font-size: 12px; }
+
+/* بوابة توفير (BLOCKED) — تُحل بإعادة الفحص لا بقرار (011 §19) */
+.pj-gate.provisioning { border-color: rgba(251, 191, 36, 0.4); }
+.pj-gate-status { font-weight: 400; font-size: 12px; color: var(--muted, #9a9aa8); }
+
+/* لوحة حقيقة المضيف (011 §24-§25) — Host ≠ Backend ≠ Isolation */
+.host-truth {
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: rgba(96, 165, 250, 0.05);
+}
+.host-truth.compat { border-color: rgba(251, 191, 36, 0.45); }
+.ht-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.ht-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px 14px; }
+.ht-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.06); }
+.ht-row span { color: var(--muted, #9a9aa8); }
+.ht-note { margin-top: 8px; font-size: 12.5px; line-height: 1.7; }
+.ht-cmd { margin-top: 6px; font-size: 12px; direction: rtl; }
+.ht-cmd code { background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 5px; font-size: 11.5px; }
+
+/* شارة الوضع المتوافق على بطاقة البيئة (011 §4) */
+.env-compat {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(251, 191, 36, 0.15); color: #fbbf24;
+}
+.env-ladder-note {
+  font-size: 11.5px; color: var(--muted, #9a9aa8);
+  padding: 6px 8px; margin-bottom: 6px;
+  border-radius: 6px; background: rgba(255, 255, 255, 0.03);
+  line-height: 1.7;
+}

@@ -129,6 +129,21 @@ def live_task_env(tmp_path, monkeypatch):
     import datetime as _dt
 
     def fast_probe(sessions, capability_id, **_kwargs):
+        # (011 §14) sandbox تُشتق من سجل البيئات — المسبار الإنتاجي
+        # (sandbox_probe_result) يحدّث سجل البيئة نفسه؛ الوصفة تحاكي
+        # المصدر الحقيقي لا سجل القدرة وحده
+        if capability_id == "sandbox":
+            from execution import service as execution_service
+            from execution.models import ExecutionEnvironment
+            from sqlalchemy import select as sa_select
+
+            execution_service.ensure_local_registered(sessions)
+            with sessions() as s:
+                row = s.scalars(sa_select(ExecutionEnvironment).where(
+                    ExecutionEnvironment.backend == "LOCAL")).first()
+                row.status = "READY"
+                row.sandboxed = 1
+                s.commit()
         return readiness_registry.record_probe(
             sessions, capability_id,
             ProbeResult(

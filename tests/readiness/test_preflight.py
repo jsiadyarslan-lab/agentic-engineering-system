@@ -19,6 +19,40 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from persistence.database import build_engine, init_db, make_session_factory
 from readiness import preflight, probes, registry
 from readiness.probes import ProbeResult
+from sqlalchemy import select as sa_select
+
+
+def _sandbox_ready(sessions):
+    """بيئة تنفيذ معزولة جاهزة في السجل — مصدر قدرة sandbox الحقيقي
+    (011 §14: الاشتقاق من البيئات لا من مسبار مُفخخ)."""
+    from execution import service as execution_service
+    from execution.models import ExecutionEnvironment
+
+    execution_service.ensure_local_registered(sessions)
+    with sessions() as s:
+        row = s.scalars(sa_select(ExecutionEnvironment).where(
+            ExecutionEnvironment.backend == "LOCAL")).first()
+        row.status = "READY"
+        row.sandboxed = 1
+        s.commit()
+
+
+def _ddg(sessions, status, reason=""):
+    """حالة مزود DDG في مصدره الحقيقي (011 §12) — سجل المزود نفسه."""
+    from execution.models import ResearchProvider
+    from research import service as research_service
+
+    research_service.ensure_seeded(sessions)
+    with sessions() as s:
+        row = s.scalars(sa_select(ResearchProvider).where(
+            ResearchProvider.kind == "search_ddg")).first()
+        row.last_probe_status = status
+        row.failure_reason = "" if status == "READY" else reason
+        row.last_probe_at = (
+            _dt.datetime.now(_dt.timezone.utc)
+            if status in ("READY", "NOT_READY") else None
+        )
+        s.commit()
 
 
 @pytest.fixture()
@@ -59,6 +93,8 @@ def _fast_probe(results: dict):
 
 
 def test_all_ready_passes(sessions):
+    _sandbox_ready(sessions)
+    _ddg(sessions, "READY")
     result = preflight.task_preflight(
         sessions, "ابحث عن مشروع مفتوح المصدر واكتب ملخصًا",
         run_probe_fn=_fast_probe({}),
@@ -69,10 +105,12 @@ def test_all_ready_passes(sessions):
 
 
 def test_required_missing_blocks_with_reason_and_recovery(sessions):
+    _sandbox_ready(sessions)
+    # (011 §12) البحث يُشتق من مزوديه — DDG فاشل بمسبار حقيقي مسجل
+    _ddg(sessions, "NOT_READY", "لم تُرجع الأداة مادة قابلة للتحليل")
     result = preflight.task_preflight(
         sessions, "مهمة بحث",
-        run_probe_fn=_fast_probe({"web_search": _not_ready(
-            "لم تُرجع الأداة مادة قابلة للتحليل", "TOOL_FAILURE")}),
+        run_probe_fn=_fast_probe({}),
     )
     assert result["verdict"] == "BLOCKED"
     blocked = result["blocked"]
@@ -97,6 +135,7 @@ def test_required_llm_unresolvable_has_owner_action(sessions):
 
 def test_optional_capability_missing_does_not_block(sessions):
     """الاختياري الغائب لا يحجب (§28) — القدرات المطلوبة فقط تحكم."""
+    _sandbox_ready(sessions)
     result = preflight.task_preflight(
         sessions, "مهمة",
         run_probe_fn=_fast_probe({"git": _not_ready("git غائب",
@@ -114,15 +153,18 @@ def test_ttl_fresh_ready_skips_reprobe(sessions):
         probe_calls["n"] += 1
         return registry.record_probe(sessions_, capability_id, _ready())
 
+    _sandbox_ready(sessions)
     first = preflight.task_preflight(
         sessions, "مهمة", run_probe_fn=counting_probe)
     assert first["verdict"] == "PASS"
-    assert probe_calls["n"] == len(first["required"])  # كل مطلوب فُحص
+    # (011 §14) sandbox جاهزتها من سجل البيئات (READY) — لا مسبار لها؛
+    # البقية (llm/ملفات/شبكة/قشدة/قاعدة) فُحصت فعليًا
+    assert probe_calls["n"] == len(first["required"]) - 1
 
     second = preflight.task_preflight(
         sessions, "مهمة", run_probe_fn=counting_probe)
     assert second["verdict"] == "PASS"
-    assert probe_calls["n"] == len(first["required"])  # لا إعادة فحص
+    assert probe_calls["n"] == len(first["required"]) - 1  # لا إعادة فحص
 
 
 def test_stale_ready_is_reprobed(sessions):
@@ -141,10 +183,12 @@ def test_stale_ready_is_reprobed(sessions):
             ),
         )
 
+    _sandbox_ready(sessions)
     preflight.task_preflight(sessions, "مهمة", run_probe_fn=probe)
     preflight.task_preflight(sessions, "مهمة", run_probe_fn=probe)
-    # منتهية الصلاحية أُعيد فحصها (لا جاهزية أبدية §24)
-    assert calls["n"] == 2 * len(preflight.required_capabilities("مهمة"))
+    # منتهية الصلاحية أُعيد فحصها (لا جاهزية أبدية §24) — sandbox مستثناة
+    # (جاهزيتها من سجل البيئات لا من مسبار قابل للانتهاء — 011 §14)
+    assert calls["n"] == 2 * (len(preflight.required_capabilities("مهمة")) - 1)
 
 
 def test_preflight_events_shape():

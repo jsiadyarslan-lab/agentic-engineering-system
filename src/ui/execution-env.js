@@ -1,9 +1,10 @@
-/* Agentic Engineering System — بيئات التنفيذ (الأمر 010 §28).
+/* Agentic Engineering System — بيئات التنفيذ (010 §28 + 011 §4+§24-§25).
  *
- * الإعدادات ← بيئات التنفيذ: قائمة البيئات بحالتها الصادقة، إضافة
- * بيئة (LOCAL تكشف تلقائيًا / REMOTE_WORKER برابط عامل حقيقي)،
- * تحقق بفحوص حقيقية (إقلاع/كتابة/تنفيذ/التقاط)، تعيين افتراضية،
- * وتنفيذ اختباري يثبت المنفذ لا المسبار وحده (§40).
+ * الإعدادات ← بيئات التنفيذ: لوحة «حقيقة المضيف» أولًا (Host Platform
+ * منفصل عن Backend منفصل عن Isolation — من runtime الفعلي لا أسماء)،
+ * ثم البيئات المسجلة بحالتها الصادقة وأعمدة المضيف/العزل/الشبكة/
+ * القدرات، وإضافة بيئة، وتحقق بفحوص حقيقية، وتنفيذ اختباري يثبت
+ * المنفذ لا المسبار وحده (§40).
  */
 (function () {
   "use strict";
@@ -36,38 +37,91 @@
           esc(out.j && out.j.detail || "") + "</div>";
         return;
       }
-      render(out.j.environments || [], out.j.supported_backends || []);
+      var environments = out.j.environments || [];
+      var supported = out.j.supported_backends || [];
+      // (011 §24-§25) حقيقة المضيف من runtime — لوحة مستقلة قبل القائمة
+      Hub.fetchJSON("/api/execution/host-truth").then(function (ht) {
+        render(environments, supported, ht.ok ? ht.j : null);
+      }, function () {
+        render(environments, supported, null);
+      });
     }, function () {
       el.innerHTML = '<div class="env-err">تعذر الوصول للخدمة</div>';
     });
   }
 
-  function render(environments, supported) {
+  function hostTruthHtml(ht) {
+    if (!ht) return "";
+    var compat = !!ht.platform_compatibility_mode;
+    var truth = ht.runtime_truth || {};
+    return '<div class="host-truth' + (compat ? " compat" : "") + '">' +
+      '<div class="ht-title">حقيقة المضيف — من الـruntime الفعلي لا من الأسماء</div>' +
+      '<div class="ht-grid">' +
+      '<div class="ht-row"><span>المنصة المضيفة</span><b dir="ltr">' +
+        esc(ht.host_platform || "؟") + "</b></div>" +
+      '<div class="ht-row"><span>التنفيذ المحلي</span><b>' +
+        esc(ht.local_execution === "AVAILABLE" ? "متاح (معزول)"
+          : "متوافق فقط — بلا عزل، معلن") + "</b></div>" +
+      '<div class="ht-row"><span>العزل المحلي</span><b>' +
+        esc(ht.isolation === "SANDBOXED" ? "متاح (ركيزة namespaces+seccomp)"
+          : "غير متاح على هذه المنصة") + "</b></div>" +
+      '<div class="ht-row"><span>Python</span><b dir="ltr">' +
+        esc(truth.python || "؟") + "</b></div>" +
+      '<div class="ht-row"><span>Git</span><b dir="ltr">' +
+        esc(truth.git || "غير مثبت") + "</b></div>" +
+      '<div class="ht-row"><span>النواة</span><b dir="ltr">' +
+        esc(truth.kernel || "؟") + "</b></div>" +
+      '<div class="ht-row"><span>المعالجات/الذاكرة</span><b dir="ltr">' +
+        esc((truth.cpu_cores || "؟") + " · " + (truth.memory || "؟")) + "</b></div>" +
+      "</div>" +
+      '<div class="ht-note">' + esc(ht.compatibility_note || "") + "</div>" +
+      (compat
+        ? '<div class="ht-cmd">عامل Linux للعزل الصارم: <code dir="ltr">' +
+          esc(ht.worker_command || "python scripts/execution_worker.py") +
+          "</code></div>"
+        : "") +
+      "</div>";
+  }
+
+  function render(environments, supported, hostTruth) {
     var el = body();
-    var html = "";
+    var html = hostTruthHtml(hostTruth);
     if (!environments.length) {
       html += '<div class="env-empty">لا بيئات مسجلة بعد</div>';
     }
     environments.forEach(function (env) {
       var profile = env.profile || {};
+      var caps = (profile.capabilities || []).join("، ");
       html += '<div class="env-card" data-id="' + env.id + '">' +
         '<div class="env-card-head">' +
         '<span class="env-name">' + esc(env.name) + "</span>" +
         statusBadge(env.status) +
         (env.is_default ? '<span class="env-default">افتراضية</span>' : "") +
+        (env.compatibility_mode
+          ? '<span class="env-compat">وضع متوافق — بلا عزل، معلن</span>' : "") +
         "</div>" +
         '<div class="env-rows">' +
         '<div class="env-row"><span>الخلفية</span><span dir="ltr">' +
         esc(env.backend) + "</span></div>" +
+        '<div class="env-row"><span>المضيف</span><span dir="ltr">' +
+        esc(env.host_platform || profile.host_platform || "؟") + "</span></div>" +
         '<div class="env-row"><span>النظام</span><span dir="ltr">' +
         esc(profile.os || "؟") + " / " + esc(profile.architecture || "؟") +
         "</span></div>" +
         '<div class="env-row"><span>العزل</span><span>' +
-        (env.sandboxed ? "معزولة (namespaces+seccomp)"
+        (env.isolation === "SANDBOXED" ? "معزولة (namespaces+seccomp)"
+          : env.isolation === "WORKER_DECLARED" ? "حسب إعلان العامل"
+          : env.isolation === "REMOTE" ? "عاملة عن بعد"
           : "بلا عزل — معلنة") + "</span></div>" +
         (env.backend === "REMOTE_WORKER"
           ? '<div class="env-row"><span>العامل</span><span dir="ltr">' +
             esc(env.endpoint) + "</span></div>"
+          : "") +
+        '<div class="env-row"><span>الشبكة</span><span>' +
+        esc(profile.network_policy || "—") + "</span></div>" +
+        (caps
+          ? '<div class="env-row"><span>القدرات</span><span dir="ltr">' +
+            esc(caps) + "</span></div>"
           : "") +
         (env.last_verified_at
           ? '<div class="env-row"><span>آخر تحقق</span><span dir="ltr">' +
@@ -215,6 +269,16 @@
           (c.detail ? ' — <span dir="ltr">' + esc(String(c.detail).slice(0, 80)) + "</span>" : "") +
           "</div>";
       }).join("");
+      // (011 §10) سلم جاهزية العامل البعيد: درجات مسماة بالترتيب
+      var ladder = (v.checks || []).some(function (c) {
+        return c.name === "connectivity" || c.name === "authentication";
+      });
+      if (ladder) {
+        checks = '<div class="env-ladder-note">سلم جاهزية العامل — ' +
+          "connectivity ← authentication ← heartbeat ← environment ← " +
+          "workspace ← execute ← artifact؛ أي درجة تفشل توقف السلم " +
+          "بسببها</div>" + checks;
+      }
       var head =
         '<div class="env-verify-head' + (out.j.status === "READY" ? " ok" : "") +
         '">' +

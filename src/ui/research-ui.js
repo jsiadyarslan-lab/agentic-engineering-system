@@ -1,9 +1,10 @@
-/* Agentic Engineering System — مزودو البحث (الأمر 010 §24-§25).
+/* Agentic Engineering System — مزودو البحث (010 §24-§25 + 011 §12-§16).
  *
- * الإعدادات ← الأدوات والقدرات: بطاقة لكل مزود بحث (ddg/searx/api)
- * بحالة مسباره، زر فحص حقيقي، وتكوين (رابط searx / نقطة API + مفتاح
- * يُخزن محليًا ولا يُعاد أبدًا). البحث قدرة قابلة للتوفير — لا علمًا
- * واحدًا يسمى «الإنترنت».
+ * الإعدادات ← الأدوات والقدرات: بطاقة لكل مزود بحث بحالته المشتقة
+ * الموحدة (effective_status) — مسبار READY قديم = STALE معلن، غير
+ * المعد = NOT_CONFIGURED لا READY؛ حفظ التكوين = حفظ ← فحص حقيقي ←
+ * جاهزية محدثة (011 §16). لا يمكن أن يقول المزود «جاهز» والقدرة
+ * «منتهية» — الحالة واحدة من مصدر واحد.
  */
 (function () {
   "use strict";
@@ -13,8 +14,13 @@
   var esc = Hub.esc;
 
   var STATUS_LABELS = {
-    READY: "جاهز — مسبار حقيقي ناجح", NOT_READY: "فحص فاشل — سبب معروف",
+    READY: "جاهز — مسبار حقيقي حديث", STALE: "منتهي الصلاحية — أعد الفحص",
+    NOT_READY: "فحص فاشل — سبب معروف", NOT_CONFIGURED: "غير معد — عيّن تكوينه",
     UNKNOWN: "لم يُفحص بعد", DISABLED: "معطّل بقرار",
+  };
+  var STATUS_CLASSES = {
+    READY: "ok", STALE: "wait", NOT_READY: "bad",
+    NOT_CONFIGURED: "wait", UNKNOWN: "wait", DISABLED: "wait",
   };
 
   function root() { return document.getElementById("research-providers"); }
@@ -45,17 +51,17 @@
       var config = p.config || {};
       var needsUrl = p.kind === "search_searx";
       var needsEndpoint = p.kind === "search_api";
+      var status = p.effective_status || p.last_probe_status || "UNKNOWN";
       html += '<div class="rp-card" data-id="' + p.id + '">' +
         '<div class="rp-head">' +
         '<span class="rp-name">' + esc(p.name) + "</span>" +
-        '<span class="rp-status ' + (p.last_probe_status === "READY" ? "ok"
-          : p.last_probe_status === "UNKNOWN" ? "wait" : "bad") + '">' +
-        esc(STATUS_LABELS[p.last_probe_status] || p.last_probe_status) +
+        '<span class="rp-status ' + (STATUS_CLASSES[status] || "wait") + '">' +
+        esc(STATUS_LABELS[status] || status) +
         "</span>" +
         (p.enabled ? "" : '<span class="rp-off">معطّل</span>') +
         "</div>" +
-        (p.failure_reason && p.last_probe_status !== "READY"
-          ? '<div class="env-reason">' + esc(p.failure_reason.slice(0, 160)) + "</div>"
+        (p.state_reason && status !== "READY"
+          ? '<div class="env-reason">' + esc(String(p.state_reason).slice(0, 200)) + "</div>"
           : "") +
         '<div class="rp-config">' +
         (needsUrl
@@ -137,7 +143,17 @@
           btn.textContent = "حفظ التكوين";
           if (out.ok) {
             if (keyInput) keyInput.value = "";
-            showResult(id, { ok: true, j: { status: "محفوظ — افحص المزود الآن" } });
+            // (011 §16) الخادم فحص فور الحفظ — اعرض نتيجة الفحص نفسها
+            var eff = out.j.effective_status || "";
+            showResult(id, {
+              ok: true,
+              j: {
+                status: eff === "READY" ? "READY" : (eff || "UNKNOWN"),
+                reason: out.j.state_reason ||
+                  "حُفظ وفُحص فورًا — الحالة أعلاه من الفحص الحقيقي",
+              },
+            });
+            load();
           } else {
             showResult(id, out);
           }
