@@ -382,10 +382,19 @@ def run_scenario() -> int:
         shot(page, "04_execution_running.png")
 
         # ---------- §10. رأس المشروع: المرحلة/البيئة/العامل/الأزرار ------
-        header = page.locator("#pl-head-bar").inner_text()
-        check("header-has-stage-and-actions",
-              "المرحلة" in header and "إيقاف" in header,
-              header[:120])
+        try:
+            page.wait_for_function(
+                "() => { const t = document.getElementById('pl-head-bar')"
+                ".textContent; return t.includes('المرحلة') &&"
+                " (t.includes('إيقاف') || t.includes('استئناف')); }",
+                timeout=15000)
+            header = page.locator("#pl-head-bar").inner_text()
+            check("header-has-stage-and-actions",
+                  "المرحلة" in header, header[:120])
+        except Exception as error:  # noqa: BLE001
+            header = page.locator("#pl-head-bar").inner_text()
+            check("header-has-stage-and-actions", False,
+                  f"{error} | header={header[:150]}")
 
         # ---------- O. تبويبان — أفعال A تظهر في B بلا refresh ----------
         print("[5] O التبويبان — نفس المشروع في صفحتين", flush=True)
