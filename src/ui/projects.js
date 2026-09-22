@@ -123,8 +123,11 @@
 
   // ---------- فتح مشروع ----------
 
-  function openProject(id) {
-    if (state.projectId === id && !view.hidden
+  function openProject(id, opts) {
+    // (012) force: مسار التحديث اللحظي (التيار/انتهاء البث) يعيد
+    // الرسم دائمًا — الحارس التراجعي للنقر المكرر فقط لا للتحديث
+    var force = !!(opts && opts.force);
+    if (!force && state.projectId === id && !view.hidden
         && view.querySelector(".pj-head")) {
       return;   // تراجعي: نفس المشروع معروض بالفعل
     }
@@ -196,6 +199,11 @@
     // الإجراء» — لا رسالة غامضة عن بوابة مغلقة أبدًا.
     if (p.execution_gate) {
       html += executionGateHtml(p);
+    }
+
+    // (012-E) بطاقة الوظيفة الدائمة — نبضة/انتظار صادق/مؤشرات
+    if (window.HubHarness && p.job) {
+      html += window.HubHarness.jobCardHtml(p.job);
     }
 
     // سياسة التنفيذ — قرار المالك الظاهر (011 §26)
@@ -290,6 +298,11 @@
     html += '<div class="pj-events"><h3>سجل الأحداث الدائم</h3>' +
       '<div class="pj-events-list" id="pj-events-list">' +
       eventsHtml(p.events || []) + "</div></div>";
+
+    // (012-D) سلسلة القبول + الخط الزمني المرحلي — إسقاط قراءة فقط
+    if (window.HubHarness) {
+      html += window.HubHarness.renderSections(p.id);
+    }
 
     view.innerHTML = html;
     wireActions(p);
@@ -614,11 +627,21 @@
                              && event.kind !== "run.start"
                              && event.kind !== "run.done") {
                     appendEvent(event);
+                    // (012) انتقالات الوظيفة تُحدّث البطاقة أثناء
+                    // البث نفسه — لا انتظار انتهائه
                     if (["PHASE_COMPLETED", "PROJECT_COMPLETION_CANDIDATE",
                          "PROJECT_PAUSED", "EXECUTION_BLOCKED",
                          "OWNER_GATE_REQUIRED", "PLAN_APPROVAL_REQUIRED",
-                         "RETRY_REQUESTED"].indexOf(event.kind) !== -1) {
-                      setTimeout(function () { openProject(projectId); }, 600);
+                         "RETRY_REQUESTED", "GATE_AUTO_RESOLVED",
+                         "PREFLIGHT_PASS", "PREFLIGHT_BLOCKED",
+                         "JOB_QUEUED", "JOB_STARTED", "JOB_WAITING",
+                         "JOB_RETRYING", "JOB_REVISING", "JOB_PAUSED",
+                         "JOB_INTERRUPTED", "JOB_COMPLETED",
+                         "JOB_FAILED", "JOB_STOPPED"].indexOf(
+                           event.kind) !== -1) {
+                      setTimeout(function () {
+                        openProject(projectId, { force: true });
+                      }, 600);
                     }
                   }
                 } catch (err) { /* تجاهل جزء ناقص */ }
@@ -634,7 +657,7 @@
 
     function finish() {
       state.streaming = false;
-      openProject(projectId);
+      openProject(projectId, { force: true });
     }
   }
 
@@ -677,6 +700,11 @@
     "PROJECT_RESUMED", "PROJECT_COMPLETION_CANDIDATE",
     "PROJECT_VERIFIED", "EXECUTION_POLICY_CHANGED",
     "PHASE_STARTED", "PHASE_COMPLETED", "PROJECT_CREATED",
+    // (012) انتقالات الوظيفة الدائمة — البطاقة والسلسلة تُحدّثان لحظيًا
+    "JOB_QUEUED", "JOB_STARTED", "JOB_WAITING", "JOB_RETRYING",
+    "JOB_REVISING", "JOB_PAUSED", "JOB_RESUMED", "JOB_COMPLETED",
+    "JOB_FAILED", "JOB_STOPPED", "JOB_ESCALATED", "JOB_INTERRUPTED",
+    "JOB_RECOVERY_ASSESSED",
   ];
 
   function subscribeProjectEvents() {
@@ -700,7 +728,7 @@
           && !state.streaming) {
         if (liveEvents.projectTimer) clearTimeout(liveEvents.projectTimer);
         liveEvents.projectTimer = setTimeout(function () {
-          openProject(state.projectId);
+          openProject(state.projectId, { force: true });
         }, 400);
       }
     };

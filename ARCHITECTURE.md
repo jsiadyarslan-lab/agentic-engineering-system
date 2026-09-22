@@ -1070,3 +1070,93 @@ artifact_probe — أي درجة تفشل توقف السلم بسببها ال�
 اختبارات `tests/regression/test_order011_regressions.py` تمنع بنيويًا:
 APPROVED+«ليست مفتوحة»؛ مزود جاهز/قدرة منتهية؛ بيئة جاهزة/منفذ غائب؛
 شريط متخلف عن المشروع؛ بحث جاهز/قدرة منتهية بلا تفسير.
+
+---
+
+## §26 — الأمر التنفيذي 012: طبقة الـHarness — وظيفة دائمة + منسق حتمي + إسقاطات
+
+الفكرة المعمارية: فوق خط 011 الأخضر تُبنى **طبقة تحكم هندسية**
+(Engineering Harness) لا تحل محل شيء — الدروز (seams) تكشف خدمات
+011 عبر واجهات معلنة، والوظيفة الدائمة (EngineeringJob) تحوّل حلقة
+المحرك إلى كيان قابل للملاحظة والنبض والانقطاع والاستئناف، والمنسق
+الحتمي يقرر بلا LLM، والإسقاطات تشتق خط زمن مرحلي وسلسلة قبول من
+الأحداث الدائمة وحدها.
+
+### القراران المحفوظان (بنيويًا)
+
+1. **لا أدوار حرة**: `harness/roles_runtime.py` يعلن الأدوار الخمسة
+   ببطاقات (هوية/عقود pydantic/برومبت/أدوات مسموحة/سياسة أدلة/
+   ميزانية)؛ `RoleRuntime` يرفض أي طلب أو نتيجة خارج عقد الدور —
+   التواصل بين الأدوار عقود حصرًا.
+2. **المنسق ليس LLM**: `harness/coordinator.py` دوال نقية خالصة —
+   `classify_tick` يحوّل نتيجة tick + الحالة الدائمة إلى حالة
+   الوظيفة ونوع انتظارها؛ `JOB_TRANSITIONS` جدول مقفل. النموذج
+   يفكر داخل الأدوار فقط.
+
+### الدروز والقدرات (012-A+B)
+
+- `harness/seams.py`: LLMBroker/CapabilityBroker/ExecutionBroker/
+  ResearchBroker/WorkflowStore — تفويض صريح إلى readiness.service
+  (مصدر الحقيقة الوحيد للجاهزية كما في 011) وexecution.service
+  (resolve_executor مسار المسبار والمنفذ الوحيد) وresearch.service
+  (فشل الأول زمن النداء يعني التالي) وproviders_registry.
+  لا حالة ولا كاش جانبي في الدروز أبدًا.
+- `harness/capabilities.py`: كتالوج موحد (SINGLE/FAILOVER/
+  AGGREGATED) + `blocked_kind_of`: sandbox وحدها WORKER (بيئة
+  تنفيذ/عامل) وكل ما عداها CAPABILITY — هذا التصنيف هو ما يفرّق
+  انتظار الوظيفة WAITING_WORKER عن WAITING_CAPABILITY.
+  للبحث: ترتيب السلسلة بالجاهزية الفعالة (الجاهز أولًا).
+
+### الوظيفة الدائمة (012-E+G)
+
+- جدول `engineering_jobs` (العائلة الخامسة المسجلة في init_db):
+  حالة الحلقة (QUEUED/RUNNING/WAITING_CAPABILITY/WAITING_WORKER/
+  WAITING_GATE/RETRYING/REVISING/PAUSED/COMPLETED/FAILED/STOPPED/
+  ESCALATED/INTERRUPTED) + نبضة heartbeat_at + مؤشرات الموضع
+  (مرحلة/خطوة/تنفيذ/دور/checkpoint) + عدادات (نبضات/إعادات/
+  نقاط حفظ) + انتظار صادق (نوع + تفصيل حرفي + مسار رفع).
+- `JobManager`: كل نبضة tick محرك ← تصنيف حتمي ← تحديث الصف ←
+  حدث JOB_* عند كل انتقال. التشغيل بعد انتظار يعيد الصف غير
+  النهائي نفسه (استمرارية «توقف بأمان ← استؤنف من آخر checkpoint»)؛
+  الحالة النهائية وحدها تفتح صفًّا جديدًا.
+- **COMPLETED قرار المالك وحده**: إعادة تشغيل مشروع «مرشح» تعيد
+  WAITING_GATE (التحقق النهائي) لا COMPLETED — القناتان الوحيدتان
+  إلى COMPLETED هما mark_verified بعد engine.verify أو tick على
+  مشروع VERIFIED.
+- **الاسترداد عند الإقلاع**: RUNNING/RETRYING/REVISING عند الإقلاع
+  = حلقتها ماتت مع العملية ← INTERRUPTED (لا حياة كاذبة)؛
+  الانتظارات تبقى كما هي (لا شيء ضاع). الاستئناف قرار صريح دائمًا
+  (011 §19 محفوظ — بوابات التوفير لا تمنع، القرار وحده يمنع).
+
+### المفردة والإسقاطات (012-D)
+
+- `harness/events.py`: JOB_EVENT_KINDS (انتقالات فقط — النبضة حقل
+  لا حدث) + CANONICAL_MAP (اسم قانوني namespaced لكل نوع دائم:
+  plan/approved، evidence/created، owner/gate.requested،
+  checkpoint/created، resume/started…) + مراحل السلسلة الثماني.
+- `harness/projections.py`: `project_timeline` (كل حدث ← بند
+  بمرحلة وفاعل وعنوان صادق) و`acceptance_chain` (حالة كل مرحلة
+  حتميًا: PENDING/ACTIVE/DONE/WAITING/FAILED — الفشل العابر للخطوة
+  لا يسمم المرحلة؛ إنجاز EXECUTION = «مرشح للتحقق» لا أقل).
+- الإسقاط قراءة فقط — نفس الأحداث تعطي نفس الإسقاط دائمًا.
+
+### API والواجهة (012-J)
+
+- `GET /api/harness/roles|capabilities|events/vocabulary|jobs|
+  jobs/{id}` + `GET /api/projects/{id}/job|timeline|chain`.
+  run/stream يعمل الآن عبر JobManager (نفس SSE + أحداث JOB_*).
+  تفاصيل المشروع تحمل `job`.
+- `src/ui/harness.js + harness.css`: بطاقة الوظيفة الدائمة (نبضة
+  حية/حالة عربية/انتظار بنوعه وسببه ومسار رفعه/مؤشرات) + سلسلة
+  القبول (OBJECTIVE → … → VERIFICATION بحالاتها) + خط زمن مرحلي
+  من الإسقاط. REFRESH_KINDS يشمل JOB_* فتتحدث البطاقة لحظيًا
+  عبر تيار 011 العام بلا refresh.
+
+### الانحدار
+
+اختبارات `tests/harness/` (62): السلسلة الكاملة حتى VERIFIED،
+التوقفات الصادقة (WORKER بالسلم والمسار ثم توفير واستئناف في الصف
+نفسه؛ CAPABILITY بمزود غائب؛ GATE بقرار؛ RETRYING لفشل عابر)،
+الاسترداد (INTERRUPTED + resumable + إكمال بعد الاستئناف)،
+إلزام العقود في RoleRuntime، اكتمال المفردة القانونية، حتمية
+الإسقاط، وقراءات API كاملة. المجموعة 555/555.

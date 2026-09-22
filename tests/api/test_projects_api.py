@@ -261,14 +261,16 @@ def test_concurrent_run_rejected(client, project_env):
 
     def slow_factory(**kwargs):
         engine = original(**kwargs)
-        real_run = engine.run
+        # (012) الحلقة تدور عبر engine.tick داخل JobManager.run_loop —
+        # الإبطاء عند أول نبضة يثبت المقصد نفسه: مشروع واحد باللحظة
+        real_tick = engine.tick
 
-        def slow_run(project_id, *, max_ticks=100):
+        def slow_tick(project_id):
             started.set()
             release.wait(timeout=10)
-            return real_run(project_id, max_ticks=max_ticks)
+            return real_tick(project_id)
 
-        engine.run = slow_run  # type: ignore[method-assign]
+        engine.tick = slow_tick  # type: ignore[method-assign]
         return engine
 
     projects._test_engine_factory = slow_factory

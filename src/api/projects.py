@@ -35,6 +35,16 @@ from workflow import gates as gate_machine
 from workflow import service
 from workflow.engine import EngineError, ProjectEngine
 
+
+def _harness_manager(on_event=None, *, engine=None):
+    """مدير وظائف فوق درز الـharness — (012-E) ربط بسيط لا منطق."""
+    from harness.jobs import JobManager
+    from harness.seams import HarnessSeams
+
+    return JobManager(
+        HarnessSeams(_sessions()), engine=engine, on_event=on_event,
+    )
+
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 #: منفّذ المشاريع — مشروع واحد يعمل في كل لحظة (حلقة ذاتية واحدة).
@@ -267,6 +277,11 @@ def project_detail(project_id: int) -> dict:
     gates = service.list_gates(_sessions(), project_id)
     events = service.list_events(_sessions(), project_id, limit=30)
     executions = service.list_executions(_sessions(), project_id, limit=20)
+    # (012-E) الوظيفة الدائمة للمشروع — أحدث صف مهما كانت حالته
+    try:
+        job = _harness_manager().job_for_project(project_id)
+    except Exception:  # noqa: BLE001
+        job = None
     return {
         **project,
         "plan": plan,
@@ -276,6 +291,7 @@ def project_detail(project_id: int) -> dict:
         "executions": executions,
         "execution_gate": _execution_gate(project, plan),
         "active_run": _active_run_id() == project_id,
+        "job": job,
     }
 
 
@@ -347,7 +363,11 @@ async def run_project(project_id: int) -> StreamingResponse:
                 # استئناف ضمني للموقوف بلقطة — إلا إن كان الإيقاف مطلوبًا
                 # حديثًا: العلم يُكرَّم في أول نبضة ولا يُمسح أبدًا بصمت
                 engine.resume(project_id)
-            outcome = engine.run(project_id)
+            # (012-E) الحلقة الدائمة كوظيفة قابلة للملاحظة: نبضة،
+            # انتظار صادق، انقطاع واستئناف — فوق المحرك نفسه (لا بديلًا)
+            manager = _harness_manager(on_event, engine=engine)
+            job = manager.start_job(project_id)
+            outcome = manager.run_loop(job["id"])
             loop.call_soon_threadsafe(queue.put_nowait, {
                 "project_id": project_id, "kind": "run.done",
                 "payload": outcome,
@@ -410,7 +430,13 @@ def resume_project(project_id: int) -> dict:
     """استئناف صريح — يعمل بعد restart من checkpoint الدائم (§9+§19)."""
     _project_or_404(project_id)
     try:
-        return _build_engine().resume(project_id)
+        result = _build_engine().resume(project_id)
+        # (012-E) الوظيفة غير النهائية تعود للطابور — استمرارية الصف
+        try:
+            _harness_manager().mark_resumed(project_id)
+        except Exception:  # noqa: BLE001 — دفتر الوظيفة لا يمنع الاستئناف
+            pass
+        return result
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 
@@ -455,9 +481,17 @@ def resolve_gate(project_id: int, gate_id: int, body: GateDecisionIn) -> dict:
     """حل بوابة مالك — لكل نوع أثره (§14)."""
     _project_or_404(project_id)
     try:
-        return _build_engine().resolve_gate(
+        outcome = _build_engine().resolve_gate(
             project_id, gate_id, approved=body.approved
         )
+        # (012-E) رفض البوابة يوقف المشروع — الوظيفة تغلق صادقة لا
+        # تبقى منتظرة لبوابة ماتت
+        if not body.approved:
+            try:
+                _harness_manager().mark_stopped(project_id)
+            except Exception:  # noqa: BLE001
+                pass
+        return outcome
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 
@@ -467,7 +501,13 @@ def verify_project(project_id: int) -> dict:
     """التحقق النهائي — VERIFIED قرار المالك وحده (§16)."""
     _project_or_404(project_id)
     try:
-        return _build_engine().verify(project_id)
+        result = _build_engine().verify(project_id)
+        # (012-E) اكتمال الوظيفة الحقيقي الوحيد: تحقق المالك
+        try:
+            _harness_manager().mark_verified(project_id)
+        except Exception:  # noqa: BLE001 — دفتر الوظيفة لا يمنع التحقق
+            pass
+        return result
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 
@@ -516,6 +556,20 @@ def project_events(project_id: int, limit: int = 100) -> dict:
 
 
 def run_startup_recovery(sessions) -> list[dict]:
-    """استرداد الإقلاع (§19) — اكتشاف وتقييم فقط، لا تنفيذ عشوائي."""
-    return ProjectEngine(sessions, router_factory=lambda: None) \
+    """استرداد الإقلاع (§19 + 012-G) — اكتشاف وتقييم فقط، لا تنفيذ.
+
+    تقييم المشاريع غير النهائية ثم الوظائف الدائمة: ما كان يدور
+    عند وفاة العملية يُوسم INTERRUPTED (لا حياة كاذبة) ويعلن هل
+    يستأنف — والاستئناف قرار صريح دائمًا.
+    """
+    assessments = ProjectEngine(sessions, router_factory=lambda: None) \
         .assess_recovery()
+    try:
+        from harness.jobs import JobManager
+        from harness.seams import HarnessSeams
+
+        manager = JobManager(HarnessSeams(sessions))
+        assessments = assessments + manager.assess_jobs_recovery()
+    except Exception:  # noqa: BLE001 — استرداد الوظائف لا يمنع الإقلاع
+        pass
+    return assessments

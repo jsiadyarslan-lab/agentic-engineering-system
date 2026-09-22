@@ -1776,6 +1776,8 @@ def mission_verify(body: MissionVerifyIn) -> dict:
 # ------------------------------------------------------------------ #
 
 from api.environment import router as environment_router  # noqa: E402
+from api.harness import projects_router as harness_projects_router  # noqa: E402
+from api.harness import router as harness_router  # noqa: E402
 from api.models_config import router as models_config_router  # noqa: E402
 from api.projects import router as projects_router  # noqa: E402
 from api.projects import run_startup_recovery  # noqa: E402
@@ -1786,6 +1788,10 @@ app.include_router(configurations_router)
 app.include_router(models_config_router)
 app.include_router(projects_router)
 app.include_router(environment_router)
+# (012) قراءات الـHarness: وظائف دائمة + خط زمن + سلسلة قبول +
+# أدوار و قدرات — فوق مصادر حقيقة 011 بلا منطق جديد هنا
+app.include_router(harness_router)
+app.include_router(harness_projects_router)
 
 #: تفعيل مرشح تقنيع المفاتيح على السجلات ([REDACTED] — §1.2).
 from secrets_store import install_log_redaction  # noqa: E402
