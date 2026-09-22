@@ -715,10 +715,11 @@ async def _stream_task_run(
             _sessions, cycle_id,
             after=0,
             is_running=is_running,
-            # (013.4) task.thread_done يُنشر بعد done_event.set() —
-            # إغلاق البث عنده يضمن أن العميل لا يسبق خيط الدورة فيرى
-            # «منتهية» قبل أن يصبح الإيقاف 409 فعلًا (نافذة السباق)
-            done_kinds=("task_done", "cycle_error", "task.thread_done"),
+            # (013.4) البث يُختم عند task.thread_done حصرًا — يُنشر بعد
+            # done_event.set() — فلا يرى العميل «منتهية» (task_done)
+            # قبل أن يصبح إيقاف الدورة 409 فعلًا (نافذة السباق أُغلقت
+            # من الجذر: task_done وحده لا يختم البث أبدًا)
+            done_kinds=("task.thread_done",),
         ):
             yield chunk
 
