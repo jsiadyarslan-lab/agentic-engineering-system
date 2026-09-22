@@ -87,6 +87,24 @@ def _build_engine(on_event=None) -> ProjectEngine:
     )
 
 
+def _live_broadcast_on_event(event: dict) -> None:
+    """بث لحظي لأحداث المحرك على تيار المشاريع (013.4 §1).
+
+    الأحداث الدائمة كتبها المحرك/جلسة التخطيط قبلنا — هذا غلاف النشر
+    اللحظي فقط: نفس عقد الـrunner (event_id موحّد + عزل القاعدة).
+    """
+    from core.live_bus import BUS, normalize_event
+
+    BUS.publish(normalize_event({
+        "project_id": event.get("project_id"),
+        "kind": event.get("kind", ""),
+        "payload": event.get("payload", {}),
+        "event_id": int(event.get("event_id") or 0),
+        "stream": "projects",
+        "db": workflow_runner.sessions_db_key(_sessions()),
+    }))
+
+
 class ProjectCreateIn(BaseModel):
     """إنشاء مشروع — الاسم والهدف (+ سياسة التنفيذ 011 §26)."""
 
@@ -113,9 +131,10 @@ class GateDecisionIn(BaseModel):
 
 
 class ProjectStopIn(BaseModel):
-    """طلب إيقاف."""
+    """طلب إيقاف — مؤقت (افتراضي) أو نهائي دائم (013.4 §12)."""
 
     reason: str = Field(default="", max_length=500)
+    final: bool = False
 
 
 class ExecutionPolicyIn(BaseModel):
@@ -399,6 +418,50 @@ async def projects_events_stream(request: Request,
     )
 
 
+@router.get("/runs/active")
+def active_runs() -> dict:
+    """التشغيلات النشطة (013.4 §9+§32) — مؤشرات الشريط الجانبي.
+
+    كل مشروع غير نهائي مع لقطة تحكم مصغرة: الحالة/المرحلة/الوظيفة/
+    الانتظار — من اللقطة القانونية (§8) لا اشتقاقًا موازيًا.
+    """
+    from workflow.snapshot import runtime_snapshot
+
+    projects = service.list_projects(_sessions())
+    active_project_ids = [p["id"] for p in projects
+                          if p["status"] not in
+                          ("VERIFIED", "COMPLETED", "STOPPED", "ESCALATED")]
+    runs: list[dict] = []
+    for pid in active_project_ids:
+        try:
+            snap = runtime_snapshot(_sessions(), pid)
+        except Exception:  # noqa: BLE001 — مشروع فاسد لا يكسر القائمة
+            continue
+        if snap["status"] in ("DRAFT", "AWAITING_OWNER_APPROVAL") \
+                and snap["job"] is None \
+                and not snap["planning"].get("active"):
+            continue   # ليس تشغيلًا — مسودة تنتظر قرارًا
+        runs.append({
+            "project_id": pid,
+            "name": snap["name"],
+            "status": snap["status"],
+            "stage": snap["stage"],
+            "waiting_for": snap["waiting_for"],
+            "job": snap["job"],
+            "planning_active": bool(snap["planning"].get("active")),
+            "heartbeat_at": snap["heartbeat_at"],
+            "elapsed_s": snap["elapsed_s"],
+            "progress": snap["progress"],
+        })
+    return {"runs": runs, "active_run": _active_run_id()}
+
+
+@router.get("/archived/list")
+def archived_list() -> dict:
+    """المشاريع المؤرشفة (013.4 §45) — قائمة الاسترجاع."""
+    return {"projects": service.archived_projects(_sessions())}
+
+
 @router.get("/{project_id}")
 def project_detail(project_id: int) -> dict:
     """التفصيل الكامل — الخطة والمراحل والخطوات والبوابات والأحداث."""
@@ -498,10 +561,23 @@ def project_plan(project_id: int) -> dict:
 
 @router.post("/{project_id}/plan/generate")
 def generate_plan(project_id: int) -> dict:
-    """توليد Master Plan — استدعاء LLM حي بعقد صارم (§4، لا خطة ملفقة)."""
-    _project_or_404(project_id)
+    """أمر توليد الخطة (013.4 §1-§3) — خلفي محدود لا طلبًا حاجزًا.
+
+    يعيد فورًا {started, session}: المزود/النموذج/request_id/الإيجار.
+    كل التطور يصل عبر تيار الأحداث (PLANNING_STARTED ←
+    PLAN_GENERATING ← MODEL_CALL_* ← PLAN_CREATED|PLANNING_FAILED)
+    — لا «Planning…» صامتة أبدًا، والفشل مصنّف حرفيًا.
+    """
+    project = _project_or_404(project_id)
     try:
-        return _build_engine().generate_plan(project_id)
+        result = _build_engine(
+            on_event=_live_broadcast_on_event
+        ).start_plan_generation(
+            project_id, reason="أمر صريح من الواجهة"
+        )
+        return {**result, "project": service.get_project(
+            _sessions(), project["id"]
+        )}
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 
@@ -689,10 +765,189 @@ async def run_project(project_id: int,
 
 @router.post("/{project_id}/stop")
 def stop_project(project_id: int, body: ProjectStopIn) -> dict:
-    """إيقاف المشروع — علم ذرّي يُكرَّم عند أقرب checkpoint (§9)."""
+    """إيقاف المشروع (013.4 §12) — نهائي دائم أو مؤقت بلقطة.
+
+    final=true: OWNER_STOP_REQUESTED ← checkpoint ← STOPPED دائمة
+    مع حفظ كل شيء (لا حذف أبدًا) + إغلاق الوظيفة صادقة.
+    """
     _project_or_404(project_id)
     try:
-        return _build_engine().request_stop(project_id, body.reason)
+        result = _build_engine().request_stop(
+            project_id, body.reason, final=body.final
+        )
+        if body.final:
+            try:
+                _harness_manager().mark_stopped(project_id)
+            except Exception:  # noqa: BLE001 — دفتر الوظيفة لا يمنع الإيقاف
+                pass
+        return result
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+# ------------------------------------------------------------------ #
+# (013.4 §8-§17) مركز التحكم — اللقطة القانونية + الأزرار الحقيقية
+# ------------------------------------------------------------------ #
+
+@router.get("/{project_id}/runtime")
+def project_runtime(project_id: int) -> dict:
+    """اللقطة القانونية لزمن التشغيل (013.4 §8) — الواجهة تقرأ هذه
+    حصرًا: لا مكوّن يشتق حالة سير العمل من مصدر آخر."""
+    _project_or_404(project_id)
+    from workflow.snapshot import runtime_snapshot
+
+    try:
+        return runtime_snapshot(_sessions(), project_id)
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.get("/{project_id}/history")
+def project_history(project_id: int, before_id: int = 0,
+                    limit: int = 100) -> dict:
+    """تاريخ المشروع (013.4 §16+§43) — صفحات بمؤشر رجوع.
+
+    خط زمن من الأحداث الدائمة: انتقالات/قرارات/إعادات/فشل/أدلة —
+    لا تُغرق الواجهة: صفحة واحدة في كل مرة، والأقدم عند الطلب.
+    """
+    _project_or_404(project_id)
+    page = service.events_page(
+        _sessions(), project_id, before_id=before_id, limit=limit
+    )
+    timeline = {}
+    try:
+        from harness import projections
+
+        timeline = projections.project_timeline(page["events"])
+    except Exception:  # noqa: BLE001 — الإسقاط قراءة لا يمنع الصفحة
+        pass
+    return {**page, "timeline": timeline}
+
+
+@router.get("/{project_id}/artifacts")
+def project_artifacts(project_id: int) -> dict:
+    """مخرجات المشروع (013.4 §47) — ملفات/تقارير/أدلة من كل خطوة.
+
+    من الأدلة الدائمة حصرًا (evidence.files/artifacts) — لا مسح
+    قرص عام: ما لم يُثبت لا يُعرض.
+    """
+    _project_or_404(project_id)
+    artifacts: list[dict] = []
+    for evidence in service.list_evidence(_sessions(), project_id):
+        files = evidence.get("files") or {}
+        for name, meta in files.items():
+            artifacts.append({
+                "name": name,
+                "kind": "file",
+                "sha256": (meta or {}).get("sha256", ""),
+                "bytes": (meta or {}).get("bytes", 0),
+                "step_id": evidence.get("step_id"),
+                "evidence_id": evidence.get("id"),
+                "verdict": evidence.get("verdict", ""),
+                "created_at": evidence.get("created_at"),
+            })
+        for item in evidence.get("artifacts") or []:
+            artifacts.append({
+                "name": str(item),
+                "kind": "artifact",
+                "step_id": evidence.get("step_id"),
+                "evidence_id": evidence.get("id"),
+                "verdict": evidence.get("verdict", ""),
+                "created_at": evidence.get("created_at"),
+            })
+    artifacts.sort(key=lambda a: str(a.get("created_at") or ""),
+                   reverse=True)
+    return {"artifacts": artifacts}
+
+
+class PauseIn(BaseModel):
+    """إيقاف مؤقت — سبب اختياري مسجل."""
+
+    reason: str = Field(default="", max_length=500)
+
+
+@router.post("/{project_id}/pause")
+def pause_project(project_id: int, body: PauseIn) -> dict:
+    """إيقاف مؤقت (013.4 §13) — RUNNING → PAUSING → PAUSED بلقطة."""
+    _project_or_404(project_id)
+    try:
+        result = _build_engine(on_event=_live_broadcast_on_event).pause(
+            project_id, body.reason
+        )
+        return result
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.post("/{project_id}/retry")
+def retry_project(project_id: int) -> dict:
+    """إعادة المحاولة (013.4 §11) — آخر فشل يحدد الإجراء الصادق."""
+    _project_or_404(project_id)
+    try:
+        result = _build_engine(
+            on_event=_live_broadcast_on_event
+        ).retry(project_id)
+        # إعادة الخطوات/التشغيل تطلق الحلقة فورًا — أمر لا صف قاعدة
+        if result.get("retried") in ("steps", "run"):
+            launch = _launch_after_decision(
+                project_id, "إعادة محاولة من المالك"
+            )
+            return {**result, "launch": launch}
+        return result
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+class DuplicateIn(BaseModel):
+    """تكرار مشروع — اسم اختياري للنسخة."""
+
+    name: str = Field(default="", max_length=200)
+
+
+@router.post("/{project_id}/duplicate", status_code=201)
+def duplicate_project(project_id: int, body: DuplicateIn) -> dict:
+    """تكرار (013.4 §15) — نسخة جديدة لا تمس الأصل أبدًا."""
+    _project_or_404(project_id)
+    try:
+        return _build_engine().duplicate_project(
+            project_id, name=body.name
+        )
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.post("/{project_id}/archive")
+def archive_project(project_id: int) -> dict:
+    """أرشفة (013.4 §17) — دورة حياة، لا حذف بيانات أبدًا."""
+    _project_or_404(project_id)
+    try:
+        return _build_engine().archive_project(project_id)
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+@router.post("/{project_id}/restore")
+def restore_project(project_id: int) -> dict:
+    """استرجاع من الأرشيف (013.4 §45)."""
+    _project_or_404(project_id)
+    try:
+        return _build_engine().restore_project(project_id)
+    except Exception as error:  # noqa: BLE001
+        raise _http(error) from error
+
+
+class RenameIn(BaseModel):
+    """إعادة تسمية — الاسم الجديد."""
+
+    name: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/{project_id}/rename")
+def rename_project(project_id: int, body: RenameIn) -> dict:
+    """إعادة تسمية المشروع (013.4 §11)."""
+    _project_or_404(project_id)
+    try:
+        return _build_engine().rename_project(project_id, body.name)
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 

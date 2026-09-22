@@ -71,7 +71,10 @@ def test_consumer_disconnect_does_not_stop_job(client, project_env,
         "name": "مغادرة أثناء التنفيذ", "objective": OSINT_OBJECTIVE,
     })
     pid = created.json()["id"]
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     before = client.get(f"/api/projects/{pid}/state").json()
     before_id = before["last_event_id"]
 
@@ -134,7 +137,10 @@ def test_provision_ready_resumes_same_job(client, project_env, sandbox_seam):
         "name": "توفير ثم استئناف", "objective": OSINT_OBJECTIVE,
     })
     pid = created.json()["id"]
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     approved = client.post(f"/api/projects/{pid}/plan/approve",
                            json={"approved": True}).json()
     assert approved["launch"]["launched"] is True
@@ -192,7 +198,10 @@ def test_only_explicit_owner_stop_terminates(client, project_env,
         "name": "إيقاف صريح", "objective": "هدف الإيقاف الصريح",
     })
     pid = created.json()["id"]
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     client.post(f"/api/projects/{pid}/plan/approve", json={"approved": True})
 
     # بلا أي إيقاف ← النهاية الطبيعية (مرشح للتحقق)

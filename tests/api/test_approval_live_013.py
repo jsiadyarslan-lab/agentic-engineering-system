@@ -189,8 +189,11 @@ def test_mandatory_approval_live_flow(client, project_env, sandbox_seam):
     })
     assert created.status_code == 201, created.text
     pid = created.json()["id"]
+    from tests.api.planning_wait import wait_for_plan
+
     generated = client.post(f"/api/projects/{pid}/plan/generate")
     assert generated.status_code == 200, generated.text
+    wait_for_plan(client, pid)
 
     # 3-4. لا refresh: لقطة المصالحة تُظهر بطاقة الاعتماد فورًا
     state = client.get(f"/api/projects/{pid}/state").json()
@@ -302,6 +305,9 @@ def test_approval_after_reload(client, project_env, sandbox_seam):
     pid = created.json()["id"]
     assert client.post(
         f"/api/projects/{pid}/plan/generate").status_code == 200
+    from tests.api.planning_wait import wait_for_plan
+
+    wait_for_plan(client, pid)
 
     # «إغلاق المتصفح وفتحه»: عميل جديد كليًا — الحالة من القاعدة وحدها
     fresh_client = TestClient(routes.app)
@@ -334,7 +340,10 @@ def test_approval_duplication_single_logical_effect(client, project_env,
         "name": "ازدواج", "objective": "هدف اختبار الازدواج",
     })
     pid = created.json()["id"]
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
 
     # نقرتان متتاليتان بأسرع ما يمكن — قبل اكتمال الأولى نظاهريًا
     first = client.post(f"/api/projects/{pid}/plan/approve",

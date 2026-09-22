@@ -86,6 +86,9 @@ def _approved_project(client):
     assert out.status_code == 201, out.text
     pid = out.json()["id"]
     assert client.post(f"/api/projects/{pid}/plan/generate").status_code == 200
+    from tests.api.planning_wait import wait_for_plan
+
+    wait_for_plan(client, pid)
     approved = client.post(f"/api/projects/{pid}/plan/approve",
                            json={"approved": True})
     assert approved.status_code == 200, approved.text

@@ -185,12 +185,18 @@ class CycleStartIn(BaseModel):
 
 
 class ChatStartIn(BaseModel):
-    """جسم رسالة محادثة — نموذج واحد بلا أدوار (§2 محادثة)."""
+    """جسم رسالة محادثة — نموذج واحد بلا أدوار (§2 محادثة).
+
+    web (013.4 §26): "auto" كاشف النية | "on" بحث صريح | "off"
+    بلا ويب — قدرة معلنة في المحادثة العادية لا حكرًا للمشاريع.
+    """
 
     message: str = Field(min_length=1, max_length=32_000)
     conversation_id: int | None = None
     provider: str | None = None
     model: str | None = None
+    web: str = Field(default="auto",
+                     pattern="^(auto|on|off)$")
 
 
 class CycleVerifyIn(BaseModel):
@@ -248,6 +254,75 @@ def conversations() -> dict:
     return {"conversations": convo.list_conversations(_sessions)}
 
 
+# ------------------------------------------------------------------ #
+# (013.4 §18+§46) دورة حياة المحادثة — تسمية/نقل/أرشفة بلا مساس
+# ------------------------------------------------------------------ #
+
+class ConversationRenameIn(BaseModel):
+    """إعادة تسمية محادثة."""
+
+    title: str = Field(min_length=1, max_length=200)
+
+
+class ConversationMoveIn(BaseModel):
+    """نقل محادثة إلى مشروع — project_id فارغ يفك الانتماء."""
+
+    project_id: int | None = None
+
+
+@app.get("/api/projects/{project_id}/conversations")
+def project_conversations_list(project_id: int) -> dict:
+    """محادثات المشروع (013.4 §18) — بيت واحد يجمع سياقه."""
+    from workflow import service as workflow_service
+
+    if workflow_service.get_project(_sessions, project_id) is None:
+        raise HTTPException(
+            status_code=404, detail=f"مشروع غير معروف: {project_id}",
+        )
+    return {
+        "project_id": project_id,
+        "conversations": convo.project_conversations(_sessions, project_id),
+    }
+
+
+@app.post("/api/conversations/{conversation_id}/rename")
+def rename_conversation(conversation_id: int,
+                        body: ConversationRenameIn) -> dict:
+    """إعادة تسمية محادثة (013.4 §46)."""
+    try:
+        return convo.rename_conversation(
+            _sessions, conversation_id, body.title
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error.args[0])) \
+            from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/api/conversations/{conversation_id}/move-to-project")
+def move_conversation(conversation_id: int,
+                      body: ConversationMoveIn) -> dict:
+    """نقل محادثة إلى مشروع (013.4 §18) — التاريخ لا يُمس أبدًا."""
+    try:
+        return convo.move_conversation_to_project(
+            _sessions, conversation_id, body.project_id
+        )
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error.args[0])) \
+            from error
+
+
+@app.post("/api/conversations/{conversation_id}/archive")
+def archive_conversation(conversation_id: int) -> dict:
+    """أرشفة محادثة (013.4 §46) — تختفي من القائمة وتبقى كاملة."""
+    try:
+        return convo.archive_conversation(_sessions, conversation_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail=str(error.args[0])) \
+            from error
+
+
 @app.get("/api/conversations/{conversation_id}")
 def conversation_meta(conversation_id: int) -> dict:
     """بيانات محادثة واحدة (010 §2) — للتنقل الدائم واستعادة التوجيه."""
@@ -261,6 +336,7 @@ def conversation_meta(conversation_id: int) -> dict:
         "conversation_id": found.id,
         "title": found.title,
         "mode": found.mode,
+        "project_id": getattr(found, "project_id", None),
         "created_at": found.created_at.isoformat(),
         "updated_at": found.updated_at.isoformat(),
     }
@@ -639,7 +715,10 @@ async def _stream_task_run(
             _sessions, cycle_id,
             after=0,
             is_running=is_running,
-            done_kinds=("task_done", "cycle_error"),
+            # (013.4) task.thread_done يُنشر بعد done_event.set() —
+            # إغلاق البث عنده يضمن أن العميل لا يسبق خيط الدورة فيرى
+            # «منتهية» قبل أن يصبح الإيقاف 409 فعلًا (نافذة السباق)
+            done_kinds=("task_done", "cycle_error", "task.thread_done"),
         ):
             yield chunk
 
@@ -826,6 +905,101 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 )
                 if m["role"] in ("user", "assistant")
             ]
+
+            # (013.4 §25-§30) الويب في المحادثة العادية: كشف معلن ←
+            # بحث حقيقي ← مصادر مرقمة ← استشهاد. لا نتائج ملفقة:
+            # المزود غير الجاهز = research.unavailable بالسبب الحرفي.
+            from research import chat_research
+
+            web_decision = chat_research.decide_web_mode(
+                body.message, setting=body.web
+            )
+            web_used: dict = {"search": False, "sources": [],
+                              "fetched": 0}
+            sources_context = ""
+            if web_decision["search"] or web_decision["fetch_urls"]:
+                put({
+                    "kind": "research.started",
+                    "message_id": message_id,
+                    "status": "searching",
+                    "text": "🌐 بحث في الويب…",
+                    "details": {
+                        "conversation_id": conversation_id,
+                        "query": body.message[:200],
+                        "fetch_urls": web_decision["fetch_urls"],
+                        "reason": web_decision["reason"],
+                    },
+                })
+                sources: list[dict] = []
+                if web_decision["search"]:
+                    outcome = chat_research.search_for_chat(
+                        _sessions, body.message[:400]
+                    )
+                    if outcome.get("ok"):
+                        sources = outcome.get("results", [])
+                        web_used["search"] = True
+                        web_used["provider"] = outcome.get("provider", "")
+                        web_used["sources"] = sources
+                        put({
+                            "kind": "research.results",
+                            "message_id": message_id,
+                            "status": "found",
+                            "text": f"🌐 الويب: {len(sources)} نتيجة "
+                                    f"({outcome.get('provider', '')})",
+                            "details": {
+                                "provider": outcome.get("provider", ""),
+                                "count": len(sources),
+                                "results": [
+                                    {"title": r.get("title", "")[:120],
+                                     "url": r.get("url", "")}
+                                    for r in sources
+                                ],
+                            },
+                        })
+                    else:
+                        put({
+                            "kind": "research.unavailable",
+                            "message_id": message_id,
+                            "status": "WEB_UNAVAILABLE",
+                            "text": "🌐 البحث غير متاح الآن — "
+                                    + outcome.get("error", "")[:120],
+                            "details": {
+                                "error": outcome.get("error", ""),
+                                "providers_tried": outcome.get(
+                                    "providers_tried", []),
+                            },
+                        })
+                fetched_ok: list[dict] = []
+                for url in web_decision["fetch_urls"][:3]:
+                    page = chat_research.fetch_for_chat(url)
+                    if page.get("ok"):
+                        fetched_ok.append(page)
+                        put({
+                            "kind": "research.fetched",
+                            "message_id": message_id,
+                            "status": "fetched",
+                            "text": "🌐 جُلبت صفحة: " + url[:80],
+                            "details": {"url": url,
+                                        "bytes": len(page["content"])},
+                        })
+                    else:
+                        put({
+                            "kind": "research.fetch_failed",
+                            "message_id": message_id,
+                            "status": "FETCH_FAILED",
+                            "text": "🌐 تعذر جلب " + url[:80],
+                            "details": {"url": url,
+                                        "error": page.get("error", "")},
+                        })
+                web_used["fetched"] = len(fetched_ok)
+                sources_context = chat_research.build_sources_context(
+                    sources, fetched_ok
+                )
+                if sources_context:
+                    history = history + [
+                        ChatMessage(role="system", content=sources_context)
+                    ]
+
             put({
                 "kind": "message_started",
                 "message_id": message_id,
@@ -881,6 +1055,26 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 _sessions, conversation_id,
                 role="assistant", content=outcome["text"],
             )
+            # (013.4 §26) مؤشر «🌐 استُخدم الويب» قابل للتوسيع —
+            # المصادر كاملة في الحدث لعرضها أسفل الرسالة.
+            if web_used.get("search") or web_used.get("fetched"):
+                put({
+                    "kind": "research.used",
+                    "message_id": message_id,
+                    "status": "used",
+                    "text": "🌐 استُخدم الويب في هذه الإجابة",
+                    "details": {
+                        "conversation_id": conversation_id,
+                        "search": web_used.get("search", False),
+                        "provider": web_used.get("provider", ""),
+                        "fetched": web_used.get("fetched", 0),
+                        "sources": [
+                            {"title": (r.get("title") or "")[:140],
+                             "url": r.get("url", "")}
+                            for r in (web_used.get("sources") or [])
+                        ],
+                    },
+                })
             put({
                 "kind": "message_completed",
                 "message_id": message_id,
@@ -895,6 +1089,8 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     "duration_ms": outcome.get("duration_ms", 0),
                     "streamed": streamed,
                     "chars": len(outcome["text"]),
+                    "web_used": web_used.get("search", False)
+                    or bool(web_used.get("fetched")),
                 },
             })
         except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته

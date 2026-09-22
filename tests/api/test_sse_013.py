@@ -72,7 +72,11 @@ def test_two_tabs_receive_same_live_events(client, project_env):
         "name": "تبويبان", "objective": "هدف اختبار التبويبين",
     })
     pid = created.json()["id"]
+    # (013.4 §1) التوليد خلفي — ننتظر نتيجته قبل الاعتماد
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
 
     approved = client.post(f"/api/projects/{pid}/plan/approve",
                            json={"approved": True})
@@ -122,7 +126,11 @@ def test_live_event_replay_after_disconnect(client, project_env):
         "name": "انقطاع", "objective": "هدف اختبار الانقطاع",
     })
     pid = created.json()["id"]
+    # (013.4 §1) التوليد خلفي — ننتظر نتيجته
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
 
     # نقطة الانقطاع: آخر معرف قبل الاعتماد
     state = client.get(f"/api/projects/{pid}/state").json()
@@ -167,7 +175,11 @@ def test_state_snapshot_reconciliation(client, project_env):
         "name": "مصالحة", "objective": "هدف اختبار المصالحة",
     })
     pid = created.json()["id"]
+    # (013.4 §1) التوليد خلفي — ننتظر نتيجته قبل الاعتماد
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     client.post(f"/api/projects/{pid}/plan/approve", json={"approved": True})
 
     # انتظر اكتمال الدورة ثم اعِد البناء من اللقطة وحدها

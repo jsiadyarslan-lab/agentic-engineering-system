@@ -81,7 +81,10 @@ def _approved(client):
         "name": "API الوظائف", "objective": "هدف اختبار API الوظيفة",
     })
     pid = out.json()["id"]
+    from planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     client.post(f"/api/projects/{pid}/plan/approve",
                 json={"approved": True})
     return pid

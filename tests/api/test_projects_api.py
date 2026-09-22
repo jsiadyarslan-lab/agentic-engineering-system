@@ -19,6 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from fastapi.testclient import TestClient  # noqa: E402
 
 from api import projects, routes  # noqa: E402
+from tests.api.planning_wait import (  # noqa: E402
+    generate_plan_and_wait,
+)
 from workflow import service  # noqa: E402
 
 
@@ -154,7 +157,8 @@ def _create_and_approve(client):
     })
     assert created.status_code == 201, created.text
     pid = created.json()["id"]
-    plan = client.post(f"/api/projects/{pid}/plan/generate")
+    # (013.4 §1) التوليد أمر خلفي — ننتظر نتيجته الصادقة
+    plan, _detail = generate_plan_and_wait(client, pid)
     assert plan.status_code == 200, plan.text
     approved = client.post(f"/api/projects/{pid}/plan/approve",
                            json={"approved": True})
@@ -306,6 +310,10 @@ def test_concurrent_run_rejected(client, project_env):
         pid = out.json()["id"]
         assert client.post(
             f"/api/projects/{pid}/plan/generate").status_code == 200
+        # (013.4 §1) التوليد خلفي — أكمل الجلسة قبل الاعتماد
+        from tests.api.planning_wait import wait_for_plan
+
+        wait_for_plan(client, pid)
         return pid
 
     # المصنع البطيء أولًا — اعتماد pid1 يطلق حلقة بطيئة فورًا (013 §3)

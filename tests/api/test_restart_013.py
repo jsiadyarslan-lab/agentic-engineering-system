@@ -41,7 +41,11 @@ def test_server_restart_preserves_workflow(client, project_env,
         "name": "استرداد", "objective": "هدف اختبار الاسترداد",
     })
     pid = created.json()["id"]
+    # (013.4 §1) التوليد خلفي — ننتظر نتيجته
+    from tests.api.planning_wait import wait_for_plan
+
     client.post(f"/api/projects/{pid}/plan/generate")
+    wait_for_plan(client, pid)
     state = client.get(f"/api/projects/{pid}/state").json()
     gate = next((g for g in state["gates"]
                  if g["kind"] == "PLAN_APPROVAL"
