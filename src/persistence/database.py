@@ -58,6 +58,24 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
         "ALTER TABLE engineering_jobs ADD COLUMN resume_token VARCHAR(40) "
         "DEFAULT '' NOT NULL",
     ),
+    # (013.4 §17+§15+§18) دورة حياة المشروع والمحادثة: أرشفة قابلة
+    # للاسترجاع + نسب النسخ المكررة + انتماء المحادثة لمشروع.
+    (
+        "projects.archived_at",
+        "ALTER TABLE projects ADD COLUMN archived_at DATETIME",
+    ),
+    (
+        "projects.original_id",
+        "ALTER TABLE projects ADD COLUMN original_id INTEGER",
+    ),
+    (
+        "conversations.project_id",
+        "ALTER TABLE conversations ADD COLUMN project_id INTEGER",
+    ),
+    (
+        "conversations.archived_at",
+        "ALTER TABLE conversations ADD COLUMN archived_at DATETIME",
+    ),
 )
 
 #: ترحيلات بيانات معلنة (011 §1-§2): بوابات «OPEN» قبل 011 صارت

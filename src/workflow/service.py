@@ -70,6 +70,130 @@ def create_project(sessions, *, name: str, objective: str,
     return get_project(sessions, pid)
 
 
+# ------------------------------------------------------------------ #
+# دورة حياة المشروع (013.4 §11-§17) — تكرار/أرشفة/استرجاع/تسمية
+# ------------------------------------------------------------------ #
+
+def duplicate_project(sessions, source: dict, *, name: str = "") -> dict:
+    """نسخة مشروع جديدة (013.4 §15) — الأصل لا يُمس أبدًا.
+
+    تُنسخ: الهدف والاسم والسياسة وبنية الخطة النشطة إن وُجدت
+    (مراحلها وخطواتها بمعرفات جديدة، مصدرها source_id معلن).
+    لا تُنسخ: الأحداث/الأدلة/الوظائف/البوابات — ملك جولة الأصل.
+    النسخة تولد DRAFT (لا اعتماد موروث — قرار مالك جديد دائمًا).
+    """
+    from execution import policy as execution_policy_mod
+
+    new_name = (name or f"نسخة — {source['name']}").strip()[:200]
+    with sessions() as session:
+        duplicate = Project(
+            name=new_name, objective=source.get("objective", ""),
+            execution_policy=execution_policy_mod.is_valid_policy(
+                source.get("execution_policy")
+            ) and source.get("execution_policy") or "STRICT_ISOLATED",
+            original_id=int(source["id"]),
+        )
+        session.add(duplicate)
+        session.commit()
+        session.refresh(duplicate)
+        new_id = duplicate.id
+
+        # بنية الخطة النشطة (لا سجلها) — إن كان للأصل خطة معتمدة
+        source_plan = None
+        plan_row = session.scalars(
+            select(Plan).where(
+                Plan.project_id == int(source["id"]),
+                Plan.status == "ACTIVE",
+            ).order_by(Plan.id.desc()).limit(1)
+        ).first()
+        if plan_row is not None:
+            source_plan = _plan_dict(plan_row)
+    if source_plan is not None:
+        plan_data = {
+            "objective": source_plan.get("objective", ""),
+            "assumptions": source_plan.get("assumptions", []),
+            "acceptance_criteria": source_plan.get(
+                "acceptance_criteria", []),
+            "phases": [
+                {
+                    "title": p.get("title", ""),
+                    "objective": p.get("objective", ""),
+                    "acceptance_criteria": p.get(
+                        "acceptance_criteria", []),
+                    "steps": [
+                        {
+                            "objective": s.get("objective", ""),
+                            "input": s.get("input", ""),
+                            "expected_output": s.get(
+                                "expected_output", ""),
+                            "acceptance_criteria": s.get(
+                                "acceptance_criteria", []),
+                            "dependencies": s.get("dependencies", []),
+                        }
+                        for s in p.get("steps", [])
+                    ],
+                }
+                for p in source_plan.get("phases", [])
+            ],
+            "risks": source_plan.get("risks", []),
+            "dependencies": source_plan.get("dependencies", []),
+            "required_owner_decisions": source_plan.get(
+                "required_owner_decisions", []),
+            "duplicated_from": {
+                "project_id": int(source["id"]),
+                "plan_id": source_plan.get("id"),
+            },
+        }
+        create_plan(sessions, new_id, plan_data,
+                    supersedes_plan_id=None,
+                    revision_reason="نسخة بنية من مشروع أصلي",
+                    revision_evidence={"source_id": int(source["id"])})
+    add_event(sessions, new_id, "PROJECT_DUPLICATED", {
+        "original_id": int(source["id"]),
+        "source_id": int(source["id"]),
+        "copied_at": _utc_now().isoformat(),
+    })
+    return get_project(sessions, new_id)
+
+
+def archive_project(sessions, project_id: int) -> dict:
+    """أرشفة (013.4 §17) — علم دورة حياة، لا حذف بيانات أبدًا."""
+    with sessions() as session:
+        project = session.get(Project, int(project_id))
+        if project is None:
+            raise KeyError(f"مشروع غير معروف: {project_id}")
+        if project.status == "RUNNING":
+            raise ValueError("المشروع يعمل — لا أرشفة أثناء التشغيل")
+        project.archived_at = _utc_now()
+        project.updated_at = _utc_now()
+        session.commit()
+    return get_project(sessions, project_id)
+
+
+def restore_project(sessions, project_id: int) -> dict:
+    """استرجاع من الأرشيف (013.4 §45) — عودة كاملة للحياة النشطة."""
+    with sessions() as session:
+        project = session.get(Project, int(project_id))
+        if project is None:
+            raise KeyError(f"مشروع غير معروف: {project_id}")
+        project.archived_at = None
+        project.updated_at = _utc_now()
+        session.commit()
+    return get_project(sessions, project_id)
+
+
+def rename_project(sessions, project_id: int, name: str) -> dict:
+    """إعادة تسمية مشروع — أمر دائم بسيط صادق."""
+    with sessions() as session:
+        project = session.get(Project, int(project_id))
+        if project is None:
+            raise KeyError(f"مشروع غير معروف: {project_id}")
+        project.name = name[:200]
+        project.updated_at = _utc_now()
+        session.commit()
+    return get_project(sessions, project_id)
+
+
 def get_project(sessions, project_id: int) -> dict | None:
     with sessions() as session:
         project = session.get(Project, int(project_id))
@@ -93,13 +217,37 @@ def _project_dict(project: Project) -> dict:
         "completion_state": project.completion_state,
         "last_error": project.last_error,
         "execution_policy": project.execution_policy or "STRICT_ISOLATED",
+        # (013.4 §15+§17) دورة الحياة: النسخة والأرشفة معلنتان
+        "archived_at": project.archived_at.isoformat()
+        if getattr(project, "archived_at", None) else None,
+        "original_id": getattr(project, "original_id", None),
     }
 
 
-def list_projects(sessions, limit: int = 200) -> list[dict]:
+def list_projects(sessions, limit: int = 200, *,
+                  include_archived: bool = False) -> list[dict]:
+    """قائمة المشاريع (013.4 §17) — النشطة افتراضيًا.
+
+    المؤرشف لا يظهر في القائمة النشطة لكنه يبقى قابلًا للاستعلام
+    (get_project) والاسترجاع (restore_project) — الأرشفة ليست حذفًا.
+    """
+    with sessions() as session:
+        query = select(Project).order_by(
+            Project.updated_at.desc(), Project.id.desc()
+        )
+        if not include_archived:
+            query = query.where(Project.archived_at.is_(None))
+        rows = session.scalars(query.limit(limit)).all()
+        return [_project_dict(row) for row in rows]
+
+
+def archived_projects(sessions, limit: int = 200) -> list[dict]:
+    """المشاريع المؤرشفة حصرًا — قائمة الاسترجاع (013.4 §45)."""
     with sessions() as session:
         rows = session.scalars(
-            select(Project).order_by(Project.updated_at.desc(), Project.id.desc())
+            select(Project)
+            .where(Project.archived_at.is_not(None))
+            .order_by(Project.archived_at.desc())
             .limit(limit)
         ).all()
         return [_project_dict(row) for row in rows]
@@ -758,6 +906,38 @@ def list_events(sessions, project_id: int, limit: int = 100) -> list[dict]:
             "payload": _jload(r.payload, {}),
             "created_at": r.created_at.isoformat() if r.created_at else None,
         } for r in reversed(rows)]
+
+
+def events_page(sessions, project_id: int, *, before_id: int = 0,
+                limit: int = 100) -> dict:
+    """صفحة أحداث بمؤشر رجوع (013.4 §43) — التاريخ الطويل بلا غرق.
+
+    يعيد {events (تصاعديًا), next_before, has_more}: الأحدث أولًا
+    داخل الاستعلام ثم يُعاد ترتيبها تصاعديًا للعرض. المؤشر قبل
+    الاستخدام لا بعده — استدعاء آخر قبل الاستخدام السابق.
+    """
+    limit = max(1, min(int(limit), 200))
+    with sessions() as session:
+        query = select(ProjectEvent).where(
+            ProjectEvent.project_id == int(project_id)
+        )
+        if int(before_id) > 0:
+            query = query.where(ProjectEvent.id < int(before_id))
+        rows = session.scalars(
+            query.order_by(ProjectEvent.id.desc()).limit(limit + 1)
+        ).all()
+        has_more = len(rows) > limit
+        rows = rows[:limit]
+        events = [{
+            "id": r.id, "project_id": r.project_id, "kind": r.kind,
+            "payload": _jload(r.payload, {}),
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        } for r in rows]
+        return {
+            "events": list(reversed(events)),
+            "next_before": events[-1]["id"] if events else 0,
+            "has_more": has_more,
+        }
 
 
 def list_recent_events(sessions, after_id: int = 0,

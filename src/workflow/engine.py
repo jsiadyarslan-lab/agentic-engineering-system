@@ -108,7 +108,13 @@ class ProjectEngine:
             raise EngineError(str(error)) from error
 
     def generate_plan(self, project_id: int) -> dict:
-        """توليد الخطة (§4) — حي حصرًا: فشل النموذج = فشل صريح لا خطة ملفقة."""
+        """توليد الخطة (§4) — حي حصرًا: فشل النموذج = فشل صريح لا خطة ملفقة.
+
+        (013.4 §1) هذا المسار **المتزامن** يبقى للنداء الداخلي المباشر
+        والاختبارات؛ الواجهة والـAPI يمرّان حصرًا عبر
+        ``start_plan_generation`` — أمر خلفي محدود (جلسة/نبضة/إيجار/
+        تصنيف فشل) لا استدعاءً حاجزًا داخل الطلب.
+        """
         project = self._project(project_id)
         if project["status"] in TERMINAL_STATES:
             raise EngineError(
@@ -117,9 +123,83 @@ class ProjectEngine:
         previous = service.latest_plan(self._sessions, project_id)
         return self._generate_plan(project, previous_failure=None)
 
+    def start_plan_generation(self, project_id: int, *,
+                              previous_failure: dict | None = None,
+                              reason: str = "توليد الخطة") -> dict:
+        """أمر توليد خطة خلفي (013.4 §1-§3) — فوري الوصف بطيء التنفيذ.
+
+        لا استدعاء LLM داخل الطلب أبدًا: جلسة تخطيط دائمة (GENERATING
+        بنبضة وإيجار) + خيط منفّذ مُتتبَّع (request_id/provider/model)
+        + أحداث PLANNING_STARTED/PLAN_GENERATING/MODEL_CALL_*/
+        PLAN_CREATED|PLANNING_FAILED. الفشل مصنّف لا صامت، وموت
+        العملية يوسمه كلب الإيجار INTERRUPTED — لا PLANNING أبديًا.
+        """
+        from workflow import planning_runtime
+
+        return planning_runtime.start_planning(
+            int(project_id),
+            sessions=self._sessions,
+            engine_factory=lambda: self,
+            on_live_event=self._on_event,
+            previous_failure=previous_failure,
+            reason=reason,
+        )
+
+    # (013.4 §1) واجهات يحتاجها زمن تشغيل التخطيط — عمومية صريحة
+    def role_selections(self) -> dict:
+        """ربط الأدوار — للعموم لا للخاصية الخاصة."""
+        return self._role_selections()
+
+    def build_planner(self):
+        """بناء المخطط الحي — نفس مصنع المحرك، علني لجلسة التخطيط."""
+        return self._build_planner()
+
+    def record_generated_plan(self, project_id: int, plan_data: dict, *,
+                              generated_by: dict | None = None,
+                              previous_failure: dict | None = None) -> dict:
+        """تدوين خطة مولّدة (013.4 §2) — الجزء الدائم المشترك.
+
+        خطة v جديدة ← حلّ محل السابقة ← AWAITING_OWNER_APPROVAL ←
+        بوابة اعتماد ← حدث PLAN_APPROVAL_REQUIRED. يُستدعى من المسار
+        المتزامن (_generate_plan) ومن جلسة التخطيط الخلفية معًا —
+        مصدر واحد للتدوين لا مسارين يفترقان.
+        """
+        previous = service.latest_plan(self._sessions, int(project_id))
+        supersedes = previous["id"] if previous else None
+        plan = service.create_plan(
+            self._sessions, int(project_id), plan_data,
+            supersedes_plan_id=supersedes,
+            revision_reason=(
+                (previous_failure or {}).get("reason", "") if supersedes
+                else ""
+            ),
+            revision_evidence=previous_failure or {},
+        )
+        if supersedes:
+            service.supersede_plan(self._sessions, supersedes)
+        service.update_project(
+            self._sessions, int(project_id),
+            status="AWAITING_OWNER_APPROVAL", last_error="",
+        )
+        gate_id = service.open_gate(
+            self._sessions, int(project_id), "PLAN_APPROVAL",
+            f"اعتماد الخطة v{plan['version']} — "
+            f"{len(plan['phases'])} مرحلة",
+            {"plan_id": plan["id"], "version": plan["version"]},
+        )
+        self._emit(int(project_id), "PLAN_APPROVAL_REQUIRED",
+                   {"plan_id": plan["id"], "gate_id": gate_id,
+                    "generated_by": generated_by or {}})
+        return plan
+
     def _generate_plan(self, project: dict, *,
                        previous_failure: dict | None = None) -> dict:
-        """توليد خطة جديدة (v1 أو مراجعة) — PLANNING → نتيجة صادقة."""
+        """توليد خطة جديدة (v1 أو مراجعة) — PLANNING → نتيجة صادقة.
+
+        (013.4 §1) المسار المتزامن الداخلي؛ كل استدعاء خارجي يمر عبر
+        start_plan_generation (خلفي محدود). الفشل يُصنّف عبر زمن
+        التشغيل؛ هذا المسار يوثّق السبب الحرفي في last_error.
+        """
         project_id = project["id"]
         service.update_project(self._sessions, project_id, status="PLANNING")
         try:
@@ -128,36 +208,25 @@ class ProjectEngine:
                 project["objective"], previous_failure=previous_failure
             )
         except Exception as error:  # noqa: BLE001 — فشل صريح موثق
+            from router.call_tracker import classify_failure
+
+            error_class, _detail = classify_failure(error)
             service.update_project(
                 self._sessions, project_id, status="DRAFT",
-                last_error=f"فشل توليد الخطة: {error}",
+                last_error=f"فشل توليد الخطة [{error_class}]: {error}",
             )
-            raise EngineError(f"فشل توليد الخطة: {error}") from error
+            self._emit(project_id, "PLANNING_FAILED", {
+                "error_class": error_class,
+                "error_detail": str(error)[:400],
+                "sync": True, "retry_available": True,
+            })
+            raise EngineError(f"فشل توليد الخطة [{error_class}]: {error}") \
+                from error
 
-        previous = service.latest_plan(self._sessions, project_id)
-        supersedes = previous["id"] if previous else None
-        plan = service.create_plan(
-            self._sessions, project_id, plan_data,
-            supersedes_plan_id=supersedes,
-            revision_reason=(
-                (previous_failure or {}).get("reason", "") if supersedes else ""
-            ),
-            revision_evidence=previous_failure or {},
+        return self.record_generated_plan(
+            project_id, plan_data,
+            previous_failure=previous_failure,
         )
-        if supersedes:
-            service.supersede_plan(self._sessions, supersedes)
-        service.update_project(
-            self._sessions, project_id,
-            status="AWAITING_OWNER_APPROVAL", last_error="",
-        )
-        gate_id = service.open_gate(
-            self._sessions, project_id, "PLAN_APPROVAL",
-            f"اعتماد الخطة v{plan['version']} — {len(plan['phases'])} مرحلة",
-            {"plan_id": plan["id"], "version": plan["version"]},
-        )
-        self._emit(project_id, "PLAN_APPROVAL_REQUIRED",
-                   {"plan_id": plan["id"], "gate_id": gate_id})
-        return plan
 
     def approve_plan(self, project_id: int, *, approved: bool,
                      feedback: str = "") -> dict:
@@ -176,16 +245,22 @@ class ProjectEngine:
             self._emit(project_id, "OWNER_GATE_RESOLVED",
                        {"gate_id": gate["id"], "approved": approved})
         if not approved:
-            # رفض = إعادة توليد بتغذية المالك الراجعة (خطة v جديدة)
+            # (013.4 §1) رفض = إعادة توليد **خلفية** بتغذية المالك
+            # الراجعة — لا استدعاء LLM حاجزًا داخل الطلب؛ الجلسة
+            # تحمل النبضة/الإيجار/التصنيف والأحداث تصل عبر التيار.
             service.update_project(self._sessions, project_id,
                                    status="REVISING", last_error="")
-            return self._generate_plan(
-                project,
+            planning = self.start_plan_generation(
+                project_id,
                 previous_failure={
                     "reason": "رفض المالك للخطة",
                     "feedback": feedback,
                 },
+                reason="إعادة توليد بعد رفض المالك",
             )
+            project_row = service.get_project(self._sessions, project_id)
+            return {**project_row, "planning": planning,
+                    "revision_pending": True}
         service.approve_plan(self._sessions, plan["id"])
         service.materialize_plan(self._sessions, plan)
         service.update_project(self._sessions, project_id,
@@ -229,9 +304,18 @@ class ProjectEngine:
         self._emit(project_id, "PROJECT_VERIFIED", {})
         return service.get_project(self._sessions, project_id)
 
-    def request_stop(self, project_id: int, reason: str = "") -> dict:
-        """طلب إيقاف — علم ذرّي يُكرَّم عند أقرب checkpoint (§9)."""
+    def request_stop(self, project_id: int, reason: str = "",
+                     *, final: bool = False) -> dict:
+        """طلب إيقاف — علم ذرّي يُكرَّم عند أقرب checkpoint (§9).
+
+        (013.4 §12+§13) نيتان معلنتان:
+        - ``final=False`` ← إيقاف مؤقت: PAUSED بلقطة قابلة للاستئناف
+          من نفس الوظيفة الدائمة.
+        - ``final=True`` ← إيقاف نهائي: STOPPED دائمة مع حفظ كل شيء
+          (الأحداث/الأدلة/اللقطات/التاريخ لا تُمس أبدًا).
+        """
         self._project(project_id)
+        _STOP_INTENTS[int(project_id)] = "stop" if final else "pause"
         service.update_project(self._sessions, project_id,
                                stop_requested=True)
         controller = _ACTIVE_CONTROLLERS.get(project_id)
@@ -239,7 +323,200 @@ class ProjectEngine:
             controller.request_stop(
                 f"project-{project_id}", by="owner", reason=reason
             )
+        if final:
+            self._emit(project_id, "OWNER_STOP_REQUESTED", {
+                "reason": reason, "final": True,
+            })
         return service.get_project(self._sessions, project_id)
+
+    # ------------------------------------------------------------------ #
+    # أزرار التحكم الحقيقية (013.4 §11-§17) — كل زر أمر دائم
+    # ------------------------------------------------------------------ #
+
+    def pause(self, project_id: int, reason: str = "") -> dict:
+        """إيقاف مؤقت (013.4 §13) — RUNNING → PAUSING → PAUSED.
+
+        نفس آلية الإيقاف الصادقة (علم ذرّي يُكرَّم عند أقرب checkpoint)
+        لكن بنيّة معلنة: الحلقة تكتب لقطة، الخطوة الجارية تعود READY،
+        والوظيفة تنتظر — الاستئناف من نفس الوظيفة الدائمة بلا نسخ.
+        """
+        project = self._project(project_id)
+        if project["status"] not in ("RUNNING", "READY", "REVISING",
+                                     "PLANNING"):
+            raise EngineError(
+                f"المشروع في حالة {project['status']} — لا إيقافًا مؤقتًا "
+                "من هنا"
+            )
+        self._emit(project_id, "PROJECT_PAUSING", {"reason": reason})
+        result = self.request_stop(
+            project_id, reason or "إيقاف مؤقت من المالك"
+        )
+        # التخطيط الخلفي النشط يتوقف هو أيضًا بنيّة الإيقاف — الجلسة
+        # تُعلق لا تُقتل: لمس النبضة يتوقف فيوسمها الكلب INTERRUPTED
+        # لو ماتت؛ والحية تُكمل بعد الاستئناف بإعادة توليد صريحة.
+        return {**result, "pausing": True}
+
+    def retry(self, project_id: int) -> dict:
+        """إعادة المحاولة (013.4 §11) — آخر فشل يحدد الإجراء الصادق.
+
+        - تخطيط فاشل/منقطع → إعادة توليد خطة (جلسة جديدة retry_of).
+        - خطوة فاشلة/محجوبة → READY + إطلاق الحلقة من checkpoint.
+        - وظيفة فاشلة (خارج كل التزامن) → إطلاق صريح.
+        لا مسار «تجاهل الفشل»: كل فرع يعلن ما يعيده ولماذا.
+        """
+        from workflow import planning_runtime
+
+        project = self._project(project_id)
+        project_id = project["id"]
+        session = planning_runtime.latest_session(self._sessions,
+                                                  project_id)
+        if project["status"] == "PLANNING" or (
+            session is not None and session["state"] == "GENERATING"
+        ):
+            raise EngineError(
+                "التوليد جارٍ الآن — انتظر نتيجته أو أوقفه أولًا"
+            )
+        if session is not None and session["state"] in (
+            "FAILED", "INTERRUPTED"
+        ):
+            planning = self.start_plan_generation(
+                project_id,
+                previous_failure={
+                    "reason": f"إعادة صريحة بعد {session['error_class']}",
+                    "last_error": session.get("error_detail", ""),
+                },
+                reason="إعادة المحاولة من المالك",
+            )
+            self._emit(project_id, "RETRY_REQUESTED", {
+                "target": "planning",
+                "from_session": session["id"],
+                "error_class": session["error_class"],
+            })
+            return {"retried": "planning", "planning": planning}
+
+        plan = self._active_plan(project)
+        failed_steps = [
+            s for s in self._pending_steps(
+                project_id, plan_id=plan["id"] if plan else None
+            )
+            if s["status"] in ("FAILED", "BLOCKED")
+        ]
+        if failed_steps and plan is not None:
+            for step in failed_steps:
+                service.update_step(self._sessions, step["id"],
+                                    status="READY", last_error="")
+            service.update_project(self._sessions, project_id,
+                                   status="READY", last_error="",
+                                   stop_requested=False)
+            self._emit(project_id, "RETRY_REQUESTED", {
+                "target": "steps",
+                "step_ids": [s["id"] for s in failed_steps],
+            })
+            return {"retried": "steps",
+                    "step_ids": [s["id"] for s in failed_steps]}
+        # لا فشل محدد — إطلاق صريح للحلقة إن كان المشروع قابلًا للتشغيل
+        if project["status"] in ("PAUSED", "BLOCKED", "READY", "DRAFT"):
+            if project["status"] == "BLOCKED":
+                gates = [g for g in service.open_gates(
+                    self._sessions, project_id
+                ) if g["status"] == "PENDING"]
+                if gates:
+                    raise EngineError(
+                        "بوابات قرار تنتظرك — عالجها أولًا: "
+                        + "؛ ".join(g["kind"] for g in gates)
+                    )
+            service.update_project(self._sessions, project_id,
+                                   stop_requested=False)
+            self._emit(project_id, "RETRY_REQUESTED",
+                       {"target": "run"})
+            return {"retried": "run"}
+        raise EngineError(
+            f"لا شيء يعاد محاكمته — الحالة {project['status']} "
+            "بلا فشل تخطيط أو خطوة"
+        )
+
+    def duplicate_project(self, project_id: int, *,
+                          name: str = "") -> dict:
+        """تكرار مشروع (013.4 §15) — نسخة جديدة لا تمس الأصل أبدًا.
+
+        النسخة: الهدف + الاسم + السياسة + الخطة المعتمدة إن وجدت
+        (بنيتها لا سجلها) بحالة DRAFT جديدة وoriginal_id يشير للأصل.
+        الأدلة/الأحداث/الوظائف لا تُنسخ — ملك جولة الأصل وحدها.
+        """
+        source = self._project(project_id)
+        duplicate = service.duplicate_project(
+            self._sessions, source, name=name
+        )
+        self._emit(duplicate["id"], "PROJECT_DUPLICATED", {
+            "original_id": source["id"],
+            "source_id": source["id"],
+            "copied_at": duplicate["created_at"],
+            "note": "نسخة من مشروع قائم — الأصل لم يُمس",
+        })
+        return duplicate
+
+    def archive_project(self, project_id: int) -> dict:
+        """أرشفة (013.4 §17) — دورة حياة لا حذفًا.
+
+        المشروع المؤرشف: يبقى قابلًا للاستعلام والاسترجاع، لا
+        يُنفَّذ، ولا يظهر في القائمة النشطة افتراضيًا. كل الأحداث
+        والأدلة والخطة تبقى كما هي حرفيًا.
+        """
+        project = self._project(project_id)
+        if project["status"] == "RUNNING":
+            raise EngineError(
+                "المشروع يعمل — أوقفه أو أوقفه مؤقتًا قبل الأرشفة"
+            )
+        if project.get("archived_at"):
+            return project   # أرشفة مرتين = نفس الحالة (idempotent)
+        result = service.archive_project(self._sessions, project_id)
+        self._emit(project_id, "PROJECT_ARCHIVED", {
+            "archived_at": result["archived_at"],
+            "note": "الأرشفة لا تحذف بيانات — الاسترجاع متاح دائمًا",
+        })
+        return result
+
+    def restore_project(self, project_id: int) -> dict:
+        """استرجاع من الأرشيف (013.4 §45) — عودة للحياة النشطة."""
+        project = self._project(project_id)
+        if not project.get("archived_at"):
+            return project
+        result = service.restore_project(self._sessions, project_id)
+        self._emit(project_id, "PROJECT_RESTORED", {
+            "from_archived_at": project["archived_at"],
+        })
+        return result
+
+    def rename_project(self, project_id: int, name: str) -> dict:
+        """إعادة تسمية — أمر دائم بحدث معلن (013.4 §11)."""
+        project = self._project(project_id)
+        name = (name or "").strip()
+        if not name:
+            raise EngineError("الاسم الجديد مطلوب — لا فراغًا")
+        result = service.rename_project(self._sessions, project_id, name)
+        self._emit(project_id, "PROJECT_RENAMED", {
+            "from": project["name"], "to": name,
+        })
+        return result
+
+    @staticmethod
+    def _planning_wait_text(view: dict) -> str:
+        """نص «ما الذي ينتظره التخطيط» (013.4 §3) — حرفي لا عام."""
+        detail = view.get("detail") or {}
+        waiting = view.get("waiting_for") or {}
+        if not view.get("active"):
+            return "لا جلسة تخطيط نشطة"
+        parts = []
+        if waiting.get("provider"):
+            parts.append(f"المزود {waiting.get('provider')}")
+        if waiting.get("model"):
+            parts.append(f"النموذج {waiting.get('model')}")
+        if waiting.get("request_id"):
+            parts.append(f"الطلب {waiting.get('request_id')}")
+        if detail.get("elapsed_s") is not None:
+            parts.append(f"مضى {detail.get('elapsed_s')}ث")
+        return "ينتظر استدعاء النموذج (" + " · ".join(parts) + ")" \
+            if parts else "ينتظر استدعاء النموذج"
 
     def resume(self, project_id: int) -> dict:
         """استئناف صريح — من checkpoint بعد إيقاف أو قرار مالك (§9)."""
@@ -285,11 +562,16 @@ class ProjectEngine:
                                    status="STOPPED", last_error="رفض المالك البوابة")
             return outcome
         if outcome["kind"] == "PLAN_REVISION_APPROVAL":
-            # موافقة على مراجعة الخطة → توليد v جديدة بسياق الفشل (§4)
+            # (013.4 §1) موافقة على مراجعة الخطة ← توليد v جديدة
+            # بسياق الفشل — خلفيًا محدودًا (جلسة/نبضة/إيجار) لا
+            # استدعاءً حاجزًا داخل طلب حل البوابة.
             failure = self._last_failure_context(project_id)
             service.update_project(self._sessions, project_id,
                                    status="REVISING", last_error="")
-            self._generate_plan(project, previous_failure=failure)
+            self.start_plan_generation(
+                project_id, previous_failure=failure,
+                reason="مراجعة خطة بعد بوابة مالك",
+            )
         elif outcome["kind"] == "PROVIDER_ACTION_REQUIRED":
             # المالك عالج المزود → الخطوة الجاهزة للإعادة والاستئناف صريح
             plan = self._active_plan(project)
@@ -364,24 +646,63 @@ class ProjectEngine:
             return {"action": "wait_owner",
                     "reason": "الخطة تنتظر اعتماد المالك"}
 
-        # إيقاف مطلوب — يُكرَّم فورًا عند هذا الحد الآمن (§9)
+        # إيقاف مطلوب — يُكرَّم فورًا عند هذا الحد الآمن (§9)؛ النية
+        # (مؤقت/نهائي 013.4 §12) مسجلة مع الطلب نفسه
         if project["stop_requested"]:
-            return self._pause(project, "طلب إيقاف المالك")
+            intent = _STOP_INTENTS.get(project_id, "pause")
+            return self._pause(
+                project, "طلب إيقاف المالك", final=(intent == "stop"),
+            )
 
         # لا خطة معتمدة → توليد (DRAFT/REVISING) — الحلقة تتضمن Planner
+        # (013.4 §1+§3) التوليد **أمر خلفي محدود** — لا استدعاء LLM
+        # داخل الحلقة أبدًا: الجلسة تحمل المزود/النموذج/request_id/
+        # النبضة/الإيجار، والحلقة تنتظر wait_planning بتفسير حرفي.
         plan = self._active_plan(project)
         if plan is None:
-            if status == "PLANNING":
-                return {"action": "failed",
-                        "reason": "توليد الخطة لم يكتمل — أعد المحاولة"}
+            from workflow import planning_runtime
+
+            session = planning_runtime.latest_session(
+                self._sessions, project_id
+            )
+            if status == "PLANNING" or (
+                session is not None and session["state"] == "GENERATING"
+            ):
+                view = planning_runtime.session_view(
+                    self._sessions, project_id
+                )
+                return {
+                    "action": "wait_planning",
+                    "reason": "توليد الخطة جارٍ — "
+                              + self._planning_wait_text(view),
+                    "planning": view,
+                }
+            if session is not None and session["state"] in (
+                "FAILED", "INTERRUPTED"
+            ):
+                return {
+                    "action": "failed",
+                    "reason": (
+                        f"توليد الخطة فشل "
+                        f"[{session.get('error_class', '?')}] — "
+                        "أعد المحاولة أو راجع المزود"
+                    ),
+                    "planning": session,
+                }
             failure = None
             latest = service.latest_plan(self._sessions, project_id)
             if latest is not None and latest["status"] == "REJECTED":
                 failure = {"reason": "رفض سابق", "feedback": ""}
-            plan = self._generate_plan(project, previous_failure=failure)
-            return {"action": "wait_owner",
-                    "reason": "خطة جديدة تنتظر الاعتماد",
-                    "plan_id": plan["id"]}
+            self.start_plan_generation(
+                project_id, previous_failure=failure,
+                reason="الحلقة بلا خطة معتمدة — توليد خطة",
+            )
+            return {"action": "wait_planning",
+                    "reason": "بدأ توليد الخطة خلفيًا — الجلسة تحمل "
+                              "المزود والنموذج والنبضة",
+                    "planning": planning_runtime.session_view(
+                        self._sessions, project_id
+                    )}
 
         # (011 §2+§27) عند الجاهزية: حاجز الفحص قبل أول خطوة —
         # APPROVED + PASS = OPEN؛ APPROVED + BLOCKED = بوابة توفير
@@ -427,7 +748,8 @@ class ProjectEngine:
             last = self.tick(project_id)
             ticks += 1
             if last.get("action") in (
-                "none", "paused", "blocked", "wait_owner", "failed",
+                "none", "paused", "stopped", "blocked", "wait_owner",
+                "failed", "wait_planning",
             ):
                 break
         last["ticks"] = ticks
@@ -1200,7 +1522,13 @@ class ProjectEngine:
         return {"action": "wait_owner",
                 "reason": "مرشح — التحقق النهائي للمالك", "gate_id": gate_id}
 
-    def _pause(self, project: dict, reason: str) -> dict:
+    def _pause(self, project: dict, reason: str,
+               *, final: bool = False) -> dict:
+        """توقف عند checkpoint (§9) — مؤقت قابل للاستئناف أو نهائي.
+
+        (013.4 §12) الإيقاف النهائي يكتب STOPPED دائمة: لا حذف — كل
+        الأحداث والأدلة واللقطات والتاريخ تبقى حرفيًا كما هي.
+        """
         project_id = project["id"]
         plan = self._active_plan(project)
         phase = service.get_phase(
@@ -1210,6 +1538,18 @@ class ProjectEngine:
             self._sessions, project["current_step_id"]
         ) if project["current_step_id"] else None
         self._checkpoint(project_id, plan, phase, step)
+        _STOP_INTENTS.pop(int(project_id), None)
+        if final:
+            service.update_project(
+                self._sessions, project_id,
+                status="STOPPED", stop_requested=False,
+            )
+            self._emit(project_id, "PROJECT_STOPPED", {
+                "reason": reason, "final": True,
+                "preserved": ["events", "evidence", "checkpoints",
+                              "history"],
+            })
+            return {"action": "stopped", "reason": reason}
         service.update_project(self._sessions, project_id,
                                status="PAUSED", stop_requested=False)
         self._emit(project_id, "PROJECT_PAUSED", {"reason": reason})
@@ -1355,6 +1695,10 @@ class ProjectEngine:
 #: الحالة الدائمة في القاعدة، والمرجع يُمسح عند نهاية الخطوة).
 _ACTIVE_CONTROLLERS: dict[int, Any] = {}
 _ACTIVE_LOCK = threading.Lock()
+
+#: (013.4 §12) نية الإيقاف لكل مشروع — "pause" مؤقت قابل للاستئناف
+#: أو "stop" نهائي دائم؛ تُقرأ عند أقرب checkpoint وتُمسح بعده.
+_STOP_INTENTS: dict[int, str] = {}
 
 
 def _git_head() -> str:

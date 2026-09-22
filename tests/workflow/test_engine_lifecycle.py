@@ -195,6 +195,14 @@ def test_plan_revision_creates_v2_without_deleting_v1(wf_env):
     assert gates and gates[0]["kind"] == "PLAN_REVISION_APPROVAL"
 
     engine.resolve_gate(pid, gates[0]["id"], approved=True)
+    # (013.4 §1) المراجعة صارت أمرًا خلفيًا محدودًا — ننتظر الجلسة
+    # ل حالتها النهائية بلا سقف انتظار مفتوح (نفس عقد المنتج).
+    from workflow import planning_runtime
+
+    session = planning_runtime.wait_for_planning(
+        wf_env["sessions"], pid, timeout=15.0
+    )
+    assert session["state"] == "COMPLETED", session
     plans = [
         p for p in [service.latest_plan(wf_env["sessions"], pid)]
     ]

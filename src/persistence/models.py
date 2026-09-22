@@ -36,6 +36,8 @@ class Conversation(Base):
 
     mode (الأمر 006 §2+§14): "chat" محادثة بنموذج واحد أو "task"
     مهمة بدورة الأدوار الخمسة — كل محادثة تعرف نمطها.
+    project_id (013.4 §18): انتماء اختياري لمشروع — نقل محادثة إلى
+    مشروع لا يمس تاريخها أبدًا (نفس الصف، عمود رابط فقط).
     """
 
     __tablename__ = "conversations"
@@ -43,6 +45,11 @@ class Conversation(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(200), default="محادثة جديدة")
     mode: Mapped[str] = mapped_column(String(10), default="chat")
+    project_id: Mapped[int | None] = mapped_column(Integer, nullable=True,
+                                                   index=True)
+    archived_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
     created_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
     updated_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
 

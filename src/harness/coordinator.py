@@ -26,28 +26,35 @@ JOB_TRANSITIONS: dict[str, tuple[str, ...]] = {
     "QUEUED": ("RUNNING", "PAUSED", "FAILED", "STOPPED"),
     "RUNNING": (
         "RUNNING", "RETRYING", "REVISING", "WAITING_CAPABILITY",
-        "WAITING_WORKER", "WAITING_GATE", "PAUSED", "COMPLETED",
-        "FAILED", "STOPPED", "ESCALATED", "INTERRUPTED",
+        "WAITING_WORKER", "WAITING_GATE", "WAITING_PLANNING",
+        "PAUSED", "COMPLETED", "FAILED", "STOPPED", "ESCALATED",
+        "INTERRUPTED",
     ),
     "RETRYING": (
         "RUNNING", "RETRYING", "REVISING", "WAITING_CAPABILITY",
-        "WAITING_WORKER", "WAITING_GATE", "PAUSED", "FAILED",
-        "STOPPED", "ESCALATED",
+        "WAITING_WORKER", "WAITING_GATE", "WAITING_PLANNING",
+        "PAUSED", "FAILED", "STOPPED", "ESCALATED",
     ),
     "REVISING": (
-        "RUNNING", "WAITING_GATE", "PAUSED", "FAILED", "STOPPED",
+        "RUNNING", "WAITING_GATE", "WAITING_PLANNING", "PAUSED",
+        "FAILED", "STOPPED",
     ),
     "WAITING_CAPABILITY": (
         "QUEUED", "RUNNING", "WAITING_CAPABILITY", "WAITING_WORKER",
-        "PAUSED", "FAILED", "STOPPED",
+        "WAITING_PLANNING", "PAUSED", "FAILED", "STOPPED",
     ),
     "WAITING_WORKER": (
         "QUEUED", "RUNNING", "WAITING_WORKER", "WAITING_CAPABILITY",
-        "PAUSED", "FAILED", "STOPPED",
+        "WAITING_PLANNING", "PAUSED", "FAILED", "STOPPED",
     ),
     "WAITING_GATE": (
         "QUEUED", "RUNNING", "WAITING_GATE", "REVISING", "PAUSED",
         "COMPLETED", "FAILED", "STOPPED", "ESCALATED",
+    ),
+    # (013.4 §2) التخطيط الخلفي جارٍ — الجلسة تحمل النبضة والإيجار
+    "WAITING_PLANNING": (
+        "QUEUED", "RUNNING", "WAITING_GATE", "WAITING_PLANNING",
+        "PAUSED", "FAILED", "STOPPED",
     ),
     "PAUSED": ("QUEUED", "RUNNING", "PAUSED", "STOPPED", "FAILED"),
     "INTERRUPTED": ("QUEUED", "RUNNING", "STOPPED", "FAILED"),
@@ -55,8 +62,8 @@ JOB_TRANSITIONS: dict[str, tuple[str, ...]] = {
 }
 
 #: أفعال tick التي توقف الحلقة (نفس روح engine.run).
-_TICK_STOP_ACTIONS = ("none", "paused", "blocked", "wait_owner",
-                      "failed")
+_TICK_STOP_ACTIONS = ("none", "paused", "stopped", "blocked",
+                      "wait_owner", "failed", "wait_planning")
 
 #: بوابات تعني «مزود/قدرة غير جاهزة» — انتظار قدرة لا قرارًا.
 _CAPABILITY_GATE_KINDS = ("PROVIDER_ACTION_REQUIRED",)
@@ -69,8 +76,9 @@ def can_transition(current: str, target: str) -> bool:
     return target in JOB_TRANSITIONS.get(current, ())
 
 
-#: أنواع الانتظار الثلاثة الصادقة (مطابقة harness/models).
-WAITING_KINDS = ("CAPABILITY", "WORKER", "GATE")
+#: أنواع الانتظار الصادقة (مطابقة harness/models) — التخطيط
+#: الخلفي (013.4 §2) انتظار من عائلة القدرة لكنه معلن باسمه.
+WAITING_KINDS = ("CAPABILITY", "WORKER", "GATE", "PLANNING")
 
 
 def classify_tick(tick_result: dict, *, project: dict,
@@ -136,6 +144,17 @@ def classify_tick(tick_result: dict, *, project: dict,
                                                               "")},
                 "terminal": False, "stop": True}
 
+    if action == "stopped":
+        # (013.4 §12) إيقاف نهائي دائم — الوظيفة تغلق صادقة والبيانات
+        # كلها محفوظة (لا حذف أبدًا)
+        return {"status": "STOPPED", "waiting_kind": "",
+                "waiting_detail": {
+                    "summary": tick_result.get("reason", "إيقاف نهائي"),
+                    "preserved": ["events", "evidence", "checkpoints",
+                                  "history"],
+                },
+                "terminal": True, "stop": True}
+
     if action == "failed":
         return {"status": "FAILED", "waiting_kind": "",
                 "waiting_detail": {"summary": tick_result.get("reason",
@@ -149,6 +168,20 @@ def classify_tick(tick_result: dict, *, project: dict,
             "waiting_detail": {
                 "summary": tick_result.get("reason", "قرار مالك معلق"),
                 "gate_kinds": gate_kinds,
+            },
+            "terminal": False, "stop": True,
+        }
+
+    if action == "wait_planning":
+        # (013.4 §2+§3) التخطيط الخلفي جارٍ — انتظار تخطيط معلن
+        # بجلسته: المزود/النموذج/الطلب/النبضة كلها في waiting_detail.
+        planning = tick_result.get("planning") or {}
+        return {
+            "status": "WAITING_PLANNING", "waiting_kind": "PLANNING",
+            "waiting_detail": {
+                "summary": tick_result.get("reason",
+                                           "توليد الخطة جارٍ"),
+                "planning": planning,
             },
             "terminal": False, "stop": True,
         }
@@ -288,6 +321,8 @@ def waiting_unblock_path(waiting_kind: str) -> str:
         "WORKER": "أضف بيئة تنفيذ (عامل Linux/WSL2 أو ركيزة محلية) "
                   "← تحقق منها ← أعد الفحص ← استئناف",
         "GATE": "عالج البوابة المعلقة من صفحة المشروع — القرار لك",
+        "PLANNING": "انتظر اكتمال التوليد أو أعده من زر الإعادة — "
+                    "الجلسة تعرض ما تنتظره حرفيًا",
     }.get(waiting_kind, "")
 
 

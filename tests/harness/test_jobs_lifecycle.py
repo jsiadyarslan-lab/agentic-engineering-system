@@ -204,11 +204,18 @@ def test_exhausted_failures_wait_revision_gate(harness_env, sandbox_seam):
     # إعادة واحدة معلنة ثم التصعيد (المحاولة المستنفدة تصعَّد بلا إعادة)
     assert job["retries"] == 1
 
-    # المالك وافق المراجعة ← خطة v2 تُولد ← «أصلح البيئة» فنجحت
+    # المالك وافق المراجعة ← خطة v2 تُولد (خلفية محدودة 013.4 §1)
+    # ← «أصلح البيئة» فنجحت
     gates = [g for g in service.list_gates(sessions, pid)
              if g["kind"] == "PLAN_REVISION_APPROVAL"
              and g["status"] == "PENDING"]
     engine.resolve_gate(pid, gates[0]["id"], approved=True)
+    # (013.4 §1) التوليد خلفي — ننتظر الجلسة نهايتها الصادقة
+    from workflow import planning_runtime
+
+    session = planning_runtime.wait_for_planning(sessions, pid,
+                                                 timeout=15.0)
+    assert session["state"] == "COMPLETED", session
     engine.approve_plan(pid, approved=True)     # خطة v2
     env["executor"].fail_prefixes = ()          # الإصلاح: تنجح الآن
 

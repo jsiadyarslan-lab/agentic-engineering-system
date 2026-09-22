@@ -135,8 +135,10 @@ def test_tables_per_family_documented():
     from workflow.models import WORKFLOW_TABLES
 
     assert TABLE_COUNT == 3  # المنتج اليومي: محادثات/رسائل/أحداث أدوار
-    assert len(WORKFLOW_TABLES) == 11  # Project/Plan/Phase/Step/Execution/
-    # Evidence/Audit/Retry/Checkpoint/OwnerGate/ProjectEvent
+    assert len(WORKFLOW_TABLES) == 12  # Project/Plan/Phase/Step/Execution/
+    # Evidence/Audit/Retry/Checkpoint/OwnerGate/ProjectEvent/PlanningSession
+    # (013.4 §2) PlanningSession: جلسة التخطيط الدائمة — عقد الحالة
+    # المحدود (نبضة/إيجار/تصنيف فشل) بدل PLANNING أبديًا صامتًا
     provider_tables = {
         t for t in provider_models.Base.metadata.tables
         if t in ("providers", "provider_configurations", "role_provider_mappings")
@@ -153,7 +155,7 @@ def test_tables_per_family_documented():
     assert len(EXECUTION_TABLES) == 3
     total = 3 + len(WORKFLOW_TABLES) + len(provider_tables) \
         + len(READINESS_TABLES) + len(EXECUTION_TABLES)
-    assert total == 22
+    assert total == 23  # 22 + PlanningSession (013.4 §2)
 
 
 def test_cycle_structure_is_the_five_roles_in_order():

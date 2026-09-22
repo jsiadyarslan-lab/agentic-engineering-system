@@ -172,6 +172,13 @@ def launch(
         _ACTIVE["handle"] = handle
 
     _ensure_watchdog(sessions)  # (013.1 §17) الكلب خامل من أول إطلاق
+    # (013.4 §7) كلب سير العمل: جلسات تخطيط ميتة + وظائف متقادمة
+    try:
+        from workflow import watchdog as workflow_watchdog
+
+        workflow_watchdog.ensure_watchdog(sessions)
+    except Exception:  # noqa: BLE001 — الكلب لا يمنع الإطلاق أبدًا
+        pass
     _RUN_EXECUTOR.submit(
         _run_loop_thread, handle, engine_factory, sessions, reason
     )
