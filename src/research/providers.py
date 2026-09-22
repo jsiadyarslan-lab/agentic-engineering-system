@@ -1,12 +1,17 @@
-"""مزودو البحث الحقيقيون (الأمر 010 §25) — البحث قابل للتوفير.
+"""مزودو البحث الحقيقيون (الأمر 010 §25 + 013.2 — إصلاح البحث) — البحث قابل للتوفير.
 
-ثلاثة مزودين حقيقيين فقط، لا أكثر ولا أقل — كل واحد بتنفيذه الفعلي:
+أربعة مزودين حقيقيين فقط، لا أكثر ولا أقل — كل واحد بتنفيذه الفعلي:
 
-- DuckDuckGoSearchProvider: بحث DDG HTML بلا مفاتيح (الافتراضي)
+- DuckDuckGoSearchProvider: بحث DDG متعدد الاستراتيجيات بلا مفاتيح
+  (lite GET ← lite POST ← html POST) — نقطة html وحدها صارت تعيد
+  صفحة تحدّ (anomaly) فيرفضها المحلل؛ الاستراتيجيات الثلاث تُجرّب
+  بالترتيب مع كشف التحدّ الصريح (013.2: لا «0 روابط خام» غامضة).
+- BingSearchProvider:      بحث Bing HTML بلا مفاتيح — تحليل b_algo
+  + فك روابط إعادة التوجيه ck/a — احتياطي DDG المفعّل افتراضيًا
 - SearxJsonSearchProvider:  مثيل SearXNG برابط يملكه المالك (JSON API)
 - ApiSearchProvider:        نقطة نهاية JSON عامة يملكها المالك + مفتاح
 
-المخطط (Planner) لا يتزوج DDG أبدًا (§25): يستدعي research.search()
+المخطط (Planner) لا يتزوج مزودًا أبدًا (§25): يستدعي research.search()
 فتُستخدم أول مزود جاهز — والفشل يعاد بتصنيف مفصل لكل مزود.
 """
 
@@ -29,6 +34,17 @@ _USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
+
+#: ترويسات متصفح كاملة (013.2): النقل المجرد بلا Accept/Language كان
+#: يسهّل على DDG كشف الطلب الآلي ورد صفحة التحدّ (anomaly).
+_BROWSER_HEADERS = {
+    "User-Agent": _USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
+              "*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+}
 
 #: فشل مصنَّف موحد — نقل منفصل عن التحليل (إضافة 008 §3)
 SEARCH_NOT_READY = "SEARCH_PROVIDER_NOT_READY"
@@ -63,42 +79,117 @@ def _tag(text: str) -> str:
 
 
 # ------------------------------------------------------------------ #
-# DuckDuckGo — HTML بلا مفاتيح
+# DuckDuckGo — متعدد الاستراتيجيات بلا مفاتيح (013.2: إصلاح البحث)
 # ------------------------------------------------------------------ #
 
 class DuckDuckGoSearchProvider:
-    """بحث DuckDuckGo HTML — POST بصيغة نموذج، بلا مفاتيح."""
+    """بحث DuckDuckGo — ثلاث استراتيجيات تُجرّب بالترتيب (013.2).
+
+    نقطة ``html`` بـPOST كانت تعيد صفحة تحدّ (anomaly-modal) لطلبات
+    الأتمتة — نقل ناجح وصفر روابط «لا نتائج قابلة للتحليل». الآن:
+    lite GET ← lite POST ← html POST، بترويسات متصفح كاملة، وكشف
+    التحدّ مصنفًا باسمه — وأي استراتيجية تنجح تُستخدم نتائجها.
+    """
 
     provider_id = "ddg"
     kind = "search_ddg"
 
-    def __init__(self, endpoint: str = "https://html.duckduckgo.com/html/"):
+    _STRATEGIES: tuple[tuple[str, str, str], ...] = (
+        # (اسم الاستراتيجية، نقطة النهاية، الطريقة)
+        ("lite-get", "https://lite.duckduckgo.com/lite/", "GET"),
+        ("lite-post", "https://lite.duckduckgo.com/lite/", "POST"),
+        ("html-post", "https://html.duckduckgo.com/html/", "POST"),
+    )
+
+    def __init__(self, endpoint: str = ""):
+        #: endpoint مخصص (اختبارات/وكيل) يلغي الاستراتيجيات المتعددة
         self.endpoint = endpoint
 
     def describe(self) -> dict:
         return {
             "provider_id": self.provider_id, "kind": self.kind,
-            "name": "DuckDuckGo (HTML)",
-            "requires_key": False, "config": {"endpoint": self.endpoint},
+            "name": "DuckDuckGo (بلا مفاتيح)",
+            "requires_key": False,
+            "config": {
+                "endpoint": self.endpoint or "auto (lite/html ×3)",
+                "strategies": [s[0] for s in self._STRATEGIES]
+                if not self.endpoint else ["custom"],
+            },
         }
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
-        body = urllib.parse.urlencode({"q": query}).encode("utf-8")
-        request = urllib.request.Request(
-            self.endpoint, data=body, method="POST",
-            headers={
-                "User-Agent": _USER_AGENT,
+    def _fetch(self, endpoint: str, method: str, query: str,
+               timeout: float) -> str:
+        if method == "POST":
+            data = urllib.parse.urlencode({"q": query}).encode("utf-8")
+            headers = {
+                **_BROWSER_HEADERS,
                 "Content-Type": "application/x-www-form-urlencoded",
-            },
+            }
+            request = urllib.request.Request(
+                endpoint, data=data, method="POST", headers=headers,
+            )
+        else:
+            url = endpoint + "?q=" + urllib.parse.quote(query)
+            request = urllib.request.Request(
+                url, headers=dict(_BROWSER_HEADERS),
+            )
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.read().decode("utf-8", "replace")
+
+    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+        attempts: list[dict] = []
+        if self.endpoint:
+            strategies = [("custom", self.endpoint, "POST")]
+        else:
+            strategies = list(self._STRATEGIES)
+        for name, endpoint, method in strategies:
+            try:
+                page = self._fetch(endpoint, method, query, timeout)
+            except Exception as error:  # noqa: BLE001 — جرب التالية
+                attempts.append({
+                    "strategy": name,
+                    "error": f"{type(error).__name__}: {error}"[:140],
+                })
+                continue
+            if _is_challenge_page(page):
+                attempts.append({
+                    "strategy": name,
+                    "error": "صفحة تحدّ (anomaly) — DDG حجب هذا "
+                            "المضيف مؤقتًا",
+                })
+                continue
+            try:
+                results = _ddg_parse(page, query)
+            except ProviderNotReady as error:
+                attempts.append({
+                    "strategy": name,
+                    "error": str(error)[:140],
+                })
+                continue
+            if results:
+                return results
+            attempts.append({
+                "strategy": name, "error": "لا نتائج قابلة للتحليل",
+            })
+        detail = "؛ ".join(
+            f"{a['strategy']}: {a['error']}" for a in attempts
+        ) or "لا استراتيجيات"
+        raise ProviderNotReady(
+            f"ddg: كل الاستراتيجيات فشلت — {detail}",
+            reason="RESULTS_NOT_ANALYZABLE",
+            details={"query": query[:200], "attempts": attempts},
         )
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                page = response.read().decode("utf-8", "replace")
-        except Exception as error:  # noqa: BLE001 — تصنيف واحد
-            raise ProviderNotReady(
-                f"ddg: نقل فاشل — {type(error).__name__}: {error}"
-            ) from error
-        return _ddg_parse(page, query)
+
+
+def _is_challenge_page(page: str) -> bool:
+    """هل الصفحة تحدّ/كابتشا لا نتائج؟ (013.2 — تصنيف صادق)"""
+    head = page[:6000].lower()
+    return (
+        "anomaly" in head
+        or "challenge" in head
+        or "js-anomaly" in page
+        or "captcha" in head
+    )
 
 
 _RESULT_LINK = re.compile(
@@ -107,6 +198,15 @@ _RESULT_LINK = re.compile(
 )
 _RESULT_SNIPPET = re.compile(
     r'<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>', re.DOTALL
+)
+
+#: صفحة lite: الروابط بخلاصة result-link والنصوص في خلايا td تالية
+_LITE_LINK = re.compile(
+    r'<a[^>]+class="[^"]*result-link[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+    re.DOTALL,
+)
+_LITE_SNIPPET = re.compile(
+    r'class="result-snippet"[^>]*>(.*?)</td>', re.DOTALL
 )
 
 
@@ -122,8 +222,14 @@ def _ddg_redirect_url(raw: str) -> str:
 
 
 def _ddg_parse(page: str, query: str) -> list[dict]:
+    """تحليل صفحات DDG — ترميز html (result__a) وترميز lite (result-link)."""
     links = _RESULT_LINK.findall(page)
     snippets = _RESULT_SNIPPET.findall(page)
+    markup = "html"
+    if not links:
+        links = _LITE_LINK.findall(page)
+        snippets = _LITE_SNIPPET.findall(page)
+        markup = "lite"
     results: list[dict] = []
     for index, (raw_url, title_html) in enumerate(links[:MAX_SEARCH_RESULTS]):
         title = html_lib.unescape(_tag(title_html)).strip()
@@ -137,14 +243,108 @@ def _ddg_parse(page: str, query: str) -> list[dict]:
             results.append({"title": title, "url": url, "snippet": snippet})
     if not results:
         raise ProviderNotReady(
-            f"ddg: لا نتائج قابلة للتحليل ({len(links)} روابط خام) "
-            f"لاستعلام: {query[:60]}",
+            f"ddg ({markup}): لا نتائج قابلة للتحليل "
+            f"({len(links)} روابط خام) لاستعلام: {query[:60]}",
             reason="RESULTS_NOT_ANALYZABLE",
             details={"query": query[:200], "transport": "SUCCESS",
-                     "page_chars": len(page), "links_extracted": len(links),
+                     "markup": markup, "page_chars": len(page),
+                     "links_extracted": len(links),
                      "snippets_extracted": len(snippets)},
         )
     return results
+
+
+# ------------------------------------------------------------------ #
+# Bing — HTML بلا مفاتيح (013.2: الاحتياطي المفعّل لبحث يعمل فعلًا)
+# ------------------------------------------------------------------ #
+
+class BingSearchProvider:
+    """بحث Bing HTML بلا مفاتيح — تحليل b_algo مع فك روابط ck/a.
+
+    DDG صار يحجب الأتمتة بصفحات تحدّ متكررة؛ Bing يرد صفحة نتائج
+    قابلة للتحليل — فيصير المسار الافتراضي: ddg ثم bing ثم searx/api.
+    روابط Bing معادة التوجيه (bing.com/ck/a؟...&u=a1<base64url>)
+    تُفك للموقع الحقيقي قبل إعادته.
+    """
+
+    provider_id = "bing"
+    kind = "search_bing"
+
+    def __init__(self, endpoint: str = "https://www.bing.com/search"):
+        self.endpoint = endpoint
+
+    def describe(self) -> dict:
+        return {
+            "provider_id": self.provider_id, "kind": self.kind,
+            "name": "Bing (بلا مفاتيح)",
+            "requires_key": False,
+            "config": {"endpoint": self.endpoint},
+        }
+
+    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+        import base64
+
+        url = (self.endpoint + "?q=" + urllib.parse.quote(query)
+               + "&count=10")
+        request = urllib.request.Request(
+            url, headers=dict(_BROWSER_HEADERS),
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                page = response.read().decode("utf-8", "replace")
+        except Exception as error:  # noqa: BLE001 — تصنيف واحد
+            raise ProviderNotReady(
+                f"bing: نقل فاشل — {type(error).__name__}: {error}"
+            ) from error
+        if _is_challenge_page(page):
+            raise ProviderNotReady(
+                "bing: صفحة تحدّ — حجب مؤقت لهذا المضيف",
+                reason="RESULTS_NOT_ANALYZABLE",
+            )
+        blocks = re.findall(
+            r'<li class="b_algo".*?</li>', page, re.DOTALL,
+        )
+        results: list[dict] = []
+        for block in blocks[:MAX_SEARCH_RESULTS]:
+            heading = re.search(
+                r'<h2[^>]*><a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+                block, re.DOTALL,
+            )
+            if not heading:
+                continue
+            href = html_lib.unescape(heading.group(1))
+            real_url = href
+            if "bing.com/ck/" in href:
+                try:
+                    query_string = urllib.parse.urlparse(href).query
+                    encoded = urllib.parse.parse_qs(query_string).get(
+                        "u", [""])[0]
+                    if encoded.startswith("a1"):
+                        padded = encoded[2:] + "=" * (
+                            -len(encoded[2:]) % 4)
+                        real_url = base64.urlsafe_b64decode(
+                            padded).decode("utf-8", "replace")
+                except Exception:  # noqa: BLE001 — الرابط الخام يبقى
+                    real_url = href
+            title = _tag(heading.group(2)).strip()
+            snippet = ""
+            para = re.search(r"<p[^>]*>(.*?)</p>", block, re.DOTALL)
+            if para:
+                snippet = html_lib.unescape(
+                    _tag(para.group(1))).strip()[:300]
+            if title and real_url.startswith("http"):
+                results.append({
+                    "title": title, "url": real_url, "snippet": snippet,
+                })
+        if not results:
+            raise ProviderNotReady(
+                f"bing: لا نتائج قابلة للتحليل ({len(blocks)} كتلة خام) "
+                f"لاستعلام: {query[:60]}",
+                reason="RESULTS_NOT_ANALYZABLE",
+                details={"query": query[:200], "transport": "SUCCESS",
+                         "blocks": len(blocks), "page_chars": len(page)},
+            )
+        return results
 
 
 # ------------------------------------------------------------------ #
@@ -395,6 +595,7 @@ def probe_provider(provider: SearchProvider) -> dict:
 __all__ = [
     "API_STYLES",
     "ApiSearchProvider",
+    "BingSearchProvider",
     "DuckDuckGoSearchProvider",
     "PROBE_QUERY",
     "ProviderNotReady",

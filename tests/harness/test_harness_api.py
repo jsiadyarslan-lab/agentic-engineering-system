@@ -198,7 +198,7 @@ def test_capabilities_endpoint(client):
     assert by_id["sandbox"]["blocked_kind"] == "WORKER"
     assert by_id["llm"]["blocked_kind"] == "CAPABILITY"
     assert by_id["web_search"]["resolution"] == "FAILOVER"
-    assert len(by_id["web_search"]["providers"]) == 3
+    assert len(by_id["web_search"]["providers"]) == 4
 
 
 def test_event_vocabulary_endpoint(client):

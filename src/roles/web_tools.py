@@ -36,29 +36,39 @@ def web_search(query: str, *, endpoint: str = "", timeout: float = FETCH_TIMEOUT
     from research import providers as research_providers
 
     if sessions is None:
-        provider = research_providers.DuckDuckGoSearchProvider(
-            endpoint=endpoint or "https://html.duckduckgo.com/html/",
-        )
-        try:
-            return provider.search(query, timeout=timeout)
-        except research_providers.ProviderNotReady as error:
-            # النقل منفصل عن التحليل (إضافة 008 §3 محفوظة): صفحة وصلت
-            # بلا مادة = TOOL_FAILURE/RESULTS_NOT_ANALYZABLE، غيره اعتماد.
-            analyzable = error.reason == "RESULTS_NOT_ANALYZABLE"
-            raise ToolFailure(
-                "web_search", error.detail,
-                failure_class="TOOL_FAILURE" if analyzable
-                else "DEPENDENCY_FAILURE",
-                reason=error.reason,
-                stage="TOOL_RESULT" if analyzable
-                else "PROVIDER_RESOLUTION",
-                retryable=False,
-                details={
-                    "provider": "ddg", "query": query[:200],
-                    "transport": "SUCCESS" if analyzable else "FAILED",
-                    **error.details,
-                },
-            ) from error
+        # (013.2) بلا قاعدة: نفس مصفوفة المزودين الحقيقيين — DDG
+        # متعدد الاستراتيجيات ثم Bing — لا نقطة html وحيدة كانت تعيد
+        # صفحة تحدّ فيتعطل البحث كليًا بلا احتياط
+        chain = [
+            research_providers.DuckDuckGoSearchProvider(
+                endpoint=endpoint or "",
+            ),
+            research_providers.BingSearchProvider(),
+        ]
+        last_error: research_providers.ProviderNotReady | None = None
+        for provider in chain:
+            try:
+                return provider.search(query, timeout=timeout)
+            except research_providers.ProviderNotReady as error:
+                last_error = error
+        assert last_error is not None
+        # النقل منفصل عن التحليل (إضافة 008 §3 محفوظة): صفحة وصلت
+        # بلا مادة = TOOL_FAILURE/RESULTS_NOT_ANALYZABLE، غيره اعتماد.
+        analyzable = last_error.reason == "RESULTS_NOT_ANALYZABLE"
+        raise ToolFailure(
+            "web_search", last_error.detail,
+            failure_class="TOOL_FAILURE" if analyzable
+            else "DEPENDENCY_FAILURE",
+            reason=last_error.reason,
+            stage="TOOL_RESULT" if analyzable
+            else "PROVIDER_RESOLUTION",
+            retryable=False,
+            details={
+                "provider": "ddg→bing", "query": query[:200],
+                "transport": "SUCCESS" if analyzable else "FAILED",
+                **last_error.details,
+            },
+        ) from last_error
     from research import service as research_service
 
     outcome = research_service.search(sessions, query)

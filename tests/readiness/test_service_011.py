@@ -125,7 +125,7 @@ def test_capability_matches_provider_state_exactly(sessions):
 def test_capability_blocked_details_when_nothing_ready(sessions):
     """(§16) لا شيء جاهز = حجب بتفصيل كل مزود (حالته الموحدة) — لا
     READY عمياء ولا NOT_READY بلا تفسير."""
-    for kind in ("search_ddg", "search_searx", "search_api"):
+    for kind in ("search_ddg", "search_bing", "search_searx", "search_api"):
         _set_provider(sessions, kind, status="UNKNOWN", config={})
     # DDG معد افتراضيًا (نقطة نهاية) — عطّله: بقية غير معدّين
     _set_provider(sessions, "search_ddg", status="UNKNOWN",
@@ -134,7 +134,10 @@ def test_capability_blocked_details_when_nothing_ready(sessions):
     assert view["readiness_status"] == "NOT_READY"
     per = {p["provider"]: p["status"]
            for p in view["details"]["per_provider"]}
+    # (013.2) أربعة مزودين: DDG معطّل، Bing معد بلا مفاتيح لكنه غير
+    # مفحوص (UNKNOWN — صار يُعد معدًا افتراضيًا كـDDG)، والبقية غير معدّين
     assert per == {"DuckDuckGo": "DISABLED",
+                   "Bing": "UNKNOWN",
                    "SearXNG": "NOT_CONFIGURED",
                    "Search API": "NOT_CONFIGURED"}
     # والمستوى الصادق لـ NOT_CONFIGURED هو المزود (§16)

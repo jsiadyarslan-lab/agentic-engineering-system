@@ -64,6 +64,10 @@ def _provider_configured(record: dict) -> bool:
     kind = record.get("kind", "")
     if kind == "search_ddg":
         return True                       # نقطة النهاية الافتراضية كافية
+    if kind == "search_bing":
+        # (013.2) Bing بلا مفاتيح — النقطة الافتراضية كافية كما DDG؛
+        # كان يُرجع False فتُهدر جاهزيته رغم مسبار READY ناجح
+        return True
     if kind == "search_searx":
         return bool(config.get("base_url"))
     if kind == "search_api":

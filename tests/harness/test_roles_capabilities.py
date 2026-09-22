@@ -234,7 +234,7 @@ def test_capability_catalog_unified(harness_env, sandbox_seam):
     assert by_id["sandbox"]["blocked_kind"] == "WORKER"
     assert by_id["web_search"]["blocked_kind"] == "CAPABILITY"
     assert by_id["web_search"]["resolution"] == "FAILOVER"
-    assert len(by_id["web_search"]["providers"]) == 3
+    assert len(by_id["web_search"]["providers"]) == 4
     # browser صادقة: UNAVAILABLE لا READY أبدًا (009 §3 محفوظ)
     assert by_id["browser"]["status"] in ("UNAVAILABLE", "NOT_READY",
                                           "UNKNOWN")

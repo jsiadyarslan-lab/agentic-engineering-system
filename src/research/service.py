@@ -20,6 +20,9 @@ from execution.models import ResearchProvider
 
 _SEED = (
     {"kind": "search_ddg", "name": "DuckDuckGo", "config": {}},
+    # (013.2) احتياطي بلا مفاتيح مفعّل افتراضيًا: DDG يحجب الأتمتة
+    # بصفحات تحدّ متكررة — بلا احتياطي كان البحث يعطل كليًا
+    {"kind": "search_bing", "name": "Bing", "config": {}},
     {"kind": "search_searx", "name": "SearXNG", "config": {}, "enabled": 0},
     {"kind": "search_api", "name": "Search API", "config": {}, "enabled": 0},
 )
@@ -37,7 +40,12 @@ def _json_loads(raw: str, default):
 
 
 def ensure_seeded(sessions) -> None:
-    """بذر المزودين الثلاثة عند أول تشغيل — آمن للتكرار."""
+    """بذر المزودين الأربعة عند أول تشغيل — آمن للتكرار.
+
+    (013.2) قاعدة قديمة بلا Bing تُرقَّم تلقائيًا بالصف الجديد —
+    البحث كان يتعطل كليًا كلما حجب DDG المضيف، والاحتياطي المفعّل
+    هو الإصلاح المعماري لا مجرد إعداد اختياري.
+    """
     with sessions() as session:
         existing = {
             row.name for row in session.scalars(
@@ -78,8 +86,12 @@ def build_provider(record: dict):
         key = store.get_key(f"research::{record['name']}") or ""
     if record["kind"] == "search_ddg":
         return research_providers.DuckDuckGoSearchProvider(
+            endpoint=config.get("endpoint", ""),
+        )
+    if record["kind"] == "search_bing":
+        return research_providers.BingSearchProvider(
             endpoint=config.get("endpoint")
-            or "https://html.duckduckgo.com/html/",
+            or "https://www.bing.com/search",
         )
     if record["kind"] == "search_searx":
         return research_providers.SearxJsonSearchProvider(
@@ -249,8 +261,9 @@ def aggregate_capability(sessions) -> dict:
         "status": "READY" if ready_any else "NOT_READY",
         "reason": (
             "مزود بحث جاهز بمسبار حقيقي حديث" if ready_any else
-            "لا مزود بحث جاهز بمسبار صالح — DDG مهلة/محجوب لا يعني "
-            "الإنترنت مقطوعًا؛ جهّز SearXNG أو Search API من الإعدادات ← البحث"
+            "لا مزود بحث جاهز — DDG/Bing قد يكونان محجوبين مؤقتًا "
+            "(تحدّ مضاد للأتمتة)؛ جهّز SearXNG أو Search API من "
+            "الإعدادات ← البحث كاحتياط دائم"
         ),
         "per_provider": per_provider,
         "note": "web_fetch قد يكون READY والبحث معطلًا — قدرات منفصلة",

@@ -111,7 +111,7 @@ def test_research_providers_seeded(client):
     out = client.get("/api/research/providers")
     assert out.status_code == 200
     kinds = {p["kind"] for p in out.json()["providers"]}
-    assert kinds == {"search_ddg", "search_searx", "search_api"}
+    assert kinds == {"search_ddg", "search_bing", "search_searx", "search_api"}
 
 
 def test_research_configure_and_probe_with_seamed_transport(
