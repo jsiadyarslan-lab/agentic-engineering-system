@@ -239,23 +239,25 @@ def _active_run_id() -> int | None:
     return active["project_id"] if active else None
 
 
-def _environment_block(project: dict) -> dict:
-    """كتلة بيئة التنفيذ (013.1 §10+§18) — الفصل الحرفي:
+def _environment_block(project: dict, *, job: dict | None = None) -> dict:
+    """كتلة بيئة التنفيذ (013.1 §10+§18 + 013.2 §1-§3) — من الحالة
+    القانونية الواحدة حصرًا.
 
-        HOST            المضيف الفعلي (منصة/معمارية/حاويات)
-        BACKEND         صنف الخلفية (local-sandbox/process/remote)
-        ENVIRONMENT     البيئة المسجلة المختارة (اسم/معرف/حالة)
-        ISOLATION       العزل المعلن للبيئة (SANDBOXED/…)
-        WORKER          عامل الوظيفة الجارية (معرف/نبضة) — من job
-
-    السياسة من المشروع حصرًا؛ لا بيئة موافقة = المتطلب الحرفي
-    (requirement) — الواجهة تعرض ما هو مطلوب لا وعودًا.
+    (013.2 §1) لا اشتقاق هنا إطلاقًا: كل حقول العرض (state/coherent/
+    required/actual/missing/evidence) تُقرأ من runtime_state.canonical_state
+    — نفس القراءة التي يقرأها سكربت القبول ونقطة runtime-state — فاستحال
+    «الواجهة تقول غير جاهزة والتقرير يقول READY»: الجميع يقرأ مصدرًا
+    واحدًا. المطلوب (REQUIRED) والفعلي (ACTUAL) مفصولان حرفيًا (§2).
     """
     from execution import policy as execution_policy
+    from execution import runtime_state as runtime_state_mod
     from execution import service as execution_service
     from execution.backends import runtime_truth
 
     policy = project.get("execution_policy") or "STRICT_ISOLATED"
+    canonical = runtime_state_mod.canonical_state(
+        _sessions(), policy, job=job
+    )
     truth = runtime_truth()
     host = {
         "platform": f"{truth.get('os', '')} {truth.get('architecture', '')}".strip(),
@@ -265,31 +267,35 @@ def _environment_block(project: dict) -> dict:
         "cores": truth.get("cpu_cores", 0),
         "memory": truth.get("memory", ""),
     }
-    selected = execution_service.select_environment(
-        _sessions(), policy=policy
-    )
-    satisfies = selected is not None
+    selected = execution_service.select_environment(_sessions(), policy=policy)
     block: dict = {
         "policy": policy,
         "policy_label": execution_policy.POLICY_LABELS.get(policy, policy),
         "host": host,
-        "selected": None,
-        "satisfies_policy": satisfies,
-        "requirement": "",
+        "selected": canonical.get("selected"),
+        "satisfies_policy": selected is not None,
+        "requirement": execution_policy.requirement_text(policy),
         "environments": [
             {k: e.get(k) for k in ("id", "name", "backend", "status",
                                    "isolation", "sandboxed", "is_default")}
             for e in execution_service.list_environments(_sessions())
         ],
+        # (013.2 §1+§3) الحالة القانونية — الواجهة تعرض هذه حصرًا
+        "runtime_state": {
+            "state": canonical["state"],
+            "coherent": canonical["coherent"],
+            "required": canonical["required"],
+            "actual": canonical["actual"],
+            "selected": canonical.get("selected"),
+            "missing": canonical["missing"],
+            "evidence": canonical["evidence"],
+            "environment_id": canonical["environment_id"],
+            "worker_id": canonical["worker_id"],
+            "progress": canonical["progress"],
+            "provisioning_record": canonical.get("provisioning_record"),
+        },
     }
-    if selected is not None:
-        block["selected"] = {
-            key: selected.get(key)
-            for key in ("id", "name", "backend", "status", "isolation",
-                        "sandboxed", "is_default", "last_verified_at")
-        }
-    else:
-        block["requirement"] = execution_policy.requirement_text(policy)
+    if selected is None:
         block["owner_action"] = execution_service\
             .owner_action_for_missing_environment(_sessions(), policy)
     try:
@@ -469,7 +475,7 @@ def project_state_snapshot(project_id: int) -> dict:
         "audits": audits,
         "execution_gate": _execution_gate(project, plan),
         "job": job,
-        "environment": _environment_block(project),
+        "environment": _environment_block(project, job=job),
         "timeline": timeline,
         "chain": chain,
         "acceptance_criteria": criteria,

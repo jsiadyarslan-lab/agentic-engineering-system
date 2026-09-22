@@ -1,9 +1,10 @@
-"""نقاط نهاية بيئات التنفيذ (الأمر 010 §28) — إدارة حقيقية لا عرضًا.
+"""نقاط نهاية بيئات التنفيذ (الأمر 010 §28 + 013.2 §1) — إدارة حقيقية.
 
 - GET    /api/execution/environments          البيئات المسجلة (بلا أسرار)
+- GET    /api/execution/runtime-state         الحالة القانونية الواحدة (013.2)
 - POST   /api/execution/environments          إضافة (LOCAL/REMOTE_WORKER فقط)
 - DELETE /api/execution/environments/{id}     حذف (غير الافتراضية)
-- POST   /api/execution/environments/{id}/verify   تحقق حقيقي (إقلاع/كتابة/تنفيذ/التقاط)
+- POST   /api/execution/environments/{id}/verify   تحقق حقيقي (فحوص §6 المسماة)
 - POST   /api/execution/environments/{id}/default  تعيين افتراضية
 - POST   /api/execution/environments/{id}/test-run اختبار تنفيذ فعلي قصير
 """
@@ -25,6 +26,32 @@ def _sessions():
     from api import routes  # noqa: PLC0415 — كسول يمنع الاستيراد الدائري
 
     return routes._sessions
+
+
+@router.get("/runtime-state")
+def runtime_state(policy: str = "STRICT_ISOLATED",
+                  project_id: int | None = None) -> dict:
+    """الحالة القانونية الواحدة (013.2 §1+§17) — مصدر الحقيقة الوحيد.
+
+    عند لحظة «الواجهة تقول جاهزة» هذا هو المسار الذي يسأل القبولُ
+    نفسَه: الرد يجب أن يقول READY بنفس environment_id — وإلا فالقبول
+    FAILED. project_id اختياري: معه تُقرأ سياسة المشروع الفعلية
+    ووظيفته الجارية (RUNNING/INTERRUPTED) من الدائم.
+    """
+    from execution import runtime_state as runtime_state_mod
+
+    sessions = _sessions()
+    job = None
+    if project_id is not None:
+        try:
+            from api.projects import _harness_manager, _project_or_404
+
+            project = _project_or_404(project_id)
+            policy = project.get("execution_policy") or policy
+            job = _harness_manager().job_for_project(project_id)
+        except Exception:  # noqa: BLE001 — قراءة المشروع/الوظيفة اختيارية
+            job = None
+    return runtime_state_mod.canonical_state(sessions, policy, job=job)
 
 
 class EnvironmentIn(BaseModel):

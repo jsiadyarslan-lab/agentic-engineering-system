@@ -99,19 +99,26 @@ def observability() -> dict:
     return metrics.snapshot()
 
 
+class ProvisionIn(BaseModel):
+    """جسم التجهيز (013.2 §5) — سياسة المشروع اختيارية."""
+
+    policy: str = "STRICT_ISOLATED"
+
+
 @router.post("/provision")
-def provision_environment() -> dict:
-    """تجهيز بيئة التنفيذ (013 §16-§17) — دورة حياة معلنة.
+def provision_environment(body: ProvisionIn | None = None) -> dict:
+    """تجهيز بيئة التنفيذ (013 §16-§17 + 013.2 §4-§5) — دورة معلنة.
 
     DISCOVERING ← PROVISIONING ← BOOTING ← HEALTH_CHECK ← READY،
-    وكل خطوة موقوتة بمعلن في الاستجابة وعلى التيار الحي. التعذر
-    البنيوي = PROVISIONING_UNAVAILABLE بالمتطلب الحرفي (لا فشل
-    ملفق ولا READY كاذبة). النجاح يسجل البيئة جاهزة فورًا — المسبار
-    والمنفذ من مصدر واحد (011 محفوظ).
+    وكل خطوة موقوتة ومعلنة ومسجلة في الحالة القانونية الدائمة
+    (runtime_state) — فالتقدم % حقيقة لا وعود. (013.2 §4) واعٍ
+    بالسياسة: مضيف لا يستطيع العزل تحت STRICT_ISOLATED = تعذر
+    بنيوي بالمتطلب الحرفي، لا READY كاذبة ولا فشل ملفق.
     """
     from execution import provisioner
 
-    return provisioner.provision(_sessions())
+    policy = body.policy if body is not None else "STRICT_ISOLATED"
+    return provisioner.provision(_sessions(), policy=policy)
 
 
 @router.get("/provision/heartbeat")

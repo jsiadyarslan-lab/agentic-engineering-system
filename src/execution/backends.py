@@ -239,12 +239,44 @@ def local_environment_name() -> str:
 # LOCAL — ركيزة Linux/x86_64 المحلية (نفس E1 المعتمدة)
 # ------------------------------------------------------------------ #
 
+#: (013.2 §6) كود الفحص الموحد — كل فحص §6 مسمى وبتقرير JSON قابل
+#: للتحليل: كتابة/قراءة/حذف/دليل العمل/المعمارية/العزل (حجب الشبكة).
+#: السطر "PROBE-JSON:" في المخرجات هو ما يقرأه verify حرفيًا.
 _LOCAL_PROBE_CODE = (
-    "import pathlib\n"
+    "import json, os, pathlib, platform, socket\n"
+    "report = {}\n"
     "p = pathlib.Path('/artifacts/probe.txt')\n"
     "p.write_text('boot-ok', encoding='utf-8')\n"
-    "print('exec-ok:', p.read_text(encoding='utf-8'))\n"
+    "report['write_file'] = True\n"
+    "report['read_file'] = p.read_text(encoding='utf-8') == 'boot-ok'\n"
+    "p.unlink()\n"
+    "report['delete_file'] = not p.exists()\n"
+    "report['working_directory'] = os.getcwd()\n"
+    "report['architecture'] = platform.machine()\n"
+    "report['python'] = platform.python_version()\n"
+    "try:\n"
+    "    socket.setdefaulttimeout(2.0)\n"
+    "    socket.gethostbyname('example.com')\n"
+    "    report['network_blocked'] = False\n"
+    "except Exception:\n"
+    "    report['network_blocked'] = True\n"
+    "print('PROBE-JSON:' + json.dumps(report))\n"
+    "print('exec-ok:', report['read_file'])\n"
 )
+
+
+def _parse_probe_report(stdout: str) -> dict:
+    """قراءة تقرير الفحص (013.2 §6) — سطر PROBE-JSON حصريًا."""
+    import json as _json
+
+    for line in (stdout or "").splitlines():
+        line = line.strip()
+        if line.startswith("PROBE-JSON:"):
+            try:
+                return _json.loads(line[len("PROBE-JSON:"):])
+            except ValueError:
+                return {}
+    return {}
 
 
 class LocalSandboxBackend:
@@ -343,6 +375,7 @@ class LocalSandboxBackend:
                     _LOCAL_PROBE_CODE, workspace=workspace,
                     artifacts=artifacts, timeout_s=60.0,
                 )
+            report = _parse_probe_report(outcome.stdout)
             checks.append({
                 "name": "boot", "ok": outcome.termination != "FAILED_TO_START",
                 "detail": outcome.termination,
@@ -353,10 +386,48 @@ class LocalSandboxBackend:
                 and outcome.exit_code == 0,
                 "detail": f"exit={outcome.exit_code} {outcome.stderr[:120]}",
             })
+            # (013.2 §6) فحوص مسماة حرفية من تقرير الفحص الفعلي —
+            # كتابة/قراءة/حذف/دليل العمل/المعمارية/العزل/التقاط
+            checks.append({
+                "name": "write_file",
+                "ok": bool(report.get("write_file")),
+                "detail": "كتابة /artifacts/probe.txt",
+            })
+            checks.append({
+                "name": "read_file",
+                "ok": bool(report.get("read_file")),
+                "detail": "قراءة ما كُتب والتحقق من المحتوى",
+            })
+            checks.append({
+                "name": "delete_file",
+                "ok": bool(report.get("delete_file")),
+                "detail": "حذف الملف والتحقق من زواله",
+            })
+            checks.append({
+                # دليل العمل المعلن داخل الركيزة: /work (مع مصادر) أو
+                # /tmp (الخربشة المحدودة D-13) — كلاهما مسار مشروع
+                "name": "working_directory",
+                "ok": str(report.get("working_directory") or "") in (
+                    "/work", "/tmp"),
+                "detail": f"cwd={report.get('working_directory', '؟')}",
+            })
+            checks.append({
+                "name": "architecture",
+                "ok": str(report.get("architecture") or "") == "x86_64",
+                "detail": f"arch={report.get('architecture', '؟')}",
+            })
+            checks.append({
+                # داخل الركيزة: network namespace بلا واجهات — نجاح DNS
+                # يعني أن العزل مكسور؛ فشله هو الدليل الحي على العزل
+                "name": "isolation",
+                "ok": bool(report.get("network_blocked")),
+                "detail": "شبكة العزل محجوبة (namespaces بلا واجهات)"
+                if report.get("network_blocked")
+                else "تحذير: الشبكة تعمل داخل الركيزة المعزولة",
+            })
             checks.append({
                 "name": "capture",
-                "ok": "boot-ok" in (outcome.artifacts.get("probe.txt") or "")
-                or "exec-ok: boot-ok" in outcome.stdout,
+                "ok": "exec-ok: True" in outcome.stdout,
                 "detail": outcome.stdout[:120],
             })
         except substrate_local_substrate.SubstrateUnavailable as error:
@@ -469,11 +540,28 @@ def _read_text(reference: str | None, *, limit: int = 400_000) -> str:
 # LOCAL COMPATIBLE — تنفيذ محلي بلا عزل، معلن صراحة (011 §4+§25+§26)
 # ------------------------------------------------------------------ #
 
+#: (013.2 §6) فحص الوضع المتوافق — نفس الفحوص المسماة، والعزل هنا
+#: «معلن بلا عزل» صراحة (الشبكة تعمل عمدًا — هذا جوهر الوضع المتوافق).
 _COMPAT_PROBE_CODE = (
-    "import pathlib, sys\n"
+    "import json, os, pathlib, platform, socket, sys\n"
+    "report = {}\n"
     "p = pathlib.Path(sys.argv[1])\n"
     "p.write_text('compat-ok', encoding='utf-8')\n"
-    "print('exec-ok:', p.read_text(encoding='utf-8'))\n"
+    "report['write_file'] = True\n"
+    "report['read_file'] = p.read_text(encoding='utf-8') == 'compat-ok'\n"
+    "p.unlink()\n"
+    "report['delete_file'] = not p.exists()\n"
+    "report['working_directory'] = os.getcwd()\n"
+    "report['architecture'] = platform.machine()\n"
+    "report['python'] = platform.python_version()\n"
+    "try:\n"
+    "    socket.setdefaulttimeout(2.0)\n"
+    "    socket.gethostbyname('example.com')\n"
+    "    report['network_blocked'] = False\n"
+    "except Exception:\n"
+    "    report['network_blocked'] = True\n"
+    "print('PROBE-JSON:' + json.dumps(report))\n"
+    "print('exec-ok:', report['read_file'])\n"
 )
 
 
@@ -599,6 +687,7 @@ class LocalProcessBackend:
                 _COMPAT_PROBE_CODE, [str(artifacts / "probe.txt")],
                 workspace=workspace, timeout_s=60.0,
             )
+            report = _parse_probe_report(stdout)
             checks.append({
                 "name": "boot",
                 "ok": "FAILED_TO_START" not in stderr and detail != "startup",
@@ -609,12 +698,44 @@ class LocalProcessBackend:
                 "ok": exit_code == 0,
                 "detail": f"exit={exit_code} {stderr[:120]}",
             })
+            # (013.2 §6) فحوص مسماة حرفية — نفس مفردات الركيزة المعزولة
+            checks.append({
+                "name": "write_file",
+                "ok": bool(report.get("write_file")),
+                "detail": "كتابة ملف الفحص",
+            })
+            checks.append({
+                "name": "read_file",
+                "ok": bool(report.get("read_file")),
+                "detail": "قراءة ما كُتب والتحقق من المحتوى",
+            })
+            checks.append({
+                "name": "delete_file",
+                "ok": bool(report.get("delete_file")),
+                "detail": "حذف الملف والتحقق من زواله",
+            })
+            checks.append({
+                "name": "working_directory",
+                "ok": bool(report.get("working_directory")),
+                "detail": f"cwd={report.get('working_directory', '؟')}",
+            })
+            checks.append({
+                "name": "architecture",
+                "ok": bool(report.get("architecture")),
+                "detail": f"arch={report.get('architecture', '؟')}",
+            })
+            checks.append({
+                # الوضع المتوافق: العزل «معلن بلا عزل» — الفحص يؤكد
+                # الصدق (الشبكة تعمل هنا عمدًا ولا يُدّعى عزل أبدًا)
+                "name": "isolation",
+                "ok": not bool(report.get("network_blocked")),
+                "detail": "معلن: بلا عزل — وضع متوافق، الشبكة تعمل",
+            })
             probe_file = artifacts / "probe.txt"
             checks.append({
                 "name": "capture",
-                "ok": probe_file.exists()
-                and probe_file.read_text(encoding="utf-8") == "compat-ok"
-                and "exec-ok: compat-ok" in stdout,
+                "ok": (not probe_file.exists())
+                and "exec-ok: True" in stdout,
                 "detail": stdout[:120],
             })
         ok = all(check["ok"] for check in checks)

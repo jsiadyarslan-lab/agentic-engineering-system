@@ -121,22 +121,36 @@ def _verify_any(sessions) -> dict:
     return {"id": None, "name": "", "verify": {"ok": False}}
 
 
-def provision(sessions, *,
+def provision(sessions, *, policy: str = "STRICT_ISOLATED",
               on_event: Callable[[str, dict], None] | None = None
               ) -> dict:
-    """تجهيز بيئة تنفيذ محلية كاملة الدورة (§16+§44).
+    """تجهيز بيئة تنفيذ محلية كاملة الدورة (§16+§44 + 013.2 §5).
 
-    الخطوات: اكتشاف ← تسجيل/تهيئة ← إقلاع ← فحص صحة ← READY.
-    النتيجة: {state, steps[], environment, reason} — كل خطوة
-    موقوتة ومعلنة، والفشل في أي منها سببه الحرفي لا عموميات.
+    الخطوات: اكتشاف ← تسجيل/تهيئة ← إقلاع ← فحص صحة ← READY — وكل
+    خطوة تُسجل في الحالة القانونية الدائمة (runtime_state) فيصير
+    «جاري التجهيز X%» حقيقة مقروءة لا وعودًا.
+
+    (013.2 §4-§5) واعٍ بالسياسة حرفيًا: إن كان المضيف لا يستطيع
+    توفير عزل فعلي (Windows بلا WSL2/Docker وبلا عامل بعيد) تحت
+    STRICT_ISOLATED — فالنتيجة ENVIRONMENT_UNAVAILABLE بفجوات
+    حرفية وأفعال واضحة، لا READY للبيئة المحلية المتوافقة وهي لا
+    توافق السياسة (هذا بالضبط كان انفصام الحقيقة الذي رفضه المالك).
     """
+    from execution import policy as execution_policy
+    from execution import runtime_state
     from execution import service as execution_service
     from execution.backends import runtime_truth
 
+    if not execution_policy.is_valid_policy(policy):
+        policy = "STRICT_ISOLATED"
     steps: list[dict] = []
     started = time.monotonic()
 
     # ---- DISCOVERING: اكتشاف المضيف والركيزة (013.1 §11 حرفيًا) ----
+    runtime_state.record_state(
+        sessions, policy, "DISCOVERING",
+        reason="جرد المضيف والركائز المتاحة…", progress=10,
+    )
     t0 = time.monotonic()
     truth = runtime_truth()
     host = {
@@ -171,6 +185,11 @@ def provision(sessions, *,
     except Exception:  # noqa: BLE001 — الجرد الموسع لا يكسر التجهيز
         inventory = {}
     substrate_ok = execution_service._substrate_available()
+    host_is_linux = str(host.get("os", "")).lower() == "linux"
+    has_remote_worker = any(
+        env.get("backend") == "REMOTE_WORKER"
+        for env in execution_service.list_environments(sessions)
+    )
     _step(steps, "DISCOVERING", True,
           f"{host['os']}/{host['arch']} — Python {host['python']}"
           + (f" — {host['container']}" if host["container"] else "")
@@ -181,7 +200,40 @@ def provision(sessions, *,
           duration_ms=int((time.monotonic() - t0) * 1000),
           host=host, substrate_available=substrate_ok)
 
+    # ---- (013.2 §4) الفجوة البنيوية أولًا: عزل صارم بلا مسار توفير ----
+    # مضيف غير Linux بلا ركيزة بلا حاويات بلا عامل بعيد = التجهيز
+    # المحلي المعزول مستحيل بنيويًا — يُعلن بالفجوة والفعل، لا فشل
+    # ملفق ولا READY لبيئة لا توافق السياسة أصلًا.
+    strict = policy == "STRICT_ISOLATED"
+    can_isolate_locally = substrate_ok and host_is_linux
+    has_containers = bool(host.get("container_runtimes"))
+    if strict and not (can_isolate_locally or has_remote_worker
+                       or has_containers):
+        actual = runtime_state.canonical_state(sessions, policy)
+        missing = actual.get("missing") or []
+        reason = (
+            f"المضيف {host['os']}/{host['arch']} لا يستطيع توفير عزل "
+            "فعلي: لا ركيزة Linux محلية، لا حاويات Docker/Podman، "
+            "لا عامل بعيد مسجل — والسياسة ترفض التنفيذ بلا عزل"
+        )
+        runtime_state.record_state(
+            sessions, policy, "UNAVAILABLE", reason=reason,
+            missing=missing, evidence={"host": host}, progress=0,
+        )
+        _step(steps, "DISCOVERING", False, reason,
+              host=host, substrate_available=substrate_ok)
+        result = _unavailable(sessions, steps, started, reason,
+                              requirement=execution_policy
+                              .requirement_text(policy))
+        result["missing"] = missing
+        result["policy"] = policy
+        return result
+
     # ---- PROVISIONING: تسجيل البيئة المحلية (أو تأكيد وجودها) -------
+    runtime_state.record_state(
+        sessions, policy, "PROVISIONING",
+        reason="تسجيل/تهيئة بيئة التنفيذ المحلية…", progress=30,
+    )
     t0 = time.monotonic()
     try:
         environment = execution_service.ensure_local_registered(sessions)
@@ -197,14 +249,29 @@ def provision(sessions, *,
                                         "namespaces) أو عامل بعيد")
 
     # ---- BOOTING + HEALTH_CHECK: المنفذ الموحد هو الحكم (011 محفوظ)
+    runtime_state.record_state(
+        sessions, policy, "BOOTING",
+        reason="إقلاع فحصي عبر المنفذ الموحد…", progress=55,
+        environment_id=environment["id"],
+    )
     t0 = time.monotonic()
     try:
         verified_full = execution_service.verify_environment(
             sessions, environment["id"]
         )
     except Exception as error:  # noqa: BLE001
+        runtime_state.record_state(
+            sessions, policy, "FAILED",
+            reason=f"فشل فحص الصحة: {error}",
+            environment_id=environment["id"], progress=0,
+        )
         return _failed(sessions, steps, started,
                        f"فحص الصحة فشل: {error}", environment)
+    runtime_state.record_state(
+        sessions, policy, "HEALTH_CHECK",
+        reason="فحوص الإقلاع/الكتابة/التنفيذ/التقاط تعمل…", progress=75,
+        environment_id=environment["id"],
+    )
     boot_ms = int((time.monotonic() - t0) * 1000)
     verified = verified_full.get("verify") or {}
 
@@ -220,16 +287,66 @@ def provision(sessions, *,
                    "detail": str(c.get("detail", ""))[:120]}
                   for c in verified.get("checks", [])
               ])
+        # (013.2 §4) READY تُعلن فقط إذا وافقت البيئةُ السياسةَ حرفيًا:
+        # تحقق ناجح لبيئة غير معزولة تحت عزل صارم ليس READY للسياسة —
+        # هذا بالضبط كان انفصام «التقرير READY والواجهة غير جاهزة»
+        satisfies = execution_policy.environment_satisfies(
+            verified_full, policy
+        )
+        if not satisfies:
+            reason = (
+                f"البيئة «{environment['name']}» اجتازت الفحوص لكنها لا "
+                "توافق سياسة العزل الصارم (تنفيذ متوافق بلا عزل). "
+                "السياسة لا تقبلها — لا READY كاذبة"
+            )
+            missing = [{
+                "need": "بيئة معزولة فعليًا توافق STRICT_ISOLATED",
+                "detected": f"المضيف {host['os']}/{host['arch']} — "
+                            "البيئة المحلية متوافقة بلا عزل",
+                "action": "شغّل عاملًا بعيدًا على Linux/WSL2 "
+                          "(python scripts/execution_worker.py) وسجّله، "
+                          "أو فعّل WSL2/Docker، أو خفّض السياسة إلى "
+                          "توافق محلي معلن",
+            }]
+            runtime_state.record_state(
+                sessions, policy, "UNAVAILABLE", reason=reason,
+                missing=missing, environment_id=environment["id"],
+                evidence={"checks": verified.get("checks", [])[:10]},
+                progress=0,
+            )
+            _step(steps, "READY", False, reason)
+            return {
+                "state": "PROVISIONING_UNAVAILABLE", "steps": steps,
+                "policy": policy,
+                "environment": environment, "reason": reason,
+                "requirement": execution_policy.requirement_text(policy),
+                "missing": missing,
+                "duration_ms": int((time.monotonic() - started) * 1000),
+                "owner_action": (
+                    "التنفيذ تحت سياسة العزل الصارم يتطلب بيئة معزولة "
+                    "فعليًا — عامل بعيد على Linux/WSL2 أو تفعيل "
+                    "WSL2/Docker، أو خفض السياسة صراحة من إعدادات المشروع"
+                ),
+            }
         _step(steps, "READY", True,
               f"بيئة التنفيذ «{environment['name']}» جاهزة — المسبار "
               "والمنفذ من مصدر واحد")
+        runtime_state.record_state(
+            sessions, policy, "READY",
+            reason=f"البيئة «{environment['name']}» اجتازت فحوص الصحة "
+                   "الحقيقية وتوافق السياسة",
+            environment_id=environment["id"],
+            evidence={"checks": verified.get("checks", [])[:10],
+                      "verified_at": verified_full.get("last_verified_at")},
+            progress=100,
+        )
         _last_heartbeat.update({
             "at": _iso(_utc_now()), "ok": True,
             "environment_id": environment["id"],
             "environment_name": environment["name"],
         })
         return {
-            "state": "READY", "steps": steps,
+            "state": "READY", "steps": steps, "policy": policy,
             "environment": {
                 key: verified_full.get(key)
                 for key in ("id", "name", "backend", "status",
@@ -253,8 +370,13 @@ def provision(sessions, *,
     _step(steps, "HEALTH_CHECK", False, reason, duration_ms=boot_ms,
           checks=failed_checks)
     _step(steps, "FAILED", False, reason)
+    runtime_state.record_state(
+        sessions, policy, "FAILED", reason=reason,
+        environment_id=environment["id"],
+        evidence={"failed_checks": failed_checks}, progress=0,
+    )
     return {
-        "state": "FAILED", "steps": steps,
+        "state": "FAILED", "steps": steps, "policy": policy,
         "environment": environment, "reason": reason,
         "duration_ms": int((time.monotonic() - started) * 1000),
         "owner_action": "راجع فحوص الإقلاع/الكتابة/التنفيذ/التقاط في "

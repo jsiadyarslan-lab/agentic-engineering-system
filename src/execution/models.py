@@ -91,7 +91,39 @@ class ResearchProvider(Base):
     updated_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
 
 
-EXECUTION_TABLES = ("execution_environments", "research_providers")
+class RuntimeStateRecord(Base):
+    """حالة التشغيل القانونية الواحدة (013.2 §1+§3) — سجل دائم.
+
+    مصدر واحد للحقيقة تشتق منه كل الواجهات وكل قبول: لا بطاقة بيئة
+    ولا سكربت قبول ولا SSE يخترع حالة — الكل يقرأ هذا الصف.
+
+    - state: من RUNTIME_STATES (آلة الحالة القانونية أدناه)
+    - policy: السياسة التي جُهِّزت لها (STRICT_ISOLATED | COMPATIBLE_LOCAL)
+    - environment_id/worker_id: هوية البيئة/العامل عند التحقق — READY
+      بلا هوية دائمة = حالة غير قانونية أبدًا (013.2 §3)
+    - progress: 0-100 عند التجهيز؛ evidence_json: فحوص الصحة الحرفية
+    """
+
+    __tablename__ = "runtime_state_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    policy: Mapped[str] = mapped_column(String(40), default="STRICT_ISOLATED")
+    state: Mapped[str] = mapped_column(String(24), default="DISCOVERING")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    missing_json: Mapped[str] = mapped_column(Text, default="[]")
+    evidence_json: Mapped[str] = mapped_column(Text, default="{}")
+    environment_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    worker_id: Mapped[str] = mapped_column(String(120), default="")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[_dt.datetime] = mapped_column(
+        DateTime, default=_utc_now, onupdate=_utc_now
+    )
+    created_at: Mapped[_dt.datetime] = mapped_column(DateTime, default=_utc_now)
+
+
+EXECUTION_TABLES = (
+    "execution_environments", "research_providers", "runtime_state_records",
+)
 
 __all__ = [
     "BACKEND_KINDS",
@@ -99,4 +131,5 @@ __all__ = [
     "EXECUTION_TABLES",
     "ExecutionEnvironment",
     "ResearchProvider",
+    "RuntimeStateRecord",
 ]
