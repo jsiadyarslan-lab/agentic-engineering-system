@@ -80,12 +80,13 @@ class ProjectEngine:
     # ------------------------------------------------------------------ #
 
     def _emit(self, project_id: int, kind: str, payload: dict) -> None:
-        service.add_event(self._sessions, project_id, kind, payload)
+        event_id = service.add_event(self._sessions, project_id, kind,
+                                     payload)
         if self._on_event is not None:
             try:
                 self._on_event({
                     "project_id": project_id, "kind": kind,
-                    "payload": payload,
+                    "payload": payload, "event_id": event_id,
                 })
             except Exception:  # noqa: BLE001 — المستقبِل لا يكسر الحلقة
                 pass
@@ -508,13 +509,54 @@ class ProjectEngine:
     def _preflight_gate(self, project: dict, plan: dict) -> dict | None:
         """حاجز الجاهزية عند READY (011 §2+§27) — PASS=None، BLOCKED=بوابة.
 
+        (013 §4) السلسلة معلنة حدثًا حدثًا — كل خطوة قابلة للرؤية:
+        PREFLIGHT_STARTED ← CAPABILITIES_EVALUATED ←
+        ENVIRONMENT_CHECK_STARTED ← ENVIRONMENT_READY | PREFLIGHT_BLOCKED
+        ← EXECUTION_OPENED. لا فحص صامت أبدًا.
+
         APPROVED + preflight BLOCKED = APPROVED_BUT_BLOCKED: بوابة توفير
         (status=BLOCKED) تُحل بإعادة الفحص بعد التوفير — لا إعادة
         اعتماد الخطة أبدًا ما لم تتغير (§19).
         """
+        project_id = project["id"]
+        self._emit(project_id, "PREFLIGHT_STARTED", {
+            "plan_id": plan["id"], "version": plan["version"],
+            "policy": project.get("execution_policy") or "STRICT_ISOLATED",
+        })
         result = self._run_preflight(project, plan)
-        self._emit_preflight(project["id"], result)
+        self._emit(project_id, "CAPABILITIES_EVALUATED", {
+            "verdict": result["verdict"],
+            "required": result.get("required", []),
+            "capabilities": [
+                {"capability_id": c["capability_id"], "status": c["status"],
+                 "ok": bool(c.get("ok"))}
+                for c in result.get("capabilities", [])
+            ],
+            "matrix": result.get("matrix", []),
+        })
+        self._emit(project_id, "ENVIRONMENT_CHECK_STARTED", {
+            "environment": (
+                {"id": result["environment"]["id"],
+                 "name": result["environment"]["name"],
+                 "isolation": result["environment"].get("isolation", "")}
+                if result.get("environment") else None
+            ),
+            "policy": result.get("policy"),
+        })
+        self._emit_preflight(project_id, result)
         if result["verdict"] == "PASS":
+            self._emit(project_id, "ENVIRONMENT_READY", {
+                "environment": (
+                    {"id": result["environment"]["id"],
+                     "name": result["environment"]["name"],
+                     "isolation": result["environment"].get("isolation", "")}
+                    if result.get("environment") else None
+                ),
+            })
+            self._emit(project_id, "EXECUTION_OPENED", {
+                "plan_id": plan["id"], "version": plan["version"],
+                "summary": "الخطة معتمدة والقدرات جاهزة — التنفيذ مفتوح",
+            })
             return None
         blocked = result["blocked"]
         # (007.1 §17 يبقى سليمًا) المزود غير الجاهز وحده يعالجه حاجز
@@ -609,6 +651,19 @@ class ProjectEngine:
             ),
         })
         if result["verdict"] == "PASS":
+            self._emit(project_id, "ENVIRONMENT_READY", {
+                "environment": (
+                    {"id": result["environment"]["id"],
+                     "name": result["environment"]["name"]}
+                    if result.get("environment") else None
+                ),
+                "recheck": True,
+            })
+            self._emit(project_id, "EXECUTION_OPENED", {
+                "plan_id": plan["id"], "version": plan["version"],
+                "summary": "إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح "
+                           "بلا إعادة اعتماد",
+            })
             for gate in service.open_gates(self._sessions, project_id):
                 if gate["status"] == "BLOCKED":
                     service.auto_resolve_gate(
@@ -698,6 +753,11 @@ class ProjectEngine:
         self._emit(project_id, "EXECUTION_STARTED",
                    {"execution_id": execution_id, "attempt": attempt,
                     "step_id": step["id"]})
+        self._emit(project_id, "ROLE_EXECUTING", {
+            "step_id": step["id"], "execution_id": execution_id,
+            "role": "implementer", "phase": "execution",
+            "objective": step["objective"][:200],
+        })
 
         # 3) التنفيذ — run_task منفذ وحدة الخطوة (§10: لا حذف له)
         stop = StopController()
@@ -713,7 +773,86 @@ class ProjectEngine:
             goal += "\nمعايير القبول (تحقق حرفيًا):\n- " + \
                 "\n- ".join(step["acceptance_criteria"])
 
+        # (013 §4+§28) أدوار الدورة وأدواتها تصل أحداثًا دائمة حيّة —
+        # دور يبدأ = ROLE_EXECUTING (مرة لكل دور داخل التنفيذ)؛
+        # أداة تستدعى = TOOL_EXECUTION (بدء/نجاح/فشل بمواقعها)؛
+        # عملية متصفح = BROWSER_* (كل عملية قابلة للتسجيل §13).
+        cycle_roles_seen: set[str] = {"implementer"}
+
+        _CYCLE_ROLE_KINDS = {
+            "plan": "thinker", "task_execution": "implementer",
+            "verification_rollup": "verifier",
+            "review_verdict": "reviewer", "arbiter_decision": "arbiter",
+        }
+        _TOOL_KINDS = {"tool.started", "tool.call", "tool.failed"}
+        _BROWSER_DURABLE = {
+            "browser.session.created": "BROWSER_SESSION_CREATED",
+            "browser.navigate": "BROWSER_NAVIGATE",
+            "browser.page.loaded": "BROWSER_PAGE_LOADED",
+            "browser.click": "BROWSER_CLICK",
+            "browser.type": "BROWSER_TYPE",
+            "browser.screenshot": "BROWSER_SCREENSHOT",
+            "browser.extract": "BROWSER_EXTRACT",
+            "browser.download": "BROWSER_DOWNLOAD",
+            "browser.session.closed": "BROWSER_SESSION_CLOSED",
+            "browser.session.interrupted": "BROWSER_SESSION_INTERRUPTED",
+        }
+
         def cycle_sink(event: dict) -> None:
+            kind = str(event.get("kind", ""))
+            if kind in _TOOL_KINDS:
+                self._emit(project_id, "TOOL_EXECUTION", {
+                    "step_id": step["id"],
+                    "execution_id": execution_id,
+                    "tool": event.get("tool", ""),
+                    "phase": ({"tool.started": "started",
+                               "tool.call": "succeeded",
+                               "tool.failed": "failed"}).get(kind, ""),
+                    "role": event.get("role", "implementer"),
+                    "duration_ms": event.get("duration_ms", 0),
+                    "execution_site": event.get("execution_site", ""),
+                    "summary": str(event.get("args_summary")
+                                    or event.get("query")
+                                    or event.get("human")
+                                    or "")[:200],
+                    "error": str(event.get("error") or "")[:200],
+                })
+            elif kind in _BROWSER_DURABLE:
+                payload = {
+                    "step_id": step["id"],
+                    "execution_id": execution_id,
+                    "session_id": event.get("session_id", ""),
+                    "url": event.get("url", ""),
+                    "summary": str(event.get("title")
+                                    or event.get("detail")
+                                    or event.get("sha256", ""))[:160],
+                    "bytes": event.get("bytes", 0),
+                    "detail": {k: v for k, v in event.items()
+                               if k not in ("kind", "role")},
+                }
+                self._emit(project_id, _BROWSER_DURABLE[kind], payload)
+            elif kind.startswith("browser."):
+                # عمليات متصفح أخرى (scroll/wait/upload/…) — أداة عامة
+                self._emit(project_id, "TOOL_EXECUTION", {
+                    "step_id": step["id"],
+                    "execution_id": execution_id,
+                    "tool": "browser", "phase": kind,
+                    "role": event.get("role", "implementer"),
+                    "summary": str(event.get("pixels")
+                                    or event.get("waited_s")
+                                    or event.get("file")
+                                    or "")[:200],
+                })
+            else:
+                cycle_role = _CYCLE_ROLE_KINDS.get(kind)
+                if cycle_role and cycle_role not in cycle_roles_seen:
+                    cycle_roles_seen.add(cycle_role)
+                    self._emit(project_id, "ROLE_EXECUTING", {
+                        "step_id": step["id"],
+                        "execution_id": execution_id,
+                        "role": cycle_role, "phase": "cycle",
+                        "objective": str(event.get("text") or "")[:200],
+                    })
             self._on_event and self._on_event({
                 "project_id": project_id, "kind": "step.progress",
                 "payload": {"step_id": step["id"],
@@ -822,6 +961,10 @@ class ProjectEngine:
 
         service.update_step(self._sessions, step["id"], status="COMPLETED",
                             evidence_id=evidence_id)
+        self._emit(project_id, "STEP_COMPLETED", {
+            "step_id": step["id"], "execution_id": execution_id,
+            "evidence_id": evidence_id, "attempts": attempt,
+        })
         self._checkpoint(project_id, plan, phase, step)
         if result.state_history and "ADJUDICATED" in result.state_history:
             self._emit(project_id, "ADJUDICATION_COMPLETED",
@@ -957,6 +1100,10 @@ class ProjectEngine:
                       steps: list[dict]) -> dict:
         """اكتمال المرحلة ← تدقيق ← COMPLETED/REVISE/BLOCKED/ESCALATE."""
         project_id = project["id"]
+        self._emit(project_id, "STAGE_REVIEW", {
+            "phase_id": phase["id"], "phase_title": phase["title"],
+            "steps": len(steps), "stage": "review",
+        })
         service.update_phase(self._sessions, phase["id"], status="REVIEWING")
         evidences = [
             e for e in service.list_evidence(self._sessions, project_id)

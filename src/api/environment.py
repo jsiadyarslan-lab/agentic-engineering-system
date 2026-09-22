@@ -1,8 +1,10 @@
-"""نقاط نهاية البيئة والجاهزية (الأمر 009 §22-§23+§32).
+"""نقاط نهاية البيئة والجاهزية (الأمر 009 §22-§23+§32 + 013 §16-§17).
 
 - GET  /api/environment/readiness   كل القدرات بآخر قراءة (STALE مطبقة)
 - POST /api/environment/probe       {capability_id} — مسبار واحد حقيقي
 - POST /api/environment/probe/all   الفحص الكامل (كل قدرة بمسبارها)
+- POST /api/environment/provision   تجهيز بيئة تنفيذ — دورة معلنة (013)
+- GET  /api/environment/provision/heartbeat  نبضة البيئة الأخيرة
 - GET  /api/environment/inventory   جرد البيئة الفعلي (OS/CPU/…/شبكة)
 - GET  /api/environment/metrics     لقطة المقاييس الحية
 """
@@ -95,3 +97,37 @@ def inventory() -> dict:
 def observability() -> dict:
     """لقطة المقاييس (§32) — عدادات فعلية من مسار الأدوات."""
     return metrics.snapshot()
+
+
+@router.post("/provision")
+def provision_environment() -> dict:
+    """تجهيز بيئة التنفيذ (013 §16-§17) — دورة حياة معلنة.
+
+    DISCOVERING ← PROVISIONING ← BOOTING ← HEALTH_CHECK ← READY،
+    وكل خطوة موقوتة بمعلن في الاستجابة وعلى التيار الحي. التعذر
+    البنيوي = PROVISIONING_UNAVAILABLE بالمتطلب الحرفي (لا فشل
+    ملفق ولا READY كاذبة). النجاح يسجل البيئة جاهزة فورًا — المسبار
+    والمنفذ من مصدر واحد (011 محفوظ).
+    """
+    from execution import provisioner
+
+    return provisioner.provision(_sessions())
+
+
+@router.get("/provision/heartbeat")
+def provision_heartbeat() -> dict:
+    """نبضة البيئة الأخيرة (013 §16) — فارغة = لم تنبض بعد."""
+    from execution import provisioner
+
+    return {
+        "heartbeat": provisioner.last_heartbeat(),
+        "note": "النبضة فحص جاهزية حقيقي — الحقيقة في سجل البيئات",
+    }
+
+
+@router.post("/provision/heartbeat")
+def run_provision_heartbeat() -> dict:
+    """إجراء نبضة الآن — فحص جاهزية حقيقي بالوقت والنتيجة (§16)."""
+    from execution import provisioner
+
+    return provisioner.heartbeat(_sessions())

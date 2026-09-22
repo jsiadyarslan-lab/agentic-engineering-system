@@ -117,6 +117,7 @@ PROJECT_EVENT_KINDS: tuple[str, ...] = (
     # (012-E) أحداث الوظيفة الدائمة — انتقالات فقط؛ النبضة حقل في
     # صف engineering_jobs. المفردة القانونية الكاملة في harness/events
     "JOB_QUEUED",
+    "JOB_CREATED",            # (013 §4) ولادة صف الوظيفة — قبل الطابور
     "JOB_STARTED",
     "JOB_WAITING",
     "JOB_RETRYING",
@@ -129,6 +130,39 @@ PROJECT_EVENT_KINDS: tuple[str, ...] = (
     "JOB_ESCALATED",
     "JOB_INTERRUPTED",
     "JOB_RECOVERY_ASSESSED",
+    # (013 §4) سلسلة الفحص المسبق المعلنة — القابلية للرؤية شرط
+    # القبول: OWNER_GATE_RESOLVED ← PLAN_APPROVED ← PREFLIGHT_STARTED
+    # ← CAPABILITIES_EVALUATED ← ENVIRONMENT_CHECK_STARTED ←
+    # ENVIRONMENT_READY | PREFLIGHT_BLOCKED ← EXECUTION_OPENED
+    "PREFLIGHT_STARTED",      # بدأ فحص ما قبل التنفيذ (بعد الاعتماد)
+    "CAPABILITIES_EVALUATED", # مصفوفة القدرات قُيّمت (Required×Available)
+    "ENVIRONMENT_CHECK_STARTED",  # فحص بيئة التنفيذ المختارة بدأ
+    "ENVIRONMENT_READY",      # البيئة جاهزة — التنفيذ يفتح
+    "EXECUTION_OPENED",       # APPROVED + PASS = التنفيذ مفتوح فعليًا
+    # (013 §4) حبيبات التنفيذ الحيّة — خط زمن إنساني قابل للثقة
+    "ROLE_EXECUTING",         # دور بدأ عمله داخل الخطوة (مفكر/منفذ/…)
+    "TOOL_EXECUTION",         # استدعاء أداة (browser/fs/proc/web/…) حيًّا
+    "STEP_COMPLETED",         # خطوة اكتملت بأدلة مقبولة
+    "STAGE_REVIEW",           # مراجعة المرحلة (تدقيق + قرار)
+    # (013 §13) قدرة المتصفح الحقيقية — كل عملية قابلة للتسجيل
+    "BROWSER_SESSION_CREATED",
+    "BROWSER_NAVIGATE",
+    "BROWSER_PAGE_LOADED",
+    "BROWSER_CLICK",
+    "BROWSER_TYPE",
+    "BROWSER_SCREENSHOT",
+    "BROWSER_EXTRACT",
+    "BROWSER_DOWNLOAD",
+    "BROWSER_SESSION_CLOSED",
+    "BROWSER_SESSION_INTERRUPTED",
+    # (013 §16) مزوّد بيئة التنفيذ — حالات معلنة لا صفوف قاعدة صامتة
+    "PROVISIONING_STARTED",
+    "PROVISIONING_COMPLETED",
+    "PROVISIONING_FAILED",
+    "PROVISIONING_UNAVAILABLE",   # تعذر بنيوي صريح + المتطلب المطلوب
+    "ENVIRONMENT_HEARTBEAT",      # نبضة البيئة المسجلة (فحص جاهزية دوري)
+    # (013 §55) انتظار مورد يقدمه المالك — لا تزييف جاهزية أبدًا
+    "WAITING_FOR_OWNER_RESOURCE",
 )
 
 

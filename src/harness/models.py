@@ -101,6 +101,16 @@ class EngineeringJob(Base):
         DateTime, nullable=True
     )
 
+    #: (013 §19) متانة الوظيفة الكاملة — لا تموت بصمت أبدًا:
+    #: worker_id: من ينفذ الحلقة (local | remote-worker-id).
+    #: attempt: رقم التشغيل/الاستئناف على الصف نفسه (0 عند الولادة).
+    #: last_event_id: آخر حدث دائم رأته الحلقة — استرداد بلا فجوة.
+    #: resume_token: رمز استئناف غير قابل للتخمين لهوية الاسترداد.
+    worker_id: Mapped[str] = mapped_column(String(64), default="local")
+    attempt: Mapped[int] = mapped_column(Integer, default=0)
+    last_event_id: Mapped[int] = mapped_column(Integer, default=0)
+    resume_token: Mapped[str] = mapped_column(String(40), default="")
+
     #: آخر نتيجة tick مختصرة — {action, reason, status, at}.
     last_tick: Mapped[str] = mapped_column(Text, default="{}")
 

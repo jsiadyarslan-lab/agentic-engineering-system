@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import threading
 
 from sqlalchemy import select
 
@@ -79,10 +80,14 @@ CAPABILITY_INVENTORY: tuple[dict, ...] = (
     {"capability_id": "observability", "name": "المراقبة والمقاييس",
      "description": "عدادات الأدوات والفشل والتعافي", "category": "OBSERVABILITY",
      "required": False, "probe": "observability"},
-    # أداة غير منفذة صراحة (§3): تظهر UNAVAILABLE لا READY أبدًا
+    # (013 §13-§14) متصفح ميكانيكي حقيقي — Playwright+Chromium عبر
+    # درزة provider؛ الجاهزية بمسبار تشغيل فعلي (إطلاق/تنقل/استخلاص/
+    # لقطة/تنظيف) — لا READY لمجرد تهيئة أبدًا.
     {"capability_id": "browser", "name": "متصفح ميكانيكي",
-     "description": "أداة تصفح/تحكم متصفح — غير منفذة في هذا النظام",
-     "category": "WEB", "required": False, "probe": None},
+     "description": "Playwright+Chromium — تنقل ونقر وإدخال ولقطات "
+     "واستخلاص وتنزيل داخل سياسة أمان معلنة (رمل تنزيلات، حجب "
+     "الشبكات الخاصة، سقوف صفحات ومهل)",
+     "category": "WEB", "required": False, "probe": "browser"},
 )
 
 
@@ -90,14 +95,31 @@ def _utc_now() -> _dt.datetime:
     return _dt.datetime.now(_dt.timezone.utc)
 
 
+#: قفل بذر العملية كلها (013): الإطلاق الخلفي بعد الاعتماد يجعل
+#: الخيوط تقرأ الجرد تزامنيًا — البذر check-then-insert بلا قفل
+#: يسبق UNIQUE constraint تحت التزامن الحقيقي. قفل واحد يكفي:
+#: البذر نادر (أول قراءة بعد إنشاء القاعدة) والقراءة بعده حرة.
+_ENSURE_LOCK = threading.Lock()
+
+
 def ensure_capabilities(sessions) -> None:
-    """بذر الجرد عند أول تشغيل — آمن للتكرار، لا يمس قراءات المسبارات."""
+    """بذر الجرد عند أول تشغيل — آمن للتكرار والتزامن، لا يمس المسبارات."""
+    with _ENSURE_LOCK:
+        try:
+            _ensure_capabilities_locked(sessions)
+        except Exception:  # noqa: BLE001
+            # سباق بذر من خيط آخر حدث فعلًا — الجرد موجود؛ لا خطأ
+            pass
+
+
+def _ensure_capabilities_locked(sessions) -> None:
     with sessions() as session:
         existing = {
             row.capability_id for row in session.scalars(
                 select(CapabilityRecord)
             ).all()
         }
+        missing = False
         for spec in CAPABILITY_INVENTORY:
             if spec["capability_id"] in existing:
                 continue
@@ -114,7 +136,9 @@ def ensure_capabilities(sessions) -> None:
                     "NOT_IMPLEMENTED" if spec["probe"] is None else ""
                 ),
             ))
-        session.commit()
+            missing = True
+        if missing:
+            session.commit()
 
 
 def _applied_staleness(row: CapabilityRecord) -> str:
@@ -317,6 +341,22 @@ def run_probe(sessions, capability_id: str, *,
             checked_at=_utc_now().isoformat(),
             ttl_seconds=probes.TTL_DEFAULTS["OBSERVABILITY"],
             details=snapshot(),
+        )
+    elif probe_name == "browser":
+        # (013 §14) مسبار تشغيل فعلي من خدمة المتصفح — كل خطوة معلنة
+        from browser import service as browser_service
+
+        result_dict = browser_service.probe()
+        result = probes.ProbeResult(
+            status=result_dict["status"],
+            reason=result_dict["reason"],
+            checked_at=probes._utc_now().isoformat(),
+            ttl_seconds=result_dict.get("ttl_seconds", 600),
+            failure_class=("" if result_dict["status"] == "READY"
+                           else "DEPENDENCY_FAILURE"),
+            failure_stage=("" if result_dict["status"] == "READY"
+                           else "BROWSER_LAUNCH"),
+            details=result_dict.get("details", {}),
         )
     elif probe_name == "llm_providers":
         result = (llm_providers_fn or _probe_llm_providers)(sessions)

@@ -43,7 +43,8 @@ from roles.web_tools import (
     web_search,
 )
 
-#: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF + أدوات البيانات الخمس.
+#: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF + أدوات البيانات الخمس
+#: + أدوات المتصفح السبع (013 §13) — متصفح حي بأنشطة مسجلة.
 TOOL_WHITELIST: tuple[str, ...] = (
     "web_search",
     "fetch_page",
@@ -56,7 +57,21 @@ TOOL_WHITELIST: tuple[str, ...] = (
     "page_to_text",
     "fred_csv",
     "worldbank_indicator",
+    "browser_navigate",
+    "browser_click",
+    "browser_type",
+    "browser_extract",
+    "browser_screenshot",
+    "browser_download",
+    "browser_wait",
 )
+
+#: أدوات المتصفح (013 §13) — تنفيذ معلن داخل عملية المتصفح دائمًا.
+BROWSER_TOOLS: frozenset[str] = frozenset({
+    "browser_navigate", "browser_click", "browser_type",
+    "browser_extract", "browser_screenshot", "browser_download",
+    "browser_wait",
+})
 
 #: أدوات البيانات الخمس (الأمر 003) — تنفيذ معلن خارج الركيزة دائمًا.
 DATA_TOOLS: frozenset[str] = frozenset({
@@ -432,6 +447,7 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
     site = (
         "in_process_declared"
         if name in ("web_search", "fetch_page") or name in DATA_TOOLS
+        or name in BROWSER_TOOLS
         else "substrate"
     )
     record = _record_of(name, args, attempt)
@@ -544,6 +560,23 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
             }
             _finish_success(ctx, record, value, digest, site, summary,
                             result_count=int(value.get("count", 1) or 1))
+        elif name in BROWSER_TOOLS:
+            # (013 §13+§28) متصفح حي — توزيع موحد في browser_tools
+            from roles import browser_tools
+
+            value = browser_tools.run_browser_tool(name, args, ctx)
+            digest = str(value.get("sha256")
+                         or _sha256_text(json.dumps(value,
+                                                    ensure_ascii=False)))
+            finalize(record)
+            summary = {
+                key: value.get(key)
+                for key in ("url", "title", "chars", "count",
+                            "bytes", "file", "clicked", "typed_chars")
+                if key in value
+            }
+            _finish_success(ctx, record, value, digest, site, summary,
+                            result_count=1)
         else:  # pragma: no cover — القائمة مغلقة أعلاه
             raise ToolFailure(name, f"أداة غير منفذة: {name}",
                               failure_class="INPUT_FAILURE",

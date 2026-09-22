@@ -7,6 +7,7 @@ engine حقيقي بكل طبقاته، وحدوده الخارجية منظمة
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -82,6 +83,22 @@ def project_env(tmp_path, monkeypatch):
         from tasks import TaskResult
 
         runs.append(goal)
+        # (013 §28) نشاط أدوات حي كالمنفذ الحقيقي — المحرك يكتبها
+        # TOOL_EXECUTION دائمة فتظهر في السلسلة الحية
+        if on_event is not None:
+            try:
+                on_event({"kind": "tool.started", "role": "implementer",
+                          "tool": "write_file", "query": "deliverable.md",
+                          "execution_site": "substrate",
+                          "tool_call_id": f"tc-{len(runs)}-1"})
+                on_event({"kind": "tool.call", "role": "implementer",
+                          "tool": "write_file",
+                          "args_summary": "deliverable.md",
+                          "execution_site": "substrate",
+                          "tool_call_id": f"tc-{len(runs)}-1",
+                          "duration_ms": 9})
+            except Exception:  # noqa: BLE001
+                pass
         root = Path(workspace)
         root.mkdir(parents=True, exist_ok=True)
         output = root / "deliverable.md"
@@ -114,6 +131,15 @@ def project_env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(projects, "_test_engine_factory", factory)
     yield {"sessions": sessions, "runs": runs, "tmp_path": tmp_path}
+    # (013) الاعتماد يطلق الحلقة خلفيًا الآن — استنزفها قبل فك الترقيع
+    # كي لا تستدعي حلقة متأخرة منفذ الاختبار التالي (تسريب عبر الحدود).
+    from workflow import runner as _wf_runner
+
+    deadline = time.monotonic() + 60.0
+    while _wf_runner.active_run(sessions) is not None:
+        if time.monotonic() > deadline:
+            break
+        time.sleep(0.05)
     monkeypatch.setattr(projects, "_test_engine_factory", None)
 
 
@@ -246,14 +272,14 @@ def test_unknown_project_404(client, project_env):
 
 
 def test_concurrent_run_rejected(client, project_env):
-    """مشروع واحد يعمل في كل لحظة — الثاني يُرفض (§10)."""
+    """مشروع واحد يعمل في كل لحظة — الثاني يُرفض (§10 + 013 §40).
+
+    (013) الاعتماد نفسه يطلق الحلقة الآن: المصنع البطيء يُثبّت قبل
+    الاعتماد فيصبح أول tick من إطلاق الاعتماد هو الحاجز — الضمان
+    نفسه (واحد باللحظة) عبر المسار الجديد نفسه.
+    """
     import threading
-    import time
 
-    pid1 = _create_and_approve(client)
-    pid2 = _create_and_approve(client)
-
-    # شغّل مشروعًا بطيئًا (منفذ ينتظر) في خيط حقيقي
     started = threading.Event()
     release = threading.Event()
 
@@ -273,16 +299,34 @@ def test_concurrent_run_rejected(client, project_env):
         engine.tick = slow_tick  # type: ignore[method-assign]
         return engine
 
+    def _create(pid_name):
+        out = client.post("/api/projects", json={
+            "name": pid_name, "objective": "هدف اختبار تزامن",
+        })
+        pid = out.json()["id"]
+        assert client.post(
+            f"/api/projects/{pid}/plan/generate").status_code == 200
+        return pid
+
+    # المصنع البطيء أولًا — اعتماد pid1 يطلق حلقة بطيئة فورًا (013 §3)
     projects._test_engine_factory = slow_factory
     try:
+        pid1 = _create("الأول")
+        pid2 = _create("الثاني")
         thread = threading.Thread(
             target=lambda: TestClient(routes.app).post(
-                f"/api/projects/{pid1}/run/stream"
+                f"/api/projects/{pid1}/plan/approve",
+                json={"approved": True},
             ), daemon=True,
         )
         thread.start()
-        assert started.wait(timeout=5)
-        # المشروع الثاني يُرفض والمشروع الأول نشط
+        assert started.wait(timeout=8), "الحلقة البطيئة لم تبدأ"
+        # المشروع الثاني: الاعتماد لا يطلق (تعارض صادق) والبث يُرفض 409
+        clash_approve = client.post(
+            f"/api/projects/{pid2}/plan/approve", json={"approved": True}
+        ).json()
+        assert clash_approve["launch"]["launched"] is False
+        assert clash_approve["launch"]["reason"] == "conflict"
         clash = client.post(f"/api/projects/{pid2}/run/stream")
         assert clash.status_code == 409
         listing = client.get("/api/projects").json()

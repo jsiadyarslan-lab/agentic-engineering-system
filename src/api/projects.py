@@ -1,22 +1,29 @@
-"""نقاط نهاية المشاريع (الأمر 007 §18) — API نحيف حول المحرك الدائم.
+"""نقاط نهاية المشاريع (الأمر 007 §18 + 013 §1-§7) — API نحيف حول
+المحرك الدائم ومُطلق سير العمل.
 
 لا orchestration هنا: الحلقة الذاتية في workflow/engine.py، والقاعدة
-في workflow/service.py — هذه الطبقة نقل وتسجيل وبث فقط.
+في workflow/service.py، والإطلاق الخلفي في workflow/runner.py — هذه
+الطبقة نقل وتسجيل وبث فقط.
+
+(013 §3) الاعتماد أمر إلى سير العمل: POST /plan/approve لا يكتب
+صف قاعدة وينتهي — يطلق الحلقة خلفيًا عبر runner.launch والبث يحمل
+كل ما يحدث: PREFLIGHT ← JOB ← PHASE/STEP/ROLES ← EVIDENCE.
 
 - POST/GET /api/projects                    إنشاء/قائمة (+ حالة الاسترداد)
 - GET    /api/projects/{id}                 التفصيل الكامل (خطة/مراحل/بوابات)
+- GET    /api/projects/{id}/state           لقطة مصالحة كاملة (013 §6)
 - GET    /api/projects/{id}/plan            الخطة الحالية
 - POST   /api/projects/{id}/plan/generate   توليد الخطة (حي)
-- POST   /api/projects/{id}/plan/approve    اعتماد/رفض المالك
-- POST   /api/projects/{id}/run/stream      تشغيل الحلقة الذاتية — SSE
+- POST   /api/projects/{id}/plan/approve    اعتماد/رفض المالك ← إطلاق (013)
+- POST   /api/projects/{id}/run/stream      تشغيل/إرفاق — بث SSE (013 §42)
 - POST   /api/projects/{id}/stop            إيقاف بلقطة قابلة للاستئناف
-- POST   /api/projects/{id}/resume          استئناف صريح (بعد restart أيضًا)
-- POST   /api/projects/{id}/gates/{gid}     حل بوابة مالك (idempotent 011)
-- POST   /api/projects/{id}/preflight       إعادة الفحص بعد التوفير (011 §19)
+- POST   /api/projects/{id}/resume          استئناف صريح ← إطلاق (013)
+- POST   /api/projects/{id}/gates/{gid}     حل بوابة مالك (idempotent)
+- POST   /api/projects/{id}/preflight       إعادة الفحص ← إطلاق عند النجاح
 - POST   /api/projects/{id}/execution-policy سياسة التنفيذ (011 §26)
 - POST   /api/projects/{id}/verify          التحقق النهائي — المالك وحده
 - GET    /api/projects/{id}/phases|steps|executions|evidence|audit|events
-- GET    /api/projects/events               تيار أحداث عام (011 §21) — SSE
+- GET    /api/projects/events               تيار أحداث عام — SSE حي
 """
 
 from __future__ import annotations
@@ -24,15 +31,16 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from providers_registry import registry
 from workflow import gates as gate_machine
 from workflow import service
+from workflow import runner as workflow_runner
 from workflow.engine import EngineError, ProjectEngine
 
 
@@ -47,10 +55,8 @@ def _harness_manager(on_event=None, *, engine=None):
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
-#: منفّذ المشاريع — مشروع واحد يعمل في كل لحظة (حلقة ذاتية واحدة).
-_project_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aes-project")
-
 #: حالة المشروع النشط — بث لحظي فقط؛ الحقيقة الدائمة في القاعدة.
+#: (013) المصدر الوحيد الآن workflow/runner — لا مسار موازٍ أبدًا.
 _project_state: dict = {"active": None, "lock": threading.Lock()}
 
 #: خطاف اختبار — يستبدل مصنع المحرك (test wiring صريح، لا يمر منه إنتاج).
@@ -228,38 +234,95 @@ def list_projects() -> dict:
 
 
 def _active_run_id() -> int | None:
-    with _project_state["lock"]:
-        active = _project_state.get("active")
-        if active is not None and not active["done"].is_set():
-            return active["project_id"]
-    return None
+    """المشروع النشط الآن — من مُطلق سير العمل (013: مصدر واحد)."""
+    active = workflow_runner.active_run(_sessions())
+    return active["project_id"] if active else None
 
 
 @router.get("/events/stream")
-async def projects_events_stream(after_id: int = 0) -> StreamingResponse:
-    """تيار أحداث عام (011 §21) — كل انتقال مهم يصل بلا refresh يدوي.
+async def projects_events_stream(request: Request,
+                                 after_id: int = 0) -> StreamingResponse:
+    """تيار أحداث عام (011 §21 + 013 §5) — حي فوريًا لا استطلاعًا فقط.
 
-    استطلاع خفيف للسجل الدائم (1.2ث) بترتيب معرف رتيب — نفس مصدر
-    الحقيقة الذي تقرأ منه الصفحات؛ الشريط الجانبي وصفحة المشروع
-    وخط الزمن يشتركون فيه.
+    (013 §5) عقد البث الكامل:
+    - **id: <event_id>** لكل حدث — المتصفح يرسل Last-Event-ID تلقائيًا
+      عند إعادة الاتصال فتُستكمل الفائتة من الدائمة بلا تكرار.
+    - **بث فوري** عبر الناقل (الاشتراك قبل القراءة — لا فجوة سباق)
+      + **استطلاع الدائمة** (1.0ث) شبكة أمان لكل ما لا يمر بالناقل.
+    - **keepalive** كل ~15ث — صحة الاتصال وقطع الوسائط الصامت.
+    - الترتيب بمعرف رتيب؛ المكرر يُسقط بالمقارنة مع آخر مرسل.
     """
-    state = {"last_id": int(after_id)}
+    from core.live_bus import BUS
+
+    header_after = request.headers.get("last-event-id", "")
+    try:
+        start_after = int(header_after) if header_after else int(after_id)
+    except ValueError:
+        start_after = int(after_id)
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    sub_id = BUS.subscribe("projects", loop, queue)
+    state = {"last_id": start_after}
+
+    def _sse(event: dict) -> str:
+        event_id = int(event.get("id") or event.get("event_id") or 0)
+        if event_id:
+            state["last_id"] = max(state["last_id"], event_id)
+            return ("id: " + str(event_id) + "\n"
+                    + "data: " + json.dumps(event, ensure_ascii=False)
+                    + "\n\n")
+        return "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
 
     async def generate():
-        yield "data: " + json.dumps(
-            {"kind": "stream.start", "last_id": state["last_id"]},
-            ensure_ascii=False,
-        ) + "\n\n"
-        while True:
-            events = service.list_recent_events(
-                _sessions(), state["last_id"], limit=100
-            )
-            for event in events:
-                state["last_id"] = max(state["last_id"], event["id"])
-                yield "data: " + json.dumps(
-                    event, ensure_ascii=False
-                ) + "\n\n"
-            await asyncio.sleep(1.2)
+        try:
+            yield "data: " + json.dumps(
+                {"kind": "stream.start", "last_id": state["last_id"]},
+                ensure_ascii=False,
+            ) + "\n\n"
+            idle_ticks = 0
+            while True:
+                # 1) الحي من الناقل أولًا — لحظة النشر
+                pushed = False
+                while not queue.empty():
+                    try:
+                        event = queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+                    pushed = True
+                    if not isinstance(event, dict):
+                        continue
+                    if str(event.get("stream") or "") not in ("projects", ""):
+                        continue
+                    event_db_id = int(event.get("event_id") or 0)
+                    if event_db_id and event_db_id <= state["last_id"]:
+                        continue
+                    yield _sse({
+                        "id": event_db_id or None,
+                        "project_id": event.get("project_id"),
+                        "kind": event.get("kind", ""),
+                        "payload": (event.get("details") or {}).get(
+                            "payload") if isinstance(
+                                event.get("details"), dict
+                            ) else event.get("payload", {}),
+                        "created_at": event.get("timestamp", ""),
+                    })
+                # 2) الدائمة بعد آخر مرسل — شبكة الأمان الكاملة
+                events = service.list_recent_events(
+                    _sessions(), state["last_id"], limit=100
+                )
+                for event in events:
+                    pushed = True
+                    yield _sse(event)
+                if pushed:
+                    idle_ticks = 0
+                    continue
+                idle_ticks += 1
+                if idle_ticks % 15 == 14:  # كل ~15ث — صحة الاتصال
+                    yield ": keepalive\n\n"
+                await asyncio.sleep(1.0)
+        finally:
+            BUS.unsubscribe(sub_id)
 
     return StreamingResponse(
         generate(),
@@ -295,6 +358,66 @@ def project_detail(project_id: int) -> dict:
     }
 
 
+@router.get("/{project_id}/state")
+def project_state_snapshot(project_id: int) -> dict:
+    """لقطة مصالحة كاملة (013 §6) — إعادة بناء الواجهة من هنا ثم
+    متابعة التيار.
+
+    initial snapshot + event stream: كل ما تحتاجه الواجهة لبناء
+    نفسها (مشروع/خطة/بوابات/مراحل/وظيفة/خط زمن/سلسلة قبول/معايير)
+    في نداء واحد — مع last_event_id للاشتراك بعده مباشرة.
+    """
+    project = _project_or_404(project_id)
+    plan = service.latest_plan(_sessions(), project_id)
+    phases = service.list_phases(_sessions(), project_id)
+    gates = service.list_gates(_sessions(), project_id)
+    events = service.list_events(_sessions(), project_id, limit=200)
+    executions = service.list_executions(_sessions(), project_id, limit=20)
+    evidence = service.list_evidence(_sessions(), project_id)
+    audits = service.list_audits(_sessions(), project_id)
+    try:
+        job = _harness_manager().job_for_project(project_id)
+    except Exception:  # noqa: BLE001
+        job = None
+    timeline = {}
+    chain = {}
+    try:
+        from harness import projections
+
+        timeline = projections.project_timeline(events)
+        chain = projections.acceptance_chain(events)
+    except Exception:  # noqa: BLE001 — الإسقاط قراءة لا يمنع اللقطة
+        pass
+    criteria: list[dict] = []
+    try:
+        from workflow import acceptance
+
+        criteria = acceptance.criteria_view(_sessions(), project_id)
+    except Exception:  # noqa: BLE001 — المعايير قراءة اختيارية
+        pass
+    active = workflow_runner.active_run(_sessions())
+    return {
+        **project,
+        "plan": plan,
+        "phases": phases,
+        "gates": gates,
+        "events": events[-60:],
+        "executions": executions,
+        "evidence": evidence,
+        "audits": audits,
+        "execution_gate": _execution_gate(project, plan),
+        "job": job,
+        "timeline": timeline,
+        "chain": chain,
+        "acceptance_criteria": criteria,
+        "active_run": (
+            {"project_id": active["project_id"], "job_id": active["job_id"]}
+            if active else None
+        ),
+        "last_event_id": events[-1]["id"] if events else 0,
+    }
+
+
 @router.get("/{project_id}/plan")
 def project_plan(project_id: int) -> dict:
     _project_or_404(project_id)
@@ -314,99 +437,179 @@ def generate_plan(project_id: int) -> dict:
         raise _http(error) from error
 
 
+def _launch_after_decision(project_id: int, reason: str) -> dict:
+    """إطلاق الحلقة بعد قرار مالك (013 §3) — أمر لا صف قاعدة.
+
+    فشل الإطلاق لا يفشل القرار (القرار دائم وقائم)؛ يعيد وصفًا
+    صادقًا {launched, reason, job_id?} يصل الواجهة فورًا، وكل ما
+    يحدث لاحقًا يصل عبر تيار الأحداث الحي.
+
+    (013) المصنع يُلتقط وقتَ الطلب لا داخل الخيط الخلفي — بيئة
+    الاختبار قد تُستبدل قبل أن يبني الخيط محركه؛ الإنتاج لا يتغير.
+    """
+
+    def engine_factory(on_event=None):
+        factory = _test_engine_factory  # مقرودة قبل الإغلاق أدناه
+        if factory is not None:
+            return factory(on_event=on_event)
+
+        def router_factory():
+            from api.routes import _build_live_router
+
+            return _build_live_router()
+
+        return ProjectEngine(
+            _sessions(),
+            router_factory=router_factory,
+            on_event=on_event,
+            role_mappings_provider=lambda: registry.get_mappings(
+                _sessions()
+            ),
+        )
+
+    try:
+        return workflow_runner.launch(
+            project_id, engine_factory=engine_factory,
+            sessions=_sessions(), reason=reason,
+        )
+    except workflow_runner.RunConflict as conflict:
+        return {"launched": False, "reason": "conflict",
+                "detail": str(conflict)}
+    except Exception as error:  # noqa: BLE001 — إعلان لا انهيار
+        return {"launched": False, "reason": "error",
+                "detail": str(error)[:300]}
+
+
 @router.post("/{project_id}/plan/approve")
 def approve_plan(project_id: int, body: PlanDecisionIn) -> dict:
-    """قرار المالك — اعتماد يفعّل الخطة، ورفض يعيد التوليد (§14)."""
+    """قرار المالك — اعتماد يفعّل الخطة **ويطلق الحلقة فورًا** (013 §3).
+
+    الرفض يعيد التوليد بتغذية راجعة (خطة v جديدة تنتظر اعتمادًا).
+    الإطلاق خلفي: النتيجة فورية والسلسلة كاملة (PREFLIGHT ← JOB ←
+    EXECUTION ← EVIDENCE) تصل عبر تيار الأحداث بلا refresh.
+    """
     _project_or_404(project_id)
     try:
-        return _build_engine().approve_plan(
+        result = _build_engine().approve_plan(
             project_id, approved=body.approved, feedback=body.feedback
         )
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
+    launch: dict = {"launched": False, "reason": "not_requested"}
+    if body.approved:
+        launch = _launch_after_decision(
+            project_id, "اعتماد الخطة — أمر المالك"
+        )
+    return {**result, "launch": launch}
 
 
 @router.post("/{project_id}/run/stream")
-async def run_project(project_id: int) -> StreamingResponse:
-    """تشغيل الحلقة الذاتية — بث SSE لكل انتقال مهم (§10+§17).
+async def run_project(project_id: int,
+                      request: Request) -> StreamingResponse:
+    """تشغيل الحلقة الذاتية أو الإرفاق بتشغيل جارٍ — بث SSE (013 §42).
 
-    كل tick يحمل حالته من القاعدة ويكتب إليها — انقطاع البث أو crash
-    لا يفقد شيئًا: الاستئناف من آخر checkpoint بلا إعادة تعريف.
+    الإطلاق عبر workflow/runner (single-flight عملية-wide): مشروع
+    آخر يعمل = 409؛ نفس المشروع يعمل = إرفاق بالبث القائم (reconnect
+    بلا فقد). كل tick يحمل حالته من القاعدة ويكتب إليها — انقطاع
+    البث أو crash لا يفقد شيئًا: الاستئناف من آخر checkpoint.
+
+    ?after=<event_id>: استهلاك الأحداث الدائمة بعد معرف — إعادة
+    الإرفاق تُكمل من حيث توقفت لا من الصفر (replay صادق).
     """
     _project_or_404(project_id)
+    # (013 §42) غياب ?after = من البداية (تاريخ المشروع كاملًا)؛
+    # وجوده = استكمال بعد معرف — إعادة الإرفاق بلا فقد ولا تكرار.
+    raw_after = request.query_params.get("after", None)
+    try:
+        after = int(raw_after) if raw_after is not None else -1
+    except ValueError:
+        after = -1
+
+    db_key = workflow_runner.sessions_db_key(_sessions())
+    active = workflow_runner.active_run(_sessions())
+    if active is not None and active["project_id"] != project_id:
+        raise HTTPException(
+            status_code=409,
+            detail=f"مشروع آخر يعمل حاليًا (#{active['project_id']}) — "
+            "الحلقة الذاتية واحدة في كل لحظة",
+        )
+    launch = _launch_after_decision(project_id, "تشغيل صريح من الواجهة")
+
+    from core.live_bus import BUS
+
     loop = asyncio.get_running_loop()
-    queue: asyncio.Queue[dict | None] = asyncio.Queue()
-    done_event = threading.Event()
-
-    with _project_state["lock"]:
-        active = _project_state.get("active")
-        if active is not None and not active["done"].is_set():
-            raise HTTPException(
-                status_code=409,
-                detail=f"مشروع آخر يعمل حاليًا (#{active['project_id']}) — "
-                "الحلقة الذاتية واحدة في كل لحظة",
-            )
-        _project_state["active"] = {
-            "project_id": project_id, "done": done_event,
-        }
-
-    def on_event(event: dict) -> None:
-        loop.call_soon_threadsafe(queue.put_nowait, event)
-
-    def run_in_thread() -> None:
-        try:
-            engine = _build_engine(on_event=on_event)
-            project = service.get_project(_sessions(), project_id)
-            if project is None:
-                raise EngineError(f"مشروع غير معروف: {project_id}")
-            if project["status"] == "PAUSED" and not project["stop_requested"]:
-                # استئناف ضمني للموقوف بلقطة — إلا إن كان الإيقاف مطلوبًا
-                # حديثًا: العلم يُكرَّم في أول نبضة ولا يُمسح أبدًا بصمت
-                engine.resume(project_id)
-            # (012-E) الحلقة الدائمة كوظيفة قابلة للملاحظة: نبضة،
-            # انتظار صادق، انقطاع واستئناف — فوق المحرك نفسه (لا بديلًا)
-            manager = _harness_manager(on_event, engine=engine)
-            job = manager.start_job(project_id)
-            outcome = manager.run_loop(job["id"])
-            loop.call_soon_threadsafe(queue.put_nowait, {
-                "project_id": project_id, "kind": "run.done",
-                "payload": outcome,
-            })
-        except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
-            loop.call_soon_threadsafe(queue.put_nowait, {
-                "project_id": project_id, "kind": "run.error",
-                "payload": {"error": str(error)},
-            })
-        finally:
-            # الخيط مالك تسجيل النشاط — لا دورة حياة SSE (درس السباق
-            # الموثق: انقطاع العميل لا يعني توقف المحرك، فالمزامنة ممنوعة)
-            done_event.set()
-            loop.call_soon_threadsafe(queue.put_nowait, None)
-            with _project_state["lock"]:
-                if (_project_state.get("active") or {}).get(
-                    "project_id"
-                ) == project_id:
-                    _project_state["active"] = None
-
-    loop.run_in_executor(_project_executor, run_in_thread)
+    queue: asyncio.Queue = asyncio.Queue()
+    sub_id = BUS.subscribe("projects", loop, queue)
 
     async def generate():
         try:
             yield "data: " + json.dumps({
                 "project_id": project_id, "kind": "run.start",
-                "payload": {"status": "RUNNING"},
+                "payload": {"status": "RUNNING", "launch": launch},
             }, ensure_ascii=False) + "\n\n"
+            last_event_id = max(after, 0) if after > 0 else 0
+            # البث من البداية أو الاستكمال بعد معرف — أحداث الدائمة
+            # الفائتة أولًا (بلا تكرار)، ثم الحي عبر الناقل
+            if after != 0:
+                for event in service.list_events(
+                        _sessions(), project_id, limit=500):
+                    if (event.get("id") or 0) > last_event_id:
+                        last_event_id = event["id"]
+                        yield "id: " + str(event["id"]) + "\n" \
+                              + "data: " + json.dumps(
+                                  {**event, "payload": event.get(
+                                      "payload", {})},
+                                  ensure_ascii=False,
+                              ) + "\n\n"
+            idle_ticks = 0
             while True:
-                event = await queue.get()
-                if event is None:
-                    break
-                yield "data: " + json.dumps(
-                    event, ensure_ascii=False
-                ) + "\n\n"
+                try:
+                    event = await asyncio.wait_for(
+                        queue.get(), timeout=0.5
+                    )
+                    idle_ticks = 0
+                except asyncio.TimeoutError:
+                    idle_ticks += 1
+                    active = workflow_runner.active_run(_sessions())
+                    if active is None or active["project_id"] != project_id:
+                        yield "data: " + json.dumps({
+                            "project_id": project_id, "kind": "run.done",
+                            "payload": {"job_id": launch.get("job_id")},
+                        }, ensure_ascii=False) + "\n\n"
+                        return
+                    if idle_ticks % 30 == 29:  # كل ~15ث — صحة الاتصال
+                        yield ": keepalive\n\n"
+                    continue
+                if event.get("project_id") != project_id:
+                    continue
+                event_db_key = str(event.get("db") or "")
+                if event_db_key and event_db_key != db_key:
+                    continue  # بث بيئة أخرى — لا تسريب
+                event_db_id = int(event.get("event_id") or 0)
+                if event_db_id and event_db_id <= last_event_id:
+                    continue  # مكرر (سباق الأرشيف/الحي)
+                if event_db_id:
+                    last_event_id = event_db_id
+                kind = event.get("kind", "")
+                details = event.get("details") or {}
+                payload = (details.get("payload")
+                           if isinstance(details, dict) else None) \
+                    or event.get("payload") or {}
+                yield "data: " + json.dumps({
+                    "project_id": project_id, "kind": kind,
+                    "payload": payload,
+                    "event_id": event_db_id,
+                }, ensure_ascii=False) + "\n\n"
+                if kind == "run.error":
+                    yield "data: " + json.dumps({
+                        "project_id": project_id, "kind": "run.done",
+                        "payload": {"error": True},
+                    }, ensure_ascii=False) + "\n\n"
+                    return
         finally:
             # انقطاع العميل لا يوقف المحرك — يكمل ويكتب كل شيء في
-            # القاعدة؛ وتسجيل النشاط يُمسح من خيط المحرك وحده
-            pass
+            # القاعدة؛ والاشتراك يُلغى هنا حصرًا (صاحبه هذا المولد)
+            BUS.unsubscribe(sub_id)
 
     return StreamingResponse(
         generate(),
@@ -427,7 +630,11 @@ def stop_project(project_id: int, body: ProjectStopIn) -> dict:
 
 @router.post("/{project_id}/resume")
 def resume_project(project_id: int) -> dict:
-    """استئناف صريح — يعمل بعد restart من checkpoint الدائم (§9+§19)."""
+    """استئناف صريح ← **إطلاق الحلقة فورًا** (013 §34+§38).
+
+    يعمل بعد restart من checkpoint الدائم (§9+§19)؛ الوظيفة غير
+    النهائية تعود للطابور في صفها نفسه، والبث يحمل ما يحدث بعدها.
+    """
     _project_or_404(project_id)
     try:
         result = _build_engine().resume(project_id)
@@ -436,18 +643,25 @@ def resume_project(project_id: int) -> dict:
             _harness_manager().mark_resumed(project_id)
         except Exception:  # noqa: BLE001 — دفتر الوظيفة لا يمنع الاستئناف
             pass
-        return result
+        launch = _launch_after_decision(project_id, "استئناف صريح من المالك")
+        return {**result, "launch": launch}
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 
 
 @router.post("/{project_id}/preflight")
 def recheck_preflight(project_id: int) -> dict:
-    """إعادة الفحص بعد التوفير (011 §19) — نجاح = فتح دون إعادة اعتماد."""
+    """إعادة الفحص بعد التوفير (011 §19) — النجاح يفتح **ويطلق تلقائيًا**
+    (013 §38: بلا إعادة اعتماد وبلا زر تشغيل إضافي)."""
     _project_or_404(project_id)
     try:
         result = _build_engine().recheck_preflight(project_id)
         project = service.get_project(_sessions(), project_id)
+        launch: dict = {"launched": False, "reason": "not_requested"}
+        if result["verdict"] == "PASS":
+            launch = _launch_after_decision(
+                project_id, "إعادة فحص ناجحة بعد التوفير — استئناف آلي"
+            )
         return {
             "project": project,
             "preflight": {
@@ -461,6 +675,7 @@ def recheck_preflight(project_id: int) -> dict:
             "execution_gate": _execution_gate(
                 project, service.latest_plan(_sessions(), project_id)
             ),
+            "launch": launch,
         }
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
@@ -478,7 +693,7 @@ def set_execution_policy(project_id: int, body: ExecutionPolicyIn) -> dict:
 
 @router.post("/{project_id}/gates/{gate_id}")
 def resolve_gate(project_id: int, gate_id: int, body: GateDecisionIn) -> dict:
-    """حل بوابة مالك — لكل نوع أثره (§14)."""
+    """حل بوابة مالك — لكل نوع أثره (§14)؛ الفتح يطلق الحلقة (013 §3)."""
     _project_or_404(project_id)
     try:
         outcome = _build_engine().resolve_gate(
@@ -486,12 +701,20 @@ def resolve_gate(project_id: int, gate_id: int, body: GateDecisionIn) -> dict:
         )
         # (012-E) رفض البوابة يوقف المشروع — الوظيفة تغلق صادقة لا
         # تبقى منتظرة لبوابة ماتت
+        launch: dict = {"launched": False, "reason": "not_requested"}
         if not body.approved:
             try:
                 _harness_manager().mark_stopped(project_id)
             except Exception:  # noqa: BLE001
                 pass
-        return outcome
+        elif outcome.get("kind") in (
+            "PROVIDER_ACTION_REQUIRED", "ESCALATION",
+        ):
+            # قرار المالك عالج العائق — الحلقة تستأنف فورًا (013 §3)
+            launch = _launch_after_decision(
+                project_id, "حل بوابة مالك — استئناف آلي"
+            )
+        return {**outcome, "launch": launch}
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
 

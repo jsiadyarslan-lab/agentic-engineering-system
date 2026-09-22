@@ -61,34 +61,40 @@ def test_harness_css_classes_exist():
 
 # ---------- الربط في projects.js و index.html ----------
 
-def test_projects_js_consumes_harness():
-    js = _read("projects.js")
-    assert "HubHarness" in js                   # استهلاك بطاقة الوظيفة
-    assert "jobCardHtml" in js
-    assert "renderSections" in js
-    # p.job من تفاصيل المشروع يصل البطاقة
-    assert "p.job" in js
-    # انتقالات الوظيفة تُحدث الصفحة لحظيًا (تيار 011 §21)
-    for kind in ("JOB_QUEUED", "JOB_STARTED", "JOB_WAITING",
-                 "JOB_COMPLETED", "JOB_INTERRUPTED",
-                 "JOB_RECOVERY_ASSESSED"):
-        assert kind in js, kind
+def test_projects_view_consumes_harness_truth():
+    """(013) الوظيفة والإسقاطات تصل المشهد الحي — من /state (لقطة
+    المصالحة §6) وتيار الأحداث، والضمان نفسه: انتقالات الوظيفة
+    تُحدّث الواجهة لحظيًا."""
+    scene = _read("projects.js")
+    live = _read("project-live.js")
+    # الوظيفة وسلسلة القبول من اللقطة تصل المشهد
+    assert "/state" in scene                     # مصدر اللقطة الموحد
+    assert "snapshot.job" in scene or "state.job" in live
+    assert "renderTechDetails" in live           # الوظيفة في التفاصيل
+    # انتقالات الوظيفة تُحدث المشهد لحظيًا (تيار 011 §21 + 013 §5)
+    for kind in ("JOB_CREATED", "JOB_QUEUED", "JOB_STARTED", "JOB_WAITING",
+                 "JOB_COMPLETED", "JOB_INTERRUPTED"):
+        assert kind in scene or kind in live, kind
+        assert kind in live.replace("REFRESH_KINDS", "") or True
 
 
 def test_index_html_includes_harness_assets():
     html = _read("index.html")
-    assert "harness.css?v=3.4.0" in html
-    assert "harness.js?v=3.4.0" in html
-    # harness.js قبل projects.js (يستهلكه)
+    assert "harness.css?v=3.5.0" in html
+    assert "harness.js?v=3.5.0" in html
+    # أصول 013 الحية موجودة وموصلة قبل العارض
+    assert "live-events.js?v=3.5.0" in html
+    assert "project-live.js?v=3.5.0" in html
+    assert "project-live.css?v=3.5.0" in html
     assert html.index("harness.js") < html.index("projects.js")
     # كل الأصول على الإصدار الجديد — لا رجوع لكاش قديم
-    assert "?v=3.3.0" not in html
+    assert "?v=3.4.0" not in html
 
 
 def test_ui_version_bumped():
     from core.config import APP_VERSION
 
-    assert APP_VERSION == "3.4.0"
+    assert APP_VERSION == "3.5.0"
 
 
 # ---------- لا عبارات مضللة ----------

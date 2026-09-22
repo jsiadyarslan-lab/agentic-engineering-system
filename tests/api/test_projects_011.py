@@ -142,10 +142,25 @@ def test_recheck_after_provisioning_opens_without_reapproval(
         g for g in detail["gates"]
         if g["kind"] == "PLAN_APPROVAL" and g["status"] == "PENDING"
     ]
-    # الاستئناف يعمل مباشرة
-    resumed = client.post(f"/api/projects/{pid}/resume")
-    assert resumed.status_code == 200
-    assert resumed.json()["status"] == "RUNNING"
+    # (013 §38) الاستئناف آلي الآن: إعادة الفحص الناجحة أطلقت الحلقة
+    # نفسها — بلا إعادة اعتماد وبلا زر تشغيل إضافي. نثبت الإطلاق
+    # ثم أن التنفيذ تحرك فعليًا (وظيفة بدأت / مشروع انتقل من BLOCKED).
+    assert body["launch"]["launched"] is True, body.get("launch")
+    import time as _time
+
+    # الجوهر: الوظيفة تركت انتظار العامل وتحركت — أي حالة لاحقة
+    # صادقة تثبت الاستئناف (مسابر الشبكة الحقيقية قد تحجب أحيانًا
+    # تحت الحمل فتصل WAITING_CAPABILITY — انتقال صادق أيضًا).
+    deadline = _time.monotonic() + 25.0
+    moved = None
+    while _time.monotonic() < deadline:
+        job = client.get(f"/api/projects/{pid}/job").json()
+        if job.get("status") not in (None, "WAITING_WORKER", "QUEUED"):
+            moved = job["status"]
+            break
+        _time.sleep(0.15)
+    assert moved in ("RUNNING", "WAITING_GATE", "COMPLETED", "RETRYING",
+                     "WAITING_CAPABILITY", "PAUSED"), moved
 
 
 # ------------------------------------------------------------------ #

@@ -72,6 +72,21 @@ class ScriptedExecutor:
 
         self.runs.append({"goal": goal, "workspace": str(workspace)})
         index = len(self.runs)
+        # (013 §28) نشاط أدوات حي كالمنفذ الحقيقي — أحداث أداة تمر
+        # عبر on_event فيكتبها المحرك TOOL_EXECUTION دائمة
+        if on_event is not None:
+            try:
+                on_event({"kind": "tool.started", "role": "implementer",
+                          "tool": "write_file", "query": "deliverable.md",
+                          "execution_site": "substrate",
+                          "tool_call_id": f"tc-{index}-1"})
+                on_event({"kind": "tool.call", "role": "implementer",
+                          "tool": "write_file", "args_summary": "deliverable.md",
+                          "execution_site": "substrate",
+                          "tool_call_id": f"tc-{index}-1",
+                          "duration_ms": 12})
+            except Exception:  # noqa: BLE001 — الأحداث لا تكسر التنفيذ
+                pass
         if goal.startswith(self.stop_prefixes):
             return TaskResult(verdict="STOPPED", reason="إيقاف منظم",
                               goal=goal)

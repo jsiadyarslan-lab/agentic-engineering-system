@@ -25,6 +25,7 @@ from __future__ import annotations
 #: أحداث الوظيفة — انتقالات فقط (012-E). النبضة/العدادات حقول في
 #: صف engineering_jobs لا أحداث؛ التفاصيل الكاملة في waiting_detail.
 JOB_EVENT_KINDS: tuple[str, ...] = (
+    "JOB_CREATED",          # (013 §4) وُلد صف الوظيفة — قبل الطابور
     "JOB_QUEUED",          # وُلدت الوظيفة أو أُعيدت للطابور (استئناف)
     "JOB_STARTED",         # بدأت الحلقة الفعلية
     "JOB_WAITING",         # توقفت بأمان: kind=CAPABILITY|WORKER|GATE
@@ -38,6 +39,38 @@ JOB_EVENT_KINDS: tuple[str, ...] = (
     "JOB_ESCALATED",       # صُعّدت للمالك بلا مسار آلي
     "JOB_INTERRUPTED",     # انقطعت بوفاة العملية — لا حياة كاذبة
     "JOB_RECOVERY_ASSESSED",  # تقييم الاسترداد عند الإقلاع
+)
+
+#: (013 §4) أحداث ما قبل التنفيذ المعلنة — السلسلة المرئية كاملة.
+PREFLIGHT_EVENT_KINDS: tuple[str, ...] = (
+    "PREFLIGHT_STARTED",          # الفحص بدأ (بعد الاعتماد مباشرة)
+    "CAPABILITIES_EVALUATED",     # مصفوفة القدرات قُيّمت
+    "ENVIRONMENT_CHECK_STARTED",  # فحص البيئة المختارة بدأ
+    "ENVIRONMENT_READY",          # البيئة جاهزة
+    "EXECUTION_OPENED",           # التنفيذ مفتوح فعليًا
+)
+
+#: (013 §13) أحداث المتصفح — كل عملية قابلة للتسجيل كدليل.
+BROWSER_EVENT_KINDS: tuple[str, ...] = (
+    "BROWSER_SESSION_CREATED",
+    "BROWSER_NAVIGATE",
+    "BROWSER_PAGE_LOADED",
+    "BROWSER_CLICK",
+    "BROWSER_TYPE",
+    "BROWSER_SCREENSHOT",
+    "BROWSER_EXTRACT",
+    "BROWSER_DOWNLOAD",
+    "BROWSER_SESSION_CLOSED",
+    "BROWSER_SESSION_INTERRUPTED",
+)
+
+#: (013 §16) أحداث التجهيز — حالات معلنة لا صفوف صامتة.
+PROVISIONING_EVENT_KINDS: tuple[str, ...] = (
+    "PROVISIONING_STARTED",
+    "PROVISIONING_COMPLETED",
+    "PROVISIONING_FAILED",
+    "PROVISIONING_UNAVAILABLE",
+    "ENVIRONMENT_HEARTBEAT",
 )
 
 #: الاسم القانوني المجرد لكل نوع دائم — لغة الإسقاط والواجهة.
@@ -60,6 +93,10 @@ CANONICAL_MAP: dict[str, str] = {
     "PHASE_STARTED": "phase/started",
     "PHASE_COMPLETED": "phase/completed",
     "STEP_STARTED": "step/started",
+    "STEP_COMPLETED": "step/completed",
+    "STAGE_REVIEW": "stage/review",
+    "ROLE_EXECUTING": "role/executing",
+    "TOOL_EXECUTION": "tool/execution",
     # التنفيذ
     "EXECUTION_STARTED": "execution/started",
     "EXECUTION_COMPLETED": "execution/completed",
@@ -71,6 +108,12 @@ CANONICAL_MAP: dict[str, str] = {
     "PREFLIGHT_PASS": "preflight/pass",
     "PREFLIGHT_BLOCKED": "preflight/blocked",
     "PREFLIGHT_RECHECKED": "preflight/rechecked",
+    # (013 §4) سلسلة الفحص المعلنة — قابلية الرؤية شرط القبول
+    "PREFLIGHT_STARTED": "preflight/started",
+    "CAPABILITIES_EVALUATED": "preflight/capabilities",
+    "ENVIRONMENT_CHECK_STARTED": "environment/check.started",
+    "ENVIRONMENT_READY": "environment/ready",
+    "EXECUTION_OPENED": "execution/opened",
     # الأدلة والتدقيق والتحكيم
     "EVIDENCE_CREATED": "evidence/created",
     "TEST_COMPLETED": "verifier/completed",
@@ -83,6 +126,7 @@ CANONICAL_MAP: dict[str, str] = {
     "OWNER_GATE_RESOLVED": "owner/gate.resolved",
     "GATE_AUTO_RESOLVED": "owner/gate.auto_resolved",
     # الوظيفة (012-E)
+    "JOB_CREATED": "job/created",
     "JOB_QUEUED": "job/queued",
     "JOB_STARTED": "job/started",
     "JOB_WAITING": "job/waiting",
@@ -96,6 +140,25 @@ CANONICAL_MAP: dict[str, str] = {
     "JOB_ESCALATED": "job/escalated",
     "JOB_INTERRUPTED": "job/interrupted",
     "JOB_RECOVERY_ASSESSED": "job/recovery_assessed",
+    # المتصفح (013 §13) — عمليات حقيقية قابلة للدليل
+    "BROWSER_SESSION_CREATED": "browser/session.created",
+    "BROWSER_NAVIGATE": "browser/navigate",
+    "BROWSER_PAGE_LOADED": "browser/page.loaded",
+    "BROWSER_CLICK": "browser/click",
+    "BROWSER_TYPE": "browser/type",
+    "BROWSER_SCREENSHOT": "browser/screenshot",
+    "BROWSER_EXTRACT": "browser/extract",
+    "BROWSER_DOWNLOAD": "browser/download",
+    "BROWSER_SESSION_CLOSED": "browser/session.closed",
+    "BROWSER_SESSION_INTERRUPTED": "browser/session.interrupted",
+    # التجهيز (013 §16)
+    "PROVISIONING_STARTED": "provisioning/started",
+    "PROVISIONING_COMPLETED": "provisioning/completed",
+    "PROVISIONING_FAILED": "provisioning/failed",
+    "PROVISIONING_UNAVAILABLE": "provisioning/unavailable",
+    "ENVIRONMENT_HEARTBEAT": "environment/heartbeat",
+    # موارد المالك (013 §55)
+    "WAITING_FOR_OWNER_RESOURCE": "owner/resource.waiting",
 }
 
 #: مراحل سلسلة القبول — الترتيب الهندسي الثابت للإسقاط.
@@ -117,10 +180,21 @@ _STAGE_OF_KIND: dict[str, str] = {
     "plan/revised": "PLAN",
     "owner/gate.requested": "APPROVAL",
     "plan/approved": "APPROVAL",
+    "preflight/started": "PREFLIGHT",
     "preflight/pass": "PREFLIGHT",
     "preflight/blocked": "PREFLIGHT",
     "preflight/rechecked": "PREFLIGHT",
-    "job/queued": "EXECUTION",
+    "preflight/capabilities": "PREFLIGHT",
+    "environment/check.started": "PREFLIGHT",
+    "environment/ready": "PREFLIGHT",
+    "environment/heartbeat": "PREFLIGHT",
+    "provisioning/started": "PREFLIGHT",
+    "provisioning/completed": "PREFLIGHT",
+    "provisioning/failed": "PREFLIGHT",
+    "provisioning/unavailable": "PREFLIGHT",
+    "owner/resource.waiting": "PREFLIGHT",
+    "execution/opened": "EXECUTION",
+    "job/created": "EXECUTION",
     "job/started": "EXECUTION",
     "job/waiting": "EXECUTION",
     "job/retrying": "EXECUTION",
@@ -136,6 +210,20 @@ _STAGE_OF_KIND: dict[str, str] = {
     "phase/started": "EXECUTION",
     "phase/completed": "EXECUTION",
     "step/started": "EXECUTION",
+    "step/completed": "EXECUTION",
+    "stage/review": "AUDIT",
+    "role/executing": "EXECUTION",
+    "tool/execution": "EXECUTION",
+    "browser/session.created": "EXECUTION",
+    "browser/navigate": "EXECUTION",
+    "browser/page.loaded": "EXECUTION",
+    "browser/click": "EXECUTION",
+    "browser/type": "EXECUTION",
+    "browser/screenshot": "EVIDENCE",
+    "browser/extract": "EVIDENCE",
+    "browser/download": "EVIDENCE",
+    "browser/session.closed": "EXECUTION",
+    "browser/session.interrupted": "EXECUTION",
     "execution/started": "EXECUTION",
     "execution/completed": "EXECUTION",
     "execution/failed": "EXECUTION",

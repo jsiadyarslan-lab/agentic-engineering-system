@@ -724,17 +724,26 @@ def open_gates(sessions, project_id: int) -> list[dict]:
 # الأحداث الدائمة (§17)
 # ------------------------------------------------------------------ #
 
-def add_event(sessions, project_id: int, kind: str, payload: dict) -> None:
-    """حدث مشروع دائم — فشل التسجيل يُعلن لا يُبتلع."""
+def add_event(sessions, project_id: int, kind: str,
+             payload: dict) -> int:
+    """حدث مشروع دائم — يعيد معرفه (013 §5) ليصل البث الحي مع
+    معرف الدائمة نفسه: إسقاط المكرر وLast-Event-ID مصالحة صادقة.
+
+    فشل التسجيل يُعلن لا يُبتلع (يعيد 0 — الحدث الحي يمر بلا معرف).
+    """
     try:
         with sessions() as session:
-            session.add(ProjectEvent(
+            row = ProjectEvent(
                 project_id=int(project_id), kind=kind,
-                payload=json.dumps(payload, ensure_ascii=False, default=str),
-            ))
+                payload=json.dumps(payload, ensure_ascii=False,
+                                   default=str),
+            )
+            session.add(row)
             session.commit()
+            session.refresh(row)
+            return int(row.id)
     except Exception:  # noqa: BLE001 — السجل لا يكسر العملية
-        pass
+        return 0
 
 
 def list_events(sessions, project_id: int, limit: int = 100) -> list[dict]:

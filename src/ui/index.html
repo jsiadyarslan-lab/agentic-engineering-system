@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agentic Engineering System</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.4.0">
-  <link rel="stylesheet" href="/static/styles.css?v=3.4.0">
-  <link rel="stylesheet" href="/static/projects.css?v=3.4.0">
-  <link rel="stylesheet" href="/static/harness.css?v=3.4.0">
-  <link rel="stylesheet" href="/static/live.css?v=3.4.0">
-  <link rel="stylesheet" href="/static/app-shell.css?v=3.4.0">
+  <link rel="stylesheet" href="/static/fonts/fonts.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/styles.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/projects.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/harness.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/live.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/app-shell.css?v=3.5.0">
+  <link rel="stylesheet" href="/static/project-live.css?v=3.5.0">
 </head>
 <body>
   <div class="app">
@@ -72,8 +73,17 @@
         <button id="follow-btn" class="follow-btn" hidden title="العودة إلى آخر حدث">↓ متابعة</button>
       </div>
 
-      <!-- عرض المشروع — يحل محل المحادثة عند فتح مشروع (وضع المشروع) -->
-      <section class="project-view" id="project-view" hidden></section>
+      <!-- عرض المشروع — تجربة محادثة حية (013 §8-§12): بطاقات تتدفق بلا refresh -->
+      <section class="project-view" id="project-view" hidden>
+        <header class="pl-head-bar" id="pl-head-bar">
+          <button class="icon-btn" id="pl-back" title="عودة للمحادثة">→</button>
+          <span class="pl-head-title" id="pl-head-title">مشروع</span>
+          <span class="pl-head-status dim" id="pl-head-status">…</span>
+        </header>
+        <div class="pl-scroll">
+          <div class="pl-scene" id="pl-scene"></div>
+        </div>
+      </section>
 
       <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
       <div class="task-settings" id="task-settings" hidden>
@@ -93,11 +103,13 @@
             <div class="plus-menu" id="plus-menu" hidden>
               <button class="plus-option" data-mode="chat">💬 محادثة</button>
               <button class="plus-option" data-mode="task">🎯 مهمة</button>
+              <button class="plus-option" data-mode="project">🏗️ مشروع</button>
             </div>
           </div>
         </div>
         <div class="composer-foot">
           <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر ＋">محادثة</span>
+          <span class="composer-hint" id="composer-hint" hidden></span>
           <button id="stop-run" class="stop-btn" hidden title="إيقاف فوري آمن — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة">■ إيقاف</button>
         </div>
       </div>
@@ -196,17 +208,19 @@
     </div>
   </div>
 
-  <script src="/static/markdown.js?v=3.4.0"></script>
-  <script src="/static/app.js?v=3.4.0"></script>
-  <script src="/static/chat-stream.js?v=3.4.0"></script>
-  <script src="/static/task-cards.js?v=3.4.0"></script>
-  <script src="/static/model-picker.js?v=3.4.0"></script>
-  <script src="/static/error-boundary.js?v=3.4.0"></script>
-  <script src="/static/settings.js?v=3.4.0"></script>
-  <script src="/static/environment.js?v=3.4.0"></script>
-  <script src="/static/research-ui.js?v=3.4.0"></script>
-  <script src="/static/execution-env.js?v=3.4.0"></script>
-  <script src="/static/harness.js?v=3.4.0"></script>
-  <script src="/static/projects.js?v=3.4.0"></script>
+  <script src="/static/markdown.js?v=3.5.0"></script>
+  <script src="/static/app.js?v=3.5.0"></script>
+  <script src="/static/chat-stream.js?v=3.5.0"></script>
+  <script src="/static/task-cards.js?v=3.5.0"></script>
+  <script src="/static/model-picker.js?v=3.5.0"></script>
+  <script src="/static/error-boundary.js?v=3.5.0"></script>
+  <script src="/static/settings.js?v=3.5.0"></script>
+  <script src="/static/environment.js?v=3.5.0"></script>
+  <script src="/static/research-ui.js?v=3.5.0"></script>
+  <script src="/static/execution-env.js?v=3.5.0"></script>
+  <script src="/static/harness.js?v=3.5.0"></script>
+  <script src="/static/live-events.js?v=3.5.0"></script>
+  <script src="/static/project-live.js?v=3.5.0"></script>
+  <script src="/static/projects.js?v=3.5.0"></script>
 </body>
 </html>

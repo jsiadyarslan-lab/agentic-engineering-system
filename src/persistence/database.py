@@ -38,6 +38,26 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
         "ALTER TABLE projects ADD COLUMN execution_policy VARCHAR(40) "
         "DEFAULT 'STRICT_ISOLATED' NOT NULL",
     ),
+    # (013 §19) متانة الوظيفة الدائمة — هوية المنفذ والاسترداد
+    (
+        "engineering_jobs.worker_id",
+        "ALTER TABLE engineering_jobs ADD COLUMN worker_id VARCHAR(64) "
+        "DEFAULT 'local' NOT NULL",
+    ),
+    (
+        "engineering_jobs.attempt",
+        "ALTER TABLE engineering_jobs ADD COLUMN attempt INTEGER DEFAULT 0",
+    ),
+    (
+        "engineering_jobs.last_event_id",
+        "ALTER TABLE engineering_jobs ADD COLUMN last_event_id INTEGER "
+        "DEFAULT 0",
+    ),
+    (
+        "engineering_jobs.resume_token",
+        "ALTER TABLE engineering_jobs ADD COLUMN resume_token VARCHAR(40) "
+        "DEFAULT '' NOT NULL",
+    ),
 )
 
 #: ترحيلات بيانات معلنة (011 §1-§2): بوابات «OPEN» قبل 011 صارت

@@ -1,0 +1,220 @@
+"""مُطلق سير العمل (الأمر 013 §1-§4) — الاعتماد أمر، لا صف قاعدة.
+
+المشكلة التي يحلها هذا الموديول (013 §1): كان اعتماد الخطة يحدّث
+القاعدة ويسجّل OWNER_GATE_RESOLVED ثم ينتهي الطلب — لا انتقال
+تشغيلي، لا فحص، لا وظيفة، لا تنفيذ، والواجهة تنتظر refresh وزر
+«تشغيل» يدوي. هنا السلسلة الحية المطلوبة:
+
+    Owner يضغط اعتماد
+        ↓ (أمر — POST /plan/approve أو /gates/{id})
+    validate → OWNER_GATE_RESOLVED → PLAN_APPROVED (دائمة)
+        ↓ launch() — هذا الملف
+    Coordinator (JobManager) يستقبل الحالة القابلة للتنفيذ
+        ↓
+    JOB_CREATED → JOB_QUEUED → JOB_STARTED (أحداث دائمة + بث)
+        ↓
+    tick: PREFLIGHT_STARTED → CAPABILITIES_EVALUATED →
+          ENVIRONMENT_CHECK_STARTED → ENVIRONMENT_READY →
+          EXECUTION_OPENED → PHASE/STEP/ROLE/TOOL/EVIDENCE …
+        ↓
+    SSE/التيار الحي → الواجهة تتحدث بلا refresh
+
+الضمانات:
+- **single-flight**: حلقة واحدة نشطة في العملية كلها — المصدر
+  الوحيد للحقيقة هنا؛ ``api/projects.run/stream`` يمر من هنا أيضًا
+  فلا حلقتان على مشروع واحد أبدًا (اختبار الازدواج §40).
+- **لا انتظار للعميل**: الإطلاق خلفي في منفّذ مخصص؛ نتيجة الأمر
+  فورية (قبل الطابور) والبث يحمل كل ما يحدث لاحقًا.
+- **فشل صريح معلن**: كل خطوة خلفية تكتب حدثًا دائمًا عند الفشل —
+  لا موت صامت (JOB_FAILED + last_error).
+- **نبضة الوظيفة**: الحلقة نفسها من JobManager (012) كما هي —
+  هذا الملف إطلاق وتسجيل فقط، لا منطق انتقال جديد.
+"""
+
+from __future__ import annotations
+
+import threading
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from typing import Callable
+
+from core.live_bus import BUS, normalize_event
+
+#: منفّذ الحلقات — حلقة واحدة تعمل في كل لحظة (max_workers=1).
+_RUN_EXECUTOR = ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="aes-workflow-run"
+)
+
+#: حالة التشغيل النشط — بث لحظي فقط؛ الحقيقة الدائمة في القاعدة.
+_ACTIVE: dict = {"handle": None, "lock": threading.Lock()}
+
+
+class RunConflict(RuntimeError):
+    """تعارض إطلاق — حلقة أخرى تعمل فعليًا."""
+
+
+class RunHandle:
+    """مقبض تشغيل خلفي — يُعاد فورًا ويمتلئ لاحقًا."""
+
+    __slots__ = ("project_id", "job_id", "done", "error", "correlation_id",
+                 "launched_at", "db_key")
+
+    def __init__(self, project_id: int, correlation_id: str = "",
+                 db_key: str = ""):
+        self.project_id = int(project_id)
+        self.job_id: int | None = None
+        self.done = threading.Event()
+        self.error: str = ""
+        self.correlation_id = correlation_id
+        self.db_key = db_key
+
+    def describe(self, *, launched: bool, reason: str = "") -> dict:
+        return {
+            "launched": launched,
+            "reason": reason,
+            "project_id": self.project_id,
+            "job_id": self.job_id,
+            "correlation_id": self.correlation_id,
+        }
+
+
+def sessions_db_key(sessions) -> str:
+    """هوية القاعدة الدائمة — مفتاح العزل بين بيئات مختلفة.
+
+    الإنتاج: قاعدة واحدة ⟶ مفتاح واحد (سلوك single-flight كما هو).
+    الاختبارات: قاعدة لكل اختبار ⟶ لا تعارض هويات المشروع بينها.
+    """
+    try:
+        bind = getattr(sessions, "kw", {}).get("bind")
+        if bind is not None:
+            return str(getattr(bind, "url", "")) or str(id(sessions))
+    except Exception:  # noqa: BLE001
+        pass
+    return str(id(sessions))
+
+
+def active_run(sessions=None) -> dict | None:
+    """التشغيل النشط الآن — {project_id, job_id, db_key} أو None.
+
+    sessions: قيّد السؤال بقاعدة معينة (الإنتاج يمرر دائمًا).
+    """
+    with _ACTIVE["lock"]:
+        handle = _ACTIVE.get("handle")
+        if handle is not None and not handle.done.is_set():
+            if sessions is not None and handle.db_key != sessions_db_key(
+                    sessions):
+                return None
+            return {"project_id": handle.project_id,
+                    "job_id": handle.job_id,
+                    "correlation_id": handle.correlation_id,
+                    "db_key": handle.db_key}
+    return None
+
+
+def _broadcast(project_id: int, kind: str, payload: dict,
+              event_id: int = 0, *, db_key: str = "") -> None:
+    """بث لحظي على تيار المشاريع — الدائمة كتبها المحرك قبلنا.
+
+    event_id: معرف الحدث الدائم (013 §5) — إسقاط المكرر ومصالحة
+    Last-Event-ID تعتمد عليه؛ 0 = بث حي بلا دائمة (استثناء معلن).
+    db_key: هوية القاعدة — عزل بث بيئة عن أخرى (لا تسريب عبر
+    المشتركين مهما تشابكت هويات المشاريع).
+    """
+    event = normalize_event({
+        "project_id": project_id, "kind": kind, "payload": payload,
+        "event_id": event_id, "stream": "projects", "db": db_key,
+    })
+    BUS.publish(event)
+
+
+def launch(
+    project_id: int,
+    *,
+    engine_factory: Callable,
+    sessions,
+    reason: str = "قرار المالك",
+    correlation_id: str = "",
+) -> dict:
+    """إطلاق الحلقة خلفيًا — أمر فوري الوصف، بطيء التنفيذ.
+
+    engine_factory:callable(on_event=...) يبني محرك الإنتاج (لا mock).
+    sessions: مصنع جلسات القاعدة الدائمة.
+    reason: سبب الإطلاق (اعتماد خطة/حل بوابة/تشغيل صريح).
+    correlation_id: ربط الطلب بالأحداث الناتجة عنه (§47).
+
+    تعيد {"launched": true/false, reason, job_id?} فورًا — كل التفاصيل
+    اللاحقة تصل عبر تيار الأحداث، لا عبر هذه النتيجة.
+    """
+    db_key = sessions_db_key(sessions)
+    with _ACTIVE["lock"]:
+        current = _ACTIVE.get("handle")
+        if current is not None and not current.done.is_set() \
+                and current.db_key == db_key:
+            if current.project_id == int(project_id):
+                # نفس المشروع يعمل — الأمر منطقي واحد (§40 الازدواج)
+                return current.describe(
+                    launched=False, reason="already_running"
+                )
+            raise RunConflict(
+                f"مشروع آخر يعمل حاليًا (#{current.project_id}) — "
+                "الحلقة الذاتية واحدة في كل لحظة"
+            )
+        handle = RunHandle(project_id, correlation_id or uuid.uuid4().hex[:12],
+                           db_key=db_key)
+        _ACTIVE["handle"] = handle
+
+    _RUN_EXECUTOR.submit(
+        _run_loop_thread, handle, engine_factory, sessions, reason
+    )
+    return handle.describe(launched=True, reason="launched")
+
+
+def _run_loop_thread(handle: RunHandle, engine_factory, sessions,
+                     reason: str) -> None:
+    """جسم التشغيل الخلفي — JobManager فوق المحرك (012 كما هي)."""
+    project_id = handle.project_id
+
+    def on_event(event: dict) -> None:
+        _broadcast(
+            event.get("project_id", project_id),
+            event.get("kind", ""),
+            event.get("payload", {}),
+            int(event.get("event_id") or 0),
+            db_key=handle.db_key,
+        )
+
+    try:
+        from harness.jobs import JobManager
+        from harness.seams import HarnessSeams
+
+        engine = engine_factory(on_event=on_event)
+        manager = JobManager(
+            HarnessSeams(sessions), engine=engine, on_event=on_event
+        )
+        job = manager.start_job(project_id, note=reason)
+        handle.job_id = job["id"]
+        _broadcast(project_id, "run.launched", {
+            "job_id": job["id"], "reason": reason,
+            "correlation_id": handle.correlation_id,
+        })
+        manager.run_loop(job["id"])
+    except Exception as error:  # noqa: BLE001 — فشل صريح معلن لا موت صامت
+        handle.error = str(error)[:500]
+        _broadcast(project_id, "run.error", {
+            "project_id": project_id, "error": handle.error,
+            "correlation_id": handle.correlation_id, "reason": reason,
+        })
+    finally:
+        handle.done.set()
+        with _ACTIVE["lock"]:
+            if _ACTIVE.get("handle") is handle:
+                _ACTIVE["handle"] = None
+
+
+__all__ = [
+    "RunConflict",
+    "RunHandle",
+    "active_run",
+    "launch",
+    "sessions_db_key",
+]

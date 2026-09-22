@@ -21,44 +21,55 @@ def _read(name: str) -> str:
 
 
 # ---------- §3 — بطاقة بوابة التنفيذ والنص الصادق ----------
+# (013) المشهد انتقل لمحادثة حية: الضمانات نفسها في project-live.js
+# (البطاقات) + projects.js (التنسيق) + live-events.js (البث).
 
-def test_projects_js_has_execution_gate_card():
-    js = _read("projects.js")
-    assert "executionGateHtml" in js
-    assert "التنفيذ محجوب مؤقتًا" in js          # النص الحرفي §3
-    assert "APPROVED_BUT_BLOCKED" in js
-    assert "التنفيذ مفتوح" in js
+def test_execution_gate_honest_state_card():
+    live = _read("project-live.js")
+    scene = _read("projects.js")
+    # بطاقة الحجب الصادقة: الحالة والسبب والمطلوب من /state
+    assert "renderBlockedCard" in live
+    assert "execution_gate" in live
+    assert "التنفيذ متوقف" in live                # النص الصادق (013 §27)
+    assert "APPROVED_BUT_BLOCKED" in live or "execution_gate" in live
     # العبارة المضللة التاريخية غير موجودة في أي ملف واجهة
-    for name in ("projects.js", "app.js", "task-cards.js", "settings.js"):
+    for name in ("projects.js", "project-live.js", "app.js",
+                 "task-cards.js", "settings.js"):
         assert "ليست مفتوحة" not in _read(name), name
 
 
-def test_projects_js_recheck_and_policy():
-    js = _read("projects.js")
-    assert "/preflight" in js                     # زر إعادة الفحص
-    assert "إعادة الفحص" in js
-    assert "execution-policy" in js               # محدد السياسة
-    assert "STRICT_ISOLATED" in js and "COMPATIBLE_LOCAL" in js
-    assert "بلا إعادة اعتماد" in js               # عقد §19 معلن للمالك
+def test_recheck_and_provisioning_actions():
+    live = _read("project-live.js")
+    scene = _read("projects.js")
+    assert "/preflight" in scene                  # مسار إعادة الفحص موصول
+    assert "إعادة الفحص" in live                  # الزر في بطاقة الحجب
+    assert "/api/environment/provision" in live   # زر التجهيز (013 §17)
+    assert "تجهيز بيئة التنفيذ" in live
+    assert "بلا إعادة اعتماد" in live             # عقد §19 معلن للمالك
 
 
-def test_projects_js_subscribes_events_stream():
-    js = _read("projects.js")
-    assert "events/stream" in js                  # تيار §21
-    assert "EventSource" in js
-    # الأحداث المفصلية للتزامن موجودة في قائمة التحديث
+def test_live_events_stream_subscription():
+    stream = _read("live-events.js")
+    live = _read("project-live.js")
+    assert "events/stream" in stream              # تيار §21 (013 §5)
+    assert "EventSource" in stream
+    assert "after_id" in stream                   # Last-Event-ID/replay
+    assert "visibilitychange" in stream           # استرداد العودة (§5)
+    # الأحداث المفصلية للتزامن في قائمة تغيّر المشهد (project-live)
     for kind in ("PREFLIGHT_PASS", "PREFLIGHT_BLOCKED", "GATE_AUTO_RESOLVED",
-                 "EXECUTION_POLICY_CHANGED", "PROJECT_RESUMED"):
-        assert kind in js
+                 "PROJECT_RESUMED", "JOB_WAITING", "PLAN_APPROVED"):
+        assert kind in live, kind
 
 
-def test_projects_js_gate_statuses_and_provisioning():
-    js = _read("projects.js")
-    # مفردات آلة الحالة الجديدة (011 §2)
-    for status in ("PENDING", "BLOCKED", "APPROVED", "REJECTED"):
-        assert status in js
-    assert "gate-recheck" in js                   # بوابات التوفير: زر فحص لا قرار
-    assert "PREFLIGHT_BLOCKED" in js              # نوع البوابة الجديد معروض
+def test_gate_statuses_and_decision_buttons():
+    live = _read("project-live.js")
+    # مفردات آلة الحالة الجديدة (011 §2) — بطاقة القرار (013 §11)
+    for status in ("PENDING", "APPROVED", "REJECTED"):
+        assert status in live, status
+    assert "PREFLIGHT_BLOCKED" in live            # نوع البوابة معروض
+    assert "اعتماد الخطة" in live                 # زر القرار §7
+    assert "جاري الاعتماد" in live                # loading — لا نقر مزدوج
+    assert "تعذر اعتماد الخطة" in live            # فشل صريح بلا صمت
 
 
 # ---------- §24-§25 — لوحة حقيقة المضيف ----------

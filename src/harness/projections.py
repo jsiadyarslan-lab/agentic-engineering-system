@@ -60,6 +60,7 @@ TITLES: dict[str, str] = {
     "project/verified": "تحقق المالك — VERIFIED",
     "recovery/assessed": "تقييم الاسترداد",
     "job/queued": "وظيفة في الطابور",
+    "job/created": "إنشاء الوظيفة الدائمة",
     "job/started": "بدء الوظيفة",
     "job/waiting": "الوظيفة تنتظر بأمان",
     "job/retrying": "الوظيفة تعيد المحاولة",
@@ -72,6 +73,34 @@ TITLES: dict[str, str] = {
     "job/escalated": "تصعيد الوظيفة",
     "job/interrupted": "انقطاع الوظيفة (وفاة العملية)",
     "job/recovery_assessed": "تقييم استرداد الوظيفة",
+    # (013 §4) سلسلة الفحص المعلنة
+    "preflight/started": "بدء فحص ما قبل التنفيذ",
+    "preflight/capabilities": "تقييم قدرات التنفيذ",
+    "environment/check.started": "فحص بيئة التنفيذ",
+    "environment/ready": "بيئة التنفيذ جاهزة",
+    "environment/heartbeat": "نبضة بيئة التنفيذ",
+    "execution/opened": "التنفيذ مفتوح",
+    "step/completed": "اكتمال خطوة",
+    "stage/review": "مراجعة المرحلة",
+    "role/executing": "دور يعمل الآن",
+    "tool/execution": "استدعاء أداة",
+    # (013 §13) المتصفح
+    "browser/session.created": "فتح جلسة متصفح",
+    "browser/navigate": "الانتقال إلى صفحة",
+    "browser/page.loaded": "تحميل الصفحة",
+    "browser/click": "نقر عنصر",
+    "browser/type": "إدخال نص",
+    "browser/screenshot": "التقاط لقطة شاشة",
+    "browser/extract": "استخلاص محتوى",
+    "browser/download": "تنزيل ملف",
+    "browser/session.closed": "إغلاق جلسة المتصفح",
+    "browser/session.interrupted": "انقطاع جلسة المتصفح",
+    # (013 §16) التجهيز
+    "provisioning/started": "بدء تجهيز البيئة",
+    "provisioning/completed": "اكتمال تجهيز البيئة",
+    "provisioning/failed": "فشل تجهيز البيئة",
+    "provisioning/unavailable": "التجهيز غير متاح — متطلب خارجي",
+    "owner/resource.waiting": "بانتظار مورد من المالك",
 }
 
 #: أي حقل حمولة يظهر كتفصيل أولًا — الأهم للعرض الصادق.

@@ -101,7 +101,11 @@ def _run(client, pid):
 def test_project_detail_carries_job(client):
     pid = _approved(client)
     detail = client.get(f"/api/projects/{pid}").json()
-    assert detail["job"] is None          # لم تُشغل بعد — لا وظيفة وهمية
+    # (013 §3) الاعتماد أمر يطلق الحلقة — الوظيفة وُلدت فعلًا
+    # (JOB_CREATED) وحالتها من الدورة الحقيقية لا وظيفة وهمية.
+    assert detail["job"] is not None
+    assert detail["job"]["status"] in ("QUEUED", "RUNNING",
+                                           "WAITING_GATE", "COMPLETED")
     _run(client, pid)
     detail = client.get(f"/api/projects/{pid}").json()
     job = detail["job"]
@@ -113,8 +117,7 @@ def test_project_detail_carries_job(client):
 
 def test_job_endpoints(client):
     pid = _approved(client)
-    # 404 قبل التشغيل
-    assert client.get(f"/api/projects/{pid}/job").status_code == 404
+    # (013) الاعتماد أطلق الوظيفة فعلًا — 404 فقط لوظيفة غير موجودة
     assert client.get("/api/jobs/9999").status_code == 404
 
     _run(client, pid)

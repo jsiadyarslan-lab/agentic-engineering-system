@@ -33,7 +33,9 @@ def test_environment_readiness_lists_inventory(client, api_env):
     # الأداة غير المنفذة صادقة (§3)
     browser = [c for c in body["capabilities"]
                if c["capability_id"] == "browser"][0]
-    assert browser["readiness_status"] == "UNAVAILABLE"
+    # (013 §13-§14) المتصفح منفذ الآن ببروفايدر حقيقي — UNKNOWN قبل
+    # المسبار لا UNAVAILABLE/NOT_IMPLEMENTED
+    assert browser["readiness_status"] == "UNKNOWN"
     assert "summary" in body
 
 

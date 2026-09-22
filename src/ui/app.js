@@ -526,16 +526,36 @@
   function setMode(mode, opts) {
     state.mode = mode;
     var isTask = mode === "task";
-    modeChipEl.textContent = isTask ? "مهمة" : "محادثة";
+    var isProject = mode === "project";
+    modeChipEl.textContent = isTask ? "مهمة"
+      : isProject ? "مشروع" : "محادثة";
     modeChipEl.classList.toggle("task", isTask);
+    modeChipEl.classList.toggle("project", isProject);
     inputEl.placeholder = isTask
       ? "صف هدف المهمة… (Enter للإرسال · Shift+Enter لسطر جديد)"
+      : isProject
+      ? "صف هدف المشروع — سيُحوَّل إلى خطة تعتمدها ثم يُنفَّذ ذاتيًا…"
       : "اكتب رسالتك… (Enter للإرسال · Shift+Enter لسطر جديد)";
     taskSettingsEl.hidden = !isTask;
+    updateComposerHint();
     if (!opts || !opts.silent) {
       if (isTask) renderTaskSettingsSummary();
     }
     if (isTask) renderTaskSettingsSummary();
+  }
+
+  /* (013 §33) ماذا سيحدث عند الإرسال؟ — وضوح القصد قبل الضغط */
+  function updateComposerHint() {
+    var hint = document.getElementById("composer-hint");
+    if (!hint) return;
+    var text = "";
+    if (state.mode === "project") {
+      text = "سيتم تحليل الهدف وإعداد خطة تنفيذ للمراجعة — لا تنفيذ قبل اعتمادك.";
+    } else if (state.mode === "task") {
+      text = "ستعمل دورة الأدوار الخمسة على الهدف بأدلة قابلة للفحص.";
+    }
+    hint.textContent = text;
+    hint.hidden = !text;
   }
 
   function renderTaskSettingsSummary() {
@@ -712,8 +732,18 @@
     autoGrow();
     updateSendState();
     hideWelcome();
-    addUserMessage(text);
     state.lastSeq = 0;
+    if (state.mode === "project") {
+      // (013 §8+§33) الهدف مشروع: يُنشأ ويُفتح حيًّا — الخطة والاعتماد
+      // والتنفيذ بطاقات تتدفق هناك؛ رسالة الهدف نفسها تظهر في المشهد
+      addUserMessage(text);
+      if (window.HubProjects) {
+        window.HubProjects.createProjectFromObjective(text);
+      }
+      setMode("chat", { silent: true });
+      return;
+    }
+    addUserMessage(text);
     if (state.mode === "task") {
       startTask(text);
     } else {

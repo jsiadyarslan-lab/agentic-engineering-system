@@ -37,13 +37,15 @@ def test_capability_registration_and_inventory(sessions):
     ids = {c["capability_id"] for c in caps}
     # جرد حقيقي من الكود: أدوات القائمة البيضاء + الركيزة + الشبكة…
     assert {"web_search", "sandbox", "llm", "git", "filesystem",
-            "persistence"} <= ids
+            "persistence", "browser"} <= ids
     by_id = {c["capability_id"]: c for c in caps}
     assert by_id["web_search"]["category"] == "RESEARCH"
     assert by_id["web_search"]["required"] is True
-    # الأداة غير المنفذة تظهر UNAVAILABLE بسبب صريح (§3) — لا READY
-    assert by_id["browser"]["readiness_status"] == "UNAVAILABLE"
-    assert "NOT_IMPLEMENTED" in by_id["browser"]["failure_reason"]
+    # (013 §13-§14) المتصفح منفذ الآن ببروفايدر حقيقي — يسجل UNKNOWN
+    # قبل المسبار (منفذ ولم يُفحص)، لا UNAVAILABLE/NOT_IMPLEMENTED
+    assert by_id["browser"]["readiness_status"] == "UNKNOWN"
+    assert "Playwright" in by_id["browser"]["description"] \
+        or "متصفح" in by_id["browser"]["description"]
 
 
 def test_status_transition_unknown_to_ready_to_stale(sessions):
@@ -170,10 +172,31 @@ def test_model_inference_probe_classifies_failure():
     assert result.failure_class == "PROVIDER_FAILURE"
 
 
-def test_run_probe_unimplemented_stays_unavailable(sessions):
+def test_run_probe_unimplemented_stays_unavailable(sessions, monkeypatch):
+    """(013 §14) صدق المسبار: المتصفح منفذ الآن — جاهزيته من تشغيل
+    فعلي حصرًا. نثبت الوجهين: مزود معطل = NOT_READY بسببه الحرفي؛
+    ومسبار ناجح = READY بخطوات موثقة. لا READY لمجرد تهيئة أبدًا.
+    """
+    from browser import service as browser_service
+    from browser.provider import PlaywrightBrowserProvider
+
+    class BrokenProvider(PlaywrightBrowserProvider):
+        def available(self):
+            return False, "مكتبة Playwright غير مثبتة (اختبار)"
+
+    # حقن المزود المعطل عبر monkeypatch — المسار الرسمي نفسه
+    original = browser_service.DEFAULT_PROVIDER
+    monkeypatch.setattr(
+        browser_service, "DEFAULT_PROVIDER", BrokenProvider(),
+        raising=True,
+    )
     result = registry.run_probe(sessions, "browser")
-    assert result["readiness_status"] == "UNAVAILABLE"
-    assert "NOT_IMPLEMENTED" in result["failure_reason"]
+    assert result["readiness_status"] == "NOT_READY"
+    assert "Playwright" in result["failure_reason"] \
+        or "مثبتة" in result["failure_reason"]
+    monkeypatch.setattr(
+        browser_service, "DEFAULT_PROVIDER", original, raising=True,
+    )
 
 
 def test_probe_all_covers_whole_inventory(sessions):

@@ -28,4 +28,22 @@ TOOLS_MANIFEST: list[dict] = [
     {"tool": "worldbank_indicator",
      "args": {"indicator": "FP.CPI.TOTL.ZG", "countries": "SA;US", "dates": "2020:2024"},
      "desc": "مؤشر البنك الدولي — قيّد countries وdates (معلن)"},
+    # (013 §13) متصفح ميكانيكي حي — للصفحات التي تحتاج DOM/تفاعلًا،
+    # والبحث/الجلب لا يكفيان
+    {"tool": "browser_navigate", "args": {"url": "https://…/page"},
+     "desc": "متصفح حي: فتح صفحة فعليًا (DOM كامل) — عند تعذر الجلب الثابت"},
+    {"tool": "browser_extract",
+     "args": {"mode": "text|links", "limit": 50},
+     "desc": "متصفح حي: استخلاص نص الصفحة الحالية أو روابطها"},
+    {"tool": "browser_screenshot", "args": {"name": "page-shot"},
+     "desc": "متصفح حي: لقطة شاشة للصفحة الحالية (دليل بـsha256)"},
+    {"tool": "browser_click", "args": {"selector": "a.next"},
+     "desc": "متصفح حي: نقر عنصر بمحدد CSS"},
+    {"tool": "browser_type",
+     "args": {"selector": "input[name=q]", "text": "استعلام"},
+     "desc": "متصفح حي: إدخال نص في حقل"},
+    {"tool": "browser_download", "args": {"url": "https://…/file.pdf"},
+     "desc": "متصفح حي: تنزيل ملف داخل رمل الجلسة"},
+    {"tool": "browser_wait", "args": {"seconds": 1.0},
+     "desc": "متصفح حي: انتظار تحميل الديناميكي"},
 ]

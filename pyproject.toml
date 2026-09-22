@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentic-engineering-system"
-version = "3.4.0"
+version = "3.5.0"
 description = "Agentic Engineering System — نظام هندسة ذاتي بإشراف المالك: مشروع دائم ← خطة رئيسية ← حلقة ذاتية (تنفيذ/اختبار/مراجعة/تدقيق/تحكيم) ← أدلة ← بوابات مالك ← تحقق نهائي؛ مع إدارة مزودين وتكوينات كاملة من الواجهة"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,6 +30,10 @@ pdf = [
     "python-bidi>=0.4",
     "pypdf>=4.0",
 ]
+# (013 §13-§14) متصفح ميكانيكي حقيقي — Playwright + Chromium.
+# اختيارية عمدًا: غيابها = القدرة NOT_READY بسببها الحرفي (لا تزييف)؛
+# التثبيت: pip install '.[browser]' ثم python -m playwright install chromium
+browser = ["playwright>=1.40"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

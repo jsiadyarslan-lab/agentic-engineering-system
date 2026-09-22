@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import threading
+import uuid
 from typing import Any, Callable
 
 from harness import coordinator
@@ -39,6 +40,11 @@ DEFAULT_MAX_TICKS = 200
 
 _RETRY_KIND = "RETRY_REQUESTED"
 _CHECKPOINT_KIND = "CHECKPOINT_CREATED"
+
+
+def new_resume_token() -> str:
+    """رمز استئناف غير قابل للتخمين — هوية استرداد الوظيفة (§19)."""
+    return "rsm-" + uuid.uuid4().hex[:16]
 
 
 def _utc_now() -> _dt.datetime:
@@ -67,6 +73,10 @@ def _job_dict(row: EngineeringJob, *, include_waiting: bool = True) -> dict:
         "tick_count": row.tick_count,
         "retries": row.retries,
         "checkpoints": row.checkpoints,
+        "worker_id": row.worker_id,
+        "attempt": row.attempt,
+        "last_event_id": row.last_event_id,
+        "resume_token": row.resume_token,
         "heartbeat_at": _iso(row.heartbeat_at),
         "heartbeat_age_s": heartbeat_age_seconds(row),
         "resumable": bool(row.resumable),
@@ -130,12 +140,12 @@ class JobManager:
     # ------------------------------------------------------------------ #
 
     def _emit(self, project_id: int, kind: str, payload: dict) -> None:
-        self._seams.add_event(project_id, kind, payload)
+        event_id = self._seams.add_event(project_id, kind, payload)
         if self._on_event is not None:
             try:
                 self._on_event({
                     "project_id": project_id, "kind": kind,
-                    "payload": payload,
+                    "payload": payload, "event_id": event_id,
                 })
             except Exception:  # noqa: BLE001 — المستقبِل لا يكسر الحلقة
                 pass
@@ -166,12 +176,19 @@ class JobManager:
             with self._seams.sessions() as session:
                 row = EngineeringJob(
                     project_id=project_id, status="QUEUED",
-                    note=note,
+                    note=note, attempt=0,
+                    worker_id="local", resume_token=new_resume_token(),
                 )
                 session.add(row)
                 session.commit()
                 session.refresh(row)
                 job_id = row.id
+            # (013 §4+§19) ولادة الصف حدث دائم قبل الطابور — الوظيفة
+            # لا تولد بصمت أبدًا؛ الرمز والمحاولة جزء من الهوية
+            self._emit(project_id, "JOB_CREATED", {
+                "job_id": job_id, "note": note,
+                "resume_token": row.resume_token, "attempt": 0,
+            })
         else:
             job_id = row.id
             if not coordinator.can_transition(row.status, "QUEUED"):
@@ -215,8 +232,13 @@ class JobManager:
         sessions = self._seams.sessions
         self._write(job_id, status="RUNNING", heartbeat_at=_utc_now(),
                     started_at=row.started_at or _utc_now(),
-                    last_error="")
-        self._emit(project_id, "JOB_STARTED", {"job_id": job_id})
+                    last_error="", worker_id=row.worker_id or "local",
+                    attempt=(row.attempt or 0) + 1)
+        self._emit(project_id, "JOB_STARTED", {
+            "job_id": job_id,
+            "attempt": (row.attempt or 0) + 1,
+            "worker_id": row.worker_id or "local",
+        })
 
         last_tick: dict = {}
         ticks = 0
@@ -286,6 +308,7 @@ class JobManager:
                         "reason": (tick_result.get("reason") or "")[:200],
                         "at": _utc_now().isoformat(),
                     }, ensure_ascii=False),
+                    last_event_id=last_event_id,
                 )
                 if retry_requested:
                     self._increment(job_id, "retries", 1)

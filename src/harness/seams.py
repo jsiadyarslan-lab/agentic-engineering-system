@@ -196,10 +196,10 @@ class HarnessSeams:
 
         return service.open_gates(self.sessions, project_id)
 
-    def add_event(self, project_id: int, kind: str, payload: dict) -> None:
+    def add_event(self, project_id: int, kind: str, payload: dict) -> int:
         from workflow import service
 
-        service.add_event(self.sessions, project_id, kind, payload)
+        return service.add_event(self.sessions, project_id, kind, payload)
 
     def list_events(self, project_id: int, limit: int = 100) -> list[dict]:
         from workflow import service
