@@ -95,10 +95,14 @@ class ToolContext:
     #: سجلات الاستدعاء الدائمة (إضافة 008 §2) — تصب في evidence.json
     #: وفي جدول tool_invocations عبر tasks.run_task.
     tool_records: list[ToolCallRecord]
+    #: (013.1 §13) سياسة تنفيذ المشروع — STRICT_ISOLATED تجعل أدوات
+    #: الملفات/العملية تمر بالبيئة الموافقة حصرًا؛ غيابها = حجب
+    #: معلن (POLICY_BLOCK) لا تنفيذ غير معزول بدلًا عنها.
+    execution_policy = None
 
     def __init__(self, grant_root: Path, on_event=None, search_results=None,
                  fetched_urls=None, data_urls=None, stop_check=None,
-                 tool_records=None, sessions=None):
+                 tool_records=None, sessions=None, execution_policy=None):
         self.grant_root = grant_root
         self.on_event = on_event
         self.search_results = search_results if search_results is not None else []
@@ -109,6 +113,7 @@ class ToolContext:
         # (الأمر 010 §19) جلسة القاعدة للتنفيذ الموحد عبر بيئة التنفيذ
         # المختارة — المسبار والمنفذ من resolve_executor() نفسه.
         self.sessions = sessions
+        self.execution_policy = execution_policy
 
     def emit(self, event: dict) -> None:
         if self.on_event is not None:
@@ -141,18 +146,30 @@ def _bounded_path(grant_root: Path, relative: str) -> Path:
 
 def _run_in_substrate(ctx: ToolContext, code: str, workspace: Path,
                       artifacts: Path) -> tuple[int, str, str]:
-    """تنفيذ كود عبر بيئة التنفيذ الموحدة (006 §11 + 010 §19).
+    """تنفيذ كود عبر بيئة التنفيذ الموحدة (006 §11 + 010 §19 + 013.1 §13).
 
     المصدر الوحيد: execution.service.run_code_unified — نفس الخلفية
     التي يمر بها مسبار sandbox، فلا «مسبار READY ومنفذ UNAVAILABLE»
-    بلا تفسير. فشل البدء يظهر بسببه الكامل لا برسالة خام.
+    بلا تفسير. سياسة المشروع (ctx.execution_policy) تجعل الاختيار
+    موافقًا لها حصرًا: STRICT بلا بيئة معزولة = POLICY_BLOCK صادق
+    لا تنفيذ غير معزول بدلًا عنها. فشل البدء يظهر بسببه الكامل.
     """
     from execution.service import run_code_unified
 
     outcome = run_code_unified(
         getattr(ctx, "sessions", None), code,
         workspace=workspace, artifacts=artifacts,
+        policy=getattr(ctx, "execution_policy", None),
     )
+    if outcome.termination == "POLICY_BLOCK":
+        # (013.1 §13) حجب سياسة صريح — غير قابل لإعادة المحاولة
+        # داخل نفس الخطوة؛ رفعه يتم بتوفير بيئة موافقة ثم إعادة فحص.
+        raise ToolFailure(
+            "execution", outcome.detail,
+            failure_class="POLICY_BLOCK", reason="NO_POLICY_ENVIRONMENT",
+            stage="TOOL_START", retryable=False,
+            details={"policy": getattr(ctx, "execution_policy", None)},
+        )
     stderr = outcome.stderr
     if outcome.termination != "COMPLETED":
         stderr = f"{outcome.termination}: {outcome.detail}"

@@ -88,6 +88,7 @@
     var composer = document.querySelector(".composer");
     if (composer) composer.style.display = "none";
     setHashQuietly("#/project/" + projectId);
+    attachLive();            // (013.1 §2) مستهلك فقط — البث على مستوى التطبيق
     reconcile();
     loadProjects();
     if (window.LiveEvents) LiveEvents.connect();
@@ -103,7 +104,11 @@
     var composer = document.querySelector(".composer");
     if (composer) composer.style.display = "";
     setHashQuietly("");
-    if (liveOff) { liveOff(); liveOff = null; }
+    /* (013.1 §2+§6) لا نفصل معالج الأحداث الحية هنا أبدًا: الخروج
+     * من الصفحة ليس إيقافًا ولا فقدانًا للبث. المعالج مفرد على مستوى
+     * التطبيق (مسجّل مرة عند التحميل) ويحرس نفسه بنفسه — مغادرة
+     * المشروع ثم العودة تجد البث حيًّا والمشهد يتحدث بلا refresh.
+     * الفصل القديم هنا كان جذر فشل بوابة §6 (عودة لمشهد مجمّد). */
     loadProjects();
   }
 
@@ -436,10 +441,22 @@
     });
   }
 
+  /* (013.1 §5) زر «عودة للمحادثة» — كان في HTML بلا معالج أبدًا
+   * (زر ميت): التنقل خارج المشروع كان Escape وحدها. الآن عودة
+   * فورية — والخروج لا يوقف الوظيفة أبدًا (§1: مغادرة ≠ إيقاف). */
+  var backBtn = $("pl-back");
+  if (backBtn) {
+    backBtn.addEventListener("click", function () {
+      exitProjectMode();
+    });
+  }
+
   document.addEventListener("keydown", function (e) {
+    /* (013.1 §6) الغياب أثناء التنفيذ مسموح دائمًا — الحارس القديم
+     * (!state.streaming) كان يحبس المستخدم داخل المشروع أثناء
+     * التنفيذ: عكس القاعدة الذهبية (المغادرة لا توقف شيئًا). */
     if (e.key === "Escape" &&
-        document.body.classList.contains("mode-project") &&
-        !state.streaming) {
+        document.body.classList.contains("mode-project")) {
       exitProjectMode();
     }
   });

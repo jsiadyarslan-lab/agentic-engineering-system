@@ -439,6 +439,13 @@
   }
 
   function openConversation(c) {
+    /* (013.1 §5+§6) فتح محادثة من داخل عرض المشروع يخرج من وضع
+     * المشروع أولًا — قبل هذا الإصلاح كان المشروع يبقى مغطيًا
+     * للشاشة والمحادثة تُحمّل خلفه: «Previous Chat لا يفتح» حرفيًا. */
+    if (document.body.classList.contains("mode-project")
+        && window.HubProjects) {
+      window.HubProjects.exitProjectMode();
+    }
     state.conversationId = c.conversation_id;
     state.lastSeq = 0;
     saveActiveConversation(c.conversation_id);

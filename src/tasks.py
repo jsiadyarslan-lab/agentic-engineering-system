@@ -177,12 +177,21 @@ def run_task(
     stop_controller: StopController | None = None,
     resume_from: dict | None = None,
     sessions: Any = None,
+    execution_policy: str | None = None,
+    stop_cycle_id: str | None = None,
 ) -> TaskResult:
     """تشغيل المهمة الحية العامة — دورة الأدوار الخمسة بأدوار حية.
 
     router: موجّه حي (ModelRouter.build_live() — production wiring).
     role_config: اختيار مستقل لكل دور (router.role_config.RoleSelection).
     sessions: جلسة القاعدة لسجل tool_invocations الدائم (اختياري).
+    execution_policy (013.1 §13): سياسة تنفيذ المشروع — تصل أدوات
+    الخطوات حصرًا؛ STRICT_ISOLATED بلا بيئة معزولة = POLICY_BLOCK
+    لا تنفيذ غير معزول بدلًا عنها.
+    stop_cycle_id (013.1 §19): مفتاح إشارة الإيقاف على مستوى المشروع
+    — المحرك يوقف بمفتاح ``project-{id}`` والمنفذ كان يستمع لمفتاح
+    الخطوة ``project-{id}-step-{n}`` فلم يكن الإيقاف داخل الخطوة
+    يُكرَّم أبدًا؛ الآن المفتاحان متطابقان عبر هذا المعامل.
     فشل بناء الأدوار أو أي system_fault = HARD STOP صريح بسبب موثق.
     """
     from core.stop_controller import load_resume_point
@@ -209,15 +218,18 @@ def run_task(
         "role_models": _role_models_block(role_config),
     })
 
-    ctx = ToolContext(grant_root=target, sessions=sessions)
+    ctx = ToolContext(grant_root=target, sessions=sessions,
+                      execution_policy=execution_policy)
 
     def tool_event_sink(event: dict) -> None:
         sink({"role": "implementer", **event})
 
     ctx.on_event = tool_event_sink
 
-    if stop_controller is not None and cycle_id:
-        ctx.stop_check = stop_controller.checker_for(cycle_id)
+    if stop_controller is not None and (stop_cycle_id or cycle_id):
+        ctx.stop_check = stop_controller.checker_for(
+            stop_cycle_id or cycle_id
+        )
 
     try:
         orchestrator = build_live_orchestrator(

@@ -239,6 +239,68 @@ def _active_run_id() -> int | None:
     return active["project_id"] if active else None
 
 
+def _environment_block(project: dict) -> dict:
+    """كتلة بيئة التنفيذ (013.1 §10+§18) — الفصل الحرفي:
+
+        HOST            المضيف الفعلي (منصة/معمارية/حاويات)
+        BACKEND         صنف الخلفية (local-sandbox/process/remote)
+        ENVIRONMENT     البيئة المسجلة المختارة (اسم/معرف/حالة)
+        ISOLATION       العزل المعلن للبيئة (SANDBOXED/…)
+        WORKER          عامل الوظيفة الجارية (معرف/نبضة) — من job
+
+    السياسة من المشروع حصرًا؛ لا بيئة موافقة = المتطلب الحرفي
+    (requirement) — الواجهة تعرض ما هو مطلوب لا وعودًا.
+    """
+    from execution import policy as execution_policy
+    from execution import service as execution_service
+    from execution.backends import runtime_truth
+
+    policy = project.get("execution_policy") or "STRICT_ISOLATED"
+    truth = runtime_truth()
+    host = {
+        "platform": f"{truth.get('os', '')} {truth.get('architecture', '')}".strip(),
+        "os": truth.get("os", ""),
+        "arch": truth.get("architecture", ""),
+        "container_runtime": truth.get("container_runtime", ""),
+        "cores": truth.get("cpu_cores", 0),
+        "memory": truth.get("memory", ""),
+    }
+    selected = execution_service.select_environment(
+        _sessions(), policy=policy
+    )
+    satisfies = selected is not None
+    block: dict = {
+        "policy": policy,
+        "policy_label": execution_policy.POLICY_LABELS.get(policy, policy),
+        "host": host,
+        "selected": None,
+        "satisfies_policy": satisfies,
+        "requirement": "",
+        "environments": [
+            {k: e.get(k) for k in ("id", "name", "backend", "status",
+                                   "isolation", "sandboxed", "is_default")}
+            for e in execution_service.list_environments(_sessions())
+        ],
+    }
+    if selected is not None:
+        block["selected"] = {
+            key: selected.get(key)
+            for key in ("id", "name", "backend", "status", "isolation",
+                        "sandboxed", "is_default", "last_verified_at")
+        }
+    else:
+        block["requirement"] = execution_policy.requirement_text(policy)
+        block["owner_action"] = execution_service\
+            .owner_action_for_missing_environment(_sessions(), policy)
+    try:
+        from execution import provisioner
+
+        block["heartbeat"] = provisioner.last_heartbeat()
+    except Exception:  # noqa: BLE001 — النبضة قراءة اختيارية
+        block["heartbeat"] = {}
+    return block
+
+
 @router.get("/events/stream")
 async def projects_events_stream(request: Request,
                                  after_id: int = 0) -> StreamingResponse:
@@ -407,6 +469,7 @@ def project_state_snapshot(project_id: int) -> dict:
         "audits": audits,
         "execution_gate": _execution_gate(project, plan),
         "job": job,
+        "environment": _environment_block(project),
         "timeline": timeline,
         "chain": chain,
         "acceptance_criteria": criteria,

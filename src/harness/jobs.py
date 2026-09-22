@@ -41,6 +41,12 @@ DEFAULT_MAX_TICKS = 200
 _RETRY_KIND = "RETRY_REQUESTED"
 _CHECKPOINT_KIND = "CHECKPOINT_CREATED"
 
+#: (013.1 §16-§17) عتبة تقادم النبضة — وظيفة RUNNING بلا نبضة/حدث
+#: خلال هذه المدة وعامل حيّ غير موجود = عامل مفقود ← INTERRUPTED.
+#: سخية عمدًا: خطوة طويلة (LLM + أدوات) تلمس النبضة مع كل حدث،
+#: فالصمت الحقيقي هنا فقدان عامل لا تفكيرًا طويلًا.
+STALE_HEARTBEAT_S = 300.0
+
 
 def new_resume_token() -> str:
     """رمز استئناف غير قابل للتخمين — هوية استرداد الوظيفة (§19)."""
@@ -114,6 +120,101 @@ def heartbeat_age_seconds(row: EngineeringJob) -> float | None:
     if beat.tzinfo is None:
         beat = beat.replace(tzinfo=_dt.timezone.utc)
     return max(0.0, (now - beat).total_seconds())
+
+
+def touch_heartbeat(sessions, job_id: int) -> None:
+    """لمس نبضة الوظيفة (013.1 §16) — حياة أثناء الخطوات الطويلة.
+
+    تُستدعى خنقةً (throttled) مع كل حدث يبثه المحرك أثناء tick:
+    الخطوة قد تستغرق دقائق (LLM + أدوات) والحدث هو برهان التقدم —
+    فالنبضة تتبع التقدم الفعلي لا دورة الـtick وحدها.
+    """
+    with sessions() as session:
+        row = session.get(EngineeringJob, int(job_id))
+        if row is None:
+            return
+        row.heartbeat_at = _utc_now()
+        session.commit()
+
+
+def detect_interrupted_jobs(
+    sessions, *, stale_after_s: float = STALE_HEARTBEAT_S,
+    active_job_ids: set[int] | None = None,
+) -> list[dict]:
+    """كاشف فقدان العامل (013.1 §17) — نبضة مفقودة = INTERRUPTED.
+
+    وظيفة RUNNING/RETRYING/REVISING بنبضة أقدم من ``stale_after_s``
+    وليست ضمن ``active_job_ids`` (حلقة حيّة في هذه العملية) =
+    عاملها مات/توقف دون إقفال صادق ← تُوسم INTERRUPTED مع السبب
+    وحدث دائم JOB_INTERRUPTED، ويُدفع المشروع إلى PAUSED بأمان
+    (استئنافه من آخر checkpoint بقرار صريح — لا تنفيذ عشوائي).
+
+    تعيد قائمة الوظائف الموسومة — فارغة = لا فقدان عامل.
+    """
+    from workflow import service as workflow_service
+
+    active = active_job_ids or set()
+    interrupted: list[dict] = []
+    with sessions() as session:
+        rows = session.query(EngineeringJob).filter(
+            EngineeringJob.status.in_(("RUNNING", "RETRYING", "REVISING"))
+        ).all()
+        stale = [
+            row for row in rows
+            if row.id not in active
+            and (heartbeat_age_seconds(row) or 0.0) > stale_after_s
+        ]
+    for row in stale:
+        age = int(heartbeat_age_seconds(row) or 0)
+        reason = (
+            f"فقدان العامل: لا نبضة منذ {age}ث (العتبة "
+            f"{int(stale_after_s)}ث) — وُسمت INTERRUPTED؛ الاستئناف من "
+            "آخر checkpoint بقرار صريح"
+        )
+        with sessions() as session:
+            fresh = session.get(EngineeringJob, row.id)
+            if fresh is None or fresh.status not in (
+                    "RUNNING", "RETRYING", "REVISING"):
+                continue  # حلقتها عادت للحياة أو أُقفلت — لا نكذب عليها
+            fresh.status = "INTERRUPTED"
+            fresh.last_error = reason[:800]
+            fresh.resumable = True
+            fresh.updated_at = _utc_now()
+            session.commit()
+        project = workflow_service.get_project(sessions, row.project_id)
+        if project is not None and project.get("status") == "RUNNING":
+            workflow_service.update_project(
+                sessions, row.project_id, status="PAUSED"
+            )
+        # حدث دائم — الواجهة ترى JOB_INTERRUPTED فتصالح المشهد
+        try:
+            from harness.seams import HarnessSeams
+
+            seams = HarnessSeams(sessions)
+            seams.add_event(row.project_id, "JOB_INTERRUPTED", {
+                "job_id": row.id, "reason": reason,
+                "heartbeat_age_s": age, "worker_id": row.worker_id,
+                "attempt": row.attempt,
+            })
+        except Exception:  # noqa: BLE001 — الحدث لا يمنع الوسم
+            pass
+        try:
+            from core.live_bus import BUS, normalize_event
+
+            BUS.publish(normalize_event({
+                "project_id": row.project_id, "kind": "JOB_INTERRUPTED",
+                "payload": {"job_id": row.id, "reason": reason,
+                            "heartbeat_age_s": age},
+                "event_id": 0, "stream": "projects", "db": "",
+            }))
+        except Exception:  # noqa: BLE001
+            pass
+        interrupted.append({
+            "job_id": row.id, "project_id": row.project_id,
+            "from_status": row.status, "status": "INTERRUPTED",
+            "heartbeat_age_s": age, "reason": reason,
+        })
+    return interrupted
 
 
 class JobError(RuntimeError):

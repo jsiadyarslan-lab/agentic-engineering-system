@@ -399,8 +399,13 @@ def select_environment(sessions, *, policy: str | None = None) -> dict | None:
 def resolve_executor(sessions, *, policy: str | None = None):
     """المصدر الموحد (§19): (بيئة، خلفية) التي يستعملها المسبار والمنفذ.
 
-    تفضل الجاهزة المختارة وفق السياسة؛ إن لم توجد بيئة جاهزة تعيد
-    الافتراضية (المحلية عادة) بوضعها الفعلي — المتصل يفحص status
+    policy معطاة (013.1 §13 — لا تراجع صامت): البيئة الجاهزة الموافقة
+    لها حصرًا؛ غيابها = ``(None, None)`` — لا سقوط إلى الافتراضية
+    مهما كانت، فالمسبار يعرض المتطلب والمنفذ يحجب نفسه (POLICY_BLOCK)
+    بدل التنفيذ غير المعزول تحت سياسة عزل صارم.
+
+    بلا سياسة (السلوك التاريخي للمسار العام): تُفضّل الجاهزة
+    المختارة، وإلا الافتراضية بوضعها الفعلي — المتصل يفحص status
     بنفسه لأن الصدق هنا أهم من الراحة.
     """
     environments_full = list_environments(sessions, include_refs=True)
@@ -409,6 +414,10 @@ def resolve_executor(sessions, *, policy: str | None = None):
     if selected is not None:
         full = by_id.get(selected["id"], selected)
         return selected, build_backend(full)
+    if policy is not None:
+        # (013.1 §13) سياسة معطاة بلا بيئة موافقة = حجب معلن،
+        # لا تنفيذ على بيئة أدنى سقفًا منها أبدًا
+        return None, None
     for env in environments_full:
         if env["is_default"]:
             public = {k: v for k, v in env.items() if k != "token_ref"}
@@ -422,7 +431,7 @@ def resolve_executor(sessions, *, policy: str | None = None):
 
 def run_code_unified(
     sessions, code: str, *, workspace: Path, artifacts: Path,
-    timeout_s: float = 120.0,
+    timeout_s: float = 120.0, policy: str | None = None,
 ) -> ExecutionOutcome:
     """تنفيذ عبر البيئة المختارة — كل نتيجة تحمل هوية البيئة (§19).
 
@@ -430,6 +439,9 @@ def run_code_unified(
     — نفس صنف الخلفية الذي يسجلها الجرد، بلا لمس أي قاعدة.
     فشل بدء بعد حالة READY يوسم ENVIRONMENT_MISMATCH بتفصيل الهوية
     والزمن — التفسير إلزامي لا الاختفاء (§42).
+
+    policy (013.1 §13): البيئة الموافقة للسياسة حصرًا — غيابها =
+    POLICY_BLOCK بالمتطلب الحرفي، لا تنفيذ غير معزول بدلًا عنها.
     """
     if sessions is None:
         # أداة «داخل الركيزة» تعد بعزل — لا تراجع متوافق هنا: منصة
@@ -439,8 +451,19 @@ def run_code_unified(
             code, workspace=workspace, artifacts=artifacts,
             timeout_s=timeout_s,
         )
-    environment, backend = resolve_executor(sessions)
+    environment, backend = resolve_executor(sessions, policy=policy)
     if backend is None:
+        if policy is not None:
+            required = execution_policy.requirement_text(policy)
+            return ExecutionOutcome(
+                environment_id="none", backend="NONE", exit_code=-1,
+                stdout="", stderr="", termination="POLICY_BLOCK",
+                detail=(
+                    f"POLICY_BLOCK — السياسة {policy} بلا بيئة تنفيذ "
+                    f"جاهزة موافقة. المطلوب: {required}. لا تنفيذ "
+                    "غير معزول بدلًا عنها (لا تراجع صامت)"
+                ),
+            )
         return ExecutionOutcome(
             environment_id="none", backend="NONE", exit_code=-1,
             stdout="", stderr="", termination="FAILED_TO_START",
@@ -484,6 +507,20 @@ def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
     """
     environment, backend = resolve_executor(sessions, policy=policy)
     if backend is None:
+        if policy is not None:
+            return {
+                "status": "UNAVAILABLE",
+                "reason": (
+                    "لا بيئة تنفيذ جاهزة توافق السياسة "
+                    + policy + " — "
+                    + execution_policy.requirement_text(policy)
+                ),
+                "latency_ms": 0,
+                "ttl_seconds": 300,
+                "failure_class": "SANDBOX_FAILURE",
+                "failure_stage": "STARTUP",
+                "details": {"environment_id": None, "policy": policy},
+            }
         return {
             "status": "UNAVAILABLE",
             "reason": "لا بيئة تنفيذ مسجلة",

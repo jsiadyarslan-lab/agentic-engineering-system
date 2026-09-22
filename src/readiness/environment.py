@@ -13,6 +13,7 @@ import platform
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 
 def _utc_now_iso() -> str:
@@ -83,13 +84,14 @@ def environment_inventory() -> dict:
     except OSError as error:
         items["disk"] = _item("NOT_READY", reason=str(error))
 
-    # الأدوات — اكتشاف فعلي
+    # الأدوات — اكتشاف فعلي (013.1 §11: podman أيضًا — لا افتراض)
     for name, args in (
         ("git", ["git", "--version"]),
         ("pip", ["pip", "--version"]),
         ("node", ["node", "--version"]),
         ("npm", ["npm", "--version"]),
         ("docker", ["docker", "--version"]),
+        ("podman", ["podman", "--version"]),
     ):
         ok, version = _cmd_version(args)
         items[name] = (
@@ -105,10 +107,40 @@ def environment_inventory() -> dict:
         if ok else _item("NOT_READY", reason="تعذر تنفيذ قشدة")
     )
 
-    # متصفح ميكانيكي (playwright/chromium) — غير منفذ كأداة نظام
-    items["browser_runtime"] = _item(
-        "UNAVAILABLE",
-        reason="NOT_IMPLEMENTED — لا أداة متصفح ميكانيكية في النظام",
+    # متصفح ميكانيكي (013 added Playwright+Chromium) — (013.1 §11)
+    # جرد صادق: الكذب ممنوع في الاتجاهين — لا UNAVAILABLE كاذبة بعد
+    # إضافة المتصفح الحقيقي، ولا READY بلا اكتشاف فعلي للمحرك.
+    try:
+        from browser.provider import DEFAULT_PROVIDER
+
+        available, why = DEFAULT_PROVIDER.available()
+        items["browser_runtime"] = _item(
+            "READY" if available else "NOT_READY",
+            version="playwright-chromium" if available else "",
+            reason="" if available else (why or "Chromium غير متاح"),
+            extra={"provider": "playwright", "engine": "chromium"},
+        )
+    except Exception as error:  # noqa: BLE001 — بلا متصفح لا نكذب جاهزية
+        items["browser_runtime"] = _item(
+            "UNAVAILABLE",
+            reason=f"تعذر فحص مزود المتصفح: {error}",
+        )
+
+    # قدرة الافتراضية (VM) — فحص فعلي لا تخمين (013.1 §11)
+    vm_ready = os.access("/dev/kvm", os.R_OK)
+    vm_reason = "/dev/kvm متاح" if vm_ready else (
+        "لا برامج افتراضية (kvm/qemu/virtualbox) قابلة للاستخدام"
+    )
+    if not vm_ready:
+        for vm_bin in ("qemu-system-x86_64", "VBoxManage"):
+            if shutil.which(vm_bin):
+                vm_ready = True
+                vm_reason = f"{vm_bin} مثبت"
+                break
+    items["vm"] = _item(
+        "READY" if vm_ready else "UNAVAILABLE",
+        version=vm_reason if vm_ready else "",
+        reason="" if vm_ready else vm_reason,
     )
 
     # الشبكة — فحص فعلي (لا قراءة إعدادات فقط)
@@ -147,6 +179,33 @@ def environment_inventory() -> dict:
     items["proxy"] = _item(
         "READY" if not proxy else "READY",
         version=proxy or "غير مضبوط",
+    )
+
+    # تنفيذ العمليات والملفات (013.1 §11) — فحص فعلي صغير لا افتراض
+    try:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            probe_file = Path(tmp) / "rw.txt"
+            probe_file.write_text("ok", encoding="utf-8")
+            fs_ok = probe_file.read_text(encoding="utf-8") == "ok"
+        items["filesystem"] = _item(
+            "READY" if fs_ok else "NOT_READY",
+            version="قراءة/كتابة",
+            reason="" if fs_ok else "تعذرت الكتابة والقراءة",
+        )
+    except OSError as error:
+        items["filesystem"] = _item("NOT_READY", reason=str(error))
+
+    proc = subprocess.run(
+        [sys.executable, "-c", "print('ok')"],
+        capture_output=True, text=True, timeout=10,
+    )
+    items["process_execution"] = _item(
+        "READY" if proc.returncode == 0
+        and proc.stdout.strip() == "ok" else "NOT_READY",
+        version=f"Python {sys.version.split()[0]}",
+        reason="" if proc.returncode == 0 else proc.stderr[:200],
     )
 
     return {

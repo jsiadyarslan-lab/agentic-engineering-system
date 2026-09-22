@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import threading
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
@@ -47,6 +48,13 @@ _RUN_EXECUTOR = ThreadPoolExecutor(
 
 #: حالة التشغيل النشط — بث لحظي فقط؛ الحقيقة الدائمة في القاعدة.
 _ACTIVE: dict = {"handle": None, "lock": threading.Lock()}
+
+#: (013.1 §17) كلب فقدان العامل — خيط خامل لكل قاعدة دائمة؛ يفحص
+#: كل 15ث: وظيفة RUNNING بنبضة متقادمة وحلقة حيّة غير موجودة =
+#: INTERRUPTED + بث. لا ينفّذ شيئًا أبدًا — الوسم والإعلان فقط،
+#: والاستئناف قرار المالك الصريح.
+_WATCHDOGS: dict = {"by_db": {}, "lock": threading.Lock()}
+_WATCHDOG_INTERVAL_S = 15.0
 
 
 class RunConflict(RuntimeError):
@@ -163,6 +171,7 @@ def launch(
                            db_key=db_key)
         _ACTIVE["handle"] = handle
 
+    _ensure_watchdog(sessions)  # (013.1 §17) الكلب خامل من أول إطلاق
     _RUN_EXECUTOR.submit(
         _run_loop_thread, handle, engine_factory, sessions, reason
     )
@@ -173,8 +182,20 @@ def _run_loop_thread(handle: RunHandle, engine_factory, sessions,
                      reason: str) -> None:
     """جسم التشغيل الخلفي — JobManager فوق المحرك (012 كما هي)."""
     project_id = handle.project_id
+    # (013.1 §16) لمس النبضة مع كل حدث — خنقة 5ث: الخطوة الطويلة
+    # (LLM + أدوات) تثبت حياتها بالأحداث لا بانتظار انتهاء الـtick
+    last_touch = [0.0]
 
     def on_event(event: dict) -> None:
+        now = time.monotonic()
+        if handle.job_id is not None and now - last_touch[0] > 5.0:
+            last_touch[0] = now
+            try:
+                from harness.jobs import touch_heartbeat
+
+                touch_heartbeat(sessions, handle.job_id)
+            except Exception:  # noqa: BLE001 — اللمس لا يكسر البث
+                pass
         _broadcast(
             event.get("project_id", project_id),
             event.get("kind", ""),
@@ -211,10 +232,57 @@ def _run_loop_thread(handle: RunHandle, engine_factory, sessions,
                 _ACTIVE["handle"] = None
 
 
+def _ensure_watchdog(sessions) -> None:
+    """تشغيل كلب فقدان العامل لهذه القاعدة (مرة واحدة لكل قاعدة).
+
+    (013.1 §17) الوظيفة RUNNING بنبضة متقادمة وليست حلقة نشطة في
+    هذه العملية = عاملها مفقود ← INTERRUPTED معلن. الحلقة النشطة
+    مستثناة حصرًا (تلمس نبضتها مع كل حدث) فلا وسم كاذب أبدًا.
+    """
+    db_key = sessions_db_key(sessions)
+    with _WATCHDOGS["lock"]:
+        if db_key in _WATCHDOGS["by_db"]:
+            return
+        stop_flag = threading.Event()
+        _WATCHDOGS["by_db"][db_key] = stop_flag
+
+    def _watch() -> None:
+        from harness.jobs import detect_interrupted_jobs
+
+        while not stop_flag.wait(_WATCHDOG_INTERVAL_S):
+            try:
+                active = active_run(sessions)
+                detect_interrupted_jobs(
+                    sessions,
+                    active_job_ids={active["job_id"]}
+                    if active and active.get("job_id") else set(),
+                )
+            except Exception:  # noqa: BLE001 — الكلب لا يموت بصمت
+                continue
+
+    threading.Thread(
+        target=_watch, daemon=True,
+        name=f"aes-job-watchdog[{db_key[-12:]:}]",
+    ).start()
+
+
+def detect_interrupted_now(sessions) -> list[dict]:
+    """كشف فوري (اختبارات/إجراءات صريحة) — نفس منطق الكلب الدوري."""
+    from harness.jobs import detect_interrupted_jobs
+
+    active = active_run(sessions)
+    return detect_interrupted_jobs(
+        sessions,
+        active_job_ids={active["job_id"]}
+        if active and active.get("job_id") else set(),
+    )
+
+
 __all__ = [
     "RunConflict",
     "RunHandle",
     "active_run",
+    "detect_interrupted_now",
     "launch",
     "sessions_db_key",
 ]

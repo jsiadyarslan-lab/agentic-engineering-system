@@ -372,3 +372,63 @@ body.live-disconnected .substrate-dot {
   .pl-stage { font-size: 11.5px; }
   .pl-actions .pl-btn { flex: 1; }
 }
+
+/* ==========================================================================
+   013.1 §18+§21+§22 — بطاقة بيئة التنفيذ + بطاقة التنفيذ الحية
+   وفشل منظم. نفس رموز التصميم — لا قيم سحرية.
+   ========================================================================== */
+
+.pl-env.ready .pl-title { color: var(--ok); }
+.pl-env.notready .pl-title { color: #d9b25f; }
+.pl-env.notready { border-color: rgba(217,178,95,.35); }
+
+.pl-env-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 4px;
+}
+
+.pl-env-row {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.7;
+  align-items: baseline;
+}
+
+.pl-env-k {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  font-size: 12.5px;
+}
+
+.pl-env-v {
+  color: var(--text-mid);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pl-env-detected {
+  display: flex;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.pl-exec .pl-title { color: var(--ok); }
+
+.pl-exec-dot {
+  display: inline-block;
+  color: var(--ok);
+  animation: pl-exec-pulse 1.6s ease-in-out infinite;
+  margin-inline-end: 4px;
+}
+
+@keyframes pl-exec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+
+.pl-exec .pl-btn.danger { margin-inline-start: auto; }

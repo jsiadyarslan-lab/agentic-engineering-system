@@ -28,9 +28,12 @@ import time
 from typing import Callable
 
 #: حالات دورة حياة التجهيز (§16) — مفردة مقفلة بهذا الترتيب.
+#: INTERRUPTED (013.1 §12): تجهيز بدأ ثم انقطع (وفاة عملية/فقدان
+#: عامل) قبل اكتمال فحص الصحة — لا READY ولا FAILED، بل قابل
+#: للإعادة من DISCOVERING بقرار صريح.
 PROVISION_STATES: tuple[str, ...] = (
     "DISCOVERING", "PROVISIONING", "BOOTING", "HEALTH_CHECK",
-    "READY", "DEGRADED", "FAILED", "STOPPED",
+    "READY", "DEGRADED", "FAILED", "INTERRUPTED", "STOPPED",
 )
 
 #: نبضة البيئة الأخيرة (§16 heartbeat) — بث لحظي فقط؛ الحقيقة في
@@ -133,7 +136,7 @@ def provision(sessions, *,
     steps: list[dict] = []
     started = time.monotonic()
 
-    # ---- DISCOVERING: اكتشاف المضيف والركيزة ------------------------
+    # ---- DISCOVERING: اكتشاف المضيف والركيزة (013.1 §11 حرفيًا) ----
     t0 = time.monotonic()
     truth = runtime_truth()
     host = {
@@ -142,10 +145,37 @@ def provision(sessions, *,
         "container": truth.get("container_runtime", ""),
         "cores": truth.get("cpu_cores", 0), "memory_gb": truth.get("memory", ""),
     }
+    # (013.1 §11) جرد فعلي موسع — لا افتراض لأي عنصر: القرص/الحاوية
+    # (docker/podman)/الافتراضية/المتصفح/الشبكة/العملية/العامل
+    try:
+        from readiness import environment as env_inventory
+
+        inventory = env_inventory.environment_inventory()
+        host["disk"] = next(
+            (i.get("version") for k, i in inventory.items()
+             if k == "disk"), "")
+        host["container_runtimes"] = sorted(
+            k for k, i in inventory.items()
+            if k in ("docker", "podman") and i.get("status") == "READY"
+        )
+        host["vm_capability"] = next(
+            (i.get("status") for k, i in inventory.items()
+             if k == "vm"), "")
+        host["chromium"] = next(
+            (i.get("status") for k, i in inventory.items()
+             if k == "browser_runtime"), "")
+        host["network"] = next(
+            ("READY" if i.get("status") == "READY" else i.get("status"))
+            for k, i in inventory.items() if k == "network_dns"
+        )
+    except Exception:  # noqa: BLE001 — الجرد الموسع لا يكسر التجهيز
+        inventory = {}
     substrate_ok = execution_service._substrate_available()
     _step(steps, "DISCOVERING", True,
           f"{host['os']}/{host['arch']} — Python {host['python']}"
           + (f" — {host['container']}" if host["container"] else "")
+          + (f" — حاويات: {'، '.join(host['container_runtimes'])}"
+             if host.get("container_runtimes") else " — لا حاويات")
           + (" — ركيزة العزل متاحة" if substrate_ok
              else " — ركيزة العزل غير متاحة (تنفيذ متوافق محلي)"),
           duration_ms=int((time.monotonic() - t0) * 1000),

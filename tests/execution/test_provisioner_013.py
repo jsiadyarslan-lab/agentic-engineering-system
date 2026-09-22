@@ -24,10 +24,14 @@ def env_db(tmp_path, monkeypatch):
 
 
 def test_provision_states_vocabulary():
-    """(§16) مفردة الحالات مقفلة بالترتيب الهندسي المعلن."""
+    """(§16+013.1 §12) مفردة الحالات مقفلة بالترتيب الهندسي المعلن.
+
+    INTERRUPTED (013.1 §12): تجهيز بدأ ثم انقطع قبل اكتمال فحص
+    الصحة — لا READY ولا FAILED، بل قابل للإعادة بقرار صريح.
+    """
     assert provisioner.PROVISION_STATES == (
         "DISCOVERING", "PROVISIONING", "BOOTING", "HEALTH_CHECK",
-        "READY", "DEGRADED", "FAILED", "STOPPED",
+        "READY", "DEGRADED", "FAILED", "INTERRUPTED", "STOPPED",
     )
 
 

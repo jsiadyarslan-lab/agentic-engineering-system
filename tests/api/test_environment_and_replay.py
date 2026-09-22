@@ -69,7 +69,15 @@ def test_environment_inventory_real_values(client, api_env):
     assert items["os"]["status"] == "READY"
     assert "Linux" in items["os"]["version"] or items["os"]["version"]
     assert items["python"]["version"]
-    assert items["browser_runtime"]["status"] == "UNAVAILABLE"
+    # (013.1 §11) المتصفح يُكتشف فعليًا منذ 013 — لا UNAVAILABLE
+    # الكاذبة القديمة (NOT_IMPLEMENTED) ولا READY بلا فحص: الحالتان
+    # الصادقتان فقط حسب توفر Chromium في بيئة التشغيل
+    assert items["browser_runtime"]["status"] in ("READY", "NOT_READY")
+    # (013.1 §11) الجرد الموسع: حاويات/افتراضية/ملفات/عملية — كلها
+    # مكتشفة لا مفترضة
+    for key in ("podman", "vm", "filesystem", "process_execution"):
+        assert key in items, f"بند الجرد مفقود: {key}"
+        assert items[key]["status"] in ("READY", "NOT_READY", "UNAVAILABLE")
     assert "network_dns" in items and "repository_access" in items
 
 

@@ -92,10 +92,12 @@ def test_sources_registry_under_220_lines():
     assert _count_lines("src/sources/__init__.py") < 220
 
 
-def test_roles_tools_under_620_lines():
+def test_roles_tools_under_660_lines():
     """الأمر 008: tools.py موزّع الأنحاف — التصنيف في tool_failures،
-    الويب في web_tools، الـPDF في pdf_tools، المانيفست في tool_manifest."""
-    assert _count_lines("src/roles/tools.py") < 620
+    الويب في web_tools، الـPDF في pdf_tools، المانيفست في tool_manifest.
+    (013.1 §13) السقف 620←660: خيط سياسة التنفيذ عبر ToolContext
+    وPOLICY_BLOCK الصادق — إضافة موثقة بمبرر لا تضخمًا."""
+    assert _count_lines("src/roles/tools.py") < 660
     assert _count_lines("src/roles/tool_failures.py") < 420
     assert _count_lines("src/roles/web_tools.py") < 180
     assert _count_lines("src/roles/pdf_tools.py") < 80

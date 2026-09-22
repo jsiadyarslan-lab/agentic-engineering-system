@@ -282,6 +282,265 @@
     return { row: wrap.row, card: card, gate: gate };
   }
 
+  /* بطاقة بيئة التنفيذ (013.1 §18) — عرض بسيط داخل تجربة المحادثة.
+   *
+   * ثلاث حالات صادقة فقط، لا رابعة:
+   *   ⚙️ جاهزة   — الاسم والعزل والعامل ونبضته
+   *   ⏳ تجهيز — تعرض أثناء التوفير (زر التجهيز يعمل فعليًا)
+   *   ⚠️ غير جاهزة — المضيف المكتشف + المطلوب الحرفي + أزرار علاج
+   * كل حقل من اللقطة الدائمة (state.environment) — لا تخمين محلي.
+   */
+  function renderEnvironmentCard(state, actions) {
+    var env = state.environment;
+    if (!env) return null;
+    var wrap = msgRow("assistant");
+    var card = el("div", "pl-card pl-env");
+    var selected = env.selected;
+    var job = state.job;
+
+    if (selected && selected.status === "READY") {
+      card.classList.add("ready");
+      var head = el("div", "pl-title", "⚙ بيئة التنفيذ — جاهزة");
+      card.appendChild(head);
+      var rows = el("div", "pl-env-rows");
+      rows.appendChild(envRow("البيئة", selected.name));
+      rows.appendChild(envRow("العزل",
+        selected.sandboxed ? "صارم (معزولة)" : "بلا عزل (معلن)"));
+      rows.appendChild(envRow("الخلفية", selected.backend || "—"));
+      if (job && job.worker_id) {
+        rows.appendChild(envRow("العامل", job.worker_id +
+          (job.heartbeat_age_s != null
+            ? " — نبضة قبل " + Math.max(0, Math.round(job.heartbeat_age_s)) + "ث"
+            : "")));
+      }
+      card.appendChild(rows);
+    } else {
+      card.classList.add("notready");
+      var warn = el("div", "pl-title",
+        "⚠ بيئة التنفيذ غير جاهزة");
+      card.appendChild(warn);
+      var reason = el("div", "pl-note");
+      reason.dir = "auto";
+      reason.textContent = env.requirement ||
+        "لا بيئة تنفيذ جاهزة توافق سياسة المشروع.";
+      card.appendChild(reason);
+      var detected = el("div", "pl-env-detected");
+      detected.appendChild(el("span", "pl-env-k", "المضيف المكتشف: "));
+      detected.appendChild(el("span", "pl-env-v",
+        (env.host && env.host.platform) || "—"));
+      card.appendChild(detected);
+      var policyLine = el("div", "pl-env-detected");
+      policyLine.appendChild(el("span", "pl-env-k", "السياسة: "));
+      policyLine.appendChild(el("span", "pl-env-v",
+        env.policy_label || env.policy || "—"));
+      card.appendChild(policyLine);
+
+      var buttons = el("div", "pl-actions");
+      var provision = el("button", "pl-btn primary", "تجهيز البيئة");
+      var recheck = el("button", "pl-btn", "إعادة الفحص");
+      buttons.appendChild(provision); buttons.appendChild(recheck);
+      card.appendChild(buttons);
+      var progress = el("div", "pl-feedback"); progress.hidden = true;
+      card.appendChild(progress);
+
+      provision.addEventListener("click", function () {
+        provision.disabled = true;
+        progress.hidden = false;
+        progress.className = "pl-feedback loading";
+        progress.textContent = "⏳ جاري تجهيز بيئة التنفيذ…";
+        Hub.fetchJSON("/api/environment/provision", { method: "POST" })
+          .then(function (out) {
+            provision.disabled = false;
+            if (!out.ok) {
+              progress.className = "pl-feedback err";
+              progress.textContent = "تعذر التجهيز: " +
+                ((out.j && out.j.reason) || "");
+              return;
+            }
+            var result = out.j || {};
+            if (result.state === "READY") {
+              progress.className = "pl-feedback ok";
+              progress.textContent =
+                "جاهزة — أعد الفحص لاستئناف التنفيذ بنفس الوظيفة";
+            } else {
+              progress.className = "pl-feedback err";
+              progress.textContent = (result.reason || "تعذر التجهيز") +
+                (result.requirement ? " — المطلوب: " + result.requirement : "");
+            }
+          }, function () {
+            provision.disabled = false;
+            progress.className = "pl-feedback err";
+            progress.textContent = "تعذر الوصول لخدمة التجهيز — أعد المحاولة";
+          });
+      });
+      recheck.addEventListener("click", function () {
+        recheck.disabled = true;
+        progress.hidden = false;
+        progress.className = "pl-feedback loading";
+        progress.textContent = "جاري إعادة الفحص…";
+        Hub.fetchJSON(actions.recheckUrl, { method: "POST" })
+          .then(function (out) {
+            recheck.disabled = false;
+            if (!out.ok) {
+              progress.className = "pl-feedback err";
+              progress.textContent = "تعذر الفحص: " +
+                ((out.j && out.j.detail) || "");
+              return;
+            }
+            var j = out.j || {};
+            if (j.preflight && j.preflight.verdict === "PASS") {
+              progress.className = "pl-feedback ok";
+              progress.textContent =
+                "البيئة جاهزة — استؤنف التنفيذ تلقائيًا بنفس الوظيفة";
+            } else {
+              progress.className = "pl-feedback err";
+              progress.textContent = "ما زالت غير جاهزة — " +
+                (env.requirement || "راجع المتطلبات");
+            }
+          }, function () {
+            recheck.disabled = false;
+            progress.className = "pl-feedback err";
+            progress.textContent = "تعذر الوصول — أعد المحاولة";
+          });
+      });
+    }
+    card.appendChild(renderTechDetails({
+      policy: env.policy,
+      satisfies_policy: env.satisfies_policy,
+      host: env.host,
+      selected: env.selected,
+      requirement: env.requirement,
+    }));
+    wrap.flow.appendChild(card);
+    return { row: wrap.row, card: card };
+  }
+
+  function envRow(key, value) {
+    var row = el("div", "pl-env-row");
+    row.appendChild(el("span", "pl-env-k", key + ": "));
+    row.appendChild(el("span", "pl-env-v", value));
+    return row;
+  }
+
+  /* بطاقة التنفيذ الحية (013.1 §21) — تتحدث تلقائيًا عبر المصالحات.
+   *
+   * ● التنفيذ جارٍ: الهدف/الحالة/البيئة/العامل/المرحلة/آخر نشاط
+   * + [التفاصيل] [إيقاف التنفيذ] — الإيقاف صريح وحده يوقف (§19). */
+  function renderExecutionCard(state, actions) {
+    var job = state.job;
+    var wrap = msgRow("assistant");
+    var card = el("div", "pl-card pl-exec live");
+
+    var head = el("div", "pl-title");
+    var dot = el("span", "pl-exec-dot", "●");
+    head.appendChild(dot);
+    head.appendChild(el("span", null, " التنفيذ جارٍ"));
+    card.appendChild(head);
+
+    var rows = el("div", "pl-env-rows");
+    var objective = el("div", "pl-env-row");
+    objective.appendChild(el("span", "pl-env-k", "الهدف: "));
+    var objText = el("span", "pl-env-v",
+      String(state.objective || "").slice(0, 120));
+    objText.dir = "auto";
+    objective.appendChild(objText);
+    rows.appendChild(objective);
+
+    rows.appendChild(envRow("الحالة",
+      STATUS_LABELS[state.status] || state.status));
+
+    var env = state.environment;
+    var envSel = env && env.selected;
+    rows.appendChild(envRow("البيئة",
+      envSel ? (envSel.name + " — " +
+        (envSel.sandboxed ? "عزل صارم" : "بلا عزل معلن"))
+        : "غير محددة بعد"));
+
+    if (job) {
+      rows.appendChild(envRow("العامل",
+        (job.worker_id || "—") +
+        (job.heartbeat_age_s != null
+          ? " — نبضة قبل " + Math.max(0, Math.round(job.heartbeat_age_s)) + "ث"
+          : "")));
+      if (job.current_phase_id && (state.phases || []).length) {
+        var phase = null;
+        (state.phases || []).forEach(function (p) {
+          if (p.id === job.current_phase_id) phase = p;
+        });
+        if (phase) rows.appendChild(envRow("المرحلة", phase.title || "—"));
+      }
+    }
+
+    var lastEvent = (state.events || []).filter(function (e) {
+      return ["ROLE_EXECUTING", "TOOL_EXECUTION", "EVIDENCE_CREATED",
+              "STEP_COMPLETED"].indexOf(e.kind) !== -1;
+    }).pop();
+    var lastActivity = "—";
+    if (lastEvent) {
+      var p = lastEvent.payload || {};
+      lastActivity = ({
+        ROLE_EXECUTING: (ROLE_LABELS[p.role] || p.role) + " يعمل",
+        TOOL_EXECUTION: "أداة " + (p.tool || "؟"),
+        EVIDENCE_CREATED: "دليل جديد",
+        STEP_COMPLETED: "خطوة اكتملت",
+      })[lastEvent.kind] || lastEvent.kind;
+    }
+    rows.appendChild(envRow("آخر نشاط", lastActivity));
+    card.appendChild(rows);
+
+    var buttons = el("div", "pl-actions");
+    var details = el("button", "pl-btn", "التفاصيل");
+    var stop = el("button", "pl-btn danger", "■ إيقاف التنفيذ");
+    buttons.appendChild(details); buttons.appendChild(stop);
+    card.appendChild(buttons);
+    var feedback = el("div", "pl-feedback"); feedback.hidden = true;
+    card.appendChild(feedback);
+
+    details.addEventListener("click", function () {
+      var tech = card.querySelector(".pl-tech-body");
+      if (tech) tech.hidden = !tech.hidden;
+    });
+    stop.addEventListener("click", function () {
+      stop.disabled = true;
+      stop.textContent = "…جارٍ طلب الإيقاف";
+      feedback.hidden = false;
+      feedback.className = "pl-feedback loading";
+      feedback.textContent = "طلب الإيقاف أُرسل — يُكرم عند أقرب حدّ آمن";
+      Hub.fetchJSON("/api/projects/" + state.id + "/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "زر الإيقاف من بطاقة التنفيذ" }),
+      }).then(function (out) {
+        if (out.ok) {
+          feedback.className = "pl-feedback ok";
+          feedback.textContent = "قُبل الإيقاف — الحالة محفوظة والاستئناف متاح";
+        } else {
+          stop.disabled = false;
+          stop.textContent = "■ إيقاف التنفيذ";
+          feedback.className = "pl-feedback err";
+          feedback.textContent = "تعذر الإيقاف: " +
+            ((out.j && out.j.detail) || "");
+        }
+      }, function () {
+        stop.disabled = false;
+        stop.textContent = "■ إيقاف التنفيذ";
+        feedback.className = "pl-feedback err";
+        feedback.textContent = "تعذر الوصول — أعد المحاولة";
+      });
+    });
+
+    card.appendChild(renderTechDetails({
+      job: job ? {
+        id: job.id, status: job.status, worker_id: job.worker_id,
+        attempt: job.attempt, checkpoint_id: job.checkpoint_id,
+        tick_count: job.tick_count,
+      } : null,
+      project_status: state.status,
+    }));
+    wrap.flow.appendChild(card);
+    return { row: wrap.row, card: card };
+  }
+
   /* بطاقة الحجب الصادقة (§27+§17): سبب مفهوم + أزرار علاج + تفاصيل */
   function renderBlockedCard(state, actions) {
     var wrap = msgRow("assistant");
@@ -292,11 +551,76 @@
     var gate = state.execution_gate || {};
     var reason = el("div", "pl-note");
     reason.dir = "auto";
-    reason.textContent = gate.reason ||
-      "بيئة التنفيذ غير جاهزة.";
+    /* (013.1 §22+§17) السبب من مصدره الفعلي: انقطاع عامل/إيقاف
+     * مالك/بوابة توفير — لا نص عامًا يخفي الحقيقة */
+    var job = state.job || {};
+    if (job.status === "INTERRUPTED") {
+      reason.textContent = "انقطع العامل (فقدان نبضة أو إعادة تشغيل) "
+        + "— لا شيء ضاع؛ الاستئناف من آخر checkpoint بنفس الوظيفة."
+        + (job.last_error ? " (" + job.last_error.slice(0, 140) + ")"
+           : "");
+    } else if (state.status === "PAUSED") {
+      reason.textContent = "التنفيذ متوقف مؤقتًا بأمان — الاستئناف من "
+        + "آخر checkpoint بقرارك.";
+    } else {
+      reason.textContent = gate.reason ||
+        "بيئة التنفيذ غير جاهزة.";
+    }
     card.appendChild(reason);
 
+    /* (013.1 §22) الفشل منظم: ما فشل/لماذا/ما اكتُشف/ما يمكن فعله/
+     * الحالة الحالية — كلها من اللقطة الدائمة لا من نص عام */
+    var env = state.environment || {};
+    var facts = el("div", "pl-env-rows");
+    if (env.host && env.host.platform) {
+      facts.appendChild(envRow("المضيف المكتشف", env.host.platform));
+    }
+    if (env.policy_label) {
+      facts.appendChild(envRow("السياسة", env.policy_label));
+    }
+    if (env.requirement) {
+      var reqRow = el("div", "pl-env-row");
+      reqRow.appendChild(el("span", "pl-env-k", "المطلوب: "));
+      var reqText = el("span", "pl-env-v", env.requirement);
+      reqText.dir = "auto";
+      reqRow.appendChild(reqText);
+      facts.appendChild(reqRow);
+    }
+    facts.appendChild(envRow("الحالة الحالية",
+      (STATUS_LABELS[state.status] || state.status) +
+      " — التنفيذ متوقف بأمان، لا شيء ضاع"));
+    card.appendChild(facts);
+
     var buttons = el("div", "pl-actions");
+    /* (013.1 §17) الاستئناف قرار المالك الصريح من الواجهة — الوظيفة
+     * المتوقفة (PAUSED/INTERRUPTED) تستأنف بنفس صفها من آخر
+     * checkpoint؛ لا يظهر الزر إلا حيث الاستئناف مشروع فعلًا. */
+    var resumable = state.status === "PAUSED"
+      || (state.job && state.status !== "BLOCKED"
+          && ["INTERRUPTED", "PAUSED"].indexOf(
+              state.job.status) !== -1);
+    if (resumable) {
+      var resumeBtn = el("button", "pl-btn primary",
+                         "▶ استئناف التنفيذ");
+      resumeBtn.addEventListener("click", function () {
+        resumeBtn.disabled = true;
+        resumeBtn.textContent = "…جارٍ الاستئناف";
+        Hub.fetchJSON("/api/projects/" + state.id + "/resume",
+                      { method: "POST" })
+          .then(function (out) {
+            if (out.ok && (out.j || {}).launch) {
+              resumeBtn.textContent = "استُؤنف — نفس الوظيفة تُكمل";
+            } else {
+              resumeBtn.disabled = false;
+              resumeBtn.textContent = "▶ استئناف التنفيذ";
+            }
+          }, function () {
+            resumeBtn.disabled = false;
+            resumeBtn.textContent = "▶ استئناف التنفيذ";
+          });
+      });
+      buttons.appendChild(resumeBtn);
+    }
     var provision = el("button", "pl-btn primary",
       "تجهيز بيئة التنفيذ");
     var recheck = el("button", "pl-btn", "إعادة الفحص");
@@ -568,7 +892,30 @@
       if (approval) container.appendChild(approval.row);
     }
 
-    if (state.status === "BLOCKED" || state.status === "PAUSED") {
+    // (013.1 §18) بطاقة بيئة التنفيذ — دائمًا بعد الاعتماد: جاهزة
+    // أو غير جاهزة بالمتطلب الحرفي، لا صمت ولا وعود
+    if (state.plan) {
+      var envCard = renderEnvironmentCard(state, actions);
+      if (envCard) container.appendChild(envCard.row);
+    }
+
+    // (013.1 §21) بطاقة التنفيذ الحية — أثناء العمل الفعلي فقط؛
+    // وظيفة منقطعة/متوقفة ليست «جارٍ» أبدًا (لا حالة كاذبة §12)
+    var jobHalted = state.job && ["INTERRUPTED", "PAUSED", "STOPPED",
+                                  "FAILED"].indexOf(
+        state.job.status) !== -1;
+    var execRunning = !jobHalted && (
+      ["RUNNING", "REVISING"].indexOf(state.status) !== -1
+      || (state.job && ["RUNNING", "RETRYING"].indexOf(
+          state.job.status) !== -1));
+    if (execRunning && state.plan) {
+      container.appendChild(renderExecutionCard(state, actions).row);
+    }
+
+    // (013.1 §17) بطاقة التوقف/الاستئناف: BLOCKED وPAUSED والوظيفة
+    // المنقطعة (انقطاع عامل/إعادة تشغيل) — كلها تستأنف بنفس الصف
+    if (state.status === "BLOCKED" || state.status === "PAUSED"
+        || jobHalted) {
       container.appendChild(
         renderBlockedCard(state, actions).row);
     }
@@ -610,6 +957,7 @@
     "PROJECT_VERIFIED", "PROJECT_STOPPED", "EXECUTION_BLOCKED",
     "JOB_CREATED", "JOB_QUEUED", "JOB_STARTED", "JOB_WAITING",
     "JOB_PAUSED", "JOB_COMPLETED", "JOB_INTERRUPTED", "JOB_RESUMED",
+    "JOB_RECOVERY_ASSESSED",
   ];
 
   function isSceneChange(kind) {

@@ -871,6 +871,15 @@ class ProjectEngine:
                 on_event=cycle_sink,
                 cycle_id=f"project-{project_id}-step-{step['id']}",
                 stop_controller=stop,
+                sessions=self._sessions,
+                # (013.1 §13) سياسة المشروع تصل أدوات الخطوة حصرًا —
+                # STRICT_ISOLATED بلا بيئة معزولة = POLICY_BLOCK معلن
+                # لا تنفيذ غير معزول بدلًا عنها
+                execution_policy=project.get("execution_policy")
+                or "STRICT_ISOLATED",
+                # (013.1 §19) مفتاح إيقاف على مستوى المشروع — يطابق
+                # request_stop فَيُكرّم الإيقاف داخل الخطوة نفسها
+                stop_cycle_id=f"project-{project_id}",
             )
         except Exception as error:  # noqa: BLE001 — فشل صريح موثق
             service.update_execution(self._sessions, execution_id,
