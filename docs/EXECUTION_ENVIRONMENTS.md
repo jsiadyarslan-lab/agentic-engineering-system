@@ -72,3 +72,36 @@ python execution_worker.py --port 8900 --token سر-مشترك
 المهمة المحجوبة تحفظ حالتها (لقطة استئناف) — بعد أن تصبح البيئة
 READY: افتح المحادثة ← زر الاستئناف (أو `POST /api/cycle/resume`)
 فتكمل من اللقطة داخل البيئة الجديدة.
+
+## الحالة القانونية الواحدة (013.2 §1-§7)
+
+مصدر واحد للحقيقة تشتق منه كل الواجهات وسكربتات القبول — لا بطاقة
+ولا تقرير يخترع حالة:
+
+| الطرف | المسار | الوظيفة |
+|---|---|---|
+| تحكم | `GET /api/execution/runtime-state?policy=X&project_id=Y` | الحالة القانونية: state/coherent/required/actual/missing/evidence |
+| تحكم | `POST /api/environment/provision` `{policy}` | دورة التجهيز الواعية بالسياسة (تسجل كل خطوة في الدائم مع تقدم٪) |
+| تحكم | `GET /api/projects/{id}/state` | اللقطة تحمل `environment.runtime_state` — نفس القراءة حصرًا |
+
+- آلة الحالة المقفلة: DISCOVERING → PROVISIONING → BOOTING →
+  HEALTH_CHECK → READY → RUNNING (+DEGRADED/INTERRUPTED/FAILED/
+  UNAVAILABLE). لا نص «جاهزة» عامًّا خارجها.
+- READY قانونية فقط ببرهان: بيئة (id دائم) + فحوص مسماة ناجحة
+  (boot/execute/write_file/read_file/delete_file/working_directory/
+  architecture/isolation/capture) + توافق السياسة + هوية مسجلة.
+- المطلوب (REQUIRED) والفعلي (ACTUAL) مفصولان حرفيًا — نص المتطلب
+  لا يحمل كلمة «جاهزة» أبدًا (درس 013.1: عنوان «غير جاهزة» مع
+  متطلب يقول «بيئة معزولة جاهزة» = تناقض مرفوض).
+- STRICT_ISOLATED على مضيف بلا مسار عزل (Windows بلا WSL2/Docker
+  وبلا عامل بعيد) = UNAVAILABLE بفجوات حرفية {need/detected/action}
+  — لا READY كاذبة للبيئة المتوافقة ولا فشل ملفق.
+
+## البحث (013.2 — إصلاح «الف مرة»)
+
+- DDG متعدد الاستراتيجيات: lite-get ← lite-post ← html-post بترويسات
+  متصفح كاملة؛ صفحة التحدّ (anomaly) تُصنّف باسمها لا «0 روابط خام».
+- Bing (بلا مفاتيح) مزود رابع مبذور مفعّلًا: تحليل b_algo + فك روابط
+  ck/a (base64url) — الاحتياط الذي يجعل البحث يعمل حين يحجب DDG.
+- الترتيب: ddg → bing → searx (بمثيلك) → api (بمفتاحك)؛ البحث بأول
+  جاهز والفشل يعاد مفصلًا لكل مزود.

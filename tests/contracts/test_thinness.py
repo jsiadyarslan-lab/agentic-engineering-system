@@ -145,14 +145,15 @@ def test_tables_per_family_documented():
     # (الأمر 008/009) عائلة الجاهزية: سجل استدعاءات الأدوات + سجل القدرات
     from readiness.models import READINESS_TABLES  # noqa: PLC0415
     assert len(READINESS_TABLES) == 2
-    # (الأمر 010 §16-§21) عائلة التنفيذ: بيئات التنفيذ + مزودو البحث —
-    # قرار معماري موثق: البيئة والبحث كيانات قابلة للتوفير لا حالات
-    # عابرة، فالقاعدة مصدر حقيقتها الدائم (المسبار والمنفذ مصدر واحد).
+    # (الأمر 010 §16-§21 + 013.2 §1) عائلة التنفيذ: بيئات التنفيذ +
+    # مزودو البحث + سجل الحالة القانونية — قرار معماري موثق: البيئة
+    # والبحث كيانات قابلة للتوفير، والحالة القانونية مصدر الحقيقة
+    # الواحد الذي يقرأه الجميع (013.2).
     from execution.models import EXECUTION_TABLES  # noqa: PLC0415
-    assert len(EXECUTION_TABLES) == 2
+    assert len(EXECUTION_TABLES) == 3
     total = 3 + len(WORKFLOW_TABLES) + len(provider_tables) \
         + len(READINESS_TABLES) + len(EXECUTION_TABLES)
-    assert total == 21
+    assert total == 22
 
 
 def test_cycle_structure_is_the_five_roles_in_order():
