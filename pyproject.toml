@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentic-engineering-system"
-version = "3.5.0"
+version = "3.6.0"
 description = "Agentic Engineering System — نظام هندسة ذاتي بإشراف المالك: مشروع دائم ← خطة رئيسية ← حلقة ذاتية (تنفيذ/اختبار/مراجعة/تدقيق/تحكيم) ← أدلة ← بوابات مالك ← تحقق نهائي؛ مع إدارة مزودين وتكوينات كاملة من الواجهة"
 readme = "README.md"
 requires-python = ">=3.10"

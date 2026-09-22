@@ -64,7 +64,7 @@
     return { row: row, flow: flow };
   }
 
-  /* البطاقة الأم: المشروع + خط الزمن المرحلي الحي (§10) */
+  /* البطاقة الأم: المشروع + تدفق المستخدم الماكرو (013.2 §8) */
   function renderProjectCard(state) {
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-project");
@@ -79,8 +79,17 @@
     objective.dir = "auto";
     card.appendChild(objective);
 
-    // خط الزمن المرحلي (§10+§12): كل مؤشر مرتبط بحالة حقيقية
-    card.appendChild(renderStages(state));
+    // (013.2 §8) تدفق المستخدم الماكرو — لا قائمة خطوات تقنية دائمة
+    card.appendChild(renderMacroFlow(state));
+    var failureLoop = renderFailureLoop(state);
+    if (failureLoop) card.appendChild(failureLoop);
+
+    // (013.2 §8) المسار التقني مطوي — للراغب في العمق فقط
+    card.appendChild(renderTechDetails({
+      technical_pipeline: renderTechnicalPipeline(state),
+      project_status: state.status,
+      plan_version: state.plan ? state.plan.version : null,
+    }));
     wrap.flow.appendChild(card);
     return { row: wrap.row, card: card };
   }
@@ -100,39 +109,103 @@
     return { cls: "pending", icon: "○" };
   }
 
-  function renderStages(state) {
+  /* (013.2 §8-§11) تدفق المستخدم الماكرو — سبع لحظات يفهمها أي
+   * مالك: المحادثة ← الخطة ← الاعتماد ← تجهيز البيئة ← التنفيذ ←
+   * المراجعة ← مكتمل. المسار التقني الداخلي (تحليل/أدلة/تدقيق/
+   * تحقق) يبقى داخل «التفاصيل التقنية» — لا يحتل الواجهة الأساسية.
+   * كل مؤشر مشتق من اللقطة والأحداث الفعلية — لا تخمين أمامي. */
+  function macroFlowStep(state, seen) {
+    var approved = state.plan && state.plan.approved_by_owner;
+    var envReady = !!(seen.PREFLIGHT_PASS || seen.ENVIRONMENT_READY);
+    var envState = state.environment
+      && state.environment.runtime_state
+      && state.environment.runtime_state.state;
+    var executing = state.status === "RUNNING"
+      || state.status === "REVISING";
+    var reviewed = !!(state.audits || []).length;
+    var done = state.status === "VERIFIED";
+    var candidate = state.status === "COMPLETED" || done;
+    var failed = state.status === "BLOCKED" || state.status === "ESCALATED"
+      || (state.job && state.job.status === "FAILED");
+    var preparing = !!(seen.PREFLIGHT_STARTED
+      || (envState && ["DISCOVERING", "PROVISIONING", "BOOTING",
+                       "HEALTH_CHECK"].indexOf(envState) !== -1));
+    return [
+      { label: "المحادثة", done: true },
+      { label: "الخطة", done: !!(state.plan || seen.PLAN_CREATED),
+        active: state.status === "PLANNING" },
+      { label: "الاعتماد", done: !!approved,
+        waiting: state.status === "AWAITING_OWNER_APPROVAL" },
+      { label: "تجهيز البيئة", done: envReady,
+        active: preparing && !envReady && !failed },
+      { label: "التنفيذ", done: !!(seen.PROJECT_COMPLETION_CANDIDATE
+        || candidate), active: executing },
+      { label: "المراجعة", done: reviewed || done,
+        active: candidate && !done },
+      { label: "مكتمل", done: done,
+        waiting: state.status === "COMPLETED" },
+    ];
+  }
+
+  function renderMacroFlow(state) {
+    var seen = {};
+    (state.events || []).forEach(function (e) { seen[e.kind] = true; });
+    var steps = macroFlowStep(state, seen);
+    var wrap = el("div", "pl-flow");
+    steps.forEach(function (step, index) {
+      var item = el("div", "pl-flow-step "
+        + (step.done ? "done" : step.active ? "active"
+          : step.waiting ? "waiting" : "pending"));
+      item.appendChild(el("span", "pl-flow-dot",
+        step.done ? "✓" : step.active ? "●" : ""));
+      item.appendChild(el("span", "pl-flow-label", step.label));
+      wrap.appendChild(item);
+      if (index < steps.length - 1) {
+        wrap.appendChild(el("span", "pl-flow-arrow", "←"));
+      }
+    });
+    return wrap;
+  }
+
+  /* (013.2 §11) حلقة الفشل المرئية — تظهر فقط عند الفشل فعليًا:
+   * فشل ← تشخيص ← تعديل الخطة ← إعادة المحاولة */
+  function renderFailureLoop(state) {
+    var job = state.job || {};
+    var failed = state.status === "BLOCKED"
+      || job.status === "FAILED" || job.status === "INTERRUPTED";
+    if (!failed) return null;
+    var wrap = el("div", "pl-failloop");
+    var steps = ["فشل/انقطاع", "تشخيص السبب", "تعديل", "إعادة المحاولة"];
+    steps.forEach(function (label, index) {
+      var cls = index === 0 ? "hit" : index === 1 ? "active" : "pending";
+      wrap.appendChild(el("span", "pl-fail-step " + cls, label));
+      if (index < steps.length - 1) {
+        wrap.appendChild(el("span", "pl-fail-arrow", "←"));
+      }
+    });
+    return wrap;
+  }
+
+  /* (013.2 §8) المسار التقني الكامل — مطوي داخل التفاصيل، لا مسارًا
+   * أساسيًا: هذا للمهندس الذي يفتح «التفاصيل التقنية» بإرادته */
+  function renderTechnicalPipeline(state) {
     var seen = {};
     (state.events || []).forEach(function (e) { seen[e.kind] = true; });
     var approved = state.plan && state.plan.approved_by_owner;
-    var blocked = state.status === "BLOCKED";
-    var stages = [
+    return [
       { label: "الهدف", done: true },
       { label: "تحليل المتطلبات", done: !!(state.plan || seen.PLAN_CREATED) },
       { label: "الخطة", done: !!(state.plan || seen.PLAN_CREATED) },
-      { label: "اعتماد المالك", done: !!approved,
-        waiting: state.status === "AWAITING_OWNER_APPROVAL" },
+      { label: "اعتماد المالك", done: !!approved },
       { label: "فحص البيئة",
-        done: !!(seen.PREFLIGHT_PASS || seen.ENVIRONMENT_READY),
-        active: !!(seen.PREFLIGHT_STARTED && !seen.PREFLIGHT_PASS
-                   && !blocked) },
-      { label: "التنفيذ", done: !!(seen.PROJECT_COMPLETION_CANDIDATE),
-        active: state.status === "RUNNING" },
-      { label: "جمع الأدلة", done: !!(state.evidence || []).length,
-        active: state.status === "RUNNING" },
+        done: !!(seen.PREFLIGHT_PASS || seen.ENVIRONMENT_READY) },
+      { label: "التنفيذ", done: !!seen.PROJECT_COMPLETION_CANDIDATE },
+      { label: "جمع الأدلة", done: !!(state.evidence || []).length },
       { label: "التدقيق", done: !!(state.audits || []).length },
-      { label: "التحقق", done: state.status === "VERIFIED",
-        waiting: state.status === "COMPLETED" },
-    ];
-    var wrap = el("div", "pl-stages");
-    stages.forEach(function (stage) {
-      var mark = stageMark(stage.done, stage.active);
-      var item = el("div", "pl-stage " + mark.cls +
-                    (stage.waiting && !stage.done ? " waiting" : ""));
-      item.appendChild(el("span", "pl-stage-icon", mark.icon));
-      item.appendChild(el("span", "pl-stage-label", stage.label));
-      wrap.appendChild(item);
-    });
-    return wrap;
+      { label: "التحقق", done: state.status === "VERIFIED" },
+    ].map(function (stage) {
+      return (stage.done ? "✓ " : "○ ") + stage.label;
+    }).join(" · ");
   }
 
   /* بطاقة الخطة (§11): المعلومات الجوهرية + تفاصيل مطوية */
@@ -282,59 +355,76 @@
     return { row: wrap.row, card: card, gate: gate };
   }
 
-  /* بطاقة بيئة التنفيذ (013.1 §18) — عرض بسيط داخل تجربة المحادثة.
+  /* بطاقة بيئة التنفيذ المتماسكة (013.2 §7+§2) — ثلاث حالات لا رابعة.
    *
-   * ثلاث حالات صادقة فقط، لا رابعة:
-   *   ⚙️ جاهزة   — الاسم والعزل والعامل ونبضته
-   *   ⏳ تجهيز — تعرض أثناء التوفير (زر التجهيز يعمل فعليًا)
-   *   ⚠️ غير جاهزة — المضيف المكتشف + المطلوب الحرفي + أزرار علاج
-   * كل حقل من اللقطة الدائمة (state.environment) — لا تخمين محلي.
+   * المصدر حصريًا: state.environment.runtime_state.coherent من
+   * الخادم (الحالة القانونية الواحدة) — الواجهة تقتبس النص ولا
+   * تركّب حالة محلية أبدًا. المطلوب (REQUIRED) والفعلي (ACTUAL)
+   * معروضان مفصولين حرفيًا — مستحيل اليوم قراءة «غير جاهزة» وتحتها
+   * وصف يوحي بالجاهزية.
+   *   ✓ جاهزة — الاسم والعزل والعامل ونبضته وبرهان الفحص
+   *   ⏳ تجهيز — الخطوات والتقدم% من السجل الدائم
+   *   ⚠️ غير متاحة — المضيف + المطلوب + الفجوات الحرفية + الأفعال
    */
   function renderEnvironmentCard(state, actions) {
     var env = state.environment;
     if (!env) return null;
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-env");
-    var selected = env.selected;
+    var runtime = env.runtime_state || {};
+    var coherent = runtime.coherent || {};
+    var kind = coherent.kind
+      || (env.selected && env.selected.status === "READY"
+        ? "READY" : "UNAVAILABLE");
     var job = state.job;
+    var policy = env.policy || "STRICT_ISOLATED";
 
-    if (selected && selected.status === "READY") {
+    if (kind === "READY") {
       card.classList.add("ready");
-      var head = el("div", "pl-title", "⚙ بيئة التنفيذ — جاهزة");
-      card.appendChild(head);
-      var rows = el("div", "pl-env-rows");
-      rows.appendChild(envRow("البيئة", selected.name));
-      rows.appendChild(envRow("العزل",
+      card.appendChild(el("div", "pl-title",
+        coherent.label || "✓ بيئة التنفيذ جاهزة"));
+      var readyRows = el("div", "pl-env-rows");
+      var selected = runtime.selected || env.selected || {};
+      readyRows.appendChild(envRow("البيئة", selected.name || "—"));
+      readyRows.appendChild(envRow("العزل",
         selected.sandboxed ? "صارم (معزولة)" : "بلا عزل (معلن)"));
-      rows.appendChild(envRow("الخلفية", selected.backend || "—"));
+      readyRows.appendChild(envRow("الخلفية", selected.backend || "—"));
+      var checks = (runtime.evidence || {}).checks || [];
+      readyRows.appendChild(envRow("فحص الصحة",
+        checks.length
+          ? "نجحت " + checks.length + " فحوصًا حقيقية"
+          : "تحقق حقيقي ناجح"));
       if (job && job.worker_id) {
-        rows.appendChild(envRow("العامل", job.worker_id +
+        readyRows.appendChild(envRow("العامل", job.worker_id +
           (job.heartbeat_age_s != null
-            ? " — نبضة قبل " + Math.max(0, Math.round(job.heartbeat_age_s)) + "ث"
-            : "")));
+            ? " — نبضة قبل " + Math.max(0, Math.round(job.heartbeat_age_s))
+              + "ث" : "")));
       }
-      card.appendChild(rows);
-    } else {
-      card.classList.add("notready");
-      var warn = el("div", "pl-title",
-        "⚠ بيئة التنفيذ غير جاهزة");
-      card.appendChild(warn);
-      var reason = el("div", "pl-note");
-      reason.dir = "auto";
-      reason.textContent = env.requirement ||
-        "لا بيئة تنفيذ جاهزة توافق سياسة المشروع.";
-      card.appendChild(reason);
-      var detected = el("div", "pl-env-detected");
-      detected.appendChild(el("span", "pl-env-k", "المضيف المكتشف: "));
-      detected.appendChild(el("span", "pl-env-v",
-        (env.host && env.host.platform) || "—"));
-      card.appendChild(detected);
-      var policyLine = el("div", "pl-env-detected");
-      policyLine.appendChild(el("span", "pl-env-k", "السياسة: "));
-      policyLine.appendChild(el("span", "pl-env-v",
-        env.policy_label || env.policy || "—"));
-      card.appendChild(policyLine);
-
+      card.appendChild(readyRows);
+      if (coherent.detail) {
+        var readyNote = el("div", "pl-note");
+        readyNote.dir = "auto";
+        readyNote.textContent = coherent.detail;
+        card.appendChild(readyNote);
+      }
+    } else if (kind === "PREPARING") {
+      card.classList.add("preparing");
+      card.appendChild(el("div", "pl-title",
+        coherent.label || "⏳ تجهيز بيئة التنفيذ"));
+      var progressValue = coherent.progress || runtime.progress || 0;
+      var bar = el("div", "pl-env-progress");
+      var fill = el("div", "pl-env-progress-fill");
+      fill.style.width = Math.max(4, progressValue) + "%";
+      bar.appendChild(fill);
+      card.appendChild(bar);
+      card.appendChild(el("div", "pl-env-progress-pct",
+        progressValue > 0 ? "التقدم: " + progressValue + "٪" : ""));
+      var prepNote = el("div", "pl-note");
+      prepNote.dir = "auto";
+      prepNote.textContent = coherent.detail
+        || "جاري إنشاء بيئة التنفيذ…";
+      card.appendChild(prepNote);
+      card.appendChild(renderRequiredVsActual(env));
       var buttons = el("div", "pl-actions");
       var provision = el("button", "pl-btn primary", "تجهيز البيئة");
       var recheck = el("button", "pl-btn", "إعادة الفحص");
@@ -342,77 +432,153 @@
       card.appendChild(buttons);
       var progress = el("div", "pl-feedback"); progress.hidden = true;
       card.appendChild(progress);
-
-      provision.addEventListener("click", function () {
-        provision.disabled = true;
-        progress.hidden = false;
-        progress.className = "pl-feedback loading";
-        progress.textContent = "⏳ جاري تجهيز بيئة التنفيذ…";
-        Hub.fetchJSON("/api/environment/provision", { method: "POST" })
-          .then(function (out) {
-            provision.disabled = false;
-            if (!out.ok) {
-              progress.className = "pl-feedback err";
-              progress.textContent = "تعذر التجهيز: " +
-                ((out.j && out.j.reason) || "");
-              return;
-            }
-            var result = out.j || {};
-            if (result.state === "READY") {
-              progress.className = "pl-feedback ok";
-              progress.textContent =
-                "جاهزة — أعد الفحص لاستئناف التنفيذ بنفس الوظيفة";
-            } else {
-              progress.className = "pl-feedback err";
-              progress.textContent = (result.reason || "تعذر التجهيز") +
-                (result.requirement ? " — المطلوب: " + result.requirement : "");
-            }
-          }, function () {
-            provision.disabled = false;
-            progress.className = "pl-feedback err";
-            progress.textContent = "تعذر الوصول لخدمة التجهيز — أعد المحاولة";
-          });
-      });
-      recheck.addEventListener("click", function () {
-        recheck.disabled = true;
-        progress.hidden = false;
-        progress.className = "pl-feedback loading";
-        progress.textContent = "جاري إعادة الفحص…";
-        Hub.fetchJSON(actions.recheckUrl, { method: "POST" })
-          .then(function (out) {
-            recheck.disabled = false;
-            if (!out.ok) {
-              progress.className = "pl-feedback err";
-              progress.textContent = "تعذر الفحص: " +
-                ((out.j && out.j.detail) || "");
-              return;
-            }
-            var j = out.j || {};
-            if (j.preflight && j.preflight.verdict === "PASS") {
-              progress.className = "pl-feedback ok";
-              progress.textContent =
-                "البيئة جاهزة — استؤنف التنفيذ تلقائيًا بنفس الوظيفة";
-            } else {
-              progress.className = "pl-feedback err";
-              progress.textContent = "ما زالت غير جاهزة — " +
-                (env.requirement || "راجع المتطلبات");
-            }
-          }, function () {
-            recheck.disabled = false;
-            progress.className = "pl-feedback err";
-            progress.textContent = "تعذر الوصول — أعد المحاولة";
-          });
-      });
+      wireProvisionButtons(card, provision, recheck, progress,
+        state, actions, policy);
+    } else {
+      card.classList.add("notready");
+      card.appendChild(el("div", "pl-title",
+        coherent.label || "⚠️ بيئة التنفيذ غير متاحة"));
+      var unavailableNote = el("div", "pl-note");
+      unavailableNote.dir = "auto";
+      unavailableNote.textContent = coherent.detail || env.requirement
+        || "لم يُعثر على بيئة توافق السياسة على هذا المضيف.";
+      card.appendChild(unavailableNote);
+      card.appendChild(renderRequiredVsActual(env));
+      var missingList = (runtime.missing || [])
+        .concat(coherent.missing || []);
+      if (missingList.length) {
+        var gaps = el("div", "pl-env-missing");
+        missingList.forEach(function (gap) {
+          var gapRow = el("div", "pl-env-gap");
+          gapRow.appendChild(el("div", "pl-env-gap-need",
+            "• " + (gap.need || "متطلب")));
+          if (gap.detected) {
+            gapRow.appendChild(el("div", "pl-env-gap-detected",
+              "المكتشف: " + gap.detected));
+          }
+          if (gap.action) {
+            gapRow.appendChild(el("div", "pl-env-gap-action",
+              "الإجراء: " + gap.action));
+          }
+          gaps.appendChild(gapRow);
+        });
+        card.appendChild(gaps);
+      }
+      var unButtons = el("div", "pl-actions");
+      var unProvision = el("button", "pl-btn primary", "تجهيز البيئة");
+      var unRecheck = el("button", "pl-btn", "إعادة الفحص");
+      unButtons.appendChild(unProvision); unButtons.appendChild(unRecheck);
+      card.appendChild(unButtons);
+      var unProgress = el("div", "pl-feedback"); unProgress.hidden = true;
+      card.appendChild(unProgress);
+      wireProvisionButtons(card, unProvision, unRecheck, unProgress,
+        state, actions, policy);
     }
+
     card.appendChild(renderTechDetails({
       policy: env.policy,
+      runtime_state: runtime.state,
       satisfies_policy: env.satisfies_policy,
       host: env.host,
       selected: env.selected,
+      environment_id: runtime.environment_id,
+      worker_id: runtime.worker_id,
       requirement: env.requirement,
     }));
     wrap.flow.appendChild(card);
     return { row: wrap.row, card: card };
+  }
+
+  /* (013.2 §2) المطلوب مقابل الفعلي — سطران مفصولان حرفيًا لا خلط */
+  function renderRequiredVsActual(env) {
+    var runtime = env.runtime_state || {};
+    var required = runtime.required || {};
+    var actual = runtime.actual || {};
+    var host = (actual.host && actual.host.platform)
+      || (env.host && env.host.platform) || "—";
+    var box = el("div", "pl-env-reqact");
+    var reqRow = el("div", "pl-env-detected");
+    reqRow.appendChild(el("span", "pl-env-k", "المطلوب: "));
+    var reqText = el("span", "pl-env-v",
+      (required.os || "—") + " · "
+      + (required.isolation || ""));
+    reqText.dir = "auto";
+    reqRow.appendChild(reqText);
+    box.appendChild(reqRow);
+    var actRow = el("div", "pl-env-detected");
+    actRow.appendChild(el("span", "pl-env-k", "المضيف الحالي: "));
+    actRow.appendChild(el("span", "pl-env-v", host));
+    box.appendChild(actRow);
+    return box;
+  }
+
+  /* أزرار التجهيز/الفحص — نفس السلوك الحي، والسياسة تُمرَّر (013.2 §5) */
+  function wireProvisionButtons(card, provision, recheck, progress,
+                                state, actions, policy) {
+    provision.addEventListener("click", function () {
+      provision.disabled = true;
+      progress.hidden = false;
+      progress.className = "pl-feedback loading";
+      progress.textContent = "⏳ جاري تجهيز بيئة التنفيذ…";
+      Hub.fetchJSON("/api/environment/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policy: policy }),
+      }).then(function (out) {
+        provision.disabled = false;
+        if (!out.ok) {
+          progress.className = "pl-feedback err";
+          progress.textContent = "تعذر التجهيز: "
+            + ((out.j && out.j.reason) || "");
+          return;
+        }
+        var result = out.j || {};
+        if (result.state === "READY") {
+          progress.className = "pl-feedback ok";
+          progress.textContent = "جاهزة — أعد الفحص لاستئناف التنفيذ";
+        } else {
+          progress.className = "pl-feedback err";
+          progress.textContent = (result.reason || "تعذر التجهيز")
+            + (result.requirement
+              ? " — " + result.requirement : "");
+        }
+      }, function () {
+        provision.disabled = false;
+        progress.className = "pl-feedback err";
+        progress.textContent = "تعذر الوصول لخدمة التجهيز — أعد المحاولة";
+      });
+    });
+    recheck.addEventListener("click", function () {
+      recheck.disabled = true;
+      progress.hidden = false;
+      progress.className = "pl-feedback loading";
+      progress.textContent = "جاري إعادة الفحص…";
+      Hub.fetchJSON(actions.recheckUrl, { method: "POST" })
+        .then(function (out) {
+          recheck.disabled = false;
+          if (!out.ok) {
+            progress.className = "pl-feedback err";
+            progress.textContent = "تعذر الفحص: "
+              + ((out.j && out.j.detail) || "");
+            return;
+          }
+          var j = out.j || {};
+          if (j.preflight && j.preflight.verdict === "PASS") {
+            progress.className = "pl-feedback ok";
+            progress.textContent =
+              "البيئة جاهزة — استؤنف التنفيذ تلقائيًا بنفس الوظيفة";
+          } else {
+            progress.className = "pl-feedback err";
+            progress.textContent = "ما زالت غير جاهزة — "
+              + ((state.environment || {}).requirement
+                || "راجع المتطلبات");
+          }
+        }, function () {
+          recheck.disabled = false;
+          progress.className = "pl-feedback err";
+          progress.textContent = "تعذر الوصول — أعد المحاولة";
+        });
+    });
   }
 
   function envRow(key, value) {
@@ -422,10 +588,10 @@
     return row;
   }
 
-  /* بطاقة التنفيذ الحية (013.1 §21) — تتحدث تلقائيًا عبر المصالحات.
-   *
-   * ● التنفيذ جارٍ: الهدف/الحالة/البيئة/العامل/المرحلة/آخر نشاط
-   * + [التفاصيل] [إيقاف التنفيذ] — الإيقاف صريح وحده يوقف (§19). */
+  /* بطاقة التنفيذ الحية (013.1 §21 + 013.2 §12) — تتحدث تلقائيًا
+   * عبر المصالحات. شريط تقدم المراحل + ملخصات تنفيذ آمنة فقط
+   * (لا سلسلة تفكير خام §10): المرحلة/آخر نشاط/البيئة/العامل
+   * + [التفاصيل] [إيقاف التنفيذ] — الإيقاف الصريح وحده يوقف (§19). */
   function renderExecutionCard(state, actions) {
     var job = state.job;
     var wrap = msgRow("assistant");
@@ -436,6 +602,22 @@
     head.appendChild(dot);
     head.appendChild(el("span", null, " التنفيذ جارٍ"));
     card.appendChild(head);
+
+    var phases = state.phases || [];
+    var doneCount = 0;
+    phases.forEach(function (p) {
+      if (p.status === "COMPLETED" || p.status === "DONE") doneCount++;
+    });
+    if (phases.length) {
+      var pct = Math.round((doneCount / phases.length) * 100);
+      card.appendChild(el("div", "pl-env-progress-label",
+        "التقدم: " + doneCount + "/" + phases.length + " مراحل (" + pct + "٪)"));
+      var bar = el("div", "pl-env-progress");
+      var fill = el("div", "pl-env-progress-fill");
+      fill.style.width = Math.max(4, pct) + "%";
+      bar.appendChild(fill);
+      card.appendChild(bar);
+    }
 
     var rows = el("div", "pl-env-rows");
     var objective = el("div", "pl-env-row");
@@ -450,7 +632,8 @@
       STATUS_LABELS[state.status] || state.status));
 
     var env = state.environment;
-    var envSel = env && env.selected;
+    var envSel = (env && env.runtime_state
+      && env.runtime_state.selected) || (env && env.selected);
     rows.appendChild(envRow("البيئة",
       envSel ? (envSel.name + " — " +
         (envSel.sandboxed ? "عزل صارم" : "بلا عزل معلن"))
@@ -462,9 +645,9 @@
         (job.heartbeat_age_s != null
           ? " — نبضة قبل " + Math.max(0, Math.round(job.heartbeat_age_s)) + "ث"
           : "")));
-      if (job.current_phase_id && (state.phases || []).length) {
+      if (job.current_phase_id && phases.length) {
         var phase = null;
-        (state.phases || []).forEach(function (p) {
+        phases.forEach(function (p) {
           if (p.id === job.current_phase_id) phase = p;
         });
         if (phase) rows.appendChild(envRow("المرحلة", phase.title || "—"));
@@ -554,6 +737,7 @@
     /* (013.1 §22+§17) السبب من مصدره الفعلي: انقطاع عامل/إيقاف
      * مالك/بوابة توفير — لا نص عامًا يخفي الحقيقة */
     var job = state.job || {};
+    var env = state.environment || {};
     if (job.status === "INTERRUPTED") {
       reason.textContent = "انقطع العامل (فقدان نبضة أو إعادة تشغيل) "
         + "— لا شيء ضاع؛ الاستئناف من آخر checkpoint بنفس الوظيفة."
@@ -563,14 +747,19 @@
       reason.textContent = "التنفيذ متوقف مؤقتًا بأمان — الاستئناف من "
         + "آخر checkpoint بقرارك.";
     } else {
-      reason.textContent = gate.reason ||
-        "بيئة التنفيذ غير جاهزة.";
+      /* (013.2 §7) السبب من الحالة القانونية المتماسكة — لا نص
+       * عام يحمل كلمة «جاهزة» تحت عنوان توقف */
+      var runtime = env.runtime_state || {};
+      var coherent = runtime.coherent || {};
+      reason.textContent = gate.reason
+        || coherent.detail
+        || coherent.label
+        || "التنفيذ متوقف — راجع بطاقة البيئة أعلاه للسبب والعلاج.";
     }
     card.appendChild(reason);
 
     /* (013.1 §22) الفشل منظم: ما فشل/لماذا/ما اكتُشف/ما يمكن فعله/
      * الحالة الحالية — كلها من اللقطة الدائمة لا من نص عام */
-    var env = state.environment || {};
     var facts = el("div", "pl-env-rows");
     if (env.host && env.host.platform) {
       facts.appendChild(envRow("المضيف المكتشف", env.host.platform));
@@ -633,7 +822,14 @@
     function runProvision() {
       provision.disabled = true;
       progress.hidden = false; progress.textContent = "جاري تجهيز البيئة…";
-      Hub.fetchJSON("/api/environment/provision", { method: "POST" })
+      Hub.fetchJSON("/api/environment/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          policy: (state.environment || {}).policy
+            || "STRICT_ISOLATED",
+        }),
+      })
         .then(function (out) {
           if (!out.ok) {
             progress.textContent = "تعذر تجهيز البيئة: " +
@@ -958,6 +1154,10 @@
     "JOB_CREATED", "JOB_QUEUED", "JOB_STARTED", "JOB_WAITING",
     "JOB_PAUSED", "JOB_COMPLETED", "JOB_INTERRUPTED", "JOB_RESUMED",
     "JOB_RECOVERY_ASSESSED",
+    // (013.2 §12) أحداث التجهيز والنبضة تحدّث بطاقة البيئة حيًّا
+    "PROVISIONING_STARTED", "PROVISIONING_COMPLETED",
+    "PROVISIONING_FAILED", "PROVISIONING_UNAVAILABLE",
+    "ENVIRONMENT_HEARTBEAT", "WORKER_READY",
   ];
 
   function isSceneChange(kind) {
