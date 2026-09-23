@@ -82,6 +82,12 @@ def classify_failure(error: BaseException) -> tuple[str, str]:
     text = str(error)
     name = type(error).__name__
     if isinstance(error, ProviderCallError):
+        # (013.5 §B) تصنيف صريح من طبقة النقل يسبق الخريطة العامة:
+        # REASONING_ONLY_RESPONSE مثلاً ليس «خادم معطل» — المزود رد
+        # فعلًا لكن سقف المخرجات استُنفد داخل الاستدلال.
+        explicit = getattr(error, "error_class", "") or ""
+        if explicit:
+            return explicit, text
         if getattr(error, "is_timeout", False):
             return "MODEL_TIMEOUT", text
         lowered = text.lower()

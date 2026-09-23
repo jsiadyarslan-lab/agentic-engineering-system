@@ -30,6 +30,7 @@ import re
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -61,6 +62,7 @@ logger = logging.getLogger("agent-hub-v2.api")
 UI_DIR = Path(__file__).resolve().parents[1] / "ui"
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
+
 
 
 @app.middleware("http")
@@ -846,7 +848,17 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
     _chat_active[message_id] = {"done": done_event, "stream": stream_key}
 
     def put(event: dict) -> None:
-        """النشر الموحد — تسلسل رتيب عبر الطلبات + دائمة + ناقل حي."""
+        """النشر الموحد — تسلسل رتيب عبر الطلبات + دائمة + ناقل حي.
+
+        (013.5 §E) **نطاق صريح إلزامي**: كل حدث محادثة يحمل
+        ``scope`` كاملًا (conversation_id/message_id/project_id/run_id/
+        job_id) قبل التسجيل الدائم وقبل البث. هذا هو الجذر الجذري
+        لتلوث المحادثة: كانت الأحداث تُبتلع عالميًا بلا نطاق، فأي
+        إعادة بث تُعيد رسم محتوى تاريخي داخل المحادثة المفتوحة
+        (رؤية المالك: «Confirmation of Completion / A15» ردًّا على
+        سؤال عن نماذج كلاود). المنع هنا في التوجيه لا في الفلترة
+        البصرية بعد الرسم.
+        """
         chat_seq["n"] += 1
         envelope = normalize_event({
             **event,
@@ -854,6 +866,15 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
             "cycle_id": stream_key,
             "role": event.get("role", "chat"),
         }, stream=stream_key)
+        envelope["sequence"] = envelope["seq"]
+        envelope["scope"] = {
+            "stream": stream_key,
+            "conversation_id": conversation_id,
+            "message_id": event.get("message_id") or message_id,
+            "project_id": None,
+            "run_id": None,
+            "job_id": None,
+        }
         _persist_event(envelope)
         BUS.publish(envelope)
 
@@ -884,6 +905,20 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 },
             )
             if not router.has_live_provider(provider):
+                # (013.5 §G) لا نُعلن فقط — نُدوّن. رسالة فاشلة في
+                # القاعدة أصدق من فراغ يبدو كأن السؤال لم يُطرح.
+                try:
+                    convo.append_message(
+                        _sessions, conversation_id, role="assistant",
+                        content=(
+                            f"⚠️ CONFIGURATION_REQUIRED — المزود "
+                            f"'{provider}' غير متاح للربط الحي. "
+                            f"المتاح: {router.live_providers()}."
+                        ),
+                        state_badge="FAILED",
+                    )
+                except Exception:  # noqa: BLE001
+                    logger.warning("تعذّر تدوين CONFIGURATION_REQUIRED")
                 put({
                     "kind": "chat.error",
                     "code": "CONFIGURATION_REQUIRED",
@@ -896,6 +931,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                         "conversation_id": conversation_id,
                         "provider": provider, "model": model,
                         "message_id": message_id,
+                        "persisted": True,
                     },
                 })
                 return
@@ -915,6 +951,10 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
             web_decision = chat_research.decide_web_mode(
                 body.message, setting=body.web
             )
+            # (013.5 §L) الاستعلام المُقطَّر: إرسال الجملة الاستفهامية
+            # كما هي كان يجعل المحرك يبحث عن «ما» وحدها ويعيد صفحات
+            # إعراب لسؤال عن أحدث نماذج Claude.
+            search_query = chat_research.build_search_query(body.message)
             web_used: dict = {"search": False, "sources": [],
                               "fetched": 0}
             sources_context = ""
@@ -926,15 +966,17 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     "text": "🌐 بحث في الويب…",
                     "details": {
                         "conversation_id": conversation_id,
-                        "query": body.message[:200],
+                        "query": search_query[:200],
+                        "original": body.message[:200],
                         "fetch_urls": web_decision["fetch_urls"],
                         "reason": web_decision["reason"],
+                        "markers": web_decision.get("markers", []),
                     },
                 })
                 sources: list[dict] = []
                 if web_decision["search"]:
                     outcome = chat_research.search_for_chat(
-                        _sessions, body.message[:400]
+                        _sessions, search_query
                     )
                     if outcome.get("ok"):
                         sources = outcome.get("results", [])
@@ -958,6 +1000,8 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                             },
                         })
                     else:
+                        web_used["unavailable_reason"] = outcome.get(
+                            "error", "")
                         put({
                             "kind": "research.unavailable",
                             "message_id": message_id,
@@ -966,6 +1010,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                                     + outcome.get("error", "")[:120],
                             "details": {
                                 "error": outcome.get("error", ""),
+                                "query": search_query[:200],
                                 "providers_tried": outcome.get(
                                     "providers_tried", []),
                             },
@@ -1000,6 +1045,17 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     history = history + [
                         ChatMessage(role="system", content=sources_context)
                     ]
+                elif web_decision["search"] and not sources:
+                    # (013.5 §L/§30) الويب مطلوب لكنه لم ينجح: النموذج
+                    # يُبلَّغ صراحةً بذلك — بلا هذا الإعلان يجيب من
+                    # ذاكرته بينما المستخدم يظن أن بحثًا حيًّا جرى،
+                    # وهو الادّعاء الممنوع حرفيًا.
+                    history = history + [ChatMessage(
+                        role="system",
+                        content=chat_research.denied_context(
+                            web_used.get("unavailable_reason", "")
+                        ),
+                    )]
 
             put({
                 "kind": "message_started",
@@ -1029,10 +1085,18 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 })
 
             streamed = False
+            # (013.5 §G) نصّ متراكم — إن فشل المزود بعد بث جزئي، الفشل
+            # يُدوَّن **مع** ما وصل، فلا تختفي إجابة عند التحديث.
+            partial = {"text": ""}
+
+            def on_delta_tracked(delta: str) -> None:
+                partial["text"] += delta
+                on_delta(delta)
+
             try:
                 outcome = router.chat_live_stream(
                     history, provider_id=provider, model=model,
-                    on_delta=on_delta,
+                    on_delta=on_delta_tracked,
                 )
                 streamed = bool(outcome.get("streamed"))
             except (ProviderCallError, AttributeError) as stream_error:
@@ -1051,10 +1115,11 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     history, provider_id=provider, model=model
                 )
                 for piece in _chunk_text(outcome["text"]):
-                    on_delta(piece)
+                    on_delta_tracked(piece)
             convo.append_message(
                 _sessions, conversation_id,
                 role="assistant", content=outcome["text"],
+                state_badge="COMPLETED",
             )
             # (013.4 §26) مؤشر «🌐 استُخدم الويب» قابل للتوسيع —
             # المصادر كاملة في الحدث لعرضها أسفل الرسالة.
@@ -1095,15 +1160,42 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 },
             })
         except Exception as error:  # noqa: BLE001 — بث الخطأ لا موته
+            error_class = ""
+            try:
+                from router.call_tracker import classify_failure
+
+                error_class, _detail = classify_failure(error)
+            except Exception:  # noqa: BLE001 — التصنيف تحسين لا شرط
+                error_class = "PROVIDER_ERROR"
+            # (013.5 §G) الفشل يُدوَّن دائمًا: النص الجزئي إن وُجد،
+            # وإلا سبب الفشل المصنّف. بهذا لا «تختفي إجابة» عند
+            # التحديث — ما يراه المالك محفوظ في القاعدة كما هو.
+            stored = partial["text"].strip()
+            if stored:
+                badge = "PARTIAL"
+            else:
+                badge = "FAILED"
+                stored = (f"⚠️ فشل الاستدعاء الحي [{error_class}] — "
+                          f"{str(error)[:400]}")
+            try:
+                convo.append_message(
+                    _sessions, conversation_id, role="assistant",
+                    content=stored, state_badge=badge,
+                )
+            except Exception:  # noqa: BLE001 — التدوين لا يمنع الإعلان
+                logger.warning("تعذّر تدوين فشل المحادثة %s", message_id)
             put({
                 "kind": "chat.error",
-                "code": "PROVIDER_CALL_FAILED",
+                "code": error_class or "PROVIDER_CALL_FAILED",
                 "text": f"تعذر الاستدعاء الحي: {error}",
                 "details": {
                     "conversation_id": conversation_id,
                     "message_id": message_id,
                     "provider": provider, "model": model,
                     "error": str(error),
+                    "error_class": error_class,
+                    "partial_chars": len(partial["text"]),
+                    "persisted": True,
                 },
             })
         finally:
@@ -1132,12 +1224,31 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
 
 @app.get("/api/chat/active")
 def chat_active(conversation_id: int) -> dict:
-    """توليد محادثة جارية (§34) — تعيد الواجهة تعليق البث بعد refresh."""
+    """توليد محادثة جارية (§34 + 013.5 §E/§G) — تعيد الواجهة تعليق البث.
+
+    (013.5 §E) تعيد **موضع الاستئناف** لا الصفر: ``last_seq`` هو آخر
+    تسلسل مسجَّل في هذا التيار، و``message_id`` هو الرسالة الجارية
+    حصرًا. العميل يستأنف من ``last_seq`` فيستقبل الجديد فقط — وهذا
+    بالضبط ما يمنع إعادة بث تاريخ المحادثة داخل الواجهة المفتوحة
+    (جذر تلوّث «Confirmation of Completion / A15»).
+    """
+    from api.streaming import next_seq_base
+
     stream_key = f"chat-{conversation_id}"
     for message_id, run in list(_chat_active.items()):
         if run["stream"] == stream_key and not run["done"].is_set():
-            return {"running": True, "message_id": message_id}
-    return {"running": False, "message_id": None}
+            return {
+                "running": True,
+                "message_id": message_id,
+                "stream": stream_key,
+                "last_seq": next_seq_base(_sessions, stream_key),
+            }
+    return {
+        "running": False,
+        "message_id": None,
+        "stream": stream_key,
+        "last_seq": next_seq_base(_sessions, stream_key),
+    }
 
 
 @app.get("/api/chat/events/{conversation_id}")
@@ -2004,6 +2115,20 @@ _RECOVERY_DONE = False
 
 @app.on_event("startup")
 def _startup_recovery() -> None:
+    """إقلاع صادق: تقييم المشاريع غير النهائية + استرداد حالة التخطيط.
+
+    (013.5 §C.4) الجزء الثاني هو الجذر الحي لعطل «PLANNING 17992ث»:
+    كلب سير العمل كان يُشغَّل **فقط** داخل ``runner.launch`` — أي عند
+    إطلاق حلقة تنفيذ. مشروع مات مولّده أثناء التخطيط أثناء إغلاق
+    الخادم لم يكن يخضع لأي فحص بعد إعادة التشغيل، فيبقى PLANNING
+    ساعات. الآن عند كل إقلاع:
+
+    1. ``recover_at_startup`` يمسح الجلسات غير السليمة **فورًا**
+       (لا انتظار أول دورة كلب بعد 15ث).
+    2. الحارس ``enforce_invariant`` يضمن ألّا يبقى مشروع PLANNING
+       بلا جلسة توليد صالحة.
+    3. الكلب الدوري يبدأ من هنا لا من أول إطلاق حلقة.
+    """
     global _RECOVERY_DONE
     if _RECOVERY_DONE:
         return
@@ -2021,6 +2146,23 @@ def _startup_recovery() -> None:
             )
     except Exception as error:  # noqa: BLE001 — الاسترداد لا يمنع الإقلاع
         logger.warning("تعذر استرداد الإقلاع: %s", error)
+    try:
+        from workflow import watchdog as workflow_watchdog
+
+        recovery = workflow_watchdog.start_at_boot(_sessions)
+        if recovery.get("healthy"):
+            logger.info(
+                "إقلاع 013.5: لا جلسات تخطيط يتيمة — الحالة نظيفة"
+            )
+        else:
+            logger.warning(
+                "إقلاع 013.5: استُردت حالة غير سليمة — جلسات %s | "
+                "مشاريع %s",
+                recovery.get("swept_verdicts"),
+                recovery.get("healed_projects"),
+            )
+    except Exception as error:  # noqa: BLE001 — الإقلاع لا يسقط
+        logger.warning("تعذر استرداد حالة التخطيط عند الإقلاع: %s", error)
 
 TEXTSTATS_APPROVAL_TIMEOUT_S = 600.0
 _textstats_state: dict = {"active": None, "lock": threading.Lock()}

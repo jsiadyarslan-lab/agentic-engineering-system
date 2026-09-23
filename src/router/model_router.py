@@ -23,9 +23,7 @@ failover.logged (الحزمة) + router.call.logged الختامي (الموجّ
 from __future__ import annotations
 
 import json
-import socket
 import time
-import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from enum import Enum
@@ -41,6 +39,7 @@ from router.live_providers import (  # noqa: F401 — إعادة تصدير契�
     _resolve_provider_credentials,
     resolve_live_providers,
 )
+from router.provider_response import content_from_body, read_json_response
 
 
 class Provider(str, Enum):
@@ -447,12 +446,16 @@ class ModelRouter:
         provider_id: Provider | str | None = None,
         model: str | None = None,
         on_delta: Callable[[str], None] | None = None,
+        on_reasoning: Callable[[int], None] | None = None,
     ) -> dict:
         """استدعاء حي متدفق (الأمر 008 §3) — قطع فعلية لحظة وصولها.
 
         نفس صراحة chat_live: لا سقوط إلى mock؛ فشل البث المتدفق
         (مزود لا يدعم stream) يُعاد خطأً مصنَّفًا ليقرر المستدعي
         التراجع الصريح إلى المسار الكامل — لا نجاح وهمي.
+
+        (013.5 §D) ``on_reasoning``: نشاط استدلال حقيقي من نموذج
+        استدلالي — يُبلَّغ عنه كحياة مزود، ولا يُمرَّر كنص إجابة.
         """
         from router.streaming import stream_completion  # noqa: PLC0415
 
@@ -494,7 +497,8 @@ class ModelRouter:
         started = time.monotonic()
         try:
             text = stream_completion(
-                dict(specs[pid]), chosen_model, messages, on_delta=on_delta
+                dict(specs[pid]), chosen_model, messages,
+                on_delta=on_delta, on_reasoning=on_reasoning,
             )
         except ProviderCallError:
             raise
@@ -549,49 +553,11 @@ def live_transport(provider_cfg: dict) -> Callable[[str, list[ChatMessage]], str
             headers=headers,
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                body = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as error:
-            detail = error.read()[:300].decode("utf-8", "replace")
-            code = int(error.code)
-            if code == 429:
-                retry_after = error.headers.get("Retry-After") if error.headers else None
-                raise ProviderCallError(
-                    f"429 اختناق من {base_url}: {detail}",
-                    code=code,
-                    is_throttle=True,
-                    retry_after=int(retry_after) if retry_after and retry_after.isdigit() else None,
-                ) from error
-            if code >= 500:
-                raise ProviderCallError(
-                    f"{code} خطأ خادم من {base_url}: {detail}",
-                    code=code,
-                    is_server_error=True,
-                ) from error
-            raise ProviderCallError(
-                f"{code} خطأ عميل من {base_url} (مفتاح/عنوان؟): {detail}",
-                code=code,
-            ) from error
-        except (urllib.error.URLError, TimeoutError, socket.timeout) as error:
-            raise ProviderCallError(
-                f"مهلة/اتصال فشل مع {base_url}: {error}",
-                is_timeout=True,
-            ) from error
-        try:
-            content = body["choices"][0]["message"]["content"]
-        except (KeyError, IndexError, TypeError) as error:
-            raise ProviderCallError(
-                f"استجابة بلا choices/content من {base_url}: "
-                f"{json.dumps(body, ensure_ascii=False)[:200]}",
-                is_server_error=True,
-            ) from error
-        if not isinstance(content, str) or not content.strip():
-            raise ProviderCallError(
-                f"رد فارغ من {base_url} — فشل صريح لا تكرار صامت",
-                is_server_error=True,
-            )
-        return content
+        # (013.5 §B) تفسير الرد نُقل إلى وحدة مستقلة
+        # (router/provider_response.py) حفاظًا على سقف النحافة المعلن،
+        # ولأن تصنيف «رد استدلالي فقط» مقابل «رد فارغ» منطق قائم بذاته.
+        body = read_json_response(request, timeout, base_url)
+        return content_from_body(body, base_url)
 
     return transport
 

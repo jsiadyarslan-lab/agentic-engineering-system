@@ -1,17 +1,23 @@
-"""كلب سير العمل الدائم (013.4 §7) — لا حلقة معلقة بلا وسم صادق.
+"""كلب سير العمل الدائم (013.4 §7 + 013.5 §C/§Q) — لا حلقة معلقة بلا وسم صادق.
 
 يكتشف ويوسم فقط — لا يزوّر اكتمالًا أبدًا ولا ينفّذ عملًا:
 
-1. **جلسات تخطيط ميتة**: GENERATING بإيجار منتهٍ (بلا نبضة) =
-   العملية المولِّدة ماتت ← INTERRUPTED + المشروع DRAFT بخطأ
-   صريح + حدث — لا PLANNING أبديًا (جذر عطل §0).
-2. **وظائف متقادمة**: كشف 013.1 (detect_interrupted_jobs) كما هو —
+1. **جلسات تخطيط غير سليمة**: GENERATING تجاوزت سقف زمن الجدار
+   (MODEL_TIMEOUT)، أو انتهى إيجارها المحسوب من **النشاط الحقيقي**
+   (INTERRUPTED إن ماتت العملية، MODEL_TIMEOUT إن كان الخيط حيًّا
+   لكن المزود صامت) — لا PLANNING أبديًا (جذر عطل §0 و013.5 §C).
+2. **حارس الثبات** (013.5 §C): كل مشروع في PLANNING بلا جلسة توليد
+   صالحة يُعاد إلى DRAFT بسبب صريح — الشرط الصريح لفشل قبول 013.5.
+3. **وظائف متقادمة**: كشف 013.1 (detect_interrupted_jobs) كما هو —
    الوظيفة RUNNING بنبضة متقادمة بلا حلقة حية = INTERRUPTED.
 
 التشخيص (DIAGNOSE) يكتب حدث WORKFLOW_DIAGNOSED بتصنيف وقرار:
 RETRY (الجلسة القابلة للإعادة أُعيدت آليًا بالفعل) أو
 OWNER_ACTION_REQUIRED (قرار المالك الصريح). «استعادة أو حجب
 بأمانة» — لا مسار ثالث يخترع نجاحًا.
+
+(013.5 §C.4) **يُشغَّل عند إقلاع التطبيق** لا عند إطلاق حلقة تنفيذ
+فقط: هذا بالضبط ما جعل مشروعًا مات مولّده يبقى PLANNING 17992ث.
 """
 
 from __future__ import annotations
@@ -38,23 +44,41 @@ def diagnose_once(sessions, *, active_job_ids: set[int] | None = None) -> list[d
 
     diagnoses: list[dict] = []
 
-    # 1) جلسات التخطيط الميتة — الإيجار منتهٍ بلا نبضة
+    # 1) جلسات التخطيط غير السليمة — مهلة صلبة أو إيجار نشاط منتهٍ
     active = active_job_ids or set()
     swept = planning_runtime.sweep_stale_sessions(
         sessions, active_project_ids=set()
     )
     for session in swept:
+        verdict = session.get("verdict") or {}
         diagnosis = {
             "project_id": session["project_id"],
             "kind": "PLANNING_LEASE_EXPIRED",
             "session_id": session["id"],
             "decision": "OWNER_ACTION_REQUIRED",
-            "detail": "انتهى إيجار جلسة التخطيط بلا نبضة — وُسمت "
-                      "INTERRUPTED والمشروع أعيد DRAFT بخطأ صريح. "
-                      "أعد المحاولة من زر الإعادة.",
-            "error_class": "PLANNING_INTERRUPTED",
+            "detail": verdict.get("reason")
+            or ("انتهى إيجار جلسة التخطيط بلا نبضة — وُسمت "
+                "INTERRUPTED والمشروع أعيد DRAFT بخطأ صريح. "
+                "أعد المحاولة من زر الإعادة."),
+            "error_class": verdict.get("error_class")
+            or "PLANNING_INTERRUPTED",
+            "session_state": verdict.get("state"),
+            "hard_deadline_at": session.get("hard_deadline_at"),
+            "last_meaningful_activity_at": session.get(
+                "last_meaningful_activity_at"),
         }
         diagnoses.append(diagnosis)
+
+    # 1.b) (013.5 §C) حارس الثبات — PLANNING بلا مولِّد صالح
+    for healed in planning_runtime.enforce_invariant(sessions):
+        diagnoses.append({
+            "project_id": healed["project_id"],
+            "kind": "PLANNING_INVARIANT_HEALED",
+            "session_id": healed.get("session_id"),
+            "decision": "OWNER_ACTION_REQUIRED",
+            "detail": healed["reason"],
+            "error_class": "PLANNING_INTERRUPTED",
+        })
 
     # 2) الوظائف المتقادمة — نفس كشف 013.1 (وسم لا تنفيذ)
     try:
@@ -109,8 +133,26 @@ def ensure_watchdog(sessions) -> None:
     ).start()
 
 
+def start_at_boot(sessions) -> dict:
+    """(013.5 §C.4) إقلاع صادق: استرداد فوري ثم كلب دائم.
+
+    يُستدعى من lifespan التطبيق — قبل خدمة أي طلب. يعيد ملخّص ما
+    استُرد حتى يُسجَّل في السجل ولا يمرّ صامتًا.
+    """
+    from workflow import planning_runtime
+
+    recovery = {}
+    try:
+        recovery = planning_runtime.recover_at_startup(sessions)
+    except Exception as error:  # noqa: BLE001 — الإقلاع لا يسقط
+        recovery = {"error": str(error)[:300], "healthy": False}
+    ensure_watchdog(sessions)
+    return recovery
+
+
 __all__ = [
     "diagnose_once",
     "ensure_watchdog",
+    "start_at_boot",
     "WATCHDOG_INTERVAL_S",
 ]

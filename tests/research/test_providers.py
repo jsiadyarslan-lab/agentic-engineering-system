@@ -25,8 +25,8 @@ from persistence.database import (  # noqa: E402
 DDG_FROZEN = """
 <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fa&amp;rut=x">عنوان أول</a>
 <a class="result__snippet" href="">مقتطف أول</a>
-<a rel="nofollow" class="result__a" href="https://example.org/b">Second</a>
-<a class="result__snippet" href="">snippet two</a>
+<a rel="nofollow" class="result__a" href="https://example.org/b">عنوان أول ثانٍ</a>
+<a class="result__snippet" href="">مقتطف أول ثانٍ</a>
 """
 
 #: (013.2) صفحة lite المجمدة — ترميز الجدول البسيط للنقطة lite
@@ -40,7 +40,7 @@ DDG_LITE_FROZEN = """
 #: (013.2) صفحة Bing المجمدة — كتل b_algo مع رابط إعادة توجيه ck/a
 BING_FROZEN = """
 <li class="b_algo"><h2><a href="https://www.bing.com/ck/a?!&amp;&amp;p=abc&amp;u=a1aHR0cHM6Ly9leGFtcGxlLmNvbS9iaW5nMQ==&amp;ntb=1">عنوان بينج</a></h2><p>مقتطف بينج أول</p></li>
-<li class="b_algo"><h2><a href="https://example.org/direct">Direct Link</a></h2><p>second snippet</p></li>
+<li class="b_algo"><h2><a href="https://example.org/direct">عنوان بينج مباشر</a></h2><p>مقتطف بينج ثانٍ</p></li>
 """
 
 
@@ -72,9 +72,16 @@ def _freeze_urlopen(monkeypatch, payload):
 
 
 def test_ddg_provider_parses_and_unwraps_redirects(monkeypatch):
+    """الاستعلام يطابق عناوين الصفحة المجمدة — بوابة الملاءمة (013.5 §L)
+    ترفض أي نتائج لا تخصّ الاستعلام، فالاختبار يمرّ باستعلام واقعي.
+
+    (013.5 §L) البوابة صارت تُسقط النتائج الضعيفة من المخرَج، فالمجمَّد
+    يحمل رمزين في النتيجة الأولى ورمزًا واحدًا في الثانية: الأولى قوية
+    والثانية لا تغطي أغلب الاستعلام — وهذا هو السلوك المطلوب.
+    """
     _freeze_urlopen(monkeypatch, DDG_FROZEN.encode("utf-8"))
     provider = rp.DuckDuckGoSearchProvider()
-    results = provider.search("استعلام")
+    results = provider.search("عنوان أول مقتطف")
     assert len(results) == 2
     assert results[0]["url"] == "https://example.com/a"
     assert results[0]["title"] == "عنوان أول"
@@ -113,7 +120,7 @@ def test_ddg_lite_markup_is_parsed(monkeypatch):
     """ترميز lite (result-link) يُحلّل كترميز html — الاستراتيجية الأولى."""
     _freeze_urlopen(monkeypatch, DDG_LITE_FROZEN.encode("utf-8"))
     provider = rp.DuckDuckGoSearchProvider()
-    results = provider.search("استعلام")
+    results = provider.search("عنوان لايت مقتطف")
     assert results[0]["url"] == "https://example.com/lite1"
     assert results[0]["title"] == "عنوان لايت"
     assert "مقتطف لايت" in results[0]["snippet"]
@@ -158,23 +165,29 @@ def test_api_provider_parses_all_styles(monkeypatch, style):
     assert results[0]["url"].startswith("https://x.example/")
 
 
-def test_service_seeds_four_providers(sessions):
+def test_service_seeds_all_five_providers(sessions):
+    """(013.5 §L) خمسة مزودين — أُضيفت ويكيبيديا كمصدر حي بلا مفاتيح."""
     providers_list = service.list_providers(sessions)
     kinds = {p["kind"] for p in providers_list}
-    assert kinds == {"search_ddg", "search_bing", "search_searx",
-                     "search_api"}
+    assert kinds == {"search_ddg", "search_bing", "search_wikipedia",
+                     "search_searx", "search_api"}
     # (013.2) DDG وBing مفعّلان افتراضيًا — لا بحث بلا احتياط
     ddg = [p for p in providers_list if p["kind"] == "search_ddg"][0]
     bing = [p for p in providers_list if p["kind"] == "search_bing"][0]
     assert ddg["enabled"] is True
     assert bing["enabled"] is True
+    # (013.5 §L) ويكيبيديا مفعّلة افتراضيًا: هي المصدر الوحيد الذي ثبت
+    # أنه يرد محتوى حقيقيًا من هذا المضيف بلا مفاتيح.
+    wiki = [p for p in providers_list if p["kind"] == "search_wikipedia"][0]
+    assert wiki["enabled"] is True
+    assert wiki["config"] == {}
 
 
 def test_bing_provider_parses_algo_and_unwraps_redirects(monkeypatch):
     """Bing (013.2): تحليل b_algo + فك رابط ck/a المرمّز base64url."""
     _freeze_urlopen(monkeypatch, BING_FROZEN.encode("utf-8"))
     provider = rp.BingSearchProvider()
-    results = provider.search("استعلام")
+    results = provider.search("عنوان بينج مقتطف")
     assert len(results) == 2
     # a1aHR0cHM6Ly9leGFtcGxlLmNvbS9iaW5nMQ== → https://example.com/bing1
     assert results[0]["url"] == "https://example.com/bing1"
@@ -194,15 +207,45 @@ def test_bing_challenge_page_classified(monkeypatch):
 
 
 def test_service_probe_writes_result(sessions, monkeypatch):
+    """المسبار الآن يشمل الملاءمة: استعلام المسبار يجب أن تجيبه الصفحة
+    فعلًا — «صفحة قابلة للتحليل» لم تعد كافية (013.5 §L)."""
     ddg = [p for p in service.list_providers(sessions)
            if p["kind"] == "search_ddg"][0]
     _freeze_urlopen(monkeypatch, DDG_FROZEN.encode("utf-8"))
+    monkeypatch.setattr(rp, "PROBE_QUERY", "عنوان أول مقتطف")
     result = service.probe_provider(sessions, ddg["id"])
     assert result["status"] == "READY"
     updated = [p for p in service.list_providers(sessions)
                if p["id"] == ddg["id"]][0]
     assert updated["last_probe_status"] == "READY"
     assert updated["last_probe_at"]
+
+
+def test_service_probe_distinguishes_transport_from_probe_relevance(
+        sessions, monkeypatch):
+    """(013.5 §L) المزود يرد ويُحلَّل لكن عبارة المسبار غير ذات صلة.
+
+    الفرق الذي يجب ألا يُخلط: «النقل/التحليل فشل» ≠ «عبارة المسبار
+    الجامدة لم تطابق شيئًا». الحالة الأولى NOT_READY، والثانية READY
+    مع تفصيل صادق — وإلا بدا Bing معطّلًا وهو يجيب استعلامات حقيقية
+    بنتائج سليمة (مقيس: «quantum computing» ← ويكيبيديا/IBM/GfG).
+    """
+    ddg = [p for p in service.list_providers(sessions)
+           if p["kind"] == "search_ddg"][0]
+    _freeze_urlopen(monkeypatch, DDG_FROZEN.encode("utf-8"))
+    monkeypatch.setattr(rp, "PROBE_QUERY",
+                        "quantum computing benchmarks")
+    result = service.probe_provider(sessions, ddg["id"])
+    assert result["status"] == "READY"
+    assert "لم تطابق" in result["reason"]
+    assert result["details"]["probe_relevance"]["relevant"] is False
+    # لكن البحث الحقيقي يبقى صارمًا: نفس النتائج تُرفض لاستعلام لا تطابقه
+    with pytest.raises(rp.ProviderNotReady):
+        rp.require_relevant(
+            "ddg", "quantum computing benchmarks",
+            [{"title": "عنوان أول", "url": "https://example.com/a",
+              "snippet": "مقتطف أول"}],
+        )
 
 
 def test_aggregate_not_ready_when_all_providers_down(sessions, monkeypatch):

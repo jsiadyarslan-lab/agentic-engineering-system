@@ -107,10 +107,25 @@
   var live = null;           // LiveMessage الحالية
   var activeId = "";
 
+  /* (013.5 §E/§F) حارس الرسالة الجارية: عند استئناف بث بعد تحديث
+   * الصفحة نعرف **معرّف الرسالة الجارية حصرًا** من الخادم. أي حدث
+   * لرسالة أخرى = إعادة بث تاريخية أو تلوث نطاق ← يُسقط، ولا يُبنى
+   * له فقاعة. الرسالة المكتملة مجمّدة: لا حدث لاحق يعدّلها. */
+  var expectedId = "";
+  var frozen = {};
+
+  function messageAllowed(messageId) {
+    var id = messageId || "";
+    if (id && frozen[id]) return false;          // (§F) ثبات بعد الاكتمال
+    if (expectedId && id && id !== expectedId) return false;  // (§E) عزل
+    return true;
+  }
+
   function ensureLive(event) {
     var id = event.message_id || "";
+    if (!messageAllowed(id)) return null;
     if (live && activeId === id) return live;
-    if (live) { live.complete({}); live = null; }
+    if (live) { live.complete({}); frozen[activeId] = true; live = null; }
     live = new LiveMessage(id);
     activeId = id;
     Hub.insertAtEnd(live.root);
@@ -119,6 +134,7 @@
 
   H["message_started"] = function (event) {
     var msg = ensureLive(event);
+    if (!msg) return;
     msg.setMeta(event.details || {}, true);
     msg.root.classList.add("streaming");
     msg.setStatus(event.status || "connecting");
@@ -131,6 +147,7 @@
 
   H["message_delta"] = function (event) {
     var msg = ensureLive(event);
+    if (!msg) return;
     if (!msg.root.classList.contains("streaming")) {
       msg.root.classList.add("streaming");
       msg.setMeta(event.details || {}, true);
@@ -144,6 +161,10 @@
       var bubble = live.root;
       var messageId = event.message_id || activeId;
       live.complete(event.details);
+      // (§F) الرسالة المكتملة مجمّدة — لا حدث لاحق يستبدل محتواها
+      frozen[messageId] = true;
+      bubble.setAttribute("data-msg-id", messageId);
+      bubble.setAttribute("data-msg-state", "completed");
       live = null;
       activeId = "";
       // (013.4 §26) الشريط يُبنى عند الاكتمال — research.used وصل
@@ -161,7 +182,16 @@
   };
 
   H["chat.error"] = function (event) {
-    if (live) { live.flush(true); live.status.hidden = true; live = null; activeId = ""; }
+    if (live && messageAllowed(event.message_id || activeId)) {
+      live.flush(true);
+      live.status.hidden = true;
+      frozen[activeId] = true;
+      if (live.root) {
+        live.root.setAttribute("data-msg-state", "failed");
+      }
+      live = null;
+      activeId = "";
+    }
     Hub.showErrorCard(event);
     Hub.onChatDone(event);
   };
@@ -261,7 +291,7 @@
     bubble.appendChild(bar);
   }
 
-  // ---------- إعادة الاتصال (§19+§34) ----------
+  // ---------- إعادة الاتصال (§19+§34+013.5 §E/§G) ----------
   function attachStream(conversationId, after) {
     return fetch(
       "/api/chat/events/" + conversationId + "?after=" + (after || 0)
@@ -271,18 +301,54 @@
     });
   }
 
-  /** تعليق البث بعد refresh — يُستدعى عند فتح محادثة فيها توليد جارٍ. */
+  /** تعليق البث بعد refresh — يُستدعى عند فتح محادثة فيها توليد جارٍ.
+   *
+   * (013.5 §E/§G) لا استئناف من الصفر أبدًا: موضع الاستئناف يأتي من
+   * الخادم (``last_seq`` = آخر تسلسل مسجَّل في هذا التيار)، ومعرّف
+   * الرسالة الجارية يأتي صريحًا (``message_id``). البدء من صفر كان
+   * يُعيد بث **تاريخ المحادثة كله** فيُعاد رسمه كأنه ردٌّ جديد — وهو
+   * الجذر الحرفي لظهور «Confirmation of Completion / A15 /
+   * HASH-MANIFEST» ردًّا على سؤال غير متعلق بها.
+   */
   window.ChatLive = {
     resumeIfRunning: function (conversationId) {
-      Hub.fetchJSON("/api/chat/active?conversation_id=" + conversationId)
-        .then(function (out) {
-          if (!out.ok || !out.j.running) return;
-          Hub.setBusy(true);
-          Hub.state.activeRun = { kind: "chat", cycleId: "" };
-          attachStream(conversationId, 0).then(Hub.onChatDone, function () {
-            Hub.onChatDone({});
-          });
-        });
-    }
+      return Hub.fetchJSON(
+        "/api/chat/active?conversation_id=" + conversationId
+      ).then(function (out) {
+        if (!out.ok || !out.j.running) {
+          expectedId = "";
+          return { running: false, resumed_from: null };
+        }
+        expectedId = out.j.message_id || "";
+        Hub.setBusy(true);
+        Hub.state.activeRun = { kind: "chat", cycleId: "" };
+        // (013.5 §G) الفقاعة الحية تُبنى الآن صراحةً بدل انتظار أول
+        // قطعة: الرسالة الجارية معلومة من الخادم، فلا «صمت» حتى
+        // تصل أول قطعة.
+        if (expectedId) {
+          var msg = ensureLive({ message_id: expectedId, details: {} });
+          if (msg) {
+            msg.root.classList.add("streaming");
+            msg.setStatus("generating");
+          }
+        }
+        var from = out.j.last_seq || 0;
+        Hub.state.lastSeq = Math.max(Hub.state.lastSeq || 0, from);
+        return attachStream(conversationId, from).then(
+          Hub.onChatDone, function () { Hub.onChatDone({}); }
+        ).then(function () { return { running: true, resumed_from: from }; });
+      });
+    },
+    /** (013.5 §G) موضع الاستئناف الحقيقي — للاختبارات والتشخيص. */
+    currentExpectation: function () {
+      return { message_id: expectedId, frozen: Object.keys(frozen) };
+    },
+    /** (013.5 §E) بداية هوية محادثة جديدة: تُصفَّر مرجعية النطاق. */
+    resetScope: function (messageId) {
+      live = null;
+      activeId = "";
+      frozen = {};
+      expectedId = messageId || "";
+    },
   };
 })();

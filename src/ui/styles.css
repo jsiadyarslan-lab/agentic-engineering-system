@@ -44,6 +44,17 @@
   --radius-l: 16px;
   --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.4);
   --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* (013.5 §N) أسماء قديمة استُعملت في control-center.css/harness.css/
+     projects.css بلا تعريف: كل موضع كان يسقط على القيمة الاحتياطية
+     الفاتحة (`var(--panel, #fff)`) فيظهر مربع أبيض داخل السطح الداكن.
+     العطل كان مرئيًا في بطاقة سير العمل وبطاقات مركز التحكم. الحل
+     الدائم اسم واحد هنا — لا مطاردة 40 موضعًا بقيم مكررة. */
+  --panel: var(--bg-raised);
+  --panel-2: var(--bg-elevated);
+  --ink: var(--text);
+  --ink-2: var(--text-mid);
+  --line: var(--border);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

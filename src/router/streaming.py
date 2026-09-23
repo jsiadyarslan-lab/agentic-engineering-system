@@ -22,11 +22,19 @@ from router.model_router import ChatMessage, ProviderCallError
 
 def streaming_live_transport(
     provider_cfg: dict,
+    *,
+    on_reasoning: Callable[[int], None] | None = None,
 ) -> Callable[[str, list[ChatMessage]], Generator[str, None, None]]:
     """نقل متدفق لمزود متوافق OpenAI — يُنتج قطع نص فعلية (deltas).
 
     provider_cfg: {base_url, api_key, model?, headers?, timeout?,
     max_tokens?, extra_body?} — نفس عقد live_transport.
+
+    (013.5 §D) ``on_reasoning``: نماذج الاستدلال تبث ``reasoning_content``
+    قبل أي ``content``. تجاهل ذلك كان يجعل النظام يرى «صمتًا» بينما
+    المزود يعمل فعلًا — فيُوسم MODEL_TIMEOUT وهو حكم كاذب. النداء هنا
+    يُبلّغ عن **نشاط حقيقي** (عدد الأحرف) دون تمرير الاستدلال كنص
+    إجابة — الاستدلال لا يُعرض للعميل أبدًا.
     """
     base_url = str(provider_cfg["base_url"]).rstrip("/")
     api_key = str(provider_cfg.get("api_key", ""))
@@ -81,6 +89,7 @@ def streaming_live_transport(
             ) from error
 
         with response:
+            reasoning_chars = 0
             for raw_line in response:
                 line = raw_line.decode("utf-8", "replace").strip()
                 if not line.startswith("data:"):
@@ -95,7 +104,14 @@ def streaming_live_transport(
                 choices = chunk.get("choices") or []
                 if not choices:
                     continue
-                delta = (choices[0].get("delta") or {}).get("content")
+                delta_obj = choices[0].get("delta") or {}
+                # (§D) استدلال حيّ = نشاط مزود حقيقي (لا يُعرض كنص)
+                reasoning = delta_obj.get("reasoning_content")
+                if reasoning:
+                    reasoning_chars += len(str(reasoning))
+                    if on_reasoning is not None:
+                        on_reasoning(reasoning_chars)
+                delta = delta_obj.get("content")
                 if delta:
                     yield delta
 
@@ -108,14 +124,27 @@ def stream_completion(
     messages: list[ChatMessage],
     *,
     on_delta: Callable[[str], None],
+    on_reasoning: Callable[[int], None] | None = None,
 ) -> str:
     """استدعاء متدفق واحد — يغذي on_delta بكل قطعة ويعيد النص الكامل.
 
-    قطعة واحدة فارغة من المزود (bلا deltas إطلاقًا) = فشل صريح —
+    قطعة واحدة فارغة من المزود (بلا deltas إطلاقًا) = فشل صريح —
     لا نجاح بلا مادة (نفس مبدأ live_transport الصادق).
+
+    (013.5 §D) إن كان الصمت مصحوبًا باستدلال حيّ (``reasoning_content``)
+    فالتصنيف صادق: المزود استجاب فعلًا والسقف هو ما منع المخرجات —
+    لا «فشل خادم» ولا «رد فارغ» المجردين.
     """
     started = time.monotonic()
-    transport = streaming_live_transport(provider_cfg)
+    reasoning_state = {"chars": 0}
+
+    def _note_reasoning(chars: int) -> None:
+        reasoning_state["chars"] = chars
+        if on_reasoning is not None:
+            on_reasoning(chars)
+
+    transport = streaming_live_transport(
+        provider_cfg, on_reasoning=_note_reasoning)
     pieces: list[str] = []
     for delta in transport(model, messages):
         pieces.append(delta)
@@ -123,6 +152,16 @@ def stream_completion(
             on_delta(delta)
     text = "".join(pieces)
     if not text.strip():
+        if reasoning_state["chars"]:
+            raise ProviderCallError(
+                f"استدلال فقط بلا مخرجات من "
+                f"{provider_cfg.get('base_url', '')} "
+                f"({time.monotonic() - started:.1f}ث، استدلال "
+                f"{reasoning_state['chars']} حرفًا) — ارفع سقف المخرجات "
+                f"أو اختر نموذجًا غير استدلالي لهذه الخطوة",
+                is_server_error=True,
+                error_class="REASONING_ONLY_RESPONSE",
+            )
         raise ProviderCallError(
             f"رد متدفق فارغ من {provider_cfg.get('base_url', '')} "
             f"({time.monotonic() - started:.1f}ث) — فشل صريح",

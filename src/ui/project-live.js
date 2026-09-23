@@ -208,42 +208,271 @@
     }).join(" · ");
   }
 
-  /* بطاقة الخطة (§11): المعلومات الجوهرية + تفاصيل مطوية */
-  function renderPlanCard(plan) {
+  /* ---------- (013.5 §N) تفاصيل الخطة: أقسام مسماة قابلة للطي ----------
+   *
+   * عطل التباين مُصلح من جذره: كانت أسطح الخطة تُبنى فاتحة (رموز
+   * غير معرّفة في الثيم الداكن) تحت نص فاتح. هنا كل سطح من رموز
+   * styles.css نفسها، والقسم المفتوح افتراضيًا واحد فقط (الخلاصة)،
+   * والحالة/المراحل/الخطوات/الافتراضات/الاعتمادات/الاعتماد مطوية،
+   * والخام خلف «JSON خام» — لا جدار JSON في المسار الأساسي. */
+
+  function planSection(label, count, open) {
+    var sec = el("div", "pl-sec" + (open ? " open" : ""));
+    var toggle = el("button", "pl-sec-toggle");
+    toggle.type = "button";
+    var arrow = el("span", "pl-sec-arrow", open ? "▴" : "▾");
+    toggle.appendChild(arrow);
+    toggle.appendChild(el("span", "pl-sec-label", label));
+    if (count != null) {
+      toggle.appendChild(el("span", "pl-sec-count", String(count)));
+    }
+    var body = el("div", "pl-sec-body");
+    body.hidden = !open;
+    toggle.addEventListener("click", function () {
+      body.hidden = !body.hidden;
+      sec.className = body.hidden ? "pl-sec" : "pl-sec open";
+      arrow.textContent = body.hidden ? "▾" : "▴";
+    });
+    sec.appendChild(toggle);
+    sec.appendChild(body);
+    return { root: sec, body: body };
+  }
+
+  /* سطر مفتاح/قيمة — يُقرأ كبطاقة لا كـJSON */
+  function planRow(key, value) {
+    var row = el("div", "pl-kv");
+    row.appendChild(el("span", "pl-kv-k", key));
+    var v = el("span", "pl-kv-v",
+      value == null || value === "" ? "—" : String(value));
+    v.dir = "auto";
+    row.appendChild(v);
+    return row;
+  }
+
+  /* نص بند قد يكون نصًا أو كائنًا — بلا تفريغ خام للخطة */
+  function planItemText(item) {
+    if (item == null) return "";
+    if (typeof item === "string") return item;
+    var fields = ["description", "statement", "text", "title",
+                  "objective", "summary", "reason", "name", "need"];
+    for (var i = 0; i < fields.length; i++) {
+      if (item[fields[i]]) return String(item[fields[i]]);
+    }
+    return item.id ? String(item.id) : "";
+  }
+
+  function planItemList(items) {
+    var list = el("div", "pl-list");
+    (items || []).forEach(function (item) {
+      var text = planItemText(item);
+      if (!text) return;
+      var line = el("div", "pl-list-item", text);
+      line.dir = "auto";
+      list.appendChild(line);
+    });
+    return list;
+  }
+
+  function planEmpty(text) {
+    var note = el("div", "pl-empty", text);
+    note.dir = "auto";
+    return note;
+  }
+
+  /* بطاقة الخطة (§11 + 013.5 §N): إطار «الخطة» وسبعة أقسام مسماة
+   * قابلة للطي بالترتيب المعلن — مستقرة من اللقطة وحدها (§8). */
+  function renderPlanCard(plan, state) {
     if (!plan) return null;
+    var snapshot = state || {};
+    var phases = plan.phases || [];
+    var assumptions = plan.assumptions || [];
+    var dependencies = plan.dependencies
+      || plan.external_dependencies || [];
+    var gates = (snapshot.gates || []).filter(function (g) {
+      return g.kind === "PLAN_APPROVAL"
+        || g.kind === "PLAN_REVISION_APPROVAL";
+    });
+    var pendingGate = null;
+    gates.forEach(function (g) {
+      if (g.status === "PENDING" && !pendingGate) pendingGate = g;
+    });
+    var approved = !!plan.approved_by_owner;
+    var stepList = [];
+    phases.forEach(function (phase, pi) {
+      (phase.steps || []).forEach(function (step, si) {
+        stepList.push({
+          number: (pi + 1) + "." + (si + 1),
+          phase: phase.title || ("مرحلة " + (pi + 1)),
+          step: step,
+        });
+      });
+    });
+    if (!stepList.length) {
+      (plan.steps || []).forEach(function (step, si) {
+        stepList.push({ number: String(si + 1), phase: "", step: step });
+      });
+    }
+
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-plan");
-    card.appendChild(el("div", "pl-title",
-      "الخطة الرئيسية v" + plan.version));
+
+    var head = el("div", "pl-head");
+    head.appendChild(el("div", "pl-title",
+      "الخطة الرئيسية v" + (plan.version || "?")));
+    head.appendChild(el("span", "pl-status " + (approved ? "ok"
+      : plan.status === "REJECTED" ? "danger" : "gold"),
+      approved ? "معتمدة" : "بانتظار اعتمادك"));
+    card.appendChild(head);
+
     var meta = el("div", "pl-meta");
-    meta.appendChild(el("span", null,
-      (plan.phases || []).length + " مراحل"));
-    if ((plan.assumptions || []).length) {
+    meta.appendChild(el("span", null, phases.length + " مراحل"));
+    meta.appendChild(el("span", null, stepList.length + " خطوة"));
+    if (assumptions.length) {
       meta.appendChild(el("span", null,
-        plan.assumptions.length + " افتراضات"));
+        assumptions.length + " افتراضات"));
+    }
+    if (dependencies.length) {
+      meta.appendChild(el("span", null,
+        dependencies.length + " اعتمادات"));
     }
     card.appendChild(meta);
 
-    (plan.phases || []).slice(0, 3).forEach(function (phase) {
-      var phaseEl = el("div", "pl-phase");
-      phaseEl.appendChild(el("div", "pl-phase-title",
-        phase.title || "مرحلة"));
-      (phase.steps || []).slice(0, 3).forEach(function (step) {
-        phaseEl.appendChild(el("div", "pl-step",
-          "• " + (step.objective || "")));
-      });
-      if ((plan.phases || []).length > 3) {
-        phaseEl.appendChild(el("div", "pl-more",
-          "+" + (plan.phases.length - 3) + " مراحل إضافية في التفاصيل"));
-      }
-      card.appendChild(phaseEl);
-    });
+    // 1) الخلاصة — القسم المفتوح افتراضيًا
+    var summary = planSection("الخلاصة", null, true);
+    summary.body.appendChild(planRow("الهدف",
+      plan.objective || plan.summary || snapshot.objective));
+    summary.body.appendChild(planRow("الإصدار",
+      "v" + (plan.version || "?")
+      + (plan.status ? " · " + plan.status : "")));
+    summary.body.appendChild(planRow("الحجم",
+      phases.length + " مراحل · " + stepList.length + " خطوة"));
+    summary.body.appendChild(planRow("الاعتماد",
+      approved ? "معتمد من المالك"
+        : pendingGate ? "بانتظار قرارك الآن" : "غير معتمد بعد"));
+    card.appendChild(summary.root);
 
-    card.appendChild(renderTechDetails({
-      "plan_id": plan.id, "version": plan.version,
-      "status": plan.status,
-      "approved": plan.approved_by_owner ? "نعم" : "لا",
-    }));
+    // 2) الحالة الحالية — من اللقطة القانونية لا تخمينًا
+    var current = planSection("الحالة الحالية", null, false);
+    current.body.appendChild(planRow("حالة الخطة",
+      plan.status || "—"));
+    if (snapshot.status) {
+      current.body.appendChild(planRow("حالة المشروع",
+        STATUS_LABELS[snapshot.status] || snapshot.status));
+    }
+    current.body.appendChild(planRow("اعتماد المالك",
+      approved ? "نعم" : "لا"));
+    if (gates.length) {
+      gates.slice(0, 4).forEach(function (g) {
+        current.body.appendChild(planRow(
+          GATE_LABELS[g.kind] || "بوابة الخطة",
+          GATE_STATUS_LABELS[g.status] || g.status));
+      });
+    } else {
+      current.body.appendChild(
+        planEmpty("لا بوابة خطة مسجلة في اللقطة بعد."));
+    }
+    card.appendChild(current.root);
+
+    // 3) المراحل — بطاقات مراحل لا أسطر خام
+    var phasesSec = planSection("المراحل", phases.length, false);
+    if (!phases.length) {
+      phasesSec.body.appendChild(
+        planEmpty("لا مراحل معلنة في الخطة بعد."));
+    }
+    phases.forEach(function (phase, index) {
+      var box = el("div", "pl-phase-card");
+      var boxHead = el("div", "pl-phase-head");
+      var name = el("span", "pl-phase-name",
+        (index + 1) + ". " + (phase.title || "مرحلة"));
+      name.dir = "auto";
+      boxHead.appendChild(name);
+      boxHead.appendChild(el("span", "pl-phase-state",
+        (phase.status || "PENDING")
+        + " · " + (phase.steps || []).length + " خطوة"));
+      box.appendChild(boxHead);
+      var phaseText = planItemText(phase);
+      if (phaseText && phaseText !== phase.title) {
+        var sub = el("div", "pl-phase-sub", phaseText);
+        sub.dir = "auto";
+        box.appendChild(sub);
+      }
+      phasesSec.body.appendChild(box);
+    });
+    card.appendChild(phasesSec.root);
+
+    // 4) الخطوات — مرقمة بالمرحلة، قابلة للطي ككتلة واحدة
+    var stepsSec = planSection("الخطوات", stepList.length, false);
+    if (!stepList.length) {
+      stepsSec.body.appendChild(
+        planEmpty("لا خطوات معلنة في الخطة بعد."));
+    }
+    var lastPhase = null;
+    stepList.forEach(function (item) {
+      if (item.phase && item.phase !== lastPhase) {
+        lastPhase = item.phase;
+        var groupTitle = el("div", "pl-steps-group-title", item.phase);
+        groupTitle.dir = "auto";
+        stepsSec.body.appendChild(groupTitle);
+      }
+      var row = el("div", "pl-step-row");
+      var number = el("span", "pl-step-n", item.number);
+      number.dir = "ltr";
+      row.appendChild(number);
+      var text = el("span", "pl-step-text",
+        planItemText(item.step) || "خطوة بلا وصف");
+      text.dir = "auto";
+      row.appendChild(text);
+      if (item.step && item.step.status) {
+        row.appendChild(el("span", "pl-step-state", item.step.status));
+      }
+      stepsSec.body.appendChild(row);
+    });
+    card.appendChild(stepsSec.root);
+
+    // 5) الافتراضات
+    var assumeSec = planSection("الافتراضات", assumptions.length, false);
+    assumeSec.body.appendChild(assumptions.length
+      ? planItemList(assumptions)
+      : planEmpty("لا افتراضات معلنة في الخطة."));
+    card.appendChild(assumeSec.root);
+
+    // 6) الاعتمادات — ما تتوقف عليه الخطة خارج نطاقها
+    var depsSec = planSection("الاعتمادات", dependencies.length, false);
+    depsSec.body.appendChild(dependencies.length
+      ? planItemList(dependencies)
+      : planEmpty("لا اعتمادات معلنة في الخطة."));
+    card.appendChild(depsSec.root);
+
+    // 7) الاعتماد — القرار نفسه يبقى في بطاقة الاعتماد (بلا تكرار أزرار)
+    var approvalSec = planSection("الاعتماد", null, false);
+    approvalSec.body.appendChild(planRow("اعتماد المالك",
+      approved ? "نعم — معتمدة" : "لا — بانتظار قرارك"));
+    if (plan.approved_at) {
+      approvalSec.body.appendChild(planRow("وقت الاعتماد", plan.approved_at));
+    }
+    if (pendingGate) {
+      approvalSec.body.appendChild(planRow("البوابة المعلقة",
+        GATE_LABELS[pendingGate.kind] || "بوابة الخطة"));
+      if (pendingGate.reason) {
+        approvalSec.body.appendChild(planRow("السبب", pendingGate.reason));
+      }
+      approvalSec.body.appendChild(
+        planEmpty("القرار يُتخذ من بطاقة الاعتماد في المحادثة — لا من هنا."));
+    } else if (!approved) {
+      approvalSec.body.appendChild(
+        planEmpty("لا بوابة اعتماد معلقة في اللقطة الحالية."));
+    }
+    card.appendChild(approvalSec.root);
+
+    // الخام خلف طيّ صريح مسمى — ليس في أي قسم افتراضي (013.5 §N)
+    var rawSec = planSection("JSON خام", null, false);
+    var raw = el("pre", "pl-tech-body pl-raw-body");
+    raw.dir = "ltr";
+    try { raw.textContent = JSON.stringify(plan, null, 1); }
+    catch (e) { raw.textContent = String(plan); }
+    rawSec.body.appendChild(raw);
+    card.appendChild(rawSec.root);
+
     wrap.flow.appendChild(card);
     return { row: wrap.row, card: card };
   }
@@ -268,13 +497,17 @@
       view.addEventListener("click", actions.viewPlan);
       buttons.appendChild(view);
     }
-    var approve = el("button", "pl-btn primary", "اعتماد الخطة");
-    if (gate.kind !== "PLAN_APPROVAL" && gate.kind !== "FINAL_VERIFICATION") {
-      approve.textContent = "موافقة";
-    }
-    var reject = el("button", "pl-btn danger",
-      gate.kind === "FINAL_VERIFICATION" ? "رفض" : "رفض / طلب تعديل");
-    buttons.appendChild(approve); buttons.appendChild(reject);
+    /* (013.5 §N) فعل أساسي واحد ظاهر: «اعتماد الخطة» — والثانويان
+     * «طلب تعديل» و«رفض» بنفس المسار والمعالج حرفيًا (بلا URL جديد) */
+    var approveLabel = gate.kind === "PLAN_APPROVAL"
+      || gate.kind === "FINAL_VERIFICATION"
+      ? "اعتماد الخطة" : "موافقة";
+    var approve = el("button", "pl-btn primary", approveLabel);
+    var revise = el("button", "pl-btn", "طلب تعديل");
+    var reject = el("button", "pl-btn danger", "رفض");
+    buttons.appendChild(approve);
+    buttons.appendChild(revise);
+    buttons.appendChild(reject);
     card.appendChild(buttons);
 
     var feedback = el("div", "pl-feedback"); feedback.hidden = true;
@@ -292,14 +525,18 @@
     }
 
     function setBusy(text) {
-      approve.disabled = true; reject.disabled = true;
+      approve.disabled = true;
+      revise.disabled = true;
+      reject.disabled = true;
       approve.textContent = text;
       feedback.hidden = false; feedback.className = "pl-feedback loading";
       feedback.textContent = text;
     }
     function setResult(ok, text, extra) {
-      approve.disabled = false; reject.disabled = false;
-      approve.textContent = "اعتماد الخطة";
+      approve.disabled = false;
+      revise.disabled = false;
+      reject.disabled = false;
+      approve.textContent = approveLabel;
       feedback.hidden = false;
       feedback.className = "pl-feedback " + (ok ? "ok" : "err");
       feedback.textContent = text;
@@ -331,13 +568,13 @@
         setResult(false, "تعذر الوصول للخدمة",
           String(err) + " · معرف الطلب: " + sentAt +
           " — أعد المحاولة");
-        approve.disabled = false; reject.disabled = false;
       });
     });
 
-    reject.addEventListener("click", function () {
-      var note = window.prompt(
-        "ما التعديل المطلوب؟ (يصل للنظام كتغذية راجعة لإعادة التخطيط)", "");
+    /* «طلب تعديل» و«رفض»: نفس المعالج ونفس المسار ونفس الجسم حرفيًا
+     * (approved: false + ملاحظة المالك) — يختلف تسمية الحقل فقط */
+    function sendRevision(promptText) {
+      var note = window.prompt(promptText, "");
       if (note === null) return;
       setBusy("جاري تسجيل الرفض…");
       Hub.fetchJSON(actions.approveUrl(gate), {
@@ -349,6 +586,16 @@
         else setResult(false, "تعذر تسجيل الرفض",
           (out.j && out.j.detail) || "");
       });
+    }
+
+    revise.addEventListener("click", function () {
+      sendRevision(
+        "ما التعديل المطلوب؟ (يصل للنظام كتغذية راجعة لإعادة التخطيط)");
+    });
+
+    reject.addEventListener("click", function () {
+      sendRevision(
+        "سبب الرفض؟ (يصل للنظام كتغذية راجعة لإعادة التخطيط)");
     });
 
     wrap.flow.appendChild(card);
@@ -911,9 +1158,43 @@
 
   var ACTIVITY_LIMIT = 24;
 
-  /* (013.4 §3+§36) بطاقة التخطيط الحي — ماذا ينتظر حرفيًا:
-   * المزود/النموذج/الطلب/المحاولة/المضي — لا «Planning…» صامتة أبدًا،
-   * والفشل يظهر مصنّفه مع زر إعادة صريح. */
+  /* (013.5 §J) رموز الانتظار الصادقة — الواجهة تقول ما تنتظره فعلًا.
+   * قبل هذا: «توليد الخطة جارٍ» بلا سقف ولا سبب ولا فرق بين «نتصل
+   * بالمزود» و«المزود صامت» — فبقي المالك ‏17992ث أمام شاشة لا تفسّر
+   * شيئًا. الآن كل حالة لها رمز ونص صادق وسقف معلن. */
+  var WAIT_PHASE_LABELS = {
+    QUEUED: "في الطابور — لم يبدأ الاستدعاء بعد",
+    CONNECTING: "جارٍ الاتصال بالمزود وإرسال الطلب",
+    /* 013.5 §D/§J: النموذج المُهيَّأ استدلالي — يبثّ reasoning_content
+     * قبل أول حرف إجابة. هذا ليس صمتًا: المزود يعمل ويُقاس. */
+    REASONING: "المزود يستدل الآن — وصل نشاط حقيقي ولم تبدأ الإجابة بعد",
+    AWAITING_PROVIDER: "بانتظار رد المزود — الاستدعاء مُرسَل ولم يصل نشاط",
+    PAUSED: "موقوف بقرار المالك",
+    DONE: "اكتمل",
+    FAILED: "فشل مصنَّف",
+    INTERRUPTED: "انقطع العامل المولِّد",
+    CANCELLED: "أُلغي",
+  };
+
+  function fmtSeconds(value) {
+    var n = Number(value);
+    if (!isFinite(n) || n < 0) return "—";
+    if (n < 60) return n + " ث";
+    var minutes = Math.floor(n / 60);
+    var seconds = n % 60;
+    if (minutes < 60) return minutes + " د " + seconds + " ث";
+    return Math.floor(minutes / 60) + " س " + (minutes % 60) + " د";
+  }
+
+  function remaining(deadline) {
+    if (!deadline) return null;
+    var target = new Date(deadline).getTime();
+    if (isNaN(target)) return null;
+    return Math.max(0, Math.round((target - Date.now()) / 1000));
+  }
+
+  /* (013.4 §3+§36 + 013.5 §D/§J) بطاقة التخطيط الحي — ماذا ينتظر
+   * حرفيًا، بنبضتين منفصلتين وسقف زمن جدار معلن. */
   function renderPlanningCard(state, actions) {
     var planning = state.planning || {};
     var detail = planning.detail || {};
@@ -923,31 +1204,54 @@
 
     if (planning.active) {
       card.classList.add("live");
+      var phase = planning.wait_phase || "CONNECTING";
       var head = el("div", "pl-title");
       head.appendChild(el("span", "pl-exec-dot", "●"));
-      head.appendChild(el("span", null,
-        " توليد الخطة جارٍ — ما يُنتظر معلن"));
+      head.appendChild(el("span", null, " توليد الخطة جارٍ"));
+      var badge = el("span", "pl-wait-phase", phase);
+      head.appendChild(badge);
       card.appendChild(head);
+
+      var phaseText = el("div", "pl-objective pl-wait-text");
+      phaseText.dir = "auto";
+      phaseText.textContent = WAIT_PHASE_LABELS[phase] ||
+        "حالة انتظار معلنة: " + phase;
+      card.appendChild(phaseText);
+
       var rows = el("div", "pl-env-rows");
       function prow(label, value) {
-        if (!value) return;
+        if (value === null || value === undefined || value === "") return;
         var row = el("div", "pl-env-row");
         row.appendChild(el("span", "pl-env-k", label + ": "));
-        row.appendChild(el("span", "pl-env-v", String(value)));
+        var cell = el("span", "pl-env-v", String(value));
+        cell.dir = "auto";
+        row.appendChild(cell);
         rows.appendChild(row);
       }
-      prow("المزود", waiting.provider);
-      prow("النموذج", waiting.model);
-      prow("الطلب", waiting.request_id);
+      prow("المزود", waiting.provider || detail.provider);
+      prow("النموذج", waiting.model || detail.model);
+      prow("الطلب", waiting.request_id || detail.request_id);
       prow("المحاولة", waiting.attempt);
-      prow("مضى", (detail.elapsed_s || 0) + " ثانية");
-      prow("آخر نبضة", detail.last_activity_at
-        ? new Date(detail.last_activity_at).toLocaleTimeString("ar")
-        : "");
+      prow("مضى على الجلسة", fmtSeconds(detail.elapsed_s));
+      // (§D) النبضتان منفصلتان — لا خلط بين «العملية حيّة» و«المزود يعمل»
+      prow("آخر نشاط مزود حقيقي",
+        fmtSeconds(detail.silence_s) + " مضت");
+      prow("آخر نبضة عملية",
+        detail.heartbeat_at
+          ? new Date(detail.heartbeat_at).toLocaleTimeString("ar")
+          : "—");
+      var left = remaining(detail.hard_deadline_at);
+      prow("السقف الصلب المتبقي",
+        left === null ? "غير معلن"
+          : fmtSeconds(left) + " (حد " +
+            fmtSeconds(detail.hard_timeout_s) + ")");
       card.appendChild(rows);
+
       var note = el("div", "pl-note",
-        "الجلسة بنبضة وإيجار: إن توقفت العملية وسمها الكلب منقطعة " +
-        "وتظهر ببطاقتها — لا انتظار أبدي.");
+        "قاعدة الصدق: نبضة العملية وحدها لا تُطيل الانتظار. إن صمت " +
+        "المزود أو تجاوز السقف الصلب أو مات العامل، تُحسم الجلسة " +
+        "بحالة مصنَّفة (MODEL_TIMEOUT / PLANNING_INTERRUPTED) وتظهر " +
+        "هنا ببطاقة الفشل مع زر إعادة — لا انتظار أبدي.");
       card.appendChild(note);
     } else if (planning.state === "FAILED" ||
                planning.state === "INTERRUPTED") {
@@ -960,6 +1264,23 @@
       reason.textContent = detail.error_detail ||
         "انقطع التوليد — العملية المولّدة ماتت";
       card.appendChild(reason);
+      var facts = el("div", "pl-env-rows");
+      function frow(label, value) {
+        if (value === null || value === undefined || value === "") return;
+        var row = el("div", "pl-env-row");
+        row.appendChild(el("span", "pl-env-k", label + ": "));
+        var cell = el("span", "pl-env-v", String(value));
+        cell.dir = "auto";
+        row.appendChild(cell);
+        facts.appendChild(row);
+      }
+      frow("المزود", detail.provider || waiting.provider);
+      frow("النموذج", detail.model || waiting.model);
+      frow("آخر طلب", detail.request_id);
+      frow("المحاولات", detail.attempt);
+      frow("انتهت", detail.finished_at
+        ? new Date(detail.finished_at).toLocaleString("ar") : "");
+      if (facts.children.length) card.appendChild(facts);
       if (actions && actions.retryUrl) {
         var retry = el("button", "pl-btn primary", "↻ إعادة المحاولة");
         retry.addEventListener("click", function () {
@@ -1220,7 +1541,7 @@
     container.appendChild(renderProjectCard(state).row);
 
     if (state.plan) {
-      var planCard = renderPlanCard(state.plan);
+      var planCard = renderPlanCard(state.plan, state);
       container.appendChild(planCard.row);
     }
 
@@ -1330,6 +1651,9 @@
     STATUS_LABELS: STATUS_LABELS,
     ROLE_LABELS: ROLE_LABELS,
     renderTechDetails: renderTechDetails,
+    // (013.5 §N) تفاصيل الخطة المهيكلة قابلة لإعادة الاستخدام خارج المشهد
+    renderPlanCard: renderPlanCard,
+    planSection: planSection,
     msgRow: msgRow,
     el: el,
   };

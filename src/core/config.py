@@ -103,6 +103,14 @@ class LiveModelConfig(BaseSettings):
     default_provider: str = "nvidia"
     default_model: str = "nvidia/nemotron-3-ultra-550b-a55b"
     providers_json: str = ""
+    #: (013.5 §B) عقد المخرجات والمهلة — معلنان لا ضمنيان.
+    #: النماذج الاستدلالية تستهلك سقف المخرجات داخل reasoning_content
+    #: قبل أن تُنتج حرفًا واحدًا؛ سقف ضيّق = رد بلا مخرجات، ومهلة
+    #: ضيّقة = MODEL_TIMEOUT على عمل صحيح جارٍ. القيمتان تُقرآن في
+    #: مواصفة المزود وتظهران في اللقطة، والمُشغِّل يضبطهما بالبيئة:
+    #: AGenthubV2_LIVE_MAX_TOKENS / AGenthubV2_LIVE_TIMEOUT.
+    max_tokens: int = 16000
+    timeout: float = 600.0
 
     model_config = {
         "env_prefix": "AGenthubV2_LIVE_",

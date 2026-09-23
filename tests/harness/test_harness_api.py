@@ -201,7 +201,9 @@ def test_capabilities_endpoint(client):
     assert by_id["sandbox"]["blocked_kind"] == "WORKER"
     assert by_id["llm"]["blocked_kind"] == "CAPABILITY"
     assert by_id["web_search"]["resolution"] == "FAILOVER"
-    assert len(by_id["web_search"]["providers"]) == 4
+    # (013.5 §L) خمسة مزودين: ويكيبيديا أُضيفت مزودًا حقيقيًا
+    # ومفعّلة افتراضيًا (بلا مفتاح) بعد DDG/Bing/SearXNG/Search API.
+    assert len(by_id["web_search"]["providers"]) == 5
 
 
 def test_event_vocabulary_endpoint(client):

@@ -208,9 +208,71 @@ def _available_actions(project: dict, job: dict | None,
     return [a for a in actions if not (a in seen or seen.add(a))]
 
 
+def _conversation_id(sessions, project_id: int):
+    """(013.5 §I) محادثة المشروع — ربط صريح لا تخمين."""
+    try:
+        from sqlalchemy import select
+
+        from persistence.models import Conversation
+
+        with sessions() as session:
+            row = session.scalars(
+                select(Conversation)
+                .where(Conversation.project_id == int(project_id))
+                .order_by(Conversation.id.asc())
+                .limit(1)
+            ).first()
+            return int(row.id) if row is not None else None
+    except Exception:  # noqa: BLE001 — القراءة اختيارية
+        return None
+
+
+def _last_successful_transition(sessions, project_id: int) -> dict | None:
+    """(013.5 §I) آخر انتقال ناجح — النجاحات وحدها لا كل الأحداث."""
+    from workflow import service
+
+    events = service.list_events(sessions, project_id, limit=60)
+    for event in reversed(events):
+        kind = str(event.get("kind") or "")
+        if kind.endswith(("_FAILED", "_INTERRUPTED")) or \
+                kind in ("WORKFLOW_DIAGNOSED", "PLANNING_INVARIANT_HEALED"):
+            continue
+        if kind.startswith(("PLAN_", "PLANNING_", "OWNER_", "JOB_",
+                            "ENVIRONMENT_", "EXECUTION_", "PHASE_", "STEP_",
+                            "PREFLIGHT_", "CAPABILITIES_", "EVIDENCE_")):
+            return {"kind": kind, "id": event.get("id"),
+                    "at": event.get("created_at"),
+                    "payload": event.get("payload") or {}}
+    return None
+
+
+def _retry_count(sessions, project_id: int) -> int:
+    """(013.5 §I) عدد محاولات التخطيط — من السجل الدائم."""
+    try:
+        from sqlalchemy import func, select
+
+        from workflow.models import PlanningSession
+
+        with sessions() as session:
+            total = session.scalar(
+                select(func.count()).select_from(PlanningSession)
+                .where(PlanningSession.project_id == int(project_id))
+            )
+            return int(total or 0)
+    except Exception:  # noqa: BLE001
+        return 0
+
+
 def runtime_snapshot(sessions, project_id: int, *,
                      job: dict | None = None) -> dict:
-    """اللقطة القانونية (013.4 §8) — كل ما تحتاجه الواجهة في نداء واحد."""
+    """اللقطة القانونية (013.4 §8 + 013.5 §I) — مصدر الحقيقة الواحد.
+
+    كل ما تحتاجه الواجهة في نداء واحد. (013.5 §I) أُضيفت الحقول التي
+    كانت تنقصها فاضطرت خمسة ملفات واجهة لاشتقاق «حقائق» متفرقة:
+    المزود/النموذج/request_id الفعليون، آخر نشاط حقيقي منفصلًا عن
+    النبضة، سقف المهلة، عدّاد المحاولات، الهويات (محادثة/تشغيل/
+    جلسة تخطيط)، وآخر انتقال ناجح.
+    """
     from workflow import planning_runtime
     from workflow import service
 
@@ -229,10 +291,10 @@ def runtime_snapshot(sessions, project_id: int, *,
             job = None
 
     planning = planning_runtime.session_view(sessions, project["id"])
+    planning_detail = planning.get("detail") or {}
     waiting = _waiting_for(sessions, project, job)
     activity = _active_activity(sessions, project)
     started = _parse_iso(project.get("created_at"))
-    updated = _parse_iso(project.get("updated_at"))
     now = _now()
 
     # البيئة والعامل — من الحالة القانونية الموحدة (013.2)
@@ -249,19 +311,33 @@ def runtime_snapshot(sessions, project_id: int, *,
             "coherent": canonical.get("coherent"),
             "environment_id": canonical.get("environment_id"),
             "worker_id": canonical.get("worker_id"),
+            "backend": canonical.get("selected") or {},
         }
     except Exception:  # noqa: BLE001 — البيئة قراءة اختيارية
         pass
 
+    # (013.5 §I) زمن التشغيل: الوظيفة إن وُجدت، وإلا جلسة التخطيط —
+    # لا «مضى 17992ث» بلا مرجع حقيقي.
     heartbeat_at = None
+    started_at = project.get("created_at")
     elapsed_s = None
     if job is not None:
         heartbeat_at = job.get("heartbeat_at")
         job_started = _parse_iso(job.get("started_at"))
         if job_started is not None:
+            started_at = job.get("started_at")
             elapsed_s = round((now - job_started).total_seconds(), 1)
-    elif started is not None:
+    if elapsed_s is None and planning_detail.get("started_at"):
+        session_started = _parse_iso(planning_detail["started_at"])
+        if session_started is not None:
+            started_at = planning_detail["started_at"]
+            heartbeat_at = planning_detail.get("heartbeat_at") or heartbeat_at
+            elapsed_s = round((now - session_started).total_seconds(), 1)
+    if elapsed_s is None and started is not None:
         elapsed_s = round((now - started).total_seconds(), 1)
+
+    phase_row = _entity(sessions, "phase", project.get("current_phase_id"))
+    step_row = _entity(sessions, "step", project.get("current_step_id"))
 
     from workflow import service as _service
 
@@ -270,13 +346,55 @@ def runtime_snapshot(sessions, project_id: int, *,
     )
 
     return {
+        # ---- الهويات (§I) ----
         "project_id": project["id"],
+        "conversation_id": _conversation_id(sessions, project["id"]),
+        "run_id": (job or {}).get("id"),
+        "planning_session_id": planning_detail.get("id"),
         "name": project["name"],
         "objective": project["objective"],
-        "status": project["status"],
         "archived_at": project.get("archived_at"),
+        # ---- الموضع ----
+        "status": project["status"],
+        "phase": phase_row,
         "stage": _stage_of(project, plan),
         "stage_labels": {key: label for key, label in _STAGES},
+        "step": step_row,
+        "current_phase_id": project.get("current_phase_id"),
+        "current_step_id": project.get("current_step_id"),
+        "plan": (
+            {"id": plan["id"], "version": plan["version"],
+             "approved": plan["approved_by_owner"],
+             "phases": len(plan.get("phases") or [])}
+            if plan else None
+        ),
+        "progress": _progress(sessions, project, plan),
+        # ---- الزمن (§I) ----
+        "started_at": started_at,
+        "updated_at": project.get("updated_at"),
+        "elapsed_seconds": elapsed_s,
+        "elapsed_s": elapsed_s,
+        "heartbeat_at": heartbeat_at,
+        "last_meaningful_activity_at": planning_detail.get(
+            "last_meaningful_activity_at"),
+        "planning_silence_s": planning_detail.get("silence_s"),
+        "timeout_at": planning_detail.get("hard_deadline_at"),
+        "finished_at": planning_detail.get("finished_at"),
+        # ---- المزود/النموذج الفعليان (§B/§I) ----
+        "provider": planning_detail.get("provider") or activity["provider"],
+        "model": planning_detail.get("model") or "",
+        "actual_provider": planning_detail.get("actual_provider") or "",
+        "actual_model": planning_detail.get("actual_model") or "",
+        "request_id": planning_detail.get("request_id") or "",
+        "attempt": planning_detail.get("attempt"),
+        "retry_count": _retry_count(sessions, project["id"]),
+        # ---- الانتظار والسبب (§3/§J) ----
+        "waiting_for": waiting,
+        "blocking_reason": _blocking_reason(sessions, project),
+        "planning": planning,
+        "wait_phase": planning.get("wait_phase"),
+        "last_error": project.get("last_error", ""),
+        # ---- التشغيل والبيئة ----
         "job": (
             {"id": job["id"], "status": job.get("status"),
              "waiting_kind": job.get("waiting_kind"),
@@ -285,39 +403,40 @@ def runtime_snapshot(sessions, project_id: int, *,
              "attempt": job.get("attempt")}
             if job else None
         ),
-        "plan": (
-            {"id": plan["id"], "version": plan["version"],
-             "approved": plan["approved_by_owner"],
-             "phases": len(plan.get("phases") or [])}
-            if plan else None
-        ),
-        "current_phase_id": project.get("current_phase_id"),
-        "current_step_id": project.get("current_step_id"),
-        "progress": _progress(sessions, project, plan),
-        "started_at": project.get("created_at"),
-        "updated_at": project.get("updated_at"),
-        "heartbeat_at": heartbeat_at,
-        "elapsed_s": elapsed_s,
-        "waiting_for": waiting,
-        "blocking_reason": _blocking_reason(sessions, project),
-        "planning": planning,
         "activity": {
             "role": activity["role"],
             "tool": activity["tool"],
             "provider": activity["provider"],
         },
         "environment": environment,
+        "backend": environment.get("backend") or {},
         "worker": (
             {"id": environment.get("worker_id")}
             if environment.get("worker_id") else None
         ),
+        # ---- الأحداث ----
         "last_event": activity["last_event"],
+        "last_successful_transition": _last_successful_transition(
+            sessions, project["id"]),
         "recent_events": recent_events[-10:],
         "available_actions": _available_actions(
             project, job, bool(planning.get("active"))
         ),
-        "last_error": project.get("last_error", ""),
     }
+
+
+def _entity(sessions, kind: str, entity_id):
+    """صف مرحلة/خطوة بمعرّفه — للعرض الحرفي في اللقطة (§I)."""
+    if not entity_id:
+        return None
+    from workflow import service
+
+    try:
+        if kind == "phase":
+            return service.get_phase(sessions, int(entity_id))
+        return service.get_step(sessions, int(entity_id))
+    except Exception:  # noqa: BLE001 — القراءة اختيارية
+        return {"id": entity_id}
 
 
 __all__ = ["runtime_snapshot"]

@@ -76,6 +76,40 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
         "conversations.archived_at",
         "ALTER TABLE conversations ADD COLUMN archived_at DATETIME",
     ),
+    # (013.5 §C+§D) آلة حالة التخطيط الصلبة: فصل نبضة الحياة عن
+    # النشاط الحقيقي + سقف زمن الجدار + المزود/النموذج الفعليان.
+    (
+        "planning_sessions.heartbeat_at",
+        "ALTER TABLE planning_sessions ADD COLUMN heartbeat_at DATETIME",
+    ),
+    (
+        "planning_sessions.last_meaningful_activity_at",
+        "ALTER TABLE planning_sessions ADD COLUMN "
+        "last_meaningful_activity_at DATETIME",
+    ),
+    (
+        "planning_sessions.hard_deadline_at",
+        "ALTER TABLE planning_sessions ADD COLUMN hard_deadline_at DATETIME",
+    ),
+    (
+        "planning_sessions.actual_provider",
+        "ALTER TABLE planning_sessions ADD COLUMN actual_provider "
+        "VARCHAR(120) DEFAULT '' NOT NULL",
+    ),
+    (
+        "planning_sessions.actual_model",
+        "ALTER TABLE planning_sessions ADD COLUMN actual_model "
+        "VARCHAR(160) DEFAULT '' NOT NULL",
+    ),
+    (
+        "planning_sessions.reasoning_chars",
+        "ALTER TABLE planning_sessions ADD COLUMN reasoning_chars "
+        "INTEGER DEFAULT 0 NOT NULL",
+    ),
+    (
+        "planning_sessions.owner_pid",
+        "ALTER TABLE planning_sessions ADD COLUMN owner_pid INTEGER",
+    ),
 )
 
 #: ترحيلات بيانات معلنة (011 §1-§2): بوابات «OPEN» قبل 011 صارت

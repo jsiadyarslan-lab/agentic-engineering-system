@@ -68,6 +68,12 @@ def _provider_configured(record: dict) -> bool:
         # (013.2) Bing بلا مفاتيح — النقطة الافتراضية كافية كما DDG؛
         # كان يُرجع False فتُهدر جاهزيته رغم مسبار READY ناجح
         return True
+    if kind == "search_wikipedia":
+        # (013.5 §L) ويكيبيديا بلا مفاتيح وبلا رابط مثيل: واجهة
+        # MediaWiki العامة هي النقطة الافتراضية. دون هذا الفرع كان
+        # `return False` الأخير يوسمها NOT_CONFIGURED — فيُستبعد المزود
+        # الوحيد الذي يعمل فعلًا من هذا المضيف، ويبقى §L بلا مصادر.
+        return True
     if kind == "search_searx":
         return bool(config.get("base_url"))
     if kind == "search_api":

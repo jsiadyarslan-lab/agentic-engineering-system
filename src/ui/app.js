@@ -27,12 +27,15 @@
 
   // ---------- الحالة ----------
   var state = {
-    mode: "chat",                 // "chat" | "task"
+    mode: "chat",                 // "chat" | "task" | "project"
     conversationId: null,         // المحادثة المفتوحة
+    projectScopeId: null,         // (013.5 §E) المشروع المفتوح — نطاق العرض
     busy: false,
     activeRun: null,              // { kind: "task"|"mission"|"chat", cycleId }
     modelsConfig: null,           // آخر إعدادات نماذج (يملؤها settings.js)
     lastSeq: 0,                   // آخر seq وصل — لإعادة الاتصال (§19)
+    historyLoaded: false,         // (013.5 §G) حُمّل التاريخ الدائم فعلًا
+    scopeDiscarded: 0,            // (013.5 §E) أحداث أُسقطت خارج النطاق
   };
 
   var handlers = {};              // معالجات تسجلها الوحدات الشقيقة
@@ -151,12 +154,82 @@
     });
   }
 
+  // ---------- (013.5 §E) عزل النطاق: لا حدث بلا هوية تُطابقه ----------
+  /* الجذر الموثّق للتلوث: الأحداث كانت تُبتلع بلا نطاق، فأي إعادة
+   * بث (after=0) تُعيد رسم محتوى تاريخي داخل المحادثة المفتوحة —
+   * رؤية المالك: سؤال «ما هي أحدث نماذج كلاود؟» فظهر
+   * «Confirmation of Completion / A15 registration / HASH-MANIFEST».
+   * المنع هنا: حدث لا يطابق نطاق العرض النشط يُسقط **قبل** أي عرض،
+   * لا فلترة بصرية بعده. */
+
+  /** نطاق الحدث الموحّد — من scope الصريح أو من الحقول القديمة. */
+  function eventScope(event) {
+    if (event && event.scope && typeof event.scope === "object") {
+      return event.scope;
+    }
+    var d = (event && event.details) || {};
+    return {
+      stream: event.cycle_id || event.stream || "",
+      conversation_id: d.conversation_id != null ? d.conversation_id
+        : (event.conversation_id != null ? event.conversation_id : null),
+      message_id: event.message_id || d.message_id || null,
+      project_id: event.project_id != null ? event.project_id
+        : (d.project_id != null ? d.project_id : null),
+      run_id: d.run_id != null ? d.run_id : null,
+      job_id: d.job_id != null ? d.job_id : null,
+    };
+  }
+
+  /** هل ينتمي الحدث إلى العرض النشط الآن؟ */
+  function eventInActiveScope(event) {
+    var scope = eventScope(event);
+    var stream = String(scope.stream || "");
+    var isChatStream = stream.indexOf("chat-") === 0;
+    var isTaskStream = stream.indexOf("task-") === 0 ||
+      stream.indexOf("cycle-") === 0;
+
+    if (state.mode === "project") {
+      // عرض المشروع: أحداث المحادثة والمهام لا تدخله أبدًا.
+      if (isChatStream || isTaskStream) return false;
+      var pid = scope.project_id;
+      if (pid != null && state.projectScopeId != null &&
+          Number(pid) !== Number(state.projectScopeId)) {
+        return false;
+      }
+      return true;
+    }
+
+    // عرض المحادثة: أي حدث مشروع/تشغيل/وظيفة يُسقط — الحقيقة هنا
+    // رسائل فقط (§H: إسقاطان منفصلان لا تيار عام واحد).
+    if (!isChatStream) {
+      if (scope.project_id != null || scope.run_id != null ||
+          scope.job_id != null) return false;
+      if (isTaskStream) return false;
+      // حدث بلا تيار معروف: يقبل فقط إن طابق المحادثة صراحةً.
+      if (scope.conversation_id == null) return false;
+    }
+    if (scope.conversation_id != null && state.conversationId != null &&
+        Number(scope.conversation_id) !== Number(state.conversationId)) {
+      return false;
+    }
+    if (isChatStream && state.conversationId != null &&
+        stream !== "chat-" + state.conversationId) {
+      return false;
+    }
+    return true;
+  }
+
   // ---------- توجيه الأحداث: النواة أو الوحدات المتخصصة ----------
   function renderEvent(event) {
     if (event.kind === "stream.done") return;   // علامة تحكم لا رسالة
     // (013.4) علامة خاتمة الخيط الداخلية — تصل الآن مع البث (ضمان
     // ترتيب الاكتمال قبل إغلاق التيار) ولا تُعرض كرسالة
     if (event.kind === "task.thread_done") return;
+    // (013.5 §E) بوابة العزل — قبل أي معالج أو عرض
+    if (!eventInActiveScope(event)) {
+      state.scopeDiscarded = (state.scopeDiscarded || 0) + 1;
+      return;
+    }
     if (state.activeRun && !state.activeRun.cycleId && event.cycle_id &&
         event.cycle_id.indexOf("chat-") !== 0) {
       state.activeRun.cycleId = event.cycle_id;
@@ -450,7 +523,9 @@
       window.HubProjects.exitProjectMode();
     }
     state.conversationId = c.conversation_id;
+    state.projectScopeId = null;
     state.lastSeq = 0;
+    state.historyLoaded = false;
     saveActiveConversation(c.conversation_id);
     setHashQuietly("#/chat/" + c.conversation_id);
     setMode(c.mode === "task" ? "task" : "chat", { silent: true });
@@ -461,7 +536,15 @@
     hideWelcome();
     var loadingCard = el("div", "history-loading", "جارٍ تحميل الرسائل…");
     messagesEl.appendChild(loadingCard);
-    fetchJSON("/api/conversations/" + c.conversation_id + "/messages")
+    /* (013.5 §G) ترتيب الاسترداد الملزم:
+     *   1. لقطة المحادثة (فوق)
+     *   2. الرسائل الدائمة  ← لا تُستبدل أبدًا بإسقاط ناقص
+     *   3. الاشتراك بالبث الحي **بعد** اكتمال التاريخ
+     *   4. مصالحة بالتسلسل (after = last_seq الحقيقي، لا صفر)
+     * قبل هذا الإصلاح كان الاشتراك يبدأ قبل وصول الرسائل، فيُبنى
+     * فقاعة حية ثم تُضاف الرسائل التاريخية بعدها (ترتيب مقلوب)،
+     * أو تُرسم إعادة بث قديمة كأنها ردٌّ جديد. */
+    return fetchJSON("/api/conversations/" + c.conversation_id + "/messages")
       .then(function (out) {
         loadingCard.remove();
         if (!out.ok) {
@@ -474,7 +557,11 @@
           return;
         }
         (out.j.messages || []).forEach(addHistoryMessage);
+        state.historyLoaded = true;
         scrollDown();
+        renderConversations(_lastConversations);
+        // (013.5 §G) الآن فقط — الاشتراك الحي والمصالحة
+        resumeActiveRun(c.conversation_id);
       }, function () {
         loadingCard.remove();
         showErrorCard({
@@ -482,8 +569,6 @@
           text: "تعذر الوصول للخدمة لتحميل الرسائل", details: {},
         });
       });
-    renderConversations(_lastConversations);
-    resumeActiveRun(c.conversation_id);   // (§34) استرداد التشغيل الحي
   }
 
   /** استرداد بعد refresh (§34): مهمة/توليد جارٍ يعاد تعليقه حيًا. */
@@ -705,6 +790,11 @@
   // ---------- هوية المحادثة (010 §1): الربط حدث أول لا حالة ضمنية ----------
   handlers["conversation.bind"] = function (event) {
     var d = event.details || {};
+    // (013.5 §E) هوية الرسالة الجارية تصبح مرجع النطاق حصرًا — أي
+    // حدث لرسالة أخرى في هذه المحادثة يُسقط ولا يُرسم.
+    if (window.ChatLive && window.ChatLive.resetScope) {
+      window.ChatLive.resetScope(event.message_id || "");
+    }
     if (d.conversation_id) {
       var changed = state.conversationId !== d.conversation_id;
       state.conversationId = d.conversation_id;
@@ -910,6 +1000,8 @@
     getStream: getStream,
     pumpSSE: pumpSSE,
     renderEvent: renderEvent,
+    eventScope: eventScope,
+    eventInActiveScope: eventInActiveScope,
     scrollDown: scrollDown,
     onLiveContent: onLiveContent,
     addUserMessage: addUserMessage,

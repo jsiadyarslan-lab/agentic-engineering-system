@@ -416,17 +416,31 @@ PLANNING_ERROR_CLASSES: tuple[str, ...] = (
     "MODEL_RESPONSE_INVALID",   # رد لا يطابق عقد الخطة (JSON/عقد)
     "PROVIDER_NOT_CONFIGURED",  # لا ربط حي أصلًا
     "PLANNING_INTERRUPTED",     # موت العملية/الخيط (كلب الإيجار)
+    # (013.5 §B) النموذج المُهيَّأ استدلالي: رد ‏200 ومخرجاته كلها
+    # داخل مرحلة الاستدلال بلا content — ليس فشل خادم ولا «رد فارغ».
+    "REASONING_ONLY_RESPONSE",
+    "OWNER_CANCELLED",          # (013.5 §K) إلغاء المالك — ليس فشلًا
     "PLANNING_ERROR",           # غير مصنّف أعلاه — يبقى صريحًا لا صامتًا
 )
 
 
 class PlanningSession(Base):
-    """جلسة توليد خطة (013.4 §2) — سجل دائم قابل للاستعلام.
+    """جلسة توليد خطة (013.4 §2 + 013.5 §C/§D) — سجل دائم قابل للاستعلام.
 
     كل توليد خطة (أولي/مراجعة/إعادة) = صف واحد هنا: المزود والنموذج
     ومعرف الطلب والنبضة والإيجار ومحاولة الفشل المصنّفة. الواجهة
     تقرأ هذا الصف فتعرف «ما الذي ينتظره التخطيط» حرفيًا — لا
     «Planning…» أبدية بلا تفسير (§3).
+
+    (013.5 §C/§D) الفصل الإلزامي بين نبضتين لا واحدة:
+
+    - ``heartbeat_at``: حياة الخيط/العملية (مؤقت — لا يعني تقدمًا).
+    - ``last_meaningful_activity_at``: آخر نشاط **حقيقي** من المزود
+      (بدأ الطلب/وصلت قطعة/اكتمل الرد). الإيجار يُحسب منه حصرًا،
+      فمزود صامت لا يحتفظ بجلسة GENERATING إلى الأبد.
+
+    ``hard_deadline_at``: سقف زمن الجدار المطلق للمحاولة — بعده
+    MODEL_TIMEOUT حتمًا مهما كان الخيط حيًّا (§B/§C.1).
     """
 
     __tablename__ = "planning_sessions"
@@ -441,11 +455,30 @@ class PlanningSession(Base):
     request_id: Mapped[str] = mapped_column(String(64), default="")
     started_at: Mapped[_dt.datetime] = mapped_column(DateTime,
                                                      default=_utc_now)
+    #: (013.5 §D) نبضة الحياة — لا تُمدّد الإيجار وحدها أبدًا.
+    heartbeat_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    #: (013.5 §D) آخر نشاط مزود حقيقي — منه يُحسب الإيجار.
+    last_meaningful_activity_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    #: آخر لمسة للصف (توافق رجعي مع 013.4) — يساوي النشاط الحقيقي.
     last_activity_at: Mapped[_dt.datetime] = mapped_column(
         DateTime, default=_utc_now
     )
     lease_expires_at: Mapped[_dt.datetime] = mapped_column(DateTime,
                                                            default=_utc_now)
+    #: (013.5 §C.1) سقف زمن الجدار — بعده فشل صريح لا انتظار.
+    hard_deadline_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    #: (013.5 §Q) معرّف العملية المالكة للمحاولة. يجعل استرداد الإقلاع
+    #: **فوريًا وقطعيًا**: عملية ماتت (‏PID غير موجود) = صفّ يتيم يُحسم
+    #: في اللحظة، بلا انتظار انتهاء الإيجار. وهذا فرق مقيس: كان استرداد
+    #: جلسة قُتل خادمها يستغرق ‏123ث (‏LEASE_SECONDS) لأن النبضة كانت
+    #: حديثة وقت القتل. وتركه ‏NULL لصف قديم يُبقي الإيجار حكمًا بديلًا.
+    owner_pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
     finished_at: Mapped[_dt.datetime | None] = mapped_column(
         DateTime, nullable=True
     )
@@ -453,6 +486,14 @@ class PlanningSession(Base):
     error_class: Mapped[str] = mapped_column(String(48), default="")
     error_detail: Mapped[str] = mapped_column(Text, default="")
     retry_of: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    #: (013.5 §B) المزود/النموذج **الفعليان** الذين خدما الاستدعاء —
+    #: منفصلان عن الاختيار المعلن حتى لا يُفقد أيّهما عند الفشل.
+    actual_provider: Mapped[str] = mapped_column(String(120), default="")
+    actual_model: Mapped[str] = mapped_column(String(160), default="")
+    #: (013.5 §D) أحرف الاستدلال المُثبتة في هذه المحاولة. النموذج
+    #: الاستدلالي يعمل دقائق قبل أول حرف إجابة؛ هذا العدّاد هو الدليل
+    #: الدائم على «المزود يعمل» فلا يُوسم صامتًا وهو يفكّر.
+    reasoning_chars: Mapped[int] = mapped_column(Integer, default=0)
 
 
 #: كل جداول الـworkflow — للعد والتحقق البنيوي.

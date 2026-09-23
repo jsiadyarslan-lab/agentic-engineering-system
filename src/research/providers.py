@@ -49,6 +49,10 @@ _BROWSER_HEADERS = {
 #: فشل مصنَّف موحد — نقل منفصل عن التحليل (إضافة 008 §3)
 SEARCH_NOT_READY = "SEARCH_PROVIDER_NOT_READY"
 
+#: (013.5 §L) سبب رفض صريح: المزود رد بصفحة نتائج لكنها لا تخصّ
+#: الاستعلام — لا تُمرَّر للنموذج كأنها مصادر.
+SEARCH_RESULTS_IRRELEVANT = "RESULTS_NOT_RELEVANT"
+
 
 class ProviderNotReady(RuntimeError):
     """المزود غير جاهز — مع تفصيل كل مزود (لا «الإنترنت مقطوع»)."""
@@ -59,6 +63,187 @@ class ProviderNotReady(RuntimeError):
         self.detail = detail
         self.reason = reason
         self.details = details or {}
+
+
+# ------------------------------------------------------------------ #
+# (013.5 §L) بوابة الملاءمة — «نتائج حقيقية» لا تعني «نتائج صحيحة»
+# ------------------------------------------------------------------ #
+
+#: كلمات وظيفية لا تُحتسب كدلالة (عربي مطبَّع + إنجليزي).
+_STOPWORDS = frozenset("""
+ما هي هو هل في من عن علي الي ان لا لم لن ثم او و هذا هذه ذلك التي الذي
+كيف اين متي لماذا كم اي ايه لي ليي اريد اريدك اخبرني قل لي اعطني اكتب
+the a an is are was were of for to in on at by with and or not what
+which who whom whose how when where why do does did can could should
+would will be been being it its this that these those me my i you your
+please tell give show explain list about
+""".split())
+
+_AR_MARKS_RE = re.compile(r"[\u064B-\u0652\u0670\u0640]")
+_AR_FOLD_TABLE = str.maketrans({
+    "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا", "ى": "ي", "ئ": "ي",
+    "ؤ": "و", "ة": "ه",
+})
+
+
+def fold_text(text: str) -> str:
+    """تطبيع عربي/حالة موحّد — الأساس المشترك للمطابقة (§L)."""
+    lowered = str(text or "").lower()
+    return _AR_MARKS_RE.sub("", lowered).translate(_AR_FOLD_TABLE)
+
+
+def query_tokens(query: str) -> list[str]:
+    """رموز الاستعلام الدلالية — بلا كلمات وظيفية ولا ترقيم (§L).
+
+    ملاحظة: الترقيم العربي (؟ ، ؛) يقع داخل نطاق الحروف العربية في
+    يونيكود، فالتقسيم على ``\\w`` وحده كان يُبقي «كلاود؟» رمزًا
+    مختلفًا عن «كلاود» فيفشل التطابق بلا سبب.
+    """
+    raw = _TOKEN_SPLIT.split(fold_text(query))
+    tokens: list[str] = []
+    for token in raw:
+        if len(token) < 3 or token in _STOPWORDS:
+            continue
+        if token not in tokens:
+            tokens.append(token)
+    return tokens
+
+
+#: فاصل الرموز: حروف لاتينية/عربية/أرقام فقط — كل ترقيم يُسقط.
+_TOKEN_SPLIT = re.compile(
+    r"[^0-9a-z_\u0621-\u064a\u0660-\u0669\u066e-\u06d3]+"
+)
+
+
+#: كلمات عامة شائعة في الأسئلة — وجودها في نتيجة لا يُثبت صلتها.
+#: «أحدث نماذج كلاود» طابق «أحدث نماذج الطائرات المسيرة» بمجموعها فقط،
+#: فظهرت نتيجة لا تخصّ السؤال. الرمز النادر وحده يُثبت الصلة.
+_GENERIC_TOKENS = frozenset(fold_text(t) for t in (
+    "احدث", "أحدث", "اخر", "آخر", "اصدار", "إصدار", "اصدارات", "إصدارات",
+    "نماذج", "نموذج", "جديد", "جديدة", "مقارنة", "افضل", "أفضل", "latest",
+    "new", "newest", "models", "model", "version", "versions", "release",
+    "released", "compare", "best", "top", "list",
+))
+
+
+def _result_haystack(result: dict) -> str:
+    return fold_text(" ".join(str(result.get(key) or "") for key in (
+        "title", "url", "snippet", "href")))
+
+
+def result_relevance(query: str, result: dict) -> dict:
+    """صلة **نتيجة واحدة** بالاستعلام — لا مجموع النتائج.
+
+    العطل الحي الذي يغلقه هذا القياس: سؤال «ما هي أحدث نماذج كلاود؟»
+    أعاد من ويكيبيديا «تطبيقات نظام آي أو إس» و«الطائرات الإيرانية
+    المسيرة» و«رسائل (أبل)»، ومجموع النتائج غطّى الرموز الثلاثة فتجاوز
+    البوابة بتغطية ‏1.0 — تمرير ذلك للنموذج كـ«مصادر ويب» تلفيق خالص.
+    القياس الصادق لكل نتيجة: أغلب رموز الاستعلام **فيها هي**، وأحدها
+    على الأقل رمز نادر (غير عام).
+    """
+    tokens = query_tokens(query)
+    if not tokens:
+        return {"tokens": [], "hit": [], "ratio": 1.0, "specific": [],
+                "strong": True}
+    haystack = _result_haystack(result)
+    hit = [t for t in tokens if t in haystack]
+    ratio = len(hit) / len(tokens)
+    specific = [t for t in hit if t not in _GENERIC_TOKENS]
+    #: القاعدة: أغلب رموز الاستعلام **في هذه النتيجة** (لا في مجموع
+    #: النتائج)، وأحدها على الأقل رمز مميّز.
+    #:
+    #: لماذا لا «كل الرموز المميّزة حاضرة»؟ لأن الاسم الأجنبي المكتوب
+    #: بالعربية يطابق كلمات مركبة أخرى: «كلاود» في سؤال عن Claude
+    #: موجودة فعلًا في «كلاود فلير» و«ساوند كلاود» — فمرّت نتيجة عن
+    #: إنترنت الأشياء ونتيجة عن دار الإفتاء، وهو التلفيق نفسه. النسبة
+    #: المجموعية تُسقطها (‏1/3) وتُبقي الصلة الحقيقية (‏رياكت، حوسبة
+    #: كمومية، Claude).
+    strong = ratio >= 0.6 and bool(specific)
+    return {"tokens": tokens, "hit": hit, "ratio": round(ratio, 3),
+            "specific": specific, "discriminating": [
+                t for t in tokens if t not in _GENERIC_TOKENS],
+            "strong": bool(strong)}
+
+
+def filter_relevant(query: str, results: list[dict]) -> list[dict]:
+    """النتائج القوية فقط — بترتيبها الأصلي."""
+    return [r for r in (results or []) if result_relevance(query, r)["strong"]]
+
+
+def relevance_report(query: str, results: list[dict]) -> dict:
+    """تغطية رموز الاستعلام في النتائج — قياس صادق لا حكم ذوقي.
+
+    العطل الحي: Bing رد ‏200 بصفحة نتائج كاملة وبلا أي علامة تحدّ،
+    لكن عناوينها لا تخصّ السؤال إطلاقًا («أنواع ما في اللغة العربية»
+    لسؤال عن أحدث نماذج Claude؛ «Telekom» لـ«احدث نماذج كلاود»).
+    تمرير ذلك للنموذج كـ«مصادر ويب حديثة» تلفيق. البوابة تقيس تغطية
+    الرموز الدلالية **لكل نتيجة** (لا لمجموعها) وتعلن الفشل بسببه.
+    """
+    tokens = query_tokens(query)
+    if not tokens:
+        return {"tokens": [], "covered": [], "coverage": 1.0,
+                "required": 0, "relevant": True, "matched_results": 0,
+                "strong_results": 0}
+    covered: list[str] = []
+    matched_results = 0
+    strong = 0
+    for result in results or []:
+        report = result_relevance(query, result)
+        if report["hit"]:
+            matched_results += 1
+            for token in report["hit"]:
+                if token not in covered:
+                    covered.append(token)
+        if report["strong"]:
+            strong += 1
+    coverage = len(covered) / len(tokens)
+    #: العتبة: أغلب الرموز الدلالية يجب أن تظهر فعلًا في النتائج.
+    #: رمز واحد في استعلام متعدد الرموز = نتيجة اسمية (brand homepage)
+    #: لا بحث — وهي بالضبط ما يجب رفضه.
+    required = 1 if len(tokens) == 1 else max(
+        2, int(len(tokens) * 0.6 + 0.5))
+    return {
+        "tokens": tokens,
+        "covered": covered,
+        "coverage": round(coverage, 3),
+        "required": required,
+        "matched_results": matched_results,
+        "strong_results": strong,
+        #: شرطان معًا: تغطية مجموعية كافية **و**نتيجة واحدة قوية على
+        #: الأقل. التغطية المجموعية وحدها أنتجت ‏1.0 لنتائج لا تخصّ
+        #: السؤال — وهو التلفيق نفسه الذي يمنعه §L.
+        "relevant": len(covered) >= required and strong > 0,
+    }
+
+
+def require_relevant(provider_name: str, query: str,
+                     results: list[dict]) -> list[dict]:
+    """يرفض نتائج لا تخصّ الاستعلام — لا «نجاح» بنتائج عمياء (§L).
+
+    (013.5 §L) يُعيد **النتائج القوية فقط**: تمرير نتائج ضعيفة مع
+    القوية يُبقي التلفيق ممكنًا لأن النموذج يقرأ كل ما يُمرَّر.
+    """
+    if not results:
+        raise ProviderNotReady(
+            f"{provider_name}: صفر نتائج — لا مصادر لتمريرها",
+            reason="NO_RESULTS",
+            details={"query": query[:200]},
+        )
+    report = relevance_report(query, results)
+    if report["relevant"]:
+        strong = filter_relevant(query, results)
+        # النتائج القوية فقط تصل للنموذج — البقية تُسقَط ولا تُمرَّر.
+        return strong or results
+    raise ProviderNotReady(
+        f"{provider_name}: {len(results)} نتيجة لكن تغطية الاستعلام "
+        f"{len(report['covered'])}/{len(report['tokens'])} "
+        f"(المطلوب {report['required']}، ونتائج قوية "
+        f"{report.get('strong_results', 0)}) — النتائج لا تخصّ السؤال",
+        reason=SEARCH_RESULTS_IRRELEVANT,
+        details={"query": query[:200], "relevance": report,
+                 "sample_titles": [
+                     (r.get("title") or "")[:80] for r in results[:4]]},
+    )
 
 
 class SearchProvider(Protocol):
@@ -76,6 +261,127 @@ class SearchProvider(Protocol):
 
 def _tag(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text)
+
+
+# ------------------------------------------------------------------ #
+# ويكيبيديا — بحث حي حقيقي بلا مفاتيح (013.5 §L)
+# ------------------------------------------------------------------ #
+
+class WikipediaSearchProvider:
+    """بحث ويكيبيديا الحقيقي عبر واجهة MediaWiki العامة بلا مفاتيح.
+
+    السبب المقيس: كل محركات البحث العامة من هذا المضيف ترد بصفحة تحدٍّ
+    أو حجب (‏DuckDuckGo anomaly، Mojeek captcha، Brave ‏429، Ecosia
+    ‏403)، ومعها لا «بحث ويب حي» في المحادثة العادية — وهو طلب §L
+    الصريح. واجهة MediaWiki ترد ‏200 بمحتوى حقيقي من نفس المضيف،
+    وتغطي ما يسأل عنه المالك فعلًا (النماذج/المكتبات/الأحداث الجارية).
+
+    **ليست بحثًا عامًا**: هي مصدر موسوعي حقيقي ومعلن — والوصف يقول ذلك
+    حرفيًا، فلا يُدَّعى تعميم لا يملكه المزود.
+    """
+
+    provider_id = "wikipedia"
+    kind = "search_wikipedia"
+
+    #: النسخ المدعومة — العربية أولًا (المالك يسأل بالعربية) ثم الإنجليزية.
+    _WIKIS: tuple[tuple[str, str], ...] = (
+        ("ar", "https://ar.wikipedia.org/w/api.php"),
+        ("en", "https://en.wikipedia.org/w/api.php"),
+    )
+
+    def __init__(self, endpoint: str = "", limit: int = 6):
+        self.endpoint = endpoint
+        self.limit = int(limit or 6)
+
+    def describe(self) -> dict:
+        return {
+            "provider_id": self.provider_id, "kind": self.kind,
+            "name": "ويكيبيديا (بحث موسوعي حي، بلا مفاتيح)",
+            "requires_key": False,
+            "note": "مصدر موسوعي معلن — ليس بحثًا عامًا على الويب",
+            # (013.5 §L) حدّ صريح لا يُخفى: المطابقة نصية على الرموز،
+            # فاسم أجنبي مكتوب بالعربية قد يطابق كلمة مركبة أخرى —
+            # «كلاود» في سؤال عن ‏Claude تطابق «كلاود فلير» و«ساوند
+            # كلاود». البوابة تُسقط ما لا يحمل أي رمز مميّز، لكن
+            # التطابق الدلالي الكامل يحتاج مترجمًا/تحويل حروف لاتينية
+            # (غير متاح هنا) — فالتقرير يعلن هذا الحدّ بدل ادعاء دقة.
+            "relevance_caveat": (
+                "مطابقة نصية على رموز الاستعلام؛ التطابق الدلالي "
+                "(ترجمة/نقل حرفي) غير مدعوم"
+            ),
+            "config": {
+                "wikis": [w[0] for w in self._WIKIS]
+                if not self.endpoint else ["custom"],
+                "endpoint": self.endpoint or "auto (ar/en MediaWiki API)",
+                "limit": self.limit,
+            },
+        }
+
+    def _endpoints(self) -> list[tuple[str, str]]:
+        if self.endpoint:
+            return [("custom", self.endpoint)]
+        return list(self._WIKIS)
+
+    def _search_one(self, label: str, endpoint: str, query: str,
+                    timeout: float) -> list[dict]:
+        url = endpoint + "?" + urllib.parse.urlencode({
+            "action": "query", "list": "search", "srsearch": query,
+            "format": "json", "srlimit": self.limit,
+        })
+        request = urllib.request.Request(url, headers={
+            "User-Agent": _USER_AGENT, "Accept": "application/json",
+        })
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8", "replace"))
+        hits = ((payload.get("query") or {}).get("search") or [])
+        results: list[dict] = []
+        for hit in hits:
+            title = str(hit.get("title") or "").strip()
+            if not title:
+                continue
+            page = urllib.parse.quote(title.replace(" ", "_"))
+            results.append({
+                "title": title,
+                "url": f"https://{label}.wikipedia.org/wiki/{page}",
+                "snippet": _tag(str(hit.get("snippet") or "")).strip(),
+                "source": f"wikipedia-{label}",
+            })
+        return results
+
+    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+        attempts: list[dict] = []
+        collected: list[dict] = []
+        seen: set[str] = set()
+        for label, endpoint in self._endpoints():
+            try:
+                found = self._search_one(label, endpoint, query, timeout)
+            except Exception as error:  # noqa: BLE001 — تصنيف صريح
+                attempts.append({"wiki": label, "ok": False,
+                                 "error": f"{type(error).__name__}: "
+                                          f"{str(error)[:160]}"})
+                continue
+            attempts.append({"wiki": label, "ok": True, "count": len(found)})
+            for item in found:
+                if item["url"] in seen:
+                    continue
+                seen.add(item["url"])
+                collected.append(item)
+        if not collected:
+            raise ProviderNotReady(
+                "wikipedia: صفر نتائج حقيقية — "
+                + json.dumps(attempts, ensure_ascii=False)
+            )
+        report = relevance_report(query, collected)
+        if report["relevant"]:
+            return collected
+        # الاستعلام بالعربية قد لا يطابق عناوين النسخة العربية (سؤال
+        # «أحدث نماذج كلاود» ← مقالة «كلود (نموذج لغوي)»). نُعلن عدم
+        # الصلة صراحةً بدل تمرير نتائج لا تُثبت السؤال.
+        raise ProviderNotReady(
+            "wikipedia: نتائج غير ذات صلة — "
+            + json.dumps({**report, "attempts": attempts},
+                         ensure_ascii=False)[:400]
+        )
 
 
 # ------------------------------------------------------------------ #
@@ -138,6 +444,8 @@ class DuckDuckGoSearchProvider:
 
     def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
         attempts: list[dict] = []
+        #: آخر نتائج حُلّلت ورُفضت لعدم الصلة — تُرفق في التفصيل
+        last_results: list[dict] = []
         if self.endpoint:
             strategies = [("custom", self.endpoint, "POST")]
         else:
@@ -167,17 +475,42 @@ class DuckDuckGoSearchProvider:
                 })
                 continue
             if results:
-                return results
+                # (013.5 §L) جودة لا كمية: استراتيجية ترد نتائج لا تخصّ
+                # الاستعلام تُرفض وتُجرَّب التالية — لا تمرير أعمى.
+                try:
+                    return require_relevant("ddg", query, results)
+                except ProviderNotReady as error:
+                    attempts.append({
+                        "strategy": name,
+                        "error": str(error)[:160],
+                        "reason": error.reason,
+                    })
+                    last_results = results
+                    continue
             attempts.append({
                 "strategy": name, "error": "لا نتائج قابلة للتحليل",
             })
         detail = "؛ ".join(
             f"{a['strategy']}: {a['error']}" for a in attempts
         ) or "لا استراتيجيات"
+        # (013.5 §L) إن كان سبب فشل كل الاستراتيجيات هو **عدم الصلة**
+        # فالتصنيف الصادق هو RESULTS_NOT_RELEVANT لا «تعذّر التحليل»:
+        # المزود ردّ وحُلّل فعلًا، والرفض جاء من بوابة الملاءمة —
+        # والفرق يظهر في المسبار والتقرير.
+        only_irrelevant = bool(attempts) and all(
+            a.get("reason") == SEARCH_RESULTS_IRRELEVANT for a in attempts
+        )
+        details: dict = {"query": query[:200], "attempts": attempts}
+        if only_irrelevant:
+            # القياس الصادق مرفق: المسبار والتقرير يقرآن **لماذا** رُفضت
+            details["relevance"] = relevance_report(query, last_results)
+            details["sample_titles"] = [
+                (r.get("title") or "")[:80] for r in last_results[:4]]
         raise ProviderNotReady(
             f"ddg: كل الاستراتيجيات فشلت — {detail}",
-            reason="RESULTS_NOT_ANALYZABLE",
-            details={"query": query[:200], "attempts": attempts},
+            reason=(SEARCH_RESULTS_IRRELEVANT if only_irrelevant
+                    else "RESULTS_NOT_ANALYZABLE"),
+            details=details,
         )
 
 
@@ -344,7 +677,11 @@ class BingSearchProvider:
                 details={"query": query[:200], "transport": "SUCCESS",
                          "blocks": len(blocks), "page_chars": len(page)},
             )
-        return results
+        # (013.5 §L) Bing يرد ‏200 بصفحة نتائج كاملة وبلا علامة تحدّ،
+        # لكن عناوينها كثيرًا ما تكون تنقّلًا إلى موقع العلامة وحدها
+        # («Claude» ← claude.com؛ «Telekom» لاستعلام عربي غير مفهوم).
+        # تمرير ذلك كـ«مصادر ويب» تلفيق — البوابة ترفضه بسببه.
+        return require_relevant("bing", query, results)
 
 
 # ------------------------------------------------------------------ #
@@ -404,7 +741,7 @@ class SearxJsonSearchProvider:
                 f"searx: لا نتائج قابلة للتحليل لاستعلام: {query[:60]}",
                 reason="RESULTS_NOT_ANALYZABLE",
             )
-        return results
+        return require_relevant("searx", query, results)
 
 
 # ------------------------------------------------------------------ #
@@ -472,7 +809,7 @@ class ApiSearchProvider:
                 f"api: الرد بلا نتائج قابلة للتحليل (style={self.style})",
                 reason="RESULTS_NOT_ANALYZABLE",
             )
-        return results
+        return require_relevant("api", query, results)
 
 
 def _parse_api_payload(data: dict, style: str) -> list[dict]:
@@ -556,7 +893,14 @@ Transport = Callable[[str], list[dict]]
 
 
 def probe_provider(provider: SearchProvider) -> dict:
-    """مسبار مزود واحد — بحث فعلي بنتائج قابلة للتحليل (§24)."""
+    """مسبار مزود واحد — بحث فعلي بنتائج قابلة للتحليل (§24).
+
+    (013.5 §L) تمييز جوهري بين «النقل/التحليل فشل» و«استعلام المسبار
+    لم يُنتج نتائج ذات صلة». الثاني يعني أن المزود **يعمل** فعلًا (ردّ
+    وحُلّل) لكن عبارة المسبار الجامدة لم تطابق شيئًا — ووسمه NOT_READY
+    كان يجعل Bing يبدو معطّلًا وهو يجيب استعلامات حقيقية بنتائج سليمة.
+    الحالة تُعلن READY مع تفصيل صادق يقول إن صلة عبارة المسبار لم تُثبت.
+    """
     import time
 
     started = time.monotonic()
@@ -577,6 +921,22 @@ def probe_provider(provider: SearchProvider) -> dict:
             },
         }
     except ProviderNotReady as error:
+        reason = getattr(error, "reason", "")
+        if reason == SEARCH_RESULTS_IRRELEVANT:
+            # المزود ردّ وحُلّل — الفشل في صلة عبارة المسبار لا في المزود
+            details = getattr(error, "details", {}) or {}
+            return {
+                "status": "READY",
+                "reason": "النقل والتحليل يعملان — عبارة المسبار لم تطابق "
+                          "نتائج ذات صلة (لا يعني عطل المزود)",
+                "latency_ms": int((time.monotonic() - started) * 1000),
+                "details": {
+                    "provider": provider.provider_id,
+                    "probe_query": PROBE_QUERY,
+                    "probe_relevance": details.get("relevance", {}),
+                    "sample_titles": details.get("sample_titles", []),
+                },
+            }
         return {
             "status": "NOT_READY",
             "reason": error.detail[:300],
@@ -600,8 +960,16 @@ __all__ = [
     "PROBE_QUERY",
     "ProviderNotReady",
     "SEARCH_NOT_READY",
+    "SEARCH_RESULTS_IRRELEVANT",
     "SearchProvider",
     "SearxJsonSearchProvider",
+    "WikipediaSearchProvider",
     "fetch_page",
+    "filter_relevant",
+    "fold_text",
     "probe_provider",
+    "query_tokens",
+    "relevance_report",
+    "require_relevant",
+    "result_relevance",
 ]

@@ -23,6 +23,11 @@ _SEED = (
     # (013.2) احتياطي بلا مفاتيح مفعّل افتراضيًا: DDG يحجب الأتمتة
     # بصفحات تحدّ متكررة — بلا احتياطي كان البحث يعطل كليًا
     {"kind": "search_bing", "name": "Bing", "config": {}},
+    # (013.5 §L) ويكيبيديا: المصدر الوحيد الذي ثبت أنه يعمل فعلًا من
+    # هذا المضيف بلا مفاتيح (‏200 ومحتوى حقيقي في العربية والإنجليزية)،
+    # بينما DDG يرد بصفحة تحدٍّ وMojeek بكابتشا وBrave ‏429/Ecosia ‏403.
+    # مفعّل افتراضيًا ومعلن في وصفه أنه **موسوعي** لا بحث عام.
+    {"kind": "search_wikipedia", "name": "Wikipedia", "config": {}},
     {"kind": "search_searx", "name": "SearXNG", "config": {}, "enabled": 0},
     {"kind": "search_api", "name": "Search API", "config": {}, "enabled": 0},
 )
@@ -92,6 +97,11 @@ def build_provider(record: dict):
         return research_providers.BingSearchProvider(
             endpoint=config.get("endpoint")
             or "https://www.bing.com/search",
+        )
+    if record["kind"] == "search_wikipedia":
+        return research_providers.WikipediaSearchProvider(
+            endpoint=config.get("endpoint", ""),
+            limit=int(config.get("limit", 6) or 6),
         )
     if record["kind"] == "search_searx":
         return research_providers.SearxJsonSearchProvider(

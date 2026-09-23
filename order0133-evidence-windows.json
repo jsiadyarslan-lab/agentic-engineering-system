@@ -1,0 +1,162 @@
+{
+ "command": "013.3",
+ "started_at": "2026-09-22T11:28:33Z",
+ "host": {
+  "os": "Windows",
+  "architecture": "AMD64",
+  "python": "3.13.2",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "wsl2": {
+   "available": false,
+   "reason": "WSL2_NO_DISTRO",
+   "detail": "wsl.exe موجود لكن لا توزيعة Linux تعمل: \u0000\n\u0000\n\u0000C\u0000o\u0000p\u0000y\u0000r\u0000i\u0000g\u0000h\u0000t\u0000 \u0000(\u0000c\u0000)\u0000 \u0000M\u0000i\u0000c\u0000r\u0000o\u0000s\u0000o\u0000f\u0000t\u0000 \u0000C\u0000o\u0000r\u0000p\u0000o\u0000r\u0000a\u0000t\u0000i\u0000o\u0000n\u0000.\u0000 \u0000A\u0000l\u0000l\u0000 \u0000r\u0000i\u0000g\u0000h\u0000t\u0000s\u0000 \u0000r\u0000e\u0000s\u0000e\u0000r\u0000v\u0000e\u0000d\u0000.\u0000\n\u0000\n\u0000\n\u0000\n\u0000\n\u0000\n\u0000U\u0000s\u0000a\u0000g\u0000e\u0000:\u0000 \u0000w\u0000s\u0000l\u0000.\u0000e\u0000x\u0000e\u0000 ",
+   "steps": {
+    "wsl_exe": true,
+    "uname": "\u0000\n\u0000\n\u0000C\u0000o\u0000p\u0000y\u0000r\u0000i\u0000g\u0000h\u0000t\u0000 \u0000(\u0000c\u0000)\u0000 \u0000M\u0000i\u0000c\u0000r\u0000o\u0000s\u0000o\u0000f\u0000t\u0000 \u0000C\u0000o\u0000r\u0000p\u0000o\u0000r\u0000a\u0000t\u0000i\u0000o\u0000n\u0000.\u0000 \u0000A\u0000l\u0000l\u0000 \u0000r\u0000i\u0000g\u0000h\u0000t\u0000s\u0000 \u0000r\u0000e\u0000s\u0000e\u0000r\u0000v\u0000e\u0000d\u0000.\u0000\n"
+   }
+  }
+ },
+ "checks": [
+  {
+   "name": "C-linux-path-rejected-before-createprocess",
+   "ok": false,
+   "detail": "cwd=/workspace على Windows: رفض قبل الإطلاق — reason=None",
+   "failure": {}
+  },
+  {
+   "name": "C-no-process-output",
+   "ok": false,
+   "detail": "لم تُنفَّذ العملية إطلاقًا — الرفض سبق CreateProcess"
+  },
+  {
+   "name": "B-winerror267-classified-structured",
+   "ok": true,
+   "detail": "WinError 267 → RUNTIME_WORKSPACE_INVALID/WINDOWS_CWD_INVALID (cwd=C:\\Users\\jaber\\AppData\\Local\\Temp\\order0133-accept-ogvahhup\\ws-b)",
+   "failure": {
+    "code": "RUNTIME_WORKSPACE_INVALID",
+    "reason": "WINDOWS_CWD_INVALID",
+    "reason_text": "cwd غير صالح لدى CreateProcess على Windows (WinError 267 ERROR_DIRECTORY أو ما يماثله)",
+    "cwd": "C:\\Users\\jaber\\AppData\\Local\\Temp\\order0133-accept-ogvahhup\\ws-b",
+    "host": "Windows",
+    "runtime": "python",
+    "execution_mode": "WINDOWS_PROCESS",
+    "environment_id": "accept-b",
+    "worker_id": "",
+    "winerror": 267,
+    "errno": 267,
+    "original": "[WinError 267] The directory name is invalid",
+    "repaired_attempted": true,
+    "repair_result": {
+     "repaired": true,
+     "cwd_exists": true,
+     "cwd_is_directory": true,
+     "absolute": true,
+     "verified_at_launch": true,
+     "note": "CREATE WORKSPACE → VERIFY → START (013.3 §6)"
+    }
+   }
+  },
+  {
+   "name": "I-single-repair-single-retry",
+   "ok": true,
+   "detail": "الإطلاقات = 2 بالضبط (أولى + إعادة واحدة بعد الإصلاح) — لا حلقة إعادة"
+  },
+  {
+   "name": "root-test-run-creates-workspace-and-executes",
+   "ok": true,
+   "detail": "test-run على البيئة المحلية: exit=0 boundary=WINDOWS_PROCESS cwd في المخرجات=True",
+   "evidence": {
+    "environment_id": 1,
+    "runtime_type": "LOCAL",
+    "execution_boundary": "WINDOWS_PROCESS",
+    "host_os": "Windows",
+    "architecture": "AMD64",
+    "worker_id": "local-process:1",
+    "host_cwd": "C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-dr5spil5\\ws",
+    "runtime_cwd": "C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-dr5spil5\\ws",
+    "workspace_exists": true,
+    "launch_command": [
+     "python 3.13.2",
+     "-c",
+     "<test-run-0133>"
+    ],
+    "failure_code": "",
+    "failure_reason": ""
+   },
+   "stdout": "os: Windows\narch: AMD64\npython: (3, 13, 2)\ncwd: C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-dr5spil5\\ws\nfile_write_read_delete: True\nfile_gone: True\n"
+  },
+  {
+   "name": "root-test-run-evidence-complete",
+   "ok": true,
+   "detail": "أدلة §17 كاملة في الرد: الحد/المضيف/العامل/البيئة/مساحة العمل"
+  },
+  {
+   "name": "provision-honest-unavailable-contract",
+   "ok": true,
+   "detail": "توقف صادق ENVIRONMENT_UNAVAILABLE بالعقد الحرفي (host/required/available/missing/action) — لا READY كاذبة ولا إطلاق عامل Windows",
+   "contract": {
+    "code": "ENVIRONMENT_UNAVAILABLE",
+    "host": {
+     "os": "Windows",
+     "arch": "AMD64"
+    },
+    "required": "Linux x86_64 + STRICT_ISOLATED",
+    "available": "LOCAL_WINDOWS (وضع متوافق بلا عزل — لا يوافق السياسة)",
+    "missing": [
+     {
+      "need": "WSL2 يعمل عليه python3 (حد تنفيذ Linux صريح)",
+      "detected": "wsl.exe: True؛ uname: \u0000\n\u0000\n\u0000C\u0000o\u0000p\u0000y\u0000r\u0000i\u0000g\u0000h\u0000t\u0000 \u0000(\u0000c\u0000)\u0000 \u0000M\u0000i\u0000c\u0000r\u0000o\u0000s\u0000o\u0000f\u0000t\u0000 \u0000C\u0000o\u0000r\u0000p\u0000o\u0000r\u0000a\u0000t\u0000i\u0000o\u0000n\u0000.\u0000 \u0000A\u0000l\u0000l\u0000 \u0000r\u0000i\u0000g\u0000h\u0000t\u0000s\u0000 \u0000r\u0000e\u0000s\u0000e\u0000r\u0000v\u0000e\u0000d\u0000.\u0000\n؛ python3: ",
+      "action": "فعّل WSL2 (wsl --install) مع توزيعة فيها python3، أو سجّل عامل Linux بعيد"
+     }
+    ],
+    "action": "جهّز WSL2 (wsl --install) أو سجّل عامل Linux بعيد (python scripts/execution_worker.py) — أو خفّض السياسة صراحة إلى COMPATIBLE_LOCAL من إعدادات المشروع"
+   }
+  },
+  {
+   "name": "canonical-state-consistent",
+   "ok": true,
+   "detail": "الحالة القانونية: UNAVAILABLE — عرضها UNAVAILABLE"
+  }
+ ],
+ "provision": {
+  "state": "PROVISIONING_UNAVAILABLE",
+  "steps": [
+   {
+    "state": "DISCOVERING",
+    "ok": true,
+    "detail": "Windows/AMD64 — Python 3.13.2 — لا حاويات — ركيزة العزل غير متاحة (تنفيذ متوافق محلي)"
+   },
+   {
+    "state": "DISCOVERING",
+    "ok": false,
+    "detail": "المضيف Windows/AMD64 لا يستطيع توفير عزل فعلي: لا ركيزة Linux محلية، لا حاويات Docker/Podman، لا عامل بعيد مسجل، وWSL2 غير متاح فعليًا — والسياسة ترفض التنفيذ بلا عزل"
+   }
+  ],
+  "environment": null,
+  "execution_boundary": "",
+  "wsl": {}
+ },
+ "canonical_state": {
+  "state": "UNAVAILABLE",
+  "environment_id": null,
+  "coherent": {
+   "kind": "UNAVAILABLE",
+   "label": "⚠️ بيئة التنفيذ غير متاحة",
+   "detail": "لا مسار توفير يوافق السياسة على هذا المضيف — الفجوات معلنة",
+   "missing": [
+    {
+     "need": "بيئة تنفيذ معزولة فعليًا",
+     "detected": "المضيف Windows/AMD64 — ركيزة العزل غير متاحة، لا حاويات Docker، لا عامل بعيد مسجل",
+     "action": "أحد ثلاثة: (1) فعّل WSL2/Docker على هذا المضيف وأعد التجهيز، أو (2) شغّل عاملًا بعيدًا على أي Linux/WSL2: python scripts/execution_worker.py ثم سجّله من الإعدادات ← بيئات التنفيذ، أو (3) خفّض السياسة إلى توافق محلي معلن من إعدادات المشروع"
+    }
+   ]
+  }
+ },
+ "finished_at": "2026-09-22T11:28:46Z",
+ "summary": {
+  "passed": 6,
+  "failed": 2,
+  "total": 8,
+  "verdict": "BLOCKED"
+ }
+}

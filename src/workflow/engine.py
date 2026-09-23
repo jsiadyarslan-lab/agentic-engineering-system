@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from router.role_config import RoleSelection
-from workflow import auditor, service
+from workflow import auditor, planning_runtime, service
 from workflow.models import GATE_KINDS, _utc_now
 from workflow.service import PROJECT_ROLES
 
@@ -313,11 +313,24 @@ class ProjectEngine:
           من نفس الوظيفة الدائمة.
         - ``final=True`` ← إيقاف نهائي: STOPPED دائمة مع حفظ كل شيء
           (الأحداث/الأدلة/اللقطات/التاريخ لا تُمس أبدًا).
+
+        (013.5 §K) **إلغاء حقيقي أثناء التخطيط**: إن كان توليد جارٍ
+        فالاستدعاء يُقطع فعلًا من خيطه (``cancel_planning``) — لا علم
+        تجميلي على صف المشروع بينما الخيط يواصل العمل.
         """
+        from workflow import planning_runtime
+
         self._project(project_id)
         _STOP_INTENTS[int(project_id)] = "stop" if final else "pause"
         service.update_project(self._sessions, project_id,
                                stop_requested=True)
+        cancel_result = planning_runtime.cancel_planning(
+            self._sessions, project_id,
+            reason=reason or ("إيقاف نهائي من المالك" if final
+                              else "إيقاف مؤقت من المالك"),
+            final=final,
+            on_live_event=self._on_event,
+        )
         controller = _ACTIVE_CONTROLLERS.get(project_id)
         if controller is not None:
             controller.request_stop(
@@ -326,8 +339,10 @@ class ProjectEngine:
         if final:
             self._emit(project_id, "OWNER_STOP_REQUESTED", {
                 "reason": reason, "final": True,
+                "planning_cancelled": bool(cancel_result.get("cancelled")),
             })
-        return service.get_project(self._sessions, project_id)
+        project = service.get_project(self._sessions, project_id)
+        return {**project, "planning_cancel": cancel_result}
 
     # ------------------------------------------------------------------ #
     # أزرار التحكم الحقيقية (013.4 §11-§17) — كل زر أمر دائم
@@ -351,9 +366,10 @@ class ProjectEngine:
         result = self.request_stop(
             project_id, reason or "إيقاف مؤقت من المالك"
         )
-        # التخطيط الخلفي النشط يتوقف هو أيضًا بنيّة الإيقاف — الجلسة
-        # تُعلق لا تُقتل: لمس النبضة يتوقف فيوسمها الكلب INTERRUPTED
-        # لو ماتت؛ والحية تُكمل بعد الاستئناف بإعادة توليد صريحة.
+        # (013.5 §K) الإيقاف المؤقت أثناء التخطيط **يلغي التوليد فعلًا**:
+        # المشروع يصير PAUSED وجلسته CANCELLED — لا انتظار حتى ينتهي
+        # استدعاء طويل ثم تُقلب الحالة. الاستئناف قرار مالك صريح يعيد
+        # التوليد بجلسة جديدة (retry_of) فلا نجاح مُدّعى من فراغ.
         return {**result, "pausing": True}
 
     def retry(self, project_id: int) -> dict:
@@ -542,6 +558,30 @@ class ProjectEngine:
                         "الاستئناف ممكن بعد توفير المتطلبات — "
                         + recheck["summary"]
                     )
+        # (013.5 §K) استئناف صادق: مشروع أُوقف **أثناء التخطيط** لا خطة
+        # له — تشغيل الحلقة عليه نجاح مُدّعى من فراغ. الاستئناف الصادق
+        # يعيده DRAFT ويعلن أن الخطوة التالية توليدُ خطة (قرار المالك).
+        from workflow import planning_runtime
+
+        session = planning_runtime.latest_session(self._sessions, project_id)
+        needs_planning = (
+            project["status"] == "PAUSED"
+            and service.latest_plan(self._sessions, project_id) is None
+            and session is not None
+            and session["state"] == "CANCELLED"
+        )
+        if needs_planning:
+            service.update_project(self._sessions, project_id,
+                                   stop_requested=False, status="DRAFT",
+                                   last_error="")
+            self._emit(project_id, "PROJECT_RESUMED", {
+                "from_status": project["status"],
+                "to_status": "DRAFT",
+                "needs_planning": True,
+                "reason": "أُوقف أثناء التوليد فلا خطة بعد — الاستئناف "
+                          "يعيد DRAFT ويطلب توليدًا صريحًا",
+            })
+            return service.get_project(self._sessions, project_id)
         service.update_project(self._sessions, project_id,
                                stop_requested=False, status="RUNNING")
         self._emit(project_id, "PROJECT_RESUMED",
@@ -1604,6 +1644,21 @@ class ProjectEngine:
                 reason = "كان قيد التشغيل عند توقف العملية — الاستئناف صريح"
                 service.update_project(self._sessions, project_id,
                                        status="PAUSED")
+            elif project["status"] in ("PLANNING", "REVISING"):
+                # (013.5 §C.4) التخطيط ليس «قرار مالك»: إن كان المولِّد
+                # ميتًا فهذا عطل يُحسم بوسم صادق (PLANNING_INTERRUPTED /
+                # MODEL_TIMEOUT) لا سؤال يُترك معلقًا — الجذر الحرفي
+                # للعطل الذي بقي PLANNING ‏17992ث. الحسم يقع في
+                # planning_runtime.recover_at_startup قبل هذا التقييم.
+                live = planning_runtime.latest_session(
+                    self._sessions, project_id)
+                recommendation = "OWNER_RETRY"
+                reason = (
+                    "التخطيط لم يكتمل وحُسم بحالة صادقة "
+                    f"({live['state']}/{live['error_class']}) — أعد التوليد"
+                    if live and live.get("error_class") else
+                    "التخطيط لم يكتمل — لا جلسة توليد حيّة؛ أعد التوليد"
+                )
             elif gates:
                 recommendation = "OWNER_DECISION"
                 reason = "بوابات مالك مفتوحة: " + "، ".join(

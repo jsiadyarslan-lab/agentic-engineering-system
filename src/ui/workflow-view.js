@@ -70,31 +70,73 @@
     return box;
   }
 
-  /** بطاقة التخطيط الحي (§36): ماذا ينتظر حرفيًا — مزود/نموذج/طلب/مضى. */
+  /* (013.5 §J) رموز الانتظار الصادقة — نفس مفردات project-live.js.
+   * «توليد الخطة جارٍ» لم تكن كافية: المالك بقي ‏17992ث أمام شاشة
+   * لا تقول إن كان الاستدعاء وصل للمزود أصلًا ولا كم بقي للسقف. */
+  var WAIT_PHASE_TEXT = {
+    QUEUED: "في الطابور — لم يبدأ الاستدعاء بعد",
+    CONNECTING: "جارٍ الاتصال بالمزود وإرسال الطلب",
+    /* 013.5 §D/§J: استدلال حيّ ≠ صمت — المزود يعمل ويُقاس عدّاده. */
+    REASONING: "المزود يستدل الآن — نشاط حقيقي وصل، والإجابة لم تبدأ بعد",
+    AWAITING_PROVIDER: "بانتظار رد المزود — الطلب مُرسَل ولم يصل نشاط",
+    PAUSED: "موقوف بقرار المالك",
+    DONE: "اكتمل",
+    FAILED: "فشل مصنَّف",
+    INTERRUPTED: "انقطع العامل المولِّد",
+    CANCELLED: "أُلغي",
+  };
+
+  function wfSeconds(value) {
+    var n = Number(value);
+    if (!isFinite(n) || n < 0) return "—";
+    if (n < 60) return n + " ث";
+    var minutes = Math.floor(n / 60);
+    if (minutes < 60) return minutes + " د " + (n % 60) + " ث";
+    return Math.floor(minutes / 60) + " س " + (minutes % 60) + " د";
+  }
+
+  function wfRemaining(deadline) {
+    if (!deadline) return null;
+    var target = new Date(deadline).getTime();
+    if (isNaN(target)) return null;
+    return Math.max(0, Math.round((target - Date.now()) / 1000));
+  }
+
+  /** بطاقة التخطيط الحي (§36 + §D/§J): ماذا ينتظر حرفيًا وسقفه. */
   function renderPlanningLive(snap) {
     var planning = snap.planning || {};
     if (!planning.active) return null;
     var detail = planning.detail || {};
     var waiting = planning.waiting_for || {};
+    var phase = planning.wait_phase || "CONNECTING";
     var card = el("div", "wf-planning-live");
-    card.appendChild(el("div", "wf-planning-title",
-      "⏳ توليد الخطة جارٍ — ما يُنتظر معلن:"));
+    var title = el("div", "wf-planning-title");
+    title.appendChild(el("span", null, "⏳ توليد الخطة جارٍ — "));
+    title.appendChild(el("span", "wf-wait-phase", phase));
+    card.appendChild(title);
+    card.appendChild(el("div", "wf-planning-wait",
+      WAIT_PHASE_TEXT[phase] || ("حالة انتظار معلنة: " + phase)));
     var rows = el("div", "wf-planning-rows");
     function row(label, value) {
-      if (!value) return;
+      if (value === null || value === undefined || value === "") return;
       var r = el("div", "wf-planning-row");
       r.appendChild(el("span", "wf-pl-k", label));
-      r.appendChild(el("span", "wf-pl-v", String(value)));
+      var v = el("span", "wf-pl-v", String(value));
+      v.dir = "auto";
+      r.appendChild(v);
       rows.appendChild(r);
     }
-    row("المزود", waiting.provider);
-    row("النموذج", waiting.model);
-    row("الطلب", waiting.request_id);
+    row("المزود", waiting.provider || detail.provider);
+    row("النموذج", waiting.model || detail.model);
+    row("الطلب", waiting.request_id || detail.request_id);
     row("المحاولة", waiting.attempt);
-    row("مضى", (detail.elapsed_s || 0) + " ثانية");
-    row("آخر نبضة", detail.last_activity_at
-      ? new Date(detail.last_activity_at).toLocaleTimeString("ar")
-      : "");
+    row("مضى على الجلسة", wfSeconds(detail.elapsed_s));
+    row("آخر نشاط مزود حقيقي", wfSeconds(detail.silence_s) + " مضت");
+    row("آخر نبضة عملية", detail.heartbeat_at
+      ? new Date(detail.heartbeat_at).toLocaleTimeString("ar") : "—");
+    var left = wfRemaining(detail.hard_deadline_at);
+    row("السقف الصلب المتبقي", left === null ? "غير معلن"
+      : wfSeconds(left) + " (حد " + wfSeconds(detail.hard_timeout_s) + ")");
     card.appendChild(rows);
     return card;
   }

@@ -108,10 +108,16 @@ def test_local_environment_cannot_be_deleted(client):
 # ------------------------------------------------------------------ #
 
 def test_research_providers_seeded(client):
+    """(013.5 §L) خمسة مزودين — ويكيبيديا أُضيفت كمصدر حي بلا مفاتيح.
+
+    السبب مقيس: كل محركات البحث العامة من هذا المضيف ترد صفحة تحدٍّ أو
+    حجبًا، فواجهة MediaWiki هي المزود الذي يخدم فعلًا سؤال المستخدم.
+    """
     out = client.get("/api/research/providers")
     assert out.status_code == 200
     kinds = {p["kind"] for p in out.json()["providers"]}
-    assert kinds == {"search_ddg", "search_bing", "search_searx", "search_api"}
+    assert kinds == {"search_ddg", "search_bing", "search_wikipedia",
+                     "search_searx", "search_api"}
 
 
 def test_research_configure_and_probe_with_seamed_transport(

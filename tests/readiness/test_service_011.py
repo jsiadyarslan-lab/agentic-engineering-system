@@ -136,10 +136,13 @@ def test_capability_blocked_details_when_nothing_ready(sessions):
            for p in view["details"]["per_provider"]}
     # (013.2) أربعة مزودين: DDG معطّل، Bing معد بلا مفاتيح لكنه غير
     # مفحوص (UNKNOWN — صار يُعد معدًا افتراضيًا كـDDG)، والبقية غير معدّين
+    # (013.5 §L) وخامسها ويكيبيديا: أُضيفت مزودًا حقيقيًا ومفعّلة
+    # افتراضيًا (بلا مفتاح)، وهي UNKNOWN حتى تُفحص كـBing.
     assert per == {"DuckDuckGo": "DISABLED",
                    "Bing": "UNKNOWN",
                    "SearXNG": "NOT_CONFIGURED",
-                   "Search API": "NOT_CONFIGURED"}
+                   "Search API": "NOT_CONFIGURED",
+                   "Wikipedia": "UNKNOWN"}
     # والمستوى الصادق لـ NOT_CONFIGURED هو المزود (§16)
     providers = readiness_service.research_providers_view(sessions)
     by_kind = {p["kind"]: p["effective_status"] for p in providers}

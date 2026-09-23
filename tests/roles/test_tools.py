@@ -82,15 +82,23 @@ def test_generate_pdf_arabic_one_page(tmp_path):
 
 
 def test_web_search_parses_ddg_html():
-    """محلل نتائج DDG — على HTML حقيقي مجمد (بدون شبكة)."""
+    """محلل نتائج DDG — على HTML حقيقي مجمد (بدون شبكة).
+
+    (013.5 §L) النص المجمد **يجب أن يحمل رموز الاستعلام**: بوابة
+    الملاءمة صارت تقيس كل نتيجة على حدة، فالنتيجة التي لا تذكر
+    «الشرق الأوسط» تُسقَط ولا تُمرَّر. هذا هو المقصود لا مخالفة
+    المحلل: ما يُختبر هنا هو تحليل HTML وفكّ رابط التوجيه، فيلزم أن
+    تكون النتائج المجمّدة صالحة تحت العقد الجديد. مع النص القديم كان
+    الفحص يمرّ سابقًا لأن البوابة لم تكن موجودة.
+    """
     import roles.web_tools as web_tools
     import research.providers as research_providers
 
     frozen = """
-    <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fa&amp;rut=xyz">عنوان النتيجة الأولى</a>
-    <a class="result__snippet" href="">مقتطف عن الوضع في المنطقة</a>
-    <a rel="nofollow" class="result__a" href="https://example.org/b">Second result</a>
-    <a class="result__snippet" href="">snippet two</a>
+    <a rel="nofollow" class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fa&amp;rut=xyz">عنوان النتيجة الأولى عن الشرق الأوسط</a>
+    <a class="result__snippet" href="">مقتطف عن الوضع في الشرق الأوسط</a>
+    <a rel="nofollow" class="result__a" href="https://example.org/b">Second result about الشرق الأوسط</a>
+    <a class="result__snippet" href="">snippet two about الشرق الأوسط</a>
     """
     original = research_providers.urllib.request.urlopen
 
@@ -119,5 +127,5 @@ def test_web_search_parses_ddg_html():
     assert len(results) == 2
     # فُكّ رابط التوجيه إلى الأصل
     assert results[0]["url"] == "https://example.com/a"
-    assert results[0]["title"] == "عنوان النتيجة الأولى"
+    assert results[0]["title"].startswith("عنوان النتيجة الأولى")
     assert "مقتطف" in results[0]["snippet"]

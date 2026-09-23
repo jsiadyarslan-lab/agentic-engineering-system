@@ -13,6 +13,16 @@ from typing import Any
 
 from core.config import live_model_settings
 
+#: (013.5 §B) عقد المخرجات الافتراضي — يغطي الاستدلال **و**الإجابة.
+#: قياس حي على النموذج المُهيَّأ (deepseek-ai/deepseek-v4.1-flash):
+#: ‏7117 حرف استدلال + 10268 حرف مخرج لخطة من 7 مراحل و34 خطوة.
+#: ‏4000 (الافتراضي القديم) كان يُستنفد داخل الاستدلال فيعود الرد
+#: بـ content فارغ — وهو ما صُنّف سابقًا «رد فارغ» خطأً.
+DEFAULT_MAX_TOKENS = 16000
+
+#: (013.5 §B) مهلة النقل الافتراضية — استدلال طويل شرعي لا عطل.
+DEFAULT_REQUEST_TIMEOUT = 600.0
+
 
 class ProviderCallError(Exception):
     """خطأ نقل مزود — تصنيفه بسمات صريحة تقرؤها الحزم بطرفية.
@@ -21,6 +31,9 @@ class ProviderCallError(Exception):
     is_server_error:  5xx غير الاختناقي — إعادات ثم تبدّل.
     is_timeout:       انتهت مهلة الاتصال/الفتحة — كخطأ خادم.
     retry_after:      ثواني رأس Retry-After إن أرسلها المزود.
+    error_class:      (013.5 §B) تصنيف صريح يسبق الخريطة العامة —
+                      مثل REASONING_ONLY_RESPONSE: المزود رد فعلًا
+                      لكن مخرجاته كلها داخل مرحلة الاستدلال.
     """
 
     def __init__(
@@ -32,6 +45,7 @@ class ProviderCallError(Exception):
         is_server_error: bool = False,
         is_timeout: bool = False,
         retry_after: int | None = None,
+        error_class: str = "",
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -39,6 +53,7 @@ class ProviderCallError(Exception):
         self.is_server_error = is_server_error
         self.is_timeout = is_timeout
         self.retry_after = retry_after
+        self.error_class = error_class
 
 
 
@@ -149,7 +164,36 @@ def resolve_live_providers(cfg: "Any" = None) -> dict[str, dict]:
             if found:
                 merged = {**resolved.get(name, {}), **found}
                 resolved[name] = merged
+    # 3) (013.5 §B) عقد المخرجات والمهلة — معلن لكل مزود لم يحدده.
+    #    السبب المقيس حيًّا: النموذج المُهيَّأ استدلالي، وسقف المخرجات
+    #    الافتراضي (4000) يُستنفد داخل reasoning_content فيعود الرد
+    #    بلا content إطلاقًا. السقف هنا يغطي الاستدلال + الإجابة،
+    #    والمهلة تسمح بمرحلة استدلال طويلة شرعية (قيس: أول استدلال
+    #    25ث، أول مخرج 112ث، إنهاء 266ث لخطة كاملة).
+    for name, spec in resolved.items():
+        spec.setdefault("max_tokens", live_cfg_max_tokens(live_cfg))
+        spec.setdefault("timeout", live_cfg_timeout(live_cfg))
     return resolved
+
+
+def live_cfg_max_tokens(live_cfg: "Any" = None) -> int:
+    """سقف مخرجات معلن لكل استدعاء — يقبل ضبطًا بمتغير بيئة صريح."""
+    cfg = live_cfg or live_model_settings
+    try:
+        value = int(getattr(cfg, "max_tokens", 0) or 0)
+    except (TypeError, ValueError):
+        value = 0
+    return value if value > 0 else DEFAULT_MAX_TOKENS
+
+
+def live_cfg_timeout(live_cfg: "Any" = None) -> float:
+    """مهلة نقل معلنة لكل استدعاء — تكفي لاستدلال طويل شرعي."""
+    cfg = live_cfg or live_model_settings
+    try:
+        value = float(getattr(cfg, "timeout", 0) or 0)
+    except (TypeError, ValueError):
+        value = 0.0
+    return value if value > 0 else DEFAULT_REQUEST_TIMEOUT
 
 
 def _resolve_db_provider_specs() -> dict[str, dict] | None:
