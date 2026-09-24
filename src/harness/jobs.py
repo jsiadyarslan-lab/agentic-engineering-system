@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import threading
+import time
 import uuid
 from typing import Any, Callable
 
@@ -349,6 +350,9 @@ class JobManager:
             while ticks < self._max_ticks:
                 tick_result = self._engine.tick(project_id)
                 ticks += 1
+                # DEBUG
+                if ticks % 10 == 0:
+                    print(f"DEBUG: tick {ticks}, action={tick_result.get('action')}, blocked_kind={tick_result.get('blocked_kind')}", flush=True)
                 # أحداث هذه النبضة (للإعادات ونقاط الحفظ الصادقة)
                 new_events = self._events_after(project_id,
                                                 last_event_id)
@@ -371,6 +375,11 @@ class JobManager:
                     tick_result, project=project, open_gates=open_gates,
                     retry_requested=retry_requested,
                 )
+
+                # (013.7 §P15) إضافة تأخير قصير عند حجب الفحص المسبق لتجنب استهلاك CPU
+                if classification.get("waiting_kind") in ("WORKER", "CAPABILITY") \
+                        and tick_result.get("blocked_kind") == "preflight":
+                    time.sleep(0.5)
 
                 checkpoint = service.latest_checkpoint(
                     sessions, project_id

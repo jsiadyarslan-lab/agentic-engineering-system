@@ -285,6 +285,12 @@ class Execution(Base):
     commit_sha: Mapped[str] = mapped_column(String(80), default="")
     error: Mapped[str] = mapped_column(Text, default="")
     checkpoint_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # (013.7 §P14) تنفيذ الأمر: تتبع الأمر والعملية ومسار العمل
+    command: Mapped[str] = mapped_column(Text, default="")
+    pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cwd: Mapped[str] = mapped_column(String(500), default="")
+    parent_pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    command_type: Mapped[str] = mapped_column(String(50), default="")
 
 
 class EvidenceRecord(Base):

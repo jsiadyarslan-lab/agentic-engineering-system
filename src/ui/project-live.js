@@ -933,6 +933,24 @@
       }
     }
 
+    // (013.7 §P14) أمر التنفيذ الحالي
+    if (execution.command) {
+      rows.appendChild(envRow("الأمر الحالي",
+        String(execution.command).slice(0, 200)));
+    }
+    if (execution.cwd) {
+      rows.appendChild(envRow("مسار العمل", execution.cwd));
+    }
+    if (execution.pid) {
+      rows.appendChild(envRow("معرّف العملية (PID)", String(execution.pid)));
+    }
+    if (execution.parent_pid) {
+      rows.appendChild(envRow("معرّف العملية الأصلية (PPID)", String(execution.parent_pid)));
+    }
+    if (execution.command_type) {
+      rows.appendChild(envRow("نوع الأمر", execution.command_type));
+    }
+
     var lastEvent = (state.events || []).filter(function (e) {
       return ["ROLE_EXECUTING", "TOOL_EXECUTION", "EVIDENCE_CREATED",
               "STEP_COMPLETED"].indexOf(e.kind) !== -1;

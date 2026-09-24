@@ -1094,6 +1094,15 @@ class ProjectEngine:
         attempt = step["attempts"] + 1
         workspace = PROJECTS_DIR / str(project_id) / "steps" / str(step["id"])
         workspace.mkdir(parents=True, exist_ok=True)
+        # (013.7 §P14) أمر التنفيذ ومسار العمل
+        command_text = step["objective"]
+        if step.get("input"):
+            command_text += f"\n\nالمدخلات: {step['input']}"
+        if step.get("expected_output"):
+            command_text += f"\nالمخرج المتوقع: {step['expected_output']}"
+        if step.get("acceptance_criteria"):
+            command_text += "\nمعايير القبول (تحقق حرفيًا):\n- " + \
+                "\n- ".join(step["acceptance_criteria"])
         # أمانة ما بعد الانهيار: تنفيذ RUNNING بلا خيط حي (restart)
         # يُوسم فشلًا بسبب صريح — لا يبقى معلقًا كأنه حي (§9)
         self._fail_orphaned_executions(step["id"])
@@ -1102,6 +1111,8 @@ class ProjectEngine:
             provider=str(role_selections.get("implementer")),
             model=str(getattr(role_selections.get("implementer"), "model", "")),
             workspace=str(workspace), agent_role="implementer",
+            command=command_text, cwd=str(workspace),
+            command_type="step_execution",
         )
         service.update_step(
             self._sessions, step["id"], status="RUNNING",

@@ -708,16 +708,36 @@ class LocalProcessBackend:
         cwd = str(workspace)
         started = _time.monotonic()
         try:
-            proc = subprocess.run(
+            # (013.7 §P14) التقاط PID والعملية الأصلية
+            proc = subprocess.Popen(
                 [sys.executable, "-c", code, *args],
-                capture_output=True, text=True, timeout=timeout_s,
-                cwd=cwd,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, cwd=cwd,
             )
-            elapsed = int((_time.monotonic() - started) * 1000)
-            return (
-                proc.returncode, proc.stdout or "", proc.stderr or "",
-                f"{elapsed}ms", {},
-            )
+            pid = proc.pid
+            parent_pid = None
+            try:
+                import psutil
+                parent = psutil.Process(pid).parent()
+                if parent:
+                    parent_pid = parent.pid
+            except Exception:
+                pass
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout_s)
+                elapsed = int((_time.monotonic() - started) * 1000)
+                return (
+                    proc.returncode, stdout or "", stderr or "",
+                    f"{elapsed}ms", {"pid": pid, "parent_pid": parent_pid},
+                )
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                stdout, stderr = proc.communicate()
+                elapsed = int((_time.monotonic() - started) * 1000)
+                return (
+                    -1, stdout or "", f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ",
+                    "timeout", {"pid": pid, "parent_pid": parent_pid},
+                )
         except subprocess.TimeoutExpired as error:
             return (
                 -1, (error.stdout or "") if isinstance(error.stdout, str) else "",

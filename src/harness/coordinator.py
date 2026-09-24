@@ -293,7 +293,7 @@ def _classify_preflight_block(blocked: list[dict], gate_kinds: list[str],
             "recovery": "وفّر المتطلب ← تحقق ← أعد الفحص ← استئناف "
                         "(بلا إعادة اعتماد)",
         },
-        "terminal": False, "stop": True,
+        "terminal": False, "stop": False,
     }
 
 

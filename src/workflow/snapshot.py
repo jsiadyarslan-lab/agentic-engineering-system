@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from workflow.models import Project, Execution
+
 _STAGES = [
     ("GOAL", "الهدف"),
     ("PLAN", "الخطة"),
@@ -394,6 +396,39 @@ def runtime_snapshot(sessions, project_id: int, *,
         "planning": planning,
         "wait_phase": planning.get("wait_phase"),
         "last_error": project.get("last_error", ""),
+        # ---- المزود/النموذج الفعليان (مكرر للتوضيح) ----
+        "provider": planning_detail.get("provider") or activity["provider"],
+        "model": planning_detail.get("model") or "",
+        "actual_provider": planning_detail.get("actual_provider") or "",
+        "actual_model": planning_detail.get("actual_model") or "",
+        "attempt": planning_detail.get("attempt"),
+        "retry_count": _retry_count(sessions, project["id"]),
+        # ---- المرحلة والخطوة الحالية ----
+        "stage": _stage_of(project, plan),
+        "stage_labels": {key: label for key, label in _STAGES},
+        "step": step_row,
+        "current_phase_id": project.get("current_phase_id"),
+        "current_step_id": project.get("current_step_id"),
+        # ---- الانتظار والسبب (§3/§J) ----
+        "waiting_for": waiting,
+        "blocking_reason": _blocking_reason(sessions, project),
+        "planning": planning,
+        "wait_phase": planning.get("wait_phase"),
+        "last_error": project.get("last_error", ""),
+        # ---- المزود/النموذج الفعليان (مكرر للتوضيح) ----
+        "provider": planning_detail.get("provider") or activity["provider"],
+        "model": planning_detail.get("model") or "",
+        "actual_provider": planning_detail.get("actual_provider") or "",
+        "actual_model": planning_detail.get("actual_model") or "",
+        "request_id": planning_detail.get("request_id") or "",
+        "attempt": planning_detail.get("attempt"),
+        "retry_count": _retry_count(sessions, project["id"]),
+        # ---- الانتظار والسبب (§3/§J) ----
+        "waiting_for": waiting,
+        "blocking_reason": _blocking_reason(sessions, project),
+        "planning": planning,
+        "wait_phase": planning.get("wait_phase"),
+        "last_error": project.get("last_error", ""),
         # ---- التشغيل والبيئة ----
         "job": (
             {"id": job["id"], "status": job.get("status"),
@@ -414,6 +449,8 @@ def runtime_snapshot(sessions, project_id: int, *,
             {"id": environment.get("worker_id")}
             if environment.get("worker_id") else None
         ),
+        # (013.7 §P14) تنفيذ الأمر الحالي
+        "execution": _execution_detail(sessions, project["id"]),
         # ---- الأحداث ----
         "last_event": activity["last_event"],
         "last_successful_transition": _last_successful_transition(
@@ -423,6 +460,39 @@ def runtime_snapshot(sessions, project_id: int, *,
             project, job, bool(planning.get("active"))
         ),
     }
+
+
+def _execution_detail(sessions, project_id: int) -> dict | None:
+    """(013.7 §P14) تفاصيل تنفيذ الأمر الحالي — للواجهة."""
+    from workflow import service
+    from workflow.models import Project, Execution
+
+    with sessions() as session:
+        project = session.get(Project, int(project_id))
+        if project is None:
+            return None
+        exec_id = project.get("current_execution_id")
+        if not exec_id:
+            return None
+        exec_row = session.get(Execution, int(exec_id))
+        if exec_row is None:
+            return None
+        return {
+            "id": exec_row.id,
+            "step_id": exec_row.step_id,
+            "attempt": exec_row.attempt,
+            "status": exec_row.status,
+            "command": exec_row.command,
+            "command_type": exec_row.command_type,
+            "cwd": exec_row.cwd,
+            "pid": exec_row.pid,
+            "parent_pid": exec_row.parent_pid,
+            "command_type": exec_row.command_type,
+            "started_at": exec_row.started_at.isoformat() if exec_row.started_at else None,
+            "finished_at": exec_row.finished_at.isoformat() if exec_row.finished_at else None,
+            "status": exec_row.status,
+            "agent_role": exec_row.agent_role,
+        }
 
 
 def _entity(sessions, kind: str, entity_id):
