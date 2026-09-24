@@ -279,8 +279,19 @@
     return note;
   }
 
-  /* بطاقة الخطة (§11 + 013.5 §N): إطار «الخطة» وسبعة أقسام مسماة
-   * قابلة للطي بالترتيب المعلن — مستقرة من اللقطة وحدها (§8). */
+  /* بطاقة الخطة (013.7 §P4): تصميم داكن RTL كامل — لا JSON خام في المسار الأساسي.
+   *
+   * الهيكل:
+   * 1) Header: "الخطة الرئيسية vN" + حالة الاعتماد
+   * 2) الهدف + الملخص
+   * 3) المراحل — بطاقة لكل مرحلة: رقم، اسم، حالة، عدد الخطوات، تبعيات، نطاق تنفيذ
+   * 4) الخطوات — مجمعة تحت كل مرحلة، قابلة للطي
+   * 5) الافتراضات
+   * 6) الاعتمادات
+   * 6) معايير النجاح
+   * 7) الاعتماد — قبل: [اعتماد][تعديل][رفض] | بعد: ✓ معتمدة
+   * 8) التفاصيل التقنية (مطوي) — JSON خام فقط هنا
+   */
   function renderPlanCard(plan, state) {
     if (!plan) return null;
     var snapshot = state || {};
@@ -288,6 +299,7 @@
     var assumptions = plan.assumptions || [];
     var dependencies = plan.dependencies
       || plan.external_dependencies || [];
+    var successCriteria = plan.success_criteria || [];
     var gates = (snapshot.gates || []).filter(function (g) {
       return g.kind === "PLAN_APPROVAL"
         || g.kind === "PLAN_REVISION_APPROVAL";
@@ -303,169 +315,189 @@
         stepList.push({
           number: (pi + 1) + "." + (si + 1),
           phase: phase.title || ("مرحلة " + (pi + 1)),
+          phaseIndex: pi,
           step: step,
         });
       });
     });
     if (!stepList.length) {
       (plan.steps || []).forEach(function (step, si) {
-        stepList.push({ number: String(si + 1), phase: "", step: step });
+        stepList.push({ number: String(si + 1), phase: "", phaseIndex: -1, step: step });
       });
     }
 
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-plan");
 
-    var head = el("div", "pl-head");
-    head.appendChild(el("div", "pl-title",
+    // === 1) Header ===
+    var head = el("div", "pl-plan-head");
+    var titleRow = el("div", "pl-plan-title-row");
+    titleRow.appendChild(el("div", "pl-plan-title",
       "الخطة الرئيسية v" + (plan.version || "?")));
-    head.appendChild(el("span", "pl-status " + (approved ? "ok"
+    var statusBadge = el("span", "pl-plan-status " + (approved ? "ok"
       : plan.status === "REJECTED" ? "danger" : "gold"),
-      approved ? "معتمدة" : "بانتظار اعتمادك"));
+      approved ? "✓ معتمدة" : "بانتظار اعتمادك");
+    titleRow.appendChild(statusBadge);
+    head.appendChild(titleRow);
+
+    // Meta chips
+    var meta = el("div", "pl-plan-meta");
+    meta.appendChild(el("span", "pl-meta-chip", phases.length + " مراحل"));
+    meta.appendChild(el("span", "pl-meta-chip", stepList.length + " خطوة"));
+    if (assumptions.length) meta.appendChild(el("span", "pl-meta-chip", assumptions.length + " افتراضات"));
+    if (dependencies.length) meta.appendChild(el("span", "pl-meta-chip", dependencies.length + " اعتمادات"));
+    if (successCriteria.length) meta.appendChild(el("span", "pl-meta-chip", successCriteria.length + " معايير نجاح"));
+    head.appendChild(meta);
     card.appendChild(head);
 
-    var meta = el("div", "pl-meta");
-    meta.appendChild(el("span", null, phases.length + " مراحل"));
-    meta.appendChild(el("span", null, stepList.length + " خطوة"));
-    if (assumptions.length) {
-      meta.appendChild(el("span", null,
-        assumptions.length + " افتراضات"));
+    // === 2) الهدف + الملخص ===
+    var summary = planSection("الهدف", null, true);
+    var objText = plan.objective || plan.summary || snapshot.objective || "—";
+    summary.body.appendChild(el("div", "pl-plan-objective", objText));
+    if (plan.summary && plan.summary !== plan.objective) {
+      var summ = planSection("الملخص", null, true);
+      summ.body.appendChild(el("div", "pl-plan-summary", plan.summary));
+      card.appendChild(summ.root);
     }
-    if (dependencies.length) {
-      meta.appendChild(el("span", null,
-        dependencies.length + " اعتمادات"));
-    }
-    card.appendChild(meta);
-
-    // 1) الخلاصة — القسم المفتوح افتراضيًا
-    var summary = planSection("الخلاصة", null, true);
-    summary.body.appendChild(planRow("الهدف",
-      plan.objective || plan.summary || snapshot.objective));
-    summary.body.appendChild(planRow("الإصدار",
-      "v" + (plan.version || "?")
-      + (plan.status ? " · " + plan.status : "")));
-    summary.body.appendChild(planRow("الحجم",
-      phases.length + " مراحل · " + stepList.length + " خطوة"));
-    summary.body.appendChild(planRow("الاعتماد",
-      approved ? "معتمد من المالك"
-        : pendingGate ? "بانتظار قرارك الآن" : "غير معتمد بعد"));
     card.appendChild(summary.root);
 
-    // 2) الحالة الحالية — من اللقطة القانونية لا تخمينًا
-    var current = planSection("الحالة الحالية", null, false);
-    current.body.appendChild(planRow("حالة الخطة",
-      plan.status || "—"));
-    if (snapshot.status) {
-      current.body.appendChild(planRow("حالة المشروع",
-        STATUS_LABELS[snapshot.status] || snapshot.status));
-    }
-    current.body.appendChild(planRow("اعتماد المالك",
-      approved ? "نعم" : "لا"));
-    if (gates.length) {
-      gates.slice(0, 4).forEach(function (g) {
-        current.body.appendChild(planRow(
-          GATE_LABELS[g.kind] || "بوابة الخطة",
-          GATE_STATUS_LABELS[g.status] || g.status));
-      });
-    } else {
-      current.body.appendChild(
-        planEmpty("لا بوابة خطة مسجلة في اللقطة بعد."));
-    }
-    card.appendChild(current.root);
-
-    // 3) المراحل — بطاقات مراحل لا أسطر خام
+    // === 3) المراحل ===
     var phasesSec = planSection("المراحل", phases.length, false);
     if (!phases.length) {
-      phasesSec.body.appendChild(
-        planEmpty("لا مراحل معلنة في الخطة بعد."));
+      phasesSec.body.appendChild(planEmpty("لا مراحل معلنة في الخطة بعد."));
+    } else {
+      phases.forEach(function (phase, index) {
+        var box = el("div", "pl-phase-card");
+        var boxHead = el("div", "pl-phase-head");
+        var idx = el("span", "pl-phase-index", String(index + 1).padStart(2, "0"));
+        idx.dir = "ltr";
+        var name = el("span", "pl-phase-name", phase.title || ("مرحلة " + (index + 1)));
+        name.dir = "auto";
+        boxHead.appendChild(idx);
+        boxHead.appendChild(name);
+        var stateBadge = el("span", "pl-phase-state " + (phase.status === "COMPLETED" ? "ok" : phase.status === "RUNNING" ? "live" : ""),
+          (phase.status || "PENDING") + " · " + (phase.steps || []).length + " خطوة");
+        boxHead.appendChild(stateBadge);
+        box.appendChild(boxHead);
+
+        var phaseText = planItemText(phase);
+        if (phaseText && phaseText !== phase.title) {
+          var sub = el("div", "pl-phase-sub", phaseText);
+          sub.dir = "auto";
+          box.appendChild(sub);
+        }
+        // تبعيات المرحلة
+        if (phase.dependencies && phase.dependencies.length) {
+          var dep = el("div", "pl-phase-deps");
+          dep.appendChild(el("span", "pl-phase-deps-label", "تبعيات: "));
+          dep.appendChild(el("span", "pl-phase-deps-list", phase.dependencies.join("، ")));
+          dep.dir = "auto";
+          box.appendChild(dep);
+        }
+        // نطاق التنفيذ
+        if (phase.execution_scope) {
+          var scope = el("div", "pl-phase-scope");
+          scope.appendChild(el("span", "pl-phase-scope-label", "نطاق التنفيذ: "));
+          scope.appendChild(el("span", "pl-phase-scope-value", phase.execution_scope));
+          scope.dir = "auto";
+          box.appendChild(scope);
+        }
+        phasesSec.body.appendChild(box);
+      });
     }
-    phases.forEach(function (phase, index) {
-      var box = el("div", "pl-phase-card");
-      var boxHead = el("div", "pl-phase-head");
-      var name = el("span", "pl-phase-name",
-        (index + 1) + ". " + (phase.title || "مرحلة"));
-      name.dir = "auto";
-      boxHead.appendChild(name);
-      boxHead.appendChild(el("span", "pl-phase-state",
-        (phase.status || "PENDING")
-        + " · " + (phase.steps || []).length + " خطوة"));
-      box.appendChild(boxHead);
-      var phaseText = planItemText(phase);
-      if (phaseText && phaseText !== phase.title) {
-        var sub = el("div", "pl-phase-sub", phaseText);
-        sub.dir = "auto";
-        box.appendChild(sub);
-      }
-      phasesSec.body.appendChild(box);
-    });
     card.appendChild(phasesSec.root);
 
-    // 4) الخطوات — مرقمة بالمرحلة، قابلة للطي ككتلة واحدة
+    // === 4) الخطوات — مجمعة تحت المرحلة ===
     var stepsSec = planSection("الخطوات", stepList.length, false);
     if (!stepList.length) {
-      stepsSec.body.appendChild(
-        planEmpty("لا خطوات معلنة في الخطة بعد."));
+      stepsSec.body.appendChild(planEmpty("لا خطوات معلنة في الخطة بعد."));
+    } else {
+      var lastPhase = null;
+      stepList.forEach(function (item) {
+        if (item.phase && item.phase !== lastPhase) {
+          lastPhase = item.phase;
+          var groupTitle = el("div", "pl-steps-group-title", item.phase);
+          groupTitle.dir = "auto";
+          stepsSec.body.appendChild(groupTitle);
+        }
+        var row = el("div", "pl-step-row");
+        var number = el("span", "pl-step-n", item.number);
+        number.dir = "ltr";
+        row.appendChild(number);
+        var text = el("span", "pl-step-text",
+          planItemText(item.step) || "خطوة بلا وصف");
+        text.dir = "auto";
+        row.appendChild(text);
+        if (item.step && item.step.status) {
+          row.appendChild(el("span", "pl-step-state " + (item.step.status === "COMPLETED" ? "ok" : ""),
+            item.step.status));
+        }
+        stepsSec.body.appendChild(row);
+      });
     }
-    var lastPhase = null;
-    stepList.forEach(function (item) {
-      if (item.phase && item.phase !== lastPhase) {
-        lastPhase = item.phase;
-        var groupTitle = el("div", "pl-steps-group-title", item.phase);
-        groupTitle.dir = "auto";
-        stepsSec.body.appendChild(groupTitle);
-      }
-      var row = el("div", "pl-step-row");
-      var number = el("span", "pl-step-n", item.number);
-      number.dir = "ltr";
-      row.appendChild(number);
-      var text = el("span", "pl-step-text",
-        planItemText(item.step) || "خطوة بلا وصف");
-      text.dir = "auto";
-      row.appendChild(text);
-      if (item.step && item.step.status) {
-        row.appendChild(el("span", "pl-step-state", item.step.status));
-      }
-      stepsSec.body.appendChild(row);
-    });
     card.appendChild(stepsSec.root);
 
-    // 5) الافتراضات
+    // === 5) الافتراضات ===
     var assumeSec = planSection("الافتراضات", assumptions.length, false);
     assumeSec.body.appendChild(assumptions.length
       ? planItemList(assumptions)
       : planEmpty("لا افتراضات معلنة في الخطة."));
     card.appendChild(assumeSec.root);
 
-    // 6) الاعتمادات — ما تتوقف عليه الخطة خارج نطاقها
+    // === 6) الاعتمادات ===
     var depsSec = planSection("الاعتمادات", dependencies.length, false);
     depsSec.body.appendChild(dependencies.length
       ? planItemList(dependencies)
       : planEmpty("لا اعتمادات معلنة في الخطة."));
     card.appendChild(depsSec.root);
 
-    // 7) الاعتماد — القرار نفسه يبقى في بطاقة الاعتماد (بلا تكرار أزرار)
+    // === 7) معايير النجاح ===
+    var criteriaSec = planSection("معايير النجاح", successCriteria.length, false);
+    criteriaSec.body.appendChild(successCriteria.length
+      ? planItemList(successCriteria)
+      : planEmpty("لا معايير نجاح معلنة في الخطة."));
+    card.appendChild(criteriaSec.root);
+
+    // === 8) الاعتماد ===
     var approvalSec = planSection("الاعتماد", null, false);
-    approvalSec.body.appendChild(planRow("اعتماد المالك",
-      approved ? "نعم — معتمدة" : "لا — بانتظار قرارك"));
-    if (plan.approved_at) {
-      approvalSec.body.appendChild(planRow("وقت الاعتماد", plan.approved_at));
-    }
-    if (pendingGate) {
-      approvalSec.body.appendChild(planRow("البوابة المعلقة",
-        GATE_LABELS[pendingGate.kind] || "بوابة الخطة"));
-      if (pendingGate.reason) {
-        approvalSec.body.appendChild(planRow("السبب", pendingGate.reason));
+    if (approved) {
+      approvalSec.body.appendChild(el("div", "pl-approval-done", "✓ تم اعتماد الخطة"));
+      if (plan.approved_at) {
+        approvalSec.body.appendChild(planRow("وقت الاعتماد", plan.approved_at));
       }
-      approvalSec.body.appendChild(
-        planEmpty("القرار يُتخذ من بطاقة الاعتماد في المحادثة — لا من هنا."));
-    } else if (!approved) {
-      approvalSec.body.appendChild(
-        planEmpty("لا بوابة اعتماد معلقة في اللقطة الحالية."));
+      if (plan.approved_by) {
+        approvalSec.body.appendChild(planRow("اعتمد بواسطة", plan.approved_by));
+      }
+    } else if (pendingGate) {
+      // أزرار قبل الاعتماد
+      var actions = el("div", "pl-plan-actions");
+      var approve = el("button", "pl-btn primary", "اعتماد الخطة");
+      approve.addEventListener("click", function () {
+        // الاستدعاء عبر actions من السياق الخارجي
+        if (window.__planApprove) window.__planApprove(true);
+      });
+      var revise = el("button", "pl-btn", "طلب تعديل");
+      revise.addEventListener("click", function () {
+        if (window.__planApprove) window.__planApprove(false, "طلب تعديل من بطاقة الخطة");
+      });
+      var reject = el("button", "pl-btn danger", "رفض");
+      reject.addEventListener("click", function () {
+        if (window.__planApprove) window.__planApprove(false, "رفض من بطاقة الخطة");
+      });
+      actions.appendChild(approve);
+      actions.appendChild(revise);
+      actions.appendChild(reject);
+      approvalSec.body.appendChild(actions);
+      if (pendingGate.reason) {
+        approvalSec.body.appendChild(planRow("ملاحظات البوابة", pendingGate.reason));
+      }
+    } else {
+      approvalSec.body.appendChild(planEmpty("لا بوابة اعتماد معلقة — الخطة جاهزة للاعتماد."));
     }
     card.appendChild(approvalSec.root);
 
-    // الخام خلف طيّ صريح مسمى — ليس في أي قسم افتراضي (013.5 §N)
-    var rawSec = planSection("JSON خام", null, false);
+    // === 9) التفاصيل التقنية (مطوي) — JSON خام هنا فقط ===
+    var rawSec = planSection("التفاصيل التقنية", null, false);
     var raw = el("pre", "pl-tech-body pl-raw-body");
     raw.dir = "ltr";
     try { raw.textContent = JSON.stringify(plan, null, 1); }

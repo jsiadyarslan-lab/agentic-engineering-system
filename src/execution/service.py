@@ -178,7 +178,7 @@ def ensure_local_registered(sessions) -> dict:
             return _row_to_dict(found)
         # لا بيئة موجودة — نحاول الإدراج
         row = ExecutionEnvironment(
-            name=correct_name, backend="LOCAL", status="UNKNOWN",
+            name=correct_name, backend="LOCAL", status="DETECTED",
             endpoint="", is_default=1, sandboxed=sandboxed,
             profile_json=json.dumps({
                 "host_platform": host_platform_label(),
@@ -340,11 +340,77 @@ def set_default(sessions, environment_id: int) -> dict:
         return _row_to_dict(row)
 
 
+def compute_environment_state(environment: dict, policy: str = "STRICT_ISOLATED") -> dict:
+    """(013.7 §P1) حساب الحالة الصريحة للبيئة — بلا بوليان «جاهز/متاح».
+
+    الحالات المتسلسلة:
+      NOT_CONFIGURED → DETECTED/REGISTERED → ONLINE → HEALTHY → ELIGIBLE → READY
+      أو يتوقف عند: NOT_READY / UNAVAILABLE / NOT_CONFIGURED
+
+    POLICY:
+      STRICT_ISOLATED → ELIGIBLE فقط إذا sandboxed=True
+      COMPATIBLE_LOCAL → ELIGIBLE إذا HEALTHY
+    """
+    status = environment.get("status", "NOT_CONFIGURED")
+
+    # إذا كانت الحالة نهائية سلبية — لا نرتقي
+    if status in ("NOT_READY", "UNAVAILABLE", "NOT_CONFIGURED"):
+        return {"state": status, "eligible": False, "reason": environment.get("failure_reason", "")}
+
+    # تحقق من الصحة (HEALTHY)
+    if status == "READY":
+        # READY من النظام القديم = HEALTHY في النموذج الجديد
+        health_state = "HEALTHY"
+    else:
+        health_state = status
+
+    # أهلية السياسة
+    eligible = False
+    reason = ""
+    if policy == "STRICT_ISOLATED":
+        eligible = bool(environment.get("sandboxed"))
+        if not eligible:
+            reason = "سليمة لكن غير معزولة — السياسة تطلب عزلًا صارمًا"
+    else:  # COMPATIBLE_LOCAL
+        eligible = True
+
+    # تحديد الحالة النهائية
+    if health_state == "HEALTHY" and eligible:
+        final_state = "READY"
+    elif health_state == "HEALTHY" and not eligible:
+        final_state = "ELIGIBLE"
+    elif health_state in ("HEALTHY", "ONLINE"):
+        final_state = health_state
+    else:
+        final_state = health_state
+
+    return {
+        "state": final_state,
+        "health_state": health_state,
+        "eligible": eligible,
+        "ineligible_reason": reason,
+    }
+
+
+def _set_environment_status(sessions, environment_id: int, status: str, **kwargs) -> None:
+    """تحديث حالة البيئة بأمان."""
+    with sessions() as session:
+        row = session.get(ExecutionEnvironment, int(environment_id))
+        if row is not None:
+            row.status = status
+            for k, v in kwargs.items():
+                if hasattr(row, k):
+                    setattr(row, k, v)
+            row.updated_at = _utc_now()
+            session.commit()
+
+
 def verify_environment(sessions, environment_id: int) -> dict:
-    """التحقق الحقيقي (§28) — READY فقط بعد فحوص إقلاع/كتابة/تنفيذ/التقاط.
+    """التحقق الحقيقي (§28) — HEALTHY فقط بعد فحوص إقلاع/كتابة/تنفيذ/التقاط.
 
     النتيجة تكتب في البيئة (status/profile/last_verified_at) وتعاد —
     هذا نفس المسار الذي سينفذ به run_code لاحقًا (§19 توحيد المصدر).
+    READY تُحدَّد لاحقاً بالسياسة والأهلية (§P1).
     """
     environment = _get_environment_full(sessions, environment_id)
     if environment is None:
@@ -353,7 +419,9 @@ def verify_environment(sessions, environment_id: int) -> dict:
     result: VerifyResult = backend.verify()
     with sessions() as session:
         row = session.get(ExecutionEnvironment, int(environment_id))
-        row.status = result.status
+        # (013.7 §P1) التحقق الناجح = HEALTHY؛ READY تُحدَّد لاحقاً
+        # بالسياسة والأهلية — لا READY فوري
+        row.status = "HEALTHY" if result.ok else result.status
         row.profile_json = json.dumps(
             result.profile, ensure_ascii=False, default=str
         )
@@ -367,8 +435,7 @@ def verify_environment(sessions, environment_id: int) -> dict:
         session.commit()
     out = get_environment(sessions, environment_id)
     out["verify"] = result.to_dict()
-    if result.status == "READY":
-        _notify_environment_ready(out)
+    # لا نبلغ READY هنا — الحالة الصريحة تُحسب بالسياسة
     return out
 
 

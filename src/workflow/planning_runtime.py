@@ -56,6 +56,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta, timezone
 from typing import Callable
 
+from core.config import planning_settings
 from workflow import service
 from workflow.models import PlanningSession
 

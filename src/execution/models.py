@@ -21,12 +21,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from persistence.models import Base
 
-#: حالات البيئة الصادقة (§12 دورة حياة معلنة، §17 ExecutionEnvironment)
+#: حالات البيئة الصادقة (013.7 §P1) — نموذج صريح بلا بوليان «available»
 ENVIRONMENT_STATUSES: tuple[str, ...] = (
-    "UNKNOWN",      # مسجلة ولم تُتحقق بعد
-    "READY",        # تحقق حقيقي: إقلاع/كتابة/تنفيذ/التقاط نجحت
-    "NOT_READY",    # تحقق فشل بسبب معروف (شبكة/توكن/منصة)
-    "UNAVAILABLE",  # الخلفية نفسها غير متاحة على هذه المنصة
+    "NOT_CONFIGURED",  # عامل بعيد: لا سجل بعد
+    "DETECTED",        # مسجلة (LOCAL/REMOTE) ولم تُتحقق بعد
+    "REGISTERED",      # عامل بعيد: سجل موجود
+    "ONLINE",          # عامل بعيد: نبضة حية
+    "HEALTHY",         # مسبار الصحة نجح (إقلاع/كتابة/تنفيذ/التقاط)
+    "ELIGIBLE",        # سليمة وتفي بسياسة **هذا المشروع**
+    "READY",           # مساحة عمل مجهزة ومتحققة — قابلة للتنفيذ
+    "NOT_READY",       # تحقق فشل بسبب معروف (شبكة/توكن/منصة)
+    "UNAVAILABLE",     # الخلفية نفسها غير متاحة على هذه المنصة
 )
 
 #: أنواع الخلفيات المدعومة من الكود فعلًا (§16 لا implementation وهمية)

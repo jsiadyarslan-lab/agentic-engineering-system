@@ -259,49 +259,50 @@ def _active_run_id() -> int | None:
 
 
 def _environment_eligibility(environment: dict, policy: str) -> dict:
-    """(013.6 §1) ثلاث حالات منفصلة — لا بوليان «جاهزة» واحد.
+    """(013.7 §P1/P2) نموذج الحالة الصريح — استبدال الثلاثي القديم.
 
-    المالك رفض أن يرى `local-windows — جاهز` بجانب «بيئة التنفيذ غير
-    متاحة»، وكان محقًّا: كلمة «جاهزة» واحدة تحمل ثلاث حقائق مختلفة:
+    الحالات المتسلسلة:
+        NOT_CONFIGURED → DETECTED/REGISTERED → ONLINE → HEALTHY → ELIGIBLE → READY
+        أو يتوقف عند: NOT_READY / UNAVAILABLE / NOT_CONFIGURED
 
-        DISCOVERED   البيئة موجودة ويمكن فحصها
-        HEALTHY      البيئة نفسها اجتازت فحص صحتها
-        ELIGIBLE     البيئة توافق سياسة **هذا المشروع**
-
-    الفصل ليس تجميليًا: بيئة محلية على Windows تكون مكتشفة وسليمة
-    ومع ذلك غير صالحة لمشروع يطلب عزلًا صارمًا. الخلط بين «سليمة» و
-    «صالحة لهذه المهمة» هو بالضبط مصدر التناقض المعروض.
+    هذا يحل محل الثلاثي القديم (discovered/healthy/eligible) بنموذج صريح
+    متسلسل يعكس دورة حياة البيئة الحقيقية.
     """
+    from execution import service as execution_service
     from execution import policy as execution_policy
 
-    healthy = environment.get("status") == "READY"
-    eligible = execution_policy.environment_satisfies(environment, policy)
-    if eligible:
-        reason = ""
-    elif not healthy:
-        reason = (
-            f"لم تجتز فحص الصحة — حالتها المعلنة «{environment.get('status')}»"
-        )
-    elif policy == "STRICT_ISOLATED":
-        reason = (
-            "سليمة وقادرة على التنفيذ، لكنها غير معزولة — "
-            "وسياسة هذا المشروع تطلب عزلًا صارمًا"
-        )
+    env_state = execution_service.compute_environment_state(environment, policy)
+    status = env_state["state"]
+    eligible = env_state["eligible"]
+    ineligible_reason = env_state.get("ineligible_reason", "")
+    health_state = env_state.get("health_state", status)
+
+    # وسم عرض صريح — يُمنع على الواجهة أن تقول «جاهزة» حين state != READY
+    if status == "READY":
+        label = "صالحة لهذه المهمة"
+    elif status == "ELIGIBLE":
+        label = "سليمة — غير صالحة لهذه المهمة"
+    elif status in ("HEALTHY", "ONLINE"):
+        label = "مكتشفة وسليمة — قيد التأهيل"
+    elif status == "NOT_CONFIGURED":
+        label = "غير مهيأة — تسجيل عامل بعيد مطلوب"
+    elif status == "DETECTED":
+        label = "مكتشفة — لم تُتحقق بعد"
+    elif status == "NOT_READY":
+        label = "مكتشفة — لم تجتز الفحص"
+    elif status == "UNAVAILABLE":
+        label = "غير متاحة على هذا المضيف"
     else:
-        reason = "لا توافق سياسة التنفيذ المعلنة للمشروع"
+        label = "حالة غير معروفة"
+
     return {
-        # discovered: الصف مسجّل ومقروء — هذا مثال «مكتشفة» الدنيا
-        "discovered": True,
-        "healthy": healthy,
+        "state": status,
+        "health_state": health_state,
         "eligible": eligible,
-        "ineligible_reason": reason,
-        # (013.6 §1) وسم عرض صريح: يُمنع على الواجهة أن تقول «جاهزة»
-        # حين eligible=False — تقول هذه العبارة حرفيًا بدلًا منها.
-        "eligibility_label": (
-            "صالحة لهذه المهمة" if eligible
-            else ("سليمة — غير صالحة لهذه المهمة" if healthy
-                  else "مكتشفة — لم تجتز الفحص")
-        ),
+        "ineligible_reason": ineligible_reason,
+        "eligibility_label": label,
+        "discovered": status not in ("NOT_CONFIGURED", "UNAVAILABLE"),
+        "healthy": health_state in ("HEALTHY", "ELIGIBLE", "READY"),
     }
 
 
@@ -331,29 +332,29 @@ def _substrate_options() -> list[dict]:
         from execution import wsl as wsl_mod
 
         detection = wsl_mod.wsl_available()
-        available = bool(detection.get("available"))
-        # سبب العرض مختصر صالح للبطاقة؛ النص الخام (وقد يكون بانر
-        # استخدام wsl.exe كاملًا) يبقى للتفاصيل التقنية فقط — عرض
-        # بانر الأداة في البطاقة ليس «صدقًا» بل ضجيج.
-        short_reasons = {
-            "WSL2_UNAVAILABLE": "WSL2 غير مثبّت على هذا المضيف",
-            "WSL2_NO_DISTRO": "wsl.exe موجود لكن لا توزيعة Linux تعمل",
-            "WSL2_NO_PYTHON3": "التوزيعة تعمل لكن python3 غير متاح داخلها",
-        }
+        # (013.7 §P3) حالة صريحة بدلاً من boolean available
+        if detection.get("available"):
+            state = "READY"
+        elif detection.get("reason") == "WSL2_NO_DISTRO":
+            state = "DETECTED_BUT_NO_DISTRO"
+        elif detection.get("reason") == "WSL2_NO_PYTHON3":
+            state = "DETECTED_NO_PYTHON3"
+        else:
+            state = "NOT_CONFIGURED"
         options.append({
             "id": "wsl2",
             "label": "تشغيل WSL2",
-            "available": available,
-            "reason": ("WSL2 يعمل ويشغّل python3" if available
-                       else short_reasons.get(
-                           detection.get("reason", ""),
-                           "WSL2 غير متاح")),
+            "state": state,
+            "reason": ("WSL2 يعمل ويشغّل python3" if state == "READY"
+                       else "wsl.exe موجود لكن لا توزيعة Linux تعمل" if state == "DETECTED_BUT_NO_DISTRO"
+                       else "التوزيعة تعمل لكن python3 غير متاح" if state == "DETECTED_NO_PYTHON3"
+                       else "WSL2 غير مثبّت على هذا المضيف"),
             "detail": str(detection.get("detail", ""))[:600],
-            "action": "" if available else "wsl --install ثم إعادة الفحص",
+            "action": "" if state == "READY" else "wsl --install ثم إعادة الفحص",
         })
     except Exception as error:  # noqa: BLE001 — الفحص لا يكسر الاستجابة
         options.append({
-            "id": "wsl2", "label": "تشغيل WSL2", "available": False,
+            "id": "wsl2", "label": "تشغيل WSL2", "state": "NOT_CONFIGURED",
             "reason": f"تعذّر فحص WSL2: {str(error)[:120]}", "detail": "",
             "action": "",
         })
@@ -361,10 +362,11 @@ def _substrate_options() -> list[dict]:
         from execution.backends import runtime_truth
 
         container = (runtime_truth().get("container_runtime") or "").strip()
+        state = "READY" if container else "NOT_CONFIGURED"
         options.append({
             "id": "docker",
             "label": "استخدام Docker",
-            "available": bool(container),
+            "state": state,
             "reason": (
                 f"ركيزة الحاويات: {container}" if container
                 else "لا Docker ولا Podman على هذا المضيف"
@@ -374,20 +376,16 @@ def _substrate_options() -> list[dict]:
         })
     except Exception as error:  # noqa: BLE001
         options.append({
-            "id": "docker", "label": "استخدام Docker", "available": False,
+            "id": "docker", "label": "استخدام Docker", "state": "NOT_CONFIGURED",
             "reason": f"تعذّر فحص الحاويات: {str(error)[:120]}", "detail": "",
             "action": "",
         })
-    # تسجيل عامل بعيد ممكن دائمًا كفعل (النظام يقبل التسجيل)؛ وجود
-    # مضيف Linux نفسه مسؤولية المالك — وهذا معلن لا مخفي.
+    # (013.7 §P1) عامل بعيد — حالات صريحة
     options.append({
         "id": "remote_worker",
         "label": "تسجيل عامل Linux",
-        "available": True,
-        "reason": (
-            "التسجيل متاح دائمًا؛ يلزم مضيف Linux/WSL2 يشغّل "
-            "python scripts/execution_worker.py"
-        ),
+        "state": "NOT_CONFIGURED",
+        "reason": "لا عامل مسجل — يلزم مضيف Linux/WSL2 يشغّل python scripts/execution_worker.py",
         "detail": "نقطة النهاية + توكن العامل يُدخلان من الإعدادات",
         "action": "شغّل العامل على Linux ثم سجّل رابطه وتوكنه",
     })
