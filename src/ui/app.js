@@ -522,6 +522,18 @@
         && window.HubProjects) {
       window.HubProjects.exitProjectMode();
     }
+    /* (013.7 §P11) تصفير حالة المحادثة السابقة: إيقاف البث الحي،
+     * إعادة تعيين متغيرات الحالة، مسح مصادر الويب. */
+    if (window.ChatLive) window.ChatLive.resetScope(c.conversation_id, "");
+    state.activeRun = null;
+    state.busy = false;
+    state.scopeDiscarded = 0;
+    setBusy(false);
+
+    if (document.body.classList.contains("mode-project")
+        && window.HubProjects) {
+      window.HubProjects.exitProjectMode();
+    }
     state.conversationId = c.conversation_id;
     state.projectScopeId = null;
     state.lastSeq = 0;
@@ -594,6 +606,13 @@
   }
 
   function newChat() {
+    /* (013.7 §P11) تصفير حالة المحادثة السابقة. */
+    if (window.ChatLive) window.ChatLive.resetScope("", "");
+    state.activeRun = null;
+    state.busy = false;
+    state.scopeDiscarded = 0;
+    setBusy(false);
+
     state.conversationId = null;
     state.lastSeq = 0;
     saveActiveConversation(null);
@@ -874,6 +893,8 @@
   function startChat(text) {
     state.activeRun = { kind: "chat", cycleId: "" };
     setBusy(true);
+    stopRunEl.hidden = false;
+    stopRunEl.disabled = false;
     postStream("/api/chat/stream", {
       message: text,
       conversation_id: state.conversationId,
@@ -891,6 +912,7 @@
 
     function finish() {
       state.activeRun = null;
+      stopRunEl.hidden = true;
       setBusy(false);
       loadConversations();
     }
@@ -900,6 +922,7 @@
   function onChatDone() {
     if (state.activeRun && state.activeRun.kind === "chat") {
       state.activeRun = null;
+      stopRunEl.hidden = true;
       setBusy(false);
       loadConversations();
     }
@@ -939,16 +962,25 @@
     loadConversations();
   }
 
-  // ---------- الإيقاف الفوري (الأمر 004) ----------
+  // ---------- الإيقاف الفوري (الأمر 004 + 013.7 §P12) ----------
   function requestStop() {
-    if (!state.activeRun || !state.activeRun.cycleId) return;
+    if (!state.activeRun) return;
     stopRunEl.disabled = true;
     stopRunEl.textContent = "■ جارٍ طلب الإيقاف…";
-    var isMission = state.activeRun.kind === "mission";
-    var url = isMission ? "/api/mission/stop" : "/api/cycle/stop";
-    var body = isMission
-      ? { reason: "زر الإيقاف من الواجهة" }
-      : { cycle_id: state.activeRun.cycleId, reason: "زر الإيقاف من الواجهة" };
+    var kind = state.activeRun.kind;
+    var url, body;
+    if (kind === "chat") {
+      // Chat mode: stop by conversation_id
+      if (!state.conversationId) return;
+      url = "/api/chat/stop";
+      body = { conversation_id: state.conversationId };
+    } else if (kind === "mission") {
+      url = "/api/mission/stop";
+      body = { reason: "زر الإيقاف من الواجهة" };
+    } else {
+      url = "/api/cycle/stop";
+      body = { cycle_id: state.activeRun.cycleId, reason: "زر الإيقاف من الواجهة" };
+    }
     fetchJSON(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

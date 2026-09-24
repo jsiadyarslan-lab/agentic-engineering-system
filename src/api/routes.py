@@ -1278,6 +1278,29 @@ async def chat_events(conversation_id: int, after: int = 0) -> StreamingResponse
     return _sse_response(generate())
 
 
+@app.post("/api/chat/stop")
+async def chat_stop(conversation_id: int) -> dict:
+    """طلب إيقاف فوري للمحادثة — يقبل فورًا ويكرم عند حد آمن.
+
+    القبول يعني: العلم رفع ذريًا والحالة STOPPING؛ التوقف الفعلي
+    عند أقرب نقطة تفتيش (أقصى الانتظار = استدعاء دور واحد).
+    """
+    stream_key = f"chat-{conversation_id}"
+    for message_id, run in list(_chat_active.items()):
+        if run["stream"] == stream_key and not run["done"].is_set():
+            run["done"].set()
+            return {
+                "conversation_id": conversation_id,
+                "message_id": message_id,
+                "status": "STOPPING",
+                "message": "■ طلب الإيقاف قُبل — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة"
+            }
+    raise HTTPException(
+        status_code=404,
+        detail=f"لا توجد محادثة جارية للإيقاف: {conversation_id}"
+    )
+
+
 @app.post("/api/cycle/verify")
 def cycle_verify(body: CycleVerifyIn) -> dict:
     """موافقة المستخدم على نتيجة المهمة — القناة الوحيدة إلى VERIFIED.
