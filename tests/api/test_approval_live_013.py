@@ -133,6 +133,7 @@ def _sandbox_env(sessions, *, status, sandboxed):
     from execution.models import ExecutionEnvironment
     from execution import service as execution_service
 
+    # الركيزة معزولة محاكاة عالميًا في sandbox_seam fixture
     execution_service.ensure_local_registered(sessions)
     with sessions() as s:
         row = s.scalars(sa.select(ExecutionEnvironment).where(
@@ -151,6 +152,11 @@ def sandbox_seam(monkeypatch):
     الدورة الحقيقية الكاملة لها اختبارات التجهيز الحية."""
     from execution import service as execution_service
 
+    # (013.6 §F) محاكاة توفر الركيزة المعزولة لهذا الاختبار فقط
+    import execution.service as execution_service_mod
+    original_substrate = execution_service_mod._substrate_available
+    monkeypatch.setattr(execution_service_mod, "_substrate_available", lambda: True)
+
     def fake_sandbox_probe(sessions_, **_kwargs):
         environments = execution_service.list_environments(sessions_)
         ready = [e for e in environments
@@ -168,6 +174,9 @@ def sandbox_seam(monkeypatch):
     monkeypatch.setattr(
         execution_service, "sandbox_probe_result", fake_sandbox_probe
     )
+    # yield للحفاظ على monkeypatch نشطًا طوال تنفيذ الاختبار
+    yield
+    # monkeypatch يُلغى تلقائيًا بعد yield
 
 
 # ------------------------------------------------------------------ #

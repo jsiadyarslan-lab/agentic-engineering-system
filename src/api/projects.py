@@ -258,6 +258,144 @@ def _active_run_id() -> int | None:
     return active["project_id"] if active else None
 
 
+def _environment_eligibility(environment: dict, policy: str) -> dict:
+    """(013.6 §1) ثلاث حالات منفصلة — لا بوليان «جاهزة» واحد.
+
+    المالك رفض أن يرى `local-windows — جاهز` بجانب «بيئة التنفيذ غير
+    متاحة»، وكان محقًّا: كلمة «جاهزة» واحدة تحمل ثلاث حقائق مختلفة:
+
+        DISCOVERED   البيئة موجودة ويمكن فحصها
+        HEALTHY      البيئة نفسها اجتازت فحص صحتها
+        ELIGIBLE     البيئة توافق سياسة **هذا المشروع**
+
+    الفصل ليس تجميليًا: بيئة محلية على Windows تكون مكتشفة وسليمة
+    ومع ذلك غير صالحة لمشروع يطلب عزلًا صارمًا. الخلط بين «سليمة» و
+    «صالحة لهذه المهمة» هو بالضبط مصدر التناقض المعروض.
+    """
+    from execution import policy as execution_policy
+
+    healthy = environment.get("status") == "READY"
+    eligible = execution_policy.environment_satisfies(environment, policy)
+    if eligible:
+        reason = ""
+    elif not healthy:
+        reason = (
+            f"لم تجتز فحص الصحة — حالتها المعلنة «{environment.get('status')}»"
+        )
+    elif policy == "STRICT_ISOLATED":
+        reason = (
+            "سليمة وقادرة على التنفيذ، لكنها غير معزولة — "
+            "وسياسة هذا المشروع تطلب عزلًا صارمًا"
+        )
+    else:
+        reason = "لا توافق سياسة التنفيذ المعلنة للمشروع"
+    return {
+        # discovered: الصف مسجّل ومقروء — هذا مثال «مكتشفة» الدنيا
+        "discovered": True,
+        "healthy": healthy,
+        "eligible": eligible,
+        "ineligible_reason": reason,
+        # (013.6 §1) وسم عرض صريح: يُمنع على الواجهة أن تقول «جاهزة»
+        # حين eligible=False — تقول هذه العبارة حرفيًا بدلًا منها.
+        "eligibility_label": (
+            "صالحة لهذه المهمة" if eligible
+            else ("سليمة — غير صالحة لهذه المهمة" if healthy
+                  else "مكتشفة — لم تجتز الفحص")
+        ),
+    }
+
+
+#: (013.6 §4) ذاكرة مؤقتة لخيارات الركائز — الفحص يستدعي wsl.exe فعليًا
+#: (وقد يستغرق ثواني)، ونقطة حالة المشروع تُقرأ بالاستطلاع؛ بلا ذاكرة
+#: هنا يدفع كل استطلاع كلفة إقلاع عملية. الصلاحية قصيرة (30ث) لأن
+#: القدرة تتغيّر بفعل المالك (يثبّت Docker/يفعّل WSL2) فيجب ألا تعلق.
+_SUBSTRATE_CACHE: dict = {"at": 0.0, "options": []}
+_SUBSTRATE_TTL_SECONDS = 30.0
+
+
+def _substrate_options() -> list[dict]:
+    """(013.6 §4) مسارات التوفير الحقيقية المتاحة على هذا المضيف.
+
+    القاعدة: لا يُعرض خيار إلا إذا كانت قدرته موجودة فعلًا. عرض زر
+    «شغّل WSL2» على جهاز بلا WSL2 هو وعد كاذب — وهو ما يرفضه الأمر.
+    """
+    import time as _time
+
+    now = _time.monotonic()
+    if _SUBSTRATE_CACHE["options"] and (
+        now - _SUBSTRATE_CACHE["at"] < _SUBSTRATE_TTL_SECONDS
+    ):
+        return _SUBSTRATE_CACHE["options"]
+    options: list[dict] = []
+    try:
+        from execution import wsl as wsl_mod
+
+        detection = wsl_mod.wsl_available()
+        available = bool(detection.get("available"))
+        # سبب العرض مختصر صالح للبطاقة؛ النص الخام (وقد يكون بانر
+        # استخدام wsl.exe كاملًا) يبقى للتفاصيل التقنية فقط — عرض
+        # بانر الأداة في البطاقة ليس «صدقًا» بل ضجيج.
+        short_reasons = {
+            "WSL2_UNAVAILABLE": "WSL2 غير مثبّت على هذا المضيف",
+            "WSL2_NO_DISTRO": "wsl.exe موجود لكن لا توزيعة Linux تعمل",
+            "WSL2_NO_PYTHON3": "التوزيعة تعمل لكن python3 غير متاح داخلها",
+        }
+        options.append({
+            "id": "wsl2",
+            "label": "تشغيل WSL2",
+            "available": available,
+            "reason": ("WSL2 يعمل ويشغّل python3" if available
+                       else short_reasons.get(
+                           detection.get("reason", ""),
+                           "WSL2 غير متاح")),
+            "detail": str(detection.get("detail", ""))[:600],
+            "action": "" if available else "wsl --install ثم إعادة الفحص",
+        })
+    except Exception as error:  # noqa: BLE001 — الفحص لا يكسر الاستجابة
+        options.append({
+            "id": "wsl2", "label": "تشغيل WSL2", "available": False,
+            "reason": f"تعذّر فحص WSL2: {str(error)[:120]}", "detail": "",
+            "action": "",
+        })
+    try:
+        from execution.backends import runtime_truth
+
+        container = (runtime_truth().get("container_runtime") or "").strip()
+        options.append({
+            "id": "docker",
+            "label": "استخدام Docker",
+            "available": bool(container),
+            "reason": (
+                f"ركيزة الحاويات: {container}" if container
+                else "لا Docker ولا Podman على هذا المضيف"
+            ),
+            "detail": f"container_runtime={container or '—'}",
+            "action": "" if container else "ثبّت Docker Desktop ثم أعد الفحص",
+        })
+    except Exception as error:  # noqa: BLE001
+        options.append({
+            "id": "docker", "label": "استخدام Docker", "available": False,
+            "reason": f"تعذّر فحص الحاويات: {str(error)[:120]}", "detail": "",
+            "action": "",
+        })
+    # تسجيل عامل بعيد ممكن دائمًا كفعل (النظام يقبل التسجيل)؛ وجود
+    # مضيف Linux نفسه مسؤولية المالك — وهذا معلن لا مخفي.
+    options.append({
+        "id": "remote_worker",
+        "label": "تسجيل عامل Linux",
+        "available": True,
+        "reason": (
+            "التسجيل متاح دائمًا؛ يلزم مضيف Linux/WSL2 يشغّل "
+            "python scripts/execution_worker.py"
+        ),
+        "detail": "نقطة النهاية + توكن العامل يُدخلان من الإعدادات",
+        "action": "شغّل العامل على Linux ثم سجّل رابطه وتوكنه",
+    })
+    _SUBSTRATE_CACHE["at"] = now
+    _SUBSTRATE_CACHE["options"] = options
+    return options
+
+
 def _environment_block(project: dict, *, job: dict | None = None) -> dict:
     """كتلة بيئة التنفيذ (013.1 §10+§18 + 013.2 §1-§3) — من الحالة
     القانونية الواحدة حصرًا.
@@ -295,10 +433,18 @@ def _environment_block(project: dict, *, job: dict | None = None) -> dict:
         "satisfies_policy": selected is not None,
         "requirement": execution_policy.requirement_text(policy),
         "environments": [
-            {k: e.get(k) for k in ("id", "name", "backend", "status",
-                                   "isolation", "sandboxed", "is_default")}
+            {
+                **{k: e.get(k) for k in ("id", "name", "backend", "status",
+                                         "isolation", "sandboxed",
+                                         "is_default")},
+                # (013.6 §1) ثلاث حالات منفصلة لكل بيئة — الواجهة ممنوعة
+                # من اشتقاق «جاهزة» بنفسها من status.
+                **_environment_eligibility(e, policy),
+            }
             for e in execution_service.list_environments(_sessions())
         ],
+        # (013.6 §4) مسارات التوفير الحقيقية — الواجهة تعرض المتاح فقط
+        "substrate_options": _substrate_options(),
         # (013.2 §1+§3) الحالة القانونية — الواجهة تعرض هذه حصرًا
         "runtime_state": {
             "state": canonical["state"],

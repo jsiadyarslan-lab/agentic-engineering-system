@@ -36,6 +36,12 @@ RUNTIME_STATES: tuple[str, ...] = (
     "PROVISIONING",  # تهيئة بيئة فعلية (تسجيل/حاويات/عامل)
     "BOOTING",       # إقلاع فحصي
     "HEALTH_CHECK",  # فحوص الصحة الحقيقية تعمل الآن
+    # (013.6 §3) خطوة صريحة منفصلة: إثبات أن العزل المطلوب بالسياسة
+    # قائم فعلًا. كانت مدموجة في HEALTH_CHECK فيظهر «صحة» ثم «جاهز»
+    # بلا لحظة تُثبت فيها المطابقة مع سياسة المشروع — فيبقى الفرق بين
+    # «البيئة سليمة» و«البيئة صالحة لهذه المهمة» غير مرئي (وهو بالضبط
+    # الانفصام الذي رفضه المالك في §1).
+    "VERIFYING_ISOLATION",
     "READY",         # كل الفحوص نجحت + هوية دائمة
     "RUNNING",       # وظيفة نشطة على بيئة READY
     "DEGRADED",      # تعمل بنقص معلن (مثلاً عامل بلا عزل تحت سياسة متوافقة)
@@ -47,7 +53,7 @@ RUNTIME_STATES: tuple[str, ...] = (
 #: الحالات التي يجوز للواجهة عرض «جاهزة/تعمل» عليها (013.2 §7)
 COHERENT_READY_STATES = ("READY", "RUNNING")
 COHERENT_PREPARING_STATES = ("DISCOVERING", "PROVISIONING", "BOOTING",
-                             "HEALTH_CHECK")
+                             "HEALTH_CHECK", "VERIFYING_ISOLATION")
 
 #: عرض المستخدم المتماسك (§7) — ثلاث حالات لا رابعة
 COHERENT_LABELS: dict[str, str] = {
@@ -55,6 +61,17 @@ COHERENT_LABELS: dict[str, str] = {
     "READY": "✓ بيئة التنفيذ جاهزة",
     "UNAVAILABLE": "⚠️ بيئة التنفيذ غير متاحة",
     "RUNNING": "● التنفيذ جارٍ",
+}
+
+#: (013.6 §3) نص الخطوة الجارية أثناء التجهيز — يُعرض للمالك
+#: بدل «جاري التجهيز…» المبهم، فيعرف أن النظام يتحقق من العزل لا
+#: من الصحة فقط.
+PREPARING_STEP_LABELS: dict[str, str] = {
+    "DISCOVERING": "جرد المضيف والركائز المتاحة",
+    "PROVISIONING": "تهيئة ركيزة التنفيذ",
+    "BOOTING": "إقلاع فحصي",
+    "HEALTH_CHECK": "فحوص الصحة الحقيقية",
+    "VERIFYING_ISOLATION": "التحقق من مطابقة العزل لسياسة المشروع",
 }
 
 
@@ -416,6 +433,9 @@ def coherent_view(state: str, reason: str = "",
             "kind": "PREPARING", "label": COHERENT_LABELS["PREPARING"],
             "detail": reason or "جاري إنشاء بيئة التنفيذ…",
             "progress": max(0, min(100, int(progress))),
+            # (013.6 §3) الخطوة الجارية بالاسم — لا «تجهيز…» مبهم
+            "step": state,
+            "step_label": PREPARING_STEP_LABELS.get(state, ""),
         }
     if state == "INTERRUPTED":
         return {
@@ -441,6 +461,7 @@ __all__ = [
     "COHERENT_LABELS",
     "COHERENT_PREPARING_STATES",
     "COHERENT_READY_STATES",
+    "PREPARING_STEP_LABELS",
     "RUNTIME_STATES",
     "canonical_state",
     "coherent_view",

@@ -410,6 +410,10 @@ PLANNING_SESSION_STATES: tuple[str, ...] = (
 
 PLANNING_ERROR_CLASSES: tuple[str, ...] = (
     "MODEL_TIMEOUT",           # المزود لم يجب خلال المهلة (013.4 §4)
+    # (013.6 §10) صمت المزود داخل المحاولة — **قابل للإعادة**، مفصول
+    # عن MODEL_TIMEOUT الذي صار حكمًا نهائيًا لميزانية العمل الكلية.
+    # الفصل صريح: «لا نشاط منذ Nث» ≠ «انتهت ميزانية التخطيط كلها».
+    "PROVIDER_ACTIVITY_TIMEOUT",
     "PROVIDER_QUOTA",           # 429 — اختناق/حصة
     "PROVIDER_UNAVAILABLE",     # 5xx/شبكة — خادم/نقل غير متاح
     "PROVIDER_AUTH_ERROR",      # 401/403 — مفتاح/تصريح
@@ -441,6 +445,15 @@ class PlanningSession(Base):
 
     ``hard_deadline_at``: سقف زمن الجدار المطلق للمحاولة — بعده
     MODEL_TIMEOUT حتمًا مهما كان الخيط حيًّا (§B/§C.1).
+
+    (013.6 §10) ``overall_deadline_at``: الميزانية الكلية **لعمل
+    التخطيط كله عبر كل محاولاته** (لا للمحاولة الواحدة). تُثبَّت عند
+    المحاولة الأولى وتُورَّث كما هي لكل إعادة، فلا تضاعف الإعادات
+    الميزانية. قطعها = MODEL_TIMEOUT نهائي. ``hard_deadline_at`` يبقى
+    مرادفًا رجعيًا لنفس السقف (الاسم القديم للقانون نفسه).
+
+    ``retry_reason``: لماذا وُلدت هذه المحاولة — نص صريح دائم (رقم
+    المحاولة + الصنف الذي استدعى الإعادة)، فلا إعادة بلا سبب محفوظ.
     """
 
     __tablename__ = "planning_sessions"
@@ -473,6 +486,13 @@ class PlanningSession(Base):
     hard_deadline_at: Mapped[_dt.datetime | None] = mapped_column(
         DateTime, nullable=True
     )
+    #: (013.6 §10) الميزانية الكلية لعمل التخطيط عبر كل المحاولات —
+    #: تُورَّث لكل إعادة فلا تضاعفها. قطعها = MODEL_TIMEOUT نهائي.
+    overall_deadline_at: Mapped[_dt.datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    #: (013.6 §10) سبب ولادة هذه المحاولة (رقم + صنف) — صريح ودائم.
+    retry_reason: Mapped[str] = mapped_column(Text, default="")
     #: (013.5 §Q) معرّف العملية المالكة للمحاولة. يجعل استرداد الإقلاع
     #: **فوريًا وقطعيًا**: عملية ماتت (‏PID غير موجود) = صفّ يتيم يُحسم
     #: في اللحظة، بلا انتظار انتهاء الإيجار. وهذا فرق مقيس: كان استرداد

@@ -930,6 +930,67 @@ def step_chat(args, db_path: Path, config: dict, evidence: Evidence) -> dict:
                              "لا message_completed ولا رسالة assistant محفوظة")
         answer_source = None
 
+    # ---- (013.6 §11) تصنيف نتيجة البحث — ثلاث حالات لا بوليان ----
+    def classify_web_outcome() -> tuple[str, str]:
+        """«صفر نتائج» ليس دليل نجاح بحث (013.6 §11).
+
+        الفحص السابق كان ``claimed_entries == 0 or len(real_urls) > 0``
+        فينجح **تلقائيًا** حين لا يُرجع البحث شيئًا: أي أن غياب النتائج
+        كان يُقرأ كنجاح. المالك رفض هذا حرفيًا. التصنيف الآن صريح:
+
+            WEB_NOT_CALLED                لم يُستدعَ البحث أصلًا
+            WEB_CALLED_NO_RESULTS         استُدعي فعلًا ولم يُرجع نتيجة
+            WEB_RESULTS_WITH_REAL_SOURCES نتائج بروابط حقيقية
+            WEB_RESULTS_WITHOUT_REAL_SOURCES
+                                          إدخالات بلا رابط حقيقي (تلفيق)
+
+        الحالة الرابعة أُضيفت فوق الثلاث المطلوبة لأنها تحمل الفحص
+        الأصلي الذي لا يجوز فقدانه: «نتيجة بلا مصدر حقيقي = فشل».
+        """
+        called = any((
+            research["research.started"], research["research.results"],
+            research["research.used"], research["research.unavailable"],
+        ))
+        if not called:
+            return ("WEB_NOT_CALLED",
+                    "لم يظهر أي حدث بحث — الكاشف لم يُفعّل لهذا السؤال")
+        if claimed_entries == 0:
+            declared = research["research.unavailable"] > 0
+            return (
+                "WEB_CALLED_NO_RESULTS",
+                "استُدعي البحث فعلًا ولم يُرجع أي نتيجة"
+                + (" — وأُعلن عدم التوفر بصدق"
+                   if declared else " — بلا إعلان صريح"),
+            )
+        if real_urls:
+            return (
+                "WEB_RESULTS_WITH_REAL_SOURCES",
+                f"{len(real_urls)} رابط حقيقي من "
+                f"{len(claimed_distinct)} رابطًا مميزًا",
+            )
+        return (
+            "WEB_RESULTS_WITHOUT_REAL_SOURCES",
+            f"{claimed_entries} إدخال مصدر بلا رابط حقيقي واحد",
+        )
+
+    web_outcome, web_note = classify_web_outcome()
+    # حكم بحث الويب **منفصل** عن حكم خطة المشروع: فشل البحث الصادق
+    # في بيئة محجوبة لا يجوز أن يُسقط قبول التخطيط، ولا أن يمرّ أخضر.
+    evidence.data["web_search"] = {
+        "outcome": web_outcome,
+        "note": web_note,
+        "verified": web_outcome == "WEB_RESULTS_WITH_REAL_SOURCES",
+        "classifications": [
+            "WEB_NOT_CALLED", "WEB_CALLED_NO_RESULTS",
+            "WEB_RESULTS_WITH_REAL_SOURCES",
+            "WEB_RESULTS_WITHOUT_REAL_SOURCES",
+        ],
+        "behaviour_expected": (
+            "نجاح بحث الويب يستلزم نتيجة حقيقية واحدة على الأقل؛ "
+            "صفر نتائج يُعلَن فشلًا صادقًا لا نجاحًا"
+        ),
+    }
+
     chat_block = {
         "conversation_id": conversation_id,
         "conversation_id_source": bind_source,
@@ -985,6 +1046,9 @@ def step_chat(args, db_path: Path, config: dict, evidence: Evidence) -> dict:
         "db_timeline": _chat_timeline_from_db(db_path, conversation_id)
         if conversation_id is not None else None,
     }
+    # (013.6 §11) التصنيف الثلاثي يُثبَّت على الكتلة بعد بنائها
+    chat_block["web_outcome"] = web_outcome
+    chat_block["web_outcome_note"] = web_note
     if research["research.unavailable"]:
         chat_block["research_outcome"] = "WEB_UNAVAILABLE (إعلان صادق)"
     elif research["research.results"] or research["research.used"]:
@@ -1021,14 +1085,27 @@ def step_chat(args, db_path: Path, config: dict, evidence: Evidence) -> dict:
                if explicit else "ولا خطأ مصنّف معلن (فشل صامت)"),
             level="truthful" if explicit else "critical",
         )
-    evidence.check(
-        "b-web-results-have-real-sources",
-        claimed_entries == 0 or len(real_urls) > 0,
-        (f"{claimed_entries} إدخال مصدر معلن، {len(real_urls)} رابط حقيقي "
-         f"من {len(claimed_distinct)} رابطًا مميزًا"
-         + (f" | غير صالحة: {invalid_urls[:3]}" if invalid_urls else "")
-         + " — «نتيجة بلا مصدر حقيقي = فشل»"),
-    )
+    # (013.6 §11) الفحص القديم كان ينجح عند صفر نتائج (فراغ مُقنَّع).
+    # الآن: لكل تصنيف فحصه الصادق — ولا يمرّ «نتائج بمصادر حقيقية»
+    # إلا بوجود رابط حقيقي واحد على الأقل.
+    evidence.check("b-web-outcome-classified", True,
+                   f"{web_outcome} — {web_note}", level="info")
+    if web_outcome == "WEB_RESULTS_WITH_REAL_SOURCES":
+        evidence.check("b-web-results-have-real-sources", True, web_note)
+    elif web_outcome == "WEB_RESULTS_WITHOUT_REAL_SOURCES":
+        evidence.check(
+            "b-web-results-have-real-sources", False,
+            web_note + " — «نتيجة بلا مصدر حقيقي = فشل»",
+            level="truthful",
+        )
+    elif web_outcome == "WEB_CALLED_NO_RESULTS":
+        evidence.check(
+            "b-web-call-returned-no-results", True,
+            web_note + " — لم يُدَّع نجاح بحث ولا لُفِّقت مصادر",
+            level="truthful",
+        )
+    else:
+        evidence.check("b-web-not-called", False, web_note, level="info")
     if chat_block["research_outcome"] == "WEB_UNAVAILABLE":
         evidence.check("b-web-unavailable-declared", True,
                        "WEB_UNAVAILABLE معلنة بالسبب الصادق — لا نتائج ملفقة",
@@ -1700,6 +1777,12 @@ def decide_verdict(config: dict, evidence: Evidence) -> dict:
         "live_provider": config.get("provider"),
         "live_model": config.get("model"),
         "config_source": config.get("source"),
+        # (013.6 §11) حكم بحث الويب منفصل عن حكم التخطيط: لا يُسقط
+        # التخطيطَ فشلُ بحث صادق، ولا يمرّ بحثٌ بلا نتيجة كنجاح.
+        "web_search": evidence.data.get("web_search") or {
+            "outcome": "NOT_EXERCISED",
+            "verified": False,
+        },
         "rule": VERDICT_RULE,
     }
 
@@ -1726,6 +1809,14 @@ def print_verdict(verdict: dict, evidence: Evidence) -> None:
         print("  ✔ فشل المزود المعلن فشلًا مصنّفًا مع خروج المشروع من "
               "PLANNING هو PASS (§P): المطلوب الصدق لا اللون الأخضر",
               flush=True)
+    web = verdict.get("web_search") or {}
+    if web:
+        mark = "✅" if web.get("verified") else "•"
+        print(f"  {mark} بحث الويب (حكم منفصل حسب §11): "
+              f"{web.get('outcome')} — {web.get('note', '')}", flush=True)
+        if not web.get("verified"):
+            print("     نجاح بحث الويب يستلزم نتيجة حقيقية واحدة على "
+                  "الأقل؛ صفر نتائج يُعلَن فشلًا لا نجاحًا", flush=True)
     if verdict["critical_failures"]:
         print("  أسباب السقوط:", flush=True)
         for failure in verdict["critical_failures"]:

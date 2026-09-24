@@ -60,6 +60,7 @@ def test_runtime_state_endpoint_exists_and_coherent(client):
     body = response.json()
     assert body["state"] in (
         "DISCOVERING", "PROVISIONING", "BOOTING", "HEALTH_CHECK",
+        "VERIFYING_ISOLATION",
         "READY", "RUNNING", "DEGRADED", "INTERRUPTED", "FAILED",
         "UNAVAILABLE",
     )

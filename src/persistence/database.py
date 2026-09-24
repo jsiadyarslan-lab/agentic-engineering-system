@@ -110,6 +110,17 @@ _MIGRATIONS: tuple[tuple[str, str], ...] = (
         "planning_sessions.owner_pid",
         "ALTER TABLE planning_sessions ADD COLUMN owner_pid INTEGER",
     ),
+    # (013.6 §10) فصل مُهل التخطيط: ميزانية كلية عبر المحاولات +
+    # سبب صريح لكل محاولة إعادة — لا إعادة ولا تمديد بلا سبب محفوظ.
+    (
+        "planning_sessions.overall_deadline_at",
+        "ALTER TABLE planning_sessions ADD COLUMN overall_deadline_at DATETIME",
+    ),
+    (
+        "planning_sessions.retry_reason",
+        "ALTER TABLE planning_sessions ADD COLUMN retry_reason TEXT "
+        "DEFAULT '' NOT NULL",
+    ),
 )
 
 #: ترحيلات بيانات معلنة (011 §1-§2): بوابات «OPEN» قبل 011 صارت

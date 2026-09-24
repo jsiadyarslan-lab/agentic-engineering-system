@@ -87,6 +87,43 @@ class ProviderConfig(BaseSettings):
         }
 
 
+class PlanningConfig(BaseSettings):
+    """مُهل التخطيط (الأمر 013.6 §10) — فصل صريح بين مهلة **نشاط المزود**
+    ومهلة **زمن الجلسة الكلي**، بدل سقف واحد خشن.
+
+    الدافع المقيس حيًّا: النموذج الاستدلالي المُهيَّأ قضى ‏~600ث قبل أول
+    رمز إخراج، فاستهلكت جلسة واحدة ‏848ث من أصل 900ث — أي أن السقف
+    الواحد كان على وشك أن يحسم MODEL_TIMEOUT على عمل جارٍ صحيح، بينما
+    لا يوجد أي تمييز بين «المزود صامت الآن» و«انتهت ميزانية الجلسة».
+
+    الفصل هنا جوهري وليس تجميليًا:
+
+    - ``provider_activity_timeout``: كم ثانية بلا **نشاط مزود حقيقي**
+      (قطعة مخرجات أو استدلال مُثبت) قبل اعتبار **المحاولة** ميتة.
+      قطعها ليس حكمًا نهائيًا: المحاولة تُوسم فشلًا قابلًا للإعادة
+      (‏PROVIDER_ACTIVITY_TIMEOUT) وقد يُعاد تشغيلها إعادةً محدودة.
+      كل نشاط حقيقي يصل **يعيد ضبط هذه المهلة** — لكنه أبدًا لا يمدّد
+      المهلة الكلية (‏``overall_planning_timeout``).
+    - ``overall_planning_timeout``: الميزانية الكلية لزمن الجدار
+      **لعمل التخطيط كله عبر كل المحاولات**. قطعها حكم نهائي صادق:
+      MODEL_TIMEOUT بلا إعادة، لأن الميزانية استُهلكت فعلًا.
+    - ``max_attempts``: سقف المحاولات لعمل تخطيط واحد (‏2 افتراضًا =
+      محاولة أولى + إعادة آلية واحدة). لا انتظار بلا سقف أبدًا.
+
+    القيم كلها معلنة في اللقطة والواجهة دائمًا، فلا يُخفي الضبط حقيقة.
+    """
+
+    provider_activity_timeout: float = 300.0
+    overall_planning_timeout: float = 900.0
+    max_attempts: int = 2
+
+    model_config = {
+        "env_prefix": "AGenthubV2_PLANNING_",
+        "env_file": ".env",
+        "extra": "ignore",
+    }
+
+
 class LiveModelConfig(BaseSettings):
     """إعدادات الربط الحي (الأمر السادس المنقح §2) — nvidia افتراضيًا.
 
@@ -121,4 +158,5 @@ class LiveModelConfig(BaseSettings):
 
 settings = Settings()
 provider_settings = ProviderConfig()
+planning_settings = PlanningConfig()
 live_model_settings = LiveModelConfig()

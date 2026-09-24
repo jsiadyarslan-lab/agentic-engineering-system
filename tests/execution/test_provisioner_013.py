@@ -31,6 +31,9 @@ def test_provision_states_vocabulary():
     """
     assert provisioner.PROVISION_STATES == (
         "DISCOVERING", "PROVISIONING", "BOOTING", "HEALTH_CHECK",
+        # (013.6 §3) خطوة مطابقة العزل — أُضيفت صراحةً لتفصل
+        # «البيئة سليمة» عن «البيئة صالحة لهذه المهمة»
+        "VERIFYING_ISOLATION",
         "READY", "DEGRADED", "FAILED", "INTERRUPTED", "STOPPED",
     )
 

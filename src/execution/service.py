@@ -124,10 +124,14 @@ def ensure_local_registered(sessions) -> dict:
     محلية «local-linux» على مضيف غير Linux تُصحَّح بالاسم والحقيقة
     (نفس المعرف يحفظ الهوية التاريخية للتنفيذات).
     لا تفترض جاهزية (§20): تُسجل UNKNOWN ثم verify() يقرر.
+
+    (013.6 §F) محصّن ضد تكرار الاستدعاء المتزامن/المتتالي: يحاول
+    القراءة أولاً، فإن تعذر الإدراج لانتهاك UNIQUE يعيد القراءة فورًا.
     """
     correct_name = local_environment_name()
     sandboxed = 1 if _substrate_available() else 0
     with sessions() as session:
+        # محاولة قراءة البيئة الموجودة أولاً
         found = session.scalars(
             select(ExecutionEnvironment)
             .where(ExecutionEnvironment.name.in_(
@@ -172,6 +176,7 @@ def ensure_local_registered(sessions) -> dict:
                 session.commit()
                 session.refresh(found)
             return _row_to_dict(found)
+        # لا بيئة موجودة — نحاول الإدراج
         row = ExecutionEnvironment(
             name=correct_name, backend="LOCAL", status="UNKNOWN",
             endpoint="", is_default=1, sandboxed=sandboxed,
@@ -184,7 +189,18 @@ def ensure_local_registered(sessions) -> dict:
             }, ensure_ascii=False, default=str),
         )
         session.add(row)
-        session.commit()
+        try:
+            session.commit()
+        except Exception as e:  # noqa: BLE001 — نزاع UNIQUE متوقع عند التزامن
+            session.rollback()
+            # محاولة قراءة ما أُدرج من استدعاء متزامن
+            found = session.scalars(
+                select(ExecutionEnvironment)
+                .where(ExecutionEnvironment.name == correct_name)
+            ).first()
+            if found is not None:
+                return _row_to_dict(found)
+            raise
         session.refresh(row)
         return _row_to_dict(row)
 

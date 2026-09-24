@@ -33,6 +33,45 @@ WSL_WORKER_DEFAULT_PORT = 8901
 WSL_ENVIRONMENT_NAME = "wsl2-linux"
 
 
+def _decode_console(raw: Any) -> str:
+    """فكّ خرج ``wsl.exe`` بصدق — UTF-16LE حين يكون كذلك (013.6 §1).
+
+    العطل المقيس: ``subprocess.run(..., text=True)`` يفكّ بترميز اللغة
+    المحلية، و``wsl.exe`` يطبع رسائله الخاصة (مثل بانر الحقوق عند غياب
+    توزيعة) بترميز **UTF-16LE**. النتيجة كانت أدلة مشوّهة تُعرض للمالك:
+
+        uname: \\x00\\n\\x00\\n\\x00C\\x00o\\x00p\\x00y\\x00r\\x00i\\x00g\\x00h\\x00t...
+
+    أي أن «المكتشف» في تقرير الفجوات كان بايتات صفرية لا نصًّا. الحكم
+    (غير متاح) كان صحيحًا بالمصادفة، أما الدليل فكان كاذبًا — وهذا
+    مرفوض: §1 يطلب أن تكون حالة البيئة قابلة للتفسير لا مجرّد منطقية.
+
+    يقبل ``str`` أيضًا: الاختبارات تحقن مخلصات نصية مباشرة.
+    """
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        return raw
+    if isinstance(raw, (bytes, bytearray)):
+        blob = bytes(raw)
+        # ترميز UTF-16 يُنتج صفرًا في كل بايت ثانٍ من النص اللاتيني/العربي
+        if blob.count(0) and b"\x00" in blob[:400]:
+            for encoding in ("utf-16-le", "utf-16", "utf-16-be"):
+                try:
+                    text = blob.decode(encoding)
+                except UnicodeDecodeError:
+                    continue
+                if "\x00" not in text:
+                    return text
+        for encoding in ("utf-8", "cp1252", "mbcs"):
+            try:
+                return blob.decode(encoding)
+            except (UnicodeDecodeError, LookupError):
+                continue
+        return blob.decode("utf-8", "replace")
+    return str(raw)
+
+
 def _wsl_runner(
     args: list[str], *, timeout: float = 20.0,
     runner: Callable[..., subprocess.CompletedProcess] | None = None,
@@ -45,11 +84,15 @@ def _wsl_runner(
     """
     run = runner or subprocess.run
     try:
+        # (013.6 §1) ``text=False`` مقصود: الفكّ يجب أن يمرّ على
+        # ``_decode_console`` ليتعامل مع UTF-16LE بدل تشويهه بترميز
+        # اللغة المحلية. المخلصات النصية من الاختبارات تبقى مقبولة.
         proc = run(
             ["wsl.exe", *args],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, timeout=timeout,
         )
-        return proc.returncode, (proc.stdout or proc.stderr or "").strip()
+        text = _decode_console(proc.stdout) or _decode_console(proc.stderr)
+        return proc.returncode, text.strip()
     except (OSError, subprocess.TimeoutExpired) as error:
         return -1, str(error)[:200]
 

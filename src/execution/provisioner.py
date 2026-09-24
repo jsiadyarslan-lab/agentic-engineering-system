@@ -12,6 +12,8 @@
         ↓
     HEALTH_CHECK    إقلاع/كتابة/تنفيذ/التقاط حقيقية (verify)
         ↓
+    VERIFYING_ISOLATION  هل توافق البيئة سياسة هذا المشروع؟ (013.6 §3)
+        ↓
     READY — مسجلة ومختارة (المنفذ والمسبار من مصدر واحد 011)
     أو DEGRADED (تعمل بنقص) / FAILED (فشل الصحة) / STOPPED
 
@@ -33,6 +35,8 @@ from typing import Callable
 #: للإعادة من DISCOVERING بقرار صريح.
 PROVISION_STATES: tuple[str, ...] = (
     "DISCOVERING", "PROVISIONING", "BOOTING", "HEALTH_CHECK",
+    # (013.6 §3) خطوة مطابقة العزل — منفصلة عن فحص الصحة عمدًا
+    "VERIFYING_ISOLATION",
     "READY", "DEGRADED", "FAILED", "INTERRUPTED", "STOPPED",
 )
 
@@ -72,7 +76,8 @@ def _step(steps: list[dict], state: str, ok: bool, detail: str,
     steps.append(entry)
     _broadcast(
         "PROVISIONING_STARTED" if state in ("DISCOVERING", "PROVISIONING",
-                                            "BOOTING", "HEALTH_CHECK")
+                                            "BOOTING", "HEALTH_CHECK",
+                                            "VERIFYING_ISOLATION")
         else ("PROVISIONING_COMPLETED" if ok else "PROVISIONING_FAILED"),
         {"state": state, "ok": ok, "detail": detail, **extra},
     )
@@ -338,11 +343,28 @@ def provision(sessions, *, policy: str = "STRICT_ISOLATED",
                    "detail": str(c.get("detail", ""))[:120]}
                   for c in verified.get("checks", [])
               ])
+        # (013.6 §3) خطوة صريحة: العزل يُتحقق منه منفصلًا عن الصحة.
+        # الصحة تجيب «هل تعمل؟» والعزل يجيب «هل توافق سياسة هذا
+        # المشروع؟» — ودمجهما كان يُخفي الفرق عن المالك تمامًا.
+        runtime_state.record_state(
+            sessions, policy, "VERIFYING_ISOLATION",
+            reason="التحقق من مطابقة عزل البيئة لسياسة المشروع…",
+            progress=90, environment_id=environment["id"],
+        )
         # (013.2 §4) READY تُعلن فقط إذا وافقت البيئةُ السياسةَ حرفيًا:
         # تحقق ناجح لبيئة غير معزولة تحت عزل صارم ليس READY للسياسة —
         # هذا بالضبط كان انفصام «التقرير READY والواجهة غير جاهزة»
         satisfies = execution_policy.environment_satisfies(
             verified_full, policy
+        )
+        _step(
+            steps, "VERIFYING_ISOLATION", bool(satisfies),
+            (
+                f"العزل مطابق: {verified_full.get('isolation') or 'معزولة'}"
+                if satisfies else
+                "العزل غير مطابق لسياسة المشروع — "
+                f"الفعلي {verified_full.get('isolation') or 'NONE'}"
+            ),
         )
         if not satisfies:
             reason = (
@@ -589,7 +611,22 @@ def _provision_wsl_worker(sessions, *, policy: str, steps: list[dict],
         sessions, environment["id"]
     )
     verified = verified_full.get("verify") or {}
+    # (013.6 §3) خطوة العزل الصريحة — قبل الحكم على المطابقة
+    runtime_state.record_state(
+        sessions, policy, "VERIFYING_ISOLATION",
+        reason="التحقق من أن العامل يعلن ركيزة عزل Linux فعلية…",
+        progress=90, environment_id=environment["id"],
+        worker_id=launch_evidence.get("worker_id", ""),
+    )
     satisfies = _satisfies(verified_full, policy)
+    _step(
+        steps, "VERIFYING_ISOLATION", bool(satisfies),
+        (
+            "العامل يعلن ركيزة Linux معزولة داخل WSL2"
+            if satisfies else
+            "الركيزة المُعلنة من العامل لا توافق سياسة المشروع"
+        ),
+    )
 
     if bool(verified.get("ok")) and satisfies:
         _step(steps, "HEALTH_CHECK", True,

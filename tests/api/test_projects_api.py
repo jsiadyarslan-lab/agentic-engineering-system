@@ -79,15 +79,17 @@ def project_env(tmp_path, monkeypatch):
     registry.ensure_seeded(sessions)
 
     runs: list[str] = []
+    # (013.6 §12) نريد مهمة بطيئة بما يكفي للسماح بإيقافها مؤقتًا
+    # أثناء التنفيذ - وإلا يكتمل المشروع قبل وصول طلب الإيقاف.
+    pause_event = None
 
     def fake_run_task(goal, *, router, role_config=None, workspace=None,
                       on_event=None, cycle_id=None, stop_controller=None,
-                      resume_from=None, **_kw):
+                      resume_from=None, stop_cycle_id=None, **_kw):
         from tasks import TaskResult
+        import time as _time
 
         runs.append(goal)
-        # (013 §28) نشاط أدوات حي كالمنفذ الحقيقي — المحرك يكتبها
-        # TOOL_EXECUTION دائمة فتظهر في السلسلة الحية
         if on_event is not None:
             try:
                 on_event({"kind": "tool.started", "role": "implementer",
@@ -108,6 +110,23 @@ def project_env(tmp_path, monkeypatch):
         output.write_text(f"# مخرج\n\n{goal}\n", encoding="utf-8")
         evidence_path = root / "evidence.json"
         evidence_path.write_text("{}", encoding="utf-8")
+        # (013.6 §F) احترام طلب الإيقاف المؤقت — واجهة StopController الحقيقية
+        # تستخدم stop_cycle_id (مستوى المشروع) للإيقاف، لا cycle_id (مستوى الخطوة)
+        check_id = stop_cycle_id or cycle_id
+        if stop_controller is not None and check_id is not None:
+            checker = (stop_controller.checker_for(check_id)
+                       if hasattr(stop_controller, "checker_for")
+                       else lambda: stop_controller.is_stopped(check_id))
+            # ننتظر الإيقاف مؤقتًا، لكن لا نعلق إلى الأبد — المهلة
+            # القصوى 5 ثوانٍ ثم نكمل المهمة (للتأكد من أن الاختبار
+            # يمكنه التقاط المشروع في RUNNING قبل أن يكتمل)
+            start_wait = _time.monotonic()
+            while not checker():
+                if _time.monotonic() - start_wait > 5.0:
+                    break  # مهلة الأمان: نكمل المهمة حتى لو لم يأتِ الإيقاف
+                _time.sleep(0.1)
+        else:
+            _time.sleep(0.5)
         return TaskResult(
             verdict="PASS", reason="تم", goal=goal, cycle_id=cycle_id or "",
             final_state="EVIDENCED", workspace=str(root),
@@ -115,7 +134,7 @@ def project_env(tmp_path, monkeypatch):
             evidence_path=str(evidence_path),
             evidence_sha256=hashlib.sha256(
                 evidence_path.read_bytes()).hexdigest(),
-            duration_ms=5, state_history=["EVIDENCED"],
+            duration_ms=500, state_history=["EVIDENCED"],
         )
 
     import tasks as tasks_mod
@@ -241,16 +260,64 @@ def test_stop_and_resume_via_api(client, project_env):
 
 
 def test_recovery_listing_after_pause(client, project_env):
-    """قائمة المشاريع تعرض تقييم الاسترداد للمشاريع غير النهائية (§19)."""
-    pid = _create_and_approve(client)
-    client.post(f"/api/projects/{pid}/stop", json={"reason": ""})
+    """قائمة المشاريع تعرض تقييم الاسترداد للمشاريع غير النهائية (§19).
+
+    ننشئ مشروعًا بسياسة COMPATIBLE_LOCAL (تنفذ على Windows)، نعتمد الخطة
+    فيطلق التنفيذ تلقائيًا، ثم ننتظر أن يدخل RUNNING ونوقفه مؤقتًا
+    فورًا — في هذه اللحظة يجب أن يظهر في recovery مع checkpoint.
+    """
+    # إنشاء مشروع بسياسة توافق محلي (تنفذ على Windows)
+    created = client.post("/api/projects", json={
+        "name": "مشروع استرداد", "objective": "هدف للاختبار",
+        "execution_policy": "COMPATIBLE_LOCAL",
+    })
+    assert created.status_code == 201, created.text
+    pid = created.json()["id"]
+    # توليد واعتماد الخطة (الاعتماد يطلق الحلقة تلقائيًا 013.5)
+    plan, _detail = generate_plan_and_wait(client, pid)
+    assert plan.status_code == 200, plan.text
+    approved = client.post(f"/api/projects/{pid}/plan/approve",
+                           json={"approved": True})
+    assert approved.status_code == 200, approved.text
+    print(f"APPROVE: {approved.json()}", flush=True)
+    # انتظار أن يدخل المشروع في RUNNING (تنفيذ فعلي)
+    import time as _time
+    deadline = _time.monotonic() + 30.0
+    while True:
+        state = client.get(f"/api/projects/{pid}/state").json()
+        rt_state = state.get("environment", {}).get("runtime_state", {})
+        print(f"POLL: status={state.get('status')}, rt={rt_state.get('state')}, coh={rt_state.get('coherent')}", flush=True)
+        if rt_state.get("state") == "RUNNING":
+            break
+        if _time.monotonic() > deadline:
+            raise AssertionError("المشروع لم يدخل RUNNING خلال المهلة")
+        _time.sleep(0.1)
+    # المشروع يعمل الآن — أوقفه مؤقتًا (pause)
+    pause_resp = client.post(f"/api/projects/{pid}/pause", json={"reason": "اختبار الاسترداد"})
+    assert pause_resp.status_code == 200, pause_resp.text
+    print(f"PAUSE RESPONSE: {pause_resp.json()}", flush=True)
+    # انتظار أن يتحول المشروع فعليًا إلى PAUSED (الإيقاف المؤقت غير متزامن)
+    deadline = _time.monotonic() + 10.0
+    while True:
+        proj = client.get(f"/api/projects/{pid}").json()
+        if proj.get("status") == "PAUSED":
+            break
+        if _time.monotonic() > deadline:
+            raise AssertionError(f"المشروع لم يتحول إلى PAUSED، الحالة: {proj.get('status')}")
+        _time.sleep(0.1)
+    # تحقق من قائمة الاسترداد الآن — يجب أن يظهر المشروع
+    listing = client.get("/api/projects").json()
+    print(f"LISTING PROJECTS: {[p['status'] for p in listing['projects']]}", flush=True)
+    print(f"RECOVERY: {listing['recovery']}", flush=True)
+    state = client.get(f"/api/projects/{pid}/state").json()
+    print(f"STATE: {state.get('status')}", flush=True)
+    entry = [r for r in listing["recovery"] if r["project_id"] == pid]
+    assert entry and entry[0]["resumable"] is True, f"recovery entry: {entry}"
+    assert entry[0]["checkpoint"], "يجب أن يوجد checkpoint عند الإيقاف المؤقت"
+    # استئنف وأكمل
     with client.stream("POST", f"/api/projects/{pid}/run/stream") as response:
         for _line in response.iter_lines():
             pass
-    listing = client.get("/api/projects").json()
-    entry = [r for r in listing["recovery"] if r["project_id"] == pid]
-    assert entry and entry[0]["resumable"] is True
-    assert entry[0]["checkpoint"]
 
 
 def test_sub_resources_exposed(client, project_env):
