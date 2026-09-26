@@ -466,7 +466,7 @@ mod linux_executor {
         }
 
         async fn negotiate_capability(&self, requested: CapabilityRequest) -> std::result::Result<CapabilityResponse, SubstrateError> {
-            self.negotiate_capability(request).await
+            self.negotiate_capability(requested).await
         }
     }
 }

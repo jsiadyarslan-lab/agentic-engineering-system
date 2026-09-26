@@ -20,17 +20,17 @@ from typing import Optional, List, Dict, Any
 TRACKER_FILE = Path(__file__).parent / "EXECUTION-TRACKER-v2.1.md"
 
 STATUS_ICONS = {
-    'completed': '✅',
-    'in_progress': '🔄',
-    'pending': '⏳',
-    'blocked': '🚫'
+    'completed': '[DONE]',
+    'in_progress': '[IN_PROGRESS]',
+    'pending': '[PENDING]',
+    'blocked': '[BLOCKED]'
 }
 
 STATUS_MARKDOWN = {
-    'completed': '✅',
-    'in_progress': '🔄',
-    'pending': '⏳',
-    'blocked': '🚫'
+    'completed': '[DONE]',
+    'in_progress': '[IN_PROGRESS]',
+    'pending': '[PENDING]',
+    'blocked': '[BLOCKED]'
 }
 
 def load_tracker() -> str:
@@ -58,8 +58,8 @@ def parse_tracker(content: str) -> Dict[str, Any]:
     in_metrics = False
     
     for line in lines:
-        # Phase headers - matches "## 📋 PHASE 0", "## 📋 A. CONTEXT MANAGEMENT", "## 🚀 IMMEDIATE ACTIONS", etc.
-        phase_match = re.match(r'##\s*[📋🚀]?\s*(PHASE\s+\d+|[A-G]\.\s+[A-Z\s]+|IMMEDIATE ACTIONS)', line)
+        # Phase headers - matches "## [PHASE] PHASE 0", "## 📋 A. CONTEXT MANAGEMENT", "## [ROCKET] IMMEDIATE ACTIONS", etc.
+        phase_match = re.match(r'##\s*[📋🚀]?\s*(PHASE\s+\d+(?:\.\d+)?|[A-G]\.\s+[A-Z\s]+|IMMEDIATE ACTIONS)', line)
         if phase_match:
             if current_phase:
                 phases.append(current_phase)
@@ -77,19 +77,19 @@ def parse_tracker(content: str) -> Dict[str, Any]:
             continue
         
         # Special section markers
-        if 'NORTH STAR METRICS' in line or '## 🎯 NORTH STAR' in line:
+        if 'NORTH STAR METRICS' in line or '## [TARGET] NORTH STAR' in line:
             in_north_star = True
             if current_phase:
                 phases.append(current_phase)
             current_phase = None
             continue
-        if 'DEFINITION OF DONE' in line or '## 🏁 DEFINITION' in line:
+        if 'DEFINITION OF DONE' in line or '## [FINISH] DEFINITION' in line:
             in_definition_of_done = True
             if current_phase:
                 phases.append(current_phase)
             current_phase = None
             continue
-        if 'METRICS SUMMARY' in line or '## 📈 METRICS' in line or '## 📊 METRICS' in line:
+        if 'METRICS SUMMARY' in line or '## [METRICS] METRICS' in line or '## 📊 METRICS' in line or '## 📈 METRICS' in line:
             in_metrics = True
             if current_phase:
                 phases.append(current_phase)
@@ -113,7 +113,7 @@ def parse_tracker(content: str) -> Dict[str, Any]:
                 status_icon = cells[0]
                 step_id = cells[1]
                 title = cells[2]
-                deps = cells[3].replace('←', '').strip() if cells[3] else ''
+                deps = cells[3].replace('<-', '').strip() if cells[3] else ''
                 owner = cells[4]
                 acceptance = cells[5]
                 files = cells[6] if len(cells) > 6 else ''
@@ -159,10 +159,10 @@ def update_step_status(step_id: str, status: str, note: Optional[str] = None):
     
     # Find the step row and update status icon
     status_icons = {
-        'completed': '✅',
-        'in_progress': '🔄',
-        'pending': '⏳',
-        'blocked': '🚫'
+        'completed': '[DONE]',
+        'in_progress': '[IN_PROGRESS]',
+        'pending': '[PENDING]',
+        'blocked': '[BLOCKED]'
     }
     
     new_icon = status_icons.get(status, '⏳')
@@ -206,11 +206,28 @@ def update_metrics(content: str) -> str:
     for action in data['immediate_actions']:
         all_steps.append(action)
     
+    total = len(all_steps)
     completed = sum(1 for s in all_steps if s['status'] == 'completed')
     in_progress = sum(1 for s in all_steps if s['status'] == 'in_progress')
     pending = sum(1 for s in all_steps if s['status'] == 'pending')
-    total = len(all_steps)
-    overall = round((completed + in_progress * 0.5) / total * 100, 1) if total > 0 else 0
+    # Include immediate actions in total
+    imm_actions = data['immediate_actions']
+    imm_total = len(imm_actions)
+    imm_completed = sum(1 for a in imm_actions if a['status'] == 'completed')
+    imm_in_progress = sum(1 for a in imm_actions if a['status'] == 'in_progress')
+    imm_pending = sum(1 for a in imm_actions if a['status'] == 'pending')
+    
+    grand_total = total + imm_total
+    grand_completed = completed + imm_completed
+    grand_in_progress = in_progress + imm_in_progress
+    grand_pending = pending + imm_pending
+    grand_overall = round((grand_completed + grand_in_progress * 0.5) / grand_total * 100, 1) if grand_total > 0 else 0
+    
+    total = grand_total
+    completed = grand_completed
+    in_progress = grand_in_progress
+    pending = grand_pending
+    overall = grand_overall
     
     # Update metrics summary table
     lines = content.split('\n')
@@ -219,7 +236,7 @@ def update_metrics(content: str) -> str:
     i = 0
     while i < len(lines):
         line = lines[i]
-        if '## 📈 METRICS SUMMARY' in line or '## 📊 METRICS SUMMARY' in line:
+        if '## [METRICS] METRICS SUMMARY' in line or '## [METRICS] METRICS SUMMARY' in line:
             in_metrics = True
             new_lines.append(line)
             # Skip until we find the table end
@@ -239,7 +256,18 @@ def update_metrics(content: str) -> str:
                 p_progress = round((p_completed + p_in_progress * 0.5) / p_total * 100, 1) if p_total > 0 else 0
                 new_lines.append(f"| **{phase_data['name']}** | {p_total} | {p_completed} | {p_in_progress} | {p_pending} | **{p_progress}%** |")
             new_lines.append(f"| **Immediate** | {len(data['immediate_actions'])} | {sum(1 for a in data['immediate_actions'] if a['status'] == 'completed')} | {sum(1 for a in data['immediate_actions'] if a['status'] == 'in_progress')} | {sum(1 for a in data['immediate_actions'] if a['status'] == 'pending')} | **{round((sum(1 for a in data['immediate_actions'] if a['status'] == 'completed') + sum(1 for a in data['immediate_actions'] if a['status'] == 'in_progress') * 0.5) / len(data['immediate_actions']) * 100, 1) if data['immediate_actions'] else 0}% |")
-            new_lines.append(f"| **TOTAL** | {total} | {completed} | {in_progress} | {pending} | **{overall}%** |")
+            # Count immediate actions
+            imm_total = len(data['immediate_actions'])
+            imm_completed = sum(1 for a in data['immediate_actions'] if a['status'] == 'completed')
+            imm_in_progress = sum(1 for a in data['immediate_actions'] if a['status'] == 'in_progress')
+            imm_pending = sum(1 for a in data['immediate_actions'] if a['status'] == 'pending')
+            grand_total = total + imm_total
+            grand_completed = completed + imm_completed
+            grand_in_progress = in_progress + imm_in_progress
+            grand_pending = pending + imm_pending
+            grand_overall = round((grand_completed + grand_in_progress * 0.5) / grand_total * 100, 1) if grand_total > 0 else 0
+            new_lines.append(f"| **Immediate** | {imm_total} | {imm_completed} | {imm_in_progress} | {imm_pending} | **{round((imm_completed + imm_in_progress * 0.5) / imm_total * 100, 1) if imm_total else 0}%** |")
+            new_lines.append(f"| **TOTAL** | {grand_total} | {grand_completed} | {grand_in_progress} | {grand_pending} | **{grand_overall}%** |")
             new_lines.append('')
             continue
         if in_metrics and line.startswith('| TOTAL'):
@@ -259,14 +287,31 @@ def show_status(content: str, phase_filter: Optional[str] = None):
     for action in data['immediate_actions']:
         all_steps.append(action)
     
+    total = len(all_steps)
     completed = sum(1 for s in all_steps if s['status'] == 'completed')
     in_progress = sum(1 for s in all_steps if s['status'] == 'in_progress')
     pending = sum(1 for s in all_steps if s['status'] == 'pending')
-    total = len(all_steps)
-    overall = round((completed + in_progress * 0.5) / total * 100, 1) if total > 0 else 0
+    # Include immediate actions in total
+    imm_actions = data['immediate_actions']
+    imm_total = len(imm_actions)
+    imm_completed = sum(1 for a in imm_actions if a['status'] == 'completed')
+    imm_in_progress = sum(1 for a in imm_actions if a['status'] == 'in_progress')
+    imm_pending = sum(1 for a in imm_actions if a['status'] == 'pending')
+    
+    grand_total = total + imm_total
+    grand_completed = completed + imm_completed
+    grand_in_progress = in_progress + imm_in_progress
+    grand_pending = pending + imm_pending
+    grand_overall = round((grand_completed + grand_in_progress * 0.5) / grand_total * 100, 1) if grand_total > 0 else 0
+    
+    total = grand_total
+    completed = grand_completed
+    in_progress = grand_in_progress
+    pending = grand_pending
+    overall = grand_overall
     
     print(f"\n{'='*80}")
-    print(f"📊 ENGINEERING AGENT SYSTEM — EXECUTION TRACKER")
+    print(f"[CHART] ENGINEERING AGENT SYSTEM — EXECUTION TRACKER")
     print(f"{'='*80}")
     print(f"Overall Progress: {overall}%")
     print(f"  ✅ Completed: {completed}")
@@ -284,7 +329,7 @@ def show_status(content: str, phase_filter: Optional[str] = None):
         p_total = len(phase['steps'])
         p_progress = round((p_completed + p_in_progress * 0.5) / p_total * 100, 1) if p_total > 0 else 0
         
-        status_icon = {'completed': '✅', 'in_progress': '🔄', 'pending': '⏳'}.get(
+        status_icon = {'completed': '[DONE]', 'in_progress': '[IN_PROGRESS]', 'pending': '[PENDING]'}.get(
             'completed' if p_completed == p_total else ('in_progress' if p_in_progress > 0 else 'pending'), '❓')
         
         print(f"{status_icon} {phase['name'].upper()} ({p_progress}%)")
@@ -292,13 +337,13 @@ def show_status(content: str, phase_filter: Optional[str] = None):
         
         for step in phase['steps']:
             step_icon = STATUS_MARKDOWN.get(step['status'], '❓')
-            deps = f" ← {', '.join(step['dependencies'])}" if step['dependencies'] else ""
+            deps = f" <- {', '.join(step['dependencies'])}" if step['dependencies'] else ""
             blocked = f" 🚫 {step.get('blocked_reason', '')}" if step.get('blocked_reason') else ""
             print(f"    {step_icon} {step['id']}: {step['title']}{deps}{blocked}")
         print()
     
     # Show immediate actions
-    print("🚀 IMMEDIATE ACTIONS")
+    print("[ROCKET] IMMEDIATE ACTIONS")
     for action in data['immediate_actions']:
         icon = STATUS_MARKDOWN.get(action['status'], '❓')
         print(f"  {icon} {action['id']}: {action['title']}")
@@ -307,6 +352,7 @@ def show_status(content: str, phase_filter: Optional[str] = None):
 def get_phase_weeks(phase_name: str) -> str:
     weeks_map = {
         'PHASE 0': '1-2',
+        'PHASE 0.5': '3-4',
         'PHASE 1': '3-5',
         'PHASE 2': '6-9',
         'PHASE 3': '10-13',
@@ -314,8 +360,10 @@ def get_phase_weeks(phase_name: str) -> str:
         'PHASE 5': '17-20',
         'IMMEDIATE ACTIONS': 'This Week'
     }
+    # Exact match first, then prefix match with space boundary
+    upper_name = phase_name.upper()
     for key, val in weeks_map.items():
-        if key in phase_name.upper():
+        if upper_name == key or upper_name.startswith(key + ' ') or upper_name.startswith(key + ':'):
             return val
     return '—'
 
@@ -335,7 +383,7 @@ def generate_report(content: str) -> str:
         p_total = len(phase['steps'])
         p_progress = round((p_completed + p_in_progress * 0.5) / p_total * 100, 1) if p_total > 0 else 0
         
-        status_icon = {'completed': '✅', 'in_progress': '🔄', 'pending': '⏳'}.get(
+        status_icon = {'completed': '[DONE]', 'in_progress': '[IN_PROGRESS]', 'pending': '[PENDING]'}.get(
             'completed' if p_completed == p_total else ('in_progress' if p_in_progress > 0 else 'pending'), '❓')
         
         lines.append(f"\n## {status_icon} {phase['name'].upper()} ({p_progress}%)")
@@ -343,7 +391,7 @@ def generate_report(content: str) -> str:
         
         for step in phase['steps']:
             step_icon = STATUS_MARKDOWN.get(step['status'], '❓')
-            deps = f" ← {', '.join(step['dependencies'])}" if step['dependencies'] else ""
+            deps = f" <- {', '.join(step['dependencies'])}" if step['dependencies'] else ""
             blocked = f" 🚫 {step.get('blocked_reason', '')}" if step.get('blocked_reason') else ""
             lines.append(f"  {step_icon} **{step['id']}**: {step['title']}{deps}{blocked}")
     

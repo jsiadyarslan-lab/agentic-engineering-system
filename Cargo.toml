@@ -41,6 +41,7 @@ dashmap = "5.0"
 libc = "0.2.153"
 nix = "0.28"
 seccomp = "0.1"
+seccompiler = "0.6"
 
 # Windows substrate
 windows = { version = "0.58", features = [

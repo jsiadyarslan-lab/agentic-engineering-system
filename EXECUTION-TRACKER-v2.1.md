@@ -24,7 +24,7 @@
 
 | Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
 |--------|-----|-------|--------------|-------|---------------------|-------|
-| 🔄 | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `crates/substrate-linux/src/lib.rs` |
+| 🔄 | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `src/substrate/local_substrate.py` |
 | 🔄 | **0.1.2** | Implement Windows Substrate (Job Objects + Silos/AppContainers) | 0.1.1 | Backend | `pytest tests/execution/test_windows_substrate.py` passes | `crates/substrate-windows/src/lib.rs`, `crates/job-objects/`, `crates/silos/` | BLOCKED: Windows API compatibility issues with windows 0.58 crate
 | ⏳ | **0.1.3** | Implement macOS Substrate (Seatbelt/XPC/App Sandbox) | 0.1.1 | Backend | `pytest tests/execution/test_macos_substrate.py` passes | `crates/substrate-macos/src/lib.rs`, `crates/seatbelt/` |
 | ✅ | **0.1.4** | Abstract Substrate Trait + Factory (`get_substrate("auto")`) | 0.1.1, 0.1.2, 0.1.3 | Backend | `get_substrate("auto")` works on Linux/Windows/macOS | `crates/substrate-core/src/lib.rs`, `src/execution/substrate/__init__.py` |
@@ -46,6 +46,21 @@
 | ⏳ | **0.2.5** | Chaos Engineering Harness | 0.2.2 | Infra | `chaos run --scenario=network-partition` passes | `chaos/`, `src/chaos/runner.py` |
 
 **Phase Progress: 57.1%** (8/14 completed)
+
+---
+
+
+
+## 📋 PHASE 0.5: RUST PORT (Weeks 3-4) — Target: 100%
+
+| Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
+|--------|-----|-------|--------------|-------|---------------------|-------|
+| ⏳ | **0.5.1** | Port Linux Substrate to Rust (crates/substrate-linux) | 0.1.1 | Backend | cargo test -p substrate-linux passes | crates/substrate-linux/ |
+| ⏳ | **0.5.2** | Port Windows Substrate (Job Objects + Silos) | 0.1.2 | Backend | cargo test -p substrate-windows passes | crates/substrate-windows/, crates/job-objects/, crates/silos/ |
+| ⏳ | **0.5.3** | Port macOS Substrate (Seatbelt) | 0.1.3 | Backend | cargo test -p substrate-macos passes | crates/substrate-macos/, crates/seatbelt/ |
+| ⏳ | **0.5.4** | FFI Bridge: Python EOE → Rust Substrates | 0.5.1, 0.5.2, 0.5.3 | Backend | eoe_engine calls substrate via FFI | src/substrate/ffi_bridge.py |
+
+**Phase Progress: 0%** (0/4 completed)
 
 ---
 
@@ -243,28 +258,6 @@
 | ⏳ | **G.7** | Adversarial Testing — Automated red-teaming of agents and substrate | G.1, G.2, G.3, G.4 | Security | `security redteam --agent=arch --iterations=1000` finds 0 critical | `src/agent_hub/security/adversarial.py` |
 
 **Phase Progress: 0%** (0/7 completed)
-
----
-
-## 📋 PHASE 4: PRODUCTION HARDENING (Weeks 14-16) — Target: 100%
-
-| Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
-|--------|-----|-------|--------------|-------|---------------------|-------|
-| ⏳ | **4.1.1** | RBAC + ABAC (Resource + Action + Context) | 0.2.1 | Security | `authz check --user=alice --resource=deploy --action=execute` | `src/agent_hub/platform/rbac/` |
-| ⏳ | **4.1.2** | Audit Log (Immutable + Tamper-Evident + Queryable) | 0.2.1 | Security | `audit log --user=alice --since=24h` complete | `src/agent_hub/platform/audit/` |
-| ⏳ | **4.1.3** | Secrets Management (Vault + Rotation + Lease) | — | Security | `secret get db/password` rotates automatically | `src/agent_hub/platform/secrets/` |
-| ⏳ | **4.1.4** | Supply Chain Security (SBOM + Sigstore + Verification) | — | Security | `cosign verify --key=cosign.pub image` passes | `src/agent_hub/platform/supply_chain/` |
-| ⏳ | **4.1.5** | Zero-Trust Substrate (mTLS + Attestation) | 0.1.4 | Security | `substrate attest --measurement=sha256` verifies | `crates/attestation/src/lib.rs` |
-| ⏳ | **4.2.1** | SLO Dashboards (Latency/Error/Throughput/Cost) | 0.2.2 | Ops | `slo dashboard` shows real-time + burn rate | `src/agent_hub/platform/observability/slo.py`, `grafana/dashboards/` |
-| ⏳ | **4.2.2** | Automated Incident Response (Runbooks + Escalation) | 0.2.1 | Ops | `incident respond --auto` pages oncall + runs runbook | `src/agent_hub/platform/incident/` |
-| ⏳ | **4.2.3** | Cost Attribution (Per Agent/Project/Team) | 0.2.1 | Ops | `cost report --by=project --period=month` accurate | `src/agent_hub/platform/cost/` |
-| ⏳ | **4.2.4** | Predictive Scaling (ML Demand Forecasting) | 0.2.2 | Ops | `scale predict --horizon=1h` accuracy > 90% | `src/agent_hub/platform/scaling/` |
-| ⏳ | **4.3.1** | Workspaces + Projects + Environments Isolation | 4.1.1 | Platform | `ws create --name=team-a --quota=cpu=100,mem=200Gi` | `src/agent_hub/platform/workspaces.py` |
-| ⏳ | **4.3.2** | Shared Agent Library + Versioning + Publishing | 1.1.1 | Platform | `agent publish --name=my-reviewer --version=1.2.0` | `src/agent_hub/platform/registry.py` |
-| ⏳ | **4.3.3** | Code Review Integration (GitHub/GitLab/Gerrit) | 1.3.3 | Platform | `pr review --agent=reviewer` posts comments | `src/agent_hub/platform/integrations/github.py`, `gitlab.py` |
-| ⏳ | **4.3.4** | Collaborative Debugging (Multi-User Real-Time) | 0.2.2 | Platform | `debug share --session=abc` multiple users watch + interact | `src/agent_hub/platform/collab_debug.py` |
-
-**Phase Progress: 0%** (0/13 completed)
 
 ---
 
