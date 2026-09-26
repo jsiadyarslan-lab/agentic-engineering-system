@@ -272,11 +272,11 @@ mod linux_executor {
             let duration_ms = start_time.elapsed().as_millis() as u64;
 
             // Collect artifacts
-            let artifacts = self.collect_artifacts(&artifacts_dir)?;
+            let artifacts = self.collect_artifacts(&artifacts_dir).await?;
 
             // Save stdout/stderr
-            let stdout_ref = self.save_output(&artifacts_dir, "stdout", &output.1)?;
-            let stderr_ref = self.save_output(&artifacts_dir, "stderr", &output.2)?;
+            let stdout_ref = self.save_output(&artifacts_dir, "stdout", &output.1).await?;
+            let stderr_ref = self.save_output(&artifacts_dir, "stderr", &output.2).await?;
 
             let (status, stdout, stderr) = match output {
                 Ok((status, stdout, stderr)) => (status, stdout, stderr),
@@ -403,12 +403,13 @@ mod linux_executor {
             Ok(artifacts)
         }
 
-        fn save_output(&self, _artifacts_dir: &Path, name: &str, data: &[Vec<u8>]) -> Result<String> {
+        async fn save_output(&self, _artifacts_dir: &Path, name: &str, data: &[Vec<u8>]) -> Result<String> {
             let output: Vec<u8> = data.iter().flatten().cloned().collect();
             let filename = format!("{}.txt", name);
             let path = std::path::Path::new("/artifacts").join(&filename);
             
-            std::fs::write(&path, &output)
+            tokio::fs::write(&path, &output)
+                .await
                 .map_err(|e| LinuxSubstrateError::Io(e))?;
             
             Ok(path.to_string_lossy().to_string())
