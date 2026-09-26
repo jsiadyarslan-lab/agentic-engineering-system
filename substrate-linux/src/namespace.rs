@@ -107,7 +107,7 @@ mod linux_namespace {
     impl Drop for NamespaceGuard {
         fn drop(&mut self) {
             // Restore original namespaces
-            for (name, file) in &self.original_ns {
+            for (_name, file) in &self.original_ns {
                 let _ = nix::sched::setns(file, nix::sched::CloneFlags::empty());
             }
 

@@ -375,14 +375,14 @@ mod linux_executor {
             
             if artifacts_dir.exists() {
                 for entry in walkdir::WalkDir::new(artifacts_dir) {
-                    let entry = entry.map_err(|e| LinuxSubstrateError::Io(e))?;
+                    let entry = entry.map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
                     if entry.file_type().is_file() {
                         let path = entry.path();
                         let relative = path.strip_prefix(artifacts_dir)
                             .map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
                         
                         let metadata = entry.metadata()
-                            .map_err(|e| LinuxSubstrateError::Io(e))?;
+                            .map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
                         
                         let content = std::fs::read(path)
                             .map_err(|e| LinuxSubstrateError::Io(e))?;
