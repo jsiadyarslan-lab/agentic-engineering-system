@@ -158,7 +158,7 @@ mod linux_namespace {
                 flags,
                 None,
             )
-        }.map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        }.map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Parent process - configure mappings
         if child_pid.as_raw() > 0 {
@@ -169,7 +169,7 @@ mod linux_namespace {
                     .collect::<Vec<_>>()
                     .join("\n");
                 fs::write(format!("/proc/{}/uid_map", child_pid), map_content)
-                    .map_err(|e| LinuxSubstrateError::Io(e))?;
+                    .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
             }
 
             // Write GID map
@@ -179,12 +179,12 @@ mod linux_namespace {
                     .collect::<Vec<_>>()
                     .join("\n");
                 fs::write(format!("/proc/{}/gid_map", child_pid), map_content)
-                    .map_err(|e| LinuxSubstrateError::Io(e))?;
+                    .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
             }
 
             // Deny setgroups
             fs::write(format!("/proc/{}/setgroups", child_pid), "deny")
-                .map_err(|e| LinuxSubstrateError::Io(e))?;
+                .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         }
 
         Ok(NamespaceGuard::new()?)
@@ -199,51 +199,51 @@ mod linux_namespace {
             None::<&str>,
             MsFlags::MS_REC | MsFlags::MS_PRIVATE,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Create private tmpfs for /tmp
-        fs::create_dir_all("/tmp/sandbox").map_err(|e| LinuxSubstrateError::Io(e))?;
+        fs::create_dir_all("/tmp/sandbox").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         mount(
             Some("tmpfs"),
             "/tmp/sandbox",
             Some("tmpfs"),
             MsFlags::MS_NOSUID | MsFlags::MS_NODEV | MsFlags::MS_NOEXEC,
             Some("size=64m,mode=0755"),
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Bind mount source tree read-only at /work
-        fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(e))?;
+        fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         mount(
             Some(workspace_root.to_str().unwrap()),
             "/work",
             None::<&str>,
             MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Bind mount artifacts directory at /artifacts
-        fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(e))?;
+        fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         mount(
             Some(artifacts_dir.to_str().unwrap()),
             "/artifacts",
             None::<&str>,
             MsFlags::MS_BIND,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Create minimal /dev
-        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(e))?;
+        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         for device in &["null", "zero", "urandom", "zero"] {
             let target = format!("/dev/{}", device);
             if !Path::new(&target).exists() {
-                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
+                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
                 mount(
                     Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
-                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+                ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
             }
         }
 
@@ -259,11 +259,11 @@ mod linux_namespace {
         nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
 
         // Pivot root
-        nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+        nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Unmount old root
         nix::mount::umount2("old", nix::mount::MntFlags::MNT_DETACH)
-            .map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+            .map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Remove old directory
         fs::remove_dir("old").ok();
@@ -273,20 +273,20 @@ mod linux_namespace {
 
     /// Setup minimal /dev
     fn setup_dev() -> Result<()> {
-        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(e))?;
+        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
         
         let devices = ["null", "zero", "urandom", "full", "zero", "random"];
         for device in &devices {
             let target = format!("/dev/{}", device);
             if !Path::new(&target).exists() {
-                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
+                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
                 mount(
                     Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
-                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.into()).to_string()))?;
+                ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
             }
         }
         Ok(())
