@@ -13,6 +13,7 @@ pub mod landlock;
 use crate::executor::LinuxSubstrate;
 use crate::types::LinuxSubstrateConfig;
 
+pub use crate::executor::LinuxSubstrate;
 pub use crate::error::{LinuxSubstrateError, Result};
 pub use crate::types::*;
 
