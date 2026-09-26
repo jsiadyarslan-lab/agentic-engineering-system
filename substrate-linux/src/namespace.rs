@@ -158,7 +158,7 @@ mod linux_namespace {
                 flags,
                 None,
             )
-        }.map_err(|e| LinuxSubstrateError::Namespace(e))?;
+        }.map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Parent process - configure mappings
         if child_pid > 0 {
