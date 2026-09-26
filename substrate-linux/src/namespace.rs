@@ -214,7 +214,7 @@ mod linux_namespace {
         // Bind mount source tree read-only at /work
         fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(e))?;
         mount(
-            Some(workspace_root),
+            Some(workspace_root.to_str().unwrap()),
             "/work",
             None::<&str>,
             MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
@@ -224,7 +224,7 @@ mod linux_namespace {
         // Bind mount artifacts directory at /artifacts
         fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(e))?;
         mount(
-            Some(artifacts_dir),
+            Some(artifacts_dir.to_str().unwrap()),
             "/artifacts",
             None::<&str>,
             MsFlags::MS_BIND,
@@ -238,7 +238,7 @@ mod linux_namespace {
             if !Path::new(&target).exists() {
                 fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
-                    Some(&format!("/dev/{}", device)),
+                    Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
@@ -263,7 +263,7 @@ mod linux_namespace {
 
         // Unmount old root
         nix::mount::umount2("old", nix::mount::MntFlags::MNT_DETACH)
-            .map_err(|e| LinuxSubstrateError::Namespace(e))?;
+            .map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Remove old directory
         fs::remove_dir("old").ok();
@@ -281,7 +281,7 @@ mod linux_namespace {
             if !Path::new(&target).exists() {
                 fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
-                    Some(&format!("/dev/{}", device)),
+                    Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
