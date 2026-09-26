@@ -52,7 +52,7 @@ mod linux_executor {
         pub fn new(config: LinuxSubstrateConfig) -> Result<Self> {
             // Check if we have required capabilities
             if !Self::check_capabilities() {
-                return Err(LinuxSubstrateError::NotAvailable(
+                return Err(LinuxSubstrateError::Unavailable(
                     "Insufficient capabilities for Linux substrate".to_string()
                 ));
             }
