@@ -252,11 +252,10 @@ mod linux_namespace {
 
     /// Pivot root into new rootfs
     pub fn pivot_root(new_root: &Path) -> Result<()> {
-        let new_root = CString::new(new_root.to_string_lossy().as_bytes()).unwrap();
         let put_old = CString::new("old").unwrap();
 
         // Change to new root
-        nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
+        nix::unistd::chdir(new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
 
         // Pivot root
         nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
