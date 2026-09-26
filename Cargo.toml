@@ -7,6 +7,7 @@ members = [
     "substrate-macos",
     "substrate-docker",
     "substrate-remote",
+    "substrate-rpc",
     "job-objects",
     "silos",
     "seatbelt",
