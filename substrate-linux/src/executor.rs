@@ -2,16 +2,31 @@
 mod linux_executor {
     use crate::error::{LinuxSubstrateError, Result};
     use crate::types::{
-        LinuxSubstrateConfig, SandboxRequest, SandboxExecutionRecord, 
+        LinuxSubstrateConfig, SandboxRequest, SandboxExecutionRecord,
         SandboxTermination, ExecutionLimits, ArtifactCustodyEntry,
-        SubstrateDescriptor, ExecutionLimits as Limits,
+        SubstrateDescriptor, NetworkMode,
     };
     use crate::namespace::{NamespaceConfig, create_namespaces, setup_mount_namespace};
     use crate::seccomp::apply_seccomp_filter;
     use crate::cgroup::CgroupManager;
+    #[cfg(feature = "landlock")]
     use crate::landlock::LandlockManager;
-    use crate::types::SandboxRequest;
-    use substrate_core::{SandboxRequest as CoreSandboxRequest, SandboxExecutionRecord as CoreExecutionRecord, Substrate, SubstrateDescriptor as CoreSubstrateDescriptor};
+    use sha2::{Digest, Sha256};
+    use substrate_core::{
+        SandboxRequest as CoreSandboxRequest,
+        SandboxExecutionRecord as CoreExecutionRecord,
+        SandboxTermination as CoreSandboxTermination,
+        ExecutionLimits as CoreExecutionLimits,
+        NetworkMode as CoreNetworkMode,
+        ArtifactCustodyEntry as CoreArtifactCustodyEntry,
+        Substrate,
+        SubstrateDescriptor as CoreSubstrateDescriptor,
+        SubstrateError,
+        SubstrateCapability,
+        ResourceLimits,
+        CapabilityRequest,
+        CapabilityResponse,
+    };
     use async_trait::async_trait;
     use std::collections::HashSet;
     use std::path::{Path, PathBuf};
@@ -85,7 +100,7 @@ mod linux_executor {
             }
         }
 
-        pub async fn negotiate_capability(&self, requested: CapabilityRequest) -> std::result::Result<CapabilityResponse, crate::error::SubstrateError> {
+        pub async fn negotiate_capability(&self, requested: CapabilityRequest) -> std::result::Result<CapabilityResponse, SubstrateError> {
             let capability = self.capability();
             
             let mut granted = Vec::new();
@@ -124,8 +139,8 @@ mod linux_executor {
             })
         }
 
-        /// Execute a sandbox request
-        pub async fn execute(&self, request: SandboxRequest) -> Result<SandboxExecutionRecord> {
+        /// Execute a sandbox request (internal method returning local types)
+        pub async fn execute_local(&self, request: SandboxRequest) -> Result<SandboxExecutionRecord> {
             let started_at = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -151,7 +166,7 @@ mod linux_executor {
                 enable_user: self.config.enable_user_namespace,
                 enable_mount: true,
                 enable_pid: true,
-                enable_network: request.network != crate::types::NetworkMode::None,
+                enable_network: request.network != NetworkMode::None,
                 enable_uts: true,
                 enable_ipc: true,
                 enable_cgroup: false,
@@ -164,7 +179,7 @@ mod linux_executor {
                 enable_user: self.config.enable_user_namespace,
                 enable_mount: true,
                 enable_pid: true,
-                enable_network: request.network != crate::types::NetworkMode::None,
+                enable_network: request.network != NetworkMode::None,
                 enable_uts: true,
                 enable_ipc: true,
                 enable_cgroup: false,
@@ -371,7 +386,9 @@ mod linux_executor {
                         
                         let content = std::fs::read(path)
                             .map_err(|e| LinuxSubstrateError::Io(e))?;
-                        let sha256 = sha256::digest(&content);
+                        let mut hasher = Sha256::new();
+                        hasher.update(&content);
+                        let sha256 = format!("{:x}", hasher.finalize());
                         
                         artifacts.push(ArtifactCustodyEntry {
                             path: relative.to_string_lossy().to_string(),
@@ -400,31 +417,32 @@ mod linux_executor {
 
     #[async_trait]
     impl Substrate for LinuxSubstrate {
-        async fn execute(&self, request: CoreSandboxRequest) -> Result<CoreExecutionRecord> {
-            // Convert request
+        async fn execute(&self, request: CoreSandboxRequest) -> std::result::Result<CoreExecutionRecord, SubstrateError> {
+            // Convert request from core types to local types
             let sandbox_req = SandboxRequest {
                 sandbox_id: request.sandbox_id,
                 image: request.image,
                 command: request.command,
-                limits: request.limits.unwrap_or_default(),
+                limits: request.limits.unwrap_or_default().into(),
                 env_names: request.env_names.unwrap_or_default(),
-                network: request.network.unwrap_or(crate::types::NetworkMode::None),
+                network: request.network.unwrap_or(CoreNetworkMode::None).into(),
                 workspace_root: request.workspace_root.unwrap_or_else(|| "/work".to_string()),
                 artifacts_dir: request.artifacts_dir.unwrap_or_else(|| "/artifacts".to_string()),
             };
 
-            let result = self.execute(sandbox_req).await?;
+            let result = self.execute_local(sandbox_req).await
+                .map_err(|e| SubstrateError::ExecutionFailed(e.to_string()))?;
             
             // Convert back to core types
             Ok(CoreExecutionRecord {
                 sandbox_id: result.sandbox_id,
                 executed: result.executed,
                 exit_code: result.exit_code,
-                termination: substrate_core::SandboxTermination::from(result.termination),
+                termination: CoreSandboxTermination::from(result.termination),
                 duration_ms: result.duration_ms,
                 stdout_reference: result.stdout_reference,
                 stderr_reference: result.stderr_reference,
-                limits_applied: result.limits_applied,
+                limits_applied: result.limits_applied.into(),
                 artifacts: result.artifacts.into_iter().map(|a| a.into()).collect(),
                 started_at: result.started_at,
                 finished_at: result.finished_at,
@@ -432,12 +450,21 @@ mod linux_executor {
         }
 
         fn descriptor(&self) -> CoreSubstrateDescriptor {
+            let d = self.descriptor();
             CoreSubstrateDescriptor {
-                name: self.descriptor().name,
-                isolation_class: self.descriptor().isolation_class,
-                network_support: self.descriptor().network_support,
-                version: "0.1.0".to_string(),
+                name: d.name,
+                isolation_class: d.isolation_class,
+                network_support: d.network_support,
+                version: d.version,
             }
+        }
+
+        fn capability(&self) -> SubstrateCapability {
+            self.capability()
+        }
+
+        async fn negotiate_capability(&self, requested: CapabilityRequest) -> std::result::Result<CapabilityResponse, SubstrateError> {
+            self.negotiate_capability(request).await
         }
     }
 }
@@ -451,9 +478,7 @@ pub use linux_executor::*;
 mod stub_executor {
     use crate::error::{LinuxSubstrateError, Result};
     use crate::types::{
-        LinuxSubstrateConfig, SandboxRequest, SandboxExecutionRecord, 
-        SandboxTermination, ExecutionLimits, ArtifactCustodyEntry,
-        SubstrateDescriptor,
+        LinuxSubstrateConfig, SubstrateDescriptor,
     };
     use substrate_core::{
         SandboxRequest as CoreSandboxRequest, 
@@ -471,11 +496,11 @@ mod stub_executor {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     /// Linux substrate implementation (stub for non-Linux)
-    pub struct LinuxSubstrate {
+    pub struct LinuxSubstrateStub {
         config: LinuxSubstrateConfig,
     }
 
-    impl LinuxSubstrate {
+    impl LinuxSubstrateStub {
         pub fn new(_config: LinuxSubstrateConfig) -> Result<Self> {
             Err(LinuxSubstrateError::Unavailable(
                 "Linux substrate not supported on this platform. Requires Linux with namespaces, seccomp, cgroups v2, and landlock support.".to_string()
@@ -521,7 +546,7 @@ mod stub_executor {
     }
 
     #[async_trait]
-    impl Substrate for LinuxSubstrate {
+    impl Substrate for LinuxSubstrateStub {
         async fn execute(&self, _request: CoreSandboxRequest) -> std::result::Result<CoreExecutionRecord, SubstrateError> {
             Err(SubstrateError::NotAvailable(
                 "Linux substrate not supported on this platform".to_string()
@@ -538,25 +563,7 @@ mod stub_executor {
         }
 
         fn capability(&self) -> SubstrateCapability {
-            SubstrateCapability {
-                name: "linux-namespace".to_string(),
-                isolation_class: "linux-namespaces".to_string(),
-                network_support: "none".to_string(),
-                resource_limits: ResourceLimits {
-                    max_memory_bytes: Some(4 * 1024 * 1024 * 1024),
-                    max_cpu_percent: Some(200.0),
-                    max_cpu_time_seconds: Some(3600),
-                    max_processes: Some(1000),
-                    max_file_size: Some(1024 * 1024 * 1024),
-                    max_open_files: Some(1024),
-                    max_wall_time_seconds: Some(7200),
-                    max_output_bytes: Some(100 * 1024 * 1024),
-                    max_artifact_bytes: Some(500 * 1024 * 1024),
-                    max_workspace_bytes: Some(10 * 1024 * 1024 * 1024),
-                },
-                supported_profiles: vec!["default".to_string(), "strict".to_string()],
-                max_concurrent_sandboxes: 100,
-            }
+            self.capability()
         }
 
         async fn negotiate_capability(&self, _requested: CapabilityRequest) -> std::result::Result<CapabilityResponse, SubstrateError> {
@@ -567,10 +574,6 @@ mod stub_executor {
     }
 }
 
-/// Re-export the Linux substrate
-#[cfg(target_os = "linux")]
-pub use linux_executor::*;
-
 /// Re-export the stub substrate for non-Linux platforms
 #[cfg(not(target_os = "linux"))]
-pub use stub_executor::*;
+pub use stub_executor::LinuxSubstrateStub as LinuxSubstrate;

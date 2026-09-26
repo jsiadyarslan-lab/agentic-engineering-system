@@ -368,6 +368,365 @@
     bubble.appendChild(bar);
   }
 
+  // ============================================================
+  // (013.7 §P18) واجهة تنفيذ المحادثة — بطاقات مرحلة/خطوة/أداة حية
+  // ============================================================
+  var STATUS_ICON = {
+    running: "⏳",
+    succeeded: "✅",
+    failed: "❌",
+    blocked: "🚫",
+    pending: "⏸️",
+  };
+
+  var PHASE_STATUS_TEXT = {
+    starting: "جارٍ البدء…",
+    running: "قيد التنفيذ…",
+    completed: "مكتملة",
+    failed: "فشلت",
+  };
+
+  var STEP_STATUS_TEXT = {
+    starting: "جارٍ البدء…",
+    running: "قيد التنفيذ…",
+    awaiting_approval: "بانتظار اعتماد المالك",
+    blocked: "محجوبة",
+    completed: "مكتملة",
+    failed: "فشلت",
+  };
+
+  var TOOL_STATUS_TEXT = {
+    started: "⏳ بدء الأداة…",
+    succeeded: "✅ نجحت",
+    failed: "❌ فشلت",
+  };
+
+  var PREFLIGHT_STATUS_TEXT = {
+    started: "⏳ فحص ما قبل التنفيذ…",
+    capabilities_evaluated: "🔍 تقييم الإمكانات…",
+    environment_check_started: "🔧 فحص بيئة التنفيذ…",
+    environment_ready: "✅ البيئة جاهزة",
+    blocked: "🚫 حاجب توفير — يحتاج تدخّل المالك",
+    rechecked: "🔄 إعادة فحص…",
+    pass: "✅ الفحص نجح — التنفيذ سيبدأ",
+  };
+
+  /** شريط حالة تنفيذي مضغوط — يُدرج داخل فقاعة المحادثة أو في لوحة جانبية. */
+  function LiveExecutionCard() {
+    this.root = document.createElement("div");
+    this.root.className = "execution-card";
+    this.root.innerHTML =
+      '<div class="execution-header">' +
+        '<span class="execution-title">تنفيذ المشروع</span>' +
+        '<span class="execution-badge">جارٍ…</span>' +
+      '</div>' +
+      '<div class="execution-body"></div>';
+    this.body = this.root.querySelector(".execution-body");
+    this.phases = new Map(); // phase_id -> {el, steps: Map}
+    this.currentPhaseId = null;
+    this.currentStepId = null;
+  }
+
+  LiveExecutionCard.prototype.getOrCreatePhase = function (phaseId, title) {
+    var phase = this.phases.get(phaseId);
+    if (phase) return phase;
+    var el = document.createElement("div");
+    el.className = "execution-phase";
+    el.innerHTML =
+      '<div class="phase-header">' +
+        '<span class="phase-icon">📋</span>' +
+        '<span class="phase-title">' + Hub.esc(title || "مرحلة") + '</span>' +
+        '<span class="phase-status">جارٍ…</span>' +
+      '</div>' +
+      '<div class="phase-steps"></div>';
+    phase = {
+      el: el,
+      title: title,
+      stepsEl: el.querySelector(".phase-steps"),
+      steps: new Map(),
+      status: "starting",
+    };
+    this.phases.set(phaseId, phase);
+    this.body.appendChild(el);
+    return phase;
+  };
+
+  LiveExecutionCard.prototype.getOrCreateStep = function (phase, stepId, objective) {
+    var step = phase.steps.get(stepId);
+    if (step) return step;
+    var el = document.createElement("div");
+    el.className = "execution-step";
+    el.innerHTML =
+      '<div class="step-header">' +
+        '<span class="step-icon">📝</span>' +
+        '<span class="step-title">' + Hub.esc(objective || "خطوة") + '</span>' +
+        '<span class="step-status">جارٍ…</span>' +
+      '</div>' +
+      '<div class="step-tools"></div>';
+    step = {
+      el: el,
+      objective: objective,
+      toolsEl: el.querySelector(".step-tools"),
+      tools: new Map(),
+      status: "starting",
+    };
+    phase.steps.set(stepId, step);
+    phase.stepsEl.appendChild(el);
+    return step;
+  };
+
+  LiveExecutionCard.prototype.getOrCreateTool = function (step, toolKey, toolName) {
+    var tool = step.tools.get(toolKey);
+    if (tool) return tool;
+    var el = document.createElement("div");
+    el.className = "execution-tool";
+    el.innerHTML =
+      '<span class="tool-icon">🔧</span>' +
+      '<span class="tool-name">' + Hub.esc(toolName || "أداة") + '</span>' +
+      '<span class="tool-status">بدء…</span>' +
+      '<span class="tool-duration"></span>';
+    tool = { el: el, status: "started" };
+    step.tools.set(toolKey, tool);
+    step.toolsEl.appendChild(el);
+    return tool;
+  };
+
+  LiveExecutionCard.prototype.updatePhaseStatus = function (phaseId, status, text) {
+    var phase = this.phases.get(phaseId);
+    if (!phase) return;
+    phase.status = status;
+    var badge = phase.el.querySelector(".phase-status");
+    if (badge) badge.textContent = text || PHASE_STATUS_TEXT[status] || status;
+    phase.el.classList.remove("phase-starting", "phase-running", "phase-completed", "phase-failed");
+    phase.el.classList.add("phase-" + status);
+  };
+
+  LiveExecutionCard.prototype.updateStepStatus = function (phaseId, stepId, status, text) {
+    var phase = this.phases.get(phaseId);
+    if (!phase) return;
+    var step = phase.steps.get(stepId);
+    if (!step) return;
+    step.status = status;
+    var badge = step.el.querySelector(".step-status");
+    if (badge) badge.textContent = text || STEP_STATUS_TEXT[status] || status;
+    step.el.classList.remove("step-starting", "step-running", "step-awaiting_approval", "step-blocked", "step-completed", "step-failed");
+    step.el.classList.add("step-" + status);
+  };
+
+  LiveExecutionCard.prototype.updateToolStatus = function (phaseId, stepId, toolKey, status, text, durationMs) {
+    var phase = this.phases.get(phaseId);
+    if (!phase) return;
+    var step = phase.steps.get(stepId);
+    if (!step) return;
+    var tool = step.tools.get(toolKey);
+    if (!tool) return;
+    tool.status = status;
+    var badge = tool.el.querySelector(".tool-status");
+    if (badge) badge.textContent = text || TOOL_STATUS_TEXT[status] || status;
+    var dur = tool.el.querySelector(".tool-duration");
+    if (dur && durationMs) dur.textContent = " (" + (durationMs / 1000).toFixed(1) + " ث)";
+    tool.el.classList.remove("tool-started", "tool-succeeded", "tool-failed");
+    tool.el.classList.add("tool-" + status);
+  };
+
+  LiveExecutionCard.prototype.setOverallStatus = function (status, text) {
+    var badge = this.root.querySelector(".execution-badge");
+    if (badge) {
+      badge.textContent = text || (STATUS_ICON[status] ? STATUS_ICON[status] + " " + status : status);
+      badge.className = "execution-badge " + status;
+    }
+  };
+
+  LiveExecutionCard.prototype.addEvidence = function (phaseId, stepId, evidence) {
+    var phase = this.phases.get(phaseId);
+    if (!phase) return;
+    var step = phase.steps.get(stepId);
+    if (!step) return;
+    var toolsEl = step.toolsEl;
+    var el = document.createElement("div");
+    el.className = "step-evidence";
+    el.innerHTML =
+      '<span class="evidence-icon">📎</span>' +
+      '<span class="evidence-label">أدلة: ' + (evidence.files || []).map(function (f) { return Hub.esc(f.name || f.path || f); }).join(", ") + '</span>';
+    toolsEl.appendChild(el);
+  };
+
+  // ============================================================
+  // معالجات أحداث التنفيذ (013.7 §P18)
+  // ============================================================
+
+  function getOrCreateExecutionCard(conversationId) {
+    var state = getConversationState(conversationId);
+    if (!state.executionCard) {
+      state.executionCard = new LiveExecutionCard();
+      var messages = document.querySelector(".messages");
+      if (messages) messages.appendChild(state.executionCard.root);
+    }
+    return state.executionCard;
+  }
+
+  function clearExecutionCard(conversationId) {
+    var state = getConversationState(conversationId);
+    if (state.executionCard && state.executionCard.root.parentNode) {
+      state.executionCard.root.parentNode.removeChild(state.executionCard.root);
+    }
+    state.executionCard = null;
+  }
+
+  H["PHASE_STARTED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var phaseId = (event.details || {}).phase_id;
+    var title = (event.details || {}).title;
+    if (!phaseId) return;
+    card.getOrCreatePhase(phaseId, title);
+    card.updatePhaseStatus(phaseId, "running", "قيد التنفيذ…");
+    card.setOverallStatus("running", "⏳ جارٍ التنفيذ…");
+  };
+
+  H["STEP_STARTED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var phaseId = (event.details || {}).phase_id;
+    var stepId = (event.details || {}).step_id;
+    var objective = (event.details || {}).objective;
+    if (!phaseId || !stepId) return;
+    var phase = card.getOrCreatePhase(phaseId, "");
+    card.getOrCreateStep(phase, stepId, objective);
+    card.updateStepStatus(phaseId, stepId, "running", "قيد التنفيذ…");
+  };
+
+  H["EXECUTION_STARTED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "⏳ جارٍ التنفيذ…");
+  };
+
+  H["ROLE_EXECUTING"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var role = (event.details || {}).role;
+    var objective = (event.details || {}).objective;
+    if (role) {
+      card.setOverallStatus("running", "⏳ " + role + ": " + (objective || "تنفيذ…"));
+    }
+  };
+
+  H["TOOL_EXECUTION"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var phaseId = (event.details || {}).phase_id;
+    var stepId = (event.details || {}).step_id;
+    var tool = (event.details || {}).tool;
+    var phase = (event.details || {}).phase; // started/succeeded/failed
+    var role = (event.details || {}).role;
+    var durationMs = (event.details || {}).duration_ms;
+    var summary = (event.details || {}).summary;
+    var error = (event.details || {}).error;
+    if (!phaseId || !stepId || !tool) return;
+    var ph = card.getOrCreatePhase(phaseId, "");
+    var st = card.getOrCreateStep(ph, stepId, "");
+    var toolKey = tool + "_" + (event.details || {}).role;
+    var tl = card.getOrCreateTool(st, toolKey, tool);
+    var status = (phase === "succeeded") ? "succeeded" : (phase === "failed" ? "failed" : "started");
+    var text = summary || (status === "started" ? "بدء…" : (status === "succeeded" ? "نجحت" : "فشلت"));
+    if (error) text += " — " + error;
+    card.updateToolStatus(phaseId, stepId, toolKey, status, text, durationMs);
+  };
+
+  H["EVIDENCE_CREATED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var phaseId = (event.details || {}).phase_id;
+    var stepId = (event.details || {}).step_id;
+    var evidence = event.details || {};
+    if (!phaseId || !stepId) return;
+    card.addEvidence(phaseId, stepId, evidence);
+    card.setOverallStatus("succeeded", "✅ أدلة منشأة");
+  };
+
+  // --- فحوصات ما قبل التنفيذ ---
+  H["PREFLIGHT_STARTED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "⏳ " + (PREFLIGHT_STATUS_TEXT.started || "فحص ما قبل التنفيذ…"));
+  };
+
+  H["CAPABILITIES_EVALUATED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "🔍 " + (PREFLIGHT_STATUS_TEXT.capabilities_evaluated || "تقييم الإمكانات…"));
+  };
+
+  H["ENVIRONMENT_CHECK_STARTED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "🔧 " + (PREFLIGHT_STATUS_TEXT.environment_check_started || "فحص بيئة التنفيذ…"));
+  };
+
+  H["ENVIRONMENT_READY"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "✅ " + (PREFLIGHT_STATUS_TEXT.environment_ready || "البيئة جاهزة"));
+  };
+
+  H["PREFLIGHT_BLOCKED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var reason = (event.details || {}).reason || "حاجب توفير";
+    card.setOverallStatus("blocked", "🚫 " + reason);
+  };
+
+  H["PREFLIGHT_RECHECKED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("running", "🔄 " + (PREFLIGHT_STATUS_TEXT.rechecked || "إعادة فحص…"));
+  };
+
+  H["PREFLIGHT_PASS"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    card.setOverallStatus("succeeded", "✅ " + (PREFLIGHT_STATUS_TEXT.pass || "الفحص نجح — التنفيذ سيبدأ"));
+  };
+
+  // --- نتائج التنفيذ ---
+  H["TEST_COMPLETED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var verdict = (event.details || {}).final_state;
+    card.setOverallStatus(verdict === "PASS" ? "succeeded" : "failed", (verdict === "PASS" ? "✅" : "❌") + " الاختبار: " + verdict);
+  };
+
+  H["REVIEW_COMPLETED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var verdict = (event.details || {}).verdict;
+    card.setOverallStatus(verdict === "PASS" ? "succeeded" : "failed", (verdict === "PASS" ? "✅" : "❌") + " المراجعة: " + verdict);
+  };
+
+  H["AUDIT_COMPLETED"] = function (event) {
+    var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
+    setCurrentConversation(conversationId);
+    var card = getOrCreateExecutionCard(conversationId);
+    var verdict = (event.details || {}).verdict;
+    card.setOverallStatus(verdict === "PASS" ? "succeeded" : "failed", (verdict === "PASS" ? "✅" : "❌") + " التدقيق: " + verdict);
+  };
+
   // ---------- إعادة الاتصال (§19+§34+013.5 §E/§G) ----------
   function attachStream(conversationId, after) {
     return fetch(

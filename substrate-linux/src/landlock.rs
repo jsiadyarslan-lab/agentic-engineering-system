@@ -6,7 +6,6 @@ mod linux_landlock {
     use std::os::unix::io::AsRawFd;
     use std::os::unix::io::FromRawFd;
     use std::fs::File;
-    use std::os::unix::io::AsRawFd;
     use landlock::{Ruleset, RulesetCreated, RulesetAttr, AccessFs, AccessNet};
 
     /// Landlock ruleset manager for filesystem access control

@@ -24,8 +24,8 @@
 
 | Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
 |--------|-----|-------|--------------|-------|---------------------|-------|
-| ✅ | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `crates/substrate-linux/src/lib.rs` |
-| 🚫 | **0.1.2** | Implement Windows Substrate (Job Objects + Silos/AppContainers) | 0.1.1 | Backend | `pytest tests/execution/test_windows_substrate.py` passes | `crates/substrate-windows/src/lib.rs`, `crates/job-objects/`, `crates/silos/` | BLOCKED: Windows API compatibility issues with windows 0.58 crate
+| 🔄 | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `crates/substrate-linux/src/lib.rs` |
+| 🔄 | **0.1.2** | Implement Windows Substrate (Job Objects + Silos/AppContainers) | 0.1.1 | Backend | `pytest tests/execution/test_windows_substrate.py` passes | `crates/substrate-windows/src/lib.rs`, `crates/job-objects/`, `crates/silos/` | BLOCKED: Windows API compatibility issues with windows 0.58 crate
 | ⏳ | **0.1.3** | Implement macOS Substrate (Seatbelt/XPC/App Sandbox) | 0.1.1 | Backend | `pytest tests/execution/test_macos_substrate.py` passes | `crates/substrate-macos/src/lib.rs`, `crates/seatbelt/` |
 | ✅ | **0.1.4** | Abstract Substrate Trait + Factory (`get_substrate("auto")`) | 0.1.1, 0.1.2, 0.1.3 | Backend | `get_substrate("auto")` works on Linux/Windows/macOS | `crates/substrate-core/src/lib.rs`, `src/execution/substrate/__init__.py` |
 | ✅ | **0.1.5** | Unified ExecutionLimits + ResourceQuotas | 0.1.4 | Backend | Memory/CPU/IO/Process limits enforced on all backends | `crates/limits/src/lib.rs`, `src/execution/limits.py` |
@@ -34,7 +34,7 @@
 | ✅ | **0.1.8** | Deterministic Replay (Record/Replay) | 0.1.6 | Backend | `replay(execution_id)` reproduces bit-identical output | `crates/replay/src/lib.rs`, `src/execution/replay.py` |
 
 **Recent Progress (2025-09-25):**
-- ✅ 0.1.1 Linux Substrate: Full implementation with namespaces, seccomp, cgroups v2, landlock (Linux stubs for other platforms)
+- 🔄 0.1.1 Linux Substrate: Fixing compilation errors (45 errors → 0) — adding From traits, fixing Substrate trait impl, sha256, which crate
 - ✅ 0.1.7 Network crate: Linux nftables implementation complete (`apply_egress_only`, `apply_ingress_only`, `apply_filtered_egress` with CIDR allowlist/denylist)
 - ✅ 0.1.8 Replay crate: ptrace-based deterministic replay engine with syscall interposition, file I/O hash verification, process tracing
 - ✅ All core crates compile: substrate-core, substrate-linux, network, artifacts, replay, limits
@@ -309,7 +309,7 @@
 
 | Phase | Total Steps | Completed | In Progress | Pending | Progress |
 |-------|-------------|-----------|-------------|---------|----------|
-| **PHASE 0** | 14 | 6 | 0 | 7 | **42.9%** |
+| **PHASE 0** | 14 | 7 | 1 | 6 | **53.6%** |
 | **A. CONTEXT MANAGEMENT ** | 5 | 0 | 0 | 5 | **0.0%** |
 | **PHASE 1** | 17 | 0 | 0 | 17 | **0.0%** |
 | **C. TOOL REGISTRY ** | 6 | 0 | 0 | 6 | **0.0%** |
@@ -325,7 +325,7 @@
 | **PHASE 5** | 12 | 0 | 0 | 12 | **0.0%** |
 | **IMMEDIATE ACTIONS** | 0 | 0 | 0 | 0 | **0%** |
 | **Immediate** | 9 | 2 | 1 | 6 | **27.8% |
-| **TOTAL** | 146 | 8 | 1 | 136 | **5.8%** |
+| **TOTAL** | 146 | 9 | 2 | 135 | **6.8%** |
 
 ---
 

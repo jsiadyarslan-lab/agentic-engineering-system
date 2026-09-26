@@ -105,6 +105,101 @@
   animation: md-blink 1.4s steps(2) infinite;
 }
 
+/* ---------- بطاقة تنفيذ المحادثة (013.7 §P18) ---------- */
+.execution-card {
+  border: 1px solid var(--border, #3a4a6b);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 10px 0;
+  background: rgba(127, 127, 127, .04);
+  animation: exec-fade-in .2s ease-out;
+}
+@keyframes exec-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.execution-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border, #3a4a6b);
+}
+.execution-title { font-weight: 700; font-size: 13px; }
+.execution-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, .1);
+  font-weight: 600;
+}
+.execution-badge.running { background: rgba(110, 168, 255, .2); color: var(--accent, #6ea8ff); }
+.execution-badge.succeeded { background: rgba(89, 201, 141, .2); color: #59c98d; }
+.execution-badge.failed { background: rgba(224, 108, 90, .2); color: #e06c5a; }
+.execution-badge.blocked { background: rgba(255, 170, 0, .2); color: #ffaa00; }
+.execution-body { display: flex; flex-direction: column; gap: 8px; }
+
+.execution-phase { border: 1px solid var(--border, #3a4a6b); border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, .15); }
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border, #3a4a6b);
+}
+.phase-icon { font-size: 14px; }
+.phase-title { font-weight: 600; font-size: 12.5px; flex: 1; }
+.phase-status { font-size: 11px; opacity: .8; }
+.execution-phase.phase-running .phase-status { color: var(--accent, #6ea8ff); }
+.execution-phase.phase-completed .phase-status { color: #59c98d; }
+.execution-phase.phase-failed .phase-status { color: #e06c5a; }
+.phase-steps { display: flex; flex-direction: column; gap: 6px; margin-inline-start: 12px; border-inline-start: 2px solid var(--border, #3a4a6b); padding-inline-start: 8px; }
+
+.execution-step { border: 1px solid var(--border, #3a4a6b); border-radius: 6px; padding: 6px 8px; background: rgba(0, 0, 0, .1); }
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.step-icon { font-size: 12px; }
+.step-title { font-weight: 500; font-size: 12px; flex: 1; }
+.step-status { font-size: 11px; opacity: .8; }
+.execution-step.step-running .step-status { color: var(--accent, #6ea8ff); }
+.execution-step.step-completed .step-status { color: #59c98d; }
+.execution-step.step-failed .step-status { color: #e06c5a; }
+.execution-step.step-blocked .step-status { color: #ffaa00; }
+.step-tools { display: flex; flex-direction: column; gap: 4px; margin-inline-start: 16px; }
+
+.execution-tool {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, .03);
+  font-size: 12px;
+}
+.tool-icon { font-size: 12px; }
+.tool-name { flex: 1; direction: ltr; font-family: var(--font-mono, monospace); font-size: 11px; opacity: .9; }
+.tool-status { font-size: 11px; min-width: 60px; }
+.execution-tool.tool-succeeded .tool-status { color: #59c98d; }
+.execution-tool.tool-failed .tool-status { color: #e06c5a; }
+.tool-duration { font-size: 10px; opacity: .6; direction: ltr; }
+
+.step-evidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(89, 201, 141, .1);
+  border: 1px solid rgba(89, 201, 141, .3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #59c98d;
+}
+.evidence-icon { font-size: 12px; }
+.evidence-label { overflow-wrap: anywhere; }
+
 /* ---------- الأخطاء المفهومة (§22-§24) ---------- */
 .human-error .he-body { padding: 4px 0; }
 .he-title { font-weight: 700; margin-bottom: 6px; }

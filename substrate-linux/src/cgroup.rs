@@ -16,7 +16,7 @@ mod linux_cgroup {
 
     impl CgroupManager {
         /// Create a new cgroup manager
-        pub fn new(cgroup_root: PathBuf, sandbox_id: &str) -> Result<Self> {
+        pub fn new(_cgroup_root: PathBuf, sandbox_id: &str) -> Result<Self> {
             let cgroup_path = PathBuf::from("/sys/fs/cgroup").join("sandbox").join(sandbox_id);
             
             Ok(Self {
@@ -102,7 +102,7 @@ mod linux_cgroup {
         }
 
         /// Set IO limits
-        fn set_io_limit(&self, max_bytes: u64) -> Result<()> {
+        fn set_io_limit(&self, _max_bytes: u64) -> Result<()> {
             // IO limits are more complex - use io.max
             // Format: "major:minor rbps wbps riops wiops"
             // For simplicity, we'll skip detailed IO limiting for now
@@ -111,8 +111,8 @@ mod linux_cgroup {
 
         /// Add current process to cgroup
         pub fn add_current_process(&self) -> Result<()> {
-            let procs = self.cgroup_path.join("cgroup.procs");
-            let pid = std::process::id();
+            let _procs = self.cgroup_path.join("cgroup.procs");
+            let _pid = std::process::id();
             
             fs::write(&self.cgroup_path.join("cgroup.procs"), std::process::id().to_string())
                 .map_err(|e| LinuxSubstrateError::Cgroup(e.to_string()))?;

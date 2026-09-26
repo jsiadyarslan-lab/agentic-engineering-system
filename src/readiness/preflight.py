@@ -172,6 +172,23 @@ def task_preflight(
             )
             ok = satisfying is not None
             status = "READY" if ok else "BLOCKED"
+            
+            # (011 §26+§28) COMPATIBLE_LOCAL: إذا كان المسبار يعيد UNAVAILABLE
+            # (لا ركيزة معزولة على Windows) لكن توجد بيئة غير معزولة جاهزة
+            # (local-windows)، فالسياسة تسمح بالتجاوز — لا حجب مسبق.
+            if not ok and policy == "COMPATIBLE_LOCAL":
+                # البحث عن بيئة غير معزولة جاهزة (sandboxed=0)
+                environments = execution_service.list_environments(sessions)
+                compatible_env = next(
+                    (env for env in environments 
+                     if env.get("status") == "READY" and not env.get("sandboxed")),
+                    None
+                )
+                if compatible_env:
+                    ok = True
+                    status = "READY"
+                    # تسجيل أن هذا وضع متوافق لا معزول
+                    pass
         #: «المطلوب» نص حرفي لكل قدرة محجوبة (011 §3) — لا افتراض
         #: عامل لينكس والحاجز بحث مثلًا
         required_text = ""

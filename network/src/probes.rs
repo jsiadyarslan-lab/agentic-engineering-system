@@ -83,8 +83,6 @@ pub async fn run_verification_probes(policy: &crate::policy::NetworkPolicy) -> c
 /// Run TCP connection probe
 async fn run_tcp_probe(host: &str, port: u16, timeout_duration: Duration) -> ProbeResult {
     let start = Instant::now();
-    let target = format!("{}:{}", host, port);
-    
     let addr = format!("{}:{}", host, port);
     let result = tokio::time::timeout(timeout_duration, TcpStream::connect(&addr)).await;
     

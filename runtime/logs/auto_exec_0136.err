@@ -1,0 +1,5 @@
+INFO:     Started server process [9384]
+INFO:     Waiting for application startup.
+إقلاع 013.5: استُردت حالة غير سليمة — جلسات [{'session_id': 26, 'state': 'INTERRUPTED', 'error_class': 'PLANNING_INTERRUPTED'}] | مشاريع []
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8022 (Press CTRL+C to quit)

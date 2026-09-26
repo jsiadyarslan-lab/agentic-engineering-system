@@ -1,0 +1,691 @@
+{
+  "started_at": "2026-09-23T02:15:17.118951+00:00",
+  "crash": {
+    "project_id": 19,
+    "create_http": 201,
+    "generate_http": 200,
+    "generating_observed": {
+      "state": "GENERATING",
+      "wait_phase": "CONNECTING",
+      "reasoning_chars": null,
+      "project_status": "PLANNING"
+    },
+    "was_generating": true,
+    "sessions_before_kill": [
+      {
+        "id": 12,
+        "state": "GENERATING",
+        "error_class": "",
+        "actual_provider": "",
+        "actual_model": "",
+        "plan_id": null,
+        "started_at": "2026-09-23 02:15:21.064430",
+        "finished_at": null
+      }
+    ],
+    "kill": {
+      "pid": 852,
+      "exit_code": 1,
+      "gone": true
+    },
+    "sessions_after_kill": [
+      {
+        "id": 12,
+        "state": "GENERATING",
+        "error_class": "",
+        "actual_provider": "",
+        "actual_model": "",
+        "plan_id": null,
+        "started_at": "2026-09-23 02:15:21.064430",
+        "finished_at": null
+      }
+    ],
+    "stuck_generating_after_kill": true,
+    "boot_seconds": 3.1,
+    "recovery_series": [
+      {
+        "t": 3.1,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 6.1,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 9.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 12.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 15.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 18.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 21.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 24.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 27.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 30.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 33.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 36.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 39.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 42.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 45.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 48.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 51.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 54.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 57.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 60.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 63.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 66.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 69.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 72.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 75.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 78.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 81.2,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 84.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 87.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 90.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 93.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 96.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 99.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 102.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 105.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 108.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 111.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 114.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 117.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 120.3,
+        "sessions": [
+          [
+            12,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING",
+        "plan_id": null
+      },
+      {
+        "t": 123.3,
+        "sessions": [
+          [
+            12,
+            "INTERRUPTED",
+            "PLANNING_INTERRUPTED"
+          ]
+        ],
+        "project_status": "DRAFT",
+        "plan_id": null
+      }
+    ],
+    "healed_after_seconds": 123.3,
+    "sessions_after_boot": [
+      {
+        "id": 12,
+        "state": "INTERRUPTED",
+        "error_class": "PLANNING_INTERRUPTED",
+        "actual_provider": "",
+        "actual_model": "",
+        "plan_id": null,
+        "started_at": "2026-09-23 02:15:21.064430",
+        "finished_at": "2026-09-23 02:17:25.254965"
+      }
+    ],
+    "project_after_boot": {
+      "id": 19,
+      "status": "DRAFT",
+      "current_plan_id": null,
+      "last_error": "توقف توليد الخطة [PLANNING_INTERRUPTED]: توقفت نبضة العامل المولِّد منذ 124ث (بلا نشاط مزود) — العملية أو الخيط مات"
+    },
+    "events": [
+      "PROJECT_CREATED",
+      "PLANNING_STARTED",
+      "PLAN_GENERATING",
+      "MODEL_CALL_STARTED",
+      "RECOVERY_ASSESSED",
+      "PLANNING_INTERRUPTED",
+      "WORKFLOW_DIAGNOSED"
+    ],
+    "plan_http": 404,
+    "plan_body_keys": "{\"detail\":\"لا خطة بعد — ولّدها أولًا\"}",
+    "plan_after_crash": null,
+    "no_fabricated_plan": true
+  },
+  "provider_failure": {
+    "port": 8012,
+    "project_id": 20,
+    "generate_http": 200,
+    "series": [
+      {
+        "t": 0.0,
+        "sessions": [
+          [
+            13,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING"
+      },
+      {
+        "t": 3.0,
+        "sessions": [
+          [
+            13,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING"
+      },
+      {
+        "t": 6.0,
+        "sessions": [
+          [
+            13,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING"
+      },
+      {
+        "t": 9.0,
+        "sessions": [
+          [
+            13,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING"
+      },
+      {
+        "t": 12.0,
+        "sessions": [
+          [
+            13,
+            "GENERATING",
+            ""
+          ]
+        ],
+        "project_status": "PLANNING"
+      },
+      {
+        "t": 15.0,
+        "sessions": [
+          [
+            13,
+            "FAILED",
+            "MODEL_TIMEOUT"
+          ]
+        ],
+        "project_status": "DRAFT"
+      }
+    ],
+    "sessions_final": [
+      {
+        "id": 13,
+        "state": "FAILED",
+        "error_class": "MODEL_TIMEOUT",
+        "actual_provider": "",
+        "actual_model": "",
+        "plan_id": null,
+        "started_at": "2026-09-23 02:17:29.462905",
+        "finished_at": "2026-09-23 02:17:43.747425"
+      }
+    ],
+    "project_final": {
+      "id": 20,
+      "status": "DRAFT",
+      "current_plan_id": null,
+      "last_error": "توقف توليد الخطة [MODEL_TIMEOUT]: المزود صامت منذ 14ث بعد آخر نشاط حقيقي مُثبت — لا رد ولا قطع"
+    },
+    "events": [
+      "PROJECT_CREATED",
+      "PLANNING_STARTED",
+      "PLAN_GENERATING",
+      "MODEL_CALL_STARTED",
+      "PLANNING_FAILED",
+      "WORKFLOW_DIAGNOSED"
+    ],
+    "classified_failure": true,
+    "error_classes": [
+      "MODEL_TIMEOUT"
+    ],
+    "bounded_seconds": 15.0
+  },
+  "checks": {
+    "crash_was_mid_generation": true,
+    "server_actually_died": true,
+    "orphan_was_generating": true,
+    "session_healed_after_boot": true,
+    "healed_within_120s": false,
+    "no_fabricated_plan": true,
+    "provider_failure_classified": true,
+    "provider_failure_bounded": true
+  },
+  "error_classes_observed": [
+    "MODEL_TIMEOUT"
+  ],
+  "verdict": "FAIL",
+  "finished_at": "2026-09-23T02:17:44.621731+00:00"
+}

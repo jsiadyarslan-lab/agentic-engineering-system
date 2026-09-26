@@ -19,6 +19,9 @@ pub enum NetworkError {
     #[error("Firewall error: {0}")]
     Firewall(String),
     
+    #[error("Command failed: {0}")]
+    CommandFailed(String),
+    
     #[error("DNS error: {0}")]
     Dns(String),
     

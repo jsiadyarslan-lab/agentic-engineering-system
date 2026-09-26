@@ -1,0 +1,1169 @@
+{
+  "version": "1.0",
+  "generated": "2025-01-XX",
+  "project": "Engineering Agent System",
+  "target": "Surpass DeepSeek Harness (DSH)",
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Foundation — Unshakeable Base",
+      "weeks": "1-2",
+      "status": "in_progress",
+      "progress_percent": 12.5,
+      "steps": [
+        {
+          "id": "0.1.1",
+          "title": "Implement WindowsSubstrate (Job Objects + Silos)",
+          "owner": "backend",
+          "status": "in_progress",
+          "dependencies": [],
+          "acceptance": "pytest tests/execution/test_windows_substrate.py passes",
+          "files": [
+            "crates/substrate-windows/src/lib.rs",
+            "crates/job-objects/src/lib.rs",
+            "crates/silos/src/lib.rs"
+          ],
+          "notes": "Use Job Objects for limits, Silos/AppContainers for FS isolation",
+          "last_status_change": "2026-09-25T03:30:51.717507",
+          "previous_status": "not_started"
+        },
+        {
+          "id": "0.1.2",
+          "title": "Abstract Substrate base class + Factory",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.1"
+          ],
+          "acceptance": "get_substrate(\"auto\") works on Linux/Windows/macOS",
+          "files": [
+            "crates/substrate-core/src/lib.rs",
+            "src/execution/substrate/__init__.py"
+          ]
+        },
+        {
+          "id": "0.1.3",
+          "title": "Unified ExecutionLimits + ResourceQuotas",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "Memory/CPU/IO/Process limits enforced on all backends",
+          "files": [
+            "crates/limits/src/lib.rs",
+            "src/execution/limits.py"
+          ]
+        },
+        {
+          "id": "0.1.4",
+          "title": "Artifact custody + provenance (SHA256 + signatures)",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "Every execution produces verifiable artifact chain",
+          "files": [
+            "crates/artifacts/src/lib.rs",
+            "src/execution/artifacts.py"
+          ]
+        },
+        {
+          "id": "0.1.5",
+          "title": "Network isolation modes (NONE/EGRESS/INGRESS/EGRESS_FILTERED)",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "Policy-enforced, verifiable via probe",
+          "files": [
+            "crates/network/src/lib.rs",
+            "src/execution/network.py"
+          ]
+        },
+        {
+          "id": "0.1.6",
+          "title": "Surpass DSH: Deterministic replay (record/replay execution)",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.4"
+          ],
+          "acceptance": "replay(execution_id) reproduces bit-identical output",
+          "files": [
+            "crates/replay/src/lib.rs",
+            "src/execution/replay.py"
+          ]
+        },
+        {
+          "id": "0.1.7",
+          "title": "Surpass DSH: Capability negotiation (agent ↔ substrate)",
+          "owner": "backend",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "Agent declares needs; substrate confirms/denies with alternatives",
+          "files": [
+            "src/execution/capability_negotiation.py"
+          ]
+        },
+        {
+          "id": "0.2.1",
+          "title": "Event sourcing for all state changes",
+          "owner": "infra",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "Full state reconstructible from event log",
+          "files": [
+            "src/events/store.py",
+            "src/events/schema.json"
+          ]
+        },
+        {
+          "id": "0.2.2",
+          "title": "Distributed tracing (OpenTelemetry)",
+          "owner": "infra",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "End-to-end latency < 50ms p99",
+          "files": [
+            "src/tracing/setup.py",
+            "docker/otel-collector-config.yaml"
+          ]
+        },
+        {
+          "id": "0.2.3",
+          "title": "Structured logging (JSON + correlation IDs)",
+          "owner": "infra",
+          "status": "completed",
+          "dependencies": [],
+          "acceptance": "100% queries answerable via logs",
+          "files": [
+            "src/logging/setup.py"
+          ],
+          "last_status_change": "2026-09-25T03:31:17.439383",
+          "previous_status": "completed"
+        },
+        {
+          "id": "0.2.4",
+          "title": "Configuration as code (GitOps)",
+          "owner": "infra",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "Zero manual config; all via PR",
+          "files": [
+            "config/",
+            ".github/workflows/config-sync.yml"
+          ]
+        },
+        {
+          "id": "0.2.5",
+          "title": "Chaos engineering harness",
+          "owner": "infra",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.2"
+          ],
+          "acceptance": "chaos run --scenario=network-partition passes",
+          "files": [
+            "chaos/",
+            "src/chaos/runner.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-1",
+      "name": "Agent Orchestration — True Multi-Agent",
+      "weeks": "3-5",
+      "status": "pending",
+      "progress_percent": 0,
+      "steps": [
+        {
+          "id": "1.1.1",
+          "title": "Agent specification format (YAML/JSON + schema)",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "agent validate spec.yaml passes",
+          "files": [
+            "src/agent_hub/agents/spec.py",
+            "schemas/agent-spec.json"
+          ]
+        },
+        {
+          "id": "1.1.2",
+          "title": "Agent lifecycle: spawn → initialize → execute → checkpoint → terminate",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.1"
+          ],
+          "acceptance": "agent run spec.yaml completes with full audit trail",
+          "files": [
+            "src/agent_hub/core/lifecycle.py"
+          ]
+        },
+        {
+          "id": "1.1.3",
+          "title": "Inter-agent communication (gRPC + message bus)",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.2"
+          ],
+          "acceptance": "agent send --to reviewer --payload '{\"verdict\": \"PASS\"}'",
+          "files": [
+            "src/agent_hub/comm/grpc.py",
+            "src/agent_hub/comm/bus.py"
+          ]
+        },
+        {
+          "id": "1.1.4",
+          "title": "Delegation patterns: sequential, parallel, map-reduce, pipeline",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.3"
+          ],
+          "acceptance": "orchestrate pipeline.yaml executes correctly",
+          "files": [
+            "src/agent_hub/orchestration/patterns.py"
+          ]
+        },
+        {
+          "id": "1.1.5",
+          "title": "Surpass DSH: Dynamic agent composition (runtime agent generation)",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.4"
+          ],
+          "acceptance": "orchestrate --generate --from-template=code-review works",
+          "files": [
+            "src/agent_hub/orchestration/generator.py"
+          ]
+        },
+        {
+          "id": "1.1.6",
+          "title": "Agent sandboxing (each agent in own substrate instance)",
+          "owner": "core",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2",
+            "1.1.2"
+          ],
+          "acceptance": "Compromised agent cannot escape its sandbox",
+          "files": [
+            "src/agent_hub/core/sandboxing.py"
+          ]
+        },
+        {
+          "id": "1.2.1",
+          "title": "Workflow engine: DAG + cycles + conditional branches",
+          "owner": "orch",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.2"
+          ],
+          "acceptance": "workflow run complex.yaml handles cycles correctly",
+          "files": [
+            "src/agent_hub/orchestration/workflow.py"
+          ]
+        },
+        {
+          "id": "1.2.2",
+          "title": "Human-in-the-loop gates (approval, clarification, override)",
+          "owner": "orch",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.2"
+          ],
+          "acceptance": "gate wait --type=approval --timeout=24h blocks correctly",
+          "files": [
+            "src/agent_hub/orchestration/gates.py"
+          ]
+        },
+        {
+          "id": "1.2.3",
+          "title": "Checkpoint/resume (arbitrary depth, cross-machine)",
+          "owner": "orch",
+          "status": "not_started",
+          "dependencies": [
+            "1.2.1"
+          ],
+          "acceptance": "workflow resume --from-checkpoint=abc123 on different machine",
+          "files": [
+            "src/agent_hub/orchestration/checkpoint.py"
+          ]
+        },
+        {
+          "id": "1.2.4",
+          "title": "Surpass DSH: Speculative execution (branch prediction + rollback)",
+          "owner": "orch",
+          "status": "not_started",
+          "dependencies": [
+            "1.2.3"
+          ],
+          "acceptance": "orchestrate --speculative --confidence=0.8 rolls back on failure",
+          "files": [
+            "src/agent_hub/orchestration/speculative.py"
+          ]
+        },
+        {
+          "id": "1.2.5",
+          "title": "Surpass DSH: Cost-aware scheduling (budget, quota, priority)",
+          "owner": "orch",
+          "status": "not_started",
+          "dependencies": [
+            "1.2.1"
+          ],
+          "acceptance": "orchestrate --budget=$50 --priority=high stays within budget",
+          "files": [
+            "src/agent_hub/orchestration/scheduler.py"
+          ]
+        },
+        {
+          "id": "1.3.1",
+          "title": "Architect Agent: Reads codebase → produces architecture docs + tradeoffs",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1",
+            "1.1.2"
+          ],
+          "acceptance": "agent run architect --codebase=. produces ARCHITECTURE.md",
+          "files": [
+            "src/agent_hub/agents/architect.py"
+          ]
+        },
+        {
+          "id": "1.3.2",
+          "title": "Implementer Agent: Writes code + tests + docs from spec",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1",
+            "1.1.2"
+          ],
+          "acceptance": "agent run implementer --spec=SPEC.md produces passing code",
+          "files": [
+            "src/agent_hub/agents/implementer.py"
+          ]
+        },
+        {
+          "id": "1.3.3",
+          "title": "Reviewer Agent: Security + performance + maintainability review",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1",
+            "1.1.2"
+          ],
+          "acceptance": "agent run reviewer --pr=123 finds issues humans miss",
+          "files": [
+            "src/agent_hub/agents/reviewer.py"
+          ]
+        },
+        {
+          "id": "1.3.4",
+          "title": "Test Engineer Agent: Generates property/fuzz/integration tests",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1",
+            "1.1.2"
+          ],
+          "acceptance": "agent run test-engineer --target=module.py achieves >90% branch coverage",
+          "files": [
+            "src/agent_hub/agents/test_engineer.py"
+          ]
+        },
+        {
+          "id": "1.3.5",
+          "title": "DevOps Agent: CI/CD + infrastructure + observability",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.2"
+          ],
+          "acceptance": "agent run devops --target=deploy produces working pipeline",
+          "files": [
+            "src/agent_hub/agents/devops.py"
+          ]
+        },
+        {
+          "id": "1.3.6",
+          "title": "Research Agent: Web + docs + code search + synthesis",
+          "owner": "spec",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.2"
+          ],
+          "acceptance": "agent run research --query=\"Rust async patterns\" produces cited report",
+          "files": [
+            "src/agent_hub/agents/researcher.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Engineering Intelligence — Understands Code",
+      "weeks": "6-9",
+      "status": "pending",
+      "progress_percent": 0,
+      "steps": [
+        {
+          "id": "2.1.1",
+          "title": "Code Graph: AST + call graph + data flow + dependencies",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "intel graph --target=func shows callers/callees/data deps",
+          "files": [
+            "src/agent_hub/intelligence/code_graph/",
+            "src/agent_hub/intelligence/code_graph/builder.py"
+          ]
+        },
+        {
+          "id": "2.1.2",
+          "title": "Semantic Search: Natural language → code locations",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1"
+          ],
+          "acceptance": "intel search \"auth flow\" returns ranked snippets with context",
+          "files": [
+            "src/agent_hub/intelligence/semantic_search/"
+          ]
+        },
+        {
+          "id": "2.1.3",
+          "title": "Impact Analysis: Change → affected tests/files/services",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1"
+          ],
+          "acceptance": "intel impact --change=auth.py lists all affected tests",
+          "files": [
+            "src/agent_hub/intelligence/impact_analysis/"
+          ]
+        },
+        {
+          "id": "2.1.4",
+          "title": "Architecture Extraction: Auto-generate C4 diagrams + ADRs",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1"
+          ],
+          "acceptance": "intel arch --output=architecture/ produces valid C4",
+          "files": [
+            "src/agent_hub/intelligence/arch_extraction/"
+          ]
+        },
+        {
+          "id": "2.1.5",
+          "title": "Technical Debt Radar: Hotspots + coupling + complexity trends",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1"
+          ],
+          "acceptance": "intel debt --threshold=high lists actionable items",
+          "files": [
+            "src/agent_hub/intelligence/debt_radar/"
+          ]
+        },
+        {
+          "id": "2.1.6",
+          "title": "Surpass DSH: Cross-repo intelligence (monorepo + polyrepo)",
+          "owner": "intelligence",
+          "status": "not_started",
+          "dependencies": [
+            "2.1.1"
+          ],
+          "acceptance": "intel search --across-repos \"payment flow\" works",
+          "files": [
+            "src/agent_hub/intelligence/cross_repo/"
+          ]
+        },
+        {
+          "id": "2.2.1",
+          "title": "Formal Verification Agent: Contracts + invariants + model checking",
+          "owner": "verify",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.3"
+          ],
+          "acceptance": "agent run verify --spec=spec.tla proves/counterexamples",
+          "files": [
+            "src/agent_hub/agents/verifier.py"
+          ]
+        },
+        {
+          "id": "2.2.2",
+          "title": "Property-Based Testing Agent: Generates + runs PBT",
+          "owner": "verify",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.4"
+          ],
+          "acceptance": "agent run pbt --target=parser finds edge cases",
+          "files": [
+            "src/agent_hub/agents/pbt_engineer.py"
+          ]
+        },
+        {
+          "id": "2.2.3",
+          "title": "Security Auditor: SAST + DAST + dependency scanning + secrets",
+          "owner": "verify",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.3"
+          ],
+          "acceptance": "agent run security-audit finds 0 false negatives on benchmark",
+          "files": [
+            "src/agent_hub/agents/security_auditor.py"
+          ]
+        },
+        {
+          "id": "2.2.4",
+          "title": "Performance Profiler: Flamegraphs + bottlenecks + regressions",
+          "owner": "verify",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.5"
+          ],
+          "acceptance": "agent run profile --load=1000rps identifies bottlenecks",
+          "files": [
+            "src/agent_hub/agents/profiler.py"
+          ]
+        },
+        {
+          "id": "2.2.5",
+          "title": "Surpass DSH: Automated proof generation (Lean/Coq/Isabelle)",
+          "owner": "verify",
+          "status": "not_started",
+          "dependencies": [
+            "2.2.1"
+          ],
+          "acceptance": "agent run prove --theorem=sort_correct produces proof",
+          "files": [
+            "src/agent_hub/agents/proof_engineer.py"
+          ]
+        },
+        {
+          "id": "2.3.1",
+          "title": "Persistent Knowledge Graph: Entities (code, decisions, people, incidents)",
+          "owner": "knowledge",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "kg query \"who owns auth\" returns owner + contact",
+          "files": [
+            "src/agent_hub/knowledge/graph/"
+          ]
+        },
+        {
+          "id": "2.3.2",
+          "title": "Decision Log (ADR): Auto-capture + link to code + search",
+          "owner": "knowledge",
+          "status": "not_started",
+          "dependencies": [
+            "2.3.1"
+          ],
+          "acceptance": "kg adr --related=auth shows all auth decisions",
+          "files": [
+            "src/agent_hub/knowledge/adr/"
+          ]
+        },
+        {
+          "id": "2.3.3",
+          "title": "Incident Memory: Postmortems → patterns → prevention",
+          "owner": "knowledge",
+          "status": "not_started",
+          "dependencies": [
+            "2.3.1"
+          ],
+          "acceptance": "kg incident --pattern=timeout shows fixes",
+          "files": [
+            "src/agent_hub/knowledge/incident/"
+          ]
+        },
+        {
+          "id": "2.3.4",
+          "title": "Cross-Project Learning: Transfer insights across repos",
+          "owner": "knowledge",
+          "status": "not_started",
+          "dependencies": [
+            "2.3.1"
+          ],
+          "acceptance": "kg learn --from=project-a --apply-to=project-b",
+          "files": [
+            "src/agent_hub/knowledge/cross_project/"
+          ]
+        },
+        {
+          "id": "2.3.5",
+          "title": "Surpass DSH: Natural language queries over entire engineering history",
+          "owner": "knowledge",
+          "status": "not_started",
+          "dependencies": [
+            "2.3.1"
+          ],
+          "acceptance": "ask \"why did we choose Redis?\" → cited answer",
+          "files": [
+            "src/agent_hub/knowledge/nl_query.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Self-Improvement & Autonomy — Gets Better",
+      "weeks": "10-13",
+      "status": "pending",
+      "progress_percent": 0,
+      "steps": [
+        {
+          "id": "3.1.1",
+          "title": "Skill Acquisition: Agent learns new tools/APIs from docs",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.6",
+            "2.1.2"
+          ],
+          "acceptance": "agent learn --doc=https://api.stripe.com → uses Stripe correctly",
+          "files": [
+            "src/agent_hub/auto/skill_acquisition.py"
+          ]
+        },
+        {
+          "id": "3.1.2",
+          "title": "Pattern Mining: Extracts reusable patterns from successful runs",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "auto pattern --min-occurrences=3 produces reusable modules",
+          "files": [
+            "src/agent_hub/auto/pattern_mining.py"
+          ]
+        },
+        {
+          "id": "3.1.3",
+          "title": "Failure Analysis: Root cause → prevention rule → auto-patch",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1",
+            "2.3.3"
+          ],
+          "acceptance": "auto fix --from-incident=INC-123 prevents recurrence",
+          "files": [
+            "src/agent_hub/auto/failure_analysis.py"
+          ]
+        },
+        {
+          "id": "3.1.4",
+          "title": "Benchmark Suite: Continuous capability measurement",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "bench run --all tracks capability trends over time",
+          "files": [
+            "benchmarks/capabilities/",
+            "src/benchmarks/runner.py"
+          ]
+        },
+        {
+          "id": "3.1.5",
+          "title": "Surpass DSH: Automated curriculum learning (easy → hard)",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "3.1.1",
+            "3.1.2"
+          ],
+          "acceptance": "auto curriculum --target=rust-async progresses systematically",
+          "files": [
+            "src/agent_hub/auto/curriculum.py"
+          ]
+        },
+        {
+          "id": "3.2.1",
+          "title": "Goal Decomposition: High-level goal → executable plan + monitoring",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "1.2.1",
+            "3.1.1"
+          ],
+          "acceptance": "auto achieve \"reduce p99 latency 50%\" produces plan + executes",
+          "files": [
+            "src/agent_hub/auto/goal_decomposition.py"
+          ]
+        },
+        {
+          "id": "3.2.2",
+          "title": "Continuous Refactoring: Safe, verified, incremental",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.2",
+            "2.2.2"
+          ],
+          "acceptance": "auto refactor --target=legacy-module --safety=verified",
+          "files": [
+            "src/agent_hub/auto/refactor.py"
+          ]
+        },
+        {
+          "id": "3.2.3",
+          "title": "Dependency Management: Updates + breaking change adaptation",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.5"
+          ],
+          "acceptance": "auto deps --strategy=conservative keeps deps current",
+          "files": [
+            "src/agent_hub/auto/deps.py"
+          ]
+        },
+        {
+          "id": "3.2.4",
+          "title": "Surpass DSH: Meta-learning (learns how to learn for your codebase)",
+          "owner": "auto",
+          "status": "not_started",
+          "dependencies": [
+            "3.1.1",
+            "3.1.2",
+            "3.1.3"
+          ],
+          "acceptance": "auto meta --codebase=. improves subsequent task success rate",
+          "files": [
+            "src/agent_hub/auto/meta_learning.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Production Hardening — Enterprise Grade",
+      "weeks": "14-16",
+      "status": "pending",
+      "progress_percent": 0,
+      "steps": [
+        {
+          "id": "4.1.1",
+          "title": "RBAC + ABAC (resource + action + context)",
+          "owner": "security",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "authz check --user=alice --resource=deploy --action=execute",
+          "files": [
+            "src/agent_hub/platform/rbac/"
+          ]
+        },
+        {
+          "id": "4.1.2",
+          "title": "Audit log (immutable, tamper-evident, queryable)",
+          "owner": "security",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "audit log --user=alice --since=24h complete",
+          "files": [
+            "src/agent_hub/platform/audit/"
+          ]
+        },
+        {
+          "id": "4.1.3",
+          "title": "Secrets management (Vault + rotation + lease)",
+          "owner": "security",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "secret get db/password rotates automatically",
+          "files": [
+            "src/agent_hub/platform/secrets/"
+          ]
+        },
+        {
+          "id": "4.1.4",
+          "title": "Supply chain security (SBOM + signing + verification)",
+          "owner": "security",
+          "status": "not_started",
+          "dependencies": [],
+          "acceptance": "cosign verify --key=cosign.pub image passes",
+          "files": [
+            "src/agent_hub/platform/supply_chain/"
+          ]
+        },
+        {
+          "id": "4.1.5",
+          "title": "Surpass DSH: Zero-trust substrate (mutual TLS + attestation)",
+          "owner": "security",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "substrate attest --measurement=sha256 verifies",
+          "files": [
+            "crates/attestation/src/lib.rs"
+          ]
+        },
+        {
+          "id": "4.2.1",
+          "title": "SLO dashboards (latency, error rate, throughput, cost)",
+          "owner": "ops",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.2"
+          ],
+          "acceptance": "slo dashboard shows real-time + burn rate",
+          "files": [
+            "src/agent_hub/platform/observability/slo.py",
+            "grafana/dashboards/"
+          ]
+        },
+        {
+          "id": "4.2.2",
+          "title": "Automated incident response (runbooks + escalation)",
+          "owner": "ops",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "incident respond --auto pages oncall + runs runbook",
+          "files": [
+            "src/agent_hub/platform/incident/"
+          ]
+        },
+        {
+          "id": "4.2.3",
+          "title": "Cost attribution (per agent, per project, per team)",
+          "owner": "ops",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "cost report --by=project --period=month accurate",
+          "files": [
+            "src/agent_hub/platform/cost/"
+          ]
+        },
+        {
+          "id": "4.2.4",
+          "title": "Surpass DSH: Predictive scaling (ML-based demand forecasting)",
+          "owner": "ops",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.2"
+          ],
+          "acceptance": "scale predict --horizon=1h accuracy > 90%",
+          "files": [
+            "src/agent_hub/platform/scaling/"
+          ]
+        },
+        {
+          "id": "4.3.1",
+          "title": "Workspaces + projects + environments isolation",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "4.1.1"
+          ],
+          "acceptance": "ws create --name=team-a --quota=cpu=100,mem=200Gi",
+          "files": [
+            "src/agent_hub/platform/workspaces.py"
+          ]
+        },
+        {
+          "id": "4.3.2",
+          "title": "Shared agent library + versioning + publishing",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.1"
+          ],
+          "acceptance": "agent publish --name=my-reviewer --version=1.2.0",
+          "files": [
+            "src/agent_hub/platform/registry.py"
+          ]
+        },
+        {
+          "id": "4.3.3",
+          "title": "Code review integration (GitHub/GitLab/Gerrit)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "1.3.3"
+          ],
+          "acceptance": "pr review --agent=reviewer posts comments",
+          "files": [
+            "src/agent_hub/platform/integrations/github.py",
+            "src/agent_hub/platform/integrations/gitlab.py"
+          ]
+        },
+        {
+          "id": "4.3.4",
+          "title": "Surpass DSH: Real-time collaborative debugging (multi-user)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.2"
+          ],
+          "acceptance": "debug share --session=abc multiple users watch + interact",
+          "files": [
+            "src/agent_hub/platform/collab_debug.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Ecosystem & Extensibility — Platform",
+      "weeks": "17-20",
+      "status": "pending",
+      "progress_percent": 0,
+      "steps": [
+        {
+          "id": "5.1.1",
+          "title": "WASM plugin SDK (sandboxed, typed, versioned)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "0.1.2"
+          ],
+          "acceptance": "plugin run --wasm=my-plugin.wasm --input='{}'",
+          "files": [
+            "crates/plugin-sdk/",
+            "src/agent_hub/platform/plugins/wasm.py"
+          ]
+        },
+        {
+          "id": "5.1.2",
+          "title": "Native plugin API (Rust/Python/Go/Node)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "5.1.1"
+          ],
+          "acceptance": "plugin build --lang=rust --template=tool",
+          "files": [
+            "crates/plugin-api/",
+            "src/agent_hub/platform/plugins/native.py"
+          ]
+        },
+        {
+          "id": "5.1.3",
+          "title": "Plugin marketplace (discovery + ratings + security scan)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "5.1.1",
+            "4.1.4"
+          ],
+          "acceptance": "plugin search --category=security",
+          "files": [
+            "src/agent_hub/platform/marketplace/"
+          ]
+        },
+        {
+          "id": "5.1.4",
+          "title": "Surpass DSH: Plugin composition (pipeline of plugins)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "5.1.2"
+          ],
+          "acceptance": "plugin chain --steps=lint,test,deploy",
+          "files": [
+            "src/agent_hub/platform/plugins/composition.py"
+          ]
+        },
+        {
+          "id": "5.2.1",
+          "title": "IDE extensions (VS Code, JetBrains, Neovim)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.1"
+          ],
+          "acceptance": "code --install-extension agent-hub works",
+          "files": [
+            "typescript/vscode-extension/",
+            "typescript/jetbrains-plugin/",
+            "typescript/neovim-plugin/"
+          ]
+        },
+        {
+          "id": "5.2.2",
+          "title": "CI/CD native (GitHub Actions, GitLab, Buildkite)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "1.2.1"
+          ],
+          "acceptance": "uses: agent-hub/orchestrate@v1 works",
+          "files": [
+            "typescript/github-action/",
+            "typescript/gitlab-ci/"
+          ]
+        },
+        {
+          "id": "5.2.3",
+          "title": "ChatOps (Slack, Discord, Teams, Matrix)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.3"
+          ],
+          "acceptance": "@agent-hub deploy staging works",
+          "files": [
+            "src/agent_hub/platform/chatops/"
+          ]
+        },
+        {
+          "id": "5.2.4",
+          "title": "Surpass DSH: API-first (all UI via API, headless mode)",
+          "owner": "platform",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "curl -X POST /api/v1/orchestrate -d '{\"spec\":...}'",
+          "files": [
+            "src/agent_hub/api/"
+          ]
+        },
+        {
+          "id": "5.3.1",
+          "title": "OpenTelemetry native (traces, metrics, logs)",
+          "owner": "standards",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.2"
+          ],
+          "acceptance": "otel collect --endpoint=localhost:4317 works",
+          "files": [
+            "src/agent_hub/telemetry/otel.py"
+          ]
+        },
+        {
+          "id": "5.3.2",
+          "title": "OpenPolicyAgent (OPA) for policy",
+          "owner": "standards",
+          "status": "not_started",
+          "dependencies": [
+            "4.1.1"
+          ],
+          "acceptance": "opa eval -i input.json -d policy.rego",
+          "files": [
+            "src/agent_hub/platform/policy/opa.py",
+            "policies/"
+          ]
+        },
+        {
+          "id": "5.3.3",
+          "title": "CloudEvents for agent events",
+          "owner": "standards",
+          "status": "not_started",
+          "dependencies": [
+            "0.2.1"
+          ],
+          "acceptance": "cloudevents validate event.json passes",
+          "files": [
+            "src/agent_hub/events/cloudevents.py"
+          ]
+        },
+        {
+          "id": "5.3.4",
+          "title": "Surpass DSH: Agent-to-Agent Protocol (A2A) standard",
+          "owner": "standards",
+          "status": "not_started",
+          "dependencies": [
+            "1.1.3"
+          ],
+          "acceptance": "a2a connect --peer=agent-hub-2 works",
+          "files": [
+            "src/agent_hub/comm/a2a.py",
+            "specs/a2a-protocol.md"
+          ]
+        }
+      ]
+    }
+  ],
+  "immediate_actions": [
+    {
+      "id": "imm-1",
+      "title": "Create tracker file",
+      "command": "python create_tracker.py",
+      "status": "completed"
+    },
+    {
+      "id": "imm-2",
+      "title": "Set up Rust workspace for substrates",
+      "command": "cargo new --lib substrate-linux && cargo new --lib substrate-windows",
+      "status": "not_started"
+    },
+    {
+      "id": "imm-3",
+      "title": "Extract local_substrate.py → crates/substrate-linux",
+      "command": "mkdir -p crates/substrate-linux/src && cp src/substrate/local_substrate.py crates/substrate-linux/src/",
+      "status": "not_started"
+    },
+    {
+      "id": "imm-4",
+      "title": "Create WindowsSubstrate skeleton",
+      "command": "cargo new --lib substrate-windows && mkdir -p crates/job-objects crates/silos",
+      "status": "not_started"
+    },
+    {
+      "id": "imm-5",
+      "title": "Abstract Substrate trait + Factory",
+      "command": "cargo new --lib substrate-core",
+      "status": "not_started"
+    },
+    {
+      "id": "imm-6",
+      "title": "Extract JobObject + Silo from research",
+      "command": "cargo new --lib job-objects && cargo new --lib silos",
+      "status": "not_started"
+    },
+    {
+      "id": "imm-7",
+      "title": "Update preflight.py for Windows substrate",
+      "command": "edit src/readiness/preflight.py",
+      "status": "completed"
+    },
+    {
+      "id": "imm-8",
+      "title": "Add cargo test to CI",
+      "command": "edit .github/workflows/ci.yml",
+      "status": "not_started"
+    }
+  ],
+  "metrics": {
+    "total_steps": 79,
+    "completed": 1,
+    "in_progress": 1,
+    "pending": 0,
+    "overall_progress_percent": 1.9
+  },
+  "last_updated": "2026-09-25T03:31:17.439486"
+}

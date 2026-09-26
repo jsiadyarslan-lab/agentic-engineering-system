@@ -1,31 +1,14 @@
-# بيئات Python
-.venv/
-venv/
-env/
+﻿target/
+.cargo/
+.tracker/
+fix_*.py
+debug_*.py
+rewrite_*.py
+find_*.py
 __pycache__/
 *.pyc
-*.pyo
-
-# أسرار وبيئة
+.venv/
+node_modules/
 .env
-.env.*
-
-# بيانات تشغيل وسجلات
-runtime/
-logs/
-*.db
-*.sqlite3
-
-# أدوات البناء والاختبار
-.pytest_cache/
-.coverage
-htmlcov/
-dist/
-build/
-*.egg-info/
-
-# أنظمة التشغيل والمحررات
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
+*.log
+src/agent_hub_v2.egg-info/

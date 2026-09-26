@@ -1,0 +1,39 @@
+[package]
+name = "substrate-macos"
+version = "0.1.0"
+edition = "2024"
+description = "macOS substrate implementation using Seatbelt, XPC, and App Sandbox"
+
+[dependencies]
+substrate-core = { path = "../substrate-core" }
+tokio = { workspace = true, features = ["full", "rt-multi-thread", "macros"] }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true, features = ["std"] }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json", "fmt"] }
+uuid = { workspace = true, features = ["v4", "serde", "v1"] }
+bytes = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+tokio-stream = "0.1"
+futures = "0.3"
+which = "6"
+walkdir = "2"
+sha2 = { workspace = true }
+
+# macOS-specific
+objc = { workspace = true }
+block = { workspace = true }
+seatbelt = { path = "../seatbelt" }
+limits = { path = "../limits" }
+
+[build-dependencies]
+objc = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"
+tempfile = { workspace = true }

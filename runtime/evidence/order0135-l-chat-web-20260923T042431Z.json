@@ -1,0 +1,463 @@
+{
+  "started_at": "2026-09-23T04:20:50.075067+00:00",
+  "research_providers": [
+    {
+      "name": "DuckDuckGo",
+      "kind": "search_ddg",
+      "enabled": true,
+      "effective_status": "NOT_READY",
+      "reason": "ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) —"
+    },
+    {
+      "name": "SearXNG",
+      "kind": "search_searx",
+      "enabled": true,
+      "effective_status": "NOT_CONFIGURED",
+      "reason": "غير معد — عيّن رابطه/مفتاحه من إعدادات البحث ثم افحص"
+    },
+    {
+      "name": "Search API",
+      "kind": "search_api",
+      "enabled": false,
+      "effective_status": "DISABLED",
+      "reason": "معطل بقرار المالك"
+    },
+    {
+      "name": "Bing",
+      "kind": "search_bing",
+      "enabled": true,
+      "effective_status": "NOT_READY",
+      "reason": "bing: 8 نتيجة لكن تغطية الاستعلام 0/4 (المطلوب 2، ونتائج قوية 0) — النتائج لا تخصّ السؤال"
+    },
+    {
+      "name": "Wikipedia",
+      "kind": "search_wikipedia",
+      "enabled": true,
+      "effective_status": "STALE",
+      "reason": "مسبار ناجح انتهت صلاحيته — أعد الفحص لتحديثها"
+    }
+  ],
+  "cases": [
+    {
+      "question": "ما هو React؟",
+      "seconds": 86.2,
+      "event_count": 107,
+      "kinds": [
+        "conversation.bind",
+        "research.started",
+        "research.results",
+        "message_started",
+        "chat.status",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "router.call.logged",
+        "research.used",
+        "message_completed",
+        "stream.done"
+      ],
+      "conversation_id": 16,
+      "scope_audit": {
+        "events": 106,
+        "missing_scope": 0,
+        "missing_sample": [],
+        "kinds_without_scope": {},
+        "conversations": [
+          16
+        ],
+        "message_ids": 1,
+        "all_scoped": true
+      },
+      "research_events": [
+        {
+          "kind": "research.started",
+          "details": {
+            "query": "React",
+            "original": "ما هو React؟",
+            "reason": "auto_detected",
+            "markers": [
+              "ما هو"
+            ]
+          },
+          "detail_keys": [
+            "conversation_id",
+            "fetch_urls",
+            "markers",
+            "original",
+            "query",
+            "reason"
+          ]
+        },
+        {
+          "kind": "research.results",
+          "details": {
+            "provider": "Wikipedia",
+            "count": 8,
+            "results": [
+              {
+                "title": "نكست جي إس",
+                "url": "https://ar.wikipedia.org/wiki/%D9%86%D9%83%D8%B3%D8%AA_%D8%AC%D9%8A_%D8%A5%D8%B3"
+              },
+              {
+                "title": "رياكت",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA"
+              },
+              {
+                "title": "رياكت أو إس",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA_%D8%A3%D9%88_%D8%A5%D8%B3"
+              },
+              {
+                "title": "رياكت نيتف",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA_%D9%86%D9%8A%D8%AA%D9%81"
+              },
+              {
+                "title": "ألعاب الفيديو في 2025",
+                "url": "https://ar.wikipedia.org/wiki/%D8%A3%D9%84%D8%B9%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%8A%D8%AF%D9%8A%D9%88_%D9%81%D9%8A_2025"
+              },
+              {
+                "title": "ردود الفعل على عملية طوفان الأقصى",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D8%AF%D9%88%D8%AF_%D8%A7%D9%84%D9%81%D8%B9%D9%84_%D8%B9%D9%84%D9%89_%D8%B9%D9%85%D9%84%D9%8A%D8%A9_%D8%B7%D9%88%D9%81%D8%A7%D9%86_%D8%A7%D9%84%D8%A3%D9%82%D8%B5%D9%89"
+              },
+              {
+                "title": "React",
+                "url": "https://en.wikipedia.org/wiki/React"
+              },
+              {
+                "title": "React (software)",
+                "url": "https://en.wikipedia.org/wiki/React_%28software%29"
+              }
+            ]
+          },
+          "detail_keys": [
+            "count",
+            "provider",
+            "results"
+          ]
+        },
+        {
+          "kind": "research.used",
+          "details": {
+            "provider": "Wikipedia",
+            "sources": [
+              {
+                "title": "نكست جي إس",
+                "url": "https://ar.wikipedia.org/wiki/%D9%86%D9%83%D8%B3%D8%AA_%D8%AC%D9%8A_%D8%A5%D8%B3"
+              },
+              {
+                "title": "رياكت",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA"
+              },
+              {
+                "title": "رياكت أو إس",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA_%D8%A3%D9%88_%D8%A5%D8%B3"
+              },
+              {
+                "title": "رياكت نيتف",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D9%8A%D8%A7%D9%83%D8%AA_%D9%86%D9%8A%D8%AA%D9%81"
+              },
+              {
+                "title": "ألعاب الفيديو في 2025",
+                "url": "https://ar.wikipedia.org/wiki/%D8%A3%D9%84%D8%B9%D8%A7%D8%A8_%D8%A7%D9%84%D9%81%D9%8A%D8%AF%D9%8A%D9%88_%D9%81%D9%8A_2025"
+              },
+              {
+                "title": "ردود الفعل على عملية طوفان الأقصى",
+                "url": "https://ar.wikipedia.org/wiki/%D8%B1%D8%AF%D9%88%D8%AF_%D8%A7%D9%84%D9%81%D8%B9%D9%84_%D8%B9%D9%84%D9%89_%D8%B9%D9%85%D9%84%D9%8A%D8%A9_%D8%B7%D9%88%D9%81%D8%A7%D9%86_%D8%A7%D9%84%D8%A3%D9%82%D8%B5%D9%89"
+              },
+              {
+                "title": "React",
+                "url": "https://en.wikipedia.org/wiki/React"
+              },
+              {
+                "title": "React (software)",
+                "url": "https://en.wikipedia.org/wiki/React_%28software%29"
+              }
+            ]
+          },
+          "detail_keys": [
+            "conversation_id",
+            "fetched",
+            "provider",
+            "search",
+            "sources"
+          ]
+        }
+      ],
+      "research_kinds": [
+        "research.started",
+        "research.results",
+        "research.used"
+      ],
+      "answer_chars": 0,
+      "answer_head": "",
+      "persisted_assistant_count": 1,
+      "persisted_chars": 857,
+      "persisted_matches_answer_tail": false,
+      "persisted_head": "**React** (ويُعرف أيضًا بـ **React.js** أو **ReactJS**) هو **مكتبة JavaScript مجانية ومفتوحة المصدر** متخصصة في بناء **واجهات المستخدم**، طوّرتها شركة فيسبوك (ميتا حاليًا) [2][7][8]. يعتمد React على ف",
+      "reread_stable": true
+    },
+    {
+      "question": "ما هي أحدث نماذج كلاود؟",
+      "seconds": 134.9,
+      "event_count": 90,
+      "kinds": [
+        "conversation.bind",
+        "research.started",
+        "research.unavailable",
+        "message_started",
+        "chat.status",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "message_delta",
+        "router.call.logged",
+        "message_completed",
+        "stream.done"
+      ],
+      "conversation_id": 16,
+      "scope_audit": {
+        "events": 195,
+        "missing_scope": 0,
+        "missing_sample": [],
+        "kinds_without_scope": {},
+        "conversations": [
+          16
+        ],
+        "message_ids": 2,
+        "all_scoped": true
+      },
+      "research_events": [
+        {
+          "kind": "research.started",
+          "details": {
+            "query": "احدث نماذج كلاود",
+            "original": "ما هي أحدث نماذج كلاود؟",
+            "reason": "auto_detected",
+            "markers": [
+              "احدث",
+              "ما هي",
+              "ما هي احدث",
+              "نماذج"
+            ]
+          },
+          "detail_keys": [
+            "conversation_id",
+            "fetch_urls",
+            "markers",
+            "original",
+            "query",
+            "reason"
+          ]
+        },
+        {
+          "kind": "research.unavailable",
+          "details": {
+            "query": "احدث نماذج كلاود"
+          },
+          "detail_keys": [
+            "error",
+            "providers_tried",
+            "query"
+          ]
+        }
+      ],
+      "research_kinds": [
+        "research.started",
+        "research.unavailable"
+      ],
+      "answer_chars": 0,
+      "answer_head": "",
+      "persisted_assistant_count": 2,
+      "persisted_chars": 693,
+      "persisted_matches_answer_tail": false,
+      "persisted_head": "هذه معرفة مدرَّبة قد تكون قديمة، والتحقق الحي من الويب لم ينجح.\n\nبناءً على ما لديّ في المعرفة المدرَّبة، أحدث عائلة نماذج Claude أستطيع الحديث عنها بثقة معقولة هي **Claude 3**، وتشمل ثلاثة أحجام رئيسي",
+      "reread_stable": true
+    }
+  ],
+  "conversation_id": 16,
+  "history_final": {
+    "count": 4,
+    "roles": [
+      "user",
+      "assistant",
+      "user",
+      "assistant"
+    ],
+    "assistant_chars": [
+      857,
+      693
+    ]
+  }
+}

@@ -831,6 +831,12 @@ async def run_project(project_id: int,
     sub_id = BUS.subscribe("projects", loop, queue)
 
     async def generate():
+        # (013.7 §P17) الحصول على conversation_id للمشروع
+        conversation_id = None
+        project = _project_or_404(project_id)
+        if project.get("conversation_id"):
+            conversation_id = project["conversation_id"]
+
         try:
             yield "data: " + json.dumps({
                 "project_id": project_id, "kind": "run.start",
@@ -844,12 +850,14 @@ async def run_project(project_id: int,
                         _sessions(), project_id, limit=500):
                     if (event.get("id") or 0) > last_event_id:
                         last_event_id = event["id"]
+                        # (013.7 §P17) إضافة conversation_id إلى أحداث المشروع
+                        event = {**event, "conversation_id": conversation_id}
                         yield "id: " + str(event["id"]) + "\n" \
                               + "data: " + json.dumps(
-                                  {**event, "payload": event.get(
-                                      "payload", {})},
-                                  ensure_ascii=False,
-                              ) + "\n\n"
+                                    {**event, "payload": event.get(
+                                        "payload", {})},
+                                    ensure_ascii=False,
+                                ) + "\n\n"
             idle_ticks = 0
             while True:
                 try:
@@ -864,6 +872,7 @@ async def run_project(project_id: int,
                         yield "data: " + json.dumps({
                             "project_id": project_id, "kind": "run.done",
                             "payload": {"job_id": launch.get("job_id")},
+                            "conversation_id": conversation_id,
                         }, ensure_ascii=False) + "\n\n"
                         return
                     if idle_ticks % 30 == 29:  # كل ~15ث — صحة الاتصال
@@ -885,21 +894,22 @@ async def run_project(project_id: int,
                            if isinstance(details, dict) else None) \
                     or event.get("payload") or {}
                 yield "data: " + json.dumps({
-                    "project_id": project_id, "kind": kind,
-                    "payload": payload,
-                    "event_id": event_db_id,
-                }, ensure_ascii=False) + "\n\n"
+                        "project_id": project_id, "kind": kind,
+                        "payload": payload,
+                        "event_id": event_db_id,
+                        "conversation_id": conversation_id,
+                    }, ensure_ascii=False) + "\n\n"
                 if kind == "run.error":
                     yield "data: " + json.dumps({
                         "project_id": project_id, "kind": "run.done",
                         "payload": {"error": True},
+                        "conversation_id": conversation_id,
                     }, ensure_ascii=False) + "\n\n"
                     return
         finally:
             # انقطاع العميل لا يوقف المحرك — يكمل ويكتب كل شيء في
             # القاعدة؛ والاشتراك يُلغى هنا حصرًا (صاحبه هذا المولد)
             BUS.unsubscribe(sub_id)
-
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",

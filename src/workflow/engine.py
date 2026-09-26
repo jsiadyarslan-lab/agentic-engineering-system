@@ -370,7 +370,10 @@ class ProjectEngine:
         # المشروع يصير PAUSED وجلسته CANCELLED — لا انتظار حتى ينتهي
         # استدعاء طويل ثم تُقلب الحالة. الاستئناف قرار مالك صريح يعيد
         # التوليد بجلسة جديدة (retry_of) فلا نجاح مُدّعى من فراغ.
-        return {**result, "pausing": True}
+        paused = self._pause(project, reason or "إيقاف مؤقت من المالك")
+        # إرجاع المشروع المحدث بعد الإيقاف المؤقت
+        updated_project = service.get_project(self._sessions, project_id)
+        return {**updated_project, "pausing": True, "pause_result": paused}
 
     def retry(self, project_id: int) -> dict:
         """إعادة المحاولة (013.4 §11) — آخر فشل يحدد الإجراء الصادق.

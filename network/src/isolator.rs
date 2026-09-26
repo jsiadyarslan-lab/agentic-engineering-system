@@ -91,6 +91,9 @@ pub mod linux {
     pub struct LinuxNetworkIsolator {
         base: super::BaseNetworkIsolator,
         table_name: String,
+    pub struct LinuxNetworkIsolator {
+        base: super::BaseNetworkIsolator,
+        table_name: String,
     }
     
     impl LinuxNetworkIsolator {
@@ -167,14 +170,48 @@ pub mod linux {
             Ok(())
         }
         
-        /// Apply NetworkMode::None - no restrictions, clear our rules
-        async fn apply_mode_none(&self) -> Result<(), NetworkError> {
+        /// Remove our table entirely
+        async fn remove_all(&self) -> Result<(), NetworkError> {
+            let _ = self.nft(&["delete", "table", "inet", &self.table_name]).await;
+            Ok(())
+        }
+    }
+    
+    #[async_trait::async_trait]
+    impl super::NetworkIsolator for LinuxNetworkIsolator {
+        async fn apply_policy(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
+            // Store policy
+            self.base.store_policy(policy.policy_id.clone(), policy.clone());
+            
+            // Ensure table exists
+            self.ensure_table().await?;
+            
+            // Apply based on mode
+            match policy.mode {
+                crate::policy::NetworkMode::None => {
+                    self.apply_mode_none().await?;
+                }
+                crate::policy::NetworkMode::Egress => {
+                    self.apply_egress_only().await?;
+                }
+                crate::policy::NetworkMode::Ingress => {
+                    self.apply_ingress_only().await?;
+                }
+                crate::policy::NetworkMode::EgressFiltered => {
+                    self.apply_filtered_egress(policy).await?;
+                }
+            }
+            
+            self.base.store_policy(policy.policy_id.clone(), policy.clone());
+            Ok(())
+        }
+        
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
             self.clear_policy_chains().await?;
             Ok(())
         }
         
-        /// Apply NetworkMode::Egress - allow all egress, block all ingress
-        async fn apply_egress_only(&self) -> Result<(), NetworkError> {
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
             self.clear_policy_chains().await?;
             
             // Egress: accept all (default policy is accept, so no rules needed)
@@ -187,8 +224,7 @@ pub mod linux {
             Ok(())
         }
         
-        /// Apply NetworkMode::Ingress - allow all ingress, block all egress
-        async fn apply_ingress_only(&self) -> Result<(), NetworkError> {
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
             self.clear_policy_chains().await?;
             
             // Egress: drop all
@@ -201,8 +237,7 @@ pub mod linux {
             Ok(())
         }
         
-        /// Apply NetworkMode::EgressFiltered - filtered egress with allowlist/denylist
-        async fn apply_filtered_egress(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), NetworkError> {
+        async fn apply_filtered_egress(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
             self.clear_policy_chains().await?;
             
             // Ingress: drop all by default for filtered mode
@@ -254,46 +289,212 @@ pub mod linux {
             Ok(())
         }
         
-        /// Remove our table entirely
-        async fn remove_all(&self) -> Result<(), NetworkError> {
-            let _ = self.nft(&["delete", "table", "inet", &self.table_name]).await;
+        async fn remove_policy(&self, policy_id: &str) -> Result<(), crate::error::NetworkError> {
+            self.base.remove_policy(policy_id);
             Ok(())
         }
-    }
-    
-    #[async_trait::async_trait]
-    impl super::NetworkIsolator for LinuxNetworkIsolator {
-        async fn apply_policy(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), NetworkError> {
-            // Store policy
-            self.base.store_policy(policy.policy_id.clone(), policy.clone());
+        
+        async fn verify_isolation(&self, policy: &crate::policy::NetworkPolicy) -> Result<crate::isolator::VerificationResult, crate::error::NetworkError> {
+            let results = crate::probes::run_verification_probes(policy).await;
+            Ok(results)
+        }
+        
+        fn supported_modes(&self) -> Vec<NetworkMode> {
+            vec![
+                NetworkMode::None,
+                NetworkMode::Egress,
+                NetworkMode::Ingress,
+                NetworkMode::EgressFiltered,
+            ]
+        }
+        
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            Ok(())
+        }
+        
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
             
-            // Ensure table exists
-            self.ensure_table().await?;
+            // Egress: accept all (default policy is accept, so no rules needed)
+            // Ingress: drop all
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "ingress_policy",
+                "drop"
+            ]).await?;
             
-            // Apply based on mode
-            match policy.mode {
-                crate::policy::NetworkMode::None => {
-                    self.apply_mode_none().await?;
-                }
-                crate::policy::NetworkMode::Egress => {
-                    self.apply_egress_only().await?;
-                }
-                crate::policy::NetworkMode::Ingress => {
-                    self.apply_ingress_only().await?;
-                }
-                crate::policy::NetworkMode::EgressFiltered => {
-                    self.apply_filtered_egress(policy).await?;
+            Ok(())
+        }
+        
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            
+            // Egress: drop all
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "egress_policy",
+                "drop"
+            ]).await?;
+            
+            // Ingress: accept all (default policy is accept)
+            Ok(())
+        }
+        
+        async fn apply_filtered_egress(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            
+            // Ingress: drop all by default for filtered mode
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "ingress_policy",
+                "drop"
+            ]).await?;
+            
+            // Egress: default drop, then add allow rules
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "egress_policy",
+                "drop"
+            ]).await?;
+            
+            // Add allowlist rules (CIDR or IP)
+            for cidr in &policy.egress_allowlist {
+                if cidr.contains('/') {
+                    // CIDR notation
+                    self.nft(&[
+                        "insert", "rule", "inet", &self.table_name, "egress_policy",
+                        "ip", "daddr", cidr, "accept"
+                    ]).await?;
+                } else {
+                    // Single IP
+                    self.nft(&[
+                        "insert", "rule", "inet", &self.table_name, "egress_policy",
+                        "ip", "daddr", cidr, "accept"
+                    ]).await?;
                 }
             }
             
-            self.base.store_policy(policy.policy_id.clone(), policy.clone());
+            // Add denylist rules (insert before allow for precedence)
+            for cidr in &policy.egress_denylist {
+                self.nft(&[
+                    "insert", "rule", "inet", &self.table_name, "egress_policy",
+                    "ip", "daddr", cidr, "drop"
+                ]).await?;
+            }
+            
+            // Allow localhost and private networks by default for functionality
+            let defaults = ["127.0.0.1/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"];
+            for cidr in defaults {
+                self.nft(&[
+                    "insert", "rule", "inet", &self.table_name, "egress_policy",
+                    "ip", "daddr", cidr, "accept"
+                ]).await?;
+            }
+            
             Ok(())
         }
         
         async fn remove_policy(&self, policy_id: &str) -> Result<(), crate::error::NetworkError> {
             self.base.remove_policy(policy_id);
-            // Note: We don't remove the table here as other policies might use it
-            // Call remove_all() explicitly if needed
+            Ok(())
+        }
+        
+        async fn verify_isolation(&self, policy: &crate::policy::NetworkPolicy) -> Result<crate::isolator::VerificationResult, crate::error::NetworkError> {
+            let results = crate::probes::run_verification_probes(policy).await;
+            Ok(results)
+        }
+        
+        fn supported_modes(&self) -> Vec<NetworkMode> {
+            vec![
+                NetworkMode::None,
+                NetworkMode::Egress,
+                NetworkMode::Ingress,
+                NetworkMode::EgressFiltered,
+            ]
+        }
+        
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            Ok(())
+        }
+        
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            
+            // Egress: accept all (default policy is accept, so no rules needed)
+            // Ingress: drop all
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "ingress_policy",
+                "drop"
+            ]).await?;
+            
+            Ok(())
+        }
+        
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            
+            // Egress: drop all
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "egress_policy",
+                "drop"
+            ]).await?;
+            
+            // Ingress: accept all (default policy is accept)
+            Ok(())
+        }
+        
+        async fn apply_filtered_egress(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
+            self.clear_policy_chains().await?;
+            
+            // Ingress: drop all by default for filtered mode
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "ingress_policy",
+                "drop"
+            ]).await?;
+            
+            // Egress: default drop, then add allow rules
+            self.nft(&[
+                "add", "rule", "inet", &self.table_name, "egress_policy",
+                "drop"
+            ]).await?;
+            
+            // Add allowlist rules (CIDR or IP)
+            for cidr in &policy.egress_allowlist {
+                if cidr.contains('/') {
+                    // CIDR notation
+                    self.nft(&[
+                        "insert", "rule", "inet", &self.table_name, "egress_policy",
+                        "ip", "daddr", cidr, "accept"
+                    ]).await?;
+                } else {
+                    // Single IP
+                    self.nft(&[
+                        "insert", "rule", "inet", &self.table_name, "egress_policy",
+                        "ip", "daddr", cidr, "accept"
+                    ]).await?;
+                }
+            }
+            
+            // Add denylist rules (insert before allow for precedence)
+            for cidr in &policy.egress_denylist {
+                self.nft(&[
+                    "insert", "rule", "inet", &self.table_name, "egress_policy",
+                    "ip", "daddr", cidr, "drop"
+                ]).await?;
+            }
+            
+            // Allow localhost and private networks by default for functionality
+            let defaults = ["127.0.0.1/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"];
+            for cidr in defaults {
+                self.nft(&[
+                    "insert", "rule", "inet", &self.table_name, "egress_policy",
+                    "ip", "daddr", cidr, "accept"
+                ]).await?;
+            }
+            
+            Ok(())
+        }
+        
+        async fn remove_policy(&self, policy_id: &str) -> Result<(), crate::error::NetworkError> {
+            self.base.remove_policy(policy_id);
             Ok(())
         }
         
@@ -313,6 +514,11 @@ pub mod linux {
     }
 }
 
+/// Re-export the Linux network isolator
+#[cfg(target_os = "linux")]
+pub use linux::*;
+
+/// Windows implementation (stub)
 #[cfg(target_os = "windows")]
 pub mod windows {
     use super::*;
@@ -335,22 +541,18 @@ pub mod windows {
             // Store policy
             self.base.store_policy(policy.policy_id.clone(), policy.clone());
             
-            // Apply based on mode
+            // Apply based on mode (stub - Windows uses WFP)
             match policy.mode {
                 crate::policy::NetworkMode::None => {
-                    // No restrictions - allow all
                     self.apply_mode_none().await?;
                 }
                 crate::policy::NetworkMode::Egress => {
-                    // Allow egress, block ingress
                     self.apply_egress_only().await?;
                 }
                 crate::policy::NetworkMode::Ingress => {
-                    // Allow ingress, block egress
                     self.apply_ingress_only().await?;
                 }
                 crate::policy::NetworkMode::EgressFiltered => {
-                    // Apply filtered egress rules
                     self.apply_filtered_egress(policy).await?;
                 }
             }
@@ -359,24 +561,23 @@ pub mod windows {
             Ok(())
         }
         
-        async fn apply_mode_none(&self) -> Result<(), NetworkError> {
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
             // No restrictions - remove all our filters
             Ok(())
         }
         
-        async fn apply_egress_only(&self) -> Result<(), NetworkError> {
-            // Allow all egress, block all ingress
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
+            // Allow all egress, block all ingress (stub - Windows uses WFP)
             Ok(())
         }
         
-        async fn apply_ingress_only(&self) -> Result<(), NetworkError> {
-            // Allow ingress, block egress
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
+            // Allow ingress, block egress (stub)
             Ok(())
         }
         
-        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), NetworkError> {
-            // Allow egress only to allowed destinations
-            // Block all other egress
+        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
+            // Allow egress only to allowed destinations (stub - Windows uses WFP)
             Ok(())
         }
         
@@ -401,6 +602,7 @@ pub mod windows {
     }
 }
 
+/// macOS implementation (stub)
 #[cfg(target_os = "macos")]
 pub mod macos {
     use super::*;
@@ -420,8 +622,43 @@ pub mod macos {
     #[async_trait::async_trait]
     impl super::NetworkIsolator for MacosNetworkIsolator {
         async fn apply_policy(&self, policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
-            // Use PF (Packet Filter) on macOS
+            // Use PF (Packet Filter) on macOS (stub)
             self.base.store_policy(policy.policy_id.clone(), policy.clone());
+            Ok(())
+        }
+        
+        async fn remove_policy(&self, policy_id: &str) -> Result<(), crate::error::NetworkError> {
+            self.base.remove_policy(policy_id);
+            Ok(())
+        }
+        
+        async fn verify_isolation(&self, policy: &crate::policy::NetworkPolicy) -> Result<crate::isolator::VerificationResult, crate::error::NetworkError> {
+            let results = crate::probes::run_verification_probes(policy).await;
+            Ok(results)
+        }
+        
+        fn supported_modes(&self) -> Vec<NetworkMode> {
+            vec![
+                NetworkMode::None,
+                NetworkMode::Egress,
+                NetworkMode::Ingress,
+                NetworkMode::EgressFiltered,
+            ]
+        }
+        
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
             Ok(())
         }
         
@@ -469,19 +706,54 @@ pub mod docker {
             Ok(())
         }
         
-        async fn apply_mode_none(&self) -> Result<(), NetworkError> {
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
             Ok(())
         }
         
-        async fn apply_egress_only(&self) -> Result<(), NetworkError> {
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
             Ok(())
         }
         
-        async fn apply_ingress_only(&self) -> Result<(), NetworkError> {
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
             Ok(())
         }
         
-        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), NetworkError> {
+        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn remove_policy(&self, policy_id: &str) -> Result<(), crate::error::NetworkError> {
+            self.base.remove_policy(policy_id);
+            Ok(())
+        }
+        
+        async fn verify_isolation(&self, policy: &crate::policy::NetworkPolicy) -> Result<crate::isolator::VerificationResult, crate::error::NetworkError> {
+            let results = crate::probes::run_verification_probes(policy).await;
+            Ok(results)
+        }
+        
+        fn supported_modes(&self) -> Vec<NetworkMode> {
+            vec![
+                NetworkMode::None,
+                NetworkMode::Egress,
+                NetworkMode::Ingress,
+                NetworkMode::EgressFiltered,
+            ]
+        }
+        
+        async fn apply_mode_none(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_egress_only(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_ingress_only(&self) -> Result<(), crate::error::NetworkError> {
+            Ok(())
+        }
+        
+        async fn apply_filtered_egress(&self, _policy: &crate::policy::NetworkPolicy) -> Result<(), crate::error::NetworkError> {
             Ok(())
         }
         

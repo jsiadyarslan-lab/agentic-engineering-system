@@ -648,6 +648,11 @@ async def _stream_task_run(
             "seq": task_seq["n"],
             "cycle_id": event.get("cycle_id") or cycle_id,
         }, stream=cycle_id)
+        # (013.7 §P17) إضافة run_id و job_id إلى نطاق الحدث
+        if "scope" not in envelope:
+            envelope["scope"] = {}
+        envelope["scope"]["run_id"] = cycle_id
+        envelope["scope"]["job_id"] = getattr(_task_state.get("active", {}), "get", lambda k, d=None: None)("job_id", None)
         _persist_event(envelope)
         BUS.publish(envelope)
         if envelope.get("kind") == "state_change":
@@ -860,6 +865,12 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
         البصرية بعد الرسم.
         """
         chat_seq["n"] += 1
+        # (013.7 §P17) إضافة project_id إلى نطاق الحدث — نحصل عليه من المحادثة
+        from persistence.conversations import get_conversation
+        conversation = get_conversation(_sessions, conversation_id)
+        project_id = conversation.project_id if conversation else None
+        
+        chat_seq["n"] += 1
         envelope = normalize_event({
             **event,
             "seq": chat_seq["n"],
@@ -871,7 +882,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
             "stream": stream_key,
             "conversation_id": conversation_id,
             "message_id": event.get("message_id") or message_id,
-            "project_id": None,
+            "project_id": project_id,
             "run_id": None,
             "job_id": None,
         }
