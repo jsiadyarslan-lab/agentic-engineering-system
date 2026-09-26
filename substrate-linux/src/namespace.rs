@@ -169,7 +169,7 @@ mod linux_namespace {
                     .collect::<Vec<_>>()
                     .join("\n");
                 fs::write(format!("/proc/{}/uid_map", child_pid), map_content)
-                    .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+                    .map_err(|e| LinuxSubstrateError::Io(e))?;
             }
 
             // Write GID map
@@ -179,12 +179,12 @@ mod linux_namespace {
                     .collect::<Vec<_>>()
                     .join("\n");
                 fs::write(format!("/proc/{}/gid_map", child_pid), map_content)
-                    .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+                    .map_err(|e| LinuxSubstrateError::Io(e))?;
             }
 
             // Deny setgroups
             fs::write(format!("/proc/{}/setgroups", child_pid), "deny")
-                .map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+                .map_err(|e| LinuxSubstrateError::Io(e))?;
         }
 
         Ok(NamespaceGuard::new()?)
@@ -202,7 +202,7 @@ mod linux_namespace {
         ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Create private tmpfs for /tmp
-        fs::create_dir_all("/tmp/sandbox").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        fs::create_dir_all("/tmp/sandbox").map_err(|e| LinuxSubstrateError::Io(e))?;
         mount(
             Some("tmpfs"),
             "/tmp/sandbox",
@@ -212,7 +212,7 @@ mod linux_namespace {
         ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Bind mount source tree read-only at /work
-        fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(e))?;
         mount(
             Some(workspace_root.to_str().unwrap()),
             "/work",
@@ -222,7 +222,7 @@ mod linux_namespace {
         ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Bind mount artifacts directory at /artifacts
-        fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(e))?;
         mount(
             Some(artifacts_dir.to_str().unwrap()),
             "/artifacts",
@@ -232,11 +232,11 @@ mod linux_namespace {
         ).map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Create minimal /dev
-        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(e))?;
         for device in &["null", "zero", "urandom", "zero"] {
             let target = format!("/dev/{}", device);
             if !Path::new(&target).exists() {
-                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
                     Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
@@ -273,13 +273,13 @@ mod linux_namespace {
 
     /// Setup minimal /dev
     fn setup_dev() -> Result<()> {
-        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(e))?;
         
         let devices = ["null", "zero", "urandom", "full", "zero", "random"];
         for device in &devices {
             let target = format!("/dev/{}", device);
             if !Path::new(&target).exists() {
-                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+                fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
                     Some(format!("/dev/{}", device).as_str()),
                     target.as_str(),
