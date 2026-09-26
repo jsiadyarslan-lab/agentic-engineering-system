@@ -266,8 +266,8 @@ mod linux_executor {
                 }
 
                 let status = child.wait().await?;
-                (status, stdout, stderr)
-            }).await;
+                Ok::<(ExitStatus, Vec<Vec<u8>>, Vec<Vec<u8>>), futures_io::Error>((status, stdout, stderr))
+            }).await?;
 
             let duration_ms = start_time.elapsed().as_millis() as u64;
 
