@@ -251,7 +251,7 @@ mod linux_executor {
 
                 if let Some(stdout_handle) = child.stdout.take() {
                     let mut reader = AsyncBufReadExt::lines(AsyncBufReader::new(stdout_handle));
-                    while let Some(line) = reader.next_line().await.transpose()? {
+                    while let Some(line) = reader.next_line().await? {
                         stdout.push(line.as_bytes().to_vec());
                         stdout.push(b"\n".to_vec());
                     }
@@ -259,7 +259,7 @@ mod linux_executor {
 
                 if let Some(stderr_handle) = child.stderr.take() {
                     let mut reader = AsyncBufReadExt::lines(AsyncBufReader::new(stderr_handle));
-                    while let Some(line) = reader.next_line().await.transpose()? {
+                    while let Some(line) = reader.next_line().await? {
                         stderr.push(line.as_bytes().to_vec());
                         stderr.push(b"\n".to_vec());
                     }
