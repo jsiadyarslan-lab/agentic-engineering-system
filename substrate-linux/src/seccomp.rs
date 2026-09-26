@@ -95,7 +95,7 @@ mod linux_seccomp {
         
         // Convert to BPF program (returns Vec<sock_filter>)
         let program = filter.try_into()
-            .map_err(|e: seccompiler::Error| LinuxSubstrateError::Seccomp(e.to_string()))?;
+            .map_err(|e: seccompiler::BackendError| LinuxSubstrateError::Seccomp(e.to_string()))?;
         
         Ok(program)
     }
