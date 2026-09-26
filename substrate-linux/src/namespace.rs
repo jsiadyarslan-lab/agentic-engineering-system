@@ -158,7 +158,7 @@ mod linux_namespace {
                 flags,
                 None,
             )
-        }.map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        }.map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Parent process - configure mappings
         if child_pid.as_raw() > 0 {
@@ -199,7 +199,7 @@ mod linux_namespace {
             None::<&str>,
             MsFlags::MS_REC | MsFlags::MS_PRIVATE,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Create private tmpfs for /tmp
         fs::create_dir_all("/tmp/sandbox").map_err(|e| LinuxSubstrateError::Io(e))?;
@@ -209,7 +209,7 @@ mod linux_namespace {
             Some("tmpfs"),
             MsFlags::MS_NOSUID | MsFlags::MS_NODEV | MsFlags::MS_NOEXEC,
             Some("size=64m,mode=0755"),
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Bind mount source tree read-only at /work
         fs::create_dir_all("/work").map_err(|e| LinuxSubstrateError::Io(e))?;
@@ -219,7 +219,7 @@ mod linux_namespace {
             None::<&str>,
             MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Bind mount artifacts directory at /artifacts
         fs::create_dir_all("/artifacts").map_err(|e| LinuxSubstrateError::Io(e))?;
@@ -229,7 +229,7 @@ mod linux_namespace {
             None::<&str>,
             MsFlags::MS_BIND,
             None::<&str>,
-        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Create minimal /dev
         fs::create_dir_all("/dev").map_err(|e| LinuxSubstrateError::Io(e))?;
@@ -243,7 +243,7 @@ mod linux_namespace {
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
-                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
             }
         }
 
@@ -256,14 +256,14 @@ mod linux_namespace {
         let put_old = CString::new("old").unwrap();
 
         // Change to new root
-        nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.0)))?;
+        nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(i32::from(e))))?;
 
         // Pivot root
-        nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+        nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Unmount old root
         nix::mount::umount2("old", nix::mount::MntFlags::MNT_DETACH)
-            .map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+            .map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
 
         // Remove old directory
         fs::remove_dir("old").ok();
@@ -286,7 +286,7 @@ mod linux_namespace {
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
-                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(e.0).to_string()))?;
+                ).map_err(|e| LinuxSubstrateError::Namespace(std::io::Error::from_raw_os_error(i32::from(e)).to_string()))?;
             }
         }
         Ok(())
