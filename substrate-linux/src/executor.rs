@@ -266,7 +266,7 @@ mod linux_executor {
                 }
 
                 let status = child.wait().await?;
-                Ok::<(ExitStatus, Vec<Vec<u8>>, Vec<Vec<u8>>), futures_io::Error>((status, stdout, stderr))
+                Ok::<(std::process::ExitStatus, Vec<Vec<u8>>, Vec<Vec<u8>>), Box<dyn std::error::Error + Send + Sync>>((status, stdout, stderr))
             }).await?;
 
             let duration_ms = start_time.elapsed().as_millis() as u64;
