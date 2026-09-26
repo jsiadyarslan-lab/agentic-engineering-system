@@ -77,7 +77,7 @@ mod linux_seccomp {
         let mut rules: BTreeMap<i64, Vec<SeccompRule>> = BTreeMap::new();
         
         for &syscall in allowed_syscalls {
-            let condition = SeccompCondition::new(0, seccompiler::SeccompCmpArgLen::DWORD, seccompiler::SeccompCmpOp::Eq, syscall as u64).unwrap();
+            let condition = SeccompCondition::new(0, seccompiler::SeccompCmpArgLen::Dword, seccompiler::SeccompCmpOp::Eq, syscall as u64).unwrap();
             let rule = SeccompRule::new(vec![condition]).unwrap();
             rules.entry(syscall).or_default().push(rule);
         }
