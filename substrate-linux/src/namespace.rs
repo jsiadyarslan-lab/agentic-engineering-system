@@ -145,23 +145,23 @@ mod linux_namespace {
         }
 
         // Fork to create new namespaces
-        let child_fn = || {
+        let child_fn = Box::new(|| {
             // This runs in the child process after clone
-            Ok(0)
-        };
+            0isize
+        });
 
-        let stack = vec![0u8; 1024 * 1024]; // 1MB stack
+        let mut stack = vec![0u8; 1024 * 1024]; // 1MB stack
         let child_pid = unsafe {
             clone(
                 child_fn,
-                &mut stack.as_slice()[stack.len() - 1] as *mut _,
+                stack.as_mut_ptr() as *mut std::ffi::c_void,
                 flags,
                 None,
             )
         }.map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
 
         // Parent process - configure mappings
-        if child_pid > 0 {
+        if child_pid.as_raw() > 0 {
             // Write UID map
             if !config.uid_map.is_empty() {
                 let map_content = config.uid_map.iter()
