@@ -344,11 +344,11 @@ impl Substrate for MacOSSubstrate {
             sandbox_id: request.sandbox_id,
             image: request.image,
             command: request.command,
-            limits: request.limits.unwrap_or_default(),
-            env_names: request.env_names.unwrap_or_default(),
-            network: request.network.unwrap_or(crate::types::NetworkMode::None),
-            workspace_root: request.workspace_root.unwrap_or_else(|| "/work".to_string()),
-            artifacts_dir: request.artifacts_dir.unwrap_or_else(|| "/artifacts".to_string()),
+            limits: request.limits,
+            env_names: request.env_names,
+            network: request.network,
+            workspace_root: request.workspace_root,
+            artifacts_dir: request.artifacts_dir,
         };
 
         let result = self.execute(sandbox_req).await?;

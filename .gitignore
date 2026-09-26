@@ -12,3 +12,4 @@ node_modules/
 .env
 *.log
 src/agent_hub_v2.egg-info/
+runtime/secrets/

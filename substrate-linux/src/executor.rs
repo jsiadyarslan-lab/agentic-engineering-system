@@ -423,11 +423,11 @@ mod linux_executor {
                 sandbox_id: request.sandbox_id,
                 image: request.image,
                 command: request.command,
-                limits: request.limits.unwrap_or_default().into(),
-                env_names: request.env_names.unwrap_or_default(),
-                network: request.network.unwrap_or(CoreNetworkMode::None).into(),
-                workspace_root: request.workspace_root.unwrap_or_else(|| "/work".to_string()),
-                artifacts_dir: request.artifacts_dir.unwrap_or_else(|| "/artifacts".to_string()),
+                limits: request.limits.into(),
+                env_names: request.env_names,
+                network: request.network.into(),
+                workspace_root: request.workspace_root,
+                artifacts_dir: request.artifacts_dir,
             };
 
             let result = self.execute_local(sandbox_req).await
