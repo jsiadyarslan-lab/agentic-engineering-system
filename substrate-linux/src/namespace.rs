@@ -256,7 +256,7 @@ mod linux_namespace {
         let put_old = CString::new("old").unwrap();
 
         // Change to new root
-        nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::from_raw_os_error(e.into())))?;
+        nix::unistd::chdir(&new_root).map_err(|e| LinuxSubstrateError::Io(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())))?;
 
         // Pivot root
         nix::unistd::pivot_root(".", "old").map_err(|e| LinuxSubstrateError::Namespace(e.to_string()))?;
