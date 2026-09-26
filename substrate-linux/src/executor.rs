@@ -267,7 +267,8 @@ mod linux_executor {
 
                 let status = child.wait().await?;
                 Ok::<(std::process::ExitStatus, Vec<Vec<u8>>, Vec<Vec<u8>>), Box<dyn std::error::Error + Send + Sync>>((status, stdout, stderr))
-            }).await?;
+            }).await
+            .map_err(|e| LinuxSubstrateError::Execution(format!("timeout: {}", e)))?;
 
             let duration_ms = start_time.elapsed().as_millis() as u64;
 
