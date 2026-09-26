@@ -77,7 +77,7 @@ mod linux_seccomp {
         let mut rules: BTreeMap<i64, Vec<SeccompRule>> = BTreeMap::new();
         
         for &syscall in allowed_syscalls {
-            rules.entry(syscall).or_default().push(SeccompRule::new(syscall as u32).unwrap().allow());
+            rules.entry(syscall).or_default().push(SeccompRule::new(syscall as u32).unwrap());
         }
 
         // Deny all others with EPERM
@@ -104,7 +104,7 @@ mod linux_seccomp {
         let program = build_seccomp_filter(profile)?;
         
         // Use seccompiler's helper to apply the filter
-        seccompiler::apply_filter(program)
+        seccompiler::apply_filter(&program)
             .map_err(|e| LinuxSubstrateError::Seccomp(e.to_string()))?;
         
         Ok(())
