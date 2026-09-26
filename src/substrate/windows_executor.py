@@ -17,10 +17,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, List
+from typing import Any, Dict, List, Optional, List, Union
 import logging
-
-logger = logging.getLogger(__name__)
 
 # Try to import Windows-specific modules
 try:
@@ -29,11 +27,22 @@ try:
     import win32job
     import win32process
     import win32security
+    import win32event
+    import win32file
+    import win32pipe
+    import pywintypes
+    import win32api
+    import win32con
+    import win32job
+    import win32process
+    import win32security
+    import win32event
+    import win32file
+    import win32pipe
     import pywintypes
     HAS_PYWIN32 = True
 except ImportError:
     HAS_PYWIN32 = False
-    logger.warning("pywin32 not available - Job Objects unavailable, falling back to subprocess")
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, List, Union
@@ -41,6 +50,8 @@ from pathlib import Path
 import hashlib
 import json
 import time
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -160,8 +171,8 @@ class WindowsExecutor:
         env = {**os.environ, **env}
         
         # Start timing
-        started_at = time.time()
-        started_at_dt = datetime.utcnow()
+        start_time = time.time()
+        started_at = datetime.utcnow()
         
         # Choose execution method
         if self.job_objects_enabled:
@@ -188,7 +199,7 @@ class WindowsExecutor:
         
         # Calculate duration
         finished_at = time.time()
-        duration_ms = int((time.time() - time.time()) * 1000)
+        duration_ms = int((time.time() - start_time) * 1000)
         
         return result
     
@@ -406,6 +417,7 @@ class WindowsExecutor:
                 data = win32file.ReadFile(stdout_read, 4096, None)
                 if data[0] == 0 and data[1]:
                     stdout_data += data[1]
+                    stdout_data += b"\n"
                 elif data[0] != 0:
                     break
             except:
@@ -416,6 +428,7 @@ class WindowsExecutor:
                 data = win32file.ReadFile(stderr_read, 4096, None)
                 if data[0] == 0 and data[1]:
                     stderr_data += data[1]
+                    stderr_data += b"\n"
                 elif data[0] != 0:
                     break
             except:
@@ -537,7 +550,7 @@ class WindowsExecutor:
                     stderr="Timeout",
                     limits_applied=limits,
                     artifacts=[],
-                    started_at=time.time(),
+                    started_at=started_at.timestamp(),
                     finished_at=time.time(),
                 )
             
@@ -565,7 +578,7 @@ class WindowsExecutor:
                 started_at=started_at.timestamp(),
                 finished_at=datetime.utcnow().timestamp(),
             )
-            
+        
         except Exception as e:
             logger.error(f"Subprocess execution failed: {e}")
             return ExecutionResult(
@@ -648,16 +661,6 @@ import win32file
 import win32event
 import win32con
 import win32api
-import hashlib
-import json
-import time
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from pathlib import Path
-import uuid
-import subprocess
-import asyncio
 import hashlib
 import json
 import time

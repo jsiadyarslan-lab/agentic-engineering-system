@@ -216,44 +216,6 @@ class Handoff:
     handoff_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
 
-# Task and Result types
-@dataclass
-class AgentTask:
-    """Task assigned to an agent."""
-    task_id: str
-    task_type: str
-    spec: Dict[str, Any]
-    acceptance_criteria: List[str]
-    dependencies: List[str] = field(default_factory=list)
-    timeout_seconds: int = 300
-    priority: int = 1
-
-
-@dataclass
-class AgentResult:
-    """Result of agent execution."""
-    task_id: str
-    agent_type: str
-    success: bool
-    output: Any
-    evidence_hash: str
-    error: Optional[str] = None
-    artifacts: List[Dict] = field(default_factory=list)
-    duration_ms: int = 0
-    evidence: Dict = field(default_factory=dict)
-
-
-@dataclass
-class Handoff:
-    """Handoff between agents with HMAC signature."""
-    from_agent: str
-    to_agent: str
-    payload: Dict[str, Any]
-    signature: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    handoff_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
-
-
 # Re-export for convenience
 __all__ = [
     "AgentType",

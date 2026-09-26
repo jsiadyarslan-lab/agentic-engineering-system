@@ -20,14 +20,6 @@ import sqlite3
 import json
 
 from factory.agents.base import BaseAgent, AgentTask, AgentResult
-from factory.agents.explorer import ExplorerAgent
-from factory.agents.thinker import ThinkerAgent
-from factory.agents.planner import PlannerAgent
-from factory.agents.designer import DesignerAgent
-from factory.agents.reviewer import ReviewerAgent
-from factory.agents.implementer import ImplementerAgent
-from factory.agents.verifier import VerifierAgent
-from factory.agents.security import SecurityAgent
 from factory.human.gate import HumanApprovalGate, HumanDecision
 from factory.human.chat import ChatInterface
 from factory.contracts.agent_protocol import (
@@ -659,22 +651,3 @@ class AgentFactoryOrchestrator:
     
     def get_decision_log(self) -> List[Dict]:
         return self.decision_log
-
-
-# Import enums
-from enum import Enum
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
-import sqlite3
-import json
-import asyncio
-import uuid
-import hashlib
-
-# Re-export for use in other modules
-__all__ = [
-    "MissionState",
-    "Mission",
-    "AgentFactoryOrchestrator",
-]
