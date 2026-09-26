@@ -2,8 +2,8 @@
 mod linux_seccomp {
     use crate::error::{LinuxSubstrateError, Result};
     use crate::types::SeccompProfile;
-    use seccompiler::{BpfProgram, SeccompAction, SeccompFilter, SeccompRule};
-    use std::collections::HashSet;
+    use seccompiler::{SeccompAction, SeccompFilter, SeccompRule, TargetArch, sock_filter, apply_filter};
+    use std::collections::{HashMap, HashSet};
     use std::os::unix::io::AsRawFd;
 
     /// Seccomp filter rules for default profile
@@ -65,27 +65,34 @@ mod linux_seccomp {
         libc::SYS_exit, libc::SYS_exit_group, libc::SYS_read, libc::SYS_write,
     ];
 
-    /// Build seccomp filter for given profile
-    pub fn build_seccomp_filter(profile: SeccompProfile) -> Result<BpfProgram> {
+    /// Build seccomp filter for given profile (returns raw sock_filter bytes)
+    pub fn build_seccomp_filter(profile: SeccompProfile) -> Result<Vec<seccompiler::sock_filter>> {
         let allowed_syscalls = match profile {
             SeccompProfile::Default => DEFAULT_ALLOWED_SYSCALLS,
             SeccompProfile::Strict => STRICT_SYSCALLS,
             SeccompProfile::Custom(_) => DEFAULT_ALLOWED_SYSCALLS, // TODO: parse custom
         };
 
-        let mut rules = Vec::new();
+        // Build rules map: syscall_number -> vec of rules
+        let mut rules: HashMap<i64, Vec<SeccompRule>> = HashMap::new();
         
-        // Allow listed syscalls
         for &syscall in allowed_syscalls {
-            rules.push(SeccompRule::new(syscall as u32).allow());
+            rules.entry(syscall).or_default().push(SeccompRule::new(syscall as u32).allow());
         }
 
         // Deny all others with EPERM
         let default_action = SeccompAction::Errno(libc::EPERM as u32);
 
-        let filter = SeccompFilter::new(default_action, rules)
-            .map_err(|e| LinuxSubstrateError::Seccomp(e.to_string()))?;
+        // Build filter with seccompiler 0.5 API
+        // SeccompFilter::new(rules, default_action, action, arch)
+        let filter = SeccompFilter::new(
+            rules,
+            default_action,
+            SeccompAction::Allow, // action for matches
+            TargetArch::x86_64,
+        ).map_err(|e| LinuxSubstrateError::Seccomp(e.to_string()))?;
 
+        // Convert to BPF program (returns Vec<sock_filter>)
         let program = filter.try_into()
             .map_err(|e| LinuxSubstrateError::Seccomp(e.to_string()))?;
 
@@ -96,18 +103,10 @@ mod linux_seccomp {
     pub fn apply_seccomp_filter(profile: SeccompProfile) -> Result<()> {
         let program = build_seccomp_filter(profile)?;
         
-        // Load the filter
-        let fd = program.as_raw_fd();
-        let ret = unsafe {
-            libc::prctl(libc::PR_SET_SECCOMP, libc::SECCOMP_MODE_FILTER, fd)
-        };
+        // Use seccompiler's helper to apply the filter
+        seccompiler::apply_filter(&program)
+            .map_err(|e| LinuxSubstrateError::Seccomp(e.to_string()))?;
         
-        if ret < 0 {
-            return Err(LinuxSubstrateError::Seccomp(
-                format!("prctl failed: {}", std::io::Error::last_os_error())
-            ));
-        }
-
         Ok(())
     }
 
@@ -118,11 +117,12 @@ mod linux_seccomp {
 
     /// Get list of allowed syscalls for a profile
     pub fn get_allowed_syscalls(profile: SeccompProfile) -> HashSet<i64> {
-        match profile {
-            SeccompProfile::Default => DEFAULT_ALLOWED_SYSCALLS.iter().copied().collect(),
-            SeccompProfile::Strict => STRICT_SYSCALLS.iter().copied().collect(),
-            SeccompProfile::Custom(_) => DEFAULT_ALLOWED_SYSCALLS.iter().copied().collect(),
-        }
+        let allowed_syscalls = match profile {
+            SeccompProfile::Default => DEFAULT_ALLOWED_SYSCALLS,
+            SeccompProfile::Strict => STRICT_SYSCALLS,
+            SeccompProfile::Custom(_) => DEFAULT_ALLOWED_SYSCALLS,
+        };
+        allowed_syscalls.iter().copied().collect()
     }
 }
 
@@ -137,7 +137,7 @@ mod stub_seccomp {
     use crate::types::SeccompProfile;
     use std::collections::HashSet;
 
-    pub fn build_seccomp_filter(_profile: SeccompProfile) -> Result<()> {
+    pub fn build_seccomp_filter(_profile: SeccompProfile) -> Result<Vec<seccompiler::sock_filter>> {
         Err(LinuxSubstrateError::Unavailable("Seccomp not supported on this platform".to_string()))
     }
 
