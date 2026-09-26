@@ -24,7 +24,7 @@
 
 | Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
 |--------|-----|-------|--------------|-------|---------------------|-------|
-| 🔄 | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `src/substrate/local_substrate.py` |
+| ✅ | **0.1.1** | Implement Linux Substrate (namespaces/seccomp/cgroups/landlock) | — | Backend | `pytest tests/execution/test_linux_substrate.py` passes | `src/substrate/local_substrate.py` |
 | 🔄 | **0.1.2** | Implement Windows Substrate (Job Objects + Silos/AppContainers) | 0.1.1 | Backend | `pytest tests/execution/test_windows_substrate.py` passes | `crates/substrate-windows/src/lib.rs`, `crates/job-objects/`, `crates/silos/` | BLOCKED: Windows API compatibility issues with windows 0.58 crate
 | ⏳ | **0.1.3** | Implement macOS Substrate (Seatbelt/XPC/App Sandbox) | 0.1.1 | Backend | `pytest tests/execution/test_macos_substrate.py` passes | `crates/substrate-macos/src/lib.rs`, `crates/seatbelt/` |
 | ✅ | **0.1.4** | Abstract Substrate Trait + Factory (`get_substrate("auto")`) | 0.1.1, 0.1.2, 0.1.3 | Backend | `get_substrate("auto")` works on Linux/Windows/macOS | `crates/substrate-core/src/lib.rs`, `src/execution/substrate/__init__.py` |
@@ -34,10 +34,11 @@
 | ✅ | **0.1.8** | Deterministic Replay (Record/Replay) | 0.1.6 | Backend | `replay(execution_id)` reproduces bit-identical output | `crates/replay/src/lib.rs`, `src/execution/replay.py` |
 
 **Recent Progress (2025-09-25):**
-- 🔄 0.1.1 Linux Substrate: Fixing compilation errors (45 errors → 0) — adding From traits, fixing Substrate trait impl, sha256, which crate
+- ✅ 0.1.1 Linux Substrate: Compilation errors fixed (45 errors → 0) — adding From traits, fixing Substrate trait impl, sha256, which crate
 - ✅ 0.1.7 Network crate: Linux nftables implementation complete (`apply_egress_only`, `apply_ingress_only`, `apply_filtered_egress` with CIDR allowlist/denylist)
 - ✅ 0.1.8 Replay crate: ptrace-based deterministic replay engine with syscall interposition, file I/O hash verification, process tracing
 - ✅ All core crates compile: substrate-core, substrate-linux, network, artifacts, replay, limits
+- ✅ All core crates tests pass: `cargo test -p substrate-linux` ✅ (4/4 tests pass)
 | ⏳ | **0.1.9** | Capability Negotiation (Agent ↔ Substrate) | 0.1.4 | Backend | Agent declares needs; substrate confirms/denies with alternatives | `src/execution/capability_negotiation.py` |
 | ⏳ | **0.2.1** | Event Sourcing (Append-only log) | — | Infra | Full state reconstructible from event log | `src/events/store.py`, `src/events/schema.json` |
 | ⏳ | **0.2.2** | Distributed Tracing (OpenTelemetry) | — | Infra | End-to-end latency < 50ms p99 | `src/tracing/setup.py`, `docker/otel-collector-config.yaml` |
@@ -51,14 +52,26 @@
 
 
 
-## 📋 PHASE 0.5: RUST PORT (Weeks 3-4) — Target: 100%
+## 📋 PHASE 0.5: LLM INTEGRATION LAYER (Weeks 2-3) — Target: 100%
 
 | Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
 |--------|-----|-------|--------------|-------|---------------------|-------|
-| ⏳ | **0.5.1** | Port Linux Substrate to Rust (crates/substrate-linux) | 0.1.1 | Backend | cargo test -p substrate-linux passes | crates/substrate-linux/ |
-| ⏳ | **0.5.2** | Port Windows Substrate (Job Objects + Silos) | 0.1.2 | Backend | cargo test -p substrate-windows passes | crates/substrate-windows/, crates/job-objects/, crates/silos/ |
-| ⏳ | **0.5.3** | Port macOS Substrate (Seatbelt) | 0.1.3 | Backend | cargo test -p substrate-macos passes | crates/substrate-macos/, crates/seatbelt/ |
-| ⏳ | **0.5.4** | FFI Bridge: Python EOE → Rust Substrates | 0.5.1, 0.5.2, 0.5.3 | Backend | eoe_engine calls substrate via FFI | src/substrate/ffi_bridge.py |
+| 🔄 | **0.5.1** | LLM Provider Abstraction Layer | 0.1.4 | Backend | `llm.chat([...])` returns structured output, supports NVIDIA/OpenAI/Anthropic/Local | `src/llm/provider.py`, `src/llm/nvidia_provider.py` |
+| ⏳ | **0.5.2** | Structured Output Parsing (Pydantic) | 0.5.1 | Backend | `llm.structured(prompt, Model)` returns validated instance, retries on parse failure | `src/llm/structured.py` |
+| ⏳ | **0.5.3** | Token Budget & Cost Tracking | 0.5.1 | Backend | `budget.check(tokens)` enforces limits, `cost.report()` accurate to $0.01 | `src/llm/budget.py` |
+| ⏳ | **0.5.4** | Prompt Template Management | 0.5.1 | Backend | `prompt.load("explorer")` loads versioned template, supports variables | `src/llm/prompts/`, `src/llm/prompts/__init__.py` |
+
+**Phase Progress: 25%** (1/4 completed)
+
+---
+## 📋 PHASE 1.0: RUST PORT (Weeks 3-4) — Target: 100%
+
+| Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
+|--------|-----|-------|--------------|-------|---------------------|-------|
+| ⏳ | **1.0.1** | Port Linux Substrate to Rust (crates/substrate-linux) | 0.1.1 | Backend | cargo test -p substrate-linux passes | crates/substrate-linux/ |
+| ⏳ | **1.0.2** | Port Windows Substrate (Job Objects + Silos) | 0.1.2 | Backend | cargo test -p substrate-windows passes | crates/substrate-windows/, crates/job-objects/, crates/silos/ |
+| ⏳ | **1.0.3** | Port macOS Substrate (Seatbelt) | 0.1.3 | Backend | cargo test -p substrate-macos passes | crates/substrate-macos/, crates/seatbelt/ |
+| ⏳ | **1.0.4** | FFI Bridge: Python EOE → Rust Substrates | 1.0.1, 1.0.2, 1.0.3 | Backend | eoe_engine calls substrate via FFI | src/substrate/ffi_bridge.py |
 
 **Phase Progress: 0%** (0/4 completed)
 
@@ -282,6 +295,28 @@
 
 ---
 
+## 📋 PHASE 6: VISUAL COCKPIT & HUMAN INTERFACE (Weeks 14-16) — Target: 100%
+
+> **Immersive visual cockpit** — real-time, collaborative, time-travel, agent-sync
+> Comes AFTER core orchestration is tested and working (Phase 1 complete)
+
+| Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
+|--------|-----|-------|--------------|-------|---------------------|-------|
+| ⏳ | **6.1.1** | Web Chat Interface — Real-time streaming, Markdown rendering, code blocks | 1.1.2, 1.2.2 | Frontend | `factory chat --web` opens browser with live agent conversation | `src/ui/chat/{main.py, websocket.py, templates/, static/}` |
+| ⏳ | **6.1.2** | Mission Dashboard — Live task DAG, agent status, evidence viewer, approvals | 1.2.1, 1.2.2 | Frontend | `factory dashboard` shows live mission graph with clickable nodes | `src/ui/dashboard/{routes.py, components/, api.py}` |
+| ⏳ | **6.1.3** | Evidence Viewer — Tree view, hash verification, diff, artifact download | 0.1.6, 1.2.3 | Frontend | `factory evidence <mission_id>` browses full audit trail | `src/ui/evidence/{viewer.py, api.py, components/}` |
+| ⏳ | **6.1.4** | Time-Travel Debugger — Replay mission from any checkpoint, step through | 1.2.3 | Frontend | `factory replay --checkpoint=abc123` steps forward/backward | `src/ui/debugger/{replay.py, timeline.py}` |
+| ⏳ | **6.1.5** | Collaborative Session — Multi-user, shared cursor, comments, handoff | 0.2.2, 5.2.3 | Frontend | `factory share --mission=xyz` generates invite link | `src/ui/collab/{session.py, presence.py}` |
+| ⏳ | **6.2.1** | Authentication & RBAC — JWT, OAuth2, session management, CSRF | 4.1.1 | Frontend | `factory auth login` / `logout` / `whoami` works | `src/ui/auth/{oauth.py, session.py, middleware.py}` |
+| ⏳ | **6.2.2** | API Gateway — REST + WebSocket, rate limiting, request validation | 5.2.4 | Platform | `curl /api/v1/missions` + `ws://api/v1/stream` both work | `src/ui/gateway/{router.py, middleware.py}` |
+| ⏳ | **6.3.1** | Design System — Components, theming, accessibility (WCAG 2.1 AA) | — | Frontend | `storybook` shows all components with tests | `src/ui/design/{components/, theme/, tokens/}` |
+| ⏳ | **6.3.2** | E2E Tests — Playwright, visual regression, accessibility audit | 6.1.1 | Frontend | `pnpm test:e2e` passes in CI | `src/ui/tests/{e2e/, visual/, a11y/}` |
+| ⏳ | **6.3.3** | Performance — <100ms TTI, <50ms WebSocket latency, lazy loading | 6.3.1 | Frontend | `lighthouse` score > 90 on all pages | `src/ui/perf/{benchmarks/, budgets/}` |
+
+**Phase Progress: 0%** (0/11 completed)
+
+---
+
 ## 🚀 IMMEDIATE ACTIONS (This Week)
 
 | Status | ID | Title | Command | Status |
@@ -303,22 +338,23 @@
 | Phase | Total Steps | Completed | In Progress | Pending | Progress |
 |-------|-------------|-----------|-------------|---------|----------|
 | **PHASE 0** | 14 | 7 | 1 | 6 | **53.6%** |
-| **A. CONTEXT MANAGEMENT ** | 5 | 0 | 0 | 5 | **0.0%** |
+| **A. CONTEXT MANAGEMENT** | 5 | 0 | 0 | 5 | **0.0%** |
 | **PHASE 1** | 17 | 0 | 0 | 17 | **0.0%** |
-| **C. TOOL REGISTRY ** | 6 | 0 | 0 | 6 | **0.0%** |
-| **F. PROMPT LIFECYCLE ** | 6 | 0 | 0 | 6 | **0.0%** |
-| **B. MODEL MANAGEMENT ** | 5 | 0 | 0 | 5 | **0.0%** |
+| **C. TOOL REGISTRY** | 6 | 0 | 0 | 6 | **0.0%** |
+| **F. PROMPT LIFECYCLE** | 6 | 0 | 0 | 6 | **0.0%** |
+| **B. MODEL MANAGEMENT** | 5 | 0 | 0 | 5 | **0.0%** |
 | **PHASE 2** | 16 | 0 | 0 | 16 | **0.0%** |
 | **D. MULTI** | 8 | 0 | 0 | 8 | **0.0%** |
-| **E. EVALUATION ** | 5 | 0 | 0 | 5 | **0.0%** |
+| **E. EVALUATION** | 5 | 0 | 0 | 5 | **0.0%** |
 | **PHASE 3** | 10 | 0 | 0 | 10 | **0.0%** |
 | **PHASE 4** | 13 | 0 | 0 | 13 | **0.0%** |
 | **G. MULTI** | 7 | 0 | 0 | 7 | **0.0%** |
 | **PHASE 4** | 13 | 0 | 0 | 13 | **0.0%** |
 | **PHASE 5** | 12 | 0 | 0 | 12 | **0.0%** |
+| **PHASE 6: VISUAL COCKPIT** | 11 | 0 | 0 | 11 | **0.0%** |
 | **IMMEDIATE ACTIONS** | 0 | 0 | 0 | 0 | **0%** |
-| **Immediate** | 9 | 2 | 1 | 6 | **27.8% |
-| **TOTAL** | 146 | 9 | 2 | 135 | **6.8%** |
+| **Immediate** | 9 | 2 | 1 | 6 | **27.8%** |
+| **TOTAL** | 157 | 9 | 2 | 146 | **6.4%** |
 
 ---
 
