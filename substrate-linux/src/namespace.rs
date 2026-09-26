@@ -239,7 +239,7 @@ mod linux_namespace {
                 fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
                     Some(&format!("/dev/{}", device)),
-                    &target,
+                    target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
@@ -282,7 +282,7 @@ mod linux_namespace {
                 fs::File::create(&target).map_err(|e| LinuxSubstrateError::Io(e))?;
                 mount(
                     Some(&format!("/dev/{}", device)),
-                    &target,
+                    target.as_str(),
                     None::<&str>,
                     MsFlags::MS_BIND,
                     None::<&str>,
