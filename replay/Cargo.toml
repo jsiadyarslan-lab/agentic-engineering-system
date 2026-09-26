@@ -1,0 +1,36 @@
+﻿[package]
+name = "replay"
+version = "0.1.0"
+edition = "2024"
+description = "Deterministic record/replay for execution substrates"
+
+[dependencies]
+tokio = { workspace = true, features = ["full", "rt-multi-thread", "macros"] }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true, features = ["std"] }
+uuid = { workspace = true, features = ["v4", "serde", "v1"] }
+bytes = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Serialization
+bincode = { workspace = true }
+postcard = { workspace = true }
+
+# Crypto
+blake3 = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+rusqlite = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"
+tempfile = { workspace = true }

@@ -1,0 +1,45 @@
+[package]
+name = "network"
+version = "0.1.0"
+edition = "2024"
+description = "Network isolation modes and policy enforcement"
+
+[dependencies]
+tokio = { workspace = true, features = ["full", "rt-multi-thread", "macros"] }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true, features = ["std"] }
+uuid = { workspace = true, features = ["v4", "serde", "v1"] }
+bytes = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Platform-agnostic - include all, use cfg_if in code
+nix = { workspace = true }
+libc = { workspace = true }
+windows = { workspace = true, features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_WindowsFilteringPlatform",
+    "Win32_Networking_WinSock",
+    "Win32_System_Threading",
+]
+}
+objc = { workspace = true }
+
+# Required for NetworkMode and other types
+substrate-core = { path = "../substrate-core" }
+
+# Regex for pattern matching
+regex = "1.10"
+
+# For CIDR parsing
+ipnet = "2.10"
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio-test = "0.4"
