@@ -7,7 +7,7 @@ mod linux_seccomp {
     use std::os::unix::io::AsRawFd;
 
     /// Seccomp filter rules for default profile
-    const DEFAULT_ALLOWED_SYSCALLS: &[i64] = &[
+    pub const DEFAULT_ALLOWED_SYSCALLS: &[i64] = &[
         // Process management
         libc::SYS_read, libc::SYS_write, libc::SYS_open, libc::SYS_close,
         libc::SYS_fstat, libc::SYS_lseek, libc::SYS_mmap, libc::SYS_munmap,
@@ -60,7 +60,7 @@ mod linux_seccomp {
     ];
 
     /// Strict profile - minimal syscalls
-    const STRICT_SYSCALLS: &[i64] = &[
+    pub const STRICT_SYSCALLS: &[i64] = &[
         libc::SYS_read, libc::SYS_write, libc::SYS_open, libc::SYS_close,
         libc::SYS_exit, libc::SYS_exit_group, libc::SYS_read, libc::SYS_write,
     ];
