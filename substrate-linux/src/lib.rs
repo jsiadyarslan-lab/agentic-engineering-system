@@ -10,7 +10,6 @@ pub mod executor;
 #[cfg(all(target_os = "linux", feature = "landlock"))]
 pub mod landlock;
 
-use crate::executor::LinuxSubstrate;
 use crate::types::LinuxSubstrateConfig;
 
 pub use crate::executor::LinuxSubstrate;
