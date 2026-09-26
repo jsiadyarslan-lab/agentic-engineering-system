@@ -108,7 +108,7 @@ mod linux_namespace {
         fn drop(&mut self) {
             // Restore original namespaces
             for (name, file) in &self.original_ns {
-                let _ = nix::sched::setns(file.as_raw_fd(), nix::sched::CloneFlags::empty());
+                let _ = nix::sched::setns(file, nix::sched::CloneFlags::empty());
             }
 
             // Cleanup mount namespace if requested
