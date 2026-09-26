@@ -271,13 +271,6 @@ mod linux_executor {
 
             let duration_ms = start_time.elapsed().as_millis() as u64;
 
-            // Collect artifacts
-            let artifacts = self.collect_artifacts(&artifacts_dir).await?;
-
-            // Save stdout/stderr
-            let stdout_ref = self.save_output(&artifacts_dir, "stdout", &output.1).await?;
-            let stderr_ref = self.save_output(&artifacts_dir, "stderr", &output.2).await?;
-
             let (status, stdout, stderr) = match output {
                 Ok((status, stdout, stderr)) => (status, stdout, stderr),
                 Err(e) if e.to_string().contains("timeout") => {
@@ -311,6 +304,13 @@ mod linux_executor {
                     });
                 }
             };
+
+            // Collect artifacts
+            let artifacts = self.collect_artifacts(&artifacts_dir).await?;
+
+            // Save stdout/stderr
+            let stdout_ref = self.save_output(&artifacts_dir, "stdout", &stdout).await?;
+            let stderr_ref = self.save_output(&artifacts_dir, "stderr", &stderr).await?;
 
             let termination = match status.code() {
                 Some(0) => SandboxTermination::Completed,
