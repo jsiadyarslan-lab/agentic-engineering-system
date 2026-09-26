@@ -3,6 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
+use substrate_core::{
+    ArtifactCustodyEntry as CoreArtifactCustodyEntry,
+    ExecutionLimits as CoreExecutionLimits,
+    NetworkMode as CoreNetworkMode,
+    SandboxExecutionRecord as CoreSandboxExecutionRecord,
+    SandboxTermination as CoreSandboxTermination,
+};
 
 /// Configuration for macOS substrate
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -638,6 +645,112 @@ pub struct SubstrateDescriptor {
     pub name: String,
     pub isolation_class: String,
     pub network_support: String,
+}
+
+/// Conversion implementations from macOS types to Core types
+impl From<ExecutionLimits> for CoreExecutionLimits {
+    fn from(limits: ExecutionLimits) -> Self {
+        CoreExecutionLimits {
+            memory_bytes: limits.memory_bytes,
+            cpu_percent: limits.cpu_percent,
+            cpu_time_seconds: limits.cpu_time_seconds,
+            max_processes: limits.max_processes,
+            max_file_size: limits.max_file_size,
+            max_open_files: limits.max_open_files.map(|v| v as u64),
+            wall_time_seconds: limits.wall_time_seconds,
+            max_output_bytes: limits.max_output_bytes,
+            max_artifact_bytes: limits.max_artifact_bytes,
+            max_workspace_bytes: limits.max_workspace_bytes,
+        }
+    }
+}
+
+impl From<NetworkMode> for CoreNetworkMode {
+    fn from(mode: NetworkMode) -> Self {
+        match mode {
+            NetworkMode::None => CoreNetworkMode::None,
+            NetworkMode::Egress => CoreNetworkMode::Egress,
+            NetworkMode::Ingress => CoreNetworkMode::Ingress,
+            NetworkMode::EgressFiltered => CoreNetworkMode::EgressFiltered,
+        }
+    }
+}
+
+impl From<SandboxTermination> for CoreSandboxTermination {
+    fn from(term: SandboxTermination) -> Self {
+        match term {
+            SandboxTermination::Completed => CoreSandboxTermination::Completed,
+            SandboxTermination::Failed => CoreSandboxTermination::Failed,
+            SandboxTermination::Timeout => CoreSandboxTermination::Timeout,
+            SandboxTermination::LimitBreach => CoreSandboxTermination::LimitBreach,
+            SandboxTermination::FailedToStart => CoreSandboxTermination::FailedToStart,
+            SandboxTermination::NotRun => CoreSandboxTermination::NotRun,
+        }
+    }
+}
+
+impl From<ArtifactCustodyEntry> for CoreArtifactCustodyEntry {
+    fn from(entry: ArtifactCustodyEntry) -> Self {
+        CoreArtifactCustodyEntry {
+            path: entry.path,
+            sha256: entry.sha256,
+            size: entry.size,
+            kind: entry.kind,
+        }
+    }
+}
+
+/// Conversion implementations from Core types to macOS types (needed by executor)
+impl From<CoreExecutionLimits> for ExecutionLimits {
+    fn from(limits: CoreExecutionLimits) -> Self {
+        ExecutionLimits {
+            memory_bytes: limits.memory_bytes,
+            cpu_percent: limits.cpu_percent,
+            cpu_time_seconds: limits.cpu_time_seconds,
+            max_processes: limits.max_processes,
+            max_file_size: limits.max_file_size,
+            max_open_files: limits.max_open_files.map(|v| v as u32),
+            wall_time_seconds: limits.wall_time_seconds,
+            max_output_bytes: limits.max_output_bytes,
+            max_artifact_bytes: limits.max_artifact_bytes,
+            max_workspace_bytes: limits.max_workspace_bytes,
+        }
+    }
+}
+
+impl From<CoreNetworkMode> for NetworkMode {
+    fn from(mode: CoreNetworkMode) -> Self {
+        match mode {
+            CoreNetworkMode::None => NetworkMode::None,
+            CoreNetworkMode::Egress => NetworkMode::Egress,
+            CoreNetworkMode::Ingress => NetworkMode::Ingress,
+            CoreNetworkMode::EgressFiltered => NetworkMode::EgressFiltered,
+        }
+    }
+}
+
+impl From<CoreSandboxTermination> for SandboxTermination {
+    fn from(term: CoreSandboxTermination) -> Self {
+        match term {
+            CoreSandboxTermination::Completed => SandboxTermination::Completed,
+            CoreSandboxTermination::Failed => SandboxTermination::Failed,
+            CoreSandboxTermination::Timeout => SandboxTermination::Timeout,
+            CoreSandboxTermination::LimitBreach => SandboxTermination::LimitBreach,
+            CoreSandboxTermination::FailedToStart => SandboxTermination::FailedToStart,
+            CoreSandboxTermination::NotRun => SandboxTermination::NotRun,
+        }
+    }
+}
+
+impl From<CoreArtifactCustodyEntry> for ArtifactCustodyEntry {
+    fn from(entry: CoreArtifactCustodyEntry) -> Self {
+        ArtifactCustodyEntry {
+            path: entry.path,
+            sha256: entry.sha256,
+            size: entry.size,
+            kind: entry.kind,
+        }
+    }
 }
 
 use std::collections::HashSet;

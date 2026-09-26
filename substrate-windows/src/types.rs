@@ -220,3 +220,44 @@ impl From<ArtifactCustodyEntry> for CoreArtifactCustodyEntry {
         }
     }
 }
+
+/// Conversion implementations from Core types to Windows types (needed by executor)
+impl From<CoreExecutionLimits> for ExecutionLimits {
+    fn from(limits: CoreExecutionLimits) -> Self {
+        ExecutionLimits {
+            memory_bytes: limits.memory_bytes,
+            cpu_percent: limits.cpu_percent,
+            cpu_time_seconds: limits.cpu_time_seconds,
+            max_processes: limits.max_processes,
+            max_file_size: limits.max_file_size,
+            max_open_files: limits.max_open_files.map(|v| v as u32),
+            wall_time_seconds: limits.wall_time_seconds,
+            max_output_bytes: limits.max_output_bytes,
+            max_artifact_bytes: limits.max_artifact_bytes,
+            max_workspace_bytes: limits.max_workspace_bytes,
+        }
+    }
+}
+
+impl From<CoreNetworkMode> for NetworkMode {
+    fn from(mode: CoreNetworkMode) -> Self {
+        mode // Same enum definition
+    }
+}
+
+impl From<CoreSandboxTermination> for SandboxTermination {
+    fn from(term: CoreSandboxTermination) -> Self {
+        term // Same enum definition
+    }
+}
+
+impl From<CoreArtifactCustodyEntry> for ArtifactCustodyEntry {
+    fn from(entry: CoreArtifactCustodyEntry) -> Self {
+        ArtifactCustodyEntry {
+            path: entry.path,
+            sha256: entry.sha256,
+            size: entry.size,
+            kind: entry.kind,
+        }
+    }
+}
