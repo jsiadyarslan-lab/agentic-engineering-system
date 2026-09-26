@@ -154,7 +154,7 @@ mod linux_namespace {
         let child_pid = unsafe {
             clone(
                 child_fn,
-                stack.as_mut_ptr() as *mut std::ffi::c_void,
+                &mut stack[..],
                 flags,
                 None,
             )
