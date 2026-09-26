@@ -39,7 +39,7 @@ dashmap = "5.0"
 
 # Linux substrate
 libc = "0.2.153"
-nix = "0.28"
+nix = { version = "0.28", features = ["sched", "process", "user", "fs", "mount"] }
 seccomp = "0.1"
 seccompiler = "0.5"
 

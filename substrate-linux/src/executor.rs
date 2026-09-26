@@ -39,7 +39,7 @@ mod linux_executor {
     use tokio::time::{timeout, Duration};
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Mutex;
-    use nix::unistd;
+    use nix::unistd::{getuid, getgid};
 
     /// Linux substrate implementation
     pub struct LinuxSubstrate {
@@ -66,7 +66,7 @@ mod linux_executor {
         fn check_capabilities() -> bool {
             // Check if we can create namespaces (need CAP_SYS_ADMIN or unprivileged user ns)
             std::path::Path::new("/proc/sys/kernel/unprivileged_userns_clone").exists()
-                || unistd::getuid().is_root()
+                || getuid().is_root()
         }
 
         pub fn descriptor(&self) -> SubstrateDescriptor {
@@ -170,8 +170,8 @@ mod linux_executor {
                 enable_uts: true,
                 enable_ipc: true,
                 enable_cgroup: false,
-                uid_map: vec![(0, unistd::getuid().as_raw(), 1)],
-                gid_map: vec![(0, unistd::getgid().as_raw(), 1)],
+                uid_map: vec![(0, getuid().as_raw(), 1)],
+                gid_map: vec![(0, getgid().as_raw(), 1)],
                 mount_propagation: crate::namespace::MountPropagation::Private,
             };
 
@@ -183,8 +183,8 @@ mod linux_executor {
                 enable_uts: true,
                 enable_ipc: true,
                 enable_cgroup: false,
-                uid_map: vec![(0, unistd::getuid().as_raw(), 1)],
-                gid_map: vec![(0, unistd::getgid().as_raw(), 1)],
+                uid_map: vec![(0, getuid().as_raw(), 1)],
+                gid_map: vec![(0, getgid().as_raw(), 1)],
                 mount_propagation: crate::namespace::MountPropagation::Private,
             })?;
 
