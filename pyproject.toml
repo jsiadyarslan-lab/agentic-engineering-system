@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # pytest وحده — تبعية تطوير لا إنتاج (الأمر حدّد ست تبعيات إنتاجية).
-test = ["pytest>=7.2", "httpx>=0.26"]
+test = ["pytest>=7.2", "httpx>=0.26", "websockets>=12.0"]
 # أدوات PDF العربية (الأمر السادس §4): reportlab + reshaper + bidi + pypdf.
 # مثبتة في requirements-full.txt لدى v1 — هنا extra مستقل بنفس الحزم.
 pdf = [
@@ -44,3 +44,4 @@ minversion = "7.2"
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra"
+asyncio_mode = "auto"
