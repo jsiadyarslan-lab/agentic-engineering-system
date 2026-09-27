@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import abc
 import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, AsyncIterator, Optional, Type, TypeVar
@@ -76,6 +77,34 @@ class LLMMessage:
 
 
 @dataclass(frozen=True)
+class ToolCall:
+    """A tool call from the LLM."""
+    id: str
+    name: str
+    arguments: dict
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> "ToolCall":
+        """Create ToolCall from OpenAI-style dict."""
+        return cls(
+            id=data.get("id", str(uuid.uuid4())[:8]),
+            name=data.get("function", {}).get("name", ""),
+            arguments=data.get("function", {}).get("arguments", {}),
+        )
+    
+    def to_dict(self) -> dict:
+        """Convert to OpenAI-style dict."""
+        return {
+            "id": self.id,
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "arguments": self.arguments,
+            },
+        }
+
+
+@dataclass(frozen=True)
 class LLMUsage:
     """Token usage statistics."""
     prompt_tokens: int = 0
@@ -97,7 +126,7 @@ class LLMResponse:
     model: str
     usage: LLMUsage
     finish_reason: str = "stop"
-    tool_calls: list[dict] = field(default_factory=list)
+    tool_calls: list[ToolCall] = field(default_factory=list)
     raw_response: dict = field(default_factory=dict)
     latency_ms: int = 0
     timestamp: float = field(default_factory=time.time)
@@ -161,12 +190,14 @@ class LLMProvider(abc.ABC):
     async def chat(
         self,
         messages: list[LLMMessage],
+        tools: Optional[list[dict]] = None,
         **kwargs,
     ) -> LLMResponse:
         """Send a chat completion request.
         
         Args:
             messages: Conversation history
+            tools: Optional list of tool schemas in OpenAI format
             **kwargs: Provider-specific parameters (temperature, max_tokens, etc.)
             
         Returns:

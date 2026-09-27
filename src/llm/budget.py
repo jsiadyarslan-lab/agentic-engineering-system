@@ -11,7 +11,7 @@ import threading
 import time
 import hashlib
 import json
-from dataclass import dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional, Dict, List
 from collections import defaultdict

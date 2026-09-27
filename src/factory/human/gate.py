@@ -16,7 +16,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 import asyncio
 
-from factory.context.decisions import DecisionLog
+from src.factory.context.decisions import DecisionLog
 
 
 class DecisionType(str, Enum):
@@ -63,10 +63,12 @@ class HumanApprovalGate:
         chat_interface: "ChatInterface",
         decision_log: "DecisionLog",
         default_timeout: float = 24 * 3600,  # 24 hours
+        test_mode: bool = False,
     ):
         self.chat = chat_interface
         self.decision_log = decision_log
         self.default_timeout = default_timeout
+        self.test_mode = test_mode
         self._pending_approvals: Dict[str, asyncio.Future] = {}
     
     async def request_approval(
@@ -86,6 +88,20 @@ class HumanApprovalGate:
         Returns:
             HumanDecision with approval status and feedback
         """
+        # Auto-approve in test mode
+        if self.test_mode:
+            decision = HumanDecision(
+                decision_id=str(uuid.uuid4())[:8],
+                mission_id=mission_id,
+                decision_type=DecisionType.APPROVE,
+                approved=True,
+                feedback="Auto-approved in test mode",
+                reviewer="test (auto-approve)",
+            )
+            if self.decision_log:
+                self.decision_log.log_decision(mission_id, decision.to_dict())
+            return decision
+        
         approval_id = str(uuid.uuid4())[:8]
         timeout = timeout or self.default_timeout
         
@@ -106,7 +122,8 @@ class HumanApprovalGate:
             decision = await asyncio.wait_for(future, timeout=timeout)
             
             # Log decision
-            self.decision_log.log_decision(mission_id, decision.to_dict())
+            if self.decision_log:
+                self.decision_log.log_decision(mission_id, decision.to_dict())
             
             return decision
             
@@ -120,7 +137,8 @@ class HumanApprovalGate:
                 feedback=f"Approval timed out after {timeout/3600:.1f} hours",
                 reviewer="system (timeout)",
             )
-            self.decision_log.log_decision(mission_id, decision.to_dict())
+            if self.decision_log:
+                self.decision_log.log_decision(mission_id, decision.to_dict())
             return decision
         finally:
             self._pending_approvals.pop(mission_id, None)

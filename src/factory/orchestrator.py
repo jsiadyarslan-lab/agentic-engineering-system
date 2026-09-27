@@ -19,30 +19,38 @@ from pathlib import Path
 import sqlite3
 import json
 
-from factory.agents.base import BaseAgent, AgentTask, AgentResult
-from factory.human.gate import HumanApprovalGate, HumanDecision
-from factory.human.chat import ChatInterface
-from factory.contracts.agent_protocol import (
+from src.factory.agents.base import BaseAgent, AgentTask, AgentResult
+from src.factory.agents.explorer import ExplorerAgent
+from src.factory.agents.thinker import ThinkerAgent
+from src.factory.agents.planner import PlannerAgent
+from src.factory.agents.designer import DesignerAgent
+from src.factory.agents.reviewer import ReviewerAgent
+from src.factory.agents.implementer import ImplementerAgent
+from src.factory.agents.verifier import VerifierAgent
+from src.factory.agents.security import SecurityAgent
+from src.factory.human.gate import HumanApprovalGate, HumanDecision
+from src.factory.human.chat import ChatInterface
+from src.factory.contracts.agent_protocol import (
     AgentTask, AgentResult, Handoff, 
     ExplorationReport, Analysis, Plan, DesignSpec, 
     Review, ImplementationResult, Verification, SecurityReport
 )
-from factory.context.memory import SharedContextManager
-from factory.context.knowledge import KnowledgeGraph
-from factory.context.artifacts import ArtifactRegistry
-from factory.context.decisions import DecisionLog
-from factory.context.memory import SharedContextManager
-from factory.workflow.dag import TaskDAG
-from factory.workflow.engine import WorkflowEngine
-from factory.workflow.checkpoint import CheckpointManager
-from factory.contracts.agent_protocol import (
+from src.factory.context.memory import SharedContextManager
+from src.factory.context.knowledge import KnowledgeGraph
+from src.factory.context.artifacts import ArtifactRegistry
+from src.factory.context.decisions import DecisionLog
+from src.factory.context.memory import SharedContextManager
+from src.factory.workflow.dag import TaskDAG
+from src.factory.workflow.engine import WorkflowEngine
+from src.factory.workflow.checkpoint import CheckpointManager
+from src.factory.contracts.agent_protocol import (
     AgentTask, AgentResult, Handoff,
     ExplorationReport, Analysis, Plan, DesignSpec,
     Review, ImplementationResult, Verification, SecurityReport
 )
-from substrate.windows_executor import WindowsExecutor, ExecutionResult
-from llm.budget import TokenBudget, get_global_budget
-from llm.provider import LLMProvider, StructuredLLM
+from src.substrate.windows_executor import WindowsExecutor, ExecutionResult
+from src.llm.budget import TokenBudget, get_global_budget
+from src.llm import LLMProvider, StructuredLLM
 
 
 class MissionState(str, Enum):
@@ -158,8 +166,17 @@ class AgentFactoryOrchestrator:
         self.current_mission: Optional[Mission] = None
         self.mission_history: List[Mission] = []
         
-        # Workflow engine
-        self.workflow_engine = WorkflowEngine()
+        # Workflow engine - create DAG from agent dependencies
+        from src.factory.workflow.dag import TaskDAG, TaskNode
+        dag = TaskDAG()
+        for agent in self.agents:
+            dag.add_task(TaskNode(
+                task_id=agent.agent_type,
+                task_type=agent.agent_type,
+                spec={},
+                acceptance_criteria=[],
+            ))
+        self.workflow_engine = WorkflowEngine(dag=dag, agents=self.agent_registry)
         self.checkpoint_manager = CheckpointManager()
         
         # Decision log
@@ -651,3 +668,56 @@ class AgentFactoryOrchestrator:
     
     def get_decision_log(self) -> List[Dict]:
         return self.decision_log
+
+    @classmethod
+    async def create_for_test(cls, test_mode: bool = True) -> "AgentFactoryOrchestrator":
+        """Create orchestrator for testing with mock components."""
+        from src.llm import MockLLMProvider
+        from src.factory.context.memory import SharedContextManager
+        from src.factory.context.knowledge import KnowledgeGraph
+        from src.factory.context.artifacts import ArtifactRegistry
+        from src.factory.context.decisions import DecisionLog
+        from src.factory.human.gate import HumanApprovalGate, HumanDecision
+        from src.factory.human.chat import ChatInterface
+        from src.llm.budget import TokenBudget
+        from src.substrate.windows_executor import WindowsExecutor
+        
+        # Create mock LLM provider
+        llm_provider = MockLLMProvider()
+        
+        # Create context manager (initialize mission first)
+        context_manager = await SharedContextManager.initialize_mission(
+            mission_id="test-mission",
+            user_request="test request"
+        )
+        
+        # Create windows executor
+        windows_executor = WindowsExecutor()
+        
+        # Create human gate with test_mode for auto-approve
+        human_gate = HumanApprovalGate(
+            chat_interface=None,
+            decision_log=None,
+            test_mode=test_mode,
+        )
+        
+        # Create chat interface (minimal for testing)
+        chat_interface = ChatInterface(
+            input_callback=lambda _: asyncio.sleep(0, result="A"),
+            output_callback=print,
+        )
+        
+        # Create token budget
+        token_budget = TokenBudget()
+        
+        # Create orchestrator
+        orchestrator = cls(
+            llm_provider=llm_provider,
+            context_manager=context_manager,
+            windows_executor=windows_executor,
+            human_gate=human_gate,
+            chat_interface=chat_interface,
+            token_budget=token_budget,
+        )
+        
+        return orchestrator

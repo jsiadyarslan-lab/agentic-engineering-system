@@ -77,9 +77,9 @@ class ExecutionResult:
     stdout: str
     stderr: str
     limits_applied: 'ExecutionLimits'
-    artifacts: List[Dict] = field(default_factory=list)
     started_at: float
     finished_at: float
+    artifacts: List[Dict] = field(default_factory=list)
     isolation_level: str = "PARTIAL_JOB_OBJECT"
     evidence_hash: str = ""
 
@@ -341,6 +341,7 @@ class WindowsExecutor:
                 env=env,
                 working_dir=working_dir,
                 artifacts_dir=artifacts_dir,
+                sandbox_id=sandbox_id,
             )
     
     def _configure_job_limits(self, job_handle, limits: ExecutionLimits):
@@ -348,17 +349,34 @@ class WindowsExecutor:
         
         # Memory limits
         if limits.memory_bytes:
-            info = win32job.JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
-            info.BasicLimitInformation.LimitFlags |= win32job.JOB_OBJECT_LIMIT_JOB_MEMORY
-            info.BasicLimitInformation.JobMemoryLimit = limits.memory_bytes
-            info.BasicLimitInformation.LimitFlags |= win32job.JOB_OBJECT_LIMIT_PROCESS_MEMORY
-            info.BasicLimitInformation.ProcessMemoryLimit = limits.memory_bytes
-            
-            win32job.SetInformationJobObject(
-                job_handle,
-                win32job.JobObjectExtendedLimitInformation,
-                info
-            )
+            try:
+                # Try to create the extended limit info structure
+                info = win32job.JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+                info.BasicLimitInformation.LimitFlags |= win32job.JOB_OBJECT_LIMIT_JOB_MEMORY
+                info.BasicLimitInformation.JobMemoryLimit = limits.memory_bytes
+                info.BasicLimitInformation.LimitFlags |= win32job.JOB_OBJECT_LIMIT_PROCESS_MEMORY
+                info.BasicLimitInformation.ProcessMemoryLimit = limits.memory_bytes
+                
+                win32job.SetInformationJobObject(
+                    job_handle,
+                    win32job.JobObjectExtendedLimitInformation,
+                    info
+                )
+            except AttributeError:
+                # Fallback: use basic limit information with dict
+                logger.warning("JOBOBJECT_EXTENDED_LIMIT_INFORMATION not available, using dict approach")
+                info_dict = {
+                    "BasicLimitInformation": {
+                        "LimitFlags": win32job.JOB_OBJECT_LIMIT_JOB_MEMORY | win32job.JOB_OBJECT_LIMIT_PROCESS_MEMORY,
+                        "JobMemoryLimit": limits.memory_bytes,
+                        "ProcessMemoryLimit": limits.memory_bytes,
+                    }
+                }
+                win32job.SetInformationJobObject(
+                    job_handle,
+                    win32job.JobObjectExtendedLimitInformation,
+                    info_dict
+                )
         
         # CPU limits
         if limits.cpu_percent and limits.cpu_percent < 100:

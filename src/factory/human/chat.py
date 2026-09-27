@@ -130,7 +130,8 @@ class ChatInterface:
                 else:
                     self._output("Invalid option. Use A/M/R/D")
                     continue
-            else:
+            except Exception as e:
+                self._output(f"Error reading input: {e}")
                 continue
             
             # Store decision and resolve future

@@ -15,14 +15,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Generic
 
-from factory.contracts.agent_protocol import (
+from src.factory.contracts.agent_protocol import (
     AgentTask, AgentResult, Handoff,
     ExplorationReport, Analysis, Plan, DesignSpec,
     Review, ImplementationResult, Verification, SecurityReport
 )
-from factory.context.memory import SharedContextManager
-from factory.contracts.grants import GrantManager
-from llm.provider import StructuredLLM
+from src.factory.context.memory import SharedContextManager
+from src.factory.contracts.grants import GrantManager
+from src.llm import StructuredLLM
 
 T = TypeVar('T')
 
@@ -180,11 +180,11 @@ import asyncio
 import hashlib
 import json
 import uuid
-from factory.contracts.agent_protocol import (
+from src.factory.contracts.agent_protocol import (
     AgentTask, AgentResult, Handoff,
     ExplorationReport, Analysis, Plan, DesignSpec,
     Review, ImplementationResult, Verification, SecurityReport
 )
-from factory.context.memory import SharedContextManager
-from factory.contracts.grants import GrantManager
-from llm.provider import StructuredLLM
+from src.factory.context.memory import SharedContextManager
+from src.factory.contracts.grants import GrantManager
+from src.llm import StructuredLLM

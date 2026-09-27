@@ -27,6 +27,7 @@ from .provider import (
     LLMProviderUnavailableError,
     LLMInvalidResponseError,
     RetryPolicy,
+    ToolCall,
 )
 
 
@@ -118,6 +119,7 @@ class NVIDIAProvider(LLMProvider):
     async def chat(
         self,
         messages: list[LLMMessage],
+        tools: Optional[list[dict]] = None,
         **kwargs,
     ) -> LLMResponse:
         """Send chat completion request to NVIDIA API."""
@@ -129,6 +131,11 @@ class NVIDIAProvider(LLMProvider):
             "messages": [msg.to_dict() for msg in messages],
             **self._prepare_request_params(**kwargs),
         }
+        
+        # Add tools if provided
+        if tools:
+            payload["tools"] = tools
+            payload["tool_choice"] = "auto"
         
         start_time = time.time()
         
@@ -156,7 +163,8 @@ class NVIDIAProvider(LLMProvider):
             # Extract response
             choice = data["choices"][0]
             content = choice["message"].get("content", "")
-            tool_calls = choice["message"].get("tool_calls", [])
+            tool_calls_raw = choice["message"].get("tool_calls", [])
+            tool_calls = [ToolCall.from_dict(tc) for tc in tool_calls_raw]
             finish_reason = choice.get("finish_reason", "stop")
             
             # Extract usage
