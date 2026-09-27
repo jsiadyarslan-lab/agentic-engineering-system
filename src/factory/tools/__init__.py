@@ -6,7 +6,7 @@ Provides base classes, registry, and built-in tools for agent execution.
 
 from .base import BaseTool, ToolResult
 from .registry import ToolRegistry
-from .filesystem import ReadFileTool, ReadFileInput
+from .filesystem import ReadFileTool, ReadFileInput, EditFileTool, EditFileInput
 
 __all__ = [
     "BaseTool",
@@ -14,4 +14,6 @@ __all__ = [
     "ToolRegistry",
     "ReadFileTool",
     "ReadFileInput",
+    "EditFileTool",
+    "EditFileInput",
 ]
