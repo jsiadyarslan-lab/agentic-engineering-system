@@ -1,0 +1,104 @@
+SCOPE AUDIT — chat_with_tools ReAct loop
+Baseline: 0bf1f93dd007f580638e185f5791e6ccd65131e5
+HEAD:     eed60ea36ba2308af41cd12418192c69b0a879e5
+Date:     2026-09-28
+
+====================================================================
+§0 BASELINE
+  HEAD == origin/main == eed60ea36ba2308af41cd12418192c69b0a879e5 ✓
+====================================================================
+
+§1 PER-FILE CLASSIFICATION (8 out-of-scope files)
+
+1. src/factory/orchestrator.py
+   Hunks: 3
+   Classification: B (LOGIC CHANGE)
+   Details:
+     - Hunk 1 (imports): A — all `from factory.xxx` → `from src.factory.xxx`, `from llm.xxx` → `from src.llm.xxx`
+     - Hunk 2 (workflow_engine): B — new DAG construction logic added to __init__ (TaskDAG, TaskNode creation)
+     - Hunk 3 (create_for_test): B — new @classmethod factory method with full mock wiring
+   Evidence: git diff 0bf1f93..HEAD -- src/factory/orchestrator.py
+
+2. src/factory/agents/base.py
+   Hunks: 2 (duplicate due to double occurrence in file)
+   Classification: A (IMPORT FIX only)
+   Details:
+     - All `from factory.xxx` → `from src.factory.xxx`, `from llm.provider` → `from src.llm`
+   Evidence: git diff 0bf1f93..HEAD -- src/factory/agents/base.py
+
+3. src/factory/human/chat.py
+   Hunks: 1
+   Classification: A (IMPORT FIX equivalent — bug fix)
+   Details:
+     - Fix SyntaxError: changed invalid bare `else:` to `except Exception as e:`
+     - This fixes broken code, not new behavior
+   Evidence: git diff 0bf1f93..HEAD -- src/factory/human/chat.py
+
+4. src/factory/human/gate.py
+   Hunks: 3
+   Classification: B (LOGIC CHANGE)
+   Details:
+     - Hunk 1 (import): A — `from factory.context.decisions` → `from src.factory.context.decisions`
+     - Hunk 2 (test_mode param + auto-approve): B — new test_mode parameter with auto-approve logic in request_approval()
+     - Hunk 3 (decision_log null guards): B — added `if self.decision_log:` guards (new defensive behavior)
+   Evidence: git diff 0bf1f93..HEAD -- src/factory/human/gate.py
+
+5. src/substrate/windows_executor.py
+   Hunks: 3
+   Classification: B (LOGIC CHANGE)
+   Details:
+     - Hunk 1 (field reorder): A — ExecutionResult dataclass field reorder (fixes non-default after default)
+     - Hunk 2 (sandbox_id): A — added missing `sandbox_id=sandbox_id` to _execute_subprocess_fallback call
+     - Hunk 3 (JOBOBJECT fallback): B — new try/except fallback for JOBOBJECT_EXTENDED_LIMIT_INFORMATION with dict-based fallback
+   Evidence: git diff 0bf1f93..HEAD -- src/substrate/windows_executor.py
+
+6. src/llm/budget.py
+   Hunks: 1
+   Classification: A (IMPORT FIX only)
+   Details:
+     - `from dataclass` → `from dataclasses` (fixes ModuleNotFoundError)
+   Evidence: git diff 0bf1f93..HEAD -- src/llm/budget.py
+
+7. src/llm/__init__.py
+   Hunks: 1
+   Classification: B (LOGIC CHANGE — new public exports)
+   Details:
+     - Added `ToolCall` to exports (new public API from provider.py)
+     - Added `MockLLMProvider` to exports (new test utility)
+   Evidence: git diff 0bf1f93..HEAD -- src/llm/__init__.py
+
+8. src/llm/mock_provider.py
+   Hunks: 1 (entire file is new)
+   Classification: B (LOGIC CHANGE — new file)
+   Details:
+     - New MockLLMProvider class with get_structured_llm(), chat(), structured_chat(), mock data generation
+     - Required for orchestrator.create_for_test() to work
+   Evidence: git diff 0bf1f93..HEAD -- src/llm/mock_provider.py
+
+====================================================================
+§1 SUMMARY
+  A (import fix only):     3 files (base.py, chat.py, budget.py)
+  B (logic change/new):    5 files (orchestrator.py, gate.py, windows_executor.py, __init__.py, mock_provider.py)
+  C (deletion):            0 files
+====================================================================
+
+§2 REGRESSION TESTS (no credentials)
+  tests/factory/tools/    : 110 passed
+  tests/llm/              : 13 passed
+  tests/factory/ (all)    : 112 passed, 3 failed (pre-existing: test_events, test_full_mission, test_ws_server)
+  Total:                  235 passed, 3 failed
+
+====================================================================
+§3 VERDICT
+  SCOPE_VIOLATION — 5 of 8 out-of-scope files contain logic changes (B), not just import fixes.
+
+  Files with B classification:
+    - src/factory/orchestrator.py (workflow_engine DAG + create_for_test)
+    - src/factory/human/gate.py (test_mode auto-approve + null guards)
+    - src/substrate/windows_executor.py (JOBOBJECT fallback logic)
+    - src/llm/__init__.py (new public exports)
+    - src/llm/mock_provider.py (entire new file)
+
+  Per §4 hard stop: any out-of-scope hunk classified as B → VERDICT: BLOCKED/SCOPE_VIOLATION
+  No commit made.
+====================================================================

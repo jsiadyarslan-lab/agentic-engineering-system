@@ -1,19 +1,23 @@
-"""Test for WebSocket Event Server - Phase 3 Batch 2"""
+"""Test for WebSocket Event Server - Phase 3 Batch 2
+
+This test uses the orchestrator's event bus to capture events from a full mission
+and verifies they are broadcast via WebSocket.
+"""
 
 import asyncio
 import json
 import pytest
 import websockets
-from datetime import datetime
-
-from src.factory.events import EventBus, WebSocketEventServer, run_server, FactoryEvent, EventType
+from src.factory.orchestrator import AgentFactoryOrchestrator, MissionState
+from src.factory.events import WebSocketEventServer, run_server
 
 
 @pytest.mark.asyncio
 async def test_websocket_server_broadcasts_events():
     """Test that WebSocket server receives and broadcasts events from EventBus."""
-    # Create our own event bus (orchestrator doesn't have one)
-    bus = EventBus()
+    # Create orchestrator with test_mode for auto-approve
+    orchestrator = await AgentFactoryOrchestrator.create_for_test(test_mode=True)
+    bus = orchestrator.event_bus
     
     # Start WebSocket server on ephemeral port
     server = await run_server(bus, host="127.0.0.1", port=0)
@@ -28,62 +32,28 @@ async def test_websocket_server_broadcasts_events():
             assert welcome["type"] == "welcome"
             assert welcome["mock_mode"] is True
             
-            # Manually publish test events to the bus
-            now = datetime.utcnow()
-            test_events = [
-                FactoryEvent(
-                    event_type=EventType.STATE_TRANSITION,
-                    mission_id="test-mission",
-                    timestamp=now,
-                    state_from="IDLE",
-                    state_to="EXPLORING",
-                    agent_type="explorer",
-                    payload={"actor": "orchestrator"},
-                    evidence_hash="abc123",
-                    source="mock",
-                ),
-                FactoryEvent(
-                    event_type=EventType.AGENT_COMPLETION,
-                    mission_id="test-mission",
-                    timestamp=now,
-                    state_from="EXPLORING",
-                    state_to="ANALYZING",
-                    agent_type="explorer",
-                    payload={"success": True},
-                    evidence_hash="def456",
-                    source="mock",
-                ),
-                FactoryEvent(
-                    event_type=EventType.HUMAN_APPROVAL_REQUEST,
-                    mission_id="test-mission",
-                    timestamp=now,
-                    state_from="REVIEWING",
-                    state_to="AWAITING_APPROVAL",
-                    agent_type="reviewer",
-                    payload={"plan": {}, "design_spec": {}},
-                    evidence_hash="",
-                    source="mock",
-                ),
-            ]
+            # Start a mission (will generate events)
+            mission = await orchestrator.start_mission(user_request="Fix typo in README.md")
             
             # Collect events from WebSocket
             received_events = []
             
-            # Publish events and collect WebSocket messages
-            for event in test_events:
-                await bus.publish(event)
-                # Small delay to allow WebSocket to process
-                await asyncio.sleep(0.05)
+            # Wait for mission completion while collecting WebSocket messages
+            for _ in range(3000):  # 300 seconds max
+                await asyncio.sleep(0.1)
                 
                 # Try to receive messages non-blocking
                 try:
-                    msg = await asyncio.wait_for(ws.recv(), timeout=0.2)
+                    msg = await asyncio.wait_for(ws.recv(), timeout=0.05)
                     data = json.loads(msg)
                     if data.get("type") == "event":
                         received_events.append(data["data"])
                 except asyncio.TimeoutError:
                     pass
                 except websockets.exceptions.ConnectionClosed:
+                    break
+                
+                if mission.state in (MissionState.COMPLETED, MissionState.ABORTED, MissionState.ESCALATED):
                     break
             
             # Drain remaining events from socket buffer
@@ -97,7 +67,7 @@ async def test_websocket_server_broadcasts_events():
                     break
             
             # Verify we received events
-            assert len(received_events) >= 3, f"Expected 3+ events via WebSocket, got {len(received_events)}"
+            assert len(received_events) >= 20, f"Expected 20+ events via WebSocket, got {len(received_events)}"
             
             # Verify event types
             event_types = {e["event_type"] for e in received_events}
@@ -107,15 +77,15 @@ async def test_websocket_server_broadcasts_events():
             
             # Verify all agent completions have evidence_hash
             agent_events = [e for e in received_events if e["event_type"] == "agent_completion"]
-            assert len(agent_events) >= 1
+            assert len(agent_events) >= 8
             for ae in agent_events:
                 assert ae["evidence_hash"], f"Missing evidence_hash in {ae}"
                 assert ae["source"] == "mock"
             
-            # Verify state transitions
+            # Verify state transitions include COMPLETED
             state_events = [e for e in received_events if e["event_type"] == "state_transition"]
             states_to = [e["state_to"] for e in state_events if e["state_to"]]
-            assert len(states_to) >= 1
+            assert "COMPLETED" in states_to
             
             # Print received events for verification
             print(f"\n=== WEBSOCKET RECEIVED {len(received_events)} EVENTS ===")

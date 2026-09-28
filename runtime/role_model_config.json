@@ -1,0 +1,26 @@
+{
+  "thinker": {
+    "provider": "openai_compatible",
+    "model": "anthropic/claude-haiku-3.5"
+  },
+  "reviewer": {
+    "provider": "nvidia",
+    "model": "nemotron-3-ultra-550b-a55b"
+  },
+  "implementer": {
+    "provider": "nvidia",
+    "model": "nemotron-3-ultra-550b-a55b"
+  },
+  "verifier": {
+    "provider": "nvidia",
+    "model": "nemotron-3-ultra-550b-a55b"
+  },
+  "arbiter": {
+    "provider": "nvidia",
+    "model": "nemotron-3-ultra-550b-a55b"
+  },
+  "chat": {
+    "provider": "nvidia",
+    "model": "nemotron-3-ultra-550b-a55b"
+  }
+}

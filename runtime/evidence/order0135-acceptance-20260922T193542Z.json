@@ -1,0 +1,423 @@
+{
+ "command": "013.5",
+ "sections": [
+  "§A",
+  "§B",
+  "§O",
+  "§P"
+ ],
+ "script": "scripts/order0135_acceptance.py",
+ "helper": "scripts/_accept_http.py",
+ "started_at": "2026-09-22T19:35:42Z",
+ "finished_at": "2026-09-22T19:35:48Z",
+ "steps": [
+  {
+   "id": "a0-health-probe",
+   "label": "فحص حياة الخادم (فشل قراءة التهيئة)",
+   "at": "2026-09-22T19:35:44Z",
+   "method": "GET",
+   "url": "http://127.0.0.1:9999/health",
+   "request": null,
+   "ok": false,
+   "status": null,
+   "duration_ms": 2040.3,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "extra": {
+    "unreachable": true
+   }
+  },
+  {
+   "id": "a-health",
+   "label": "GET /health",
+   "at": "2026-09-22T19:35:46Z",
+   "method": "GET",
+   "url": "http://127.0.0.1:9999/health",
+   "request": null,
+   "ok": false,
+   "status": null,
+   "duration_ms": 2035.4,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "extra": {
+    "unreachable": true
+   }
+  }
+ ],
+ "checks": [
+  {
+   "name": "p-live-config-resolved",
+   "ok": true,
+   "level": "critical",
+   "note": "المصدر: db:role_provider_mappings | nvidia / deepseek-ai/deepseek-v4.1-flash",
+   "at": "2026-09-22T19:35:46Z"
+  },
+  {
+   "name": "a-server-reachable",
+   "ok": false,
+   "level": "critical",
+   "note": "لا خادم يستجيب على http://127.0.0.1:9999 (URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>)",
+   "at": "2026-09-22T19:35:48Z"
+  },
+  {
+   "name": "p-verdict",
+   "ok": false,
+   "level": "critical",
+   "note": "تعذّر الوصول إلى الخادم — لم يُنفَّذ أي سيناريو",
+   "at": "2026-09-22T19:35:48Z"
+  }
+ ],
+ "unavailable": [],
+ "notes": [
+  {
+   "at": "2026-09-22T19:35:46Z",
+   "text": "تعذّر GET http://127.0.0.1:9999/api/models/config (URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>) — انتقلنا إلى قراءة القاعدة"
+  }
+ ],
+ "role_defaults_source": "src/router/role_config.py (ROLE_KEYS/DEFAULT_PROVIDER/DEFAULT_MODEL)",
+ "base_url_source": "--base-url (صريح)",
+ "base_url": "http://127.0.0.1:9999",
+ "db_path": "C:\\Users\\jaber\\Documents\\GitHub\\agent-hub-v2\\runtime\\agent_hub_v2.db",
+ "db_path_source": "src/core/config.py Settings.db_path (settings.db_path)",
+ "repo": {
+  "head_sha": "9057c8d",
+  "branch": "main",
+  "dirty": true,
+  "dirty_files": 26,
+  "source": "git rev-parse"
+ },
+ "self_audit": {
+  "checked_file": "scripts\\order0135_acceptance.py",
+  "literal_provider_or_model_assignments": []
+ },
+ "live_config_tested": true,
+ "config_resolution": {
+  "source": "db:role_provider_mappings",
+  "source_detail": "قراءة مباشرة (read-only) لجدول role_provider_mappings في runtime/agent_hub_v2.db — المصدر الدائم المعلن في وثيقة src/router/role_config.py",
+  "endpoint": "sqlite3 (read-only): C:\\Users\\jaber\\Documents\\GitHub\\agent-hub-v2\\runtime\\agent_hub_v2.db",
+  "read_at": "2026-09-22T19:35:46Z",
+  "role_mappings": {
+   "thinker": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622257",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   },
+   "reviewer": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622286",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   },
+   "implementer": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622308",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   },
+   "verifier": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622329",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   },
+   "arbiter": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622349",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   },
+   "chat": {
+    "provider": "nvidia",
+    "configuration": "default",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "updated_at": "2026-09-22 09:09:45.622370",
+    "source": "role_provider_mappings (قراءة مباشرة)"
+   }
+  },
+  "provider_blocks": {
+   "nvidia": {
+    "label": "NVIDIA NIM",
+    "enabled": true,
+    "requires_key": true,
+    "has_key": null,
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "default_model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "known_models": [
+     "01-ai/yi-large",
+     "adept/fuyu-8b",
+     "ai21labs/jamba-1.5-large-instruct",
+     "aisingapore/sea-lion-7b-instruct",
+     "bigcode/starcoder2-15b",
+     "databricks/dbrx-instruct",
+     "deepseek-ai/deepseek-coder-6.7b-instruct",
+     "deepseek-ai/deepseek-v4.1-flash",
+     "google/codegemma-1.1-7b",
+     "google/codegemma-7b",
+     "google/deplot",
+     "google/diffusiongemma-26b-a4b-it",
+     "google/gemma-2b",
+     "google/gemma-3-12b-it",
+     "google/gemma-3-4b-it",
+     "google/gemma-4-31b-it",
+     "google/recurrentgemma-2b",
+     "ibm/granite-3.0-3b-a800m-instruct",
+     "ibm/granite-3.0-8b-instruct",
+     "ibm/granite-34b-code-instruct",
+     "ibm/granite-8b-code-instruct",
+     "meta/codellama-70b",
+     "meta/llama-3.2-11b-vision-instruct",
+     "meta/llama-3.2-90b-vision-instruct",
+     "meta/llama-guard-4-12b",
+     "meta/llama2-70b",
+     "meta/muse-glimmer-30b",
+     "microsoft/kosmos-2",
+     "microsoft/phi-3-vision-128k-instruct",
+     "microsoft/phi-3.5-moe-instruct",
+     "mistralai/codestral-22b-instruct-v0.1",
+     "mistralai/mistral-7b-instruct-v0.3",
+     "mistralai/mistral-large",
+     "mistralai/mistral-large-2-instruct",
+     "mistralai/mistral-nemotron",
+     "mistralai/mixtral-8x22b-v0.1",
+     "moonshotai/kimi-k2.6",
+     "moonshotai/kimi-k3",
+     "nemotron-3-ultra-550b-a55b",
+     "nv-mistralai/mistral-nemo-12b-instruct",
+     "nvidia/ai-synthetic-video-detector",
+     "nvidia/cosmos-reason2-8b",
+     "nvidia/embed-qa-4",
+     "nvidia/ising-calibration-1.5-31b",
+     "nvidia/llama-3.1-nemoguard-8b-content-safety",
+     "nvidia/llama-3.1-nemoguard-8b-topic-control",
+     "nvidia/llama-3.1-nemotron-51b-instruct",
+     "nvidia/llama-3.1-nemotron-70b-instruct",
+     "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+     "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+     "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+     "nvidia/llama-3.2-nv-embedqa-1b-v1",
+     "nvidia/llama-nemotron-embed-vl-1b-v2",
+     "nvidia/llama3-chatqa-1.5-70b",
+     "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+     "nvidia/nemotron-3-embed-1b",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+     "nvidia/nemotron-3-super-120b-a12b",
+     "nvidia/nemotron-3-ultra-550b-a55b",
+     "nvidia/nemotron-3.5-content-safety",
+     "nvidia/nemotron-3.5-lightning-30b-a3b",
+     "nvidia/nemotron-4-340b-instruct",
+     "nvidia/nemotron-4-340b-reward",
+     "nvidia/nemotron-nano-3-30b-a3b",
+     "nvidia/nemotron-parse",
+     "nvidia/nemotron-parse-2.0",
+     "nvidia/neva-22b",
+     "nvidia/nv-embedqa-mistral-7b-v2",
+     "nvidia/nvclip",
+     "nvidia/riva-translate-4b-instruct",
+     "nvidia/riva-translate-4b-instruct-v1.1",
+     "nvidia/riva-translate-4b-instruct-v2",
+     "nvidia/vila",
+     "openai/gpt-oss-20b",
+     "poolside/laguna-xs-2.1",
+     "snowflake/arctic-embed-l",
+     "writer/palmyra-creative-122b",
+     "writer/palmyra-fin-70b-32k",
+     "writer/palmyra-med-70b",
+     "writer/palmyra-med-70b-32k",
+     "z-ai/glm-5.3",
+     "z-ai/glm-5.3-flash",
+     "zyphra/zamba2-7b-instruct"
+    ],
+    "readiness_status": "UNTESTED",
+    "configurations": [
+     {
+      "name": "default",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "default_model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "models_count": 83,
+      "models": [
+       "01-ai/yi-large",
+       "adept/fuyu-8b",
+       "ai21labs/jamba-1.5-large-instruct",
+       "aisingapore/sea-lion-7b-instruct",
+       "bigcode/starcoder2-15b",
+       "databricks/dbrx-instruct",
+       "deepseek-ai/deepseek-coder-6.7b-instruct",
+       "deepseek-ai/deepseek-v4.1-flash",
+       "google/codegemma-1.1-7b",
+       "google/codegemma-7b",
+       "google/deplot",
+       "google/diffusiongemma-26b-a4b-it",
+       "google/gemma-2b",
+       "google/gemma-3-12b-it",
+       "google/gemma-3-4b-it",
+       "google/gemma-4-31b-it",
+       "google/recurrentgemma-2b",
+       "ibm/granite-3.0-3b-a800m-instruct",
+       "ibm/granite-3.0-8b-instruct",
+       "ibm/granite-34b-code-instruct",
+       "ibm/granite-8b-code-instruct",
+       "meta/codellama-70b",
+       "meta/llama-3.2-11b-vision-instruct",
+       "meta/llama-3.2-90b-vision-instruct",
+       "meta/llama-guard-4-12b",
+       "meta/llama2-70b",
+       "meta/muse-glimmer-30b",
+       "microsoft/kosmos-2",
+       "microsoft/phi-3-vision-128k-instruct",
+       "microsoft/phi-3.5-moe-instruct",
+       "mistralai/codestral-22b-instruct-v0.1",
+       "mistralai/mistral-7b-instruct-v0.3",
+       "mistralai/mistral-large",
+       "mistralai/mistral-large-2-instruct",
+       "mistralai/mistral-nemotron",
+       "mistralai/mixtral-8x22b-v0.1",
+       "moonshotai/kimi-k2.6",
+       "moonshotai/kimi-k3",
+       "nemotron-3-ultra-550b-a55b",
+       "nv-mistralai/mistral-nemo-12b-instruct",
+       "nvidia/ai-synthetic-video-detector",
+       "nvidia/cosmos-reason2-8b",
+       "nvidia/embed-qa-4",
+       "nvidia/ising-calibration-1.5-31b",
+       "nvidia/llama-3.1-nemoguard-8b-content-safety",
+       "nvidia/llama-3.1-nemoguard-8b-topic-control",
+       "nvidia/llama-3.1-nemotron-51b-instruct",
+       "nvidia/llama-3.1-nemotron-70b-instruct",
+       "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+       "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+       "nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1",
+       "nvidia/llama-3.2-nv-embedqa-1b-v1",
+       "nvidia/llama-nemotron-embed-vl-1b-v2",
+       "nvidia/llama3-chatqa-1.5-70b",
+       "nvidia/mistral-nemo-minitron-8b-8k-instruct",
+       "nvidia/nemotron-3-embed-1b",
+       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+       "nvidia/nemotron-3-super-120b-a12b",
+       "nvidia/nemotron-3-ultra-550b-a55b",
+       "nvidia/nemotron-3.5-content-safety",
+       "nvidia/nemotron-3.5-lightning-30b-a3b",
+       "nvidia/nemotron-4-340b-instruct",
+       "nvidia/nemotron-4-340b-reward",
+       "nvidia/nemotron-nano-3-30b-a3b",
+       "nvidia/nemotron-parse",
+       "nvidia/nemotron-parse-2.0",
+       "nvidia/neva-22b",
+       "nvidia/nv-embedqa-mistral-7b-v2",
+       "nvidia/nvclip",
+       "nvidia/riva-translate-4b-instruct",
+       "nvidia/riva-translate-4b-instruct-v1.1",
+       "nvidia/riva-translate-4b-instruct-v2",
+       "nvidia/vila",
+       "openai/gpt-oss-20b",
+       "poolside/laguna-xs-2.1",
+       "snowflake/arctic-embed-l",
+       "writer/palmyra-creative-122b",
+       "writer/palmyra-fin-70b-32k",
+       "writer/palmyra-med-70b",
+       "writer/palmyra-med-70b-32k",
+       "z-ai/glm-5.3",
+       "z-ai/glm-5.3-flash",
+       "zyphra/zamba2-7b-instruct"
+      ],
+      "enabled": true,
+      "readiness": {
+       "status": "UNTESTED",
+       "checked_at": null
+      }
+     }
+    ]
+   },
+   "openai_compatible": {
+    "label": "OpenRouter (متوافق OpenAI)",
+    "enabled": true,
+    "requires_key": true,
+    "has_key": null,
+    "base_url": "https://openrouter.ai/api/v1",
+    "default_model": "anthropic/claude-haiku-3.5",
+    "known_models": [
+     "anthropic/claude-haiku-3.5"
+    ],
+    "readiness_status": "UNTESTED",
+    "configurations": [
+     {
+      "name": "default",
+      "base_url": "https://openrouter.ai/api/v1",
+      "default_model": "anthropic/claude-haiku-3.5",
+      "models_count": 1,
+      "models": [
+       "anthropic/claude-haiku-3.5"
+      ],
+      "enabled": true,
+      "readiness": {
+       "status": "UNTESTED",
+       "checked_at": null
+      }
+     }
+    ]
+   },
+   "zai_internal": {
+    "label": "z.ai داخلي (منشأة الحاوية المعلنة)",
+    "enabled": true,
+    "requires_key": false,
+    "has_key": null,
+    "base_url": "https://internal-api.z.ai/v1",
+    "default_model": "glm-4.6",
+    "known_models": [
+     "glm-4.6"
+    ],
+    "readiness_status": "UNTESTED",
+    "configurations": [
+     {
+      "name": "default",
+      "base_url": "https://internal-api.z.ai/v1",
+      "default_model": "glm-4.6",
+      "models_count": 1,
+      "models": [
+       "glm-4.6"
+      ],
+      "enabled": true,
+      "readiness": {
+       "status": "UNTESTED",
+       "checked_at": null
+      }
+     }
+    ]
+   }
+  },
+  "declared_defaults": null,
+  "db_failure": null,
+  "notes": [],
+  "chat_selection": {
+   "provider": "nvidia",
+   "configuration": "default",
+   "model": "deepseek-ai/deepseek-v4.1-flash",
+   "updated_at": "2026-09-22 09:09:45.622370",
+   "source": "role_provider_mappings (قراءة مباشرة)"
+  },
+  "thinker_selection": {
+   "provider": "nvidia",
+   "configuration": "default",
+   "model": "deepseek-ai/deepseek-v4.1-flash",
+   "updated_at": "2026-09-22 09:09:45.622257",
+   "source": "role_provider_mappings (قراءة مباشرة)"
+  },
+  "provider": "nvidia",
+  "model": "deepseek-ai/deepseek-v4.1-flash",
+  "configuration": "default",
+  "transport_key": "nvidia",
+  "roles_differ": false
+ },
+ "health": {
+  "ok": false,
+  "unreachable": true,
+  "status": null,
+  "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+  "url": "http://127.0.0.1:9999/health",
+  "at": "2026-09-22T19:35:46Z"
+ },
+ "exit_code": 4
+}

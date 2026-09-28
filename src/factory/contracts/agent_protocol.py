@@ -5,13 +5,11 @@ Agent Contracts - Core protocol definitions for agent communication.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Literal
-from typing_extensions import TypedDict
+from typing import Any, Dict, List, Optional
 import uuid
-from datetime import datetime
 
 
 class AgentType(str, Enum):
@@ -38,20 +36,18 @@ class TaskType(str, Enum):
     SECURITY_AUDIT = "security_audit"
 
 
-@dataclass
-class AgentTask:
+class AgentTask(BaseModel):
     """Task assigned to an agent."""
     task_id: str
     task_type: str
     spec: Dict[str, Any]
     acceptance_criteria: List[str]
-    dependencies: List[str] = field(default_factory=list)
+    dependencies: List[str] = Field(default_factory=list)
     timeout_seconds: int = 300
     priority: int = 1
 
 
-@dataclass
-class AgentResult:
+class AgentResult(BaseModel):
     """Result of agent execution."""
     task_id: str
     agent_type: str
@@ -59,24 +55,22 @@ class AgentResult:
     output: Any
     evidence_hash: str
     error: Optional[str] = None
-    artifacts: List[Dict] = field(default_factory=list)
+    artifacts: List[Dict] = Field(default_factory=list)
     duration_ms: int = 0
-    evidence: Dict = field(default_factory=dict)
+    evidence: Dict = Field(default_factory=dict)
 
 
-@dataclass
-class Handoff:
+class Handoff(BaseModel):
     """Handoff between agents with HMAC signature."""
     from_agent: str
     to_agent: str
     payload: Dict[str, Any]
     signature: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    handoff_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    handoff_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
 
 
-@dataclass
-class ExplorationReport:
+class ExplorationReport(BaseModel):
     """Report from Explorer agent."""
     summary: str
     codebase_structure: Dict[str, Any]
@@ -88,8 +82,7 @@ class ExplorationReport:
     evidence_hash: str = ""
 
 
-@dataclass
-class Analysis:
+class Analysis(BaseModel):
     """Analysis from Thinker agent."""
     root_cause: str
     impact_assessment: str
@@ -100,8 +93,7 @@ class Analysis:
     evidence_hash: str = ""
 
 
-@dataclass
-class Plan:
+class Plan(BaseModel):
     """Execution plan from Planner."""
     summary: str
     tasks: List[Dict[str, Any]]
@@ -110,9 +102,11 @@ class Plan:
     risks: List[str]
     evidence_hash: str = ""
 
+    def to_dict(self) -> dict:
+        return self.model_dump()
 
-@dataclass
-class DesignSpec:
+
+class DesignSpec(BaseModel):
     """Design specification from Designer."""
     summary: str
     architecture: Dict[str, Any]
@@ -122,9 +116,11 @@ class DesignSpec:
     api_contracts: List[Dict[str, Any]]
     evidence_hash: str = ""
 
+    def to_dict(self) -> dict:
+        return self.model_dump()
 
-@dataclass
-class Review:
+
+class Review(BaseModel):
     """Review from Reviewer agent."""
     approved: bool
     summary: str
@@ -134,8 +130,7 @@ class Review:
     evidence_hash: str = ""
 
 
-@dataclass
-class ImplementationResult:
+class ImplementationResult(BaseModel):
     """Result from Implementer agent."""
     files_created: List[str]
     files_modified: List[str]
@@ -144,11 +139,11 @@ class ImplementationResult:
     build_command: str
     test_command: str
     artifacts: List[Dict[str, Any]]
+    file_contents: Dict[str, str] = Field(default_factory=dict)
     evidence_hash: str = ""
 
 
-@dataclass
-class Verification:
+class Verification(BaseModel):
     """Verification result from Verifier agent."""
     passed: bool
     tests_passed: int
@@ -158,62 +153,13 @@ class Verification:
     evidence_hash: str = ""
 
 
-@dataclass
-class SecurityReport:
+class SecurityReport(BaseModel):
     """Security audit report."""
     vulnerabilities_found: int
     secrets_found: int
     dependencies_checked: int
     issues: List[Dict[str, Any]]
     evidence_hash: str = ""
-
-
-@dataclass
-class Handoff:
-    """Handoff between agents with HMAC signature."""
-    from_agent: str
-    to_agent: str
-    payload: Dict[str, Any]
-    signature: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    handoff_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
-
-
-@dataclass
-class AgentTask:
-    """Task assigned to an agent."""
-    task_id: str
-    task_type: str
-    spec: Dict[str, Any]
-    acceptance_criteria: List[str]
-    dependencies: List[str] = field(default_factory=list)
-    timeout_seconds: int = 300
-    priority: int = 1
-
-
-@dataclass
-class AgentResult:
-    """Result of agent execution."""
-    task_id: str
-    agent_type: str
-    success: bool
-    output: Any
-    evidence_hash: str
-    error: Optional[str] = None
-    artifacts: List[Dict] = field(default_factory=list)
-    duration_ms: int = 0
-    evidence: Dict = field(default_factory=dict)
-
-
-@dataclass
-class Handoff:
-    """Handoff between agents with HMAC signature."""
-    from_agent: str
-    to_agent: str
-    payload: Dict[str, Any]
-    signature: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
-    handoff_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
 
 # Re-export for convenience
@@ -231,14 +177,4 @@ __all__ = [
     "ImplementationResult",
     "Verification",
     "SecurityReport",
-    "Handoff",
 ]
-
-# Import required modules
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional
-from typing_extensions import TypedDict
-import uuid
-from datetime import datetime

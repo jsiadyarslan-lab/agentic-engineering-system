@@ -1,0 +1,1097 @@
+{
+  "started_at": "2026-09-22T21:29:54.422846+00:00",
+  "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+  "roles": {
+    "thinker": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "reviewer": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "implementer": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "verifier": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "arbiter": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "chat": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    }
+  },
+  "declared_provider": "nvidia",
+  "declared_model": "deepseek-ai/deepseek-v4.1-flash",
+  "project_id": 14,
+  "plan_start": {
+    "status": 200,
+    "body": {
+      "started": true,
+      "session": {
+        "id": 6,
+        "project_id": 14,
+        "attempt": 1,
+        "state": "GENERATING",
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "request_id": "plan-ee97e1fb9c2d",
+        "started_at": "2026-09-22T21:29:54.499187",
+        "heartbeat_at": "2026-09-22T21:29:54.499187+00:00",
+        "last_meaningful_activity_at": "2026-09-22T21:29:54.499187+00:00",
+        "silence_s": 0.0,
+        "hard_deadline_at": "2026-09-22T21:44:54.499187+00:00",
+        "hard_deadline_derived_at": null,
+        "hard_timeout_s": 900.0,
+        "last_activity_at": "2026-09-22T21:29:54.499187",
+        "lease_expires_at": "2026-09-22T21:31:54.499187",
+        "finished_at": null,
+        "elapsed_s": 0.0,
+        "plan_id": null,
+        "error_class": "",
+        "error_detail": "",
+        "retry_of": null,
+        "actual_provider": "",
+        "actual_model": "",
+        "reasoning_chars": 0
+      },
+      "project": {
+        "id": 14,
+        "name": "تحقق 013.5 — خطة حقيقية",
+        "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+        "status": "PLANNING",
+        "created_at": "2026-09-22T21:29:54.475445",
+        "updated_at": "2026-09-22T21:29:54.507513",
+        "current_plan_id": null,
+        "current_phase_id": null,
+        "current_step_id": null,
+        "stop_requested": false,
+        "completion_state": "",
+        "last_error": "",
+        "execution_policy": "STRICT_ISOLATED",
+        "archived_at": null,
+        "original_id": null
+      }
+    }
+  },
+  "poll_series": [],
+  "terminal_poll": null,
+  "total_seconds": 900.8,
+  "final_project": {
+    "id": 14,
+    "name": "تحقق 013.5 — خطة حقيقية",
+    "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+    "status": "AWAITING_OWNER_APPROVAL",
+    "created_at": "2026-09-22T21:29:54.475445",
+    "updated_at": "2026-09-22T21:32:40.433342",
+    "current_plan_id": 10,
+    "current_phase_id": null,
+    "current_step_id": null,
+    "stop_requested": false,
+    "completion_state": "",
+    "last_error": "",
+    "execution_policy": "STRICT_ISOLATED",
+    "archived_at": null,
+    "original_id": null,
+    "plan": {
+      "id": 10,
+      "project_id": 14,
+      "version": 1,
+      "objective": "بناء لوحة متابعة مهام داخلية في مساحة عمل معزولة: صفحة واحدة (index.html) تعرض المهام المتأخرة من مصدر بيانات محلي، وتُنبّه المالك داخل المتصفح دون أي تكامل خارجي أو طلبات شبكة.",
+      "assumptions": [
+        "التنفيذ يتم داخل مساحة عمل معزولة تحتوي فقط على أدوات بحث/قراءة وكتابة ملفات، بدون شبكة خارجية.",
+        "البيانات محلية بالكامل (ملف داخل مساحة العمل) ولا توجد قاعدة بيانات ولا واجهة برمجية خارجية.",
+        "المالك هو المستخدم الوحيد للوحة، ويعمل الملف بفتحه مباشرة (file://) أو من خادم محلي.",
+        "التنبيه المطلوب هو تنبيه محلي: شريط داخل الصفحة + إشعار المتصفح (Notification API) المحلي، وليس بريدًا أو رسائل أو Webhook.",
+        "المرجع الزمني قابل للتمرير كوسيط للدوال لتسهيل الاختبار الميكانيكي بدل الاعتماد على ساعة النظام فقط."
+      ],
+      "acceptance_criteria": [
+        "الملف index.html موجود في جذر مساحة العمل ويفتح ويعرض قائمة المهام المتأخرة دون أخطاء في وحدة التحكم.",
+        "لا يحتوي أي ملف مُنتَج على fetch أو XMLHttpRequest أو import( أو أي رابط http/https أو mailto أو Webhook.",
+        "عدد المهام المعروضة في اللوحة يساوي ناتج Overdue.getOverdueTasks(window.TASKS, refDate) على نفس المرجع الزمني.",
+        "يظهر شريط التنبيه تلقائيًا عند وجود مهمة متأخرة واحدة على الأقل، ولا يظهر عند عدم وجودها.",
+        "تقرير evidence/verification.md يوثّق كل معيار قبول أعلاه مع نتيجة تحقق ميكانيكي وطريقة التحقق."
+      ],
+      "phases": [
+        {
+          "title": "مصدر البيانات ومنطق التأخير",
+          "objective": "تثبيت مصدر بيانات محلي بصيغة قابلة للقراءة بفتح الملف مباشرة، وبناء دوال خالصة لتحديد المهام المتأخرة قابلة للاختبار آليًا.",
+          "acceptance_criteria": [
+            "ملف البيانات موجود ويُحلّل محتواه إلى مصفوفة JSON صالحة.",
+            "ملف المنطق يُصدّر ثلاث دوال على الأقل ولا يحتوي أي استدعاء شبكي.",
+            "صفحة الاختبار الذاتي تعرض نتيجة نجاح/فشل لكل حالة وتُظهر الإجمالي."
+          ],
+          "steps": [
+            {
+              "objective": "إنشاء ملف البيانات المحلي الذي يحمل قائمة المهام مع حقول التاريخ والحالة.",
+              "input": "قائمة الحقول المطلوبة: id، title، dueDate (ISO)، status (open/done)، priority.",
+              "expected_output": "ملف data/tasks.js يعرّف المتغير window.TASKS كمصفوفة JSON صالحة تضم 8 مهام على الأقل، منها 3 مهام متأخرة (dueDate قبل التاريخ المرجعي و status=open) ومهمة واحدة منتهية لكن متأخرة التاريخ (status=done) لاختبار الاستثناء.",
+              "acceptance_criteria": [
+                "الملف data/tasks.js موجود في المسار المحدد.",
+                "المحتوى بين window.TASKS = و ; الأخيرة يُحلّل كـ JSON صالح دون خطأ.",
+                "طول المصفوفة ≥ 8.",
+                "عدد العناصر التي تحقق (dueDate < 2025-01-15 و status=open) يساوي 3 على الأقل.",
+                "يوجد عنصر واحد على الأقل بـ status=done وبـ dueDate قبل التاريخ المرجعي (حالة استثناء)."
+              ],
+              "dependencies": []
+            },
+            {
+              "objective": "بناء منطق تحديد التأخير كدوال خالصة قابلة للتشغيل في المتصفح وفي بيئة الاختبار.",
+              "input": "data/tasks.js ومصفوفة مهام وتاريخ مرجعي قابل للتمرير.",
+              "expected_output": "ملف src/overdue.js يعرّف الكائن window.Overdue بثلاث دوال: isOverdue(task, refDate) و getOverdueTasks(tasks, refDate) و daysLate(task, refDate)، مع تصدير اختياري عبر module.exports عند وجود module.",
+              "acceptance_criteria": [
+                "الملف src/overdue.js موجود.",
+                "يحتوي التعريفات الثلاثة isOverdue و getOverdueTasks و daysLate بالاسم الحرفي.",
+                "لا يحتوي أي من السلاسل: fetch، XMLHttpRequest، import(، http://، https://.",
+                "getOverdueTasks تستثني العناصر ذات status=\"done\"."
+              ],
+              "dependencies": [
+                "data/tasks.js"
+              ]
+            },
+            {
+              "objective": "إنشاء صفحة اختبار ذاتي تغطي حالات حدود تاريخ التأخير.",
+              "input": "src/overdue.js ومصفوفة حالات اختبار مُضمّنة في الصفحة.",
+              "expected_output": "ملف tests/tests.html يعرض جدول حالات يشمل: تاريخ قبل المرجع، بعد المرجع، يساوي المرجع، ومهمة status=done، مع علامة نجاح/فشل لكل صف ورقم إجمالي الحالات الناجحة.",
+              "acceptance_criteria": [
+                "الملف tests/tests.html موجود.",
+                "يستدعي الدوال الثلاث isOverdue و getOverdueTasks و daysLate.",
+                "يشمل حالة واحدة على الأقل بـ status=\"done\" متوقعة ألا تُحتسب متأخرة.",
+                "يعرض عنصرًا نصيًا يحمل معرّف id=\"summary\" يحتوي عدد الحالات الناجحة من إجمالي الحالات."
+              ],
+              "dependencies": [
+                "src/overdue.js"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "الواجهة الواحدة والتنبيه المحلي",
+          "objective": "بناء صفحة واحدة تجمع عرض المهام المتأخرة والعدّاد والتنبيه المحلي، مرتبطة بمنطق التأخير، دون أي تكامل خارجي.",
+          "acceptance_criteria": [
+            "صفحة واحدة تعرض العدّاد وقائمة المهام المتأخرة وشريط التنبيه.",
+            "عدد الصفوف المعروضة مطابق لناتج منطق التأخير على نفس المرجع الزمني.",
+            "التنبيه يظهر ويعمل بدون أي طلب شبكة."
+          ],
+          "steps": [
+            {
+              "objective": "بناء الهيكل الساكن للواجهة الواحدة.",
+              "input": "متطلبات العرض: رأس يحوي العدّاد، منطقة قائمة المهام المتأخرة، منطقة تنبيه.",
+              "expected_output": "ملف index.html في جذر مساحة العمل يربط styles.css و src/overdue.js و data/tasks.js و src/app.js بالترتيب الصحيح قبل إغلاق body، ويحتوي عناصر بمعرّفات: #overdue-count، #overdue-list، #alert-banner، #empty-state.",
+              "acceptance_criteria": [
+                "الملف index.html موجود في جذر مساحة العمل.",
+                "يحتوي المعرّفات #overdue-count و #overdue-list و #alert-banner و #empty-state بالاسم الحرفي.",
+                "ترتيب وسوم script يضع data/tasks.js و src/overdue.js قبل src/app.js.",
+                "لا يحتوي أي رابط http:// أو https:// أو mailto."
+              ],
+              "dependencies": []
+            },
+            {
+              "objective": "ربط البيانات بالواجهة وعرض المهام المتأخرة والعدّاد.",
+              "input": "window.TASKS وwindow.Overdue وعناصر DOM في index.html.",
+              "expected_output": "ملف src/app.js يقرأ window.TASKS، يستدعي Overdue.getOverdueTasks بتحديد مرجع زمني، يرند عنصر قائمة لكل مهمة متأخرة (العنوان + عدد أيام التأخير)، يحدّث #overdue-count، ويُظهر #empty-state فقط عند عدم وجود مهام متأخرة.",
+              "acceptance_criteria": [
+                "الملف src/app.js موجود.",
+                "يستدعي Overdue.getOverdueTasks بالاسم الحرفي.",
+                "يستخدم document.createElement أو innerHTML لبناء صف لكل مهمة متأخرة.",
+                "يضبط نص #overdue-count على طول مصفوفة المهام المتأخرة.",
+                "لا يحتوي أي من السلاسل: fetch، XMLHttpRequest، import(، http://، https://."
+              ],
+              "dependencies": [
+                "index.html",
+                "src/overdue.js",
+                "data/tasks.js"
+              ]
+            },
+            {
+              "objective": "إضافة التنبيه المحلي للمالك مع منع تكراره في نفس اليوم.",
+              "input": "نتيجة حساب المهام المتأخرة وواجهة التنبيه في index.html.",
+              "expected_output": "ملف src/notify.js يعرض #alert-banner عند وجود مهمة متأخرة واحدة على الأقل، يطلب إذن الإشعار المحلي مرة واحدة عبر Notification.requestPermission عند توفره، ويخزّن تاريخ آخر تنبيه في localStorage بمفتاح واحد لمنع التكرار في نفس اليوم، ويُخفى الشريط عند عدم وجود مهام متأخرة.",
+              "acceptance_criteria": [
+                "الملف src/notify.js موجود ومربوط في index.html.",
+                "يحتوي localStorage.setItem بمفتاح ثابت واحد على الأقل.",
+                "يستخدم Notification.requestPermission مع تحقق من وجود window.Notification قبل الاستدعاء.",
+                "لا يحتوي أي من السلاسل: fetch، XMLHttpRequest، http://، https://، mailto، webhook."
+              ],
+              "dependencies": [
+                "src/app.js"
+              ]
+            }
+          ]
+        },
+        {
+          "title": " التحقق بالأدلة والتحكيم",
+          "objective": "إنتاج أدلة ميكانيكية على تحقق كل معيار قبول، وتقرير نهائي يوضح ما نُفّذ والقيود والقرارات المطلوبة من المالك.",
+          "acceptance_criteria": [
+            "تقرير تحقق يربط كل معيار قبول بنتيجة وطريقة تحقق قابلة للتكرار.",
+            "تقرير نهائي يذكر صراحة غياب أي تكامل خارجي ويعدد القرارات المعلّقة."
+          ],
+          "steps": [
+            {
+              "objective": "توثيق نتائج التحقق الميكانيكي لكل معيار قبول.",
+              "input": "الملفات المنتَجة: index.html، styles.css، data/tasks.js، src/overdue.js، src/app.js، src/notify.js، tests/tests.html.",
+              "expected_output": "ملف evidence/verification.md يحتوي جدولًا لكل معيار قبول مع: المعيار، طريقة التحقق (بحث نصي في ملف / قراءة مخرجات tests/tests.html / عدّ العناصر)، النتيجة (ناجح/راسب)، والدليل (مقتطف السطر أو القيمة).",
+              "acceptance_criteria": [
+                "الملف evidence/verification.md موجود.",
+                "يحتوي صفًا لكل معيار قبول وارد في هذا المخطط.",
+                "يحتوي لكل صف حقل نتيجة يحمل القيمة ناجح أو راسب.",
+                "يذكر صراحة نتيجة البحث عن fetch و XMLHttpRequest و http:// في كل ملف منتَج."
+              ],
+              "dependencies": [
+                "src/notify.js",
+                "tests/tests.html"
+              ]
+            },
+            {
+              "objective": "إصدار تقرير نهائي وتوصية للمالك عن الجاهزية والقيود.",
+              "input": "evidence/verification.md وقائمة المعايير الراسبة إن وُجدت.",
+              "expected_output": "ملف evidence/final-report.md يضم: ملخصًا تنفيذيًا، جدول الملفات المنتَجة، المعايير الناجحة والراسبة، القيود (مثل حاجة إشعار المتصفح إلى إذن صريح وسلوك file://)، وتعليمات تشغيل اللوحة في ثلاثة أسطر.",
+              "acceptance_criteria": [
+                "الملف evidence/final-report.md موجود.",
+                "يحتوي قسمًا بعنوان صريح يذكر انعدام أي تكامل خارجي.",
+                "يحتوي قسمًا لتعليمات التشغيل.",
+                "إذا وُجد معيار راسب، يُدرج في قسم قرارات مطلوبة من المالك."
+              ],
+              "dependencies": [
+                "evidence/verification.md"
+              ]
+            }
+          ]
+        }
+      ],
+      "risks": [
+        "قيود المتصفح على قراءة الملفات عبر file:// قد تمنع أي قراءة شبكية محلية، ولهذا اعتُمد تحميل البيانات عبر وسم script بدل fetch.",
+        "إشعارات المتصفح Notification تتطلب إذنًا صريحًا من المستخدم وقد تُرفض، لذا شريط التنبيه داخل الصفحة هو المسار المضمون.",
+        "انحراف التاريخ المرجعي الثابت داخل الكود يجعل نتائج الاختبار غير قابلة للتكرار إذا لم يُمرَّر كوسيط.",
+        "احتمال اعتبار مهمة منتهية (status=done) متأخرة بالخطأ إذا لم يُطبّق الاستثناء في getOverdueTasks."
+      ],
+      "dependencies": [
+        "مساحة عمل معزولة قابلة للكتابة والقراءة فقط.",
+        "متصفح حديث يدعم HTML/CSS/JS وlocalStorage (وNotification اختياريًا).",
+        "لا توجد أي تبعية شبكية أو حزم خارجية."
+      ],
+      "required_owner_decisions": [
+        "الحد الفاصل للتأخير: هل يُحتسب كل ما تجاوز تاريخ الاستحقاق، أم بعد عدد أيام سماح محدد؟",
+        "قناة التنبيه المعتمدة: شريط داخل الصفحة فقط، أم إشعار متصفح إضافي، أم الاثنان؟",
+        "توقيت التنبيه وتكراره: مرة واحدة عند الفتح، أم مرة واحدة يوميًا، أم عند كل فتح؟",
+        "مصدر تحديث المهام: تعديل يدوي لملف data/tasks.js مؤقتًا، أم نموذج إدخال داخل الصفحة لاحقًا؟"
+      ],
+      "status": "AWAITING_OWNER_APPROVAL",
+      "created_at": "2026-09-22T21:32:40.403709",
+      "supersedes_plan_id": null,
+      "revision_reason": "",
+      "revision_evidence": {},
+      "approved_by_owner": false,
+      "approved_at": null
+    },
+    "phases": [],
+    "gates": [
+      {
+        "id": 12,
+        "project_id": 14,
+        "kind": "PLAN_APPROVAL",
+        "reason": "اعتماد الخطة v1 — 3 مرحلة",
+        "details": {
+          "plan_id": 10,
+          "version": 1
+        },
+        "status": "PENDING",
+        "created_at": "2026-09-22T21:32:40.440078",
+        "resolved_at": null
+      }
+    ],
+    "events": [
+      {
+        "id": 339,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 18,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:45.614105"
+      },
+      {
+        "id": 340,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 16,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:47.925195"
+      },
+      {
+        "id": 341,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 26,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:49.942609"
+      },
+      {
+        "id": 342,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:51.952726"
+      },
+      {
+        "id": 343,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 13,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:53.973815"
+      },
+      {
+        "id": 344,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:56.111416"
+      },
+      {
+        "id": 345,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 5,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:31:58.207195"
+      },
+      {
+        "id": 346,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 16,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:00.583959"
+      },
+      {
+        "id": 347,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 4,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:02.709920"
+      },
+      {
+        "id": 348,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 3,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:04.736325"
+      },
+      {
+        "id": 349,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 29,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:06.768998"
+      },
+      {
+        "id": 350,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 7,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:08.785040"
+      },
+      {
+        "id": 351,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 13,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:10.807242"
+      },
+      {
+        "id": 352,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 26,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:12.818683"
+      },
+      {
+        "id": 353,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 5,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:15.089191"
+      },
+      {
+        "id": 354,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 29,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:17.378125"
+      },
+      {
+        "id": 355,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 13,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:19.658301"
+      },
+      {
+        "id": 356,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 3,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:21.659174"
+      },
+      {
+        "id": 357,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 22,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:23.694746"
+      },
+      {
+        "id": 358,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 11,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:25.876468"
+      },
+      {
+        "id": 359,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 3,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:28.226425"
+      },
+      {
+        "id": 360,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:30.525556"
+      },
+      {
+        "id": 361,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:32.883062"
+      },
+      {
+        "id": 362,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 18,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:34.902822"
+      },
+      {
+        "id": 363,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:36.907850"
+      },
+      {
+        "id": 364,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 8,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:38.915506"
+      },
+      {
+        "id": 365,
+        "project_id": 14,
+        "kind": "MODEL_CALL_COMPLETED",
+        "payload": {
+          "request_id": "req-6ef9d5912034",
+          "purpose": "planning",
+          "provider": "",
+          "model": "",
+          "started_at": "2026-09-22T21:29:54.539565+00:00",
+          "heartbeat_at": "2026-09-22T21:32:39.151365+00:00",
+          "completed_at": "2026-09-22T21:32:40.378857+00:00",
+          "duration_ms": 165812,
+          "retry_count": 0,
+          "error_class": "",
+          "error_detail": "",
+          "streamed": false,
+          "session_id": 6
+        },
+        "created_at": "2026-09-22T21:32:40.379324"
+      },
+      {
+        "id": 366,
+        "project_id": 14,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "plan_id": 10,
+          "version": 1,
+          "supersedes": null,
+          "reason": ""
+        },
+        "created_at": "2026-09-22T21:32:40.419562"
+      },
+      {
+        "id": 367,
+        "project_id": 14,
+        "kind": "PLAN_APPROVAL_REQUIRED",
+        "payload": {
+          "plan_id": 10,
+          "gate_id": 12,
+          "generated_by": {
+            "request_id": "req-6ef9d5912034",
+            "purpose": "planning",
+            "provider": "",
+            "model": "",
+            "started_at": "2026-09-22T21:29:54.539565+00:00",
+            "heartbeat_at": "2026-09-22T21:32:39.151365+00:00",
+            "completed_at": "2026-09-22T21:32:40.378857+00:00",
+            "duration_ms": 165812,
+            "retry_count": 0,
+            "error_class": "",
+            "error_detail": ""
+          }
+        },
+        "created_at": "2026-09-22T21:32:40.447808"
+      },
+      {
+        "id": 368,
+        "project_id": 14,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "session_id": 6,
+          "plan_id": 10,
+          "version": 1,
+          "phases": 3,
+          "provider": "",
+          "model": "",
+          "duration_ms": 165812
+        },
+        "created_at": "2026-09-22T21:32:40.463226"
+      }
+    ],
+    "executions": [],
+    "execution_gate": {
+      "state": "AWAITING_APPROVAL",
+      "open_for_execution": false,
+      "label": "الخطة تنتظر اعتمادك",
+      "reason": "الخطة بانتظار اعتماد المالك",
+      "required": "",
+      "owner_action": "اعتمد الخطة أو ارفضها من بطاقة القرار"
+    },
+    "active_run": false,
+    "job": null
+  },
+  "plans_count": 0,
+  "planning_view": {
+    "project_id": 14,
+    "conversation_id": null,
+    "run_id": null,
+    "planning_session_id": 6,
+    "name": "تحقق 013.5 — خطة حقيقية",
+    "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+    "archived_at": null,
+    "status": "AWAITING_OWNER_APPROVAL",
+    "phase": null,
+    "stage": "APPROVAL",
+    "stage_labels": {
+      "GOAL": "الهدف",
+      "PLAN": "الخطة",
+      "APPROVAL": "الاعتماد",
+      "PREPARE": "التهيئة",
+      "EXECUTE": "التنفيذ",
+      "TEST": "الاختبار",
+      "REVIEW": "المراجعة",
+      "AUDIT": "التدقيق",
+      "DONE": "الاكتمال"
+    },
+    "step": null,
+    "current_phase_id": null,
+    "current_step_id": null,
+    "plan": {
+      "id": 10,
+      "version": 1,
+      "approved": false,
+      "phases": 3
+    },
+    "progress": {
+      "steps_total": 0,
+      "steps_completed": 0,
+      "steps_failed": 0,
+      "percent": 0.0,
+      "current_step": null
+    },
+    "started_at": "2026-09-22T21:29:54.499187",
+    "updated_at": "2026-09-22T21:32:40.433342",
+    "elapsed_seconds": 900.7,
+    "elapsed_s": 900.7,
+    "heartbeat_at": "2026-09-22T21:32:40.387385+00:00",
+    "last_meaningful_activity_at": "2026-09-22T21:32:40.387385+00:00",
+    "planning_silence_s": null,
+    "timeout_at": "2026-09-22T21:44:54.499187+00:00",
+    "finished_at": "2026-09-22T21:32:40.395126",
+    "provider": "nvidia",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "actual_provider": "",
+    "actual_model": "",
+    "request_id": "plan-ee97e1fb9c2d",
+    "attempt": 1,
+    "retry_count": 1,
+    "waiting_for": {
+      "kind": "owner_approval",
+      "label": "اعتماد المالك للخطة"
+    },
+    "blocking_reason": "",
+    "planning": {
+      "active": false,
+      "state": "COMPLETED",
+      "wait_phase": "DONE",
+      "waiting_for": null,
+      "retry_available": false,
+      "detail": {
+        "id": 6,
+        "project_id": 14,
+        "attempt": 1,
+        "state": "COMPLETED",
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "request_id": "plan-ee97e1fb9c2d",
+        "started_at": "2026-09-22T21:29:54.499187",
+        "heartbeat_at": "2026-09-22T21:32:40.387385+00:00",
+        "last_meaningful_activity_at": "2026-09-22T21:32:40.387385+00:00",
+        "silence_s": null,
+        "hard_deadline_at": "2026-09-22T21:44:54.499187+00:00",
+        "hard_deadline_derived_at": null,
+        "hard_timeout_s": 900.0,
+        "last_activity_at": "2026-09-22T21:32:40.387385",
+        "lease_expires_at": "2026-09-22T21:34:40.387385",
+        "finished_at": "2026-09-22T21:32:40.395126",
+        "elapsed_s": 165.9,
+        "plan_id": 10,
+        "error_class": "",
+        "error_detail": "",
+        "retry_of": null,
+        "actual_provider": "",
+        "actual_model": "",
+        "reasoning_chars": 6412
+      }
+    },
+    "wait_phase": "DONE",
+    "last_error": "",
+    "job": null,
+    "activity": {
+      "role": "",
+      "tool": "",
+      "provider": ""
+    },
+    "environment": {
+      "state": "UNAVAILABLE",
+      "coherent": {
+        "kind": "UNAVAILABLE",
+        "label": "⚠️ بيئة التنفيذ غير متاحة",
+        "detail": "لا مسار توفير يوافق السياسة على هذا المضيف — الفجوات معلنة",
+        "missing": [
+          {
+            "need": "بيئة تنفيذ معزولة فعليًا",
+            "detected": "المضيف Windows/AMD64 — ركيزة العزل غير متاحة، لا حاويات Docker، لا عامل بعيد مسجل",
+            "action": "أحد ثلاثة: (1) فعّل WSL2/Docker على هذا المضيف وأعد التجهيز، أو (2) شغّل عاملًا بعيدًا على أي Linux/WSL2: python scripts/execution_worker.py ثم سجّله من الإعدادات ← بيئات التنفيذ، أو (3) خفّض السياسة إلى توافق محلي معلن من إعدادات المشروع"
+          }
+        ]
+      },
+      "environment_id": null,
+      "worker_id": "",
+      "backend": {}
+    },
+    "backend": {},
+    "worker": null,
+    "last_event": {
+      "id": 368,
+      "project_id": 14,
+      "kind": "PLAN_CREATED",
+      "payload": {
+        "session_id": 6,
+        "plan_id": 10,
+        "version": 1,
+        "phases": 3,
+        "provider": "",
+        "model": "",
+        "duration_ms": 165812
+      },
+      "created_at": "2026-09-22T21:32:40.463226"
+    },
+    "last_successful_transition": {
+      "kind": "PLAN_CREATED",
+      "id": 368,
+      "at": "2026-09-22T21:32:40.463226",
+      "payload": {
+        "session_id": 6,
+        "plan_id": 10,
+        "version": 1,
+        "phases": 3,
+        "provider": "",
+        "model": "",
+        "duration_ms": 165812
+      }
+    },
+    "recent_events": [
+      {
+        "id": 359,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 3,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:28.226425"
+      },
+      {
+        "id": 360,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:30.525556"
+      },
+      {
+        "id": 361,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:32.883062"
+      },
+      {
+        "id": 362,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 18,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:34.902822"
+      },
+      {
+        "id": 363,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:36.907850"
+      },
+      {
+        "id": 364,
+        "project_id": 14,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 6,
+          "activity": "content_delta",
+          "chars": 8,
+          "request_id": "req-6ef9d5912034",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:32:38.915506"
+      },
+      {
+        "id": 365,
+        "project_id": 14,
+        "kind": "MODEL_CALL_COMPLETED",
+        "payload": {
+          "request_id": "req-6ef9d5912034",
+          "purpose": "planning",
+          "provider": "",
+          "model": "",
+          "started_at": "2026-09-22T21:29:54.539565+00:00",
+          "heartbeat_at": "2026-09-22T21:32:39.151365+00:00",
+          "completed_at": "2026-09-22T21:32:40.378857+00:00",
+          "duration_ms": 165812,
+          "retry_count": 0,
+          "error_class": "",
+          "error_detail": "",
+          "streamed": false,
+          "session_id": 6
+        },
+        "created_at": "2026-09-22T21:32:40.379324"
+      },
+      {
+        "id": 366,
+        "project_id": 14,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "plan_id": 10,
+          "version": 1,
+          "supersedes": null,
+          "reason": ""
+        },
+        "created_at": "2026-09-22T21:32:40.419562"
+      },
+      {
+        "id": 367,
+        "project_id": 14,
+        "kind": "PLAN_APPROVAL_REQUIRED",
+        "payload": {
+          "plan_id": 10,
+          "gate_id": 12,
+          "generated_by": {
+            "request_id": "req-6ef9d5912034",
+            "purpose": "planning",
+            "provider": "",
+            "model": "",
+            "started_at": "2026-09-22T21:29:54.539565+00:00",
+            "heartbeat_at": "2026-09-22T21:32:39.151365+00:00",
+            "completed_at": "2026-09-22T21:32:40.378857+00:00",
+            "duration_ms": 165812,
+            "retry_count": 0,
+            "error_class": "",
+            "error_detail": ""
+          }
+        },
+        "created_at": "2026-09-22T21:32:40.447808"
+      },
+      {
+        "id": 368,
+        "project_id": 14,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "session_id": 6,
+          "plan_id": 10,
+          "version": 1,
+          "phases": 3,
+          "provider": "",
+          "model": "",
+          "duration_ms": 165812
+        },
+        "created_at": "2026-09-22T21:32:40.463226"
+      }
+    ],
+    "available_actions": [
+      "run",
+      "duplicate",
+      "rename",
+      "history",
+      "archive"
+    ]
+  },
+  "session": {
+    "id": null,
+    "state": "COMPLETED",
+    "provider": null,
+    "model": null,
+    "actual_provider": null,
+    "actual_model": null,
+    "attempt": null,
+    "request_id": null,
+    "error_class": null,
+    "error_detail": null,
+    "elapsed_s": null,
+    "reasoning_chars": null,
+    "wait_phase": "DONE",
+    "phase": null
+  },
+  "verdict": "FAIL"
+}

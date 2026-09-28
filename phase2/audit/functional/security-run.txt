@@ -1,0 +1,43 @@
+Security Agent Run Test (Mock LLM)
+===================================
+Test: python -c "
+import asyncio, sys, uuid; sys.path.insert(0,'src')
+from llm import MockLLMProvider, StructuredLLM
+from factory.context.memory import SharedContextManager
+from factory.agents.security import SecurityAgent
+from factory.contracts.agent_protocol import AgentTask
+
+async def main():
+    llm = StructuredLLM(MockLLMProvider())
+    ctx = await SharedContextManager.initialize_mission('t-'+str(uuid.uuid4())[:6], 'sec')
+    agent = SecurityAgent(llm=llm, context=ctx, test_mode=False)
+    task = AgentTask(task_id='s1', task_type='security',
+        spec={'user_request': 'Scan src/ for vulnerabilities', 'target_path': 'src/'},
+        acceptance_criteria=['Returns SecurityReport'])
+    result = await agent.execute(task)
+    print('success:', result.success)
+    print('error:', result.error)
+    if result.output:
+        print('vulnerabilities_found:', result.output.vulnerabilities_found)
+        print('secrets_found:', result.output.secrets_found)
+        print('dependencies_checked:', result.output.dependencies_checked)
+        print('issues count:', len(result.output.issues))
+        for issue in result.output.issues[:5]:
+            msg = issue.get('message', issue.get('package', 'N/A'))
+            print('  -', issue.get('type', 'unknown') + ':', msg[:80])
+asyncio.run(main())
+"
+
+Result: PASS
+- success: True
+- error: None
+- vulnerabilities_found: 151
+- secrets_found: 0
+- dependencies_checked: 0
+- issues count: 151
+
+Note: Runs bandit SAST, pip-audit, and detect-secrets via subprocess. Mechanical only - no LLM calls.
+
+Exit code: 0
+
+Evidence SHA256: 6f4f1e58b2272373a56e4718aaf581040844d02719b7ff804addf2f779c8ec99 (src/factory/agents/security.py)

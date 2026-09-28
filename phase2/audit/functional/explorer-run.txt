@@ -1,0 +1,36 @@
+Explorer Agent Run Test (Mock LLM)
+==================================
+Test: python -c "
+import asyncio, sys, uuid; sys.path.insert(0,'src')
+from llm import MockLLMProvider, StructuredLLM
+from factory.context.memory import SharedContextManager
+from factory.agents.explorer import ExplorerAgent
+from factory.contracts.agent_protocol import AgentTask
+
+async def main():
+    llm = StructuredLLM(MockLLMProvider())
+    ctx = await SharedContextManager.initialize_mission('t-'+str(uuid.uuid4())[:6], 'explorer test')
+    agent = ExplorerAgent(llm=llm, context=ctx)
+    task = AgentTask(task_id='t1', task_type='explore',
+        spec={'user_request': 'Explore src/llm', 'target_path': 'src/llm'},
+        acceptance_criteria=['ExplorationReport with evidence_hash'])
+    result = await agent.execute(task)
+    print('success:', result.success)
+    print('error:', result.error)
+    if result.output:
+        print('evidence_hash:', result.output.evidence_hash)
+        print('summary:', result.output.summary[:100])
+asyncio.run(main())
+"
+
+Result: PASS
+- success: True
+- error: None
+- evidence_hash: mock_evidence_hash
+- summary: mock_summary
+
+Note: Uses MockLLMProvider which returns pre-canned responses matching ExplorationReport schema. Real NVIDIA call not required for this test.
+
+Exit code: 0
+
+Evidence SHA256: 98cd4c8ba60dea8de2bf8eaf3e5bf83f9b8d5cfce7290d6aa0739ea3540a1739 (src/factory/agents/explorer.py)

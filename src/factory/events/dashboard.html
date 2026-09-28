@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentFactory Visual Cockpit</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117; color: #e6edf3; line-height: 1.5;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+        
+        /* Header */
+        header { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid #30363d; margin-bottom: 16px;
+        }
+        h1 { font-size: 1.5rem; font-weight: 600; }
+        .status-badge { 
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+        }
+        .status-badge.connected { background: #1f6feb; color: white; }
+        .status-badge.disconnected { background: #da3633; color: white; }
+        .status-badge.mock { background: #d29922; color: #0d1117; }
+        .status-dot { 
+            width: 8px; height: 8px; border-radius: 50%;
+            background: currentColor; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Layout */
+        .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; }
+        @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+        
+        /* Panels */
+        .panel { 
+            background: #161b22; border: 1px solid #30363d; 
+            border-radius: 8px; overflow: hidden;
+        }
+        .panel-header { 
+            padding: 12px 16px; border-bottom: 1px solid #30363d;
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: 600; font-size: 0.875rem;
+        }
+        .panel-body { padding: 12px; max-height: 70vh; overflow-y: auto; }
+        
+        /* Mission Info */
+        .mission-info { display: flex; flex-direction: column; gap: 8px; }
+        .info-row { display: flex; justify-content: space-between; font-size: 0.875rem; }
+        .info-label { color: #8b949e; }
+        .info-value { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; }
+        .state-current { 
+            padding: 8px 12px; border-radius: 6px; text-align: center; 
+            font-weight: 600; font-size: 1.1rem; text-transform: uppercase;
+        }
+        
+        /* State History */
+        .state-list { display: flex; flex-direction: column; gap: 6px; }
+        .state-item { 
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            background: #0d1117; border-radius: 6px; border: 1px solid #21262d;
+            font-size: 0.8rem;
+        }
+        .state-item.current { border-color: #1f6feb; }
+        .state-arrow { color: #58a6ff; font-family: monospace; }
+        .state-from { color: #8b949e; }
+        .state-to { font-weight: 600; }
+        .state-time { margin-left: auto; color: #6e7681; font-size: 0.7rem; }
+        
+        /* Event Stream */
+        .event-stream { display: flex; flex-direction: column-reverse; gap: 4px; }
+        .event-item { 
+            padding: 10px 12px; background: #0d1117; border-radius: 6px;
+            border: 1px solid #21262d; font-size: 0.75rem;
+            transition: border-color 0.2s;
+        }
+        .event-item:hover { border-color: #30363d; }
+        .event-header { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+        .event-type { 
+            padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .event-type.state_transition { background: #1f6feb; color: white; }
+        .event-type.agent_completion { background: #238636; color: white; }
+        .event-type.human_approval_request { background: #d29922; color: #0d1117; }
+        .event-type.evidence_recorded { background: #8957e5; color: white; }
+        .event-agent { color: #58a6ff; font-family: monospace; }
+        .event-time { margin-left: auto; color: #6e7681; font-size: 0.65rem; }
+        .event-detail { 
+            display: flex; gap: 12px; flex-wrap: wrap; font-family: monospace; font-size: 0.7rem;
+            color: #8b949e;
+        }
+        .event-detail span { background: #0d1117; padding: 2px 6px; border-radius: 3px; }
+        .event-hash { color: #d29922; word-break: break-all; }
+        
+        /* Empty state */
+        .empty { text-align: center; color: #6e7681; padding: 40px 20px; font-size: 0.875rem; }
+        
+        /* Controls */
+        .controls { display: flex; gap: 8px; }
+        button { 
+            padding: 6px 12px; border: 1px solid #30363d; background: #21262d;
+            color: #e6edf3; border-radius: 6px; cursor: pointer; font-size: 0.75rem;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        button:hover { background: #30363d; border-color: #484f58; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.primary { background: #1f6feb; border-color: #1f6feb; }
+        button.primary:hover { background: #388bfd; border-color: #388bfd; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AgentFactory Visual Cockpit</h1>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="status-badge mock">MOCK MODE</span>
+                <span class="status-badge disconnected" id="conn-status">
+                    <span class="status-dot"></span> Disconnected
+                </span>
+            </div>
+        </header>
+        
+        <div class="grid">
+            <!-- Left Panel: Mission State -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Mission State</span>
+                    <button onclick="clearEvents()" title="Clear event stream">Clear</button>
+                </div>
+                <div class="panel-body">
+                    <div class="mission-info" id="mission-info">
+                        <div class="empty">No active mission. Start one from CLI.</div>
+                    </div>
+                    
+                    <div style="margin-top: 16px;">
+                        <div class="panel-header" style="padding: 8px 0; border: none;">State History</div>
+                        <div class="state-list" id="state-history">
+                            <div class="empty">Waiting for state transitions...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Event Stream -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span>Event Stream</span>
+                    <div class="controls">
+                        <button onclick="togglePause()" id="pause-btn">Pause</button>
+                        <button onclick="scrollToBottom()">↓ Bottom</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="event-stream" id="event-stream">
+                        <div class="empty">Connecting to WebSocket...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Config - read port from URL query param, default to 8765
+        const urlParams = new URLSearchParams(window.location.search);
+        const WS_PORT = urlParams.get('port') || '8765';
+        const WS_URL = `ws://127.0.0.1:${WS_PORT}`;
+        const MAX_EVENTS = 200;
+        
+        // State
+        let ws = null;
+        let paused = false;
+        let eventCount = 0;
+        let currentMissionId = null;
+        let statesSeen = [];
+        
+        // DOM elements
+        const connStatus = document.getElementById('conn-status');
+        const missionInfo = document.getElementById('mission-info');
+        const stateHistory = document.getElementById('state-history');
+        const eventStream = document.getElementById('event-stream');
+        const pauseBtn = document.getElementById('pause-btn');
+        
+        // Connect to WebSocket
+        function connect() {
+            try {
+                ws = new WebSocket(WS_URL);
+                
+                ws.onopen = () => {
+                    connStatus.className = 'status-badge connected';
+                    connStatus.innerHTML = '<span class="status-dot"></span> Connected';
+                    eventStream.innerHTML = '<div class="empty">Waiting for events...</div>';
+                };
+                
+                ws.onmessage = (event) => {
+                    if (paused) return;
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'welcome') {
+                            console.log('Welcome:', msg.message);
+                        } else if (msg.type === 'event') {
+                            handleEvent(msg.data);
+                        }
+                    } catch (e) {
+                        console.error('Parse error:', e);
+                    }
+                };
+                
+                ws.onclose = () => {
+                    connStatus.className = 'status-badge disconnected';
+                    connStatus.innerHTML = '<span class="status-dot"></span> Disconnected';
+                    setTimeout(connect, 3000); // Reconnect
+                };
+                
+                ws.onerror = (err) => {
+                    console.error('WS Error:', err);
+                };
+            } catch (e) {
+                console.error('Connection failed:', e);
+                setTimeout(connect, 3000);
+            }
+        }
+        
+        // Handle incoming event
+        function handleEvent(e) {
+            eventCount++;
+            
+            // Track mission
+            if (!currentMissionId && e.mission_id) {
+                currentMissionId = e.mission_id;
+                updateMissionInfo(e);
+            }
+            
+            // Render event
+            renderEvent(e);
+            
+            // Track state transitions
+            if (e.event_type === 'state_transition' && e.state_to) {
+                trackState(e);
+            }
+        }
+        
+        // Render single event
+        function renderEvent(e) {
+            // Remove empty placeholder
+            const empty = eventStream.querySelector('.empty');
+            if (empty) empty.remove();
+            
+            const div = document.createElement('div');
+            div.className = 'event-item';
+            
+            const time = new Date(e.timestamp).toLocaleTimeString();
+            const typeClass = e.event_type;
+            const agent = e.agent_type ? `<span class="event-agent">agent: ${e.agent_type}</span>` : '';
+            const hash = e.evidence_hash ? `<span class="event-hash">hash: ${e.evidence_hash.slice(0,16)}...</span>` : '';
+            const fromTo = (e.state_from && e.state_to) 
+                ? `<span class="event-detail"><span>${e.state_from} → ${e.state_to}</span></span>` 
+                : '';
+            
+            div.innerHTML = `
+                <div class="event-header">
+                    <span class="event-type ${typeClass}">${e.event_type.replace('_', ' ')}</span>
+                    ${agent}
+                    <span class="event-time">${time}</span>
+                </div>
+                <div class="event-detail">
+                    ${fromTo}
+                    ${hash}
+                    <span>source: ${e.source}</span>
+                </div>
+            `;
+            
+            eventStream.insertBefore(div, eventStream.firstChild);
+            
+            // Limit events
+            while (eventStream.children.length > MAX_EVENTS) {
+                eventStream.removeChild(eventStream.lastChild);
+            }
+        }
+        
+        // Track state transitions
+        function trackState(e) {
+            const state = e.state_to;
+            if (!statesSeen.includes(state)) {
+                statesSeen.push(state);
+            }
+            
+            // Update current state display
+            const existing = document.getElementById('current-state');
+            if (existing) existing.remove();
+            
+            const stateDiv = document.createElement('div');
+            stateDiv.id = 'current-state';
+            stateDiv.className = 'state-current';
+            stateDiv.style.background = getStateColor(state);
+            stateDiv.textContent = state;
+            missionInfo.insertBefore(stateDiv, missionInfo.firstChild);
+            
+            // Add to history
+            const empty = stateHistory.querySelector('.empty');
+            if (empty) empty.remove();
+            
+            const time = new Date(e.timestamp).toLocaleTimeString();
+            const item = document.createElement('div');
+            item.className = 'state-item current';
+            item.innerHTML = `
+                <span class="state-from">${e.state_from || '—'}</span>
+                <span class="state-arrow">→</span>
+                <span class="state-to">${state}</span>
+                <span class="state-time">${time}</span>
+            `;
+            stateHistory.insertBefore(item, stateHistory.firstChild);
+            
+            // Remove current class from others after delay
+            setTimeout(() => item.classList.remove('current'), 500);
+        }
+        
+        function getStateColor(state) {
+            const colors = {
+                'IDLE': '#30363d', 'LISTENING': '#1f6feb', 'EXPLORING': '#0969da',
+                'ANALYZING': '#8957e5', 'PLANNING': '#a371f7', 'DESIGNING': '#d2a8ff',
+                'REVIEWING': '#d29922', 'AWAITING_APPROVAL': '#f77f00', 'EXECUTING': '#3fb950',
+                'VERIFYING': '#2ea043', 'SECURITY_CHECK': '#238636', 'COMPLETED': '#238636',
+                'REVISING': '#f77f00', 'BLOCKED': '#da3633', 'ABORTED': '#da3633', 'ESCALATED': '#d29922'
+            };
+            return colors[state] || '#30363d';
+        }
+        
+        function updateMissionInfo(e) {
+            missionInfo.innerHTML = `
+                <div class="info-row">
+                    <span class="info-label">Mission ID</span>
+                    <span class="info-value">${e.mission_id}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Events Received</span>
+                    <span class="info-value">${eventCount}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">States Completed</span>
+                    <span class="info-value">${statesSeen.length}</span>
+                </div>
+            `;
+        }
+        
+        // Controls
+        function togglePause() {
+            paused = !paused;
+            pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+            pauseBtn.classList.toggle('primary', paused);
+        }
+        
+        function scrollToBottom() {
+            eventStream.scrollTop = eventStream.scrollHeight;
+        }
+        
+        function clearEvents() {
+            eventStream.innerHTML = '<div class="empty">Event stream cleared. Waiting for new events...</div>';
+            eventCount = 0;
+            document.getElementById('current-state')?.remove();
+            stateHistory.innerHTML = '<div class="empty">Waiting for state transitions...</div>';
+            statesSeen = [];
+            missionInfo.innerHTML = '<div class="empty">No active mission. Start one from CLI.</div>';
+            currentMissionId = null;
+        }
+        
+        // Start
+        connect();
+    </script>
+</body>
+</html>

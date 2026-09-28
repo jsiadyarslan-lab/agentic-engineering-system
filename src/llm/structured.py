@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -147,8 +148,8 @@ class StructuredLLM:
         
         for attempt in range(self.retry_policy.max_retries + 1):
             try:
-                response = await self.provider.chat(messages, **kwargs)
-                return parse_structured_output(response.content, output_model)
+                # Use provider's structured_chat which handles schema injection
+                return await self.provider.structured_chat(messages, output_model, **kwargs)
             
             except StructuredOutputError as e:
                 last_error = e

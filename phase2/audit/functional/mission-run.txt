@@ -1,0 +1,22 @@
+End-to-End Mission Test (Test Mode - Mock LLM)
+==============================================
+Test: python test_full_real.py
+
+Result: PASS
+- STATE: COMPLETED
+- VERIFICATION: True
+- EVIDENCE_COUNT: 16
+- HELLO_EXISTS: True
+- HELLO_CONTENT: print("hello world")
+- human_decision: HumanDecision(decision_id='...', mission_id='...', decision_type=APPROVE, approved=True, feedback='Auto-approved in test mode', reviewer='test (auto-approve)')
+
+State transitions observed:
+LISTENING -> EXPLORING -> ANALYZING -> PLANNING -> DESIGNING -> REVIEWING -> AWAITING_APPROVAL -> EXECUTING -> VERIFYING -> SECURITY_CHECK -> COMPLETED
+
+All 8 agents executed successfully with mock LLM.
+Human approval gate auto-approved in test_mode.
+Evidence hashes: 16 distinct hashes recorded.
+
+Exit code: 0
+
+Evidence SHA256: 9aba82e8d039b3b8e20fca08c2e51f10907c369bbb3da568177074ab78787202 (src/factory/orchestrator.py)

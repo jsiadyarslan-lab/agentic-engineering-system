@@ -1,0 +1,2479 @@
+{
+  "started_at": "2026-09-22T21:54:39.532621+00:00",
+  "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+  "roles": {
+    "thinker": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "reviewer": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "implementer": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "verifier": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "arbiter": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    },
+    "chat": {
+      "provider": "nvidia",
+      "configuration": "default",
+      "model": "deepseek-ai/deepseek-v4.1-flash"
+    }
+  },
+  "declared_provider": "nvidia",
+  "declared_model": "deepseek-ai/deepseek-v4.1-flash",
+  "project_id": 15,
+  "plan_start": {
+    "status": 200,
+    "body": {
+      "started": true,
+      "session": {
+        "id": 7,
+        "project_id": 15,
+        "attempt": 1,
+        "state": "GENERATING",
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "request_id": "plan-f973fa874df9",
+        "started_at": "2026-09-22T21:54:39.693153",
+        "heartbeat_at": "2026-09-22T21:54:39.693153+00:00",
+        "last_meaningful_activity_at": "2026-09-22T21:54:39.693153+00:00",
+        "silence_s": 0.0,
+        "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+        "hard_deadline_derived_at": null,
+        "hard_timeout_s": 900.0,
+        "last_activity_at": "2026-09-22T21:54:39.693153",
+        "lease_expires_at": "2026-09-22T21:56:39.693153",
+        "finished_at": null,
+        "elapsed_s": 0.0,
+        "plan_id": null,
+        "error_class": "",
+        "error_detail": "",
+        "retry_of": null,
+        "actual_provider": "",
+        "actual_model": "",
+        "reasoning_chars": 0
+      },
+      "project": {
+        "id": 15,
+        "name": "تحقق 013.5 — خطة حقيقية",
+        "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+        "status": "PLANNING",
+        "created_at": "2026-09-22T21:54:39.664715",
+        "updated_at": "2026-09-22T21:54:39.703149",
+        "current_plan_id": null,
+        "current_phase_id": null,
+        "current_step_id": null,
+        "stop_requested": false,
+        "completion_state": "",
+        "last_error": "",
+        "execution_policy": "STRICT_ISOLATED",
+        "archived_at": null,
+        "original_id": null
+      }
+    }
+  },
+  "poll_series": [
+    {
+      "t": 0.4,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "CONNECTING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 0.1,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:54:39.693153+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:54:39.693153+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:54:39.693153",
+          "lease_expires_at": "2026-09-22T21:56:39.693153",
+          "finished_at": null,
+          "elapsed_s": 0.0,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 0
+        }
+      }
+    },
+    {
+      "t": 5.4,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.2,
+      "elapsed_seconds": 5.2,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.2,
+          "reasoning_chars": 410,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:54:44.770861+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:54:44.770861+00:00",
+          "silence_s": 0.2,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:54:44.770861",
+          "lease_expires_at": "2026-09-22T21:56:44.770861",
+          "finished_at": null,
+          "elapsed_s": 5.2,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 410
+        }
+      }
+    },
+    {
+      "t": 10.4,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 10.2,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 804,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:54:49.742117+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:54:49.611873+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:54:49.611873",
+          "lease_expires_at": "2026-09-22T21:56:49.611873",
+          "finished_at": null,
+          "elapsed_s": 10.2,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 804
+        }
+      }
+    },
+    {
+      "t": 15.5,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.4,
+      "elapsed_seconds": 15.3,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.4,
+          "reasoning_chars": 981,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:54:54.750976+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:54:54.617655+00:00",
+          "silence_s": 0.4,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:54:54.617655",
+          "lease_expires_at": "2026-09-22T21:56:54.617655",
+          "finished_at": null,
+          "elapsed_s": 15.3,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 981
+        }
+      }
+    },
+    {
+      "t": 20.5,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 20.3,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 1170,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:54:59.757058+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:54:59.703583+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:54:59.703583",
+          "lease_expires_at": "2026-09-22T21:56:59.703583",
+          "finished_at": null,
+          "elapsed_s": 20.3,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 1170
+        }
+      }
+    },
+    {
+      "t": 25.5,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 25.3,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 1295,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:04.771012+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:04.758285+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:04.758285",
+          "lease_expires_at": "2026-09-22T21:57:04.758285",
+          "finished_at": null,
+          "elapsed_s": 25.3,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 1295
+        }
+      }
+    },
+    {
+      "t": 30.5,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 30.4,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 1696,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:09.782848+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:09.764069+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:09.764069",
+          "lease_expires_at": "2026-09-22T21:57:09.764069",
+          "finished_at": null,
+          "elapsed_s": 30.4,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 1696
+        }
+      }
+    },
+    {
+      "t": 35.5,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.4,
+      "elapsed_seconds": 35.4,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.4,
+          "reasoning_chars": 1781,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:14.800907+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:14.636551+00:00",
+          "silence_s": 0.4,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:14.636551",
+          "lease_expires_at": "2026-09-22T21:57:14.636551",
+          "finished_at": null,
+          "elapsed_s": 35.4,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 1781
+        }
+      }
+    },
+    {
+      "t": 40.6,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 40.4,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2083,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:20.068937+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:20.068937+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:20.068937",
+          "lease_expires_at": "2026-09-22T21:57:20.068937",
+          "finished_at": null,
+          "elapsed_s": 40.4,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2083
+        }
+      }
+    },
+    {
+      "t": 45.6,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 45.4,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:25.074177+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:25.074177+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:25.074177",
+          "lease_expires_at": "2026-09-22T21:57:25.074177",
+          "finished_at": null,
+          "elapsed_s": 45.4,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 50.6,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 50.5,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:29.893828+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:29.893828+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:29.893828",
+          "lease_expires_at": "2026-09-22T21:57:29.893828",
+          "finished_at": null,
+          "elapsed_s": 50.5,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 55.7,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.1,
+      "elapsed_seconds": 55.5,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.1,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:35.104568+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:35.104568+00:00",
+          "silence_s": 0.1,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:35.104568",
+          "lease_expires_at": "2026-09-22T21:57:35.104568",
+          "finished_at": null,
+          "elapsed_s": 55.5,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 60.8,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 60.5,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:40.196961+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:40.196961+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:40.196961",
+          "lease_expires_at": "2026-09-22T21:57:40.196961",
+          "finished_at": null,
+          "elapsed_s": 60.5,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 65.8,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.2,
+      "elapsed_seconds": 65.6,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.2,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:45.106536+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:45.106536+00:00",
+          "silence_s": 0.2,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:45.106536",
+          "lease_expires_at": "2026-09-22T21:57:45.106536",
+          "finished_at": null,
+          "elapsed_s": 65.6,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 70.8,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 70.7,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:50.312602+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:50.312602+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:50.312602",
+          "lease_expires_at": "2026-09-22T21:57:50.312602",
+          "finished_at": null,
+          "elapsed_s": 70.7,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 75.9,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 75.7,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:55:55.373246+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:55:55.373246+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:55:55.373246",
+          "lease_expires_at": "2026-09-22T21:57:55.373246",
+          "finished_at": null,
+          "elapsed_s": 75.7,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 80.9,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.1,
+      "elapsed_seconds": 80.7,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.1,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:00.382860+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:00.382860+00:00",
+          "silence_s": 0.1,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:00.382860",
+          "lease_expires_at": "2026-09-22T21:58:00.382860",
+          "finished_at": null,
+          "elapsed_s": 80.7,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 85.9,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.4,
+      "elapsed_seconds": 85.8,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.4,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:05.072187+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:05.072187+00:00",
+          "silence_s": 0.4,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:05.072187",
+          "lease_expires_at": "2026-09-22T21:58:05.072187",
+          "finished_at": null,
+          "elapsed_s": 85.8,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 91.0,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.4,
+      "elapsed_seconds": 90.8,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.4,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:10.111961+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:10.111961+00:00",
+          "silence_s": 0.4,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:10.111961",
+          "lease_expires_at": "2026-09-22T21:58:10.111961",
+          "finished_at": null,
+          "elapsed_s": 90.8,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 96.0,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 95.8,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:15.495040+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:15.495040+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:15.495040",
+          "lease_expires_at": "2026-09-22T21:58:15.495040",
+          "finished_at": null,
+          "elapsed_s": 95.8,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 101.0,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.4,
+      "elapsed_seconds": 100.8,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.4,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:20.173836+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:20.173836+00:00",
+          "silence_s": 0.4,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:20.173836",
+          "lease_expires_at": "2026-09-22T21:58:20.173836",
+          "finished_at": null,
+          "elapsed_s": 100.8,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 106.1,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 105.9,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:25.555601+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:25.555601+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:25.555601",
+          "lease_expires_at": "2026-09-22T21:58:25.555601",
+          "finished_at": null,
+          "elapsed_s": 105.9,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 111.1,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.3,
+      "elapsed_seconds": 110.9,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.3,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:30.302022+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:30.302022+00:00",
+          "silence_s": 0.3,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:30.302022",
+          "lease_expires_at": "2026-09-22T21:58:30.302022",
+          "finished_at": null,
+          "elapsed_s": 110.9,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 116.1,
+      "project_status": "PLANNING",
+      "stage": "PLAN",
+      "phase": null,
+      "wait_phase": "REASONING",
+      "planning_state": "GENERATING",
+      "planning_silence_s": 0.0,
+      "elapsed_seconds": 115.9,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "",
+      "actual_model": "",
+      "waiting_for": {
+        "kind": "model",
+        "label": "استدعاء نموذج التخطيط",
+        "detail": {
+          "kind": "model",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "attempt": 1,
+          "silence_s": 0.0,
+          "reasoning_chars": 2188,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00"
+        },
+        "session": {
+          "id": 7,
+          "project_id": 15,
+          "attempt": 1,
+          "state": "GENERATING",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "request_id": "plan-f973fa874df9",
+          "started_at": "2026-09-22T21:54:39.693153",
+          "heartbeat_at": "2026-09-22T21:56:35.597855+00:00",
+          "last_meaningful_activity_at": "2026-09-22T21:56:35.597855+00:00",
+          "silence_s": 0.0,
+          "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+          "hard_deadline_derived_at": null,
+          "hard_timeout_s": 900.0,
+          "last_activity_at": "2026-09-22T21:56:35.597855",
+          "lease_expires_at": "2026-09-22T21:58:35.597855",
+          "finished_at": null,
+          "elapsed_s": 115.9,
+          "plan_id": null,
+          "error_class": "",
+          "error_detail": "",
+          "retry_of": null,
+          "actual_provider": "",
+          "actual_model": "",
+          "reasoning_chars": 2188
+        }
+      }
+    },
+    {
+      "t": 121.2,
+      "project_status": "AWAITING_OWNER_APPROVAL",
+      "stage": "APPROVAL",
+      "phase": null,
+      "wait_phase": "DONE",
+      "planning_state": "COMPLETED",
+      "planning_silence_s": null,
+      "elapsed_seconds": 121.0,
+      "provider": "nvidia",
+      "model": "deepseek-ai/deepseek-v4.1-flash",
+      "actual_provider": "nvidia",
+      "actual_model": "deepseek-ai/deepseek-v4.1-flash",
+      "waiting_for": {
+        "kind": "owner_approval",
+        "label": "اعتماد المالك للخطة"
+      }
+    }
+  ],
+  "terminal_poll": {
+    "t": 121.2,
+    "project_status": "AWAITING_OWNER_APPROVAL",
+    "stage": "APPROVAL",
+    "phase": null,
+    "wait_phase": "DONE",
+    "planning_state": "COMPLETED",
+    "planning_silence_s": null,
+    "elapsed_seconds": 121.0,
+    "provider": "nvidia",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "actual_provider": "nvidia",
+    "actual_model": "deepseek-ai/deepseek-v4.1-flash",
+    "waiting_for": {
+      "kind": "owner_approval",
+      "label": "اعتماد المالك للخطة"
+    }
+  },
+  "total_seconds": 121.2,
+  "final_project": {
+    "id": 15,
+    "name": "تحقق 013.5 — خطة حقيقية",
+    "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+    "status": "AWAITING_OWNER_APPROVAL",
+    "created_at": "2026-09-22T21:54:39.664715",
+    "updated_at": "2026-09-22T21:56:36.965772",
+    "current_plan_id": 11,
+    "current_phase_id": null,
+    "current_step_id": null,
+    "stop_requested": false,
+    "completion_state": "",
+    "last_error": "",
+    "execution_policy": "STRICT_ISOLATED",
+    "archived_at": null,
+    "original_id": null,
+    "plan": {
+      "id": 11,
+      "project_id": 15,
+      "version": 1,
+      "objective": "بناء لوحة متابعة مهام داخلية كواجهة واحدة (ملفات ثابتة داخل مساحة العمل) تعرض المهام المتأخرة، تُبرزها بصريًا، وتُنبّه المالك داخل الواجهة نفسها عبر شريط/شارة تنبيه، دون أي تكامل خارجي (لا شبكة، لا بريد، لا واجهات برمجية خارجية).",
+      "assumptions": [
+        "التنفيذ يتم بكتابة ملفات فقط (HTML/CSS/JS/JSON/MD) داخل مساحة عمل معزولة، بدون تنفيذ أوامر نظام.",
+        "البيانات مصدرها ملف محلي واحد data/tasks.json (لا قاعدة بيانات ولا مصدر خارجي).",
+        "التنبيه محلي داخل الواجهة (بانر/شارة/عدّاد)، ويجوز استخدام التخزين المحلي في المتصفح لحالة الإخفاء فقط.",
+        "الحقول الدنيا للمهمة: id, title, owner, due_date, status.",
+        "تعريف 'متأخرة' يُحدَّد في وثيقة المتطلبات ويُطبَّق في الكود بنفس التعريف."
+      ],
+      "acceptance_criteria": [
+        "الملفات التالية موجودة: index.html, styles.css, app.js, data/tasks.json, docs/requirements.md, docs/schema.md, verification/evidence.md, README.md.",
+        "data/tasks.json صالح كـ JSON ويحتوي على 3 مهام على الأقل: واحدة متأخرة، وواحدة قريبة الاستحقاق، وواحدة مكتملة.",
+        "app.js يحسب قائمة المتأخرات ويحدّث عنصر واجهة بمعرّف ثابت (مثال: id=\"overdue-count\") بعددها.",
+        "عند وجود مهمة متأخرة واحدة على الأقل، يظهر عنصر التنبيه ذو المعرّف الثابت (مثال: id=\"alert-banner\") بحالة مرئية، ويُخفى عند غياب المتأخرات.",
+        "docs/requirements.md يحتوي على تعريف حرفي لكلمة 'متأخرة' قابل للاقتباس في الكود.",
+        "verification/evidence.md يسرد فحوصات ميكانيكية (اسم ملف + سلسلة نصية متوقعة) لكل معيار قبول أعلاه."
+      ],
+      "phases": [
+        {
+          "title": "المرحلة 1: تثبيت المتطلبات ونموذج البيانات",
+          "objective": "تعريف دقيق لمفهوم التأخر ولحقول المهمة، وإنشاء ملف بيانات محلي مطابق للمخطط.",
+          "acceptance_criteria": [
+            "docs/requirements.md و docs/schema.md و data/tasks.json موجودة.",
+            "docs/schema.md يعدد الحقول وأنواعها الإلزامية.",
+            "data/tasks.json يطابق المخطط ويغطي الحالات الثلاث المطلوبة."
+          ],
+          "steps": [
+            {
+              "objective": "كتابة وثيقة المتطلبات مع تعريف حرفي لـ 'متأخرة' وقواعد التنبيه الداخلي.",
+              "input": "هدف المالك: لوحة واحدة للمهام المتأخرة مع تنبيه للمالك بلا تكامل خارجي.",
+              "expected_output": "ملف docs/requirements.md يحتوي أقسامًا: الهدف، النطاق، خارج النطاق، تعريف المتأخرة، قواعد التنبيه، معايير القبول.",
+              "acceptance_criteria": [
+                "الملف docs/requirements.md موجود.",
+                "يحتوي على السلسلة الحرفية 'متأخرة:' متبوعة بتعريف يعتمد على due_date و status.",
+                "يحتوي على قسم يذكر صراحة 'خارج النطاق' ويشمل 'لا تكامل خارجي'."
+              ],
+              "dependencies": []
+            },
+            {
+              "objective": "تعريف مخطط المهمة في وثيقة مستقلة.",
+              "input": "تعريف المتأخرة من docs/requirements.md.",
+              "expected_output": "ملف docs/schema.md يحتوي جدول حقول: id (string), title (string), owner (string), due_date (ISO date), status (enum: open|done), priority (اختياري).",
+              "acceptance_criteria": [
+                "الملف docs/schema.md موجود.",
+                "يذكر الحقول الخمسة الإلزامية بأسمائها الحرفية.",
+                "يحدد قيم status المسموحة حرفيًا: open و done."
+              ],
+              "dependencies": [
+                "docs/requirements.md"
+              ]
+            },
+            {
+              "objective": "إنشاء ملف البيانات المحلي ببيانات تجريبية تغطي الحالات الثلاث.",
+              "input": "docs/schema.md.",
+              "expected_output": "ملف data/tasks.json صالح كـ JSON يحتوي مصفوفة tasks فيها 3 مهام على الأقل: واحدة status=open وتاريخها ماضٍ، وواحدة status=open وتاريخها قريب، وواحدة status=done.",
+              "acceptance_criteria": [
+                "الملف data/tasks.json موجود ويبدأ بـ '{' وينتهي بـ '}'.",
+                "يحتوي على 3 قيم مختلفة على الأقل للمفتاح \"id\".",
+                "يحتوي على السلسلة \"status\": \"open\" والسلسلة \"status\": \"done\"."
+              ],
+              "dependencies": [
+                "docs/schema.md"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "المرحلة 2: بناء الواجهة الواحدة ومنطق التنبيه الداخلي",
+          "objective": "إنشاء صفحة واحدة تعرض المهام وتُبرز المتأخرات وتُظهر تنبيهًا داخليًا للمالك.",
+          "acceptance_criteria": [
+            "index.html و styles.css و app.js موجودة ومترابطة عبر مسارات محلية نسبية.",
+            "الواجهة تُحمّل data/tasks.json محليًا وتصنّف المهام إلى: متأخرة / قريبة الاستحقاق / مكتملة.",
+            "عناصر المعرّفات الثابتة (overdue-count, alert-banner, task-list) موجودة وتُحدَّث عبر app.js."
+          ],
+          "steps": [
+            {
+              "objective": "بناء هيكل الصفحة الواحدة وتنسيقها البصري.",
+              "input": "docs/requirements.md.",
+              "expected_output": "index.html يحتوي عناصر بمعرّفات ثابتة: alert-banner نصيًا في الأعلى، overdue-count، task-list؛ وstyles.css ينسّق حالات: overdue / upcoming / done بألوان متمايزة.",
+              "acceptance_criteria": [
+                "index.html موجود ويحتوي على السلسلة id=\"alert-banner\" و id=\"overdue-count\" و id=\"task-list\".",
+                "index.html يشير إلى styles.css و app.js بمسارات نسبية.",
+                "styles.css موجود ويحتوي على الأصناف: .status-overdue و .status-upcoming و .status-done."
+              ],
+              "dependencies": [
+                "docs/requirements.md"
+              ]
+            },
+            {
+              "objective": "تنفيذ منطق تحميل البيانات والتصنيف وحساب عدد المتأخرات.",
+              "input": "data/tasks.json + docs/schema.md.",
+              "expected_output": "app.js يحتوي دالة تصنيف (classify) تطبق تعريف المتأخرة حرفيًا، وتحدّث #overdue-count و #task-list.",
+              "acceptance_criteria": [
+                "app.js موجود ويحتوي على السلسلة 'tasks.json' لمسار التحميل المحلي.",
+                "app.js يحتوي على تحديث textContent للعنصر overdue-count.",
+                "app.js يضيف صنفًا من الأصناف الثلاثة على كل عنصر مهمة معروض."
+              ],
+              "dependencies": [
+                "index.html",
+                "data/tasks.json"
+              ]
+            },
+            {
+              "objective": "تنفيذ التنبيه الداخلي للمالك وإخفاؤه/تأكيده محليًا.",
+              "input": "app.js الحالي.",
+              "expected_output": "منطق يُظهر #alert-banner عند وجود متأخرات ويخفيه عند عدم وجودها، مع زر 'تم الاطلاع' يخزّن حالة الإخفاء في localStorage.",
+              "acceptance_criteria": [
+                "app.js يحتوي على تعديل style.display أو إضافة/إزالة صنف على العنصر alert-banner.",
+                "app.js يحتوي على السلسلة 'localStorage' لتخزين حالة الاطلاع.",
+                "index.html يحتوي على عنصر زر بمعرّف id=\"dismiss-alert\"."
+              ],
+              "dependencies": [
+                "app.js"
+              ]
+            }
+          ]
+        },
+        {
+          "title": "المرحلة 3: التحقق بالأدلة وتوثيق التشغيل",
+          "objective": "إنتاج أدلة فحص ميكانيكية وتوثيق التشغيل وربط النتائج بمعايير القبول.",
+          "acceptance_criteria": [
+            "verification/evidence.md يربط كل معيار قبول بملف وسلسلة نصية متوقعة.",
+            "README.md يشرح التشغيل المحلي وسيناريو اختبار يدوي للتنبيه.",
+            "تقرير مطابقة نهائي في evidence.md يذكر صراحة أي معيار غير محقق إن وُجد."
+          ],
+          "steps": [
+            {
+              "objective": "توليد قائمة فحوصات ميكانيكية لكل معيار قبول.",
+              "input": "جميع ملفات المشروع المنتجة في المرحلتين 1 و2.",
+              "expected_output": "verification/evidence.md يحتوي جدولًا: المعيار | الملف | السلسلة/الشرط المفحوص | الناتج.",
+              "acceptance_criteria": [
+                "الملف verification/evidence.md موجود.",
+                "يحتوي على صفوف لعناصر المعرّفات الثلاثة: alert-banner, overdue-count, task-list.",
+                "يحتوي على صف يفحص وجود \"status\": \"open\" داخل data/tasks.json."
+              ],
+              "dependencies": [
+                "index.html",
+                "app.js",
+                "data/tasks.json"
+              ]
+            },
+            {
+              "objective": "توثيق التشغيل وسيناريو الاختبار اليدوي.",
+              "input": "index.html و app.js و data/tasks.json.",
+              "expected_output": "README.md يشرح طريقة الفتح المحلي، وخطوات اختبار: وجود مهمة متأخرة => ظهور التنبيه، وحذف/إكمال المتأخرة => اختفاء التنبيه.",
+              "acceptance_criteria": [
+                "الملف README.md موجود.",
+                "يحتوي على قسم 'خطوات الاختبار' بثلاث خطوات مرقّمة على الأقل.",
+                "يذكر صراحة أن اللوحة لا تتصل بأي خدمة خارجية."
+              ],
+              "dependencies": [
+                "verification/evidence.md"
+              ]
+            },
+            {
+              "objective": "إصدار تقرير مطابقة نهائي مقابل معايير القبول.",
+              "input": "verification/evidence.md و README.md.",
+              "expected_output": "قسم في verification/evidence.md بعنوان 'المطابقة النهائية' يسرد كل معيار قبول من الخطة مع حالة: محقق/غير محقق + سبب.",
+              "acceptance_criteria": [
+                "verification/evidence.md يحتوي على السلسلة 'المطابقة النهائية'.",
+                "يحتوي على كلمتي 'محقق' و'غير محقق' كمسمّيين للحالات.",
+                "عدد الصفوف في قسم المطابقة لا يقل عن عدد معايير القبول العليا في هذه الخطة."
+              ],
+              "dependencies": [
+                "verification/evidence.md",
+                "README.md"
+              ]
+            }
+          ]
+        }
+      ],
+      "risks": [
+        "غموض تعريف 'متأخرة' (مقارنة بالتاريخ فقط أم بالتاريخ والساعة) قد يسبب اختلافًا بين الوثيقة والكود.",
+        "تحميل data/tasks.json عبر fetch قد يفشل عند الفتح ببروتوكول file:// في بعض المتصفحات.",
+        "عدم وجود بيانات متأخرة في ملف البيانات يجعل التنبيه غير قابل للاختبار بصريًا.",
+        "الاعتماد على localStorage قد يعطي نتائج مختلفة بين جلسات المتصفح أثناء الفحص.",
+        "انحراف النطاق نحو تكاملات خارجية (بريد/إشعارات نظام) رغم منعها صراحة."
+      ],
+      "dependencies": [
+        "بيانات مهام محلية جاهزة أو مولّدة تجريبيًا في data/tasks.json.",
+        "قدرة التنفيذ على كتابة ملفات HTML/CSS/JS/JSON/MD في مساحة العمل المعزولة.",
+        "قدرة التحقق على فحص محتوى الملفات نصيًا (وجود سلاسل محددة)."
+      ],
+      "required_owner_decisions": [
+        "تعريف دقيق لـ 'متأخرة': هل تشمل يوم الاستحقاق نفسه أم تبدأ بعد انقضائه فقط؟ وما المنطقة الزمنية المعتمدة؟",
+        "هل يُسمح باستخدام localStorage لحالة إخفاء التنبيه أم يجب أن يكون التنبيه ظاهرًا دائمًا؟",
+        "الحد الزمني لتصنيف 'قريبة الاستحقاق' (مثال: خلال 48 ساعة).",
+        "هل اللوحة للقراءة فقط أم يُسمح بتغيير status داخل الواجهة (مع بقاء التعديل محليًا فقط)؟",
+        "عدد المهام الأدنى والحد الأقصى المتوقع في ملف البيانات المحلي."
+      ],
+      "status": "AWAITING_OWNER_APPROVAL",
+      "created_at": "2026-09-22T21:56:36.938411",
+      "supersedes_plan_id": null,
+      "revision_reason": "",
+      "revision_evidence": {},
+      "approved_by_owner": false,
+      "approved_at": null
+    },
+    "phases": [],
+    "gates": [
+      {
+        "id": 13,
+        "project_id": 15,
+        "kind": "PLAN_APPROVAL",
+        "reason": "اعتماد الخطة v1 — 3 مرحلة",
+        "details": {
+          "plan_id": 11,
+          "version": 1
+        },
+        "status": "PENDING",
+        "created_at": "2026-09-22T21:56:36.973182",
+        "resolved_at": null
+      }
+    ],
+    "events": [
+      {
+        "id": 412,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 15,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:43.344075"
+      },
+      {
+        "id": 413,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:45.497876"
+      },
+      {
+        "id": 414,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 24,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:47.787614"
+      },
+      {
+        "id": 415,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 7,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:49.798926"
+      },
+      {
+        "id": 416,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 21,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:52.043904"
+      },
+      {
+        "id": 417,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:54.095143"
+      },
+      {
+        "id": 418,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 12,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:56.459003"
+      },
+      {
+        "id": 419,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 8,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:55:58.468310"
+      },
+      {
+        "id": 420,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 30,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:00.782459"
+      },
+      {
+        "id": 421,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 10,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:02.784219"
+      },
+      {
+        "id": 422,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 24,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:04.855674"
+      },
+      {
+        "id": 423,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 3,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:06.881647"
+      },
+      {
+        "id": 424,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 18,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:08.895434"
+      },
+      {
+        "id": 425,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 29,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:10.955903"
+      },
+      {
+        "id": 426,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 15,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:12.961723"
+      },
+      {
+        "id": 427,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 27,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:14.985728"
+      },
+      {
+        "id": 428,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 22,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:17.068837"
+      },
+      {
+        "id": 429,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 28,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:19.323972"
+      },
+      {
+        "id": 430,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 7,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:21.528516"
+      },
+      {
+        "id": 431,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 1,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:23.550476"
+      },
+      {
+        "id": 432,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:25.566312"
+      },
+      {
+        "id": 433,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:27.977534"
+      },
+      {
+        "id": 434,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 17,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:30.311609"
+      },
+      {
+        "id": 435,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:32.624805"
+      },
+      {
+        "id": 436,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:34.651019"
+      },
+      {
+        "id": 437,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:36.657416"
+      },
+      {
+        "id": 438,
+        "project_id": 15,
+        "kind": "MODEL_CALL_COMPLETED",
+        "payload": {
+          "request_id": "req-8e3bce675357",
+          "purpose": "planning",
+          "provider": "",
+          "model": "",
+          "started_at": "2026-09-22T21:54:39.769703+00:00",
+          "heartbeat_at": "2026-09-22T21:56:36.209514+00:00",
+          "completed_at": "2026-09-22T21:56:36.912001+00:00",
+          "duration_ms": 117114,
+          "retry_count": 0,
+          "error_class": "",
+          "error_detail": "",
+          "streamed": false,
+          "session_id": 7
+        },
+        "created_at": "2026-09-22T21:56:36.912467"
+      },
+      {
+        "id": 439,
+        "project_id": 15,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "plan_id": 11,
+          "version": 1,
+          "supersedes": null,
+          "reason": ""
+        },
+        "created_at": "2026-09-22T21:56:36.955452"
+      },
+      {
+        "id": 440,
+        "project_id": 15,
+        "kind": "PLAN_APPROVAL_REQUIRED",
+        "payload": {
+          "plan_id": 11,
+          "gate_id": 13,
+          "generated_by": {
+            "request_id": "req-8e3bce675357",
+            "purpose": "planning",
+            "provider": "nvidia",
+            "model": "deepseek-ai/deepseek-v4.1-flash",
+            "started_at": "2026-09-22T21:54:39.769703+00:00",
+            "heartbeat_at": "2026-09-22T21:56:36.209514+00:00",
+            "completed_at": "2026-09-22T21:56:36.912001+00:00",
+            "duration_ms": 117112,
+            "retry_count": 0,
+            "error_class": "",
+            "error_detail": ""
+          }
+        },
+        "created_at": "2026-09-22T21:56:36.982093"
+      },
+      {
+        "id": 441,
+        "project_id": 15,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "session_id": 7,
+          "plan_id": 11,
+          "version": 1,
+          "phases": 3,
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "duration_ms": 117112
+        },
+        "created_at": "2026-09-22T21:56:36.998711"
+      }
+    ],
+    "executions": [],
+    "execution_gate": {
+      "state": "AWAITING_APPROVAL",
+      "open_for_execution": false,
+      "label": "الخطة تنتظر اعتمادك",
+      "reason": "الخطة بانتظار اعتماد المالك",
+      "required": "",
+      "owner_action": "اعتمد الخطة أو ارفضها من بطاقة القرار"
+    },
+    "active_run": false,
+    "job": null
+  },
+  "plans_count": 1,
+  "plan": {
+    "id": 11,
+    "version": 1,
+    "phases": 3,
+    "steps": 9,
+    "generated_by": null,
+    "objective_chars": 229
+  },
+  "planning_view": {
+    "project_id": 15,
+    "conversation_id": null,
+    "run_id": null,
+    "planning_session_id": 7,
+    "name": "تحقق 013.5 — خطة حقيقية",
+    "objective": "بناء لوحة متابعة مهام داخلية: واجهة واحدة تعرض المهام المتأخرة وتُنبّه المالك، بلا تكامل خارجي",
+    "archived_at": null,
+    "status": "AWAITING_OWNER_APPROVAL",
+    "phase": null,
+    "stage": "APPROVAL",
+    "stage_labels": {
+      "GOAL": "الهدف",
+      "PLAN": "الخطة",
+      "APPROVAL": "الاعتماد",
+      "PREPARE": "التهيئة",
+      "EXECUTE": "التنفيذ",
+      "TEST": "الاختبار",
+      "REVIEW": "المراجعة",
+      "AUDIT": "التدقيق",
+      "DONE": "الاكتمال"
+    },
+    "step": null,
+    "current_phase_id": null,
+    "current_step_id": null,
+    "plan": {
+      "id": 11,
+      "version": 1,
+      "approved": false,
+      "phases": 3
+    },
+    "progress": {
+      "steps_total": 0,
+      "steps_completed": 0,
+      "steps_failed": 0,
+      "percent": 0.0,
+      "current_step": null
+    },
+    "started_at": "2026-09-22T21:54:39.693153",
+    "updated_at": "2026-09-22T21:56:36.965772",
+    "elapsed_seconds": 121.1,
+    "elapsed_s": 121.1,
+    "heartbeat_at": "2026-09-22T21:56:36.919970+00:00",
+    "last_meaningful_activity_at": "2026-09-22T21:56:36.919970+00:00",
+    "planning_silence_s": null,
+    "timeout_at": "2026-09-22T22:09:39.693153+00:00",
+    "finished_at": "2026-09-22T21:56:36.927919",
+    "provider": "nvidia",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "actual_provider": "nvidia",
+    "actual_model": "deepseek-ai/deepseek-v4.1-flash",
+    "request_id": "plan-f973fa874df9",
+    "attempt": 1,
+    "retry_count": 1,
+    "waiting_for": {
+      "kind": "owner_approval",
+      "label": "اعتماد المالك للخطة"
+    },
+    "blocking_reason": "",
+    "planning": {
+      "active": false,
+      "state": "COMPLETED",
+      "wait_phase": "DONE",
+      "waiting_for": null,
+      "retry_available": false,
+      "detail": {
+        "id": 7,
+        "project_id": 15,
+        "attempt": 1,
+        "state": "COMPLETED",
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "request_id": "plan-f973fa874df9",
+        "started_at": "2026-09-22T21:54:39.693153",
+        "heartbeat_at": "2026-09-22T21:56:36.919970+00:00",
+        "last_meaningful_activity_at": "2026-09-22T21:56:36.919970+00:00",
+        "silence_s": null,
+        "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+        "hard_deadline_derived_at": null,
+        "hard_timeout_s": 900.0,
+        "last_activity_at": "2026-09-22T21:56:36.919970",
+        "lease_expires_at": "2026-09-22T21:58:36.919970",
+        "finished_at": "2026-09-22T21:56:36.927919",
+        "elapsed_s": 117.2,
+        "plan_id": 11,
+        "error_class": "",
+        "error_detail": "",
+        "retry_of": null,
+        "actual_provider": "nvidia",
+        "actual_model": "deepseek-ai/deepseek-v4.1-flash",
+        "reasoning_chars": 2188
+      }
+    },
+    "wait_phase": "DONE",
+    "last_error": "",
+    "job": null,
+    "activity": {
+      "role": "",
+      "tool": "",
+      "provider": ""
+    },
+    "environment": {
+      "state": "UNAVAILABLE",
+      "coherent": {
+        "kind": "UNAVAILABLE",
+        "label": "⚠️ بيئة التنفيذ غير متاحة",
+        "detail": "لا مسار توفير يوافق السياسة على هذا المضيف — الفجوات معلنة",
+        "missing": [
+          {
+            "need": "بيئة تنفيذ معزولة فعليًا",
+            "detected": "المضيف Windows/AMD64 — ركيزة العزل غير متاحة، لا حاويات Docker، لا عامل بعيد مسجل",
+            "action": "أحد ثلاثة: (1) فعّل WSL2/Docker على هذا المضيف وأعد التجهيز، أو (2) شغّل عاملًا بعيدًا على أي Linux/WSL2: python scripts/execution_worker.py ثم سجّله من الإعدادات ← بيئات التنفيذ، أو (3) خفّض السياسة إلى توافق محلي معلن من إعدادات المشروع"
+          }
+        ]
+      },
+      "environment_id": null,
+      "worker_id": "",
+      "backend": {}
+    },
+    "backend": {},
+    "worker": null,
+    "last_event": {
+      "id": 441,
+      "project_id": 15,
+      "kind": "PLAN_CREATED",
+      "payload": {
+        "session_id": 7,
+        "plan_id": 11,
+        "version": 1,
+        "phases": 3,
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "duration_ms": 117112
+      },
+      "created_at": "2026-09-22T21:56:36.998711"
+    },
+    "last_successful_transition": {
+      "kind": "PLAN_CREATED",
+      "id": 441,
+      "at": "2026-09-22T21:56:36.998711",
+      "payload": {
+        "session_id": 7,
+        "plan_id": 11,
+        "version": 1,
+        "phases": 3,
+        "provider": "nvidia",
+        "model": "deepseek-ai/deepseek-v4.1-flash",
+        "duration_ms": 117112
+      }
+    },
+    "recent_events": [
+      {
+        "id": 432,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:25.566312"
+      },
+      {
+        "id": 433,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:27.977534"
+      },
+      {
+        "id": 434,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 17,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:30.311609"
+      },
+      {
+        "id": 435,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 2,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:32.624805"
+      },
+      {
+        "id": 436,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 9,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:34.651019"
+      },
+      {
+        "id": 437,
+        "project_id": 15,
+        "kind": "MODEL_CALL_PROGRESS",
+        "payload": {
+          "session_id": 7,
+          "activity": "content_delta",
+          "chars": 6,
+          "request_id": "req-8e3bce675357",
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash"
+        },
+        "created_at": "2026-09-22T21:56:36.657416"
+      },
+      {
+        "id": 438,
+        "project_id": 15,
+        "kind": "MODEL_CALL_COMPLETED",
+        "payload": {
+          "request_id": "req-8e3bce675357",
+          "purpose": "planning",
+          "provider": "",
+          "model": "",
+          "started_at": "2026-09-22T21:54:39.769703+00:00",
+          "heartbeat_at": "2026-09-22T21:56:36.209514+00:00",
+          "completed_at": "2026-09-22T21:56:36.912001+00:00",
+          "duration_ms": 117114,
+          "retry_count": 0,
+          "error_class": "",
+          "error_detail": "",
+          "streamed": false,
+          "session_id": 7
+        },
+        "created_at": "2026-09-22T21:56:36.912467"
+      },
+      {
+        "id": 439,
+        "project_id": 15,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "plan_id": 11,
+          "version": 1,
+          "supersedes": null,
+          "reason": ""
+        },
+        "created_at": "2026-09-22T21:56:36.955452"
+      },
+      {
+        "id": 440,
+        "project_id": 15,
+        "kind": "PLAN_APPROVAL_REQUIRED",
+        "payload": {
+          "plan_id": 11,
+          "gate_id": 13,
+          "generated_by": {
+            "request_id": "req-8e3bce675357",
+            "purpose": "planning",
+            "provider": "nvidia",
+            "model": "deepseek-ai/deepseek-v4.1-flash",
+            "started_at": "2026-09-22T21:54:39.769703+00:00",
+            "heartbeat_at": "2026-09-22T21:56:36.209514+00:00",
+            "completed_at": "2026-09-22T21:56:36.912001+00:00",
+            "duration_ms": 117112,
+            "retry_count": 0,
+            "error_class": "",
+            "error_detail": ""
+          }
+        },
+        "created_at": "2026-09-22T21:56:36.982093"
+      },
+      {
+        "id": 441,
+        "project_id": 15,
+        "kind": "PLAN_CREATED",
+        "payload": {
+          "session_id": 7,
+          "plan_id": 11,
+          "version": 1,
+          "phases": 3,
+          "provider": "nvidia",
+          "model": "deepseek-ai/deepseek-v4.1-flash",
+          "duration_ms": 117112
+        },
+        "created_at": "2026-09-22T21:56:36.998711"
+      }
+    ],
+    "available_actions": [
+      "run",
+      "duplicate",
+      "rename",
+      "history",
+      "archive"
+    ]
+  },
+  "session": {
+    "id": 7,
+    "state": "COMPLETED",
+    "wait_phase": "DONE",
+    "provider": "nvidia",
+    "model": "deepseek-ai/deepseek-v4.1-flash",
+    "actual_provider": "nvidia",
+    "actual_model": "deepseek-ai/deepseek-v4.1-flash",
+    "request_id": "plan-f973fa874df9",
+    "attempt": 1,
+    "elapsed_s": 117.2,
+    "reasoning_chars": 2188,
+    "error_class": "",
+    "error_detail": "",
+    "hard_deadline_at": "2026-09-22T22:09:39.693153+00:00",
+    "hard_timeout_s": 900.0
+  },
+  "checks": {
+    "project_awaiting_approval": true,
+    "plan_persisted_with_phases": true,
+    "session_completed": true,
+    "actual_provider_recorded": true,
+    "finished_within_hard_timeout": true
+  },
+  "verdict": "PASS"
+}

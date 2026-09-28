@@ -1,0 +1,24 @@
+WindowsExecutor Smoke Test
+===========================
+Test: python -c "
+import sys; sys.path.insert(0,'src')
+from substrate.windows_executor import WindowsExecutor
+ex = WindowsExecutor()
+r = ex.execute(['cmd','/c','echo hello'])
+print('exit:', r.exit_code)
+print('stdout:', repr(r.stdout))
+print('evidence:', r.evidence_hash[:16])
+print('isolation:', r.isolation_level)
+"
+
+Result: PASS
+- exit: 0
+- stdout: 'hello\r\n'
+- evidence: (empty string - see note)
+- isolation: PARTIAL_JOB_OBJECT
+
+Note: evidence_hash returned empty string. The execute method returns an ExecutionResult with evidence_hash but it appears to be empty. The isolation level correctly reports PARTIAL_JOB_OBJECT (honest declaration - no filesystem/network isolation).
+
+Exit code: 0
+
+Evidence SHA256: c98333fe1164b6fa1831b19c82d2e2bd49e7a98d9b87116d0d0750097839f129 (src/substrate/windows_executor.py)

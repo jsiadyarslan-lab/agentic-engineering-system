@@ -48,6 +48,7 @@ from src.factory.contracts.agent_protocol import (
     ExplorationReport, Analysis, Plan, DesignSpec,
     Review, ImplementationResult, Verification, SecurityReport
 )
+from src.factory.events import EventBus, FactoryEvent, EventType
 from src.substrate.windows_executor import WindowsExecutor, ExecutionResult
 from src.llm.budget import TokenBudget, get_global_budget
 from src.llm import LLMProvider, StructuredLLM
@@ -150,6 +151,7 @@ class AgentFactoryOrchestrator:
         human_gate: HumanApprovalGate,
         chat_interface: ChatInterface,
         token_budget: TokenBudget,
+        test_mode: bool = False,
     ):
         self.llm_provider = llm_provider
         self.context_manager = context_manager
@@ -157,6 +159,7 @@ class AgentFactoryOrchestrator:
         self.human_gate = human_gate
         self.chat_interface = chat_interface
         self.token_budget = token_budget
+        self.test_mode = test_mode
         
         # Initialize agents
         self.agents = self._initialize_agents()
@@ -181,6 +184,9 @@ class AgentFactoryOrchestrator:
         
         # Decision log
         self.decision_log: List[Dict] = []
+        
+        # Event bus
+        self.event_bus = EventBus()
         
         # Running state
         self._running = False
@@ -223,11 +229,13 @@ class AgentFactoryOrchestrator:
                 llm=self.llm_provider.get_structured_llm("verifier"),
                 context=self.context_manager,
                 grants=None,
+                test_mode=self.test_mode,
             ),
             SecurityAgent(
                 llm=self.llm_provider.get_structured_llm("security"),
                 context=self.context_manager,
                 grants=None,
+                test_mode=self.test_mode,
             ),
         ]
         return agents
@@ -311,7 +319,9 @@ class AgentFactoryOrchestrator:
     async def _handle_idle(self):
         """IDLE -> LISTENING"""
         mission = self.current_mission
+        old_state = mission.state
         mission.transition(MissionState.LISTENING, "orchestrator")
+        await self._publish_state_transition(mission, old_state, MissionState.LISTENING, "orchestrator")
         # Wait for user input or external trigger
         await asyncio.sleep(0.5)
     
@@ -319,7 +329,9 @@ class AgentFactoryOrchestrator:
         """LISTENING -> EXPLORING"""
         mission = self.current_mission
         if mission.user_request:
+            old_state = mission.state
             mission.transition(MissionState.EXPLORING, "orchestrator")
+            await self._publish_state_transition(mission, old_state, MissionState.EXPLORING, "orchestrator")
     
     async def _handle_exploring(self):
         """EXPLORING -> ANALYZING"""
@@ -340,7 +352,10 @@ class AgentFactoryOrchestrator:
             mission.exploration_report = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("explorer", "explore", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "explorer", result, True)
+            old_state = mission.state
             mission.transition(MissionState.ANALYZING, "explorer")
+            await self._publish_state_transition(mission, old_state, MissionState.ANALYZING, "explorer")
         else:
             await self._handle_agent_failure("explorer", result.error)
     
@@ -365,7 +380,10 @@ class AgentFactoryOrchestrator:
             mission.analysis = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("thinker", "analyze", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "thinker", result, True)
+            old_state = mission.state
             mission.transition(MissionState.PLANNING, "thinker")
+            await self._publish_state_transition(mission, old_state, MissionState.PLANNING, "thinker")
         else:
             await self._handle_agent_failure("thinker", result.error)
     
@@ -391,7 +409,10 @@ class AgentFactoryOrchestrator:
             mission.plan = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("planner", "plan", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "planner", result, True)
+            old_state = mission.state
             mission.transition(MissionState.DESIGNING, "planner")
+            await self._publish_state_transition(mission, old_state, MissionState.DESIGNING, "planner")
         else:
             await self._handle_agent_failure("planner", result.error)
     
@@ -416,7 +437,10 @@ class AgentFactoryOrchestrator:
             mission.design_spec = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("designer", "design", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "designer", result, True)
+            old_state = mission.state
             mission.transition(MissionState.REVIEWING, "designer")
+            await self._publish_state_transition(mission, old_state, MissionState.REVIEWING, "designer")
         else:
             await self._handle_agent_failure("designer", result.error)
     
@@ -442,11 +466,22 @@ class AgentFactoryOrchestrator:
             mission.review = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("reviewer", "review", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "reviewer", result, True)
             
             if result.output.approved:
+                old_state = mission.state
                 mission.transition(MissionState.AWAITING_APPROVAL, "reviewer")
+                await self._publish_state_transition(mission, old_state, MissionState.AWAITING_APPROVAL, "reviewer")
+                # Publish human approval request
+                await self._publish_human_approval_request(mission, {
+                    "plan": mission.plan.to_dict() if mission.plan else {},
+                    "design_spec": mission.design_spec.to_dict() if mission.design_spec else {},
+                    "review_summary": mission.review.summary if mission.review else "",
+                })
             else:
+                old_state = mission.state
                 mission.transition(MissionState.REVISING, "reviewer")
+                await self._publish_state_transition(mission, old_state, MissionState.REVISING, "reviewer")
         else:
             await self._handle_agent_failure("reviewer", result.error)
     
@@ -456,21 +491,24 @@ class AgentFactoryOrchestrator:
         
         # Request human approval via chat interface
         approval_request = {
-            "mission_id": mission.mission_id,
             "plan": mission.plan.to_dict() if mission.plan else {},
             "design_spec": mission.design_spec.to_dict() if mission.design_spec else {},
             "review_summary": mission.review.summary if mission.review else "",
         }
         
         # Request human approval via chat interface
-        decision = await self.human_gate.request_approval(approval_request)
+        decision = await self.human_gate.request_approval(mission.mission_id, approval_request)
         
         if decision.approved:
             mission.human_decision = decision
+            old_state = mission.state
             mission.transition(MissionState.EXECUTING, "human")
+            await self._publish_state_transition(mission, old_state, MissionState.EXECUTING, "human")
         else:
             mission.human_decision = decision
+            old_state = mission.state
             mission.transition(MissionState.REVISING, "human")
+            await self._publish_state_transition(mission, old_state, MissionState.REVISING, "human")
     
     async def _handle_executing(self):
         """EXECUTING -> VERIFYING"""
@@ -499,7 +537,10 @@ class AgentFactoryOrchestrator:
             mission.implementation_result = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("implementer", "implement", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "implementer", result, True)
+            old_state = mission.state
             mission.transition(MissionState.VERIFYING, "implementer")
+            await self._publish_state_transition(mission, old_state, MissionState.VERIFYING, "implementer")
         else:
             await self._handle_agent_failure("implementer", result.error)
     
@@ -525,7 +566,10 @@ class AgentFactoryOrchestrator:
             mission.verification = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("verifier", "verify", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "verifier", result, True)
+            old_state = mission.state
             mission.transition(MissionState.SECURITY_CHECK, "verifier")
+            await self._publish_state_transition(mission, old_state, MissionState.SECURITY_CHECK, "verifier")
         else:
             await self._handle_agent_failure("verifier", result.error)
     
@@ -550,7 +594,10 @@ class AgentFactoryOrchestrator:
             mission.security_report = result.output
             mission.evidence_hashes.append(result.evidence_hash)
             mission.add_checkpoint("security", "security_audit", result.output, result.evidence_hash)
+            await self._publish_agent_completion(mission, "security", result, True)
+            old_state = mission.state
             mission.transition(MissionState.COMPLETED, "security")
+            await self._publish_state_transition(mission, old_state, MissionState.COMPLETED, "security")
             mission.completed_at = datetime.utcnow()
         else:
             await self._handle_agent_failure("security", result.error)
@@ -564,9 +611,13 @@ class AgentFactoryOrchestrator:
         
         # Determine where to go back based on feedback
         if "design" in (mission.human_decision.feedback or "").lower():
+            old_state = mission.state
             mission.transition(MissionState.DESIGNING, "human")
+            await self._publish_state_transition(mission, old_state, MissionState.DESIGNING, "human")
         else:
+            old_state = mission.state
             mission.transition(MissionState.PLANNING, "human")
+            await self._publish_state_transition(mission, old_state, MissionState.PLANNING, "human")
     
     async def _handle_blocked(self):
         """BLOCKED -> ESCALATED or ABORTED"""
@@ -574,7 +625,9 @@ class AgentFactoryOrchestrator:
         mission.error_count += 1
         
         if mission.error_count >= 3:
+            old_state = mission.state
             mission.transition(MissionState.ESCALATED, "orchestrator")
+            await self._publish_state_transition(mission, old_state, MissionState.ESCALATED, "orchestrator")
         else:
             # Try to recover
             await asyncio.sleep(5)
@@ -582,6 +635,9 @@ class AgentFactoryOrchestrator:
     
     async def _handle_aborted(self):
         """ABORTED - mission terminated"""
+        if self.current_mission:
+            old_state = self.current_mission.state
+            await self._publish_state_transition(self.current_mission, old_state, MissionState.ABORTED, "orchestrator")
         self._running = False
     
     async def _handle_unknown_state(self):
@@ -591,7 +647,9 @@ class AgentFactoryOrchestrator:
             "state": mission.state.value,
             "mission_id": mission.mission_id,
         })
+        old_state = mission.state
         mission.transition(MissionState.ABORTED, "orchestrator")
+        await self._publish_state_transition(mission, old_state, MissionState.ABORTED, "orchestrator")
     
     async def _handle_agent_failure(self, agent_name: str, error: str):
         """Handle agent execution failure."""
@@ -605,8 +663,13 @@ class AgentFactoryOrchestrator:
             "mission_id": self.current_mission.mission_id,
         })
         
+        # Publish failed agent completion event
+        await self._publish_agent_completion(mission, agent_name, None, False)
+        
         if self.current_mission.error_count >= 3:
+            old_state = self.current_mission.state
             self.current_mission.transition(MissionState.ESCALATED, "orchestrator")
+            await self._publish_state_transition(self.current_mission, old_state, MissionState.ESCALATED, "orchestrator")
         else:
             # Retry logic would go here
             await asyncio.sleep(2)
@@ -615,7 +678,9 @@ class AgentFactoryOrchestrator:
     async def _handle_mission_error(self, error: Exception):
         """Handle unexpected mission error."""
         if self.current_mission:
+            old_state = self.current_mission.state
             self.current_mission.transition(MissionState.ABORTED, "orchestrator")
+            await self._publish_state_transition(self.current_mission, old_state, MissionState.ABORTED, "orchestrator")
             self.current_mission.last_error = str(error)
         
         self._log_decision("mission_error", {
@@ -633,9 +698,55 @@ class AgentFactoryOrchestrator:
         self.decision_log.append(entry)
         # Would persist to DecisionLog in context
     
+    async def _publish_state_transition(self, mission: Mission, old_state: MissionState, new_state: MissionState, actor: str = "orchestrator"):
+        """Publish state transition event to event bus."""
+        await self.event_bus.publish(FactoryEvent(
+            event_type=EventType.STATE_TRANSITION,
+            mission_id=mission.mission_id,
+            timestamp=datetime.utcnow(),
+            state_from=old_state.value,
+            state_to=new_state.value,
+            agent_type=actor,
+            payload={"actor": actor},
+            evidence_hash="",
+            source="mock",
+        ))
+    
+    async def _publish_agent_completion(self, mission: Mission, agent_type: str, result, success: bool):
+        """Publish agent completion event to event bus."""
+        evidence_hash = ""
+        if result is not None and hasattr(result, 'evidence_hash'):
+            evidence_hash = result.evidence_hash
+        await self.event_bus.publish(FactoryEvent(
+            event_type=EventType.AGENT_COMPLETION,
+            mission_id=mission.mission_id,
+            timestamp=datetime.utcnow(),
+            state_from=mission.state.value,
+            state_to=mission.state.value,
+            agent_type=agent_type,
+            payload={"success": success},
+            evidence_hash=evidence_hash,
+            source="mock",
+        ))
+    
+    async def _publish_human_approval_request(self, mission: Mission, payload: Dict):
+        """Publish human approval request event to event bus."""
+        await self.event_bus.publish(FactoryEvent(
+            event_type=EventType.HUMAN_APPROVAL_REQUEST,
+            mission_id=mission.mission_id,
+            timestamp=datetime.utcnow(),
+            state_from=mission.state.value,
+            state_to="AWAITING_APPROVAL",
+            agent_type="reviewer",
+            payload=payload,
+            evidence_hash="",
+            source="mock",
+        ))
+    
     async def request_human_approval(self, request: Dict) -> HumanDecision:
         """Request human approval via gate."""
-        return await self.human_gate.request_approval(request)
+        mission_id = request.get("mission_id", "")
+        return await self.human_gate.request_approval(mission_id, request)
     
     async def shutdown(self):
         """Graceful shutdown."""
@@ -718,6 +829,7 @@ class AgentFactoryOrchestrator:
             human_gate=human_gate,
             chat_interface=chat_interface,
             token_budget=token_budget,
+            test_mode=test_mode,
         )
         
         return orchestrator
