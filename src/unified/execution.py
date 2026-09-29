@@ -21,7 +21,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import json
+import hashlib
+import shutil
 import uuid
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -66,7 +70,7 @@ from unified.contracts import (
     # Event Catalog
     FactoryEvent, EVENT_CATALOG, EVENT_CONSUMERS,
     MissionStartedEvent, RunStartedEvent, PlanCreatedEvent,
-    AgentStartedEvent, AgentCompletedEvent, TaskFailedEvent,
+    AgentStartedEvent, AgentCompletedEvent, TaskFailedEvent, TaskRetryEvent, TaskCompletedEvent,
     ToolStartedEvent, ToolCompletedEvent, ToolFailedEvent,
     ArtifactCreatedEvent, EvidenceRecordedEvent,
     VerificationCompleteEvent, CheckpointCreatedEvent,
@@ -354,6 +358,7 @@ class ExecutionEngine:
             "depends_on": set(depends_on or []),
             "dependents": set(),
             "state": TaskState.PENDING,
+            "mission_id": mission_id,
         }
         
         # Add reverse dependencies
@@ -377,7 +382,7 @@ class ExecutionEngine:
     
     # --- Agent Selection ---
     
-    def select_agent_for_task(self, task: AgentTask) -> Optional[AgentDefinition]:
+    def select_agent_for_task(self, task: AgentTask, previous_agent_id: Optional[str] = None) -> Optional[AgentDefinition]:
         """
         Select the best agent for a task using capability-based deterministic selection.
         
@@ -387,6 +392,9 @@ class ExecutionEngine:
         - Supported domains
         - Agent availability (enabled + AVAILABLE state)
         - Max tokens (higher wins ties)
+        
+        On retry (previous_agent_id provided), prefers a DIFFERENT available agent
+        to enable agent reassignment after failure.
         """
         # Infer required capabilities from task
         # For now, use the agent_type as primary filter
@@ -395,14 +403,39 @@ class ExecutionEngine:
         # First try exact type match
         defn = self.agent_registry.get_definition_by_type(task.agent_type)
         if defn and defn.is_available():
+            # On retry, if the default agent is the same as previous, try to find another
+            if previous_agent_id and defn.agent_id == previous_agent_id:
+                # Try to find an alternative agent of the same type
+                alternative = self._find_alternative_agent(task.agent_type, previous_agent_id)
+                if alternative:
+                    return alternative
             return defn
         
-        # If agent exists but is in COMPLETED/FAILED state, reset to AVAILABLE for reuse
+        # If default agent exists but is in COMPLETED/FAILED state, reset to AVAILABLE for reuse
         if defn and defn.state in (AgentLifecycleState.COMPLETED, AgentLifecycleState.FAILED):
             self.agent_registry.set_lifecycle_state(defn.agent_id, AgentLifecycleState.AVAILABLE)
+            # On retry, check if this is the same as previous agent
+            if previous_agent_id and defn.agent_id == previous_agent_id:
+                alternative = self._find_alternative_agent(task.agent_type, previous_agent_id)
+                if alternative:
+                    return alternative
             return defn
         
+        # Also check all definitions of this type and reset any FAILED ones to AVAILABLE
+        # This enables retry with different agents of the same type
+        for d in self.agent_registry.list_definitions():
+            if d.agent_type == task.agent_type and d.state == AgentLifecycleState.FAILED:
+                self.agent_registry.set_lifecycle_state(d.agent_id, AgentLifecycleState.AVAILABLE)
+        
         # Fall back to capability-based selection
+        # On retry, try to exclude the previous agent
+        if previous_agent_id:
+            # Get all available agents of this type, excluding previous
+            alternatives = self._get_alternative_agents(task.agent_type, previous_agent_id)
+            if alternatives:
+                # Select the one with highest max_tokens
+                return max(alternatives, key=lambda d: d.max_tokens)
+        
         # For now, require no specific tools/permissions/domains
         # The registry will select the best available agent
         return self.agent_registry.select_agent(
@@ -410,6 +443,21 @@ class ExecutionEngine:
             required_permissions=[],
             required_domains=[],
         )
+    
+    def _find_alternative_agent(self, agent_type: AgentType, exclude_agent_id: str) -> Optional[AgentDefinition]:
+        """Find an available alternative agent of the same type, excluding the given agent_id."""
+        for d in self.agent_registry.list_definitions():
+            if d.agent_type == agent_type and d.agent_id != exclude_agent_id and d.is_available():
+                return d
+        return None
+    
+    def _get_alternative_agents(self, agent_type: AgentType, exclude_agent_id: str) -> List[AgentDefinition]:
+        """Get all available alternative agents of the same type, excluding the given agent_id."""
+        alternatives = []
+        for d in self.agent_registry.list_definitions():
+            if d.agent_type == agent_type and d.agent_id != exclude_agent_id and d.is_available():
+                alternatives.append(d)
+        return alternatives
     
     # --- Task Graph Dependency Resolution ---
     
@@ -515,27 +563,12 @@ class ExecutionEngine:
                 continue
             
             if graph[dep_id]["state"] in (TaskState.BLOCKED, TaskState.READY):
-                graph[dep_id]["state"] = TaskState.BLOCKED
+                # Use _update_task_graph_state to properly emit STATE_TRANSITION with correct from_state
+                self._update_task_graph_state(run_id, dep_id, TaskState.BLOCKED)
                 self.task_runnable_cache[run_id].discard(dep_id)
                 
-                # Update task object
-                if dep_id in self.tasks:
-                    self.tasks[dep_id].state = TaskState.BLOCKED
-                
-                # Emit event
-                self._emit(FactoryEvent.create(
-                    event_type=EventType.STATE_TRANSITION,
-                    mission_id=self.tasks[dep_id].mission_id if dep_id in self.tasks else "",
-                    run_id=run_id,
-                    payload={
-                        "task_id": dep_id,
-                        "from_state": graph[dep_id]["state"],
-                        "to_state": "BLOCKED",
-                        "reason": reason,
-                    },
-                    source="task_graph",
-                    correlation_id=dep_id,
-                ))
+                # The state transition event is already emitted by _update_task_graph_state
+                # with correct from_state and to_state
     
     def get_runnable_tasks(self, run_id: str) -> List[Task]:
         """Get all tasks that are ready to run (READY state)."""
@@ -621,9 +654,17 @@ class ExecutionEngine:
         Execute an agent role.
         
         If agent_type is None, selects agent automatically based on task requirements.
+        If context.agent_id is already set, uses that agent (for retry with reassignment).
         """
         # Determine agent to use
-        if agent_type is None:
+        # If context already has agent_id, use it (for retry with specific agent)
+        if context is not None and context.agent_id:
+            agent_id = context.agent_id
+            defn = self.agent_registry.get_definition(agent_id)
+            if defn is None:
+                raise AgentSelectionError(f"No definition for agent {agent_id}")
+            agent_type = defn.agent_type
+        elif agent_type is None:
             if task is None:
                 raise ValueError("Either agent_type or task must be provided")
             defn = self.select_agent_for_task(task)
@@ -693,17 +734,19 @@ class ExecutionEngine:
                 correlation_id=context.task_id,
             ))
         else:
+            # Emit task completed event with required fields
             self._emit(FactoryEvent.create(
-                event_type=EventType.TASK_FAILED,
+                event_type=EventType.TASK_COMPLETED,
                 mission_id=context.mission_id,
                 run_id=context.run_id,
-                payload=TaskFailedEvent(
+                payload=TaskCompletedEvent(
                     task_id=context.task_id,
                     mission_id=context.mission_id,
                     run_id=context.run_id,
-                    error=result.error or "Unknown error",
-                    retry_count=0,
-                    max_retries=2,
+                    success=True,
+                    artifacts=result.artifacts if result.artifacts else [],
+                    evidence_hashes=result.evidence_ids if result.evidence_ids else [],
+                    duration_ms=result.duration_ms if result.duration_ms else 0,
                 ),
                 source=f"agent.{agent_type.value}",
                 correlation_id=context.task_id,
@@ -1127,6 +1170,39 @@ class ExecutionEngine:
     
     # --- Checkpoint/Resume ---
     
+    def _get_checkpoint_dir(self, mission_id: str) -> Path:
+        """Get checkpoint directory for mission."""
+        base = Path(self.artifacts_base_dir) / "checkpoints" / mission_id
+        base.mkdir(parents=True, exist_ok=True)
+        return base
+    
+    def _save_checkpoint_to_disk(self, checkpoint: Checkpoint) -> Path:
+        """Save checkpoint to filesystem for durability."""
+        checkpoint_dir = self._get_checkpoint_dir(checkpoint.mission_id)
+        checkpoint_file = checkpoint_dir / f"{checkpoint.checkpoint_id}.json"
+        
+        # Serialize checkpoint to JSON
+        data = checkpoint.model_dump(mode='json')
+        
+        # Write atomically
+        temp_file = checkpoint_file.with_suffix('.tmp')
+        with open(temp_file, 'w') as f:
+            json.dump(data, f, indent=2)
+        temp_file.replace(checkpoint_file)
+        
+        return checkpoint_file
+    
+    def _load_checkpoint_from_disk(self, mission_id: str, checkpoint_id: str) -> Optional[Checkpoint]:
+        """Load checkpoint from filesystem."""
+        checkpoint_file = self._get_checkpoint_dir(mission_id) / f"{checkpoint_id}.json"
+        if not checkpoint_file.exists():
+            return None
+        
+        with open(checkpoint_file, 'r') as f:
+            data = json.load(f)
+        
+        return Checkpoint.model_validate(data)
+    
     def create_checkpoint(
         self,
         mission_id: str,
@@ -1137,7 +1213,7 @@ class ExecutionEngine:
         artifact_ids: List[str],
         evidence_hashes: List[str],
     ) -> Checkpoint:
-        """Create execution checkpoint."""
+        """Create execution checkpoint and persist to disk."""
         checkpoint = Checkpoint(
             checkpoint_id=new_checkpoint_id(),
             mission_id=mission_id,
@@ -1149,6 +1225,9 @@ class ExecutionEngine:
             evidence_hashes=evidence_hashes,
         )
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
+        
+        # Persist to disk for durability
+        self._save_checkpoint_to_disk(checkpoint)
         
         # Emit checkpoint created
         self._emit(FactoryEvent.create(
@@ -1173,11 +1252,22 @@ class ExecutionEngine:
     def resume_from_checkpoint(
         self,
         checkpoint_id: str,
+        mission_id: Optional[str] = None,
     ) -> Optional[Run]:
-        """Resume execution from checkpoint."""
+        """Resume execution from checkpoint (loads from disk if not in memory)."""
+        # Try memory first
         checkpoint = self.checkpoints.get(checkpoint_id)
+        
+        # If not in memory, try disk (for process termination survival)
+        if not checkpoint and mission_id:
+            checkpoint = self._load_checkpoint_from_disk(mission_id, checkpoint_id)
+        
         if not checkpoint:
             return None
+        
+        # Restore to memory if loaded from disk
+        if checkpoint_id not in self.checkpoints:
+            self.checkpoints[checkpoint_id] = checkpoint
         
         # Create new run as child of original
         new_run = self.create_run(
@@ -1196,6 +1286,47 @@ class ExecutionEngine:
         
         return new_run
     
+    def restore_task_graph_from_checkpoint(
+        self,
+        run_id: str,
+        checkpoint: Checkpoint,
+    ) -> None:
+        """Restore task graph state from checkpoint."""
+        if run_id not in self.task_graph:
+            # Need to recreate the task graph from the original run
+            # For now, we assume the task graph exists or is rebuilt
+            return
+        
+        graph = self.task_graph[run_id]
+        
+        # Restore task states from checkpoint
+        for task_id, state in checkpoint.task_states.items():
+            if task_id in graph:
+                old_state = graph[task_id]["state"]
+                if old_state != state:
+                    graph[task_id]["state"] = state
+                    # Update retry count if needed
+                    if state == TaskState.READY and old_state in (TaskState.FAILED, TaskState.BLOCKED):
+                        graph[task_id]["retry_count"] = 0
+                    # Also update the Task object
+                    if task_id in self.tasks:
+                        self.tasks[task_id].state = state
+                    # Emit state transition event
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.STATE_TRANSITION,
+                        mission_id=checkpoint.mission_id,
+                        run_id=run_id,
+                        payload={
+                            "entity_type": "task",
+                            "entity_id": task_id,
+                            "from_state": old_state.value if hasattr(old_state, 'value') else str(old_state),
+                            "to_state": state.value if hasattr(state, 'value') else str(state),
+                            "trigger": "checkpoint_resume",
+                        },
+                        source="execution_engine",
+                        correlation_id=task_id,
+                    ))
+    
     # --- Task Graph Execution ---
     
     async def execute_task_graph(
@@ -1204,18 +1335,22 @@ class ExecutionEngine:
         sandbox_manager=None,
         event_collector=None,
         max_parallel: int = 1,
+        checkpoint_id: Optional[str] = None,
+        checkpoint_every: int = 1,  # Create checkpoint every N tasks
     ) -> Dict[str, Any]:
         """
         Execute all tasks in the task graph for a run.
         
         Respects dependencies: only runs tasks when all dependencies are COMPLETED.
-        Supports retry and failure propagation.
+        Supports retry, failure propagation, and checkpoint/resume.
         
         Args:
             run_id: The run ID containing the task graph
             sandbox_manager: Optional sandbox manager (uses engine's if not provided)
             event_collector: Optional event collector
             max_parallel: Maximum parallel tasks (currently sequential only)
+            checkpoint_id: Optional checkpoint ID to resume from
+            checkpoint_every: Create checkpoint every N completed tasks (default 1)
         
         Returns:
             Dict with execution results and final task states
@@ -1235,31 +1370,76 @@ class ExecutionEngine:
         if errors:
             raise ValueError(f"Invalid task graph: {errors}")
         
+        # If resuming from checkpoint, restore task graph state
+        if checkpoint_id:
+            # Find mission_id for this run
+            mission_id = None
+            for task_id, node in graph.items():
+                if node.get("mission_id"):
+                    mission_id = node["mission_id"]
+                    break
+            
+            if mission_id:
+                checkpoint = self._load_checkpoint_from_disk(mission_id, checkpoint_id)
+                if checkpoint:
+                    self.restore_task_graph_from_checkpoint(run_id, checkpoint)
+        
+        completed_since_checkpoint = 0
+        
         # Execute tasks in dependency order
         while True:
-                runnable = self.get_runnable_tasks(run_id)
-                if not runnable:
-                    # Check if any tasks are still pending/running/blocked
-                    all_done = True
-                    for task_id, node in graph.items():
-                        if node["state"] not in (TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED):
-                            all_done = False
-                            break
-                    if all_done:
+            runnable = self.get_runnable_tasks(run_id)
+            if not runnable:
+                # Check if any tasks are still pending/running/blocked/retrying
+                all_done = True
+                for task_id, node in graph.items():
+                    if node["state"] not in (TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED):
+                        all_done = False
                         break
-                    # No runnable tasks but not all done - deadlock or all blocked
+                if all_done:
+                    # All tasks are done - populate results for COMPLETED tasks that weren't executed
+                    for task_id, node in graph.items():
+                        if node["state"] == TaskState.COMPLETED and task_id not in results:
+                            results[task_id] = {"success": True, "resumed": True}
+                            completed_since_checkpoint += 1
                     break
+                # No runnable tasks but not all done - deadlock or all blocked
+                break
+            
+            # For now, execute sequentially (one at a time)
+            for task in runnable:
+                # Skip already completed tasks (resume case)
+                if task.state == TaskState.COMPLETED:
+                    results[task.task_id] = {"success": True, "resumed": True}
+                    completed_since_checkpoint += 1
+                    continue
                 
-                # For now, execute sequentially (one at a time)
-                for task in runnable:
-                    if task.state != TaskState.READY:
-                        continue
-                    
-                    # Update task state to ASSIGNED
-                    self._update_task_graph_state(run_id, task.task_id, TaskState.ASSIGNED)
+                if task.state != TaskState.READY:
+                    continue
+                
+                # Update task state to ASSIGNED
+                self._update_task_graph_state(run_id, task.task_id, TaskState.ASSIGNED)
+                
+                # Retry loop for this task
+                max_retries = task.max_retries if hasattr(task, 'max_retries') else 2
+                task.retry_count = getattr(task, 'retry_count', 0)
+                
+                while task.retry_count <= max_retries:
+                    # Create a new attempt for each retry
+                    attempt_id = new_attempt_id()
+                    attempt = Attempt(
+                        attempt_id=attempt_id,
+                        task_id=task.task_id,
+                        agent_id="",  # Will be set after agent selection
+                        state=TaskState.RUNNING,
+                    )
+                    # Store attempt in engine for tracking
+                    if not hasattr(self, '_attempts'):
+                        self._attempts = {}
+                    self._attempts[attempt_id] = attempt
                     
                     try:
-                        # Select agent
+                        # Select agent - on retry, try to select a different agent
                         agent_task = AgentTask(
                             task_id=task.task_id,
                             run_id=run_id,
@@ -1271,24 +1451,33 @@ class ExecutionEngine:
                             depends_on=task.depends_on,
                         )
                         
-                        defn = self.select_agent_for_task(agent_task)
+                        # Pass retry info to allow agent reassignment
+                        previous_agent_id = self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None
+                        defn = self.select_agent_for_task(agent_task, previous_agent_id=previous_agent_id)
                         if defn is None:
                             self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
-                            results[task.task_id] = {"success": False, "error": "No available agent"}
-                            continue
+                            results[task.task_id] = {"success": False, "error": "No available agent", "terminal": True}
+                            attempt.success = False
+                            attempt.error = "No available agent"
+                            attempt.completed_at = datetime.now(timezone.utc)
+                            attempt.state = TaskState.FAILED
+                            break
                         
-                        # Create execution context
+                        # Update attempt with selected agent
+                        attempt.agent_id = defn.agent_id
+                        
+                        # Create execution context with new attempt_id for each retry
                         sandbox_id = f"sandbox-{task.task_id}"
                         context = ExecutionContext(
                             mission_id=task.mission_id,
                             run_id=run_id,
                             task_id=task.task_id,
-                            attempt_id=new_attempt_id(),
+                            attempt_id=attempt_id,
                             agent_id=defn.agent_id,
                             agent_type=task.agent_type,
                             sandbox_id=sandbox_id,
                             sandbox_manager=sandbox_manager,
-                            event_emitter=self.event_bus.emit,  # Use event bus emit to avoid duplicate events
+                            event_emitter=self.event_bus.emit,
                             evidence_store=self.evidence_store,
                         )
                         
@@ -1297,50 +1486,158 @@ class ExecutionEngine:
                         
                         # Execute agent
                         result = await self.execute_agent(
-                            agent_type=task.agent_type,
+                            agent_type=None,
                             context=context,
                             task=agent_task,
                         )
+                        
+                        task_failed = False
+                        failure_error = None
                         
                         if result.success:
                             # Verify if acceptance criteria exist
                             if task.acceptance_criteria:
                                 report = await self.verify_task(context, agent_task, context.attempt_id)
                                 if report.verdict not in ("evidenced", "passed"):
-                                    # Verification failed - mark task as failed
-                                    self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
-                                    # Emit task failed event
-                                    self._emit(FactoryEvent.create(
-                                        event_type=EventType.TASK_FAILED,
-                                        mission_id=context.mission_id,
-                                        run_id=context.run_id,
-                                        payload=TaskFailedEvent(
-                                            task_id=context.task_id,
-                                            mission_id=context.mission_id,
-                                            run_id=context.run_id,
-                                            error=f"Verification failed: {report.verdict}",
-                                            retry_count=0,
-                                            max_retries=task.max_retries if hasattr(task, 'max_retries') else 2,
-                                        ),
-                                        source=f"agent.{task.agent_type.value}",
-                                        correlation_id=context.task_id,
-                                    ))
-                                    results[task.task_id] = {
-                                        "success": False,
-                                        "error": f"Verification failed: {report.verdict}",
-                                        "verification": report.verdict,
-                                    }
-                                else:
-                                    results[task.task_id] = {"success": True, "verification": report.verdict}
-                            else:
-                                results[task.task_id] = {"success": True}
+                                    # Verification failed
+                                    task_failed = True
+                                    failure_error = f"Verification failed: {report.verdict}"
+                            # else: success, no verification needed
                         else:
-                            self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
-                            results[task.task_id] = {"success": False, "error": result.error}
+                            task_failed = True
+                            failure_error = result.error
                         
+                        if not task_failed:
+                            # Task succeeded
+                            attempt.success = True
+                            attempt.completed_at = datetime.now(timezone.utc)
+                            attempt.state = TaskState.COMPLETED
+                            
+                            results[task.task_id] = {"success": True, "attempts": task.retry_count + 1}
+                            completed_since_checkpoint += 1
+                            
+                            # Create checkpoint if needed
+                            if completed_since_checkpoint >= checkpoint_every:
+                                await self._create_execution_checkpoint(run_id)
+                                completed_since_checkpoint = 0
+                            
+                            break  # Exit retry loop
+                        
+                        # Task failed - update attempt
+                        attempt.success = False
+                        attempt.error = failure_error
+                        attempt.completed_at = datetime.now(timezone.utc)
+                        attempt.state = TaskState.FAILED
+                        
+                        # Task failed - check if we can retry
+                        task.retry_count += 1
+                        # Store the failed agent_id for reassignment on retry
+                        if not hasattr(self, '_previous_agent_ids'):
+                            self._previous_agent_ids = {}
+                        self._previous_agent_ids[task.task_id] = attempt.agent_id
+                        if task.retry_count <= max_retries:
+                            # Retry: reset to READY and emit retry event
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.READY)
+                            self._emit(FactoryEvent.create(
+                                event_type=EventType.TASK_RETRY,
+                                mission_id=context.mission_id,
+                                run_id=context.run_id,
+                                payload=TaskRetryEvent(
+                                    task_id=context.task_id,
+                                    mission_id=context.mission_id,
+                                    run_id=context.run_id,
+                                    attempt_id=context.attempt_id,
+                                    retry_count=task.retry_count,
+                                    max_retries=max_retries,
+                                    error=failure_error,
+                                ),
+                                source=f"agent.{task.agent_type.value}",
+                                correlation_id=context.task_id,
+                            ))
+                            # Continue while loop for retry
+                            continue
+                        else:
+                            # Retry exhausted - terminal failure
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                            self._emit(FactoryEvent.create(
+                                event_type=EventType.TASK_FAILED,
+                                mission_id=context.mission_id,
+                                run_id=context.run_id,
+                                payload=TaskFailedEvent(
+                                    task_id=context.task_id,
+                                    mission_id=context.mission_id,
+                                    run_id=context.run_id,
+                                    error=failure_error or "Unknown error",
+                                    retry_count=task.retry_count - 1,
+                                    max_retries=max_retries,
+                                ),
+                                source=f"agent.{task.agent_type.value}",
+                                correlation_id=context.task_id,
+                            ))
+                            results[task.task_id] = {
+                                "success": False, 
+                                "error": failure_error,
+                                "attempts": task.retry_count,
+                                "terminal": True
+                            }
+                            break
+                    
                     except Exception as e:
-                        self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
-                        results[task.task_id] = {"success": False, "error": str(e)}
+                        task.retry_count += 1
+                        attempt.success = False
+                        attempt.error = str(e)
+                        attempt.completed_at = datetime.now(timezone.utc)
+                        attempt.state = TaskState.FAILED
+                        
+                        if task.retry_count <= max_retries:
+                            # Retry on exception
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.READY)
+                            self._emit(FactoryEvent.create(
+                                event_type=EventType.TASK_RETRY,
+                                mission_id=task.mission_id,
+                                run_id=run_id,
+                                payload=TaskRetryEvent(
+                                    task_id=task.task_id,
+                                    mission_id=task.mission_id,
+                                    run_id=run_id,
+                                    attempt_id=new_attempt_id(),
+                                    retry_count=task.retry_count,
+                                    max_retries=max_retries,
+                                    error=str(e),
+                                ),
+                                source=f"agent.{task.agent_type.value}",
+                                correlation_id=task.task_id,
+                            ))
+                            continue
+                        else:
+                            # Retry exhausted
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                            self._emit(FactoryEvent.create(
+                                event_type=EventType.TASK_FAILED,
+                                mission_id=task.mission_id,
+                                run_id=run_id,
+                                payload=TaskFailedEvent(
+                                    task_id=task.task_id,
+                                    mission_id=task.mission_id,
+                                    run_id=run_id,
+                                    error=str(e),
+                                    retry_count=task.retry_count - 1,
+                                    max_retries=max_retries,
+                                ),
+                                source=f"agent.{task.agent_type.value}",
+                                correlation_id=task.task_id,
+                            ))
+                            results[task.task_id] = {
+                                "success": False, 
+                                "error": str(e),
+                                "attempts": task.retry_count,
+                                "terminal": True
+                            }
+                            break
+        
+        # Final checkpoint
+        if completed_since_checkpoint > 0:
+            await self._create_execution_checkpoint(run_id)
         
         # Final status
         final_status = self.get_task_graph_status(run_id)
@@ -1352,6 +1649,49 @@ class ExecutionEngine:
             "task_results": results,
             "final_status": final_status,
         }
+    
+    async def _create_execution_checkpoint(self, run_id: str) -> None:
+        """Create a checkpoint from current execution state."""
+        if run_id not in self.task_graph:
+            return
+        
+        graph = self.task_graph[run_id]
+        
+        # Collect mission_id from first task
+        mission_id = None
+        for node in graph.values():
+            if node.get("mission_id"):
+                mission_id = node["mission_id"]
+                break
+        
+        if not mission_id:
+            return
+        
+        # Build task states dict
+        task_states = {}
+        artifact_ids = []
+        evidence_hashes = []
+        
+        for task_id, node in graph.items():
+            task_states[task_id] = node["state"]
+            artifact_ids.extend(node.get("artifact_ids", []))
+            evidence_hashes.extend(node.get("evidence_hashes", []))
+        
+        # Get current plan state (simplified)
+        plan_state = PlanState.EXECUTING
+        
+        # Count completed tasks as step
+        step = sum(1 for s in task_states.values() if s == TaskState.COMPLETED)
+        
+        self.create_checkpoint(
+            mission_id=mission_id,
+            run_id=run_id,
+            step=step,
+            state=plan_state,
+            task_states=task_states,
+            artifact_ids=artifact_ids,
+            evidence_hashes=evidence_hashes,
+        )
     
     # --- Event Emission ---
     

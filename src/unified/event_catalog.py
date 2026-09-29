@@ -261,6 +261,16 @@ class TaskFailedEvent(BaseModel):
     max_retries: int
 
 
+class TaskRetryEvent(BaseModel):
+    task_id: str
+    mission_id: str
+    run_id: str
+    attempt_id: str
+    retry_count: int
+    max_retries: int
+    error: str
+
+
 class ToolStartedEvent(BaseModel):
     tool_name: str
     action_id: str
@@ -456,6 +466,7 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.TASK_ASSIGNED: TaskAssignedEvent,
     EventType.TASK_COMPLETED: TaskCompletedEvent,
     EventType.TASK_FAILED: TaskFailedEvent,
+    EventType.TASK_RETRY: TaskRetryEvent,
     EventType.TOOL_STARTED: ToolStartedEvent,
     EventType.TOOL_COMPLETED: ToolCompletedEvent,
     EventType.TOOL_FAILED: ToolFailedEvent,
@@ -568,6 +579,7 @@ EVENT_CONSUMERS: Dict[EventType, List[str]] = {
     EventType.TASK_ASSIGNED: ["Dashboard", "EventStore", "AgentRuntime"],
     EventType.TASK_COMPLETED: ["Dashboard", "EventStore", "Orchestrator", "Verifier"],
     EventType.TASK_FAILED: ["Dashboard", "EventStore", "Orchestrator"],
+    EventType.TASK_RETRY: ["Dashboard", "EventStore", "Orchestrator"],
 
     # Tool
     EventType.TOOL_STARTED: ["Dashboard", "EventStore", "SandboxManager"],
