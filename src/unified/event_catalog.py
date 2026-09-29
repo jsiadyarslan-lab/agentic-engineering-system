@@ -67,6 +67,11 @@ class EventType(str, Enum):
     # Verification
     VERIFICATION_STARTED = "verification.started"
     VERIFICATION_COMPLETE = "verification.complete"
+
+    # State transitions
+    STATE_TRANSITION = "state.transition"
+    CHECKPOINT_CREATED = "checkpoint.created"
+    CHECKPOINT_LOADED = "checkpoint.loaded"
     VERIFICATION_FAILED = "verification.failed"
 
     # Arbiter
@@ -91,10 +96,6 @@ class EventType(str, Enum):
     PUSH_INITIATED = "push.initiated"
     PUSH_COMPLETED = "push.completed"
     PUSH_FAILED = "push.failed"
-
-    # Checkpoints
-    CHECKPOINT_CREATED = "checkpoint.created"
-    CHECKPOINT_LOADED = "checkpoint.loaded"
 
     # Hard stops (EAS v2)
     HARD_STOP_FIRED = "hard_stop.fired"

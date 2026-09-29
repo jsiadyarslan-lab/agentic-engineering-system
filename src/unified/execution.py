@@ -275,6 +275,10 @@ class ExecutionEngine:
         # Current execution
         self._current_mission: Optional[Mission] = None
         self._current_run: Optional[Run] = None
+        
+        # Task Graph (DAG)
+        self.task_graph: Dict[str, Dict[str, Any]] = {}  # run_id -> {task_id -> {depends_on, dependents}}
+        self.task_runnable_cache: Dict[str, Set[str]] = {}  # run_id -> set of runnable task_ids
     
     # --- Mission Lifecycle ---
     
@@ -328,7 +332,7 @@ class ExecutionEngine:
         acceptance_criteria: Optional[List[AcceptanceCriterion]] = None,
         depends_on: Optional[List[str]] = None,
     ) -> Task:
-        """Create a new task."""
+        """Create a new task and add to task graph."""
         task = create_task(
             run_id=run_id,
             mission_id=mission_id,
@@ -339,6 +343,36 @@ class ExecutionEngine:
             depends_on=depends_on or [],
         )
         self.tasks[task.task_id] = task
+        
+        # Add to task graph
+        if run_id not in self.task_graph:
+            self.task_graph[run_id] = {}
+            self.task_runnable_cache[run_id] = set()
+        
+        # Initialize task node in graph
+        self.task_graph[run_id][task.task_id] = {
+            "depends_on": set(depends_on or []),
+            "dependents": set(),
+            "state": TaskState.PENDING,
+        }
+        
+        # Add reverse dependencies
+        for dep_id in depends_on or []:
+            if dep_id in self.task_graph[run_id]:
+                self.task_graph[run_id][dep_id]["dependents"].add(task.task_id)
+        
+        # Check if task is runnable (no dependencies or all completed)
+        if not depends_on or all(
+            self.tasks.get(dep_id) and self.tasks[dep_id].state == TaskState.COMPLETED
+            for dep_id in depends_on
+        ):
+            task.state = TaskState.READY
+            self.task_runnable_cache[run_id].add(task.task_id)
+            self.task_graph[run_id][task.task_id]["state"] = TaskState.READY
+        else:
+            task.state = TaskState.BLOCKED
+            self.task_graph[run_id][task.task_id]["state"] = TaskState.BLOCKED
+        
         return task
     
     # --- Agent Selection ---
@@ -376,6 +410,204 @@ class ExecutionEngine:
             required_permissions=[],
             required_domains=[],
         )
+    
+    # --- Task Graph Dependency Resolution ---
+    
+    def _update_task_graph_state(self, run_id: str, task_id: str, new_state: TaskState) -> None:
+        """Update task state in graph and propagate to dependents."""
+        if run_id not in self.task_graph:
+            return
+        
+        graph = self.task_graph[run_id]
+        if task_id not in graph:
+            return
+        
+        old_state = graph[task_id]["state"]
+        if old_state == new_state:
+            return  # No change
+        
+        graph[task_id]["state"] = new_state
+        
+        # Update task object
+        if task_id in self.tasks:
+            self.tasks[task_id].state = new_state
+        
+        # Emit state transition event
+        self._emit(FactoryEvent.create(
+            event_type=EventType.STATE_TRANSITION,
+            mission_id=self.tasks[task_id].mission_id if task_id in self.tasks else "",
+            run_id=run_id,
+            payload={
+                "task_id": task_id,
+                "from_state": old_state.value if hasattr(old_state, 'value') else str(old_state),
+                "to_state": new_state.value if hasattr(new_state, 'value') else str(new_state),
+                "reason": f"Task state updated to {new_state.value if hasattr(new_state, 'value') else str(new_state)}",
+            },
+            source="task_graph",
+            correlation_id=task_id,
+        ))
+        
+        # If task completed, check dependents
+        if new_state == TaskState.COMPLETED:
+            self._check_and_unblock_dependents(run_id, task_id)
+        elif new_state == TaskState.FAILED:
+            self._block_dependents(run_id, task_id, f"Dependency {task_id} failed")
+    
+    def _check_and_unblock_dependents(self, run_id: str, completed_task_id: str) -> None:
+        """Check if dependents of completed task can now run."""
+        if run_id not in self.task_graph:
+            return
+        
+        graph = self.task_graph[run_id]
+        if completed_task_id not in graph:
+            return
+        
+        dependents = graph[completed_task_id]["dependents"]
+        for dep_id in dependents:
+            if dep_id not in graph:
+                continue
+            
+            # Check if all dependencies are completed
+            all_deps_completed = True
+            for req_dep_id in graph[dep_id]["depends_on"]:
+                req_task = self.tasks.get(req_dep_id)
+                if not req_task or req_task.state != TaskState.COMPLETED:
+                    all_deps_completed = False
+                    break
+            
+            if all_deps_completed:
+                # Unblock the dependent
+                if graph[dep_id]["state"] == TaskState.BLOCKED:
+                    graph[dep_id]["state"] = TaskState.READY
+                    self.task_runnable_cache[run_id].add(dep_id)
+                    
+                    # Update task object
+                    if dep_id in self.tasks:
+                        self.tasks[dep_id].state = TaskState.READY
+                    
+                    # Emit event
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.STATE_TRANSITION,
+                        mission_id=self.tasks[dep_id].mission_id if dep_id in self.tasks else "",
+                        run_id=run_id,
+                        payload={
+                            "task_id": dep_id,
+                            "from_state": "BLOCKED",
+                            "to_state": "READY",
+                            "reason": f"Dependency {completed_task_id} completed",
+                        },
+                        source="task_graph",
+                        correlation_id=dep_id,
+                    ))
+    
+    def _block_dependents(self, run_id: str, failed_task_id: str, reason: str) -> None:
+        """Block all dependents of a failed task."""
+        if run_id not in self.task_graph:
+            return
+        
+        graph = self.task_graph[run_id]
+        if failed_task_id not in graph:
+            return
+        
+        dependents = graph[failed_task_id]["dependents"]
+        for dep_id in dependents:
+            if dep_id not in graph:
+                continue
+            
+            if graph[dep_id]["state"] in (TaskState.BLOCKED, TaskState.READY):
+                graph[dep_id]["state"] = TaskState.BLOCKED
+                self.task_runnable_cache[run_id].discard(dep_id)
+                
+                # Update task object
+                if dep_id in self.tasks:
+                    self.tasks[dep_id].state = TaskState.BLOCKED
+                
+                # Emit event
+                self._emit(FactoryEvent.create(
+                    event_type=EventType.STATE_TRANSITION,
+                    mission_id=self.tasks[dep_id].mission_id if dep_id in self.tasks else "",
+                    run_id=run_id,
+                    payload={
+                        "task_id": dep_id,
+                        "from_state": graph[dep_id]["state"],
+                        "to_state": "BLOCKED",
+                        "reason": reason,
+                    },
+                    source="task_graph",
+                    correlation_id=dep_id,
+                ))
+    
+    def get_runnable_tasks(self, run_id: str) -> List[Task]:
+        """Get all tasks that are ready to run (READY state)."""
+        if run_id not in self.task_runnable_cache:
+            return []
+        
+        runnable = []
+        for task_id in self.task_runnable_cache[run_id]:
+            task = self.tasks.get(task_id)
+            if task and task.state == TaskState.READY:
+                runnable.append(task)
+        return runnable
+    
+    def get_task_graph_status(self, run_id: str) -> Dict[str, Any]:
+        """Get status of all tasks in the graph."""
+        if run_id not in self.task_graph:
+            return {}
+        
+        graph = self.task_graph[run_id]
+        status = {}
+        for task_id, node in graph.items():
+            task = self.tasks.get(task_id)
+            status[task_id] = {
+                "state": node["state"],
+                "depends_on": list(node["depends_on"]),
+                "dependents": list(node["dependents"]),
+                "name": task.name if task else "unknown",
+                "agent_type": task.agent_type.value if task else "unknown",
+            }
+        return status
+    
+    def validate_task_graph(self, run_id: str) -> List[str]:
+        """Validate task graph for cycles and missing dependencies."""
+        errors = []
+        if run_id not in self.task_graph:
+            return errors
+        
+        graph = self.task_graph[run_id]
+        
+        # Check for missing dependencies
+        for task_id, node in graph.items():
+            for dep_id in node["depends_on"]:
+                if dep_id not in graph:
+                    errors.append(f"Task {task_id} depends on missing task {dep_id}")
+        
+        # Check for cycles using DFS
+        visited = set()
+        rec_stack = set()
+        
+        def dfs(node_id: str) -> bool:
+            visited.add(node_id)
+            rec_stack.add(node_id)
+            
+            for dep_id in graph.get(node_id, {}).get("dependents", set()):
+                if dep_id not in graph:
+                    continue
+                if dep_id not in visited:
+                    if dfs(dep_id):
+                        return True
+                elif dep_id in rec_stack:
+                    return True
+            
+            rec_stack.remove(node_id)
+            return False
+        
+        for task_id in graph:
+            if task_id not in visited:
+                if dfs(task_id):
+                    errors.append(f"Cycle detected in task graph involving {task_id}")
+                    break
+        
+        return errors
     
     # --- Agent Execution ---
     
@@ -428,45 +660,34 @@ class ExecutionEngine:
             correlation_id=context.task_id,
         ))
         
-        # Emit agent started
-        self._emit(FactoryEvent.create(
-            event_type=EventType.AGENT_STARTED,
-            mission_id=context.mission_id,
-            run_id=context.run_id,
-            payload=AgentStartedEvent(
-                agent_id=context.agent_id,
-                mission_id=context.mission_id,
-                run_id=context.run_id,
-                task_id=context.task_id,
-                agent_type=agent_type.value,
-            ),
-            source=f"agent.{agent_type.value}",
-            correlation_id=context.task_id,
-        ))
-        
-        # Execute via agent factory
+        # Execute via agent factory (agent will emit AGENT_STARTED and AGENT_COMPLETED)
         result = await self.agent_factory.execute_agent(
             agent_type=agent_type,
             context=context,
             task=task,
         )
         
-        # Emit agent completed/failed
+        # Update task graph state
+        task_id = context.task_id
+        run_id = context.run_id
         if result.success:
+            self._update_task_graph_state(run_id, task_id, TaskState.COMPLETED)
+        else:
+            self._update_task_graph_state(run_id, task_id, TaskState.FAILED)
+        
+        # Emit task failed if agent failed (agent emits AGENT_COMPLETED/AGENT_FAILED)
+        if not result.success:
             self._emit(FactoryEvent.create(
-                event_type=EventType.AGENT_COMPLETED,
+                event_type=EventType.TASK_FAILED,
                 mission_id=context.mission_id,
                 run_id=context.run_id,
-                payload=AgentCompletedEvent(
-                    agent_id=context.agent_id,
-                    agent_type=agent_type.value,
+                payload=TaskFailedEvent(
+                    task_id=context.task_id,
                     mission_id=context.mission_id,
                     run_id=context.run_id,
-                    task_id=context.task_id,
-                    success=True,
-                    output_summary=f"artifacts={result.artifacts}",
-                    evidence_hash=result.evidence_hash,
-                    duration_ms=result.duration_ms,
+                    error=result.error or "Unknown error",
+                    retry_count=0,
+                    max_retries=2,
                 ),
                 source=f"agent.{agent_type.value}",
                 correlation_id=context.task_id,
@@ -975,11 +1196,207 @@ class ExecutionEngine:
         
         return new_run
     
+    # --- Task Graph Execution ---
+    
+    async def execute_task_graph(
+        self,
+        run_id: str,
+        sandbox_manager=None,
+        event_collector=None,
+        max_parallel: int = 1,
+    ) -> Dict[str, Any]:
+        """
+        Execute all tasks in the task graph for a run.
+        
+        Respects dependencies: only runs tasks when all dependencies are COMPLETED.
+        Supports retry and failure propagation.
+        
+        Args:
+            run_id: The run ID containing the task graph
+            sandbox_manager: Optional sandbox manager (uses engine's if not provided)
+            event_collector: Optional event collector
+            max_parallel: Maximum parallel tasks (currently sequential only)
+        
+        Returns:
+            Dict with execution results and final task states
+        """
+        if run_id not in self.task_graph:
+            raise ValueError(f"No task graph for run {run_id}")
+        
+        graph = self.task_graph[run_id]
+        results = {}
+        
+        # Use engine's sandbox manager if not provided
+        if sandbox_manager is None:
+            sandbox_manager = self.sandbox_manager
+        
+        # Validate graph first
+        errors = self.validate_task_graph(run_id)
+        if errors:
+            raise ValueError(f"Invalid task graph: {errors}")
+        
+        # Execute tasks in dependency order
+        while True:
+                runnable = self.get_runnable_tasks(run_id)
+                if not runnable:
+                    # Check if any tasks are still pending/running/blocked
+                    all_done = True
+                    for task_id, node in graph.items():
+                        if node["state"] not in (TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED):
+                            all_done = False
+                            break
+                    if all_done:
+                        break
+                    # No runnable tasks but not all done - deadlock or all blocked
+                    break
+                
+                # For now, execute sequentially (one at a time)
+                for task in runnable:
+                    if task.state != TaskState.READY:
+                        continue
+                    
+                    # Update task state to ASSIGNED
+                    self._update_task_graph_state(run_id, task.task_id, TaskState.ASSIGNED)
+                    
+                    try:
+                        # Select agent
+                        agent_task = AgentTask(
+                            task_id=task.task_id,
+                            run_id=run_id,
+                            mission_id=task.mission_id,
+                            name=task.name,
+                            description=task.description,
+                            agent_type=task.agent_type,
+                            acceptance_criteria=task.acceptance_criteria,
+                            depends_on=task.depends_on,
+                        )
+                        
+                        defn = self.select_agent_for_task(agent_task)
+                        if defn is None:
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                            results[task.task_id] = {"success": False, "error": "No available agent"}
+                            continue
+                        
+                        # Create execution context
+                        sandbox_id = f"sandbox-{task.task_id}"
+                        context = ExecutionContext(
+                            mission_id=task.mission_id,
+                            run_id=run_id,
+                            task_id=task.task_id,
+                            attempt_id=new_attempt_id(),
+                            agent_id=defn.agent_id,
+                            agent_type=task.agent_type,
+                            sandbox_id=sandbox_id,
+                            sandbox_manager=sandbox_manager,
+                            event_emitter=self.event_bus.emit,  # Use event bus emit to avoid duplicate events
+                            evidence_store=self.evidence_store,
+                        )
+                        
+                        # Update task state to RUNNING
+                        self._update_task_graph_state(run_id, task.task_id, TaskState.RUNNING)
+                        
+                        # Execute agent
+                        result = await self.execute_agent(
+                            agent_type=task.agent_type,
+                            context=context,
+                            task=agent_task,
+                        )
+                        
+                        if result.success:
+                            # Verify if acceptance criteria exist
+                            if task.acceptance_criteria:
+                                report = await self.verify_task(context, agent_task, context.attempt_id)
+                                if report.verdict not in ("evidenced", "passed"):
+                                    # Verification failed - mark task as failed
+                                    self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                                    # Emit task failed event
+                                    self._emit(FactoryEvent.create(
+                                        event_type=EventType.TASK_FAILED,
+                                        mission_id=context.mission_id,
+                                        run_id=context.run_id,
+                                        payload=TaskFailedEvent(
+                                            task_id=context.task_id,
+                                            mission_id=context.mission_id,
+                                            run_id=context.run_id,
+                                            error=f"Verification failed: {report.verdict}",
+                                            retry_count=0,
+                                            max_retries=task.max_retries if hasattr(task, 'max_retries') else 2,
+                                        ),
+                                        source=f"agent.{task.agent_type.value}",
+                                        correlation_id=context.task_id,
+                                    ))
+                                    results[task.task_id] = {
+                                        "success": False,
+                                        "error": f"Verification failed: {report.verdict}",
+                                        "verification": report.verdict,
+                                    }
+                                else:
+                                    results[task.task_id] = {"success": True, "verification": report.verdict}
+                            else:
+                                results[task.task_id] = {"success": True}
+                        else:
+                            self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                            results[task.task_id] = {"success": False, "error": result.error}
+                        
+                    except Exception as e:
+                        self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                        results[task.task_id] = {"success": False, "error": str(e)}
+        
+        # Final status
+        final_status = self.get_task_graph_status(run_id)
+        all_success = all(r.get("success", False) for r in results.values())
+        
+        return {
+            "run_id": run_id,
+            "success": all_success,
+            "task_results": results,
+            "final_status": final_status,
+        }
+    
     # --- Event Emission ---
     
-    def _emit(self, event: FactoryEvent) -> None:
-        """Emit event to bus."""
-        self.event_bus.emit(event)
+    def _emit(self, event: FactoryEvent | Any) -> None:
+        """Emit event to bus. Accepts either FactoryEvent or payload event."""
+        if isinstance(event, FactoryEvent):
+            factory_event = event
+        else:
+            # Map payload event class names to EventType
+            event_type_map = {
+                'MissionStartedEvent': EventType.MISSION_STARTED,
+                'MissionCompletedEvent': EventType.MISSION_COMPLETED,
+                'RunStartedEvent': EventType.RUN_STARTED,
+                'RunCompletedEvent': EventType.RUN_COMPLETED,
+                'AgentStartedEvent': EventType.AGENT_STARTED,
+                'AgentCompletedEvent': EventType.AGENT_COMPLETED,
+                'AgentFailedEvent': EventType.AGENT_FAILED,
+                'AgentSelectedEvent': EventType.AGENT_SELECTED,
+                'TaskFailedEvent': EventType.TASK_FAILED,
+                'TaskCompletedEvent': EventType.TASK_COMPLETED,
+                'ToolStartedEvent': EventType.TOOL_STARTED,
+                'ToolCompletedEvent': EventType.TOOL_COMPLETED,
+                'ToolFailedEvent': EventType.TOOL_FAILED,
+                'ArtifactCreatedEvent': EventType.ARTIFACT_CREATED,
+                'VerificationCompleteEvent': EventType.VERIFICATION_COMPLETE,
+                'MissionStateChangedEvent': EventType.MISSION_STATE_CHANGED,
+                'StateTransitionEvent': EventType.STATE_TRANSITION,
+                'CheckpointCreatedEvent': EventType.CHECKPOINT_CREATED,
+                'CheckpointLoadedEvent': EventType.CHECKPOINT_LOADED,
+            }
+            event_class_name = event.__class__.__name__
+            event_type = event_type_map.get(event_class_name)
+            if event_type is None:
+                # Fallback: try to convert from class name
+                event_type = EventType(event_class_name.replace('Event', '').upper())
+            
+            factory_event = FactoryEvent.create(
+                event_type=event_type,
+                mission_id=getattr(event, 'mission_id', ''),
+                run_id=getattr(event, 'run_id', ''),
+                payload=event,
+                source='execution_engine',
+                correlation_id=getattr(event, 'task_id', getattr(event, 'run_id', '')),
+            )
+        self.event_bus.emit(factory_event)
     
     def subscribe_events(self, callback: Callable[[FactoryEvent], None]) -> None:
         """Subscribe to events."""
