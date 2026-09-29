@@ -8,7 +8,7 @@ All models are frozen Pydantic v2 for immutability and validation.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Literal
 from pydantic import BaseModel, Field, field_validator
@@ -244,9 +244,9 @@ class Mission(BaseModel):
         if self.state.is_terminal:
             raise ValueError(f"Cannot transition from terminal state {self.state}")
         self.state = new_state
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
         if new_state.is_terminal:
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
 
 
 class Run(BaseModel):
@@ -382,7 +382,7 @@ class Grant(BaseModel):
     @field_validator("expires_at")
     @classmethod
     def expires_after_issued(cls, v: datetime, info) -> datetime:
-        issued = info.data.get("issued_at") or datetime.utcnow()
+        issued = info.data.get("issued_at") or datetime.now(timezone.utc)
         if v <= issued:
             raise ValueError("expires_at must be after issued_at")
         return v

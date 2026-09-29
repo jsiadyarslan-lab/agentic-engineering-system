@@ -13,7 +13,7 @@ Based on: EAS v2 Verifier (evidence-based, file existence + hash matching)
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Literal, Callable
 from pydantic import BaseModel, Field, field_validator
@@ -162,8 +162,8 @@ class VerificationReport(BaseModel):
     sub_verdict: Optional[str] = None  # "NOT_EVIDENCED" or None
 
     # Timing
-    started_at: datetime = Field(default_factory=datetime.utcnow)
-    completed_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     duration_ms: int = 0
 
     @property
@@ -258,7 +258,7 @@ class Verifier:
             report.confidence = report.score
             report.sub_verdict = "NOT_EVIDENCED"
 
-        report.completed_at = __import__("datetime").datetime.utcnow()
+        report.completed_at = datetime.now(timezone.utc)
         report.duration_ms = int(
             (report.completed_at - report.started_at).total_seconds() * 1000
         )
@@ -271,7 +271,7 @@ class Verifier:
         artifacts: Dict[str, Any],
     ) -> CheckResult:
         """Check a single criterion."""
-        start = __import__("datetime").datetime.utcnow()
+        start = datetime.now(timezone.utc)
 
         try:
             if criterion.type == CriterionType.FILE_EXISTS:
@@ -313,7 +313,7 @@ class Verifier:
             )
         finally:
             duration = int(
-                (__import__("datetime").datetime.utcnow() - start).total_seconds() * 1000
+                (datetime.now(timezone.utc) - start).total_seconds() * 1000
             )
 
     def _check_file_exists(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
@@ -530,7 +530,7 @@ def create_evidence_record(
         "mission_id": mission_id,
         "run_id": run_id,
         "task_id": task_id,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

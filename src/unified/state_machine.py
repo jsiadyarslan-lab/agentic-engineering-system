@@ -10,6 +10,7 @@ Based on EAS v2 core/state.py with unification of AgentFactory MissionState.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, FrozenSet, Set
 from dataclasses import dataclass
@@ -391,7 +392,7 @@ class MissionStateMachine:
             "to": to_state.value,
             "actor": actor,
             "reason": reason,
-            "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "counters": {
                 "review_cycles": self.review_cycle_count,
                 "arbiter_calls": self.arbiter_call_count,

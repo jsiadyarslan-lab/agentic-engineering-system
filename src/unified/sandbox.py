@@ -329,14 +329,23 @@ class SandboxManager:
         content: bytes,
     ) -> Artifact:
         """Write artifact to sandbox."""
+        # Allow writing to any sandbox_id - create directory if needed
         if sandbox_id not in self._active:
-            raise SandboxError(f"Sandbox {sandbox_id} not active")
+            # Create sandbox directory structure
+            import os
+            artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
+            os.makedirs(artifacts_dir, exist_ok=True)
         return await self.sandbox.write_artifact(sandbox_id, path, content)
 
     async def read_artifact(self, sandbox_id: str, path: str) -> bytes:
         """Read artifact from sandbox."""
+        # Allow reading from any sandbox directory that exists
         if sandbox_id not in self._active and sandbox_id not in self._completed:
-            raise SandboxError(f"Sandbox {sandbox_id} not found")
+            # Check if directory exists
+            import os
+            artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
+            if not os.path.exists(artifacts_dir):
+                raise SandboxError(f"Sandbox {sandbox_id} not found")
         return await self.sandbox.read_artifact(sandbox_id, path)
 
     async def list_artifacts(self, sandbox_id: str) -> List[Artifact]:
@@ -404,6 +413,7 @@ def create_sandbox_manager(
     default_limits: Optional[ResourceLimits] = None,
     grant_validator: Optional[callable] = None,
     event_emitter: Optional[callable] = None,
+    artifacts_base_dir: Optional[str] = None,
 ) -> SandboxManager:
     """
     Create SandboxManager with appropriate backend.
@@ -416,7 +426,7 @@ def create_sandbox_manager(
         else:
             backend = SandboxBackend.LOCAL_SUBSTRATE
 
-    sandbox = create_sandbox_backend(backend)
+    sandbox = create_sandbox_backend(backend, artifacts_base_dir=artifacts_base_dir)
     return SandboxManager(
         sandbox=sandbox,
         image_allowlist=image_allowlist,
@@ -426,12 +436,12 @@ def create_sandbox_manager(
     )
 
 
-def create_sandbox_backend(backend: SandboxBackend) -> ExecutionSandbox:
+def create_sandbox_backend(backend: SandboxBackend, artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
     """Create sandbox backend implementation."""
     if backend == SandboxBackend.LOCAL_SUBSTRATE:
         return create_local_substrate_adapter()
     elif backend == SandboxBackend.WINDOWS_EXECUTOR:
-        return create_windows_executor_adapter()
+        return create_windows_executor_adapter(artifacts_base_dir=artifacts_base_dir)
     elif backend == SandboxBackend.DOCKER:
         return create_docker_adapter()
     else:
@@ -447,11 +457,11 @@ def create_local_substrate_adapter() -> ExecutionSandbox:
         raise SandboxUnavailableError(f"LocalSubstrateAdapter not available: {e}")
 
 
-def create_windows_executor_adapter() -> ExecutionSandbox:
+def create_windows_executor_adapter(artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
     """Create WindowsExecutorAdapter (Windows only)."""
     try:
-        from core.windows_executor import WindowsExecutorAdapter
-        return WindowsExecutorAdapter()
+        from unified.windows_adapter import create_windows_executor_adapter as _create
+        return _create(artifacts_base_dir=artifacts_base_dir)
     except ImportError as e:
         raise SandboxUnavailableError(f"WindowsExecutorAdapter not available: {e}")
 

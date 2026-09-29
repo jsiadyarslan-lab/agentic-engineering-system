@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-09-29T02:31:17.911894+00:00",
+  "baseline_sha": "2c82bbf9204bd8c72480337b6994954e7adc1956",
+  "vs002_result": {
+    "mission_id": "mission-ad882254b273",
+    "run_id": "run-15dd7ef993cf",
+    "final_state": "VERIFIED",
+    "events": 18,
+    "artifacts": 2,
+    "evidence": 2,
+    "checkpoints": 1,
+    "verification_verdict": "evidenced",
+    "golden_rule_enforced": true,
+    "checkpoint_resume": true,
+    "failure_injection": true,
+    "retry_test": true,
+    "mutation_detection": true,
+    "artifact_read_write": true
+  },
+  "overall": "PASSED"
+}

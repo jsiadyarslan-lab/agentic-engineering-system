@@ -857,10 +857,12 @@ class ToolResult(BaseModel):
     success: bool
     output: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    error_type: Optional[str] = None
     evidence_id: Optional[str] = None
     duration_ms: int = 0
     audit_event: str = ""
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    artifacts: List[str] = Field(default_factory=list)
 
 
 # ============================================================
