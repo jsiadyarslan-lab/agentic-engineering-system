@@ -168,6 +168,7 @@ class EventType(str, Enum):
     SECTION_COMPLETE = "section.complete"
     AGENT_STARTED = "agent.started"
     AGENT_COMPLETED = "agent.completed"
+    AGENT_FAILED = "agent.failed"
     TOOL_STARTED = "tool.started"
     TOOL_COMPLETED = "tool.completed"
     TOOL_FAILED = "tool.failed"

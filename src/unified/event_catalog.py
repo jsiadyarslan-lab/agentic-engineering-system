@@ -206,6 +206,16 @@ class AgentCompletedEvent(BaseModel):
     duration_ms: int
 
 
+class AgentFailedEvent(BaseModel):
+    agent_id: str
+    agent_type: str
+    mission_id: str
+    run_id: str
+    task_id: str
+    error: str
+    error_type: str
+
+
 class TaskCreatedEvent(BaseModel):
     task_id: str
     mission_id: str
@@ -429,6 +439,7 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.SECTION_COMPLETE: SectionCompleteEvent,
     EventType.AGENT_STARTED: AgentStartedEvent,
     EventType.AGENT_COMPLETED: AgentCompletedEvent,
+    EventType.AGENT_FAILED: AgentFailedEvent,
     EventType.TASK_CREATED: TaskCreatedEvent,
     EventType.TASK_ASSIGNED: TaskAssignedEvent,
     EventType.TASK_COMPLETED: TaskCompletedEvent,

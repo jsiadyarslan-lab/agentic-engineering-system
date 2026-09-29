@@ -1,0 +1,7 @@
+{
+  "AgentDefinition": "registered",
+  "AgentRegistry": "operational",
+  "AgentLifecycle": "enforced",
+  "CapabilitySelection": "deterministic",
+  "ToolPolicy": "enforced"
+}

@@ -110,6 +110,7 @@ from unified.event_catalog import (
     SectionCompleteEvent,
     AgentStartedEvent,
     AgentCompletedEvent,
+    AgentFailedEvent,
     TaskCreatedEvent,
     TaskAssignedEvent,
     TaskCompletedEvent,
@@ -185,6 +186,35 @@ from unified.agent_contract import (
     # Capabilities
     AgentCapability,
     AGENT_CAPABILITIES,
+)
+
+# ============================================================
+# AGENT ROLE (E4: Agent Registry & Lifecycle)
+# ============================================================
+from unified.agent_role import (
+    # Lifecycle
+    AgentLifecycleState,
+    AGENT_LIFECYCLE_TRANSITIONS,
+    validate_agent_lifecycle_transition,
+    # Definition
+    AgentDefinition,
+    # Capability (re-export)
+    AgentCapability,
+    AGENT_CAPABILITIES,
+    # Context
+    AgentContext,
+    # Protocol
+    AgentRole,
+    # Base
+    BaseAgent,
+    # Registry
+    AgentRegistry,
+    agent_registry,
+    AgentSelectionError,
+    # Factory
+    AgentFactory,
+    # Adapter
+    EASRoleAdapter,
 )
 
 # ============================================================
@@ -366,7 +396,7 @@ __all__ = [
     "EventType", "EventMetadata", "MissionStartedEvent", "MissionCompletedEvent",
     "MissionStateChangedEvent", "RunStartedEvent", "PlanCreatedEvent",
     "PlanRevisedEvent", "SectionStartEvent", "SectionCompleteEvent",
-    "AgentStartedEvent", "AgentCompletedEvent", "TaskCreatedEvent",
+    "AgentStartedEvent", "AgentCompletedEvent", "AgentFailedEvent", "TaskCreatedEvent",
     "TaskAssignedEvent", "TaskCompletedEvent", "TaskFailedEvent",
     "ToolStartedEvent", "ToolCompletedEvent", "ToolFailedEvent",
     "ArtifactCreatedEvent", "EvidenceRecordedEvent", "VerificationCompleteEvent",
@@ -389,6 +419,15 @@ __all__ = [
     "VerifierInput", "VerificationResult",
     "ArbiterInput", "ArbiterResult",
     "AgentContractRegistry", "AgentCapability", "AGENT_CAPABILITIES",
+    # Agent Role (E4)
+    "AgentLifecycleState", "AGENT_LIFECYCLE_TRANSITIONS",
+    "validate_agent_lifecycle_transition",
+    "AgentDefinition",
+    "AgentContext",
+    "BaseAgent",
+    "AgentRegistry", "agent_registry", "AgentSelectionError",
+    "AgentFactory",
+    "EASRoleAdapter",
     # Tool Contracts
     "ToolCategory", "ToolRiskLevel", "IsolationRequirement",
     "ToolInputSchema", "ToolOutputSchema", "RetryPolicy", "ToolContract",
