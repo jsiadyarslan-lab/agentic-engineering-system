@@ -1,0 +1,96 @@
+BASELINE RECORD - E2 FOUNDATION INTEGRATION
+==============================================
+
+TIMESTAMP: 2025-09-29T01:15:00Z
+EXECUTOR: Engineering Agent Factory
+
+REPOSITORY STATE
+----------------
+Branch: main
+HEAD SHA: b09b6201673d6140e59ab7d49f1525a525adebc7
+Remote: origin/main (up to date)
+Worktree: NOT CLEAN (uncommitted changes in src/factory/, src/llm/, src/router/)
+LOCAL != REMOTE: TRUE (uncommitted changes + untracked files)
+
+UNCOMMITTED CHANGES:
+- Modified: 23 files in src/factory/, src/llm/, src/router/
+- Deleted: src/llm/mock_provider.py
+- Untracked: 40+ files including src/unified/ directory and test files
+
+NOTE: Per E2 Order, LOCAL != REMOTE is a HARD STOP condition.
+This baseline is recorded for audit purposes. No auto-commit or clean performed.
+
+E1 ARTIFACT INVENTORY
+---------------------
+All 17 artifacts present in src/unified/:
+
+| # | Artifact | Type | Size | Status |
+|---|----------|------|------|--------|
+| 1 | architecture.md | Markdown | 28,335 bytes | OK |
+| 2 | execution_tracker.json | JSON | 15,979 bytes | OK |
+| 3 | dependency_graph.json | JSON | 6,667 bytes | OK |
+| 4 | domain_model.py | Python | 25,598 bytes | OK |
+| 5 | state_machine.py | Python | 17,906 bytes | OK |
+| 6 | event_catalog.py | Python | 29,555 bytes | OK |
+| 7 | agent_contract.py | Python | 19,253 bytes | OK |
+| 8 | tool_contract.py | Python | 26,191 bytes | OK |
+| 9 | verification_standard.py | Python | 21,609 bytes | OK |
+| 10 | risk_register.json | JSON | 10,749 bytes | OK |
+| 11 | adr_index.json | JSON | 18,760 bytes | OK |
+| 11 | vertical_slice.py | Python | 16,284 bytes | OK |
+| 13 | self_hosting_benchmark.py | Python | 19,898 bytes | OK |
+| 14 | contracts.py | Python | 14,435 bytes | OK |
+| 15 | llm_gateway.py | Python | 19,956 bytes | OK |
+| 16 | sandbox.py | Python | 18,484 bytes | OK |
+| 17 | agent_role.py | Python | 20,087 bytes | OK |
+
+VALIDATION:
+- All 13 Python modules import successfully
+- All 4 JSON files parse as valid JSON
+- No circular imports detected
+- Cross-module imports work correctly
+- 13 ID generators present in domain_model
+- 19 MissionState values match 19 PlanState values
+- 8 AgentType values consistent across modules
+- 52 EventType values defined
+- 11 CriterionType values defined
+- 6 SandboxTermination values defined
+- 4 IsolationRequirement values defined
+
+EXISTING TEST RESULTS
+---------------------
+Factory Tests: 112 passed, 3 skipped (no LLM provider configured)
+Core Tests: 29 passed, 9 skipped (Linux-only substrate), 3 failed (provider required)
+No Mock in Production: 3 passed, 1 failed (provider required)
+
+CONTRACT CONSISTENCY AUDIT
+--------------------------
+- MissionState (19) == PlanState (19) ✓
+- SubVerdict (2) consistent across domain_model/state_machine ✓
+- AgentType (8) consistent across domain_model/agent_contract ✓
+- EventType (52) defined in event_catalog ✓
+- ToolCategory (9) defined in tool_contract ✓
+- CriterionType (11) defined in verification_standard ✓
+- VerifierVerdict (2) in domain_model ✓
+- ArbiterDecision (3) in domain_model ✓
+- HumanDecisionType (4) in domain_model ✓
+- ReviewVerdict (2) in agent_contract ✓
+- SandboxTermination (6) in domain_model ✓
+- IsolationRequirement (4) in tool_contract ✓
+- ID generators (13) present in domain_model ✓
+- No duplicate models detected ✓
+- No circular imports detected ✓
+
+GAPS IDENTIFIED
+---------------
+1. LOCAL != REMOTE (HARD STOP per E2 Order)
+2. Core integration tests require LLM provider (expected on Windows)
+3. Windows substrate tests skipped (Linux-only LocalSubstrateAdapter)
+4. No end-to-end Vertical Slice execution yet (VS-001 not executed)
+5. Checkpoint/resume not tested in integration
+6. Event trace from real execution not captured
+6. Artifact → Evidence → Verification chain not proven in integration
+
+NEXT STEPS
+----------
+Proceed with VS-001 execution per E2 Order Section 4.

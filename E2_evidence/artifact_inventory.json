@@ -1,0 +1,187 @@
+{
+  "timestamp": "2025-09-29T01:15:00Z",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "artifacts": [
+    {
+      "id": 1,
+      "name": "architecture.md",
+      "path": "src/unified/architecture.md",
+      "type": "markdown",
+      "size_bytes": 28335,
+      "exists": true,
+      "importable": "N/A",
+      "valid": true
+    },
+    {
+      "id": 2,
+      "name": "execution_tracker.json",
+      "path": "src/unified/execution_tracker.json",
+      "type": "json",
+      "size_bytes": 15979,
+      "exists": true,
+      "importable": "N/A",
+      "valid": true
+    },
+    {
+      "id": 3,
+      "name": "dependency_graph.json",
+      "path": "src/unified/dependency_graph.json",
+      "type": "json",
+      "size_bytes": 6667,
+      "exists": true,
+      "importable": "N/A",
+      "valid": true
+    },
+    {
+      "id": 4,
+      "name": "domain_model.py",
+      "path": "src/unified/domain_model.py",
+      "type": "python",
+      "size_bytes": 25598,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 5,
+      "name": "state_machine.py",
+      "path": "src/unified/state_machine.py",
+      "type": "python",
+      "size_bytes": 17906,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 6,
+      "name": "event_catalog.py",
+      "path": "src/unified/event_catalog.py",
+      "type": "python",
+      "size_bytes": 29555,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 7,
+      "name": "agent_contract.py",
+      "path": "src/unified/agent_contract.py",
+      "type": "python",
+      "size_bytes": 19253,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 8,
+      "name": "tool_contract.py",
+      "path": "src/unified/tool_contract.py",
+      "type": "python",
+      "size_bytes": 26191,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 9,
+      "name": "verification_standard.py",
+      "path": "src/unified/verification_standard.py",
+      "type": "python",
+      "size_bytes": 21609,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 10,
+      "name": "risk_register.json",
+      "path": "src/unified/risk_register.json",
+      "type": "json",
+      "size_bytes": 10749,
+      "exists": true,
+      "importable": "N/A",
+      "valid": true
+    },
+    {
+      "id": 11,
+      "name": "adr_index.json",
+      "path": "src/unified/adr_index.json",
+      "type": "json",
+      "size_bytes": 18760,
+      "exists": true,
+      "importable": "N/A",
+      "valid": true
+    },
+    {
+      "id": 12,
+      "name": "vertical_slice.py",
+      "path": "src/unified/vertical_slice.py",
+      "type": "python",
+      "size_bytes": 16284,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 13,
+      "name": "self_hosting_benchmark.py",
+      "path": "src/unified/self_hosting_benchmark.py",
+      "type": "python",
+      "size_bytes": 19898,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 14,
+      "name": "contracts.py",
+      "path": "src/unified/contracts.py",
+      "type": "python",
+      "size_bytes": 14435,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 15,
+      "name": "llm_gateway.py",
+      "path": "src/unified/llm_gateway.py",
+      "type": "python",
+      "size_bytes": 19956,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 16,
+      "name": "sandbox.py",
+      "path": "src/unified/sandbox.py",
+      "type": "python",
+      "size_bytes": 18484,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    },
+    {
+      "id": 17,
+      "name": "agent_role.py",
+      "path": "src/unified/agent_role.py",
+      "type": "python",
+      "size_bytes": 20087,
+      "exists": true,
+      "importable": true,
+      "valid": true
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "python_modules": 13,
+    "json_files": 4,
+    "markdown_files": 1,
+    "all_exist": true,
+    "all_importable": true,
+    "all_valid": true,
+    "cross_module_imports": true,
+    "circular_imports": false
+  }
+}

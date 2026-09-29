@@ -17,6 +17,8 @@ class CLIMonitor:
     
     def __init__(self):
         self._current_state: Optional[MissionState] = None
+        self._mission_id: Optional[str] = None
+        self._approval_future: Optional[asyncio.Future] = None
     
     def set_dependencies(self, chat_interface, human_gate):
         # Not needed - ChatInterface handles approval directly
@@ -62,6 +64,7 @@ class CLIMonitor:
 
 async def main():
     parser = argparse.ArgumentParser(description="Agent Factory CLI")
+    
     subparsers = parser.add_subparsers(dest="command", required=True)
     
     # factory run "task"
@@ -69,6 +72,11 @@ async def main():
     run_parser.add_argument("task", help="Task description")
     run_parser.add_argument("--codebase", default=".", help="Codebase path")
     run_parser.add_argument("--test-mode", action="store_true", help="Run in test mode (auto-approve)")
+    run_parser.add_argument("--api-key", help="API key (overrides env var)")
+    run_parser.add_argument("--provider", default="nvidia", choices=["nvidia", "openai", "anthropic", "google", "ollama", "custom"], help="LLM provider")
+    run_parser.add_argument("--model", default="nvidia/nemotron-3-ultra", help="Model name")
+    run_parser.add_argument("--ws-port", type=int, default=8765, help="WebSocket server port")
+    run_parser.add_argument("--no-ws", action="store_true", help="Disable WebSocket server")
     
     # factory status <mission_id>
     status_parser = subparsers.add_parser("status", help="Get mission status")
@@ -80,32 +88,36 @@ async def main():
     args = parser.parse_args()
     
     if args.command == "run":
-        # Check for API key
-        use_mock_llm = not os.getenv("NVIDIA_API_KEY")
-        
-        # --test-mode: use mock LLM with auto-approval (for CI/testing)
-        # No flag: use mock LLM (if no API key) with interactive approval
-        # With API key: use real LLM with interactive approval
+        # Check for API key (cli arg takes precedence over env)
+        api_key = args.api_key
         auto_approve = args.test_mode
-        
-        if use_mock_llm:
-            print("[WARNING] NVIDIA_API_KEY not set. Running with mock LLM.")
         
         if auto_approve:
             print("[INFO] Test mode: auto-approving all human gates.")
         else:
             print("[INFO] Interactive human approval enabled.")
         
-        # Create orchestrator
-        if use_mock_llm:
-            # Use test factory with mock LLM (always test_mode=True for mock LLM)
-            orchestrator = await AgentFactoryOrchestrator.create_for_test(test_mode=True)
-            # Override human gate test_mode based on auto_approve flag
-            orchestrator.human_gate.test_mode = auto_approve
-        else:
-            orchestrator = await AgentFactoryOrchestrator.create_for_production(test_mode=False)
-            if auto_approve:
-                orchestrator.human_gate.test_mode = True
+        # Create orchestrator with real provider
+        try:
+            orchestrator = await AgentFactoryOrchestrator.create_for_production(
+                api_key=api_key,
+                provider_type=args.provider,
+                model=args.model,
+            )
+        except ValueError as e:
+            print(f"[ERROR] {e}")
+            return 1
+        
+        if auto_approve:
+            orchestrator.human_gate.test_mode = True
+        
+        # Start WebSocket server for real-time event streaming (unless disabled)
+        if not args.no_ws:
+            try:
+                await orchestrator.start_ws_server(port=args.ws_port)
+                print(f"[INFO] WebSocket server started on ws://127.0.0.1:{args.ws_port}")
+            except Exception as e:
+                print(f"[WARNING] Could not start WebSocket server: {e}")
         
         # Set up CLI monitor
         monitor = CLIMonitor()
@@ -127,6 +139,10 @@ async def main():
             if mission.state in (MissionState.COMPLETED, MissionState.ABORTED, MissionState.ESCALATED):
                 break
         
+        # Stop WebSocket server
+        if not args.no_ws:
+            await orchestrator.stop_ws_server()
+        
         # Print final status
         print(f"\n{'='*60}")
         print(f"Mission {mission.mission_id[:8]}: {mission.state.value}")
@@ -142,8 +158,19 @@ async def main():
             print(f"Human decision: {mission.human_decision.decision_type.value} - {mission.human_decision.feedback}")
         
     elif args.command == "status":
-        # For status, we need a test orchestrator to access stored missions
-        orchestrator = await AgentFactoryOrchestrator.create_for_test(test_mode=True)
+        # For status, create a minimal orchestrator (no LLM needed for status check)
+        # Use create_for_production with Ollama (no API key needed) or require API key
+        try:
+            orchestrator = await AgentFactoryOrchestrator.create_for_production(
+                provider_type="ollama",
+                model="llama3",
+            )
+        except ValueError:
+            # Fallback: create with NVIDIA if key available
+            orchestrator = await AgentFactoryOrchestrator.create_for_production(
+                provider_type="nvidia",
+                model="nvidia/nemotron-3-ultra",
+            )
         status = orchestrator.get_mission_status(args.mission_id)
         print(status)
         

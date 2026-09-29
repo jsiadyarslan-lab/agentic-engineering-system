@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-09-28T23:47:43.451118",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "gaps": [
+    {
+      "id": "GAP-001",
+      "description": "LOCAL != REMOTE (uncommitted changes + untracked files)",
+      "severity": "HIGH",
+      "e2_order_section": "Section 1 - HARD BASELINE",
+      "status": "DOCUMENTED",
+      "evidence": "E2_evidence/baseline.txt",
+      "resolution": "Must commit or stash changes before proceeding to E3"
+    },
+    {
+      "id": "GAP-002",
+      "description": "Core integration tests require LLM provider (3 failed)",
+      "severity": "MEDIUM",
+      "e2_order_section": "Section 9 - LLM GATEWAY PROOF",
+      "status": "EXPECTED",
+      "evidence": "E2_evidence/test_results.json",
+      "resolution": "Configure API key or run Ollama locally for full test coverage"
+    },
+    {
+      "id": "GAP-003",
+      "description": "Linux substrate tests skipped on Windows (10 skipped)",
+      "severity": "LOW",
+      "e2_order_section": "Section 8 - SANDBOX PROOF",
+      "status": "EXPECTED",
+      "evidence": "E2_evidence/test_results.json",
+      "resolution": "Run in CI/Linux for full substrate test coverage"
+    },
+    {
+      "id": "GAP-004",
+      "description": "VS-001 uses MockSandboxAdapter instead of real WindowsExecutorAdapter",
+      "severity": "MEDIUM",
+      "e2_order_section": "Section 8 - SANDBOX PROOF",
+      "status": "DOCUMENTED",
+      "evidence": "E2_evidence/test_results.json",
+      "resolution": "Replace MockSandboxAdapter with WindowsExecutorAdapter in integration test"
+    },
+    {
+      "id": "GAP-005",
+      "description": "datetime.utcnow() deprecation warnings (17 in windows_executor.py)",
+      "severity": "LOW",
+      "e2_order_section": "General",
+      "status": "DOCUMENTED",
+      "evidence": "Test output warnings",
+      "resolution": "Update to datetime.now(datetime.UTC) in production code"
+    },
+    {
+      "id": "GAP-006",
+      "description": "Resume test demonstrates checkpoint creation but not full state restoration",
+      "severity": "MEDIUM",
+      "e2_order_section": "Section 10 - CHECKPOINT + RESUME",
+      "status": "PARTIAL",
+      "evidence": "E2_evidence/resume_test.json",
+      "resolution": "Implement full state restoration from checkpoint in Orchestrator"
+    }
+  ],
+  "total_gaps": 6,
+  "high": 1,
+  "medium": 3,
+  "low": 2,
+  "blockers_for_e3": ["GAP-001"]
+}

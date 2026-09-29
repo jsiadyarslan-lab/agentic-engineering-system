@@ -1,0 +1,748 @@
+{
+  "timestamp": "2025-09-29T00:00:00Z",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "classification_rules": {
+    "E2_REQUIRED": "Files directly created/modified by E2 to deliver 17 artifacts, VS-001, and evidence",
+    "E2_EVIDENCE": "Files in E2_evidence/ directory created by E2 verification",
+    "E2_TEST": "Test files created for VS-001 integration testing",
+    "E2_DOCUMENTATION": "Documentation files created by E2 (reports, etc.)",
+    "PRE_EXISTING": "Files that existed before E2 and were modified as side effects",
+    "UNRELATED": "Files not related to E2 scope",
+    "UNKNOWN": "Files that cannot be classified - requires manual review"
+  },
+  "files": [
+    {
+      "path": "src/unified/architecture.md",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Master Architecture Document - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/execution_tracker.json",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Master Execution Tracker - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/dependency_graph.json",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Dependency graph - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/domain_model.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Core domain models - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/state_machine.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "State machine with golden rule - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/event_catalog.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Event catalog - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/agent_contract.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Agent contracts - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/tool_contract.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Tool contracts - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/verification_standard.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Verification standard - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/risk_register.json",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Risk register - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/adr_index.json",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "ADR index - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/vertical_slice.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "VS-001 definition - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/self_hosting_benchmark.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Self-hosting benchmark - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/contracts.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Single import for all contracts - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/llm_gateway.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "LLM Gateway - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/sandbox.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Cross-platform sandbox protocol - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/unified/agent_role.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Agent role protocol - one of 17 E1 artifacts",
+      "included_in_e2": true
+    },
+    {
+      "path": "tests/unified/test_vs001_simple.py",
+      "status": "added",
+      "classification": "E2_TEST",
+      "reason": "VS-001 simplified integration test",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/baseline.txt",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Repository baseline at HEAD",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/artifact_inventory.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "All 17 E1 artifacts validated",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/contract_audit.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Contract consistency audit",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/vs001_run.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "VS-001 execution result",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/event_trace.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Full event trace (21 events)",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/state_trace.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "State machine transitions",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/artifact_manifest.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Artifact -> Evidence chain",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/verification_result.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Mechanical verification report",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/failure_test.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "5 failure scenarios tested",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/resume_test.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Checkpoint/resume demonstration",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/test_results.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Test suite summary",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/gaps.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Gap analysis",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/FINAL_REPORT.md",
+      "status": "added",
+      "classification": "E2_DOCUMENTATION",
+      "reason": "E2 final report",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/ratification_file_manifest.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "This manifest",
+      "included_in_e2": true
+    },
+    {
+      "path": "E2_evidence/ratification_verification.json",
+      "status": "added",
+      "classification": "E2_EVIDENCE",
+      "reason": "Post-verification results",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/llm/providers.py",
+      "status": "added",
+      "classification": "E2_REQUIRED",
+      "reason": "Universal provider adapter (6 real adapters) - core infrastructure for no-mock policy",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/orchestrator.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Removed create_for_test(), create_for_production() requires real provider - critical for no-mock policy",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/cli.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Added --provider flag, removed mock logic - critical for no-mock policy",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/llm/__init__.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Removed MockLLMProvider export, added universal provider exports",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/llm/mock_provider.py",
+      "status": "deleted",
+      "classification": "E2_REQUIRED",
+      "reason": "Mock provider removed - enforces no-mock policy",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/router/model_router.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Removed Provider.MOCK, default=OLLAMA - enforces no-mock policy",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/events/contracts.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "FactoryEvent.source default changed from 'mock' to 'real'",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/events/ws_server.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Removed mock_mode from welcome message",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/events/dashboard.html",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Settings modal: only Production mode, provider dropdown (6 providers)",
+      "included_in_e2": true
+    },
+    {
+      "path": "tests/factory/test_events.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Added _has_provider() check, skip if no real provider",
+      "included_in_e2": true
+    },
+    {
+      "path": "tests/factory/test_full_mission.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Added _has_provider() check, skip if no real provider",
+      "included_in_e2": true
+    },
+    {
+      "path": "tests/factory/test_ws_server.py",
+      "status": "modified",
+      "classification": "E2_REQUIRED",
+      "reason": "Added _has_provider() check, skip if no real provider",
+      "included_in_e2": true
+    },
+    {
+      "path": "src/factory/agents/base.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "BaseAgent changes - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/designer.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/explorer.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/implementer.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/planner.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/reviewer.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/security.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/thinker.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/agents/verifier.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Constructor change - may be pre-existing refactor, not E2-specific",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/context/memory.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "workspace_root parameter added - may be pre-existing refactor",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/tools/__init__.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Added web tools import - may be pre-existing feature",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/llm/structured.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Added get_structured_llm() - may be pre-existing refactor",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/events/bus.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Added unsubscribe() - may be pre-existing refactor",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/llm/structured.py",
+      "status": "modified",
+      "classification": "PRE_EXISTING",
+      "reason": "Added get_structured_llm() - may be pre-existing refactor",
+      "included_in_e2": false
+    },
+    {
+      "path": "test.txt",
+      "status": "modified",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "core_test_e2.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "core_test_output.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "factory_e2_final.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "factory_test_e2.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "output.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/api_server.py",
+      "status": "untracked",
+      "classification": "PRE_EXISTING",
+      "reason": "New API server - may be pre-existing work",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/stored_conversations.json",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Runtime data file",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/stored_projects.json",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Runtime data file",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/stored_settings.json",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Runtime data file",
+      "included_in_e2": false
+    },
+    {
+      "path": "src/factory/tools/web.py",
+      "status": "untracked",
+      "classification": "PRE_EXISTING",
+      "reason": "New web tools - may be pre-existing feature",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_arabic2.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_arabic_pattern.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_chat.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_chat2.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_chat3.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_chat_final.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_chat_production.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_client.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_conv_localhost.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_conversations.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_english.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_full_conv.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_full_conv2.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_get_conv.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_impl_arabic.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mission.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mission_arabic.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mission_english.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mission_mock.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mock_arabic.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_mock_direct.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_openapi.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_openapi_127.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_orchestrator_fail.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_orchestrator_real.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_output.txt",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test output file",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_projects.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_save_conv.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_save_conv2.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_save_conv3.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_structured.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "test_unified.py",
+      "status": "untracked",
+      "classification": "UNRELATED",
+      "reason": "Test file unrelated to E2",
+      "included_in_e2": false
+    },
+    {
+      "path": "tests/unified/",
+      "status": "untracked",
+      "classification": "E2_TEST",
+      "reason": "VS-001 test directory",
+      "included_in_e2": true
+    }
+  ],
+  "summary": {
+    "total_files": 99,
+    "e2_required": 34,
+    "e2_evidence": 14,
+    "e2_test": 2,
+    "e2_documentation": 1,
+    "pre_existing": 11,
+    "unrelated": 37,
+    "unknown": 0,
+    "included_in_e2_commit": 51,
+    "excluded_from_e2_commit": 48
+  }
+}

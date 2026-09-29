@@ -1,0 +1,466 @@
+{
+  "version": "1.0",
+  "description": "Architecture Decision Record (ADR) Index for Unified Engineering Agents System",
+  "last_updated": "2025-01-15",
+  "adrs": [
+    {
+      "id": "ADR-001",
+      "title": "Unify on EAS v2 Core with AgentFactory UI/LLM Gateway",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Consolidate on EAS v2 core (grants, sandbox, evidence, honest states) as the execution substrate. AgentFactory provides UI (Dashboard), WebSocket EventBus, and LLM gateway (UnifiedLLMClient). Zero shared code between the two original systems.",
+      "context": "Two independent systems existed: AgentFactory (8 agents, mock LLM, WebSocket dashboard) and EAS v2 (5 roles, real LLM, Linux sandbox, grants). Both had 13-state machines but different semantics. Unification required choosing one core.",
+      "alternatives": [
+        "Merge both agent sets into single orchestrator",
+        "Keep both systems separate with API bridge",
+        "Build new system from scratch"
+      ],
+      "consequences": {
+        "positive": [
+          "Single source of truth for state machine, grants, sandbox",
+          "AgentFactory UI reused (Dashboard, WebSocket, CLI)",
+          "LLM provider adapters unified (6 real providers, no mock)",
+          "EAS v2 evidence-based verification preserved"
+        ],
+        "negative": [
+          "Windows partial isolation only (Job Objects vs Linux namespaces)",
+          "AgentFactory agents need rewrite to EAS v2 role protocol",
+          "Migration effort for existing AgentFactory users"
+        ]
+      },
+      "links": [
+        "src/unified/architecture.md",
+        "src/llm/providers.py",
+        "src/factory/orchestrator.py"
+      ]
+    },
+    {
+      "id": "ADR-002",
+      "title": "No Mock Providers in Production Paths",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Remove MockLLMProvider entirely. All LLM interactions use real providers (NVIDIA, OpenAI, Anthropic, Google, Ollama, Custom). Tests skip gracefully when no provider configured.",
+      "context": "AgentFactory used MockLLMProvider for testing and demos. This created false confidence - tests passed but production failed. User explicitly requested: 'لا اريد ان ارى كلمة mock بالمشروع'.",
+      "alternatives": [
+        "Keep mock for unit tests only",
+        "Mock at HTTP layer for integration tests",
+        "Use Ollama local as test provider"
+      ],
+      "consequences": {
+        "positive": [
+          "No production path depends on mock behavior",
+          "Tests reflect real provider behavior (rate limits, errors, streaming)",
+          "Forces proper API key management in CI/CD"
+        ],
+        "negative": [
+          "CI requires API keys or Ollama running",
+          "Unit tests slower (real HTTP calls)",
+          "No offline development mode"
+        ]
+      },
+      "links": [
+        "src/llm/providers.py",
+        "src/llm/__init__.py",
+        "src/factory/orchestrator.py",
+        "tests/factory/test_*.py"
+      ]
+    },
+    {
+      "id": "ADR-003",
+      "title": "State Machine: 13 States + 2 Sub-Verdicts (Not 15 States)",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Keep 13 honest states for mission lifecycle. NOT_EVIDENCED and STAGNANT are sub-verdicts that drive transitions, not states themselves. This matches EAS v2 design.",
+      "context": "AgentFactory had 13 states. EAS v2 had 13 states + NOT_EVIDENCED/STAGNANT as sub-verdicts. Some wanted 15 states. Decision: sub-verdicts are flow control signals, not persistable states.",
+      "alternatives": [
+        "15 states with NOT_EVIDENCED/STAGNANT as states",
+        "Different state set per system"
+      ],
+      "consequences": {
+        "positive": [
+          "Clear separation: states = persistence, sub-verdicts = flow control",
+          "State machine validation simpler (13 states)",
+          "Audit trail shows state transitions, not sub-verdict transitions"
+        ],
+        "negative": [
+          "Must check sub_verdict field on Verification/Arbiter records",
+          "UI must display sub-verdict separately from state"
+        ]
+      },
+      "links": [
+        "src/unified/state_machine.py",
+        "src/unified/domain_model.py"
+      ]
+    },
+    {
+      "id": "ADR-004",
+      "title": "Golden Rule: VERIFIED Only by actor='user'",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "VERIFIED state transition is ONLY allowed when actor='user'. No agent, verifier, arbiter, or system component can grant VERIFIED. Enforced in validate_transition().",
+      "context": "EAS v2 Order 004: 'VERIFIED only by user'. AgentFactory had no such rule - missions could auto-complete. This is the critical safety gate.",
+      "alternatives": [
+        "Verifier can grant VERIFIED with high confidence",
+        "Arbiter can grant VERIFIED after max retries",
+        "Auto-verify after evidence threshold"
+      ],
+      "consequences": {
+        "positive": [
+          "Human accountability for all completions",
+          "Prevents false 'done' from hallucinated evidence",
+          "Audit trail shows human approval"
+        ],
+        "negative": [
+          "Requires human availability for every mission",
+          "Cannot run fully autonomous batch missions",
+          "Dashboard/CLI must be accessible for approval"
+        ]
+      },
+      "links": [
+        "src/unified/state_machine.py",
+        "src/unified/domain_model.py"
+      ]
+    },
+    {
+      "id": "ADR-005",
+      "title": "Order 004: STOPPING → STOPPED Only (Safe Stop Request)",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "STOPPING can only transition to STOPPED. STOPPING request only by user or orchestrator. Enables checkpoint-based resume.",
+      "context": "EAS v2 Order 004: 'STOPPING→STOPPED for safe stop request'. AgentFactory had no stop/resume. This is critical for long missions.",
+      "alternatives": [
+        "Allow STOPPING → any state",
+        "Immediate ABORT without STOPPING",
+        "No stop state, just cancel"
+      ],
+      "consequences": {
+        "positive": [
+          "Graceful shutdown with checkpoint creation",
+          "Resume from last checkpoint supported",
+          "No partial work lost on stop"
+        ],
+        "negative": [
+          "Adds state machine complexity",
+          "Must handle in-progress sandbox teardown"
+        ]
+      },
+      "links": [
+        "src/unified/state_machine.py",
+        "src/unified/domain_model.py"
+      ]
+    },
+    {
+      "id": "ADR-006",
+      "title": "Grants: HMAC-Signed, Typed, Expiring, Revocable",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Adopt EAS v2 grant model exactly: typed (read/write/execute/admin), scoped to domains/resources, HMAC-SHA256 signed, expiring, revocable. Validated at admission AND execution.",
+      "context": "AgentFactory had no grant system. EAS v2 had full capability-based authorization. No alternative - grants are fundamental to sandbox security.",
+      "alternatives": [
+        "Simple role-based (admin/user)",
+        "JWT tokens instead of HMAC",
+        "No grants - trust sandbox isolation"
+      ],
+      "consequences": {
+        "positive": [
+          "Fine-grained least-privilege",
+          "Cryptographic proof of authorization",
+          "Revocation channel for compromise response",
+          "Dual validation (admission + execution) = defense in depth"
+        ],
+        "negative": [
+          "Key management complexity (ADR-002)",
+          "Grant issuance workflow required",
+          "Performance overhead on every sandbox call"
+        ]
+      },
+      "links": [
+        "src/core/grants.py",
+        "src/unified/domain_model.py"
+      ]
+    },
+    {
+      "id": "ADR-007",
+      "title": "Sandbox: No Host Execution Fallback (Fail-Closed)",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "If sandbox unavailable (Linux substrate missing on Windows, image pull failed, limits exceeded), operation FAILS. No fallback to host execution. This is EAS v2 D-04=A.",
+      "context": "AgentFactory ran tools on host. EAS v2 requires sandbox. WindowsExecutor provides partial isolation via Job Objects but cannot match Linux namespaces/seccomp.",
+      "alternatives": [
+        "Fallback to host with warning",
+        "Partial sandbox on Windows, full on Linux",
+        "Docker-based sandbox everywhere"
+      ],
+      "consequences": {
+        "positive": [
+          "Consistent security model - no escape hatch",
+          "Forces proper sandbox setup in deployment",
+          "Clear failure mode: 'sandbox unavailable' not 'running on host'"
+        ],
+        "negative": [
+          "Windows cannot run full-isolation missions",
+          "CI must provide Linux runners for full tests",
+          "Some operations impossible on Windows"
+        ]
+      },
+      "links": [
+        "src/core/substrate.py",
+        "src/core/windows_executor.py"
+      ]
+    },
+    {
+      "id": "ADR-008",
+      "title": "NetworkMode.NONE Always for Sandbox",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Sandbox network mode is ALWAYS NONE. No outbound network from sandbox. Web access via tools (web_search, web_fetch) runs on host with grants.",
+      "context": "EAS v2 D-04=A: NetworkMode.NONE. AgentFactory had no network isolation. This prevents data exfiltration and supply chain attacks.",
+      "alternatives": [
+        "Allowlist domains per grant",
+        "Egress proxy with logging",
+        "Full network with monitoring"
+      ],
+      "consequences": {
+        "positive": [
+          "Strong isolation guarantee",
+          "No surprise network calls from sandbox",
+          "Web access audited via tool calls"
+        ],
+        "negative": [
+          "Cannot run npm install, pip install in sandbox",
+          "Must vendor dependencies or use pre-built images",
+          "Build commands need network = pre-baked images"
+        ]
+      },
+      "links": [
+        "src/core/substrate.py",
+        "src/unified/tool_contract.py"
+      ]
+    },
+    {
+      "id": "ADR-009",
+      "title": "Evidence: Content-Addressable (SHA256), Immutable Records",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "All evidence is content-addressable via SHA256. EvidenceRecord is immutable once created. Verification checks hash match, not filesystem paths.",
+      "context": "EAS v2 uses content-addressable evidence. AgentFactory had no evidence model. This prevents tampering and enables reproducible verification.",
+      "alternatives": [
+        "Path-based evidence (trust filesystem)",
+        "Git-based evidence (commit hashes)",
+        "Database records without content hash"
+      ],
+      "consequences": {
+        "positive": [
+          "Tamper-evident: any change changes hash",
+          "Reproducible: same content = same hash",
+          "Distributed verification possible",
+          "No TOCTOU attacks on filesystem paths"
+        ],
+        "negative": [
+          "Must compute hash for every artifact",
+          "Storage for evidence records",
+          "Large files = hash computation time"
+        ]
+      },
+      "links": [
+        "src/unified/domain_model.py",
+        "src/unified/verification_standard.py"
+      ]
+    },
+    {
+      "id": "ADR-010",
+      "title": "Review Cycles: Max 3 Then Arbiter",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Maximum 3 review cycles (REVISE → PLANNING). On 4th, Arbiter automatically invoked. State machine enforces this.",
+      "context": "AgentFactory had unlimited review cycles. EAS v2 enforces max 3. This prevents infinite loops where reviewer keeps requesting changes.",
+      "alternatives": [
+        "No limit (AgentFactory approach)",
+        "Max 5 cycles",
+        "Auto-approve after 3"
+      ],
+      "consequences": {
+        "positive": [
+          "Bounded review process",
+          "Forces convergence or escalation",
+          "Predictable mission timeline"
+        ],
+        "negative": [
+          "May escalate prematurely for complex reviews",
+          "Reviewer must be decisive within 3 rounds"
+        ]
+      },
+      "links": [
+        "src/unified/state_machine.py",
+        "src/unified/agent_contract.py"
+      ]
+    },
+    {
+      "id": "ADR-011",
+      "title": "Arbiter Max 3 Calls Then Forced Escalation",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Arbiter can be called maximum 3 times per mission. On 4th conflict, forced ESCALATED_TO_HUMAN. Sub-verdict STAGNANT tracks repeated same-fingerprint conflicts.",
+      "context": "EAS v2 Arbiter has retry budget. AgentFactory had no Arbiter. This prevents infinite Arbiter retries.",
+      "alternatives": [
+        "Unlimited Arbiter calls",
+        "Auto-terminate after 2",
+        "Arbiter decides when to escalate"
+      ],
+      "consequences": {
+        "positive": [
+          "Bounded arbitration",
+          "STAGNANT detection prevents same-issue loops",
+          "Human gets context after 3 attempts"
+        ],
+        "negative": [
+          "Complex fingerprint definition needed",
+          "May escalate solvable issues"
+        ]
+      },
+      "links": [
+        "src/unified/state_machine.py",
+        "src/unified/agent_contract.py"
+      ]
+    },
+    {
+      "id": "ADR-012",
+      "title": "Universal LLM Gateway: 6 Providers, Structured Output",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "UnifiedLLMClient supports 6 providers (NVIDIA, OpenAI, Anthropic, Google, Ollama, Custom OpenAI-compatible). All support structured_chat() with JSON schema injection. Provider auto-detection priority: NVIDIA > OpenAI > Anthropic > Google > Ollama.",
+      "context": "AgentFactory had MockLLMProvider only. EAS v2 had NVIDIA + OpenAI. Need unified gateway for all providers with structured output for agent contracts.",
+      "alternatives": [
+        "Separate clients per provider",
+        "Only support OpenAI-compatible",
+        "Use LiteLLM or similar proxy"
+      ],
+      "consequences": {
+        "positive": [
+          "Single interface for all agents",
+          "Structured output for contract compliance",
+          "Retry policy built-in",
+          "Provider failover possible"
+        ],
+        "negative": [
+          "Provider-specific features abstracted away",
+          "Must maintain 6 adapter implementations",
+          "API changes require adapter updates"
+        ]
+      },
+      "links": [
+        "src/llm/providers.py",
+        "src/unified/llm_gateway.py"
+      ]
+    },
+    {
+      "id": "ADR-013",
+      "title": "Checkpoint Resume: Full State Recovery",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Checkpoints capture: mission state, task states, artifact IDs, evidence hashes. Resume creates new run with parent_run_id. Full state recovery from checkpoint.",
+      "context": "EAS v2 had checkpoint/resume. AgentFactory had none. Order 004 requires STOPPING→STOPPED for safe stop with checkpoint.",
+      "alternatives": [
+        "No resume (restart from scratch)",
+        "Partial resume (only completed tasks)",
+        "Snapshot entire sandbox filesystem"
+      ],
+      "consequences": {
+        "positive": [
+          "Long missions survivable",
+          "Stop/resume for human approval gates",
+          "Debugging: replay from checkpoint"
+        ],
+        "negative": [
+          "Checkpoint storage grows",
+          "Must handle schema evolution",
+          "Sandbox state not captured (ephemeral)"
+        ]
+      },
+      "links": [
+        "src/unified/domain_model.py",
+        "src/unified/state_machine.py"
+      ]
+    },
+    {
+      "id": "ADR-014",
+      "title": "Event Bus: In-Process Pub/Sub with WebSocket Bridge",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "EventBus is in-process pub/sub for FactoryEvent (Pydantic). WebSocket server on ws://127.0.0.1:8768 bridges to Dashboard. EventStore persists for replay.",
+      "context": "AgentFactory had WebSocket EventBus. EAS v2 had no event system. Unified system uses AgentFactory's event model with EAS v2 event types.",
+      "alternatives": [
+        "Message queue (Redis, RabbitMQ)",
+        "Database-backed event store only",
+        "gRPC streaming instead of WebSocket"
+      ],
+      "consequences": {
+        "positive": [
+          "Low latency in-process",
+          "Dashboard real-time updates",
+          "EventStore for audit/replay",
+          "Simple deployment (no external deps)"
+        ],
+        "negative": [
+          "Single-process only (no horizontal scaling)",
+          "WebSocket port conflicts (ADR-015)",
+          "Event loss on process crash (mitigated by EventStore)"
+        ]
+      },
+      "links": [
+        "src/factory/events/ws_server.py",
+        "src/factory/events/contracts.py",
+        "src/unified/event_catalog.py"
+      ]
+    },
+    {
+      "id": "ADR-015",
+      "title": "Dashboard: Production Mode Only, Provider Dropdown",
+      "status": "accepted",
+      "date": "2025-01-15",
+      "decision": "Dashboard settings modal shows only 'Production' mode. Provider dropdown with 6 options (nvidia, openai, anthropic, google, ollama, custom). Settings persist to stored_settings.json.",
+      "context": "AgentFactory had 'mock' and 'production' modes. Removed mock mode per ADR-002. Provider selection required for production.",
+      "alternatives": [
+        "Keep mock mode for demo",
+        "Auto-detect provider only",
+        "Config file only, no UI"
+      ],
+      "consequences": {
+        "positive": [
+          "No accidental mock usage",
+          "Clear provider selection",
+          "Persisted settings across restarts"
+        ],
+        "negative": [
+          "No quick demo mode",
+          "Must configure API key before use"
+        ]
+      },
+      "links": [
+        "src/factory/events/dashboard.html",
+        "src/factory/cli.py"
+      ]
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "accepted": 15,
+    "proposed": 0,
+    "deprecated": 0,
+    "superseded": 0
+  },
+  "template": {
+    "id": "ADR-XXX",
+    "title": "Short descriptive title",
+    "status": "proposed|accepted|deprecated|superseded",
+    "date": "YYYY-MM-DD",
+    "decision": "One paragraph stating the decision",
+    "context": "Why this decision was needed",
+    "alternatives": ["Alternative 1", "Alternative 2"],
+    "consequences": {
+      "positive": ["Benefit 1", "Benefit 2"],
+      "negative": ["Cost 1", "Cost 2"]
+    },
+    "links": ["src/file.py", "src/other.py"]
+  }
+}

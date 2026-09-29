@@ -48,10 +48,11 @@ from src.factory.contracts.agent_protocol import (
     ExplorationReport, Analysis, Plan, DesignSpec,
     Review, ImplementationResult, Verification, SecurityReport
 )
-from src.factory.events import EventBus, FactoryEvent, EventType
+from src.factory.events import EventBus, FactoryEvent, EventType, WebSocketEventServer, run_server
 from src.substrate.windows_executor import WindowsExecutor, ExecutionResult
 from src.llm.budget import TokenBudget, get_global_budget
 from src.llm import LLMProvider, StructuredLLM
+from src.factory.tools import ToolRegistry, ReadFileTool, WriteFileTool, EditFileTool, ListDirTool, GrepTool, FindFilesTool, RunCommandTool, WebSearchTool, FileBrowserTool, WebFetchTool
 
 
 class MissionState(str, Enum):
@@ -161,6 +162,9 @@ class AgentFactoryOrchestrator:
         self.token_budget = token_budget
         self.test_mode = test_mode
         
+        # Initialize tool registry
+        self.tool_registry = self._initialize_tool_registry()
+        
         # Initialize agents
         self.agents = self._initialize_agents()
         self.agent_registry = {agent.agent_type: agent for agent in self.agents}
@@ -188,9 +192,35 @@ class AgentFactoryOrchestrator:
         # Event bus
         self.event_bus = EventBus()
         
+        # WebSocket server for real-time event streaming
+        self.ws_server: Optional[WebSocketEventServer] = None
+        
         # Running state
         self._running = False
         self._shutdown_event = asyncio.Event()
+    
+    def _initialize_tool_registry(self) -> ToolRegistry:
+        """Initialize and populate the tool registry."""
+        registry = ToolRegistry()
+        workspace_root = self.context_manager.workspace_root if self.context_manager else Path.cwd()
+        
+        # Register filesystem tools
+        registry.register(ReadFileTool())
+        registry.register(WriteFileTool())
+        registry.register(EditFileTool())
+        registry.register(ListDirTool())
+        registry.register(GrepTool())
+        registry.register(FindFilesTool())
+        
+        # Register execution tools
+        registry.register(RunCommandTool())
+        
+        # Register web tools
+        registry.register(WebSearchTool())
+        registry.register(FileBrowserTool())
+        registry.register(WebFetchTool())
+        
+        return registry
     
     def _initialize_agents(self) -> List[BaseAgent]:
         """Initialize all 7 agents with their dependencies."""
@@ -199,43 +229,51 @@ class AgentFactoryOrchestrator:
                 llm=self.llm_provider.get_structured_llm("explorer"),
                 context=self.context_manager,
                 grants=None,  # Explorer needs read access
+                tool_registry=self.tool_registry,
             ),
             ThinkerAgent(
                 llm=self.llm_provider.get_structured_llm("thinker"),
                 context=self.context_manager,
                 grants=None,
+                tool_registry=self.tool_registry,
             ),
             PlannerAgent(
                 llm=self.llm_provider.get_structured_llm("planner"),
                 context=self.context_manager,
                 grants=None,
+                tool_registry=self.tool_registry,
             ),
             DesignerAgent(
                 llm=self.llm_provider.get_structured_llm("designer"),
                 context=self.context_manager,
                 grants=None,
+                tool_registry=self.tool_registry,
             ),
             ReviewerAgent(
                 llm=self.llm_provider.get_structured_llm("reviewer"),
                 context=self.context_manager,
                 grants=None,
+                tool_registry=self.tool_registry,
             ),
             ImplementerAgent(
                 llm=self.llm_provider.get_structured_llm("implementer"),
                 context=self.context_manager,
                 grants=None,  # Will get write grants after human approval
+                tool_registry=self.tool_registry,
             ),
             VerifierAgent(
                 llm=self.llm_provider.get_structured_llm("verifier"),
                 context=self.context_manager,
                 grants=None,
                 test_mode=self.test_mode,
+                tool_registry=self.tool_registry,
             ),
             SecurityAgent(
                 llm=self.llm_provider.get_structured_llm("security"),
                 context=self.context_manager,
                 grants=None,
                 test_mode=self.test_mode,
+                tool_registry=self.tool_registry,
             ),
         ]
         return agents
@@ -253,7 +291,7 @@ class AgentFactoryOrchestrator:
         self._shutdown_event.clear()
         
         # Initialize context for this mission
-        await self.context_manager.initialize_mission(mission.mission_id, user_request)
+        await self.context_manager.initialize_mission(mission.mission_id, user_request, workspace_root=self.context_manager.workspace_root)
         
         # Log mission start
         self._log_decision("mission_started", {
@@ -265,7 +303,19 @@ class AgentFactoryOrchestrator:
         asyncio.create_task(self._run_mission_loop())
         
         return mission
-    
+
+    async def start_ws_server(self, host: str = "127.0.0.1", port: int = 8765) -> None:
+        """Start the WebSocket event server for real-time event streaming."""
+        if self.ws_server is not None:
+            return
+        self.ws_server = await run_server(self.event_bus, host, port)
+
+    async def stop_ws_server(self) -> None:
+        """Stop the WebSocket event server."""
+        if self.ws_server is not None:
+            await self.ws_server.stop()
+            self.ws_server = None
+
     async def _run_mission_loop(self):
         """Main mission execution loop."""
         mission = self.current_mission
@@ -527,6 +577,7 @@ class AgentFactoryOrchestrator:
                 "plan": mission.plan.to_dict() if mission.plan else {},
                 "design_spec": mission.design_spec.to_dict() if mission.design_spec else {},
                 "workspace": self.context_manager.get_workspace_path(),
+                "user_request": mission.user_request,
             },
             acceptance_criteria=["all_tests_pass", "code_compiles", "implements_spec"],
         )
@@ -709,7 +760,7 @@ class AgentFactoryOrchestrator:
             agent_type=actor,
             payload={"actor": actor},
             evidence_hash="",
-            source="mock",
+            source="real",
         ))
     
     async def _publish_agent_completion(self, mission: Mission, agent_type: str, result, success: bool):
@@ -726,7 +777,7 @@ class AgentFactoryOrchestrator:
             agent_type=agent_type,
             payload={"success": success},
             evidence_hash=evidence_hash,
-            source="mock",
+            source="real",
         ))
     
     async def _publish_human_approval_request(self, mission: Mission, payload: Dict):
@@ -740,7 +791,7 @@ class AgentFactoryOrchestrator:
             agent_type="reviewer",
             payload=payload,
             evidence_hash="",
-            source="mock",
+            source="real",
         ))
     
     async def request_human_approval(self, request: Dict) -> HumanDecision:
@@ -781,55 +832,102 @@ class AgentFactoryOrchestrator:
         return self.decision_log
 
     @classmethod
-    async def create_for_test(cls, test_mode: bool = True) -> "AgentFactoryOrchestrator":
-        """Create orchestrator for testing with mock components."""
-        from src.llm import MockLLMProvider
-        from src.factory.context.memory import SharedContextManager
-        from src.factory.context.knowledge import KnowledgeGraph
-        from src.factory.context.artifacts import ArtifactRegistry
-        from src.factory.context.decisions import DecisionLog
-        from src.factory.human.gate import HumanApprovalGate, HumanDecision
+    async def create_for_production(
+        cls,
+        api_key: Optional[str] = None,
+        provider_type: str = "nvidia",
+        model: str = "nvidia/nemotron-3-ultra-550b-a55b",
+        budget_limits: Optional[dict] = None,
+    ) -> "AgentFactoryOrchestrator":
+        """Create orchestrator for production use with real components.
+        
+        Args:
+            api_key: API key for the provider (defaults to env var based on provider_type)
+            provider_type: Provider type - nvidia, openai, anthropic, google, ollama, custom
+            model: Model name to use
+            budget_limits: Optional custom budget limits per scope
+             
+        Returns:
+            Configured AgentFactoryOrchestrator instance
+            
+        Raises:
+            ValueError: If no API key is provided and not using Ollama
+        """
+        import os
+        import uuid
+        from src.llm import StructuredLLM, TokenBudget, ProviderType, ProviderConfig, UnifiedLLMClient
+        from src.llm.budget import TokenLimit, BudgetScope
         from src.factory.human.chat import ChatInterface
-        from src.llm.budget import TokenBudget
+        from src.factory.human.gate import HumanApprovalGate
+        from src.factory.context.memory import SharedContextManager
+        from src.factory.context.decisions import DecisionLog
         from src.substrate.windows_executor import WindowsExecutor
+
+        # Determine provider and API key
+        provider_type_enum = ProviderType(provider_type.lower())
         
-        # Create mock LLM provider
-        llm_provider = MockLLMProvider()
+        # Get API key from env if not provided
+        if provider_type_enum == ProviderType.NVIDIA:
+            key = api_key or os.getenv("NVIDIA_API_KEY")
+        elif provider_type_enum == ProviderType.OPENAI:
+            key = api_key or os.getenv("OPENAI_API_KEY")
+        elif provider_type_enum == ProviderType.ANTHROPIC:
+            key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        elif provider_type_enum == ProviderType.GOOGLE:
+            key = api_key or os.getenv("GOOGLE_API_KEY")
+        elif provider_type_enum == ProviderType.CUSTOM:
+            key = api_key or os.getenv("CUSTOM_API_KEY")
+        else:
+            key = api_key  # Ollama doesn't need API key
         
-        # Create context manager (initialize mission first)
-        context_manager = await SharedContextManager.initialize_mission(
-            mission_id="test-mission",
-            user_request="test request"
-        )
-        
-        # Create windows executor
-        windows_executor = WindowsExecutor()
-        
-        # Create human gate with test_mode for auto-approve
+        # Create real provider
+        if provider_type_enum == ProviderType.OLLAMA:
+            # Ollama doesn't need API key
+            provider = UnifiedLLMClient.from_config(ProviderConfig(
+                provider_type=provider_type_enum,
+                model=model,
+            ))
+        else:
+            if not key:
+                raise ValueError(
+                    f"API key required for {provider_type}. "
+                    f"Set {provider_type.upper()}_API_KEY env var or pass api_key parameter."
+                )
+            provider = UnifiedLLMClient.from_config(ProviderConfig(
+                provider_type=provider_type_enum,
+                api_key=key,
+                model=model,
+            ))
+        structured_llm = StructuredLLM(provider)
+
+        # Budget
+        limits = budget_limits or {
+            BudgetScope.AGENT: TokenLimit(max_tokens=50000),
+            BudgetScope.MISSION: TokenLimit(max_tokens=200000),
+            BudgetScope.PROJECT: TokenLimit(max_tokens=1000000),
+            BudgetScope.GLOBAL: TokenLimit(max_tokens=10000000),
+        }
+        token_budget = TokenBudget(default_limits=limits)
+
+        # Context
+        mid = "prod-" + str(uuid.uuid4())[:8]
+        context_manager = await SharedContextManager.initialize_mission(mid, "production mission", workspace_root=Path.cwd())
+        decision_log = DecisionLog(mission_id=mid)
+
+        # Human + Chat
+        chat_interface = ChatInterface()
         human_gate = HumanApprovalGate(
-            chat_interface=None,
-            decision_log=None,
-            test_mode=test_mode,
+            chat_interface=chat_interface,
+            decision_log=decision_log,
+            test_mode=False,
         )
-        
-        # Create chat interface (minimal for testing)
-        chat_interface = ChatInterface(
-            input_callback=lambda _: asyncio.sleep(0, result="A"),
-            output_callback=print,
-        )
-        
-        # Create token budget
-        token_budget = TokenBudget()
-        
-        # Create orchestrator
-        orchestrator = cls(
-            llm_provider=llm_provider,
+
+        return cls(
+            llm_provider=structured_llm,
             context_manager=context_manager,
-            windows_executor=windows_executor,
+            windows_executor=WindowsExecutor(),
             human_gate=human_gate,
             chat_interface=chat_interface,
             token_budget=token_budget,
-            test_mode=test_mode,
+            test_mode=False,
         )
-        
-        return orchestrator

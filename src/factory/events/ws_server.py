@@ -81,7 +81,6 @@ class WebSocketEventServer:
             await websocket.send(json.dumps({
                 "type": "welcome",
                 "message": "Connected to AgentFactory Event Stream",
-                "mock_mode": True,
                 "protocol_version": "1.0"
             }))
             
@@ -138,3 +137,34 @@ async def run_server(event_bus: EventBus, host: str = "127.0.0.1", port: int = 8
     server = WebSocketEventServer(event_bus, host, port)
     await server.start()
     return server
+
+
+async def _run_standalone_server(host: str = "127.0.0.1", port: int = 8765):
+    """Run WebSocket server standalone for testing."""
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    bus = EventBus()
+    server = WebSocketEventServer(bus, host, port)
+    await server.start()
+    
+    print(f"WebSocket server running on ws://{host}:{port}")
+    print("Press Ctrl+C to stop...")
+    
+    try:
+        await asyncio.Event().wait()  # Run forever
+    except KeyboardInterrupt:
+        pass
+    finally:
+        await server.stop()
+        print("Server stopped")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="AgentFactory WebSocket Event Server")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind")
+    parser.add_argument("--port", type=int, default=8765, help="Port to bind")
+    args = parser.parse_args()
+    
+    asyncio.run(_run_standalone_server(args.host, args.port))

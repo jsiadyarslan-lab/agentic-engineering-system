@@ -7,7 +7,22 @@ from .provider import LLMProvider, LLMMessage, LLMResponse, ToolCall
 from .structured import StructuredLLM, parse_structured_output
 from .budget import TokenBudget, BudgetExceeded, estimate_tokens
 from .nvidia_provider import NVIDIAProvider
-from .mock_provider import MockLLMProvider
+from .providers import (
+    ProviderType,
+    ProviderConfig,
+    BaseProviderAdapter,
+    NVIDIAAdapter,
+    OpenAIAdapter,
+    AnthropicAdapter,
+    GoogleAdapter,
+    OllamaAdapter,
+    CustomAdapter,
+    register_adapter,
+    create_provider,
+    create_provider_from_env,
+    UnifiedLLMClient,
+    quick_chat,
+)
 
 __all__ = [
     "LLMProvider",
@@ -20,5 +35,19 @@ __all__ = [
     "BudgetExceeded",
     "estimate_tokens",
     "NVIDIAProvider",
-    "MockLLMProvider",
+    # New Universal Providers
+    "ProviderType",
+    "ProviderConfig",
+    "BaseProviderAdapter",
+    "NVIDIAAdapter",
+    "OpenAIAdapter",
+    "AnthropicAdapter",
+    "GoogleAdapter",
+    "OllamaAdapter",
+    "CustomAdapter",
+    "register_adapter",
+    "create_provider",
+    "create_provider_from_env",
+    "UnifiedLLMClient",
+    "quick_chat",
 ]

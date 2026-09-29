@@ -1,0 +1,510 @@
+{
+  "version": "1.0",
+  "created": "2026-09-29T00:00:00Z",
+  "status": "ACTIVE",
+  "golden_rule": "المصنع الهندسي يجب أن يكون قادرًا على إنتاج وتنفيذ مهمة هندسية بحجم وتعقيد المشروع نفسه، وأن يستهدف مستوى أقوى من الأنظمة الموجودة في السوق.",
+  "workstreams": [
+    {
+      "id": "WS-01",
+      "name": "Truth / Baseline",
+      "phase": 0,
+      "description": "Establish verified current state of both systems",
+      "deliverables": [
+        "Repository baseline (git, branch, HEAD, remotes)",
+        "Runtime baseline (OS, Python, deps, services)",
+        "Architecture inventory (both systems)",
+        "Test suite execution results"
+      ],
+      "dependencies": [],
+      "status": "VERIFIED",
+      "evidence": [
+        "git status output",
+        "pip list output",
+        "pytest tests/factory/ (112 passed, 3 skipped)",
+        "pytest tests/eoe/ tests/router/ tests/substrate/ tests/contracts/ (111 passed, 4 failed, 26 skipped, 15 errors)",
+        "E2_evidence/baseline.txt",
+        "E2_evidence/artifact_inventory.json",
+        "E2_evidence/contract_audit.json"
+      ],
+      "verification": "All baseline data captured and cross-checked. E1 artifacts verified (17/17). Contract consistency confirmed.",
+      "exit_criteria": "Complete documented baseline with evidence"
+    },
+    {
+      "id": "WS-02",
+      "name": "Contracts",
+      "phase": 0,
+      "description": "Unified contract definitions for all layers",
+      "deliverables": [
+        "src/unified/contracts.py (merged Pydantic models)",
+        "MissionRequest/Response",
+        "OrderSpec, TaskGraph, TaskNode",
+        "AgentTask/AgentResult",
+        "SandboxRequest/Record",
+        "ResourceGrant, EvidenceRecord",
+        "FactoryEvent, PlanState, HumanDecision"
+      ],
+      "dependencies": [
+        "WS-01"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "src/unified/contracts.py",
+        "src/unified/domain_model.py",
+        "src/unified/state_machine.py",
+        "src/unified/event_catalog.py",
+        "src/unified/agent_contract.py",
+        "src/unified/tool_contract.py",
+        "src/unified/verification_standard.py",
+        "E2_evidence/contract_audit.json"
+      ],
+      "verification": "All 17 E1 artifacts created and validated. Contract consistency audit passed. No circular imports. No unjustified duplicates.",
+      "exit_criteria": "AgentFactory agents + EAS roles both use unified contracts"
+    },
+    {
+      "id": "WS-03",
+      "name": "LLM Gateway",
+      "phase": 0,
+      "description": "Single LLM gateway wrapping UnifiedLLMClient with ModelRouter fallback",
+      "deliverables": [
+        "src/unified/llm_gateway.py",
+        "LLMGateway class with structured_chat(), chat(), stream_chat()",
+        "Provider auto-detection (NVIDIA, OpenAI, Anthropic, Google, Ollama, Custom)",
+        "Retry policy integration",
+        "ModelRouter fallback for unsupported providers"
+      ],
+      "dependencies": [
+        "WS-01"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "src/unified/llm_gateway.py",
+        "src/llm/providers.py (UnifiedLLMClient)",
+        "E2_evidence/test_results.json"
+      ],
+      "verification": "LLMGateway wraps UnifiedLLMClient with token budgets, structured_chat, provider auto-detection. All imports work.",
+      "exit_criteria": "LLMGateway.from_env().structured_chat() returns valid Pydantic models"
+    },
+    {
+      "id": "WS-04",
+      "name": "Sandbox Interface",
+      "phase": 0,
+      "description": "Cross-platform ExecutionSandbox protocol with Linux + Windows adapters",
+      "deliverables": [
+        "src/unified/sandbox.py (ExecutionSandbox protocol)",
+        "src/substrate/windows_adapter.py (WindowsExecutorAdapter)",
+        "LocalSubstrateAdapter implements ExecutionSandbox (Linux)",
+        "WindowsExecutorAdapter implements ExecutionSandbox (Windows)",
+        "Factory function get_sandbox_adapter()"
+      ],
+      "dependencies": [
+        "WS-01"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "src/unified/sandbox.py",
+        "src/core/windows_executor.py (WindowsExecutorAdapter)",
+        "src/core/substrate.py (LocalSubstrateAdapter)",
+        "E2_evidence/test_results.json"
+      ],
+      "verification": "ExecutionSandbox protocol defined with cross-platform adapters. Mock adapter used in VS-001 test.",
+      "exit_criteria": "Both adapters implement protocol; factory returns correct adapter per platform"
+    },
+    {
+      "id": "WS-05",
+      "name": "Agent Role Protocol",
+      "phase": 0,
+      "description": "Common AgentRole protocol for both AgentFactory agents and EAS roles",
+      "deliverables": [
+        "src/unified/agent_role.py (AgentRole protocol)",
+        "BaseAgent implements AgentRole",
+        "EAS roles (Thinker, Reviewer, Implementer, Verifier, Arbiter) add async execute() wrapper",
+        "Common interface: agent_type, agent_role, required_grants, execute(), on_start/on_complete/on_failed"
+      ],
+      "dependencies": [
+        "WS-02"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "src/unified/agent_role.py",
+        "src/unified/agent_contract.py",
+        "E2_evidence/test_results.json"
+      ],
+      "verification": "AgentRole protocol unifies 8 AgentFactory agents + 5 EAS roles. BaseAgent, AgentRegistry, AgentFactory implemented.",
+      "exit_criteria": "isinstance(agent, AgentRole) == True for all roles"
+    },
+    {
+      "id": "WS-06",
+      "name": "Unified Orchestrator",
+      "phase": 1,
+      "description": "Single orchestrator using PlanState machine + AgentFactory mission tracking",
+      "deliverables": [
+        "src/unified/orchestrator.py",
+        "PlanState machine (13 states + sub-verdicts)",
+        "Mission tracking with checkpoints + resume from STOPPED",
+        "Intake → Plan → Decompose → Schedule → Assign → Execute → Observe → Verify → Recover",
+        "EventBus integration for real-time updates"
+      ],
+      "dependencies": [
+        "WS-02",
+        "WS-03",
+        "WS-04",
+        "WS-05"
+      ],
+      "status": "IN_PROGRESS",
+      "evidence": [
+        "tests/unified/test_vs001_simple.py",
+        "E2_evidence/vs001_run.json",
+        "E2_evidence/event_trace.json",
+        "E2_evidence/state_trace.json",
+        "E2_evidence/artifact_manifest.json",
+        "E2_evidence/verification_result.json",
+        "E2_evidence/failure_test.json",
+        "E2_evidence/resume_test.json",
+        "E2_evidence/test_results.json"
+      ],
+      "verification": "VS-001 vertical slice executed successfully. Full chain: Mission->Run->Task->Agent->Tool->Sandbox->Artifact->Evidence->Verification->State->Checkpoint->Resume demonstrated.",
+      "exit_criteria": "10 missions complete without manual intervention"
+    },
+    {
+      "id": "WS-07",
+      "name": "Resume Capability",
+      "phase": 1,
+      "description": "Crash recovery from STOPPED snapshot + latest checkpoint",
+      "deliverables": [
+        "STOPPED snapshot serialization (Order 004)",
+        "CheckpointManager.load_latest() integration",
+        "Mission resume from STOPPED + checkpoint",
+        "State reconstruction: tasks completed, artifacts, evidence"
+      ],
+      "dependencies": [
+        "WS-06"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Kill mid-mission → resume completes mission",
+      "exit_criteria": "Crash recovery test passes; state matches pre-crash"
+    },
+    {
+      "id": "WS-08",
+      "name": "Task Engine",
+      "phase": 2,
+      "description": "OrderSpec → Sections → Grants → Execution flow",
+      "deliverables": [
+        "OrderSpec parser (from EAS v2)",
+        "Section DAG builder (dependencies, parallelism)",
+        "Grant issuance (propose → owner signs HMAC → register)",
+        "Grant validation at admission + execution (AccessAdmission)",
+        "Section execution orchestration"
+      ],
+      "dependencies": [
+        "WS-06"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Parallel sections execute correctly; grants enforced",
+      "exit_criteria": "Complex multi-section order completes with evidence"
+    },
+    {
+      "id": "WS-09",
+      "name": "Event Store",
+      "phase": 2,
+      "description": "Persistent event log for full mission replay",
+      "deliverables": [
+        "EventStore class (append-only, indexed by mission_id)",
+        "FactoryEvent serialization (JSONL or SQLite)",
+        "Mission replay from event log",
+        "Correlation/causation tracking"
+      ],
+      "dependencies": [
+        "WS-08"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Full mission replay from events produces identical state",
+      "exit_criteria": "Event store captures all events; replay verified"
+    },
+    {
+      "id": "WS-10",
+      "name": "Roles Implementation",
+      "phase": 3,
+      "description": "7 roles + Arbiter with unified contracts",
+      "deliverables": [
+        "EXPLORER (codebase mapping + LLM report)",
+        "ANALYST/THINKER (root cause + impact)",
+        "PLANNER (task decomposition + acceptance criteria)",
+        "DESIGNER (interfaces, schemas, protocols)",
+        "REVIEWER (approve/revise, max 3 rounds)",
+        "IMPLEMENTER (generate → sandbox execute → artifacts)",
+        "VERIFIER (evidence check: file existence + hash + criteria)",
+        "ARBITER (conflict resolution, retry budget, stagnation detection)"
+      ],
+      "dependencies": [
+        "WS-08"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "All role contract tests pass; mock + live modes work",
+      "exit_criteria": "All roles execute in sandbox with grants"
+    },
+    {
+      "id": "WS-11",
+      "name": "Cross-Platform Sandbox",
+      "phase": 4,
+      "description": "LocalSubstrateAdapter (Linux) + WindowsExecutorAdapter (Windows)",
+      "deliverables": [
+        "ExecutionSandbox protocol implementation for both",
+        "SandboxRequest/Record unified contracts",
+        "Artifact custody (sha256) on both platforms",
+        "Resource limits enforcement (rlimits on Linux, Job Objects on Windows)",
+        "NetworkMode.NONE on Linux; best-effort on Windows"
+      ],
+      "dependencies": [
+        "WS-04"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Same mission runs on Linux + Windows with isolation",
+      "exit_criteria": "Implementer writes files in sandbox on both OSes"
+    },
+    {
+      "id": "WS-12",
+      "name": "First Complete Mission (E2E)",
+      "phase": 5,
+      "description": "End-to-end: explore → analyze → plan → implement → verify",
+      "deliverables": [
+        "Working mission visible on Dashboard",
+        "Real-time WebSocket progress updates",
+        "Human approval gate wired to Dashboard",
+        "Artifacts written to sandbox + verified",
+        "Mission reaches VERIFIED state"
+      ],
+      "dependencies": [
+        "WS-10",
+        "WS-11"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Dashboard shows real-time progress; mission completes",
+      "exit_criteria": "\"Create hello.py\" mission passes on Dashboard"
+    },
+    {
+      "id": "WS-13",
+      "name": "Multi-Agent Coordination",
+      "phase": 6,
+      "description": "DAG parallelism + Arbiter + Reviewer cycles",
+      "deliverables": [
+        "TaskDAG parallel execution (WorkflowEngine)",
+        "Arbiter retry budget + STAGNANT detection",
+        "Reviewer max 3 revision cycles",
+        "Dynamic replanning on NOT_EVIDENCED"
+      ],
+      "dependencies": [
+        "WS-12"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Complex mission with review cycles completes",
+      "exit_criteria": "Mission with forced revision cycle passes"
+    },
+    {
+      "id": "WS-14",
+      "name": "Verification & Recovery",
+      "phase": 7,
+      "description": "Evidence-based verification + resume + stagnation",
+      "deliverables": [
+        "Verifier: file existence + hash + acceptance criteria",
+        "Arbiter: STAGNANT detection (same conflict fingerprint)",
+        "Resume from STOPPED + checkpoint",
+        "Crash mid-mission → resume completes",
+        "Fake artifacts rejected by verifier"
+      ],
+      "dependencies": [
+        "WS-13",
+        "WS-07"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Crash recovery test passes; fake artifacts detected",
+      "exit_criteria": "Crash recovery test passes; STAGNANT detected correctly"
+    },
+    {
+      "id": "WS-15",
+      "name": "Observability",
+      "phase": 8,
+      "description": "Metrics + traces + enhanced dashboard",
+      "deliverables": [
+        "Prometheus metrics (tokens, latency, failures, retries)",
+        "Structured logging (JSON, correlation IDs)",
+        "Enhanced Dashboard: token usage, evidence chain, agent timelines",
+        "Grafana dashboard templates"
+      ],
+      "dependencies": [
+        "WS-14"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "Real-time token/latency/evidence visible on Dashboard",
+      "exit_criteria": "Dashboard shows token usage, latency, evidence chain per mission"
+    },
+    {
+      "id": "WS-16",
+      "name": "Production Hardening",
+      "phase": 9,
+      "description": "Long missions + human gates + cost controls",
+      "deliverables": [
+        "Production config (timeouts, budgets, limits)",
+        "Human approval gates (Dashboard + CLI)",
+        "Cost controls (TokenBudget enforcement at LLMGateway)",
+        "Alerting (mission stuck, budget exceeded, sandbox failures)",
+        "Runbooks for common failure modes"
+      ],
+      "dependencies": [
+        "WS-15"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "48hr mission with multiple human approvals completes",
+      "exit_criteria": "Production readiness checklist passed"
+    },
+    {
+      "id": "WS-17",
+      "name": "Scale & Security",
+      "phase": 10,
+      "description": "Concurrent missions + horizontal scaling + security audit",
+      "deliverables": [
+        "Multi-mission orchestrator (concurrent state machines)",
+        "Load testing (10 concurrent missions)",
+        "Security audit (pen test, grant system, sandbox escape)",
+        "Horizontal scaling design (stateless API + stateful workers)",
+        "Final architecture documentation"
+      ],
+      "dependencies": [
+        "WS-16"
+      ],
+      "status": "NOT_STARTED",
+      "evidence": [],
+      "verification": "10 concurrent missions; security audit clean",
+      "exit_criteria": "Scale targets met; no critical vulnerabilities"
+    }
+  ],
+  "phase_summary": [
+    {
+      "phase": 0,
+      "name": "Foundation / Contracts / Baseline",
+      "workstreams": [
+        "WS-01",
+        "WS-02",
+        "WS-03",
+        "WS-04",
+        "WS-05"
+      ],
+      "objective": "Unified contracts, single LLM gateway, sandbox interface, agent role protocol",
+      "exit_criteria": "All existing tests pass with unified contracts; no mock imports in production"
+    },
+    {
+      "phase": 1,
+      "name": "Orchestrator Core",
+      "workstreams": [
+        "WS-06",
+        "WS-07"
+      ],
+      "objective": "Unified orchestrator with PlanState machine + resume",
+      "exit_criteria": "10 missions complete end-to-end with real LLM"
+    },
+    {
+      "phase": 2,
+      "name": "Task & State Engine",
+      "workstreams": [
+        "WS-08",
+        "WS-09"
+      ],
+      "objective": "OrderSpec → Sections → Grants → Execution + persistent events",
+      "exit_criteria": "Complex multi-section order completes with evidence"
+    },
+    {
+      "phase": 3,
+      "name": "Agent Runtime",
+      "workstreams": [
+        "WS-10"
+      ],
+      "objective": "7 roles + Arbiter with unified contracts",
+      "exit_criteria": "All roles execute in sandbox with grants"
+    },
+    {
+      "phase": 4,
+      "name": "Tools & Execution Sandbox",
+      "workstreams": [
+        "WS-11"
+      ],
+      "objective": "Cross-platform sandbox (Linux + Windows)",
+      "exit_criteria": "Same mission runs on Linux + Windows with isolation"
+    },
+    {
+      "phase": 5,
+      "name": "First Agents (E2E)",
+      "workstreams": [
+        "WS-12"
+      ],
+      "objective": "First complete mission visible on Dashboard",
+      "exit_criteria": "\"Create hello.py\" mission passes on Dashboard"
+    },
+    {
+      "phase": 6,
+      "name": "Multi-Agent Coordination",
+      "workstreams": [
+        "WS-13"
+      ],
+      "objective": "DAG parallelism + Arbiter + Reviewer cycles",
+      "exit_criteria": "Mission with forced revision cycle passes"
+    },
+    {
+      "phase": 7,
+      "name": "Verification & Recovery",
+      "workstreams": [
+        "WS-14"
+      ],
+      "objective": "Evidence verification + resume + stagnation detection",
+      "exit_criteria": "Crash recovery test passes; fake artifacts detected"
+    },
+    {
+      "phase": 8,
+      "name": "Observability",
+      "workstreams": [
+        "WS-15"
+      ],
+      "objective": "Metrics + traces + enhanced dashboard",
+      "exit_criteria": "Dashboard shows token usage, latency, evidence chain"
+    },
+    {
+      "phase": 9,
+      "name": "Long-Running Production",
+      "workstreams": [
+        "WS-16"
+      ],
+      "objective": "48hr missions + human gates + cost controls",
+      "exit_criteria": "Production readiness checklist passed"
+    },
+    {
+      "phase": 10,
+      "name": "Scale / Hardening",
+      "workstreams": [
+        "WS-17"
+      ],
+      "objective": "Concurrent missions + security audit",
+      "exit_criteria": "10 concurrent; security audit clean"
+    }
+  ],
+  "status_values": [
+    "NOT_STARTED",
+    "DISCOVERY",
+    "READY",
+    "IN_PROGRESS",
+    "BLOCKED",
+    "VERIFYING",
+    "VERIFIED",
+    "DEFERRED",
+    "REJECTED"
+  ],
+  "forbidden_status": "DONE",
+  "notes": "Only VERIFIED with evidence counts as complete. No workstream advances without dependency VERIFIED."
+}

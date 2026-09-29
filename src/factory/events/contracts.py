@@ -27,4 +27,4 @@ class FactoryEvent(BaseModel):
     agent_type: Optional[str] = None
     payload: Dict[str, Any] = {}
     evidence_hash: Optional[str] = None
-    source: str = "mock"  # "mock" | "real"
+    source: str = "real"  # "real"

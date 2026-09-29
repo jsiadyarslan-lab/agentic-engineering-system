@@ -9,7 +9,7 @@ dict) والموجّه يبقى منسقًا فقط:
       1) rate_limiter.acquire()        → إذا لم يُسمح: انتظر (⏳)
       2) cooling_loop.execute_with_…() → إذا اختناق (429): صبر (🧊)
       3) failover_chain.execute_with_…() → إذا انهيار (5xx): تبدّل (🔄)
-      4) النقل (mock فقط في هذه المرحلة — لا استدعاءات LLM حقيقية بعد)
+      4) النقل (لا mock، لا استدعاءات وهمية — نقل حقيقي فقط)
 
 التركيب من الخارج (wiring): الحزم تُبنى افتراضيًا من ProviderConfig
 (as_dicts) وتُبث أحداثها عبر on_event واحدة — ومن يبني الموجّه يملك
@@ -45,7 +45,6 @@ from router.provider_response import content_from_body, read_json_response
 class Provider(str, Enum):
     """أسماء المزودات — بلا أي منطق تبريد/تبديل هنا (الحزم تملكه)."""
 
-    MOCK = "mock"                    # محلي دائمًا — للاختبار والتجريب
     OLLAMA = "ollama"                # محلي
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
@@ -62,7 +61,6 @@ class ProviderSpec:
 
 
 PROVIDERS: dict[Provider, ProviderSpec] = {
-    Provider.MOCK: ProviderSpec(name=Provider.MOCK, key_required=False),
     Provider.OLLAMA: ProviderSpec(
         name=Provider.OLLAMA, key_required=False, base_url="http://127.0.0.1:11434"
     ),
@@ -107,7 +105,7 @@ class ModelRouter:
         rate_limiter: RateLimiter | None = None,
         failover_chain: FailoverChain | None = None,
         cooling_loop: CoolingLoop | None = None,
-        default_provider: Provider | str = Provider.MOCK,
+        default_provider: Provider | str = Provider.OLLAMA,
         transports: dict[str, Callable[[str, list[ChatMessage]], str]]
         | None = None,
         on_event: Callable[[dict], None] | None = None,
@@ -118,7 +116,7 @@ class ModelRouter:
         cfg = provider_settings.as_dicts()
         self._limiter = rate_limiter or RateLimiter(cfg["rate_limiter"])
         self._failover = failover_chain or FailoverChain(
-            [Provider.MOCK.value], cfg["failover"], on_event=on_event
+            [Provider.OLLAMA.value], cfg["failover"], on_event=on_event
         )
         self._cooling = cooling_loop or CoolingLoop(
             cfg["cooling"], on_event=on_event
@@ -201,7 +199,7 @@ class ModelRouter:
             pid = provider_id.value
         else:
             pid = str(provider_id or self.default_provider)
-        model_name = model or "mock-v2"
+        model_name = model or "gpt-4o-mini"
         started = time.monotonic()
         est_tokens = self._estimate_tokens(messages)
 
@@ -282,7 +280,7 @@ class ModelRouter:
         return result
 
     # ------------------------------------------------------------ #
-    # النقل — mock فقط في هذه المرحلة (لا استدعاءات LLM حقيقية بعد)
+    # النقل — لا mock، لا استدعاءات وهمية
     # ------------------------------------------------------------ #
 
     def _transport(
@@ -291,21 +289,9 @@ class ModelRouter:
         transport = self._transports.get(provider)
         if transport is not None:
             return transport(model, messages)
-        if provider == Provider.MOCK.value:
-            return self._mock_transport(model, messages)
         raise ProviderCallError(
-            f"لا نقل مسجَّل للمزود '{provider}' — النقل الحقيقي يُضاف في "
-            "أمر الاستدعاءات الحية؛ mock متاح دائمًا",
+            f"لا نقل مسجَّل للمزود '{provider}' — أضف نقلاً حقيقياً عند بناء الموجّه"
         )
-
-    @staticmethod
-    def _mock_transport(model: str, messages: list[ChatMessage]) -> str:
-        """نقل mock حتمي — أول رد مستخدم مقتطعًا (لا ادعاء توليد)."""
-        user_text = next(
-            (m.content for m in reversed(messages) if m.role == "user"),
-            messages[-1].content if messages else "",
-        )
-        return f"[mock:{model}] {user_text[:80]}"
 
     @staticmethod
     def _estimate_tokens(messages: list[ChatMessage]) -> int:
@@ -426,10 +412,10 @@ class ModelRouter:
             if isinstance(provider_id, Provider)
             else str(provider_id or self.default_provider)
         )
-        if pid == Provider.MOCK.value or pid not in self._transports:
+        if pid not in self._transports:
             raise ProviderCallError(
                 f"لا نقل حي مسجَّل للمزود '{pid}' — الربط الحي يُبنى عبر "
-                "ModelRouter.build_live()؛ لا سقوط إلى mock"
+                "ModelRouter.build_live()"
             )
         chosen_model = model or self._live_default_model
         if not chosen_model:

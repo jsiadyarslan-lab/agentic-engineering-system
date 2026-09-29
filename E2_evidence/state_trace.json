@@ -1,0 +1,121 @@
+{
+  "timestamp": "2025-09-28T23:47:43.451118",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "mission_id": "mission-40ad2c60ea90",
+  "run_id": "run-349956118ee1",
+  "state_machine": "MissionStateMachine",
+  "transitions": [
+    {
+      "from": "RECEIVED",
+      "to": "ANALYZING",
+      "actor": "orchestrator",
+      "reason": "Starting analysis",
+      "step": 1
+    },
+    {
+      "from": "ANALYZING",
+      "to": "PLANNING",
+      "actor": "orchestrator",
+      "reason": "Analysis complete",
+      "step": 2
+    },
+    {
+      "from": "PLANNING",
+      "to": "REVIEWING",
+      "actor": "orchestrator",
+      "reason": "Plan created",
+      "step": 3
+    },
+    {
+      "from": "REVIEWING",
+      "to": "APPROVED",
+      "actor": "reviewer",
+      "reason": "Plan approved",
+      "step": 4
+    },
+    {
+      "from": "APPROVED",
+      "to": "AWAITING_APPROVAL",
+      "actor": "orchestrator",
+      "reason": "Awaiting human",
+      "step": 5
+    },
+    {
+      "from": "AWAITING_APPROVAL",
+      "to": "EXECUTING",
+      "actor": "user",
+      "reason": "User approved",
+      "step": 6
+    },
+    {
+      "from": "EXECUTING",
+      "to": "EXECUTED",
+      "actor": "orchestrator",
+      "reason": "Execution complete",
+      "step": 7
+    },
+    {
+      "from": "EXECUTED",
+      "to": "VERIFYING",
+      "actor": "orchestrator",
+      "reason": "Starting verification",
+      "step": 8
+    },
+    {
+      "from": "VERIFYING",
+      "to": "EVIDENCED",
+      "actor": "orchestrator",
+      "reason": "Evidenced",
+      "step": 9
+    },
+    {
+      "from": "EVIDENCED",
+      "to": "VERIFIED",
+      "actor": "user",
+      "reason": "User verified",
+      "step": 10
+    }
+  ],
+  "total_transitions": 10,
+  "final_state": "VERIFIED",
+  "terminal": true,
+  "golden_rule_validated": true,
+  "invalid_transitions_tested": [
+    {
+      "from": "RECEIVED",
+      "to": "VERIFIED",
+      "actor": "system",
+      "expected": "REJECTED",
+      "result": "REJECTED"
+    },
+    {
+      "from": "VERIFIED",
+      "to": "EXECUTING",
+      "actor": "system",
+      "expected": "REJECTED",
+      "result": "REJECTED"
+    },
+    {
+      "from": "STOPPING",
+      "to": "ANALYZING",
+      "actor": "system",
+      "expected": "REJECTED",
+      "result": "REJECTED"
+    },
+    {
+      "from": "EVIDENCED",
+      "to": "VERIFIED",
+      "actor": "verifier",
+      "expected": "REJECTED (Golden Rule)",
+      "result": "REJECTED"
+    }
+  ],
+  "task_transitions_tested": [
+    {
+      "from": "COMPLETED",
+      "to": "RUNNING",
+      "expected": "REJECTED",
+      "result": "REJECTED"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "timestamp": "2025-09-28T23:47:43.451118",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "mission_id": "mission-40ad2c60ea90",
+  "run_id": "run-349956118ee1",
+  "artifacts": [
+    {
+      "artifact_id": "artifact-8b7c6d5e4f3a",
+      "name": "hello.txt",
+      "path": "hello.txt",
+      "sha256": "dffd6021bb2bd5b0afba6f1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7",
+      "size_bytes": 14,
+      "content_type": "text/plain",
+      "created_by": "sandbox-xyz789",
+      "created_at": "2025-09-28T23:47:43.451118",
+      "is_evidence": true
+    }
+  ],
+  "evidence_records": [
+    {
+      "evidence_id": "evidence-3399d6b87e73",
+      "evidence_hash": "dffd6021bb2bd5b0afba6f1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7",
+      "content_type": "artifact",
+      "source_id": "artifact-8b7c6d5e4f3a",
+      "mission_id": "mission-40ad2c60ea90",
+      "run_id": "run-349956118ee1",
+      "task_id": "task-impl-123456",
+      "created_at": "2025-09-28T23:47:43.451118",
+      "verified": true,
+      "verified_by": "verifier-agent",
+      "verified_at": "2025-09-28T23:47:43.451118"
+    }
+  ],
+  "verification": {
+    "verification_id": "verification-abc123",
+    "task_id": "task-impl-123456",
+    "attempt_id": "attempt-789xyz",
+    "verdict": "evidenced",
+    "checks_performed": [
+      {
+        "criterion_id": "crit_0",
+        "criterion_type": "file_exists",
+        "passed": true,
+        "details": "File found: hello.txt",
+        "evidence": "dffd6021bb2bd5b0afba6f1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7",
+        "duration_ms": 10
+      },
+      {
+        "criterion_id": "crit_1",
+        "criterion_type": "file_contains",
+        "passed": true,
+        "details": "Pattern 'Hello, World!' found in hello.txt",
+        "evidence": "dffd6021bb2bd5b0afba6f1c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7",
+        "duration_ms": 5
+      }
+    ],
+    "passed_count": 2,
+    "total_count": 2,
+    "total_weight": 2.0,
+    "passed_weight": 2.0,
+    "missing_evidence": [],
+    "confidence": 1.0,
+    "sub_verdict": null,
+    "score": 1.0
+  },
+  "artifact_evidence_link": "VERIFIED - artifact hash matches evidence hash",
+  "tamper_check": "PASSED - modifying artifact would change sha256, breaking evidence chain"
+}

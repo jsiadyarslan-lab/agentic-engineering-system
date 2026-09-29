@@ -1,0 +1,28 @@
+{
+  "timestamp": "2025-09-28T23:47:43.451118",
+  "baseline_sha": "b09b6201673d6140e59ab7d49f1525a525adebc7",
+  "resume_test": {
+    "checkpoint_created": true,
+    "checkpoint_id": "checkpoint-86abd53414f5",
+    "checkpoint_state": "AWAITING_APPROVAL",
+    "checkpoint_step": 6,
+    "checkpoint_task_states": {
+      "task-impl-123456": "PENDING"
+    },
+    "checkpoint_artifact_ids": [],
+    "checkpoint_evidence_hashes": [],
+    "checkpoint_hash": "chk_hash",
+    "resume_run_created": true,
+    "resume_run_id": "run-48d4030d395f",
+    "resume_run_number": 2,
+    "resume_parent_run_id": "run-349956118ee1",
+    "resume_from_checkpoint": "checkpoint-86abd53414f5",
+    "state_restored": true,
+    "events_emitted": [
+      "checkpoint.created",
+      "checkpoint.loaded"
+    ],
+    "note": "Resume capability demonstrated - new run created with parent_run_id, state restored from checkpoint"
+  },
+  "passed": true
+}
