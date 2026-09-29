@@ -673,36 +673,25 @@ class TestVS004TaskGraphOrchestration:
         loaded_run = engine_b.resume_from_checkpoint(checkpoint_id, mission_id=mission_a.mission_id)
         assert loaded_run is not None
         
-        # Recreate the task graph in engine_b (same structure as engine_a)
-        task_a2 = engine_b.create_task(
-            run_id=loaded_run.run_id,
-            mission_id=mission_a.mission_id,
-            name="Task A",
-            description="First task",
-            agent_type=AgentType.IMPLEMENTER,
-            depends_on=[],
-        )
+        # The task graph should have been reconstructed from checkpoint
+        # Find the restored task IDs (they should match the original ones)
+        restored_graph = engine_b.task_graph[loaded_run.run_id]
+        restored_task_ids = list(restored_graph.keys())
+        print(f"DEBUG: Restored graph: {restored_graph}")
+        print(f"DEBUG: Restored task IDs: {restored_task_ids}")
+        assert len(restored_task_ids) == 3, f"Expected 3 restored tasks, got {len(restored_task_ids)}"
         
-        task_b2 = engine_b.create_task(
-            run_id=loaded_run.run_id,
-            mission_id=mission_a.mission_id,
-            name="Task B",
-            description="Second task",
-            agent_type=AgentType.IMPLEMENTER,
-            depends_on=[task_a2.task_id],
-        )
+        # Find which tasks were completed vs pending
+        completed_task_ids = [tid for tid, node in restored_graph.items() if node["state"] == TaskState.COMPLETED]
+        pending_task_ids = [tid for tid, node in restored_graph.items() if node["state"] in (TaskState.PENDING, TaskState.READY, TaskState.BLOCKED)]
         
-        task_c2 = engine_b.create_task(
-            run_id=loaded_run.run_id,
-            mission_id=mission_a.mission_id,
-            name="Task C",
-            description="Third task",
-            agent_type=AgentType.IMPLEMENTER,
-            depends_on=[task_b2.task_id],
-        )
+        print(f"DEBUG: Completed task IDs: {completed_task_ids}")
+        print(f"DEBUG: Pending task IDs: {pending_task_ids}")
         
-        # Execute in engine_b - verify it runs successfully
-        # (Task graph restoration with different task IDs is not fully supported yet)
+        assert len(completed_task_ids) == 2, f"Expected 2 completed tasks, got {len(completed_task_ids)}"
+        assert len(pending_task_ids) == 1, f"Expected 1 pending task, got {len(pending_task_ids)}"
+        
+        # Execute in engine_b - only the pending task should run
         engine_b.subscribe_events(collector)
         
         result_b = await engine_b.execute_task_graph(
@@ -711,17 +700,30 @@ class TestVS004TaskGraphOrchestration:
             event_collector=collector,
         )
         
+        print(f"DEBUG: result_b: {result_b}")
         assert result_b["success"]
-        # Verify all 3 tasks executed in Runtime-B
-        assert len(result_b["task_results"]) == 3
+        # Verify all 3 tasks are in results
+        assert len(result_b["task_results"]) == 3, f"Expected 3 task results, got {len(result_b['task_results'])}: {result_b['task_results']}"
+        
+        # Verify completed tasks are marked as resumed (not re-executed)
+        for task_id in completed_task_ids:
+            assert task_id in result_b["task_results"], f"Completed task {task_id} should be in results"
+            assert result_b["task_results"][task_id].get("resumed") is True, f"Task {task_id} should be marked as resumed"
+            assert "attempts" not in result_b["task_results"][task_id] or result_b["task_results"][task_id].get("attempts") == 1
+        
+        # Verify pending task was executed (not resumed)
+        for task_id in pending_task_ids:
+            assert task_id in result_b["task_results"], f"Pending task {task_id} should be in results"
+            assert result_b["task_results"][task_id].get("resumed") is not True, f"Task {task_id} should not be marked as resumed"
+            assert "attempts" in result_b["task_results"][task_id], f"Task {task_id} should have attempts"
         
         agent_started_total = sum(1 for e in events if e.event_type.value == "agent.started")
-        # 3 in Runtime-A + 3 in Runtime-B = 6 total
-        assert agent_started_total == 6, f"Expected 6 total agent executions, got {agent_started_total}"
+        # 3 in Runtime-A + 1 in Runtime-B (only pending task) = 4 total
+        assert agent_started_total == 4, f"Expected 4 total agent executions (3 before + 1 after), got {agent_started_total}"
         
-        assert result_b["task_results"][task_a2.task_id]["success"]
-        assert result_b["task_results"][task_b2.task_id]["success"]
-        assert result_b["task_results"][task_c2.task_id]["success"]
+        # Verify all tasks succeeded
+        for task_id, result in result_b["task_results"].items():
+            assert result["success"], f"Task {task_id} should succeed: {result}"
         
         with open(os.path.join(temp_dir, "e7_cross_runtime_resume_test.json"), "w") as f:
             trace = []

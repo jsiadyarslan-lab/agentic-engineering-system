@@ -1212,6 +1212,11 @@ class ExecutionEngine:
         task_states: Dict[str, TaskState],
         artifact_ids: List[str],
         evidence_hashes: List[str],
+        task_definitions: Optional[Dict[str, Dict[str, Any]]] = None,
+        task_dependencies: Optional[Dict[str, List[str]]] = None,
+        task_dependents: Optional[Dict[str, List[str]]] = None,
+        attempt_history: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        agent_assignments: Optional[Dict[str, str]] = None,
     ) -> Checkpoint:
         """Create execution checkpoint and persist to disk."""
         checkpoint = Checkpoint(
@@ -1223,6 +1228,11 @@ class ExecutionEngine:
             task_states=task_states,
             artifact_ids=artifact_ids,
             evidence_hashes=evidence_hashes,
+            task_definitions=task_definitions or {},
+            task_dependencies=task_dependencies or {},
+            task_dependents=task_dependents or {},
+            attempt_history=attempt_history or {},
+            agent_assignments=agent_assignments or {},
         )
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
         
@@ -1275,6 +1285,9 @@ class ExecutionEngine:
             parent_run_id=checkpoint.run_id,
         )
         
+        # Reconstruct the task graph from checkpoint
+        self._reconstruct_task_graph_from_checkpoint(new_run.run_id, checkpoint)
+        
         # Emit checkpoint loaded
         self._emit(FactoryEvent.create(
             event_type=EventType.CHECKPOINT_LOADED,
@@ -1286,12 +1299,104 @@ class ExecutionEngine:
         
         return new_run
     
+    def _reconstruct_task_graph_from_checkpoint(
+        self,
+        run_id: str,
+        checkpoint: Checkpoint,
+    ) -> None:
+        """Reconstruct the full task graph from checkpoint for cross-runtime resume."""
+        # Initialize task graph for this run
+        self.task_graph[run_id] = {}
+        
+        # Restore attempt history
+        if checkpoint.attempt_history:
+            if not hasattr(self, '_attempts'):
+                self._attempts = {}
+            for task_id, attempts in checkpoint.attempt_history.items():
+                for attempt_data in attempts:
+                    # Reconstruct Attempt objects
+                    attempt = Attempt(
+                        attempt_id=attempt_data["attempt_id"],
+                        task_id=attempt_data["task_id"],
+                        agent_id=attempt_data["agent_id"],
+                        state=TaskState(attempt_data["state"]),
+                        success=attempt_data["success"],
+                        error=attempt_data["error"],
+                        started_at=datetime.fromisoformat(attempt_data["started_at"]) if attempt_data.get("started_at") else None,
+                        completed_at=datetime.fromisoformat(attempt_data["completed_at"]) if attempt_data.get("completed_at") else None,
+                    )
+                    self._attempts[attempt.attempt_id] = attempt
+        
+        # Reconstruct each task
+        for task_id, state in checkpoint.task_states.items():
+            # Get task definition from checkpoint
+            task_def = checkpoint.task_definitions.get(task_id, {})
+            
+            # Create task node in graph
+            self.task_graph[run_id][task_id] = {
+                "state": state,
+                "name": task_def.get("name", ""),
+                "description": task_def.get("description", ""),
+                "agent_type": AgentType(task_def.get("agent_type", "implementer")) if task_def.get("agent_type") else AgentType.IMPLEMENTER,
+                "depends_on": checkpoint.task_dependencies.get(task_id, []),
+                "dependents": checkpoint.task_dependents.get(task_id, []),
+                "acceptance_criteria": task_def.get("acceptance_criteria", []),
+                "max_retries": task_def.get("max_retries", 2),
+                "retry_count": task_def.get("retry_count", 0),
+                "mission_id": checkpoint.mission_id,
+                "run_id": run_id,
+                "agent_id": checkpoint.agent_assignments.get(task_id, ""),
+                "artifact_ids": [],
+                "evidence_hashes": [],
+            }
+            
+            # Also create Task object
+            task = Task(
+                task_id=task_id,
+                mission_id=checkpoint.mission_id,
+                run_id=run_id,
+                name=task_def.get("name", ""),
+                description=task_def.get("description", ""),
+                agent_type=AgentType(task_def.get("agent_type", "implementer")) if task_def.get("agent_type") else AgentType.IMPLEMENTER,
+                state=state,
+                depends_on=checkpoint.task_dependencies.get(task_id, []),
+                acceptance_criteria=task_def.get("acceptance_criteria", []),
+                max_retries=task_def.get("max_retries", 2),
+            )
+            task.retry_count = task_def.get("retry_count", 0)
+            self.tasks[task_id] = task
+            
+            # Add to runnable cache
+            if run_id not in self.task_runnable_cache:
+                self.task_runnable_cache[run_id] = set()
+            self.task_runnable_cache[run_id].add(task_id)
+            
+            # Emit state transition event for restored task
+            self._emit(FactoryEvent.create(
+                event_type=EventType.STATE_TRANSITION,
+                mission_id=checkpoint.mission_id,
+                run_id=run_id,
+                payload={
+                    "entity_type": "task",
+                    "entity_id": task_id,
+                    "from_state": "UNKNOWN",
+                    "to_state": state.value if hasattr(state, 'value') else str(state),
+                    "trigger": "checkpoint_resume",
+                },
+                source="execution_engine",
+                correlation_id=task_id,
+            ))
+        
+        # Restore artifact IDs and evidence hashes if available
+        # These would be populated when artifacts/evidence are loaded
+        # For now, we track them as empty lists
+        
     def restore_task_graph_from_checkpoint(
         self,
         run_id: str,
         checkpoint: Checkpoint,
     ) -> None:
-        """Restore task graph state from checkpoint."""
+        """Restore task graph state from checkpoint (for same-runtime resume)."""
         if run_id not in self.task_graph:
             # Need to recreate the task graph from the original run
             # For now, we assume the task graph exists or is rebuilt
@@ -1672,10 +1777,52 @@ class ExecutionEngine:
         artifact_ids = []
         evidence_hashes = []
         
+        # Build full task graph for cross-runtime restoration
+        task_definitions = {}
+        task_dependencies = {}
+        task_dependents = {}
+        attempt_history = {}
+        agent_assignments = {}
+        
         for task_id, node in graph.items():
             task_states[task_id] = node["state"]
             artifact_ids.extend(node.get("artifact_ids", []))
             evidence_hashes.extend(node.get("evidence_hashes", []))
+            
+            # Capture task definition
+            task_definitions[task_id] = {
+                "name": node.get("name", ""),
+                "description": node.get("description", ""),
+                "agent_type": node.get("agent_type", "").value if hasattr(node.get("agent_type", ""), 'value') else str(node.get("agent_type", "")),
+                "acceptance_criteria": node.get("acceptance_criteria", []),
+                "max_retries": node.get("max_retries", 2),
+                "retry_count": node.get("retry_count", 0),
+            }
+            
+            # Capture dependencies
+            task_dependencies[task_id] = node.get("depends_on", [])
+            task_dependents[task_id] = node.get("dependents", [])
+            
+            # Capture agent assignment
+            if node.get("agent_id"):
+                agent_assignments[task_id] = node["agent_id"]
+        
+        # Capture attempt history
+        if hasattr(self, '_attempts'):
+            for attempt_id, attempt in self._attempts.items():
+                task_id = attempt.task_id
+                if task_id not in attempt_history:
+                    attempt_history[task_id] = []
+                attempt_history[task_id].append({
+                    "attempt_id": attempt.attempt_id,
+                    "task_id": attempt.task_id,
+                    "agent_id": attempt.agent_id,
+                    "state": attempt.state.value if hasattr(attempt.state, 'value') else str(attempt.state),
+                    "success": attempt.success,
+                    "error": attempt.error,
+                    "started_at": attempt.started_at.isoformat() if attempt.started_at else None,
+                    "completed_at": attempt.completed_at.isoformat() if attempt.completed_at else None,
+                })
         
         # Get current plan state (simplified)
         plan_state = PlanState.EXECUTING
@@ -1691,6 +1838,11 @@ class ExecutionEngine:
             task_states=task_states,
             artifact_ids=artifact_ids,
             evidence_hashes=evidence_hashes,
+            task_definitions=task_definitions,
+            task_dependencies=task_dependencies,
+            task_dependents=task_dependents,
+            attempt_history=attempt_history,
+            agent_assignments=agent_assignments,
         )
     
     # --- Event Emission ---
