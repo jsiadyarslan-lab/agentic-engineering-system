@@ -44,6 +44,7 @@ class EventType(str, Enum):
     AGENT_STARTED = "agent.started"
     AGENT_COMPLETED = "agent.completed"
     AGENT_FAILED = "agent.failed"
+    AGENT_SELECTED = "agent.selected"
 
     # Task lifecycle
     TASK_CREATED = "task.created"
@@ -214,6 +215,15 @@ class AgentFailedEvent(BaseModel):
     task_id: str
     error: str
     error_type: str
+
+
+class AgentSelectedEvent(BaseModel):
+    agent_id: str
+    agent_type: str
+    mission_id: str
+    run_id: str
+    task_id: str
+    selection_method: str
 
 
 class TaskCreatedEvent(BaseModel):
@@ -440,6 +450,7 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.AGENT_STARTED: AgentStartedEvent,
     EventType.AGENT_COMPLETED: AgentCompletedEvent,
     EventType.AGENT_FAILED: AgentFailedEvent,
+    EventType.AGENT_SELECTED: AgentSelectedEvent,
     EventType.TASK_CREATED: TaskCreatedEvent,
     EventType.TASK_ASSIGNED: TaskAssignedEvent,
     EventType.TASK_COMPLETED: TaskCompletedEvent,

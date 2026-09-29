@@ -1,0 +1,105 @@
+{
+  "factory_agents": {
+    "path": "src/factory/agents/",
+    "files": [
+      "base.py",
+      "designer.py",
+      "explorer.py",
+      "implementer.py",
+      "planner.py",
+      "reviewer.py",
+      "security.py",
+      "thinker.py",
+      "verifier.py"
+    ],
+    "base_class": "BaseAgent (src/factory/agents/base.py)",
+    "agent_type": "string (e.g., planner, reviewer)",
+    "llm": "StructuredLLM",
+    "context": "SharedContextManager",
+    "grants": "GrantManager",
+    "tools": "ToolRegistry",
+    "execution": "execute(AgentTask) -> AgentResult",
+    "lifecycle": "on_start -> execute -> on_complete/on_failed",
+    "production_or_test": "production",
+    "legacy": true,
+    "migration_required": true,
+    "replacement": "unified AgentRole protocol + AgentRegistry"
+  },
+  "factory_orchestrator": {
+    "path": "src/factory/orchestrator.py",
+    "note": "Has create_for_production(), uses UnifiedLLMClient.from_config()",
+    "agent_creation": "Direct instantiation of factory agents",
+    "legacy": true,
+    "migration_required": true
+  },
+  "factory_cli": {
+    "path": "src/factory/cli.py",
+    "note": "Uses factory agents directly for CLI missions",
+    "legacy": true,
+    "migration_required": true
+  },
+  "eas_v2_roles": {
+    "path": "src/roles/",
+    "files": [
+      "thinker.py",
+      "reviewer.py",
+      "implementer.py",
+      "verifier.py",
+      "arbiter.py",
+      "live.py",
+      "implementer_live.py"
+    ],
+    "base_class": "LiveRoleBase (src/roles/live.py)",
+    "agent_type": "RoleType enum (THINKER, REVIEWER, IMPLEMENTER, VERIFIER, ARBITER)",
+    "llm": "ModelRouter.chat_live()",
+    "prompts": "prompts/<role>.md",
+    "lifecycle": "Single execute per role, no explicit state machine",
+    "production_or_test": "production (live) + test (mock)",
+    "legacy": true,
+    "migration_required": true,
+    "replacement": "unified AgentRole protocol + EASRoleAdapter"
+  },
+  "eas_v2_orchestrator": {
+    "path": "src/core/orchestrator.py",
+    "note": "Orchestrates 5 roles in cycle: THINKER -> REVIEWER -> IMPLEMENTER -> VERIFIER -> ARBITER",
+    "agent_selection": "Hardcoded in _REQUIRED_ROLES",
+    "legacy": true,
+    "migration_required": true
+  },
+  "eas_v2_wiring": {
+    "path": "src/core/wiring.py",
+    "functions": [
+      "build_mock_orchestrator",
+      "build_live_orchestrator"
+    ],
+    "note": "Creates orchestrators with hardcoded role implementations",
+    "legacy": true,
+    "migration_required": true
+  },
+  "unified_vertical_slice_adapters": {
+    "path": "src/unified/",
+    "files": [
+      "planner_adapter.py",
+      "implementer_adapter.py",
+      "verifier_adapter.py",
+      "reviewer_adapter.py",
+      "analyst_adapter.py",
+      "designer_adapter.py",
+      "explorer_adapter.py",
+      "arbiter_adapter.py"
+    ],
+    "note": "Adapters for EAS v2 roles to AgentRole protocol",
+    "status": "Referenced in vertical_slice.py but files may not exist",
+    "legacy": false,
+    "migration_required": false
+  },
+  "unified_execution_engine": {
+    "path": "src/unified/execution.py",
+    "class": "ExecutionEngine",
+    "agent_factory": "AgentFactory() - uses global agent_registry",
+    "agent_selection": "Direct agent_type parameter (NO AgentRegistry selection)",
+    "lifecycle_integration": "Partial - uses AgentFactory.execute_agent() which manages lifecycle",
+    "legacy": false,
+    "migration_required": "Yes - integrate AgentRegistry selection"
+  }
+}

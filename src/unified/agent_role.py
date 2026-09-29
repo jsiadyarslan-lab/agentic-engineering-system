@@ -838,10 +838,17 @@ class AgentFactory:
     ) -> AgentResult:
         """Create and execute agent in one call."""
         agent = self.create_agent(agent_type, context)
+        
+        # Get the agent_id from the created agent
+        agent_id = context.agent_id
+        
+        # Set lifecycle to ASSIGNED
+        self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
 
         # Validate input
         errors = agent.validate_input(task)
         if errors:
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
             return AgentResult(
                 task_id=task.task_id,
                 agent_type=agent_type,
@@ -852,10 +859,13 @@ class AgentFactory:
 
         # Execute with lifecycle
         agent.on_start(context, task)
+        # Transition to RUNNING
+        self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.RUNNING)
         try:
             result = await agent.execute(context, task)
         except Exception as e:
             agent.on_failed(context, task, e)
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
             return AgentResult(
                 task_id=task.task_id,
                 agent_type=agent_type,
@@ -873,8 +883,10 @@ class AgentFactory:
 
         if result.success:
             agent.on_complete(context, task, result)
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
         else:
             agent.on_failed(context, task, Exception(result.error or "Validation failed"))
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
 
         return result
 

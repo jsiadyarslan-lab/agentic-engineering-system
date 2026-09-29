@@ -356,6 +356,7 @@ class Verifier:
                 details="Missing path or expected_hash",
             )
 
+        # First try to find the artifact in the provided artifacts map
         found = False
         evidence = None
         for art_id, meta in artifacts.items():
@@ -364,6 +365,20 @@ class Verifier:
                 found = actual == expected
                 evidence = actual
                 break
+        
+        # If not found in artifacts map, try to read from evidence store
+        if not found and self.evidence_store:
+            # Try to find artifact by path in evidence store
+            for art_id, art in self.evidence_store._artifacts.items():
+                if art.path == path or art.name == path:
+                    # Read file from disk and compute hash
+                    content = self.evidence_store.read_artifact_content(art_id)
+                    if content:
+                        import hashlib
+                        actual = hashlib.sha256(content).hexdigest()
+                        found = actual == expected
+                        evidence = actual
+                    break
 
         return CheckResult(
             criterion_id=criterion.id,

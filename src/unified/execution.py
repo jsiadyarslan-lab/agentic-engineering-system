@@ -74,7 +74,7 @@ from unified.contracts import (
 )
 from unified.agent_role import (
     AgentCapability, AgentContext, AgentRegistry, agent_registry,
-    AgentFactory, BaseAgent,
+    AgentFactory, BaseAgent, AgentSelectionError, AgentLifecycleState,
 )
 from unified.sandbox import (
     ExecutionSandbox, SandboxBackend, SandboxManager,
@@ -113,6 +113,7 @@ class ExecutionContext:
     llm_gateway: Optional[Any] = None  # LLMGateway
     event_emitter: Optional[Callable[[FactoryEvent], None]] = None
     grant_validator: Optional[Callable[[str, str], bool]] = None
+    evidence_store: Optional[Any] = None  # FileEvidenceStore
     
     # State
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -250,8 +251,9 @@ class ExecutionEngine:
         # Event bus
         self.event_bus = SimpleEventBus()
         
-        # Agent factory
-        self.agent_factory = AgentFactory()
+        # Agent registry and factory
+        self.agent_registry = agent_registry
+        self.agent_factory = AgentFactory(self.agent_registry)
         
         # Evidence store
         self.evidence_store = FileEvidenceStore(self.artifacts_base_dir)
@@ -339,15 +341,93 @@ class ExecutionEngine:
         self.tasks[task.task_id] = task
         return task
     
+    # --- Agent Selection ---
+    
+    def select_agent_for_task(self, task: AgentTask) -> Optional[AgentDefinition]:
+        """
+        Select the best agent for a task using capability-based deterministic selection.
+        
+        Uses AgentRegistry.select_agent() which considers:
+        - Required tools from task acceptance criteria (inferred)
+        - Required permissions
+        - Supported domains
+        - Agent availability (enabled + AVAILABLE state)
+        - Max tokens (higher wins ties)
+        """
+        # Infer required capabilities from task
+        # For now, use the agent_type as primary filter
+        # In future, parse acceptance_criteria to infer tools/permissions/domains
+        
+        # First try exact type match
+        defn = self.agent_registry.get_definition_by_type(task.agent_type)
+        if defn and defn.is_available():
+            return defn
+        
+        # If agent exists but is in COMPLETED/FAILED state, reset to AVAILABLE for reuse
+        if defn and defn.state in (AgentLifecycleState.COMPLETED, AgentLifecycleState.FAILED):
+            self.agent_registry.set_lifecycle_state(defn.agent_id, AgentLifecycleState.AVAILABLE)
+            return defn
+        
+        # Fall back to capability-based selection
+        # For now, require no specific tools/permissions/domains
+        # The registry will select the best available agent
+        return self.agent_registry.select_agent(
+            required_tools=[],
+            required_permissions=[],
+            required_domains=[],
+        )
+    
     # --- Agent Execution ---
     
     async def execute_agent(
         self,
-        agent_type: AgentType,
-        context: ExecutionContext,
-        task: AgentTask,
+        agent_type: Optional[AgentType] = None,
+        context: Optional[ExecutionContext] = None,
+        task: Optional[AgentTask] = None,
     ) -> AgentResult:
-        """Execute an agent role."""
+        """
+        Execute an agent role.
+        
+        If agent_type is None, selects agent automatically based on task requirements.
+        """
+        # Determine agent to use
+        if agent_type is None:
+            if task is None:
+                raise ValueError("Either agent_type or task must be provided")
+            defn = self.select_agent_for_task(task)
+            if defn is None:
+                raise AgentSelectionError(f"No available agent for task {task.task_id}")
+            agent_type = defn.agent_type
+            agent_id = defn.agent_id
+        else:
+            # Use provided agent_type, get default definition
+            defn = self.agent_registry.get_definition_by_type(agent_type)
+            if defn is None:
+                raise AgentSelectionError(f"No definition for agent type {agent_type}")
+            agent_id = defn.agent_id
+        
+        # Ensure context has agent_id
+        if context is not None and not context.agent_id:
+            context.agent_id = agent_id
+        
+        # Emit agent selected event
+        from unified.contracts import AgentSelectedEvent
+        self._emit(FactoryEvent.create(
+            event_type=EventType.AGENT_SELECTED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=AgentSelectedEvent(
+                agent_id=agent_id,
+                agent_type=agent_type.value,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                task_id=context.task_id,
+                selection_method="capability_based" if agent_type is None else "explicit",
+            ),
+            source="execution_engine",
+            correlation_id=context.task_id,
+        ))
+        
         # Emit agent started
         self._emit(FactoryEvent.create(
             event_type=EventType.AGENT_STARTED,
@@ -379,8 +459,12 @@ class ExecutionEngine:
                 run_id=context.run_id,
                 payload=AgentCompletedEvent(
                     agent_id=context.agent_id,
+                    agent_type=agent_type.value,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
                     task_id=context.task_id,
                     success=True,
+                    output_summary=f"artifacts={result.artifacts}",
                     evidence_hash=result.evidence_hash,
                     duration_ms=result.duration_ms,
                 ),
@@ -403,6 +487,31 @@ class ExecutionEngine:
                 source=f"agent.{agent_type.value}",
                 correlation_id=context.task_id,
             ))
+        
+        # Emit artifact created events for artifacts produced by agent
+        if result.success and result.artifacts:
+            for artifact_id in result.artifacts:
+                artifact = self.evidence_store.get_artifact_obj(artifact_id)
+                if artifact:
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.ARTIFACT_CREATED,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        payload=ArtifactCreatedEvent(
+                            artifact_id=artifact.artifact_id,
+                            mission_id=context.mission_id,
+                            run_id=context.run_id,
+                            task_id=context.task_id,
+                            agent_id=context.agent_id,
+                            name=artifact.name,
+                            path=artifact.path,
+                            sha256=artifact.sha256,
+                            size_bytes=artifact.size_bytes,
+                            created_by=context.sandbox_id or context.agent_id,
+                        ),
+                        source=f"agent.{agent_type.value}",
+                        correlation_id=context.task_id,
+                    ))
         
         return result
     

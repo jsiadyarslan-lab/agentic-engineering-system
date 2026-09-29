@@ -1,0 +1,83 @@
+{
+  "mission_creation": {
+    "who": "ExecutionEngine.create_mission()",
+    "path": "src/unified/execution.py:279",
+    "output": "Mission object",
+    "events": "MissionStartedEvent",
+    "storage": "self.missions[mission_id]"
+  },
+  "run_creation": {
+    "who": "ExecutionEngine.create_run()",
+    "path": "src/unified/execution.py:293",
+    "output": "Run object",
+    "events": "RunStartedEvent",
+    "storage": "self.runs[run_id]"
+  },
+  "task_creation": {
+    "who": "ExecutionEngine.create_task()",
+    "path": "src/unified/execution.py:319",
+    "input": "run_id, mission_id, name, description, agent_type, acceptance_criteria, depends_on",
+    "output": "Task object (from domain_model)",
+    "events": "None",
+    "storage": "self.tasks[task_id]"
+  },
+  "agent_assignment": {
+    "who": "ExecutionEngine.execute_agent()",
+    "path": "src/unified/execution.py:344",
+    "input": "agent_type (hardcoded/passed), context, task",
+    "method": "self.agent_factory.execute_agent(agent_type, context, task)",
+    "note": "agent_type is passed directly, NO selection via AgentRegistry",
+    "events": "AGENT_STARTED -> AGENT_COMPLETED or TASK_FAILED"
+  },
+  "agent_execution": {
+    "who": "AgentFactory.execute_agent()",
+    "path": "src/unified/agent_role.py:833",
+    "method": "Creates agent instance via agent_registry.create_instance(), calls on_start, execute, on_complete/on_failed",
+    "lifecycle": "AgentLifecycleState.ASSIGNED -> RUNNING -> COMPLETED/FAILED",
+    "note": "Uses global agent_registry but agent_type is predetermined"
+  },
+  "agent_instance_creation": {
+    "who": "AgentFactory.create_agent()",
+    "path": "src/unified/agent_role.py:818",
+    "method": "agent_registry.create_instance(agent_type)",
+    "note": "Creates instance, updates lifecycle to ASSIGNED if agent_id provided"
+  },
+  "tool_execution": {
+    "who": "ExecutionEngine.execute_tool()",
+    "path": "src/unified/execution.py:411",
+    "methods": [
+      "run_command",
+      "write_artifact",
+      "read_artifact"
+    ],
+    "sandbox": "self.sandbox_manager.execute() or write_artifact/read_artifact",
+    "events": "TOOL_STARTED -> TOOL_COMPLETED/TOOL_FAILED",
+    "artifacts": "stored in self.artifacts and evidence_store"
+  },
+  "artifact_creation": {
+    "who": "ExecutionEngine._emit_artifact_created()",
+    "path": "src/unified/execution.py:594",
+    "method": "stores in evidence_store, emits ArtifactCreatedEvent"
+  },
+  "evidence_recording": {
+    "who": "AgentFactory.execute_agent() -> agent.execute() -> returns AgentResult with evidence_hash",
+    "path": "src/unified/agent_role.py:833",
+    "note": "AgentResult contains evidence_hash and artifacts list, but verification not automatic"
+  },
+  "verification": {
+    "who": "ExecutionEngine.verifier (Verifier class)",
+    "path": "src/unified/execution.py:260",
+    "note": "Available but not automatically invoked after agent execution"
+  },
+  "completion_decision": {
+    "who": "ExecutionEngine.execute_agent()",
+    "path": "src/unified/execution.py:374",
+    "method": "Checks result.success, emits AGENT_COMPLETED or TASK_FAILED",
+    "note": "No task state transition to COMPLETED"
+  },
+  "event_recording": {
+    "who": "ExecutionEngine._emit() -> SimpleEventBus",
+    "path": "src/unified/execution.py:125",
+    "events": "All events go through SimpleEventBus.history"
+  }
+}
