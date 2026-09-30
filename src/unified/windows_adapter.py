@@ -11,6 +11,7 @@ import asyncio
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 import time
 import uuid

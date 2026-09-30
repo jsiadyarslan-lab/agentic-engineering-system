@@ -100,6 +100,11 @@ class MissionState(str, Enum):
     STOPPING = "STOPPING"
     STOPPED = "STOPPED"
     ABORTED = "ABORTED"
+    # E11: Human Mission Control states
+    PAUSED = "PAUSED"
+    CANCEL_REQUESTED = "CANCEL_REQUESTED"
+    CANCELLED = "CANCELLED"
+    HUMAN_REQUIRED = "HUMAN_REQUIRED"
 
     @property
     def is_terminal(self) -> bool:
@@ -109,6 +114,7 @@ class MissionState(str, Enum):
             MissionState.ESCALATED_TO_HUMAN,
             MissionState.STOPPED,
             MissionState.ABORTED,
+            MissionState.CANCELLED,
         }
 
 
@@ -181,6 +187,15 @@ class EventType(str, Enum):
     HARD_STOP_FIRED = "hard_stop.fired"
     STATE_TRANSITION = "state.transition"
     CHECKPOINT_CREATED = "checkpoint.created"
+    # E11: Human Mission Control events
+    MISSION_PAUSE_REQUESTED = "mission.pause_requested"
+    MISSION_PAUSED = "mission.paused"
+    MISSION_RESUME_REQUESTED = "mission.resume_requested"
+    MISSION_RESUMED = "mission.resumed"
+    MISSION_CANCEL_REQUESTED = "mission.cancel_requested"
+    MISSION_CANCELLED = "mission.cancelled"
+    HUMAN_GATE_CREATED = "human.gate_created"
+    HUMAN_DECISION_RECORDED = "human.decision_recorded"
 
 
 class SandboxTermination(str, Enum):
@@ -236,6 +251,9 @@ class Mission(BaseModel):
 
     # Human interaction
     human_decision_id: Optional[str] = None
+
+    # E11: Human Mission Control metadata
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
     def transition(self, new_state: MissionState, actor: str = "system") -> None:
         """Validate and apply state transition."""
@@ -752,6 +770,7 @@ def validate_mission_transition(
         MissionState.ESCALATED_TO_HUMAN,
         MissionState.STOPPED,
         MissionState.ABORTED,
+        MissionState.CANCELLED,
     }:
         raise ValueError(f"Cannot transition from terminal state {from_state}")
 
@@ -765,20 +784,24 @@ def validate_mission_transition(
 
     # Allowed transitions (simplified - full table in state_machine.py)
     allowed = {
-        MissionState.RECEIVED: {MissionState.ANALYZING, MissionState.STOPPING},
-        MissionState.ANALYZING: {MissionState.PLANNING, MissionState.STOPPING},
-        MissionState.PLANNING: {MissionState.DESIGNING, MissionState.REVIEWING, MissionState.STOPPING},
-        MissionState.DESIGNING: {MissionState.REVIEWING, MissionState.STOPPING},
-        MissionState.REVIEWING: {MissionState.APPROVED, MissionState.REVISE, MissionState.STOPPING},
-        MissionState.APPROVED: {MissionState.AWAITING_APPROVAL, MissionState.STOPPING},
-        MissionState.REVISE: {MissionState.PLANNING, MissionState.STOPPING},
-        MissionState.AWAITING_APPROVAL: {MissionState.EXECUTING, MissionState.STOPPING},
-        MissionState.EXECUTING: {MissionState.EXECUTED, MissionState.FAILED, MissionState.STOPPING},
-        MissionState.EXECUTED: {MissionState.VERIFYING, MissionState.STOPPING},
-        MissionState.VERIFYING: {MissionState.EVIDENCED, MissionState.ADJUDICATED, MissionState.STOPPING},
-        MissionState.EVIDENCED: {MissionState.VERIFIED, MissionState.ADJUDICATED, MissionState.STOPPING},
-        MissionState.ADJUDICATED: {MissionState.EXECUTING, MissionState.ESCALATED_TO_HUMAN, MissionState.STOPPING},
+        MissionState.RECEIVED: {MissionState.ANALYZING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.ANALYZING: {MissionState.PLANNING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.PLANNING: {MissionState.DESIGNING, MissionState.REVIEWING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.DESIGNING: {MissionState.REVIEWING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.REVIEWING: {MissionState.APPROVED, MissionState.REVISE, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.APPROVED: {MissionState.AWAITING_APPROVAL, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.REVISE: {MissionState.PLANNING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.AWAITING_APPROVAL: {MissionState.EXECUTING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.EXECUTING: {MissionState.EXECUTED, MissionState.FAILED, MissionState.STOPPING, MissionState.CANCEL_REQUESTED, MissionState.PAUSED, MissionState.HUMAN_REQUIRED},
+        MissionState.EXECUTED: {MissionState.VERIFYING, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.VERIFYING: {MissionState.EVIDENCED, MissionState.ADJUDICATED, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.EVIDENCED: {MissionState.VERIFIED, MissionState.ADJUDICATED, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
+        MissionState.ADJUDICATED: {MissionState.EXECUTING, MissionState.ESCALATED_TO_HUMAN, MissionState.STOPPING, MissionState.CANCEL_REQUESTED},
         MissionState.STOPPING: {MissionState.STOPPED},
+        # E11: Human Mission Control states
+        MissionState.PAUSED: {MissionState.EXECUTING, MissionState.CANCEL_REQUESTED, MissionState.STOPPING},
+        MissionState.CANCEL_REQUESTED: {MissionState.CANCELLED},
+        MissionState.HUMAN_REQUIRED: {MissionState.EXECUTING, MissionState.CANCELLED, MissionState.STOPPING},
     }
 
     if to_state not in allowed.get(from_state, set()):
@@ -789,10 +812,10 @@ def validate_task_transition(from_state: TaskState, to_state: TaskState) -> None
     """Validate task state transition."""
     allowed = {
         TaskState.PENDING: {TaskState.READY, TaskState.CANCELLED},
-        TaskState.READY: {TaskState.ASSIGNED, TaskState.CANCELLED},
-        TaskState.ASSIGNED: {TaskState.RUNNING, TaskState.BLOCKED, TaskState.CANCELLED},
+        TaskState.READY: {TaskState.ASSIGNED, TaskState.BLOCKED, TaskState.CANCELLED},
+        TaskState.ASSIGNED: {TaskState.RUNNING, TaskState.BLOCKED, TaskState.CANCELLED, TaskState.FAILED},
         TaskState.RUNNING: {TaskState.COMPLETED, TaskState.FAILED, TaskState.BLOCKED},
-        TaskState.COMPLETED: set(),
+        TaskState.COMPLETED: {TaskState.READY, TaskState.FAILED},  # Allow retry after verification failure, or failure on timeout
         TaskState.FAILED: {TaskState.READY},  # Retry
         TaskState.BLOCKED: {TaskState.READY, TaskState.CANCELLED},
         TaskState.CANCELLED: set(),

@@ -1,37 +1,28 @@
 """
 Event Catalog — Unified Engineering Agents System
-
 Complete catalog of all events in the system with schemas, triggers, and consumers.
 Based on EAS v2 event model + AgentFactory FactoryEvent.
 """
-
 from __future__ import annotations
-
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
-
-
 # ============================================================
 # EVENT TYPES
 # ============================================================
-
 class EventType(str, Enum):
     """All event types in the system."""
-
     # Mission lifecycle
     MISSION_STARTED = "mission.started"
     MISSION_COMPLETED = "mission.completed"
     MISSION_ABORTED = "mission.aborted"
     MISSION_STATE_CHANGED = "mission.state_changed"
-
     # Run lifecycle
     RUN_STARTED = "run.started"
     RUN_COMPLETED = "run.completed"
     RUN_RESUMED = "run.resumed"
-
     # Plan/Section lifecycle
     PLAN_CREATED = "plan.created"
     PLAN_REVISED = "plan.revised"
@@ -39,13 +30,11 @@ class EventType(str, Enum):
     SECTION_START = "section.start"
     SECTION_COMPLETE = "section.complete"
     SECTION_FAILED = "section.failed"
-
     # Agent lifecycle
     AGENT_STARTED = "agent.started"
     AGENT_COMPLETED = "agent.completed"
     AGENT_FAILED = "agent.failed"
     AGENT_SELECTED = "agent.selected"
-
     # Task lifecycle
     TASK_CREATED = "task.created"
     TASK_ASSIGNED = "task.assigned"
@@ -53,67 +42,64 @@ class EventType(str, Enum):
     TASK_COMPLETED = "task.completed"
     TASK_FAILED = "task.failed"
     TASK_RETRY = "task.retry"
-
     # Tool execution
     TOOL_STARTED = "tool.started"
     TOOL_COMPLETED = "tool.completed"
     TOOL_FAILED = "tool.failed"
-
     # Artifacts & Evidence
     ARTIFACT_CREATED = "artifact.created"
     ARTIFACT_VERIFIED = "artifact.verified"
     EVIDENCE_RECORDED = "evidence.recorded"
-
     # Verification
     VERIFICATION_STARTED = "verification.started"
     VERIFICATION_COMPLETE = "verification.complete"
-
     # State transitions
     STATE_TRANSITION = "state.transition"
     CHECKPOINT_CREATED = "checkpoint.created"
     CHECKPOINT_LOADED = "checkpoint.loaded"
     VERIFICATION_FAILED = "verification.failed"
-
     # Arbiter
     ARBITER_CALLED = "arbiter.called"
     ARBITER_DECIDED = "arbiter.decided"
-
     # Human interaction
     HUMAN_REQUIRED = "human.required"
     HUMAN_DECISION = "human.decision"
-
+    # Replan
+    REPLAN_REQUESTED = "replan.requested"
+    REPLAN_APPLIED = "replan.applied"
     # Grants
     GRANT_ISSUED = "grant.issued"
     GRANT_VALIDATED = "grant.validated"
     GRANT_REVOKED = "grant.revoked"
-
     # Sandbox
     SANDBOX_STARTED = "sandbox.started"
     SANDBOX_COMPLETED = "sandbox.completed"
     SANDBOX_FAILED = "sandbox.failed"
-
     # Push/Repository
     PUSH_INITIATED = "push.initiated"
     PUSH_COMPLETED = "push.completed"
     PUSH_FAILED = "push.failed"
-
     # Hard stops (EAS v2)
     HARD_STOP_FIRED = "hard_stop.fired"
-
     # Metrics/Cost
     TOKEN_USAGE = "token.usage"
     BUDGET_WARNING = "budget.warning"
     BUDGET_EXCEEDED = "budget.exceeded"
-
     # System
     SYSTEM_ERROR = "system.error"
     SYSTEM_WARNING = "system.warning"
-
-
+    # E11: Human Mission Control
+    MISSION_PAUSE_REQUESTED = "mission.pause_requested"
+    MISSION_PAUSED = "mission.paused"
+    MISSION_RESUME_REQUESTED = "mission.resume_requested"
+    MISSION_RESUMED = "mission.resumed"
+    MISSION_CANCEL_REQUESTED = "mission.cancel_requested"
+    MISSION_CANCELLED = "mission.cancelled"
+    HUMAN_GATE_CREATED = "human.gate_created"
+    HUMAN_DECISION_RECORDED = "human.decision_recorded"
 # ============================================================
 # EVENT SCHEMAS (Pydantic Models)
 # ============================================================
-
 class EventMetadata(BaseModel):
     """Common metadata for all events."""
     event_id: str
@@ -123,15 +109,11 @@ class EventMetadata(BaseModel):
     causation_id: Optional[str] = None    # Event that caused this one
     source: str = "orchestrator"          # Component that emitted
     tags: List[str] = Field(default_factory=list)
-
-
 class MissionStartedEvent(BaseModel):
     mission_id: str
     user_request: str
     provider: Optional[str] = None
     model: Optional[str] = None
-
-
 class MissionCompletedEvent(BaseModel):
     mission_id: str
     final_state: str
@@ -139,8 +121,6 @@ class MissionCompletedEvent(BaseModel):
     total_tokens: int
     artifact_count: int
     verification_result: str
-
-
 class MissionStateChangedEvent(BaseModel):
     mission_id: str
     run_id: str
@@ -148,29 +128,21 @@ class MissionStateChangedEvent(BaseModel):
     to_state: str
     actor: str
     reason: str
-
-
 class RunStartedEvent(BaseModel):
     run_id: str
     mission_id: str
     run_number: int
     parent_run_id: Optional[str] = None
-
-
 class PlanCreatedEvent(BaseModel):
     mission_id: str
     run_id: str
     plan_summary: str
     task_count: int
-
-
 class PlanRevisedEvent(BaseModel):
     mission_id: str
     run_id: str
     revision_number: int
     changes: List[str]
-
-
 class SectionStartEvent(BaseModel):
     section_id: str
     mission_id: str
@@ -178,24 +150,18 @@ class SectionStartEvent(BaseModel):
     section_name: str
     command: List[str]
     grants_required: List[str]
-
-
 class SectionCompleteEvent(BaseModel):
     section_id: str
     mission_id: str
     run_id: str
     artifacts_produced: List[str]
     evidence_hashes: List[str]
-
-
 class AgentStartedEvent(BaseModel):
     agent_id: str
     agent_type: str
     mission_id: str
     run_id: str
     task_id: str
-
-
 class AgentCompletedEvent(BaseModel):
     agent_id: str
     agent_type: str
@@ -206,8 +172,6 @@ class AgentCompletedEvent(BaseModel):
     output_summary: str
     evidence_hash: str
     duration_ms: int
-
-
 class AgentFailedEvent(BaseModel):
     agent_id: str
     agent_type: str
@@ -216,8 +180,6 @@ class AgentFailedEvent(BaseModel):
     task_id: str
     error: str
     error_type: str
-
-
 class AgentSelectedEvent(BaseModel):
     agent_id: str
     agent_type: str
@@ -225,8 +187,6 @@ class AgentSelectedEvent(BaseModel):
     run_id: str
     task_id: str
     selection_method: str
-
-
 class TaskCreatedEvent(BaseModel):
     task_id: str
     mission_id: str
@@ -235,13 +195,9 @@ class TaskCreatedEvent(BaseModel):
     agent_type: str
     acceptance_criteria: List[str]
     depends_on: List[str]
-
-
 class TaskAssignedEvent(BaseModel):
     task_id: str
     agent_id: str
-
-
 class TaskCompletedEvent(BaseModel):
     task_id: str
     mission_id: str
@@ -250,8 +206,6 @@ class TaskCompletedEvent(BaseModel):
     artifacts: List[str]
     evidence_hashes: List[str]
     duration_ms: int
-
-
 class TaskFailedEvent(BaseModel):
     task_id: str
     mission_id: str
@@ -259,8 +213,6 @@ class TaskFailedEvent(BaseModel):
     error: str
     retry_count: int
     max_retries: int
-
-
 class TaskRetryEvent(BaseModel):
     task_id: str
     mission_id: str
@@ -269,16 +221,12 @@ class TaskRetryEvent(BaseModel):
     retry_count: int
     max_retries: int
     error: str
-
-
 class ToolStartedEvent(BaseModel):
     tool_name: str
     action_id: str
     attempt_id: str
     sandbox_id: Optional[str] = None
     args_summary: str
-
-
 class ToolCompletedEvent(BaseModel):
     tool_name: str
     action_id: str
@@ -287,16 +235,12 @@ class ToolCompletedEvent(BaseModel):
     output_summary: str
     evidence_id: Optional[str] = None
     duration_ms: int
-
-
 class ToolFailedEvent(BaseModel):
     tool_name: str
     action_id: str
     attempt_id: str
     error: str
     sandbox_id: Optional[str] = None
-
-
 class ArtifactCreatedEvent(BaseModel):
     artifact_id: str
     name: str
@@ -307,8 +251,6 @@ class ArtifactCreatedEvent(BaseModel):
     mission_id: str
     run_id: str
     task_id: Optional[str] = None
-
-
 class EvidenceRecordedEvent(BaseModel):
     evidence_id: str
     evidence_hash: str
@@ -317,8 +259,6 @@ class EvidenceRecordedEvent(BaseModel):
     mission_id: str
     run_id: str
     task_id: Optional[str] = None
-
-
 class VerificationCompleteEvent(BaseModel):
     verification_id: str
     task_id: str
@@ -327,23 +267,17 @@ class VerificationCompleteEvent(BaseModel):
     checks_performed: List[str]
     missing_evidence: List[str]
     confidence: float
-
-
 class ArbiterCalledEvent(BaseModel):
     mission_id: str
     conflict_type: str
     parties: List[str]
     evidence_summary: str
-
-
 class ArbiterDecidedEvent(BaseModel):
     mission_id: str
     decision: str  # ArbiterDecision
     rationale: str
     escalation_to_human: bool
     max_retries_remaining: int
-
-
 class HumanRequiredEvent(BaseModel):
     mission_id: str
     run_id: str
@@ -353,8 +287,6 @@ class HumanRequiredEvent(BaseModel):
     options: List[Dict[str, str]]
     impact: str
     recommended_action: str
-
-
 class HumanDecisionEvent(BaseModel):
     decision_id: str
     mission_id: str
@@ -364,8 +296,71 @@ class HumanDecisionEvent(BaseModel):
     approved: bool
     feedback: str
     reviewer: str
-
-
+class ReplanRequestedEvent(BaseModel):
+    run_id: str
+    failed_task_id: str
+    reason: str
+    proposed_changes: List[Dict[str, Any]]
+    actor: str
+    graph_version_before: int
+    timestamp: str
+class ReplanAppliedEvent(BaseModel):
+    run_id: str
+    replan_id: str
+    applied_changes: List[Dict[str, Any]]
+    actor: str
+    graph_version_before: int
+    graph_version_after: int
+    timestamp: str
+# E11: Human Mission Control events
+class MissionPauseRequestedEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    actor: str
+    reason: str
+class MissionPausedEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    checkpoint_id: Optional[str] = None
+    paused_at_task: Optional[str] = None
+class MissionResumeRequestedEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    actor: str
+    reason: str
+class MissionResumedEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    resumed_from_state: str
+class MissionCancelRequestedEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    actor: str
+    reason: str
+class MissionCancelledEvent(BaseModel):
+    mission_id: str
+    run_id: str
+    cancelled_at_state: str
+    tasks_affected: int
+class HumanGateCreatedEvent(BaseModel):
+    gate_id: str
+    mission_id: str
+    run_id: str
+    task_id: Optional[str] = None
+    reason: str
+    context: Dict[str, Any]
+    options: List[Dict[str, str]]
+    impact: str
+    required_action: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+class HumanDecisionRecordedEvent(BaseModel):
+    gate_id: str
+    mission_id: str
+    run_id: str
+    decision: str  # continue, cancel
+    actor: str
+    feedback: str
+    decided_at: datetime = Field(default_factory=datetime.utcnow)
 class GrantIssuedEvent(BaseModel):
     grant_id: str
     grantor: str
@@ -374,15 +369,11 @@ class GrantIssuedEvent(BaseModel):
     domains: List[str]
     resources: List[str]
     expires_at: datetime
-
-
 class GrantValidatedEvent(BaseModel):
     grant_id: str
     subject: str
     valid: bool
     reason: Optional[str] = None
-
-
 class SandboxStartedEvent(BaseModel):
     sandbox_id: str
     mission_id: str
@@ -390,8 +381,6 @@ class SandboxStartedEvent(BaseModel):
     task_id: Optional[str] = None
     command: List[str]
     image: str
-
-
 class SandboxCompletedEvent(BaseModel):
     sandbox_id: str
     mission_id: str
@@ -400,8 +389,6 @@ class SandboxCompletedEvent(BaseModel):
     termination: str
     duration_ms: int
     artifacts: List[str]
-
-
 class CheckpointCreatedEvent(BaseModel):
     checkpoint_id: str
     mission_id: str
@@ -411,15 +398,11 @@ class CheckpointCreatedEvent(BaseModel):
     task_count: int
     artifact_count: int
     hash: str
-
-
 class HardStopFiredEvent(BaseModel):
     reason: str
     detail: str
     mission_id: Optional[str] = None
     section_id: Optional[str] = None
-
-
 class TokenUsageEvent(BaseModel):
     mission_id: str
     run_id: Optional[str] = None
@@ -427,27 +410,20 @@ class TokenUsageEvent(BaseModel):
     tokens_used: int
     cost_usd: float
     scope: str  # agent, mission, project, global
-
-
 class BudgetWarningEvent(BaseModel):
     mission_id: str
     scope: str
     utilization: float
     threshold: float
     remaining: int
-
-
 class SystemErrorEvent(BaseModel):
     component: str
     error: str
     severity: str
     recoverable: bool
-
-
 # ============================================================
 # EVENT UNION & WRAPPER
 # ============================================================
-
 # Map event types to their payload models
 EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.MISSION_STARTED: MissionStartedEvent,
@@ -486,9 +462,19 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.TOKEN_USAGE: TokenUsageEvent,
     EventType.BUDGET_WARNING: BudgetWarningEvent,
     EventType.SYSTEM_ERROR: SystemErrorEvent,
+    # E11: Human Mission Control events
+    EventType.MISSION_PAUSE_REQUESTED: MissionPauseRequestedEvent,
+    EventType.MISSION_PAUSED: MissionPausedEvent,
+    EventType.MISSION_RESUME_REQUESTED: MissionResumeRequestedEvent,
+    EventType.MISSION_RESUMED: MissionResumedEvent,
+    EventType.MISSION_CANCEL_REQUESTED: MissionCancelRequestedEvent,
+    EventType.MISSION_CANCELLED: MissionCancelledEvent,
+    EventType.HUMAN_GATE_CREATED: HumanGateCreatedEvent,
+    EventType.HUMAN_DECISION_RECORDED: HumanDecisionRecordedEvent,
+    # E13: Replan events
+    EventType.REPLAN_REQUESTED: ReplanRequestedEvent,
+    EventType.REPLAN_APPLIED: ReplanAppliedEvent,
 }
-
-
 class FactoryEvent(BaseModel):
     """
     Unified event envelope - matches AgentFactory FactoryEvent
@@ -503,7 +489,6 @@ class FactoryEvent(BaseModel):
     source: str = "orchestrator"
     correlation_id: Optional[str] = None
     causation_id: Optional[str] = None
-
     @classmethod
     def create(
         cls,
@@ -524,7 +509,6 @@ class FactoryEvent(BaseModel):
             payload_dict = validated.model_dump()
         else:
             payload_dict = payload.model_dump() if isinstance(payload, BaseModel) else payload
-
         return cls(
             mission_id=mission_id,
             run_id=run_id,
@@ -535,119 +519,92 @@ class FactoryEvent(BaseModel):
             correlation_id=correlation_id,
             causation_id=causation_id,
         )
-
     def get_payload_model(self) -> Optional[type]:
         """Get the Pydantic model for this event's payload."""
         return EVENT_PAYLOAD_MODELS.get(self.event_type)
-
     def get_typed_payload(self) -> Optional[BaseModel]:
         """Parse payload into typed model."""
         model = self.get_payload_model()
         if model:
             return model.model_validate(self.payload)
         return None
-
-
 # ============================================================
 # EVENT CONSUMERS (Who listens to what)
 # ============================================================
-
 EVENT_CONSUMERS: Dict[EventType, List[str]] = {
     # Mission
     EventType.MISSION_STARTED: ["Dashboard", "EventStore", "Metrics"],
     EventType.MISSION_COMPLETED: ["Dashboard", "EventStore", "Metrics", "Notification"],
     EventType.MISSION_STATE_CHANGED: ["Dashboard", "EventStore", "Orchestrator"],
-
     # Run
     EventType.RUN_STARTED: ["EventStore", "Metrics"],
     EventType.RUN_COMPLETED: ["EventStore", "Metrics"],
-
     # Plan/Section
     EventType.PLAN_CREATED: ["Dashboard", "EventStore"],
     EventType.PLAN_REVISED: ["Dashboard", "EventStore"],
     EventType.PLAN_APPROVED: ["Dashboard", "EventStore", "HumanGate"],
     EventType.SECTION_START: ["Dashboard", "EventStore", "SandboxManager"],
     EventType.SECTION_COMPLETE: ["Dashboard", "EventStore", "Verifier"],
-
     # Agent
     EventType.AGENT_STARTED: ["Dashboard", "EventStore"],
     EventType.AGENT_COMPLETED: ["Dashboard", "EventStore", "Orchestrator"],
     EventType.AGENT_FAILED: ["Dashboard", "EventStore", "Orchestrator"],
-
     # Task
     EventType.TASK_CREATED: ["Dashboard", "EventStore", "Scheduler"],
     EventType.TASK_ASSIGNED: ["Dashboard", "EventStore", "AgentRuntime"],
     EventType.TASK_COMPLETED: ["Dashboard", "EventStore", "Orchestrator", "Verifier"],
     EventType.TASK_FAILED: ["Dashboard", "EventStore", "Orchestrator"],
     EventType.TASK_RETRY: ["Dashboard", "EventStore", "Orchestrator"],
-
     # Tool
     EventType.TOOL_STARTED: ["Dashboard", "EventStore", "SandboxManager"],
     EventType.TOOL_COMPLETED: ["Dashboard", "EventStore", "SandboxManager"],
     EventType.TOOL_FAILED: ["Dashboard", "EventStore", "SandboxManager", "Orchestrator"],
-
     # Artifacts & Evidence
     EventType.ARTIFACT_CREATED: ["Dashboard", "EventStore", "ArtifactStore"],
     EventType.EVIDENCE_RECORDED: ["EventStore", "Verifier", "Metrics"],
-
     # Verification
     EventType.VERIFICATION_COMPLETE: ["Dashboard", "EventStore", "Orchestrator", "Arbiter"],
     EventType.VERIFICATION_FAILED: ["Dashboard", "EventStore", "Orchestrator"],
-
     # Arbiter
     EventType.ARBITER_CALLED: ["Dashboard", "EventStore", "Orchestrator"],
     EventType.ARBITER_DECIDED: ["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
-
     # Human
     EventType.HUMAN_REQUIRED: ["Dashboard", "HumanGate", "EventStore"],
     EventType.HUMAN_DECISION: ["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
-
     # Grants
     EventType.GRANT_ISSUED: ["EventStore", "AccessAdmission"],
     EventType.GRANT_VALIDATED: ["EventStore", "AccessAdmission", "SandboxManager"],
-
     # Sandbox
     EventType.SANDBOX_STARTED: ["EventStore", "SandboxManager"],
     EventType.SANDBOX_COMPLETED: ["Dashboard", "EventStore", "Verifier"],
-
     # Checkpoints
     EventType.CHECKPOINT_CREATED: ["EventStore", "CheckpointManager"],
-
     # Hard stops
     EventType.HARD_STOP_FIRED: ["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
-
     # Metrics
     EventType.TOKEN_USAGE: ["Metrics", "TokenBudget", "Dashboard"],
     EventType.BUDGET_WARNING: ["Dashboard", "Metrics", "Orchestrator"],
     EventType.BUDGET_EXCEEDED: ["Orchestrator", "Dashboard", "HumanGate"],
-
     # System
     EventType.SYSTEM_ERROR: ["Dashboard", "EventStore", "Alerting"],
     EventType.SYSTEM_WARNING: ["Dashboard", "EventStore", "Metrics"],
 }
-
-
 # ============================================================
 # EVENT BUS INTERFACE
 # ============================================================
-
 class EventBusInterface:
     """
     Abstract interface for event bus implementation.
     """
-
     async def publish(self, event: FactoryEvent) -> None:
         """Publish event to all subscribers."""
         raise NotImplementedError
-
     def subscribe(self, event_type: EventType, handler: callable) -> None:
         """Subscribe to event type."""
         raise NotImplementedError
-
     def unsubscribe(self, event_type: EventType, handler: callable) -> None:
         """Unsubscribe from event type."""
         raise NotImplementedError
-
     async def get_history(
         self,
         mission_id: Optional[str] = None,
@@ -656,21 +613,16 @@ class EventBusInterface:
     ) -> List[FactoryEvent]:
         """Get event history with filters."""
         raise NotImplementedError
-
-
 # ============================================================
 # EVENT STORE (Persistence)
 # ============================================================
-
 class EventStoreInterface:
     """
     Interface for persistent event storage.
     """
-
     async def append(self, event: FactoryEvent) -> None:
         """Append event to store."""
         raise NotImplementedError
-
     async def get_events(
         self,
         mission_id: Optional[str] = None,
@@ -682,20 +634,15 @@ class EventStoreInterface:
     ) -> List[FactoryEvent]:
         """Query events with filters."""
         raise NotImplementedError
-
     async def get_mission_timeline(self, mission_id: str) -> List[FactoryEvent]:
         """Get complete event timeline for mission replay."""
         raise NotImplementedError
-
     async def get_correlation_chain(self, correlation_id: str) -> List[FactoryEvent]:
         """Get all events in a correlation chain."""
         raise NotImplementedError
-
-
 # ============================================================
 # EVENT CATALOG (Metadata for documentation)
 # ============================================================
-
 @dataclass
 class EventCatalogEntry:
     """Documentation entry for an event type."""
@@ -707,8 +654,6 @@ class EventCatalogEntry:
     triggers: List[str]
     is_state_transition: bool = False
     is_terminal: bool = False
-
-
 EVENT_CATALOG: Dict[EventType, EventCatalogEntry] = {
     EventType.MISSION_STARTED: EventCatalogEntry(
         event_type=EventType.MISSION_STARTED,
@@ -882,28 +827,102 @@ EVENT_CATALOG: Dict[EventType, EventCatalogEntry] = {
         triggers=["Mission abort", "Human notification"],
         is_terminal=True,
     ),
+    # E11: Human Mission Control events
+    EventType.MISSION_PAUSE_REQUESTED: EventCatalogEntry(
+        event_type=EventType.MISSION_PAUSE_REQUESTED,
+        description="Human requested mission pause",
+        payload_model="MissionPauseRequestedEvent",
+        emitted_by=["ControlPlane.pause_mission()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Checkpoint creation", "Execution pause"],
+    ),
+    EventType.MISSION_PAUSED: EventCatalogEntry(
+        event_type=EventType.MISSION_PAUSED,
+        description="Mission paused at safe checkpoint",
+        payload_model="MissionPausedEvent",
+        emitted_by=["ExecutionEngine.on_pause_complete()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Resume available", "Human notification"],
+    ),
+    EventType.MISSION_RESUME_REQUESTED: EventCatalogEntry(
+        event_type=EventType.MISSION_RESUME_REQUESTED,
+        description="Human requested mission resume",
+        payload_model="MissionResumeRequestedEvent",
+        emitted_by=["ControlPlane.resume_mission()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Execution resume"],
+    ),
+    EventType.MISSION_RESUMED: EventCatalogEntry(
+        event_type=EventType.MISSION_RESUMED,
+        description="Mission resumed from paused state",
+        payload_model="MissionResumedEvent",
+        emitted_by=["ExecutionEngine.on_resume_complete()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Task execution continues"],
+    ),
+    EventType.MISSION_CANCEL_REQUESTED: EventCatalogEntry(
+        event_type=EventType.MISSION_CANCEL_REQUESTED,
+        description="Human requested mission cancellation",
+        payload_model="MissionCancelRequestedEvent",
+        emitted_by=["ControlPlane.cancel_mission()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Execution cancellation", "Resource cleanup"],
+    ),
+    EventType.MISSION_CANCELLED: EventCatalogEntry(
+        event_type=EventType.MISSION_CANCELLED,
+        description="Mission cancelled and resources released",
+        payload_model="MissionCancelledEvent",
+        emitted_by=["ExecutionEngine.on_cancel_complete()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Resource release", "Final reporting"],
+        is_terminal=True,
+    ),
+    EventType.HUMAN_GATE_CREATED: EventCatalogEntry(
+        event_type=EventType.HUMAN_GATE_CREATED,
+        description="Human gate created requiring decision",
+        payload_model="HumanGateCreatedEvent",
+        emitted_by=["HumanGate.create()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
+        triggers=["Human decision required"],
+    ),
+    EventType.HUMAN_DECISION_RECORDED: EventCatalogEntry(
+        event_type=EventType.HUMAN_DECISION_RECORDED,
+        description="Human decision recorded for gate",
+        payload_model="HumanDecisionRecordedEvent",
+        emitted_by=["HumanGate.decide()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
+        triggers=["Mission continues or cancels"],
+    ),
+    # E13: Replan events
+    EventType.REPLAN_REQUESTED: EventCatalogEntry(
+        event_type=EventType.REPLAN_REQUESTED,
+        description="Replan requested due to task failure or new requirements",
+        payload_model="ReplanRequestedEvent",
+        emitted_by=["ExecutionEngine.request_replan()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Graph mutation"],
+    ),
+    EventType.REPLAN_APPLIED: EventCatalogEntry(
+        event_type=EventType.REPLAN_APPLIED,
+        description="Replan changes applied to task graph",
+        payload_model="ReplanAppliedEvent",
+        emitted_by=["ExecutionEngine.apply_replan()"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator"],
+        triggers=["Graph version increment", "New task scheduling"],
+    ),
 }
-
-
 # ============================================================
 # UTILITY FUNCTIONS
 # ============================================================
-
 def get_event_payload_model(event_type: EventType) -> Optional[type]:
     """Get the Pydantic model for an event type."""
     return EVENT_PAYLOAD_MODELS.get(event_type)
-
-
 def get_event_consumers(event_type: EventType) -> List[str]:
     """Get list of consumers for an event type."""
     return EVENT_CONSUMERS.get(event_type, [])
-
-
 def get_event_catalog_entry(event_type: EventType) -> Optional[EventCatalogEntry]:
     """Get catalog documentation for event type."""
     return EVENT_CATALOG.get(event_type)
-
-
 def validate_event_payload(event_type: EventType, payload: Dict[str, Any]) -> bool:
     """Validate event payload against its model."""
     model = get_event_payload_model(event_type)
@@ -914,17 +933,12 @@ def validate_event_payload(event_type: EventType, payload: Dict[str, Any]) -> bo
         except Exception:
             return False
     return True  # No model = no validation
-
-
 def list_all_events() -> List[EventType]:
     """List all defined event types."""
     return list(EventType)
-
-
 # ============================================================
 # EXPORTS
 # ============================================================
-
 __all__ = [
     "EventType",
     "EventMetadata",
@@ -952,6 +966,8 @@ __all__ = [
     "ArbiterDecidedEvent",
     "HumanRequiredEvent",
     "HumanDecisionEvent",
+    "ReplanRequestedEvent",
+    "ReplanAppliedEvent",
     "GrantIssuedEvent",
     "GrantValidatedEvent",
     "SandboxStartedEvent",

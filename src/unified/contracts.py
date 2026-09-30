@@ -148,6 +148,18 @@ from unified.event_catalog import (
     get_event_catalog_entry,
     validate_event_payload,
     list_all_events,
+    # E11: Human Mission Control events
+    MissionPauseRequestedEvent,
+    MissionPausedEvent,
+    MissionResumeRequestedEvent,
+    MissionResumedEvent,
+    MissionCancelRequestedEvent,
+    MissionCancelledEvent,
+    HumanGateCreatedEvent,
+    HumanDecisionRecordedEvent,
+    # E13: Replan events
+    ReplanRequestedEvent,
+    ReplanAppliedEvent,
 )
 
 # ============================================================

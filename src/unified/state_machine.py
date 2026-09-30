@@ -57,6 +57,12 @@ class PlanState(str, Enum):
     STOPPED = "STOPPED"
     ABORTED = "ABORTED"
 
+    # E11: Human Mission Control states
+    PAUSED = "PAUSED"
+    CANCEL_REQUESTED = "CANCEL_REQUESTED"
+    CANCELLED = "CANCELLED"
+    HUMAN_REQUIRED = "HUMAN_REQUIRED"
+
 
 class SubVerdict(str, Enum):
     """Sub-verdicts that drive transitions (NOT states)."""
@@ -76,6 +82,7 @@ TERMINAL_STATES: FrozenSet[PlanState] = frozenset({
     PlanState.ESCALATED_TO_HUMAN,
     PlanState.STOPPED,
     PlanState.ABORTED,
+    PlanState.CANCELLED,
 })
 
 # STOPPING target (Order 004: safe stop request)
@@ -87,21 +94,25 @@ TRANSITIONS: Dict[PlanState, FrozenSet[PlanState]] = {
     PlanState.RECEIVED: frozenset({
         PlanState.ANALYZING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
 
     # Analysis & Planning
     PlanState.ANALYZING: frozenset({
         PlanState.PLANNING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.PLANNING: frozenset({
         PlanState.DESIGNING,
         PlanState.REVIEWING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.DESIGNING: frozenset({
         PlanState.REVIEWING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
 
     # Review Cycle (max 3 rounds enforced by orchestrator)
@@ -109,20 +120,24 @@ TRANSITIONS: Dict[PlanState, FrozenSet[PlanState]] = {
         PlanState.APPROVED,
         PlanState.REVISE,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.APPROVED: frozenset({
         PlanState.AWAITING_APPROVAL,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.REVISE: frozenset({
         PlanState.PLANNING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
 
     # Human Gate
     PlanState.AWAITING_APPROVAL: frozenset({
         PlanState.EXECUTING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
 
     # Execution
@@ -130,10 +145,14 @@ TRANSITIONS: Dict[PlanState, FrozenSet[PlanState]] = {
         PlanState.EXECUTED,
         PlanState.FAILED,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
+        PlanState.PAUSED,
+        PlanState.HUMAN_REQUIRED,
     }),
     PlanState.EXECUTED: frozenset({
         PlanState.VERIFYING,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
 
     # Verification
@@ -141,15 +160,33 @@ TRANSITIONS: Dict[PlanState, FrozenSet[PlanState]] = {
         PlanState.EVIDENCED,
         PlanState.ADJUDICATED,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.EVIDENCED: frozenset({
         PlanState.VERIFIED,
         PlanState.ADJUDICATED,
         PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
     }),
     PlanState.ADJUDICATED: frozenset({
         PlanState.EXECUTING,      # Arbiter: retry_with_constraints
         PlanState.ESCALATED_TO_HUMAN,
+        PlanState.STOPPING,
+        PlanState.CANCEL_REQUESTED,
+    }),
+
+    # E11: Human Mission Control states
+    PlanState.PAUSED: frozenset({
+        PlanState.EXECUTING,      # Resume
+        PlanState.CANCEL_REQUESTED,
+        PlanState.STOPPING,
+    }),
+    PlanState.CANCEL_REQUESTED: frozenset({
+        PlanState.CANCELLED,
+    }),
+    PlanState.HUMAN_REQUIRED: frozenset({
+        PlanState.EXECUTING,      # Human decision: continue
+        PlanState.CANCELLED,      # Human decision: cancel
         PlanState.STOPPING,
     }),
 
@@ -162,6 +199,7 @@ TRANSITIONS: Dict[PlanState, FrozenSet[PlanState]] = {
     PlanState.ESCALATED_TO_HUMAN: frozenset(),
     PlanState.STOPPED: frozenset(),
     PlanState.ABORTED: frozenset(),
+    PlanState.CANCELLED: frozenset(),
 }
 
 
