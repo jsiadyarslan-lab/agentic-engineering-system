@@ -292,6 +292,9 @@ class Task(BaseModel):
     evidence_hashes: List[str] = Field(default_factory=list)
     artifact_ids: List[str] = Field(default_factory=list)
 
+    # Context for agent execution (file paths, content, etc.)
+    context: Dict[str, Any] = Field(default_factory=dict)
+
     # Timing
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None

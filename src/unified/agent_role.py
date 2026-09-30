@@ -17,8 +17,11 @@ from typing import Any, Dict, List, Optional, Protocol, runtime_checkable, Type,
 from pydantic import BaseModel, Field, field_validator
 import uuid
 
-from unified.contracts import (
+from unified.domain_model import (
     AgentType,
+    EventType,
+)
+from unified.agent_contract import (
     AgentTask,
     AgentResult,
     Grant,
@@ -26,9 +29,8 @@ from unified.contracts import (
     Artifact,
     EvidenceRecord,
     Verification,
-    EventType,
-    FactoryEvent,
 )
+from unified.event_catalog import FactoryEvent
 
 
 # ============================================================
@@ -607,6 +609,27 @@ class AgentRegistry:
         self._definitions[definition.agent_id] = definition
         self._type_to_definition[definition.agent_type] = definition.agent_id
         self._instance_states[definition.agent_id] = AgentLifecycleState.REGISTERED
+    
+    def replace_definition(self, definition: AgentDefinition) -> None:
+        """Replace agent definition (for testing only)."""
+        # Remove old default mapping for this type
+        old_agent_id = self._type_to_definition.get(definition.agent_type)
+        if old_agent_id and old_agent_id != definition.agent_id:
+            # Safe delete - ignore if already removed
+            self._definitions.pop(old_agent_id, None)
+        
+        self._definitions[definition.agent_id] = definition
+        self._type_to_definition[definition.agent_type] = definition.agent_id
+        self._instance_states[definition.agent_id] = AgentLifecycleState.REGISTERED
+    
+    def add_definition(self, definition: AgentDefinition) -> None:
+        """Add additional agent definition for same type (doesn't change default)."""
+        if definition.agent_id in self._definitions:
+            raise ValueError(f"Agent definition {definition.agent_id} already exists")
+        
+        self._definitions[definition.agent_id] = definition
+        # Don't change _type_to_definition - keeps original default
+        self._instance_states[definition.agent_id] = AgentLifecycleState.REGISTERED
 
     def register_implementation(
         self, 
@@ -616,6 +639,14 @@ class AgentRegistry:
         """Register agent implementation class."""
         if agent_type in self._implementations:
             raise ValueError(f"Agent type {agent_type} already has implementation")
+        self._implementations[agent_type] = agent_class
+    
+    def replace_implementation(
+        self, 
+        agent_type: AgentType, 
+        agent_class: Type[AgentRole]
+    ) -> None:
+        """Replace agent implementation class (for testing only)."""
         self._implementations[agent_type] = agent_class
 
     def get_definition(self, agent_id: str) -> Optional[AgentDefinition]:

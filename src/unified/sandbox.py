@@ -212,12 +212,14 @@ class SandboxManager:
         default_limits: Optional[ResourceLimits] = None,
         grant_validator: Optional[callable] = None,
         event_emitter: Optional[callable] = None,
+        evidence_store: Optional[Any] = None,  # FileEvidenceStore
     ):
         self.sandbox = sandbox
         self.image_allowlist = image_allowlist or DEFAULT_IMAGE_ALLOWLIST
         self.default_limits = default_limits or DEFAULT_RESOURCE_LIMITS
         self.grant_validator = grant_validator
         self.event_emitter = event_emitter
+        self.evidence_store = evidence_store
 
         # Track active sandboxes
         self._active: Dict[str, SandboxRequest] = {}
@@ -335,7 +337,13 @@ class SandboxManager:
             import os
             artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
             os.makedirs(artifacts_dir, exist_ok=True)
-        return await self.sandbox.write_artifact(sandbox_id, path, content)
+        artifact = await self.sandbox.write_artifact(sandbox_id, path, content)
+        
+        # Store in evidence store if available
+        if self.evidence_store:
+            self.evidence_store.store_artifact(artifact)
+        
+        return artifact
 
     async def read_artifact(self, sandbox_id: str, path: str) -> bytes:
         """Read artifact from sandbox."""
@@ -413,6 +421,7 @@ def create_sandbox_manager(
     default_limits: Optional[ResourceLimits] = None,
     grant_validator: Optional[callable] = None,
     event_emitter: Optional[callable] = None,
+    evidence_store: Optional[Any] = None,
     artifacts_base_dir: Optional[str] = None,
 ) -> SandboxManager:
     """
@@ -433,6 +442,7 @@ def create_sandbox_manager(
         default_limits=default_limits,
         grant_validator=grant_validator,
         event_emitter=event_emitter,
+        evidence_store=evidence_store,
     )
 
 

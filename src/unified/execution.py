@@ -245,11 +245,15 @@ class ExecutionEngine:
         self.default_limits = default_limits or {}
         self.grant_validator = grant_validator
         
+        # Evidence store (must be created before sandbox manager)
+        self.evidence_store = FileEvidenceStore(self.artifacts_base_dir)
+        
         # Create sandbox manager
         self.sandbox_manager = create_sandbox_manager(
             backend=sandbox_backend,
             grant_validator=grant_validator,
             artifacts_base_dir=self.artifacts_base_dir,
+            evidence_store=self.evidence_store,
         )
         
         # Event bus
@@ -258,9 +262,6 @@ class ExecutionEngine:
         # Agent registry and factory
         self.agent_registry = agent_registry
         self.agent_factory = AgentFactory(self.agent_registry)
-        
-        # Evidence store
-        self.evidence_store = FileEvidenceStore(self.artifacts_base_dir)
         
         # Verifier
         self.verifier = Verifier(self.evidence_store)
@@ -1039,9 +1040,9 @@ class ExecutionEngine:
         attempt_id: str,
     ) -> VerificationReport:
         """Verify task against acceptance criteria."""
-        # Prepare artifacts map
+        # Prepare artifacts map from evidence store (which has all artifacts)
         artifacts = {}
-        for art in self.artifacts.values():
+        for art in self.evidence_store._artifacts.values():
             artifacts[art.artifact_id] = {
                 "path": art.path,
                 "sha256": art.sha256,
@@ -1554,6 +1555,7 @@ class ExecutionEngine:
                             agent_type=task.agent_type,
                             acceptance_criteria=task.acceptance_criteria,
                             depends_on=task.depends_on,
+                            context=getattr(task, 'context', {}),
                         )
                         
                         # Pass retry info to allow agent reassignment
