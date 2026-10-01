@@ -1,0 +1,9 @@
+{
+  "phase": "NEGATIVE_TEST_3_MISSING_EVIDENCE",
+  "timestamp": 1790884734.0913856,
+  "data": {
+    "resume_success": true,
+    "evidence_records_after_resume": 0,
+    "expected": "evidence store should be empty (no evidence files to load)"
+  }
+}

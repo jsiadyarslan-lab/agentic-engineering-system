@@ -459,6 +459,7 @@ class Artifact(BaseModel):
     size_bytes: int
     created_by: str  # action_id or sandbox_id
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    mission_id: str = ""
 
     # Metadata
     content_type: str = "text/plain"
@@ -679,6 +680,7 @@ def create_artifact(
     sha256: str,
     size_bytes: int,
     created_by: str,
+    mission_id: str = "",
 ) -> Artifact:
     """Create new artifact record."""
     return Artifact(
@@ -687,6 +689,7 @@ def create_artifact(
         sha256=sha256,
         size_bytes=size_bytes,
         created_by=created_by,
+        mission_id=mission_id,
     )
 
 

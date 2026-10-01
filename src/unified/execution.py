@@ -195,6 +195,54 @@ class FileEvidenceStore(EvidenceStore):
         self._evidence[evidence.evidence_id] = evidence
     def get_evidence(self, evidence_id: str) -> Optional[EvidenceRecord]:
         return self._evidence.get(evidence_id)
+    # Persistence methods for cross-runtime durability
+    def _get_evidence_store_dir(self, mission_id: str) -> Path:
+        """Get evidence store directory for mission."""
+        base = Path(self.artifacts_dir) / "evidence_store" / mission_id
+        base.mkdir(parents=True, exist_ok=True)
+        return base
+    def save_to_disk(self, mission_id: str) -> None:
+        """Save artifacts and evidence to disk for durability."""
+        store_dir = self._get_evidence_store_dir(mission_id)
+        # Save artifacts
+        artifacts_file = store_dir / "artifacts.json"
+        artifacts_data = {}
+        for aid, art in self._artifacts.items():
+            if art.mission_id == mission_id or (hasattr(art, 'mission_id') and art.mission_id == mission_id):
+                artifacts_data[aid] = art.model_dump(mode='json')
+        temp_file = artifacts_file.with_suffix('.tmp')
+        with open(temp_file, 'w') as f:
+            json.dump(artifacts_data, f, indent=2)
+        temp_file.replace(artifacts_file)
+        # Save evidence
+        evidence_file = store_dir / "evidence.json"
+        evidence_data = {}
+        for eid, ev in self._evidence.items():
+            if ev.mission_id == mission_id or (hasattr(ev, 'mission_id') and ev.mission_id == mission_id):
+                evidence_data[eid] = ev.model_dump(mode='json')
+        temp_file = evidence_file.with_suffix('.tmp')
+        with open(temp_file, 'w') as f:
+            json.dump(evidence_data, f, indent=2)
+        temp_file.replace(evidence_file)
+    def load_from_disk(self, mission_id: str) -> None:
+        """Load artifacts and evidence from disk for cross-runtime resume."""
+        store_dir = self._get_evidence_store_dir(mission_id)
+        # Load artifacts
+        artifacts_file = store_dir / "artifacts.json"
+        if artifacts_file.exists():
+            with open(artifacts_file, 'r') as f:
+                artifacts_data = json.load(f)
+            for aid, art_data in artifacts_data.items():
+                art = Artifact.model_validate(art_data)
+                self._artifacts[aid] = art
+        # Load evidence
+        evidence_file = store_dir / "evidence.json"
+        if evidence_file.exists():
+            with open(evidence_file, 'r') as f:
+                evidence_data = json.load(f)
+            for eid, ev_data in evidence_data.items():
+                ev = EvidenceRecord.model_validate(ev_data)
+                self._evidence[eid] = ev
 # ============================================================
 # EXECUTION ENGINE
 # ============================================================
@@ -1967,6 +2015,7 @@ class ExecutionEngine:
                 for art_id in record.artifacts:
                     art = self.evidence_store.get_artifact(art_id)
                     if art:
+                        art.mission_id = context.mission_id
                         artifact_ids.append(art.artifact_id)
                         self.artifacts[art.artifact_id] = art
                         # Track artifact count per run
@@ -2015,6 +2064,7 @@ class ExecutionEngine:
                 artifact = await self.sandbox_manager.write_artifact(
                     sandbox_id, tool_input.get("path", "output.txt"), content
                 )
+                artifact.mission_id = context.mission_id
                 self.artifacts[artifact.artifact_id] = artifact
                 # Track artifact count per run
                 run_id = context.run_id
@@ -2423,6 +2473,8 @@ class ExecutionEngine:
         self._save_checkpoint_to_disk(checkpoint)
         # Persist events to disk for durability
         self._save_events_to_disk(mission_id)
+        # Persist evidence store (artifacts & evidence) to disk for durability
+        self.evidence_store.save_to_disk(mission_id)
         # Emit checkpoint created
         self._emit(FactoryEvent.create(
             event_type=EventType.CHECKPOINT_CREATED,
@@ -2459,6 +2511,8 @@ class ExecutionEngine:
             self.checkpoints[checkpoint_id] = checkpoint
         # Restore events from disk for this mission
         self._restore_events_from_disk(checkpoint.mission_id)
+        # Restore evidence store (artifacts & evidence) from disk for durability
+        self.evidence_store.load_from_disk(checkpoint.mission_id)
         # CRITICAL: Auto-recreate Mission object if not in memory
         # This enables true cross-runtime resume without manual intervention
         if checkpoint.mission_id not in self.missions:
@@ -2469,6 +2523,28 @@ class ExecutionEngine:
             mission.mission_id = checkpoint.mission_id
             self.missions[checkpoint.mission_id] = mission
             self._current_mission = mission
+        # Resume execution implies mission should be in EXECUTING state
+        # This enables replan/human_gate to work after cross-runtime resume
+        mission = self.missions[checkpoint.mission_id]
+        if mission.state != MissionState.EXECUTING:
+            from unified.contracts import validate_mission_transition
+            try:
+                # Transition through required states to reach EXECUTING
+                required_path = [
+                    MissionState.ANALYZING,
+                    MissionState.PLANNING,
+                    MissionState.DESIGNING,
+                    MissionState.REVIEWING,
+                    MissionState.APPROVED,
+                    MissionState.AWAITING_APPROVAL,
+                    MissionState.EXECUTING,
+                ]
+                for state in required_path:
+                    if mission.state != state:
+                        validate_mission_transition(mission.state, state)
+                        mission.state = state
+            except Exception:
+                pass  # Best effort
         # Create new run as child of original
         new_run = self.create_run(
             mission_id=checkpoint.mission_id,
@@ -2551,8 +2627,8 @@ class ExecutionEngine:
                 "name": task_def.get("name", ""),
                 "description": task_def.get("description", ""),
                 "agent_type": AgentType(task_def.get("agent_type", "implementer")) if task_def.get("agent_type") else AgentType.IMPLEMENTER,
-                "depends_on": checkpoint.task_dependencies.get(task_id, []),
-                "dependents": checkpoint.task_dependents.get(task_id, []),
+                "depends_on": set(checkpoint.task_dependencies.get(task_id, [])),
+                "dependents": set(checkpoint.task_dependents.get(task_id, [])),
                 "acceptance_criteria": task_def.get("acceptance_criteria", []),
                 "max_retries": task_def.get("max_retries", 2),
                 "retry_count": task_def.get("retry_count", 0),

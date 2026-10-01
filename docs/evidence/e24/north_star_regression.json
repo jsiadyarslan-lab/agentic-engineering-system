@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-10-02T02:00:00.000000+00:00",
+  "phases": [
+    {
+      "phase": "NORTH_STAR_FULL_LIFECYCLE",
+      "timestamp": 1790885038.9952958,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "NORTH_STAR_FULL_LIFECYCLE",
+      "timestamp": 1790885039.0903335,
+      "data": {
+        "success": true,
+        "mission_id": "mission-6d64084e522a",
+        "run_id": "run-b89a549ea0b0",
+        "checkpoints": 4,
+        "events": 57,
+        "artifacts": 4,
+        "verifications": 4
+      }
+    },
+    {
+      "phase": "RESTART_1",
+      "timestamp": 1790885039.0903935,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "RESTART_1",
+      "timestamp": 1790885039.1964133,
+      "data": {
+        "resume_success": true,
+        "resumed_tasks": 2,
+        "fresh_tasks": 2,
+        "mission_state_after_resume": "MissionState.EXECUTING",
+        "execution_success": true,
+        "failed_tasks": [],
+        "replan_success": true,
+        "human_gate_ok": true,
+        "events_persisted": 79,
+        "artifacts_in_store": 6
+      }
+    },
+    {
+      "phase": "RESTART_2",
+      "timestamp": 1790885039.196496,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "RESTART_2",
+      "timestamp": 1790885039.2630494,
+      "data": {
+        "second_resume_success": true,
+        "events_persisted": 106,
+        "artifacts_in_store": 8,
+        "events_monotonic": true
+      }
+    }
+  ],
+  "verdicts": {
+    "NORTH_STAR_FULL_LIFECYCLE": "VERIFIED",
+    "RESTART_1": "VERIFIED",
+    "RESTART_2": "VERIFIED"
+  }
+}

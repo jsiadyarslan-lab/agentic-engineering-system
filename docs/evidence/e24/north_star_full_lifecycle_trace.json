@@ -1,0 +1,13 @@
+{
+  "phase": "NORTH_STAR_FULL_LIFECYCLE",
+  "timestamp": 1790885039.0903335,
+  "data": {
+    "success": true,
+    "mission_id": "mission-6d64084e522a",
+    "run_id": "run-b89a549ea0b0",
+    "checkpoints": 4,
+    "events": 57,
+    "artifacts": 4,
+    "verifications": 4
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-10-02T00:30:00.000000+00:00",
+  "phases": [
+    {
+      "phase": "NEGATIVE_TEST_1_MISSING_ARTIFACT",
+      "timestamp": 1790884733.5584614,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "NEGATIVE_TEST_1_MISSING_ARTIFACT",
+      "timestamp": 1790884733.8675392,
+      "data": {
+        "resume_success": true,
+        "artifact_accessible_after_delete": false,
+        "expected": "artifact should not be accessible"
+      }
+    },
+    {
+      "phase": "NEGATIVE_TEST_2_HASH_MISMATCH",
+      "timestamp": 1790884733.867587,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "NEGATIVE_TEST_2_HASH_MISMATCH",
+      "timestamp": 1790884734.040007,
+      "data": {
+        "resume_success": true,
+        "original_sha256": "bc4039fea67023f8ec0ea2d8fcc83fdc8e5fccec98ee63efe170c8118c9141a0",
+        "hash_verified_after_tamper": false,
+        "expected": "hash verification should fail (detect tampering)"
+      }
+    },
+    {
+      "phase": "NEGATIVE_TEST_3_MISSING_EVIDENCE",
+      "timestamp": 1790884734.0400658,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "NEGATIVE_TEST_3_MISSING_EVIDENCE",
+      "timestamp": 1790884734.0913856,
+      "data": {
+        "resume_success": true,
+        "evidence_records_after_resume": 0,
+        "expected": "evidence store should be empty (no evidence files to load)"
+      }
+    }
+  ],
+  "verdicts": {
+    "NEGATIVE_TEST_1_MISSING_ARTIFACT": "VERIFIED",
+    "NEGATIVE_TEST_2_HASH_MISMATCH": "VERIFIED",
+    "NEGATIVE_TEST_3_MISSING_EVIDENCE": "VERIFIED"
+  }
+}

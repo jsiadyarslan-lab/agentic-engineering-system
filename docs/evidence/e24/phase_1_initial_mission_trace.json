@@ -1,0 +1,35 @@
+{
+  "phase": "PHASE_1_INITIAL_MISSION",
+  "timestamp": 1790884598.8700247,
+  "data": {
+    "mission_id": "mission-351a08b3db37",
+    "run_id": "run-00551445610f",
+    "success": true,
+    "artifacts_created": 3,
+    "artifact_details": {
+      "durable_b.txt": {
+        "artifact_id": "artifact-84e59e4e4994",
+        "sha256": "aef163d134728ff5f291786840cfdd4cde193873b7bc7af4a2378fdb150823dc",
+        "size_bytes": 26,
+        "mission_id": "mission-351a08b3db37"
+      },
+      "durable_a.txt": {
+        "artifact_id": "artifact-988f14c9bfa9",
+        "sha256": "bc6bd43433de6ac989cc8672638beac2ee3a619d927a7a9d36fd57722fad05ee",
+        "size_bytes": 26,
+        "mission_id": "mission-351a08b3db37"
+      },
+      "durable_c.txt": {
+        "artifact_id": "artifact-22bf5ef30f2d",
+        "sha256": "e0fef9d9d8baf3129ac4f4240d8297b612c5de40089c47c49b073e4a989afb05",
+        "size_bytes": 26,
+        "mission_id": "mission-351a08b3db37"
+      }
+    },
+    "evidence_created": 0,
+    "verifications": 3,
+    "events_emitted": 46,
+    "checkpoints_created": 3,
+    "checkpoint_for_resume": "checkpoint-3c9ae9165b46"
+  }
+}

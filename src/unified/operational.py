@@ -170,6 +170,8 @@ class OperationalImplementerAgent:
                     context.sandbox_id, path, content
                 )
                 
+                artifact.mission_id = context.mission_id
+                
                 # Store in evidence store
                 if hasattr(context, 'evidence_store') and context.evidence_store:
                     context.evidence_store.store_artifact(artifact)
@@ -232,6 +234,13 @@ class OperationalImplementerAgent:
                 )
                 
                 record = await context.sandbox_manager.execute(request)
+                
+                # Set mission_id on artifacts created by this command
+                if hasattr(context, 'evidence_store') and context.evidence_store:
+                    for art_id in record.artifacts:
+                        art = context.evidence_store.get_artifact_obj(art_id)
+                        if art:
+                            art.mission_id = context.mission_id
                 
                 # Check for timeout
                 error_msg = None
