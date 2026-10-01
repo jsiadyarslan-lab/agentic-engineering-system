@@ -2488,6 +2488,7 @@ class ExecutionEngine:
                 depends_on=checkpoint.task_dependencies.get(task_id, []),
                 acceptance_criteria=task_def.get("acceptance_criteria", []),
                 max_retries=task_def.get("max_retries", 2),
+                context=task_def.get("context", {}),
             )
             task.retry_count = task_def.get("retry_count", 0)
             self.tasks[task_id] = task
