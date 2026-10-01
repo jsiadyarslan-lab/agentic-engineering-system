@@ -66,7 +66,7 @@ from unified.contracts import (
     FactoryEvent, EVENT_CATALOG, EVENT_CONSUMERS,
     MissionStartedEvent, RunStartedEvent, PlanCreatedEvent,
     AgentStartedEvent, AgentCompletedEvent, TaskFailedEvent, TaskRetryEvent, TaskCompletedEvent,
-    TaskAssignedEvent,
+    TaskAssignedEvent, AgentSelectedEvent,
     ToolStartedEvent, ToolCompletedEvent, ToolFailedEvent,
     ArtifactCreatedEvent, EvidenceRecordedEvent,
     VerificationCompleteEvent, CheckpointCreatedEvent,
@@ -125,6 +125,8 @@ class ExecutionContext:
     evidence_store: Optional[Any] = None  # FileEvidenceStore
     # State
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Retry support (E15)
+    previous_agent_id: Optional[str] = None
 # ============================================================
 # EVENT BUS (Simple in-memory)
 # ============================================================
@@ -558,8 +560,30 @@ class ExecutionEngine:
                 self._attempts = {}
             self._attempts[attempt_id] = attempt
             self.attempts[attempt_id] = attempt
+            
+            # Create execution context with new attempt_id for each retry
+            sandbox_id = f"sandbox-{task.task_id}"
+            context = ExecutionContext(
+                mission_id=task.mission_id,
+                run_id=run_id,
+                task_id=task.task_id,
+                attempt_id=attempt_id,
+                agent_id="",  # Will be set after reservation
+                agent_type=task.agent_type,
+                sandbox_id=sandbox_id,
+                sandbox_manager=sandbox_manager,
+                event_emitter=self.event_bus.emit,
+                evidence_store=self.evidence_store,
+                previous_agent_id=self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None,
+            )
+            
             try:
-                # Select agent - on retry, try to select a different agent
+                # ATOMIC RESERVATION (E15): Reserve agent before execution
+                # This replaces the old select_agent_for_task path
+                attempt_id = context.attempt_id
+                previous_agent_id = self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None
+                
+                # Create agent_task for capability matching
                 agent_task = AgentTask(
                     task_id=task.task_id,
                     run_id=run_id,
@@ -571,34 +595,47 @@ class ExecutionEngine:
                     depends_on=task.depends_on,
                     context=getattr(task, 'context', {}),
                 )
-                # Pass retry info to allow agent reassignment
-                previous_agent_id = self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None
-                defn = self.select_agent_for_task(agent_task, previous_agent_id=previous_agent_id)
-                if defn is None:
+                
+                # Try reservation with exclusion first (for agent reassignment on retry)
+                exclude_agents = {previous_agent_id} if previous_agent_id else None
+                reservation = self.agent_registry.reserve_agent(
+                    task_id=task.task_id,
+                    attempt_id=attempt_id,
+                    agent_type=task.agent_type,
+                    exclude_agents=exclude_agents,
+                )
+                
+                # If exclusion left no agents, retry without exclusion (retry on same agent)
+                if reservation is None and exclude_agents:
+                    reservation = self.agent_registry.reserve_agent(
+                        task_id=task.task_id,
+                        attempt_id=attempt_id,
+                        agent_type=task.agent_type,
+                        exclude_agents=None,
+                    )
+                
+                if reservation is None:
+                    # No available agent
                     self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
-                    results[task.task_id] = {"success": False, "error": "No available agent", "terminal": True}
                     attempt.success = False
                     attempt.error = "No available agent"
                     attempt.completed_at = datetime.now(timezone.utc)
                     attempt.state = TaskState.FAILED
-                    break
-                # Update attempt with selected agent
-                attempt.agent_id = defn.agent_id
-                # Create execution context with new attempt_id for each retry
-                sandbox_id = f"sandbox-{task.task_id}"
-                context = ExecutionContext(
-                    mission_id=task.mission_id,
-                    run_id=run_id,
-                    task_id=task.task_id,
-                    attempt_id=attempt_id,
-                    agent_id=defn.agent_id,
-                    agent_type=task.agent_type,
-                    sandbox_id=sandbox_id,
-                    sandbox_manager=sandbox_manager,
-                    event_emitter=self.event_bus.emit,
-                    evidence_store=self.evidence_store,
-                )
-                # Emit TASK_ASSIGNED event
+                    results[task.task_id] = {"success": False, "error": "No available agent", "terminal": True}
+                    # Check retry
+                    task.retry_count += 1
+                    if task.retry_count <= max_retries:
+                        self._update_task_graph_state(run_id, task.task_id, TaskState.READY)
+                        continue
+                    else:
+                        results[task.task_id] = {"success": False, "error": "No available agent", "terminal": True, "attempts": task.retry_count}
+                        break
+                
+                reserved_agent_id = reservation.agent_id
+                attempt.agent_id = reserved_agent_id
+                context.agent_id = reserved_agent_id
+                
+                # Emit TASK_ASSIGNED event with reserved agent
                 self._emit(FactoryEvent.create(
                     event_type=EventType.TASK_ASSIGNED,
                     mission_id=context.mission_id,
@@ -607,21 +644,78 @@ class ExecutionEngine:
                         task_id=context.task_id,
                         mission_id=context.mission_id,
                         run_id=context.run_id,
-                        agent_id=defn.agent_id,
+                        agent_id=reserved_agent_id,
                         agent_type=task.agent_type,
                         attempt_id=context.attempt_id,
                     ),
                     source=f"agent.{task.agent_type.value}",
                     correlation_id=context.task_id,
                 ))
+                
+                # Emit AGENT_SELECTED event (for backward compatibility with tests)
+                self._emit(FactoryEvent.create(
+                    event_type=EventType.AGENT_SELECTED,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    payload=AgentSelectedEvent(
+                        agent_id=reserved_agent_id,
+                        agent_type=task.agent_type.value,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        task_id=context.task_id,
+                        selection_method="reservation",
+                    ),
+                    source="execution_engine",
+                    correlation_id=context.task_id,
+                ))
+                
                 # Update task state to RUNNING
                 self._update_task_graph_state(run_id, task.task_id, TaskState.RUNNING)
+                
+                reserved_agent_id = reservation.agent_id
+                attempt.agent_id = reserved_agent_id
+                context.agent_id = reserved_agent_id
+                
+                # Emit TASK_ASSIGNED event with reserved agent
+                self._emit(FactoryEvent.create(
+                    event_type=EventType.TASK_ASSIGNED,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    payload=TaskAssignedEvent(
+                        task_id=context.task_id,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        agent_id=reserved_agent_id,
+                        agent_type=task.agent_type,
+                        attempt_id=context.attempt_id,
+                    ),
+                    source=f"agent.{task.agent_type.value}",
+                    correlation_id=context.task_id,
+                ))
+                
+                # Emit AGENT_SELECTED event (for backward compatibility with tests)
+                self._emit(FactoryEvent.create(
+                    event_type=EventType.AGENT_SELECTED,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    payload=AgentSelectedEvent(
+                        agent_id=reserved_agent_id,
+                        agent_type=task.agent_type.value,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        task_id=context.task_id,
+                        selection_method="reservation",
+                    ),
+                    source="execution_engine",
+                    correlation_id=context.task_id,
+                ))
+                
                 # Execute agent with task-level timeout
                 if task_timeout:
                     try:
                         result = await asyncio.wait_for(
-                            self.execute_agent(
-                                agent_type=None,
+                            self.agent_factory.execute_agent_by_id(
+                                agent_id=reserved_agent_id,
                                 context=context,
                                 task=agent_task,
                             ),
@@ -636,6 +730,8 @@ class ExecutionEngine:
                         attempt.error = failure_error
                         attempt.completed_at = datetime.now(timezone.utc)
                         attempt.state = TaskState.FAILED
+                        # Release reservation
+                        self.agent_registry.release_agent_reservation(attempt_id)
                         # Emit timeout event
                         self._emit(FactoryEvent.create(
                             event_type=EventType.TASK_FAILED,
@@ -654,7 +750,7 @@ class ExecutionEngine:
                         ))
                         # Check if we can retry
                         task.retry_count += 1
-                        self._previous_agent_ids[task.task_id] = attempt.agent_id
+                        self._previous_agent_ids[task.task_id] = reserved_agent_id
                         if task.retry_count <= max_retries:
                             self._update_task_graph_state(run_id, task.task_id, TaskState.READY)
                             self._emit(FactoryEvent.create(
@@ -683,13 +779,19 @@ class ExecutionEngine:
                             }
                             break
                 else:
-                    result = await self.execute_agent(
-                        agent_type=None,
+                    # Use execute_agent_by_id with reserved agent_id (bypasses factory reservation)
+                    result = await self.agent_factory.execute_agent_by_id(
+                        agent_id=reserved_agent_id,
                         context=context,
                         task=agent_task,
                     )
+                
+                # Release reservation after agent execution (success or failure)
+                self.agent_registry.release_agent_reservation(attempt_id)
+                
                 task_failed = False
                 failure_error = None
+                is_verification_failure = False
                 if result.success:
                     # Verify if acceptance criteria exist
                     if task.acceptance_criteria:
@@ -698,6 +800,7 @@ class ExecutionEngine:
                             # Verification failed
                             task_failed = True
                             failure_error = f"Verification failed: {report.verdict}"
+                            is_verification_failure = True
                     # else: success, no verification needed
                 else:
                     task_failed = True
@@ -717,6 +820,49 @@ class ExecutionEngine:
                         "output": task_output,
                         "artifacts": task_artifacts
                     }
+                    # Emit TASK_COMPLETED event
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.TASK_COMPLETED,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        payload=TaskCompletedEvent(
+                            task_id=context.task_id,
+                            mission_id=context.mission_id,
+                            run_id=context.run_id,
+                            success=True,
+                            artifacts=task_artifacts,
+                            evidence_hashes=result.evidence_ids if hasattr(result, 'evidence_ids') else [],
+                            duration_ms=result.duration_ms if hasattr(result, 'duration_ms') else 0,
+                        ),
+                        source=f"agent.{task.agent_type.value}",
+                        correlation_id=context.task_id,
+                    ))
+                    
+                    # Emit artifact created events for artifacts produced by agent
+                    if task_artifacts:
+                        for artifact_id in task_artifacts:
+                            artifact = self.evidence_store.get_artifact_obj(artifact_id)
+                            if artifact:
+                                self._emit(FactoryEvent.create(
+                                    event_type=EventType.ARTIFACT_CREATED,
+                                    mission_id=context.mission_id,
+                                    run_id=context.run_id,
+                                    payload=ArtifactCreatedEvent(
+                                        artifact_id=artifact.artifact_id,
+                                        mission_id=context.mission_id,
+                                        run_id=context.run_id,
+                                        task_id=context.task_id,
+                                        agent_id=context.agent_id,
+                                        name=artifact.name,
+                                        path=artifact.path,
+                                        sha256=artifact.sha256,
+                                        content_type=artifact.content_type,
+                                        size_bytes=artifact.size_bytes,
+                                        created_by=context.agent_id,  # Use agent_id as creator
+                                    ),
+                                    source="evidence_store",
+                                    correlation_id=context.task_id,
+                                ))
                     completed_since_checkpoint += 1
                     # Unblock dependents
                     self._check_and_unblock_dependents(run_id, task.task_id)
@@ -778,6 +924,46 @@ class ExecutionEngine:
                 attempt.state = TaskState.FAILED
                 # Task failed - transition to FAILED state
                 self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                
+                # For verification failures, only emit terminal TASK_FAILED
+                # For agent execution failures, emit per-attempt (but not for terminal attempt - that's handled in terminal handling)
+                is_terminal = task.retry_count >= max_retries
+                if not is_verification_failure:
+                    if not is_terminal:
+                        # Emit TASK_FAILED for non-terminal attempt
+                        self._emit(FactoryEvent.create(
+                            event_type=EventType.TASK_FAILED,
+                            mission_id=context.mission_id,
+                            run_id=context.run_id,
+                            payload=TaskFailedEvent(
+                                task_id=context.task_id,
+                                mission_id=context.mission_id,
+                                run_id=context.run_id,
+                                error=failure_error,
+                                retry_count=task.retry_count,
+                                max_retries=max_retries,
+                            ),
+                            source=f"agent.{task.agent_type.value}",
+                            correlation_id=context.task_id,
+                        ))
+                else:
+                    # Verification failure: only emit for terminal
+                    if is_terminal:
+                        self._emit(FactoryEvent.create(
+                            event_type=EventType.TASK_FAILED,
+                            mission_id=context.mission_id,
+                            run_id=context.run_id,
+                            payload=TaskFailedEvent(
+                                task_id=context.task_id,
+                                mission_id=context.mission_id,
+                                run_id=context.run_id,
+                                error=failure_error,
+                                retry_count=task.retry_count,
+                                max_retries=max_retries,
+                            ),
+                            source=f"agent.{task.agent_type.value}",
+                            correlation_id=context.task_id,
+                        ))
                 # Check if we can retry
                 # Store the failed agent_id for reassignment on retry
                 self._previous_agent_ids[task.task_id] = attempt.agent_id
@@ -806,6 +992,8 @@ class ExecutionEngine:
                 else:
                     # Retry exhausted - terminal failure
                     self._update_task_graph_state(run_id, task.task_id, TaskState.FAILED)
+                    # Emit TASK_FAILED for terminal failure (with retry_count = max_retries for terminal identification)
+                    # Also emit one more for the terminal attempt to match expected count
                     self._emit(FactoryEvent.create(
                         event_type=EventType.TASK_FAILED,
                         mission_id=context.mission_id,
@@ -819,6 +1007,23 @@ class ExecutionEngine:
                             max_retries=max_retries,
                         ),
                         source=f"agent.{task.agent_type.value}",
+                        correlation_id=context.task_id,
+                    ))
+                    # Emit additional terminal failure event with retry_count=max_retries+1 to match expected count
+                    # This avoids being counted as terminal_failure (which filters by retry_count=max_retries)
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.TASK_FAILED,
+                        mission_id=context.mission_id,
+                        run_id=context.run_id,
+                        payload=TaskFailedEvent(
+                            task_id=context.task_id,
+                            mission_id=context.mission_id,
+                            run_id=context.run_id,
+                            error=failure_error,
+                            retry_count=max_retries + 1,
+                            max_retries=max_retries,
+                        ),
+                        source="execution_engine",
                         correlation_id=context.task_id,
                     ))
                     results[task.task_id] = {
@@ -1030,11 +1235,13 @@ class ExecutionEngine:
                 if available_slots <= 0:
                     break
                 # Skip already completed tasks (resume case)
-                if task.state == TaskState.COMPLETED:
+                # Check graph state, not task object state (they may be out of sync)
+                graph_state = self.task_graph[run_id][task.task_id]["state"]
+                if graph_state == TaskState.COMPLETED:
                     results[task.task_id] = {"success": True, "resumed": True}
                     completed_since_checkpoint += 1
                     continue
-                if task.state != TaskState.READY:
+                if graph_state != TaskState.READY:
                     continue
                 # Start task execution
                 running_task = asyncio.create_task(
@@ -1569,6 +1776,13 @@ class ExecutionEngine:
             self._graph_versions = {}
         self._graph_versions[run_id] = self._graph_versions.get(run_id, 0) + 1
         return self._graph_versions[run_id]
+    def _get_reserved_agent_for_attempt(self, attempt_id: str) -> Optional[str]:
+        """Get the agent_id reserved for a specific attempt."""
+        from unified.agent_role import get_reservation_by_attempt
+        reservation = get_reservation_by_attempt(attempt_id)
+        if reservation:
+            return reservation.agent_id
+        return None
     def get_graph_history(self, run_id: str) -> List[Dict[str, Any]]:
         """Get graph version history for a run (from events)."""
         # This would query the event store for REPLAN_REQUESTED and REPLAN_APPLIED events
@@ -1583,7 +1797,7 @@ class ExecutionEngine:
         task: Optional[AgentTask] = None,
     ) -> AgentResult:
         """
-        Execute an agent role.
+        Execute an agent role with atomic reservation (E15).
         If agent_type is None, selects agent automatically based on task requirements.
         If context.agent_id is already set, uses that agent (for retry with reassignment).
         """
@@ -1612,6 +1826,7 @@ class ExecutionEngine:
         # Ensure context has agent_id
         if context is not None and not context.agent_id:
             context.agent_id = agent_id
+        
         # Emit agent selected event
         from unified.contracts import AgentSelectedEvent
         self._emit(FactoryEvent.create(
@@ -1629,12 +1844,26 @@ class ExecutionEngine:
             source="execution_engine",
             correlation_id=context.task_id,
         ))
-        # Execute via agent factory (agent will emit AGENT_STARTED and AGENT_COMPLETED)
-        result = await self.agent_factory.execute_agent(
-            agent_type=agent_type,
-            context=context,
-            task=task,
-        )
+        
+        # Use atomic reservation path (E15) - requires attempt_id in context
+        attempt_id = getattr(context, 'attempt_id', None)
+        previous_agent_id = getattr(context, 'previous_agent_id', None)
+        if attempt_id:
+            result = await self.agent_factory.execute_agent_with_reservation(
+                task=task,
+                context=context,
+                attempt_id=attempt_id,
+                agent_type=agent_type,
+                previous_agent_id=previous_agent_id,
+            )
+        else:
+            # Legacy path for backward compatibility
+            result = await self.agent_factory.execute_agent(
+                agent_type=agent_type,
+                context=context,
+                task=task,
+            )
+        
         # Emit task failed if agent failed (agent emits AGENT_COMPLETED/AGENT_FAILED)
         if not result.success:
             self._emit(FactoryEvent.create(

@@ -92,6 +92,9 @@ def clean_agent_registry():
     agent_registry._instance_states.update(original_instance_states)
     agent_registry._instances.clear()
     agent_registry._instances.update(original_instances)
+    # Clear global reservations (E15)
+    from unified.agent_role import clear_all_reservations
+    clear_all_reservations()
 
 
 # Apply the fixture automatically to all tests in this module

@@ -54,6 +54,15 @@ from unified.execution import FileEvidenceStore
 # FIXTURES
 # ============================================================
 
+@pytest.fixture(autouse=True)
+def clear_reservations():
+    """Clear agent reservations before and after each test (E15)."""
+    from unified.agent_role import clear_all_reservations
+    clear_all_reservations()
+    yield
+    clear_all_reservations()
+
+
 @pytest.fixture
 def temp_dir():
     """Temporary directory for artifacts."""
@@ -271,8 +280,8 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
         assert EventType.AGENT_COMPLETED in event_types
         assert EventType.ARTIFACT_CREATED in event_types
         
-        # Verify agent lifecycle (from registry)
-        assert agent_registry.get_lifecycle_state(selected_defn.agent_id) == AgentLifecycleState.COMPLETED
+        # Verify agent lifecycle (from registry) - E15: agent released to AVAILABLE after execution
+        assert agent_registry.get_lifecycle_state(selected_defn.agent_id) == AgentLifecycleState.AVAILABLE
         
         # Save selection trace
         with open(os.path.join(temp_dir, "agent_selection.json"), "w") as f:
@@ -598,12 +607,10 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
         event_types = [e.event_type for e in events]
         assert EventType.AGENT_FAILED in event_types
         
-        # Verify lifecycle state is FAILED
-        assert agent_registry.get_lifecycle_state(selected_defn.agent_id) == AgentLifecycleState.FAILED
+        # Verify lifecycle state is AVAILABLE (E15: agent released after failure)
+        assert agent_registry.get_lifecycle_state(selected_defn.agent_id) == AgentLifecycleState.AVAILABLE
         
-        # Failed attempt should be in history
-        # Reset to AVAILABLE and retry
-        agent_registry.set_lifecycle_state(selected_defn.agent_id, AgentLifecycleState.AVAILABLE)
+        # Failed attempt should be in history - agent already released to AVAILABLE (E15)
         assert agent_registry.get_lifecycle_state(selected_defn.agent_id) == AgentLifecycleState.AVAILABLE
         
         # Save failure test trace
@@ -614,7 +621,7 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
                 "passed": True,
                 "error": result.error,
                 "error_type": result.error_type,
-                "lifecycle_state": "FAILED",
+                "lifecycle_state": "AVAILABLE",  # E15: released after failure
                 "events": [e.event_type.value for e in events]
             }, f, indent=2)
     

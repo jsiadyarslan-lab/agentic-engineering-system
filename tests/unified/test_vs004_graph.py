@@ -42,6 +42,15 @@ from unified.test_agent import E4TestAgent, register_e4_test_agent
 # FIXTURES
 # ============================================================
 
+@pytest.fixture(autouse=True)
+def clear_reservations():
+    """Clear agent reservations before and after each test (E15)."""
+    from unified.agent_role import clear_all_reservations
+    clear_all_reservations()
+    yield
+    clear_all_reservations()
+
+
 @pytest.fixture
 def temp_dir():
     """Temporary directory for artifacts."""

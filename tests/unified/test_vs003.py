@@ -92,6 +92,9 @@ class TestVS003AgentLifecycle:
         agent_registry._implementations.clear()
         agent_registry._instances.clear()
         agent_registry._instance_states.clear()
+        # Clear reservations (E15)
+        from unified.agent_role import clear_all_reservations
+        clear_all_reservations()
         yield
         # Cleanup
         agent_registry._definitions.clear()
@@ -99,6 +102,7 @@ class TestVS003AgentLifecycle:
         agent_registry._implementations.clear()
         agent_registry._instances.clear()
         agent_registry._instance_states.clear()
+        clear_all_reservations()
     
     def test_agent_definition_registration(self):
         """AC-E4-01: AgentDefinition contract exists and validates."""

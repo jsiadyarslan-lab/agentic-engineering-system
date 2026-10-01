@@ -33,7 +33,7 @@ class AgentLifecycleState(str, Enum):
     """Agent lifecycle states."""
     REGISTERED = "REGISTERED"      # Definition registered, not yet available
     AVAILABLE = "AVAILABLE"        # Ready for assignment
-    ASSIGNED = "ASSIGNED"          # Assigned to a task
+    ASSIGNED = "ASSIGNED"          # Assigned to a task (reserved)
     RUNNING = "RUNNING"            # Currently executing
     COMPLETED = "COMPLETED"        # Last execution succeeded
     FAILED = "FAILED"              # Last execution failed
@@ -55,6 +55,125 @@ def validate_agent_lifecycle_transition(
     allowed = AGENT_LIFECYCLE_TRANSITIONS.get(from_state, set())
     if to_state not in allowed:
         raise ValueError(f"Invalid agent lifecycle transition: {from_state} -> {to_state}")
+
+# ============================================================
+# AGENT RESERVATION / OWNERSHIP (E15)
+# ============================================================
+@dataclass
+class AgentReservation:
+    """
+    Represents an atomic reservation of an agent instance for a specific attempt.
+    This is the ownership token that proves the scheduler owns this agent for this attempt.
+    """
+    reservation_id: str
+    agent_id: str
+    task_id: str
+    attempt_id: str
+    created_at: datetime
+    owner: str = "execution_engine"  # Who created this reservation
+    
+    def is_owner(self, attempt_id: str) -> bool:
+        """Check if the given attempt_id owns this reservation."""
+        return self.attempt_id == attempt_id
+
+# Global reservation store
+_agent_reservations: Dict[str, AgentReservation] = {}  # reservation_id -> reservation
+_agent_reservation_by_attempt: Dict[str, str] = {}  # attempt_id -> reservation_id
+_agent_reservation_by_agent: Dict[str, str] = {}  # agent_id -> reservation_id
+
+
+def create_reservation(
+    agent_id: str,
+    task_id: str,
+    attempt_id: str,
+    owner: str = "execution_engine"
+) -> AgentReservation:
+    """Create a new agent reservation."""
+    import uuid
+    reservation_id = f"res-{uuid.uuid4().hex[:12]}"
+    reservation = AgentReservation(
+        reservation_id=reservation_id,
+        agent_id=agent_id,
+        task_id=task_id,
+        attempt_id=attempt_id,
+        created_at=datetime.now(timezone.utc),
+        owner=owner,
+    )
+    _agent_reservations[reservation_id] = reservation
+    _agent_reservation_by_attempt[attempt_id] = reservation_id
+    _agent_reservation_by_agent[agent_id] = reservation_id
+    return reservation
+
+
+def get_reservation(reservation_id: str) -> Optional[AgentReservation]:
+    """Get reservation by ID."""
+    return _agent_reservations.get(reservation_id)
+
+
+def get_reservation_by_attempt(attempt_id: str) -> Optional[AgentReservation]:
+    """Get reservation by attempt ID."""
+    res_id = _agent_reservation_by_attempt.get(attempt_id)
+    if res_id:
+        return _agent_reservations.get(res_id)
+    return None
+
+
+def get_reservation_by_agent(agent_id: str) -> Optional[AgentReservation]:
+    """Get reservation by agent ID."""
+    res_id = _agent_reservation_by_agent.get(agent_id)
+    if res_id:
+        return _agent_reservations.get(res_id)
+    return None
+
+
+def release_reservation(attempt_id: str, owner: str = "execution_engine") -> bool:
+    """
+    Release agent reservation. Only the owner attempt can release.
+    Returns True if released, False if not found or not owner.
+    """
+    reservation = get_reservation_by_attempt(attempt_id)
+    if not reservation:
+        return False
+    if reservation.attempt_id != attempt_id:
+        return False  # Not the owner
+    # Clean up
+    _agent_reservations.pop(reservation.reservation_id, None)
+    _agent_reservation_by_attempt.pop(attempt_id, None)
+    _agent_reservation_by_agent.pop(reservation.agent_id, None)
+    return True
+
+
+def is_agent_reserved(agent_id: str) -> bool:
+    """Check if agent is currently reserved."""
+    return agent_id in _agent_reservation_by_agent
+
+
+def is_agent_available_for_reservation(agent_id: str) -> bool:
+    """Check if agent can be reserved (AVAILABLE and not reserved)."""
+    reservation = get_reservation_by_agent(agent_id)
+    if reservation:
+        return False
+    # Also check lifecycle state
+    return agent_registry._instance_states.get(agent_id) == AgentLifecycleState.AVAILABLE
+
+
+def get_available_agents_for_reservation(agent_type: Optional[AgentType] = None) -> List[str]:
+    """Get agent IDs that are AVAILABLE and not reserved."""
+    available = []
+    for agent_id, state in agent_registry._instance_states.items():
+        if state == AgentLifecycleState.AVAILABLE and not is_agent_reserved(agent_id):
+            defn = agent_registry._definitions.get(agent_id)
+            if defn and defn.enabled:
+                if agent_type is None or defn.agent_type == agent_type:
+                    available.append(agent_id)
+    return available
+
+
+def clear_all_reservations() -> None:
+    """Clear all reservations (for testing)."""
+    _agent_reservations.clear()
+    _agent_reservation_by_attempt.clear()
+    _agent_reservation_by_agent.clear()
 # ============================================================
 # AGENT DEFINITION CONTRACT
 # ============================================================
@@ -603,18 +722,153 @@ class AgentRegistry:
         # Deterministic: highest max_tokens, then lexicographically by agent_id
         candidates.sort(key=lambda d: (-d.max_tokens, d.agent_id))
         return candidates[0]
-    def select_agent_for_task(self, task: AgentTask) -> Optional[AgentDefinition]:
+    def select_agent_for_task(self, task: AgentTask, previous_agent_id: Optional[str] = None) -> Optional[AgentDefinition]:
         """Select agent for a task based on its agent_type and acceptance criteria."""
         # First try exact type match
         defn = self.get_definition_by_type(task.agent_type)
-        if defn and defn.is_available():
+        if defn and defn.is_available() and defn.agent_id != previous_agent_id:
             return defn
         # Fall back to capability-based selection
+        exclude = {previous_agent_id} if previous_agent_id else None
         return self.select_agent(
             required_tools=[],  # Would need to infer from acceptance criteria
             required_permissions=[],
             required_domains=[],
+            exclude_agents=exclude,
         )
+
+    # --- Atomic Reservation (E15) ---
+    def reserve_agent(
+        self,
+        task_id: str,
+        attempt_id: str,
+        agent_type: Optional[AgentType] = None,
+        exclude_agents: Optional[Set[str]] = None,
+        owner: str = "execution_engine"
+    ) -> Optional[AgentReservation]:
+        """
+        Atomically reserve an available agent instance.
+        This combines selection + reservation in one atomic operation.
+        Returns AgentReservation if successful, None if no agent available.
+        
+        Selection criteria (matching select_agent_for_task):
+        1. If agent_type specified, prefer default agent for that type
+        2. Must match agent_type if specified
+        3. Must be AVAILABLE and not reserved
+        4. Must be enabled
+        5. Not excluded
+        6. Highest max_tokens wins ties (capability-based fallback)
+        
+        On success: atomically transitions agent AVAILABLE -> ASSIGNED
+        """
+        exclude_agents = exclude_agents or set()
+        
+        # First try default agent for type
+        if agent_type is not None:
+            default_defn = self.get_definition_by_type(agent_type)
+            if (default_defn and 
+                default_defn.enabled and 
+                default_defn.state == AgentLifecycleState.AVAILABLE and
+                default_defn.agent_id not in exclude_agents and
+                not is_agent_reserved(default_defn.agent_id)):
+                
+                # ATOMIC: Transition to ASSIGNED and create reservation
+                self.set_lifecycle_state(default_defn.agent_id, AgentLifecycleState.ASSIGNED)
+                reservation = create_reservation(
+                    agent_id=default_defn.agent_id,
+                    task_id=task_id,
+                    attempt_id=attempt_id,
+                    owner=owner
+                )
+                return reservation
+        
+        # Fall back to capability-based selection
+        candidates = []
+        for defn in self._definitions.values():
+            if defn.agent_id in exclude_agents:
+                continue
+            if not defn.enabled:
+                continue
+            if agent_type is not None and defn.agent_type != agent_type:
+                continue
+            # Check availability AND not reserved
+            if defn.state != AgentLifecycleState.AVAILABLE:
+                continue
+            if is_agent_reserved(defn.agent_id):
+                continue
+            candidates.append(defn)
+        
+        if not candidates:
+            return None
+        
+        # Deterministic: highest max_tokens, then lexicographically by agent_id
+        candidates.sort(key=lambda d: (-d.max_tokens, d.agent_id))
+        selected = candidates[0]
+        
+        # ATOMIC: Transition to ASSIGNED and create reservation
+        # This is the critical section - no other thread can reserve this agent now
+        self.set_lifecycle_state(selected.agent_id, AgentLifecycleState.ASSIGNED)
+        
+        reservation = create_reservation(
+            agent_id=selected.agent_id,
+            task_id=task_id,
+            attempt_id=attempt_id,
+            owner=owner
+        )
+        return reservation
+
+    def reserve_specific_agent(
+        self,
+        agent_id: str,
+        task_id: str,
+        attempt_id: str,
+        owner: str = "execution_engine"
+    ) -> Optional[AgentReservation]:
+        """
+        Atomically reserve a specific agent by ID.
+        Returns AgentReservation if successful, None if agent not available.
+        """
+        defn = self._definitions.get(agent_id)
+        if not defn:
+            return None
+        if not defn.enabled:
+            return None
+        if defn.state != AgentLifecycleState.AVAILABLE:
+            return None
+        if is_agent_reserved(agent_id):
+            return None
+        
+        # ATOMIC: Transition to ASSIGNED and create reservation
+        self.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
+        
+        reservation = create_reservation(
+            agent_id=agent_id,
+            task_id=task_id,
+            attempt_id=attempt_id,
+            owner=owner
+        )
+        return reservation
+
+    def release_agent_reservation(self, attempt_id: str, owner: str = "execution_engine") -> bool:
+        """
+        Release agent reservation and transition agent back to AVAILABLE.
+        Only the owning attempt can release.
+        """
+        reservation = get_reservation_by_attempt(attempt_id)
+        if not reservation:
+            return False
+        if reservation.attempt_id != attempt_id:
+            return False
+        
+        agent_id = reservation.agent_id
+        current_state = self._instance_states.get(agent_id)
+        
+        # Only release if agent is in a terminal or assigned state
+        if current_state in (AgentLifecycleState.ASSIGNED, AgentLifecycleState.RUNNING, 
+                            AgentLifecycleState.COMPLETED, AgentLifecycleState.FAILED):
+            self.set_lifecycle_state(agent_id, AgentLifecycleState.AVAILABLE)
+        
+        return release_reservation(attempt_id, owner)
     # --- Implementation management ---
     def get_implementation(self, agent_type: AgentType) -> Optional[Type[AgentRole]]:
         """Get agent implementation class."""
@@ -624,14 +878,17 @@ class AgentRegistry:
         agent_type: AgentType,
         agent_id: Optional[str] = None,
     ) -> AgentRole:
-        """Create agent instance."""
+        """Create agent instance. Does not overwrite existing lifecycle state if already ASSIGNED or higher."""
         agent_class = self.get_implementation(agent_type)
         if not agent_class:
             raise ValueError(f"No implementation registered for {agent_type}")
         instance = agent_class()
         if agent_id:
             self._instances[agent_id] = instance
-            self._instance_states[agent_id] = AgentLifecycleState.AVAILABLE
+            # Only set AVAILABLE if not already in a reserved/active state
+            current_state = self._instance_states.get(agent_id)
+            if current_state is None or current_state == AgentLifecycleState.REGISTERED:
+                self._instance_states[agent_id] = AgentLifecycleState.AVAILABLE
         return instance
     def get_instance(self, agent_id: str) -> Optional[AgentRole]:
         """Get agent instance by ID."""
@@ -707,35 +964,150 @@ class AgentFactory:
         agent_id: str,
         context: AgentContext,
     ) -> AgentRole:
-        """Create agent by specific ID."""
+        """Create agent by specific ID (legacy - use execute_agent for atomic reservation)."""
         defn = self.registry.get_definition(agent_id)
         if not defn:
             raise ValueError(f"Unknown agent: {agent_id}")
-        if not defn.is_available():
+        # Allow agents that are AVAILABLE or ASSIGNED (reserved)
+        # The reservation system prevents double-booking
+        if defn.state not in (AgentLifecycleState.AVAILABLE, AgentLifecycleState.ASSIGNED):
             raise RuntimeError(f"Agent {agent_id} not available (state: {defn.state}, enabled: {defn.enabled})")
+        if not defn.enabled:
+            raise RuntimeError(f"Agent {agent_id} is disabled")
         agent = self.registry.create_instance(defn.agent_type, agent_id)
-        # Update lifecycle
-        self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
+        # Update lifecycle - only transition if not already ASSIGNED
+        current_state = self.registry.get_lifecycle_state(agent_id)
+        if current_state == AgentLifecycleState.AVAILABLE:
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
         return agent
+    
+    async def execute_agent_with_reservation(
+        self,
+        task: AgentTask,
+        context: AgentContext,
+        attempt_id: str,
+        agent_type: Optional[AgentType] = None,
+        previous_agent_id: Optional[str] = None,
+    ) -> AgentResult:
+        """
+        Execute agent with atomic reservation.
+        This is the E15 atomic execution path.
+        
+        Args:
+            task: The task to execute
+            context: Execution context (must have attempt_id set)
+            attempt_id: The attempt ID for ownership tracking
+            agent_type: Optional agent type filter
+            previous_agent_id: Agent to exclude (for retry)
+        
+        Returns:
+            AgentResult with success/failure and ownership info
+        """
+        exclude = {previous_agent_id} if previous_agent_id else None
+        target_type = agent_type or task.agent_type
+        
+        # ATOMIC: Reserve agent
+        reservation = self.registry.reserve_agent(
+            task_id=task.task_id,
+            attempt_id=attempt_id,
+            agent_type=target_type,
+            exclude_agents=exclude,
+        )
+        
+        if reservation is None:
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=target_type,
+                success=False,
+                error="No available agent",
+                error_type="AgentUnavailable",
+            )
+        
+        agent_id = reservation.agent_id
+        context.agent_id = agent_id
+        
+        # Create agent instance
+        defn = self.registry.get_definition(agent_id)
+        agent = self.registry.create_instance(defn.agent_type, agent_id)
+        
+        # Validate input
+        errors = agent.validate_input(task)
+        if errors:
+            # Release reservation on validation failure
+            self.registry.release_agent_reservation(attempt_id)
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error="; ".join(errors),
+                error_type="ValidationError",
+            )
+        
+        # Execute with lifecycle
+        agent.on_start(context, task)
+        
+        # Transition to RUNNING
+        self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.RUNNING)
+        
+        try:
+            result = await agent.execute(context, task)
+        except Exception as e:
+            agent.on_failed(context, task, e)
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
+            # Release reservation
+            self.registry.release_agent_reservation(attempt_id)
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+        
+        # Validate output
+        errors = agent.validate_output(result)
+        if errors:
+            result.success = False
+            result.error = "; ".join(errors)
+            result.error_type = "ValidationError"
+        
+        if result.success:
+            agent.on_complete(context, task, result)
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
+        else:
+            agent.on_failed(context, task, Exception(result.error or "Validation failed"))
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
+        
+        # Release reservation (ownership transfer complete)
+        self.registry.release_agent_reservation(attempt_id)
+        
+        return result
+
     async def execute_agent(
         self,
         agent_type: AgentType,
         context: AgentContext,
         task: AgentTask,
     ) -> AgentResult:
-        """Create and execute agent in one call."""
-        # Use create_agent_by_id if agent_id is already set in context (for retry/reuse)
+        """Create and execute agent in one call (legacy path)."""
+        # Use atomic reservation if attempt_id is available
+        if hasattr(context, 'attempt_id') and context.attempt_id:
+            return await self.execute_agent_with_reservation(
+                task=task,
+                context=context,
+                attempt_id=context.attempt_id,
+                agent_type=agent_type,
+            )
+        
+        # Legacy path for backward compatibility
         if context.agent_id:
             agent = self.create_agent_by_id(context.agent_id, context)
             agent_id = context.agent_id
-            # create_agent_by_id already sets lifecycle to ASSIGNED
         else:
             agent = self.create_agent(agent_type, context)
-            # Get the agent_id from the created agent
             agent_id = context.agent_id
-            # Set lifecycle to ASSIGNED
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
-        # Validate input
+        
         errors = agent.validate_input(task)
         if errors:
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
@@ -746,10 +1118,10 @@ class AgentFactory:
                 error="; ".join(errors),
                 error_type="ValidationError",
             )
-        # Execute with lifecycle
+        
         agent.on_start(context, task)
-        # Transition to RUNNING
         self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.RUNNING)
+        
         try:
             result = await agent.execute(context, task)
         except Exception as e:
@@ -762,12 +1134,13 @@ class AgentFactory:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-        # Validate output
+        
         errors = agent.validate_output(result)
         if errors:
             result.success = False
             result.error = "; ".join(errors)
             result.error_type = "ValidationError"
+        
         if result.success:
             agent.on_complete(context, task, result)
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
@@ -775,15 +1148,16 @@ class AgentFactory:
             agent.on_failed(context, task, Exception(result.error or "Validation failed"))
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
         return result
+
     async def execute_agent_by_id(
         self,
         agent_id: str,
         context: AgentContext,
         task: AgentTask,
     ) -> AgentResult:
-        """Create and execute specific agent by ID."""
+        """Create and execute specific agent by ID (legacy path - no atomic reservation)."""
         agent = self.create_agent_by_id(agent_id, context)
-        # Validate input
+        
         errors = agent.validate_input(task)
         if errors:
             return AgentResult(
@@ -793,8 +1167,9 @@ class AgentFactory:
                 error="; ".join(errors),
                 error_type="ValidationError",
             )
-        # Execute with lifecycle
+        
         agent.on_start(context, task)
+        
         try:
             result = await agent.execute(context, task)
         except Exception as e:
@@ -807,12 +1182,13 @@ class AgentFactory:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-        # Validate output
+        
         errors = agent.validate_output(result)
         if errors:
             result.success = False
             result.error = "; ".join(errors)
             result.error_type = "ValidationError"
+        
         if result.success:
             agent.on_complete(context, task, result)
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
