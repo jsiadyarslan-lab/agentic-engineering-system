@@ -1,0 +1,33 @@
+{
+  "phase": "PHASE_1_INITIAL_EXECUTION",
+  "timestamp": 1790883024.8115468,
+  "data": {
+    "success": true,
+    "mission_id": "mission-955005e8b200",
+    "run_id": "run-0a8978407028",
+    "checkpoints": 4,
+    "events": 57,
+    "task_results": {
+      "task-20ce5e7062f1": {
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1
+      },
+      "task-bcc0ec077484": {
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1
+      },
+      "task-217235ca877f": {
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1
+      },
+      "task-530287d5df16": {
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "phase": "PHASE_4_EXECUTE_WITH_FAILURE",
+  "timestamp": 1790883025.213468,
+  "data": {
+    "execution_success": false,
+    "failed_tasks": [
+      "task-9ac1e6725dab"
+    ],
+    "task_results": {
+      "task-9ac1e6725dab": {
+        "state": "UNKNOWN",
+        "success": false,
+        "attempts": 0,
+        "error": "1 validation error for TaskFailedEvent\nerror\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2."
+      }
+    }
+  }
+}

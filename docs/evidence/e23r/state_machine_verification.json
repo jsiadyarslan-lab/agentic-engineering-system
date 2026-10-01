@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-10-01T22:10:00.000000+00:00",
+  "mission_id": "mission-bc39aac12a03",
+  "run_id": "run-2bafde69fd12",
+  "total_transitions": 11,
+  "transitions": [
+    {
+      "from_state": "RECEIVED",
+      "to_state": "ANALYZING",
+      "actor": "operational_engine",
+      "reason": "Mission analysis started",
+      "timestamp": "2026-10-01T19:23:01.014295"
+    },
+    {
+      "from_state": "ANALYZING",
+      "to_state": "PLANNING",
+      "actor": "operational_engine",
+      "reason": "Mission planning started",
+      "timestamp": "2026-10-01T19:23:01.014350"
+    },
+    {
+      "from_state": "PLANNING",
+      "to_state": "DESIGNING",
+      "actor": "operational_engine",
+      "reason": "Mission design completed",
+      "timestamp": "2026-10-01T19:23:01.014388"
+    },
+    {
+      "from_state": "DESIGNING",
+      "to_state": "REVIEWING",
+      "actor": "operational_engine",
+      "reason": "Mission under review",
+      "timestamp": "2026-10-01T19:23:01.014424"
+    },
+    {
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "actor": "operational_engine",
+      "reason": "Mission approved for execution",
+      "timestamp": "2026-10-01T19:23:01.014466"
+    },
+    {
+      "from_state": "APPROVED",
+      "to_state": "AWAITING_APPROVAL",
+      "actor": "operational_engine",
+      "reason": "Awaiting final approval",
+      "timestamp": "2026-10-01T19:23:01.014498"
+    },
+    {
+      "from_state": "AWAITING_APPROVAL",
+      "to_state": "EXECUTING",
+      "actor": "operational_engine",
+      "reason": "Mission execution started",
+      "timestamp": "2026-10-01T19:23:01.014530"
+    },
+    {
+      "from_state": "EXECUTING",
+      "to_state": "EXECUTED",
+      "actor": "operational_engine",
+      "reason": "Mission execution completed",
+      "timestamp": "2026-10-01T19:23:01.027556"
+    },
+    {
+      "from_state": "EXECUTED",
+      "to_state": "VERIFYING",
+      "actor": "operational_engine",
+      "reason": "Mission verification started",
+      "timestamp": "2026-10-01T19:23:01.027693"
+    },
+    {
+      "from_state": "VERIFYING",
+      "to_state": "EVIDENCED",
+      "actor": "operational_engine",
+      "reason": "Mission evidence collected",
+      "timestamp": "2026-10-01T19:23:01.027834"
+    },
+    {
+      "from_state": "EVIDENCED",
+      "to_state": "ADJUDICATED",
+      "actor": "operational_engine",
+      "reason": "Mission adjudicated",
+      "timestamp": "2026-10-01T19:23:01.027931"
+    }
+  ],
+  "expected_path": [
+    "RECEIVED",
+    "ANALYZING",
+    "PLANNING",
+    "DESIGNING",
+    "REVIEWING",
+    "APPROVED",
+    "AWAITING_APPROVAL",
+    "EXECUTING",
+    "EXECUTED",
+    "VERIFYING",
+    "EVIDENCED",
+    "ADJUDICATED"
+  ],
+  "actual_path": [
+    "RECEIVED",
+    "ANALYZING",
+    "PLANNING",
+    "DESIGNING",
+    "REVIEWING",
+    "APPROVED",
+    "AWAITING_APPROVAL",
+    "EXECUTING",
+    "EXECUTED",
+    "VERIFYING",
+    "EVIDENCED",
+    "ADJUDICATED"
+  ],
+  "complete": true
+}

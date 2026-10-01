@@ -1,0 +1,10 @@
+{
+  "phase": "PHASE_6_HUMAN_GATE",
+  "timestamp": 1790883025.2160842,
+  "data": {
+    "gate_created": true,
+    "gate_id": "decision-924db9f9",
+    "decision_result": true,
+    "mission_state_after": "MissionState.EXECUTING"
+  }
+}

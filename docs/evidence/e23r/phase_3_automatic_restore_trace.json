@@ -1,0 +1,34 @@
+{
+  "phase": "PHASE_3_AUTOMATIC_RESTORE",
+  "timestamp": 1790883024.8812354,
+  "data": {
+    "resume_success": true,
+    "new_run_id": "run-914a22453cf9",
+    "mission_recreated": true,
+    "resumed_tasks": 2,
+    "fresh_tasks": 2,
+    "mission_state": "MissionState.EXECUTING",
+    "task_results": {
+      "task-bcc0ec077484": {
+        "state": "COMPLETED",
+        "success": true,
+        "resumed": false
+      },
+      "task-530287d5df16": {
+        "state": "COMPLETED",
+        "success": true,
+        "resumed": false
+      },
+      "task-20ce5e7062f1": {
+        "state": "COMPLETED",
+        "success": true,
+        "resumed": true
+      },
+      "task-217235ca877f": {
+        "state": "COMPLETED",
+        "success": true,
+        "resumed": true
+      }
+    }
+  }
+}

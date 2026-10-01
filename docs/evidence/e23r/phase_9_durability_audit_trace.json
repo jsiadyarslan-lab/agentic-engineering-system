@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_9_DURABILITY_AUDIT",
+  "timestamp": 1790883025.2730489,
+  "data": {
+    "second_resume_success": true,
+    "second_run_id": "run-3f43fa2089d0",
+    "events_after_second_resume": 79,
+    "mission_recreated_again": true,
+    "artifacts_still_accessible": 0
+  }
+}
