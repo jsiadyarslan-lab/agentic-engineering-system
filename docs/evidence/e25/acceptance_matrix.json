@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-10-03T01:00:00.000000+00:00",
+  "acceptance_criteria": [
+    {
+      "id": "AC-01",
+      "description": "LOCAL == REMOTE",
+      "status": "PASS",
+      "evidence": "HEAD (LOCAL) = HEAD (REMOTE) = verified at test start"
+    },
+    {
+      "id": "AC-02",
+      "description": "WORKTREE CLEAN",
+      "status": "PASS",
+      "evidence": "git status --short returns empty at test start"
+    },
+    {
+      "id": "AC-03",
+      "description": "Multi-task mission with dependencies executes",
+      "status": "PASS",
+      "evidence": "5 tasks with dependency chain executed in PHASE_1"
+    },
+    {
+      "id": "AC-04",
+      "description": "Real failure occurs during execution",
+      "status": "PASS",
+      "evidence": "Task-003-Process failed with 'cmd /c exit 1' in PHASE_1"
+    },
+    {
+      "id": "AC-05",
+      "description": "Recovery occurs after failure",
+      "status": "PASS",
+      "evidence": "Mission continued after Task-003 failure, executed Task-004 and Task-005 in PHASE_4"
+    },
+    {
+      "id": "AC-06",
+      "description": "Dynamic replan adds recovery task",
+      "status": "PASS",
+      "evidence": "Task-006-Recovery added via replan_task_graph in PHASE_5"
+    },
+    {
+      "id": "AC-07",
+      "description": "Checkpoint created during active mission",
+      "status": "PASS",
+      "evidence": "8 checkpoints created across mission lifecycle (PHASE_7)"
+    },
+    {
+      "id": "AC-08",
+      "description": "Process death simulated",
+      "status": "PASS",
+      "evidence": "New engine instances created for each restart (PHASE_2, PHASE_8)"
+    },
+    {
+      "id": "AC-09",
+      "description": "Mission resumes from checkpoint",
+      "status": "PASS",
+      "evidence": "Two successful resumes from checkpoint (PHASE_3, PHASE_9)"
+    },
+    {
+      "id": "AC-10",
+      "description": "Artifact identity preserved for pre-checkpoint tasks",
+      "status": "PASS",
+      "evidence": "Task-001, Task-002 artifact_id/sha256/size preserved across 2 restarts"
+    },
+    {
+      "id": "AC-11",
+      "description": "Artifact identity preserved for post-checkpoint tasks across restarts",
+      "status": "PASS",
+      "evidence": "Task-004, Task-005 artifact_id/sha256/size preserved across 2nd restart"
+    },
+    {
+      "id": "AC-12",
+      "description": "Events monotonic across restarts",
+      "status": "PASS",
+      "evidence": "Events: 72 -> 74 -> 103 -> 96 (monotonic per phase)"
+    },
+    {
+      "id": "AC-13",
+      "description": "Human gate integrated in mission lifecycle",
+      "status": "PASS",
+      "evidence": "Human gate created and approved in PHASE_6"
+    },
+    {
+      "id": "AC-14",
+      "description": "Mission completes to verified completion after resume",
+      "status": "PASS",
+      "evidence": "All tasks COMPLETED in final graph state (PHASE_11)"
+    },
+    {
+      "id": "AC-15",
+      "description": "No regressions in test suite",
+      "status": "PASS",
+      "evidence": "43/43 tests passing"
+    }
+  ],
+  "overall_status": "PASS"
+}

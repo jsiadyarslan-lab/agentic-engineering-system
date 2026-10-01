@@ -752,7 +752,35 @@ class OperationalExecutionEngine:
         for task in created_tasks:
             task_config = [t for t in tasks_config if t["name"] == task.name][0]
             depends_on_names = task_config.get("depends_on", [])
-            task.depends_on = [task_id_map[name] for name in depends_on_names if name in task_id_map]
+            resolved_deps = [task_id_map[name] for name in depends_on_names if name in task_id_map]
+            task.depends_on = resolved_deps
+            # Update task graph with resolved dependencies
+            if run.run_id in engine.task_graph and task.task_id in engine.task_graph[run.run_id]:
+                engine.task_graph[run.run_id][task.task_id]["depends_on"] = set(resolved_deps)
+                # Add reverse dependencies
+                for dep_id in resolved_deps:
+                    if dep_id in engine.task_graph[run.run_id]:
+                        engine.task_graph[run.run_id][dep_id]["dependents"].add(task.task_id)
+                # Update task state based on resolved dependencies
+                if not resolved_deps:
+                    # No dependencies - task is READY
+                    if engine.task_graph[run.run_id][task.task_id]["state"] == TaskState.PENDING:
+                        engine.task_graph[run.run_id][task.task_id]["state"] = TaskState.READY
+                        task.state = TaskState.READY
+                        engine.task_runnable_cache[run.run_id].add(task.task_id)
+                else:
+                    # Has dependencies - check if all are COMPLETED
+                    all_deps_completed = all(
+                        engine.tasks.get(dep_id) and engine.tasks[dep_id].state == TaskState.COMPLETED
+                        for dep_id in resolved_deps
+                    )
+                    if all_deps_completed:
+                        engine.task_graph[run.run_id][task.task_id]["state"] = TaskState.READY
+                        task.state = TaskState.READY
+                        engine.task_runnable_cache[run.run_id].add(task.task_id)
+                    else:
+                        engine.task_graph[run.run_id][task.task_id]["state"] = TaskState.BLOCKED
+                        task.state = TaskState.BLOCKED
         
         # Execute task graph with mission-level timeout
         execution_start = time.monotonic()

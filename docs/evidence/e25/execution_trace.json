@@ -1,0 +1,443 @@
+{
+  "timestamp": "2026-10-03T00:00:00.000000+00:00",
+  "mission_name": "E25-LONG-RUN",
+  "phases": [
+    {
+      "phase": "PHASE_1_INITIAL_EXECUTION",
+      "timestamp": 1790888154.4800122,
+      "data": {
+        "start": true,
+        "tasks": [
+          "Task-001-Setup",
+          "Task-002-DataPrep",
+          "Task-003-Process",
+          "Task-004-Validate",
+          "Task-005-Finalize"
+        ]
+      }
+    },
+    {
+      "phase": "PHASE_1_INITIAL_EXECUTION",
+      "timestamp": 1790888154.5707786,
+      "data": {
+        "mission_id": "mission-333bb174dd8c",
+        "run_id": "run-7cb371629ea8",
+        "success": true,
+        "artifacts_created": 4,
+        "artifact_details": {
+          "e25_task001_setup.txt": {
+            "artifact_id": "artifact-4b433964d137",
+            "sha256": "aadaf3595080fdec54a8ff85593668479ca681bf697f506f2997e655bb0f4b37",
+            "size_bytes": 14,
+            "mission_id": "mission-333bb174dd8c"
+          },
+          "e25_task002_dataprep.txt": {
+            "artifact_id": "artifact-be6ee626cba9",
+            "sha256": "cadb34e7ef08588c6f08c3c0f3ad572fd79bbf01e5007a61f3d9f2590f76f645",
+            "size_bytes": 13,
+            "mission_id": "mission-333bb174dd8c"
+          },
+          "e25_task004_validate.txt": {
+            "artifact_id": "artifact-afa0cf3e4b7c",
+            "sha256": "f21570c715de41949f64077c702287260047f9d7493bde57511f416611e3be20",
+            "size_bytes": 19,
+            "mission_id": "mission-333bb174dd8c"
+          },
+          "e25_task005_finalize.txt": {
+            "artifact_id": "artifact-c3ed941b0f13",
+            "sha256": "def7cd4b26b5e0453acda0872c8418985164a0c1dbdba1aed18ceffa698061e8",
+            "size_bytes": 9,
+            "mission_id": "mission-333bb174dd8c"
+          }
+        },
+        "evidence_created": 0,
+        "verifications": 5,
+        "events_emitted": 72,
+        "checkpoints_created": 5,
+        "checkpoint_for_resume": "checkpoint-46b1f0ebc0c5",
+        "tasks_completed_before_checkpoint": [
+          "Task-001-Setup",
+          "Task-003-Process",
+          "Task-002-DataPrep"
+        ],
+        "task_results": {
+          "task-27004b218bf2": {
+            "state": "COMPLETED",
+            "success": true,
+            "attempts": 1,
+            "error": "None"
+          },
+          "task-a929f05d075d": {
+            "state": "COMPLETED",
+            "success": true,
+            "attempts": 1,
+            "error": "None"
+          },
+          "task-ccaff0c85189": {
+            "state": "COMPLETED",
+            "success": true,
+            "attempts": 1,
+            "error": "None"
+          },
+          "task-d8b4d42d910e": {
+            "state": "COMPLETED",
+            "success": true,
+            "attempts": 1,
+            "error": "None"
+          },
+          "task-6a697c4894d9": {
+            "state": "COMPLETED",
+            "success": true,
+            "attempts": 1,
+            "error": "None"
+          }
+        }
+      }
+    },
+    {
+      "phase": "PHASE_2_PROCESS_DEATH",
+      "timestamp": 1790888154.5709517,
+      "data": {
+        "simulated": true,
+        "new_engine_instance": true
+      }
+    },
+    {
+      "phase": "PHASE_3_RESTART_1_RESUME",
+      "timestamp": 1790888154.5709693,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_3_RESTART_1_RESUME",
+      "timestamp": 1790888154.610718,
+      "data": {
+        "resume_success": true,
+        "new_run_id": "run-db32c69ddfb0",
+        "mission_recreated": true,
+        "task_states_after_resume": {
+          "Task-001-Setup": "TaskState.COMPLETED",
+          "Task-002-DataPrep": "TaskState.COMPLETED",
+          "Task-003-Process": "TaskState.COMPLETED",
+          "Task-004-Validate": "TaskState.READY",
+          "Task-005-Finalize": "TaskState.BLOCKED"
+        },
+        "artifact_continuity": {
+          "e25_task001_setup.txt": {
+            "task_name": "Task-001-Setup",
+            "completed_before_cp": true,
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task002_dataprep.txt": {
+            "task_name": "Task-002-DataPrep",
+            "completed_before_cp": true,
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task004_validate.txt": {
+            "task_name": "Task-004-Validate",
+            "completed_before_cp": false,
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task005_finalize.txt": {
+            "task_name": "Task-005-Finalize",
+            "completed_before_cp": false,
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          }
+        },
+        "pre_cp_artifacts_continuous": true,
+        "events_before": 72,
+        "events_after": 74,
+        "events_restored": true
+      }
+    },
+    {
+      "phase": "PHASE_4_EXECUTE_REMAINING",
+      "timestamp": 1790888154.6107798,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_4_EXECUTE_REMAINING",
+      "timestamp": 1790888154.6391754,
+      "data": {
+        "execution_success": true,
+        "total_artifacts": 4,
+        "total_evidence": 0,
+        "failed_tasks": [],
+        "task_results": {
+          "task-d8b4d42d910e": {
+            "state": "UNKNOWN",
+            "success": true,
+            "resumed": false,
+            "attempts": 1,
+            "error": ""
+          },
+          "task-6a697c4894d9": {
+            "state": "UNKNOWN",
+            "success": true,
+            "resumed": false,
+            "attempts": 1,
+            "error": ""
+          },
+          "task-27004b218bf2": {
+            "state": "UNKNOWN",
+            "success": true,
+            "resumed": true,
+            "attempts": 0,
+            "error": ""
+          },
+          "task-a929f05d075d": {
+            "state": "UNKNOWN",
+            "success": true,
+            "resumed": true,
+            "attempts": 0,
+            "error": ""
+          },
+          "task-ccaff0c85189": {
+            "state": "UNKNOWN",
+            "success": true,
+            "resumed": true,
+            "attempts": 0,
+            "error": ""
+          }
+        }
+      }
+    },
+    {
+      "phase": "PHASE_5_DYNAMIC_REPLAN",
+      "timestamp": 1790888154.6392384,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_5_DYNAMIC_REPLAN",
+      "timestamp": 1790888154.6395805,
+      "data": {
+        "replan_success": true,
+        "total_tasks_after": 6,
+        "graph_version": 1
+      }
+    },
+    {
+      "phase": "PHASE_5_EXECUTE_RECOVERY",
+      "timestamp": 1790888154.6501234,
+      "data": {
+        "execution_success": false,
+        "task_results": {
+          "task-d3a33de37fcf": {
+            "state": "UNKNOWN",
+            "success": false,
+            "attempts": 0
+          },
+          "task-27004b218bf2": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-a929f05d075d": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-ccaff0c85189": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-d8b4d42d910e": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-6a697c4894d9": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          }
+        }
+      }
+    },
+    {
+      "phase": "PHASE_6_HUMAN_GATE",
+      "timestamp": 1790888154.6501615,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_6_HUMAN_GATE",
+      "timestamp": 1790888154.6504705,
+      "data": {
+        "gate_created": true,
+        "gate_id": "decision-14134399",
+        "decision_result": true,
+        "mission_state_after": "MissionState.EXECUTING"
+      }
+    },
+    {
+      "phase": "PHASE_7_SECOND_CHECKPOINT",
+      "timestamp": 1790888154.650497,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_7_SECOND_CHECKPOINT",
+      "timestamp": 1790888154.6507144,
+      "data": {
+        "checkpoints_total": 8,
+        "latest_checkpoint": "checkpoint-f0f23a9c8828.json"
+      }
+    },
+    {
+      "phase": "PHASE_8_SECOND_PROCESS_DEATH",
+      "timestamp": 1790888154.65073,
+      "data": {
+        "simulated": true
+      }
+    },
+    {
+      "phase": "PHASE_9_RESTART_2_RESUME",
+      "timestamp": 1790888154.6507378,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_9_RESTART_2_RESUME",
+      "timestamp": 1790888154.6887906,
+      "data": {
+        "second_resume_success": true,
+        "new_run_id": "run-34ba1c6dd742",
+        "mission_recreated_again": true,
+        "artifact_continuity_through_2_restarts": {
+          "e25_task001_setup.txt": {
+            "task_name": "Task-001-Setup",
+            "expected_source": "original",
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task002_dataprep.txt": {
+            "task_name": "Task-002-DataPrep",
+            "expected_source": "original",
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task004_validate.txt": {
+            "task_name": "Task-004-Validate",
+            "expected_source": "phase4",
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          },
+          "e25_task005_finalize.txt": {
+            "task_name": "Task-005-Finalize",
+            "expected_source": "phase4",
+            "artifact_id_match": true,
+            "sha256_match": true,
+            "size_match": true,
+            "mission_id_match": true
+          }
+        },
+        "all_artifacts_continuous": true,
+        "evidence_continuity_through_2_restarts": {},
+        "all_evidence_continuous": true,
+        "events_through_2_restarts": 103,
+        "events_monotonic": true
+      }
+    },
+    {
+      "phase": "PHASE_10_EXECUTE_RECOVERY",
+      "timestamp": 1790888154.6888554,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_10_EXECUTE_RECOVERY",
+      "timestamp": 1790888154.6889188,
+      "data": {
+        "execution_success": true,
+        "total_artifacts": 4,
+        "task_results": {
+          "task-27004b218bf2": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-a929f05d075d": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-ccaff0c85189": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-d8b4d42d910e": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          },
+          "task-6a697c4894d9": {
+            "state": "UNKNOWN",
+            "success": true,
+            "attempts": 0
+          }
+        }
+      }
+    },
+    {
+      "phase": "PHASE_11_FINAL_VERIFICATION",
+      "timestamp": 1790888154.68895,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_11_FINAL_VERIFICATION",
+      "timestamp": 1790888154.689589,
+      "data": {
+        "mission_id": "mission-333bb174dd8c",
+        "final_run_id": "run-34ba1c6dd742",
+        "events_persisted": 96,
+        "artifacts_in_store": 6,
+        "evidence_in_store": 0,
+        "all_tasks_completed": true,
+        "artifacts_identity_preserved": true,
+        "evidence_continuity": true
+      }
+    }
+  ],
+  "verdicts": {
+    "PHASE_1_INITIAL_EXECUTION": "VERIFIED",
+    "PHASE_3_RESTART_1_RESUME": "VERIFIED",
+    "PHASE_4_EXECUTE_REMAINING": "VERIFIED",
+    "PHASE_5_DYNAMIC_REPLAN": "VERIFIED",
+    "PHASE_6_HUMAN_GATE": "VERIFIED",
+    "PHASE_9_RESTART_2_RESUME": "VERIFIED",
+    "PHASE_10_EXECUTE_RECOVERY": "VERIFIED",
+    "PHASE_11_FINAL_VERIFICATION": "VERIFIED"
+  }
+}
