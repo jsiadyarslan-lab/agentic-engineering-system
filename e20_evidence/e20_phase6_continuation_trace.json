@@ -1,0 +1,5 @@
+{
+  "t8_state": "TaskState.COMPLETED",
+  "t9_state": "TaskState.FAILED",
+  "t10_state": "TaskState.BLOCKED"
+}
