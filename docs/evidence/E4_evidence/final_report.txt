@@ -1,0 +1,66 @@
+E4 IMPLEMENTATION REPORT
+
+A. BASELINE
+BRANCH: main
+HEAD: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+ORIGIN: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+LS_REMOTE: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+LOCAL == REMOTE: TRUE
+WORKTREE: DIRTY (pre-existing modifications only)
+
+B. ARCHITECTURE
+CURRENT_AGENT_MODEL: Two systems (AgentFactory 8 agents, EAS v2 5 roles) unified via AgentRole protocol
+NEW_AGENT_MODEL: AgentDefinition + AgentRegistry + AgentFactory with lifecycle state machine
+REGISTRY: In-memory with definition registration, capability-based selection, lifecycle management
+CAPABILITY_MODEL: AgentCapability with tools, permissions, max_tokens, timeout, domains
+TOOL_POLICY: Enforced via _check_tool_permission / _require_tool_permission
+LIFECYCLE: REGISTERED -> AVAILABLE -> ASSIGNED -> RUNNING -> COMPLETED/FAILED -> DISABLED
+
+C. VS-003
+MISSION: VS-003: Test agent lifecycle
+RUN: run-e4-001
+TASK: Write test artifact via agent
+AGENT: E4TestAgent (IMPLEMENTER type)
+SELECTION: Deterministic by capability (max_tokens)
+TOOL: write_artifact (allowed), read_artifact (allowed), run_command (denied)
+SANDBOX: WindowsExecutorAdapter (Job Objects)
+ARTIFACT: e4_test_output.txt with SHA256
+EVIDENCE: Stored in FileEvidenceStore
+VERIFICATION: Mechanical (file existence + content + hash)
+FINAL_STATE: COMPLETED
+
+D. NEGATIVE TESTS
+UNKNOWN_AGENT: REJECTED (ValueError: Unknown agent)
+DISABLED_AGENT: DENIED (RuntimeError: not available)
+TOOL_DENIED: ENFORCED (PermissionError: not permitted)
+DUPLICATE_AGENT: REJECTED (ValueError: already exists)
+INVALID_AGENT: REJECTED (ValueError: no implementation)
+
+E. FAILURE
+AGENT_FAILURE: PRESERVED (RuntimeError -> AgentResult.success=False, AGENT_FAILED event)
+RETRY: SUPPORTED (FAILED -> AVAILABLE transition allowed)
+HISTORY_PRESERVED: YES (failed attempt remains in event trace)
+
+F. TESTS
+TOTAL: 132
+PASSED: 129
+FAILED: 0
+SKIPPED: 3 (require LLM provider)
+
+G. EVIDENCE
+FILES: vs003_run.json, test_results.json, agent_contract.json, baseline.txt, baseline_post.txt, architecture_inventory.txt
+CODE <-> EVIDENCE: VERIFIED
+EVIDENCE <-> EXECUTION: VERIFIED
+
+H. E3 REGRESSION
+RESULT: PASS (129 tests pass, same as before E4)
+
+I. COMMIT
+SHA: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+PUSH: SUCCESS
+ORIGIN: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+LS_REMOTE: ede2a5ff60f3c60fd827f9e2f07924d5d1dde929
+LOCAL == REMOTE: TRUE
+
+J. FINAL VERDICT
+E4_IMPLEMENTED

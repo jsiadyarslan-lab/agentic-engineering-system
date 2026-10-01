@@ -1,0 +1,31 @@
+{
+  "test": "test_e7_cross_runtime_resume_no_rerun_completed",
+  "original_graph": {
+    "task_ids": ["task-db0532421dc0", "task-0b1d6cb22b38", "task-17a1f131c842"],
+    "dependencies": {
+      "task-db0532421dc0": [],
+      "task-0b1d6cb22b38": ["task-db0532421dc0"],
+      "task-17a1f131c842": ["task-0b1d6cb22b38"]
+    },
+    "states": {
+      "task-db0532421dc0": "COMPLETED",
+      "task-0b1d6cb22b38": "COMPLETED", 
+      "task-17a1f131c842": "READY"
+    }
+  },
+  "restored_graph": {
+    "task_ids": ["task-db0532421dc0", "task-0b1d6cb22b38", "task-17a1f131c842"],
+    "dependencies": {
+      "task-db0532421dc0": [],
+      "task-0b1d6cb22b38": ["task-db0532421dc0"],
+      "task-17a1f131c842": ["task-0b1d6cb22b38"]
+    },
+    "states": {
+      "task-db0532421dc0": "COMPLETED",
+      "task-0b1d6cb22b38": "COMPLETED",
+      "task-17a1f131c842": "READY"
+    }
+  },
+  "identical": true,
+  "status": "VERIFIED"
+}

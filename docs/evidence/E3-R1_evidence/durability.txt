@@ -1,0 +1,29 @@
+DURABILITY VERIFICATION
+=======================
+
+E3_COMMIT_SHA: 03a039d5c7f1351004e123fa5e543f8a64a03b53
+HEAD: 03a039d5c7f1351004e123fa5e543f8a64a03b53
+ORIGIN: 03a039d5c7f1351004e123fa5e543f8a64a03b53
+LS_REMOTE: 03a039d5c7f1351004e123fa5e543f8a64a03b53
+E3_COMMIT_SHA == HEAD: TRUE
+E3_COMMIT_SHA == ORIGIN: TRUE
+E3_COMMIT_SHA == LS_REMOTE: TRUE
+
+LOCAL == REMOTE: TRUE
+
+WORKTREE STATE:
+- Modified files (22): Pre-existing AgentFactory changes from before E3
+  (src/factory/agents/*.py, src/factory/context/memory.py, src/factory/events/bus.py,
+   src/factory/tools/__init__.py, src/llm/structured.py, test.txt)
+- Untracked files (43): Development/test debris, not part of E3
+  (test_*.py, core_*.txt, factory_*.txt, output.txt, src/factory/api_server.py,
+   stored_*.json, tools/web.py, E2_evidence/*.json, E3-R1_evidence/)
+- E3 scope files: ALL COMMITTED AND PUSHED
+
+CLASSIFICATION:
+  E3_SCOPE: 19 files committed
+  PRE_EXISTING: 22 modified (not E3)
+  UNRELATED: 43 untracked (not E3)
+  UNKNOWN: 0
+
+DURABILITY: VERIFIED

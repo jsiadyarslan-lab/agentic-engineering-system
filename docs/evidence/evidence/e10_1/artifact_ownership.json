@@ -1,0 +1,17 @@
+{
+  "mission_id": "mission-2004072d9125",
+  "run_id": "run-859f0a29f649",
+  "task_ids": [
+    "task-ed6a3d64dee9"
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "artifact-eb3a461a0e84",
+      "path": "ownership_test.txt",
+      "sha256": "e21a52927f6dfd7906b50648d05b33e2a0e1e829c2e1237bcfc4911fa89595ad",
+      "size_bytes": 14,
+      "created_at": "2026-09-30T08:38:32.774487"
+    }
+  ],
+  "evidence": []
+}

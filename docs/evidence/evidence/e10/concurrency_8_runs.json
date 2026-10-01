@@ -1,0 +1,162 @@
+[
+  {
+    "mission_num": 1,
+    "mission_id": "mission-9df7299b5bdb",
+    "run_id": "run-73e3015cbd5d",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 1,
+    "evidence_count": 0,
+    "verification_count": 1,
+    "event_count": 10,
+    "checkpoint_count": 1,
+    "duration_ms": 234,
+    "task_results": {
+      "task-ffaf512df6d7": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 2,
+    "mission_id": "mission-873d11f8ca38",
+    "run_id": "run-29b8ea5b2bb3",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 2,
+    "evidence_count": 0,
+    "verification_count": 2,
+    "event_count": 20,
+    "checkpoint_count": 2,
+    "duration_ms": 24,
+    "task_results": {
+      "task-be6fa8cc259f": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 3,
+    "mission_id": "mission-42d0ec803f2a",
+    "run_id": "run-efd19ad2c02e",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 3,
+    "evidence_count": 0,
+    "verification_count": 3,
+    "event_count": 30,
+    "checkpoint_count": 3,
+    "duration_ms": 11,
+    "task_results": {
+      "task-cce0e8f42926": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 4,
+    "mission_id": "mission-ab718b52576b",
+    "run_id": "run-3f3ee530e697",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 4,
+    "evidence_count": 0,
+    "verification_count": 4,
+    "event_count": 40,
+    "checkpoint_count": 4,
+    "duration_ms": 14,
+    "task_results": {
+      "task-343035b91861": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 5,
+    "mission_id": "mission-4e72da244fde",
+    "run_id": "run-f6eff8c6ed74",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 5,
+    "evidence_count": 0,
+    "verification_count": 5,
+    "event_count": 50,
+    "checkpoint_count": 5,
+    "duration_ms": 8,
+    "task_results": {
+      "task-c8a74aad7413": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 6,
+    "mission_id": "mission-ccaef76ac0c1",
+    "run_id": "run-dea45c18644c",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 6,
+    "evidence_count": 0,
+    "verification_count": 6,
+    "event_count": 60,
+    "checkpoint_count": 6,
+    "duration_ms": 10,
+    "task_results": {
+      "task-5efb6f5cf3d1": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 7,
+    "mission_id": "mission-9534dc82af60",
+    "run_id": "run-aa1a06bdc786",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 7,
+    "evidence_count": 0,
+    "verification_count": 7,
+    "event_count": 70,
+    "checkpoint_count": 7,
+    "duration_ms": 11,
+    "task_results": {
+      "task-2281fe072247": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 8,
+    "mission_id": "mission-98695ffba932",
+    "run_id": "run-376419bf5c38",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 8,
+    "evidence_count": 0,
+    "verification_count": 8,
+    "event_count": 80,
+    "checkpoint_count": 8,
+    "duration_ms": 10,
+    "task_results": {
+      "task-c669c23ff910": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  }
+]

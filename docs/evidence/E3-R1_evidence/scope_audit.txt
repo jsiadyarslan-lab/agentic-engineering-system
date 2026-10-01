@@ -1,0 +1,30 @@
+E3 SCOPE AUDIT
+================
+
+COMMIT: 03a039d5c7f1351004e123fa5e543f8a64a03b53
+PARENT: 2c82bbf9204bd8c72480337b6994954e7adc1956 (E2)
+
+FILES IN E3 COMMIT:
+- src/unified/execution.py (NEW, 941 lines)
+- src/unified/windows_adapter.py (NEW, 665 lines)
+- src/unified/sandbox.py (MODIFIED, +26 -26)
+- src/unified/domain_model.py (MODIFIED, +8 -8)
+- src/unified/state_machine.py (MODIFIED, +3 -3)
+- src/unified/verification_standard.py (MODIFIED, +14 -14)
+- src/unified/tool_contract.py (MODIFIED, +2 -2)
+- src/unified/execution_tracker.json (MODIFIED, +47 -47)
+- tests/unified/test_vs002.py (NEW, 602 lines)
+- E3_evidence/artifact_manifest.json (NEW)
+- E3_evidence/attempt_trace.json (NEW)
+- E3_evidence/checkpoint.json (NEW)
+- E3_evidence/event_trace.json (NEW, 310 lines)
+- E3_evidence/failure_injection.json (NEW)
+- E3_evidence/resume_result.json (NEW)
+- E3_evidence/state_trace.json (NEW)
+- E3_evidence/test_results.json (NEW)
+- E3_evidence/verification_mutation.json (NEW)
+- E3_evidence/vs002_run.json (NEW)
+
+SCOPE MATCH: YES - All files are E3 implementation, test, or evidence
+NO UNRELATED FILES IN COMMIT
+NO PRODUCTION MOCK IN UNIFIED MODULE

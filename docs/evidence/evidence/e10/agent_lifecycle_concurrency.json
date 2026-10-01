@@ -1,0 +1,20 @@
+{
+  "results": [
+    {
+      "mission_id": "mission-3b817fae9d5f",
+      "success": true
+    },
+    {
+      "mission_id": "mission-c50fbe7505be",
+      "success": true
+    },
+    {
+      "mission_id": "mission-c145b39fb0bb",
+      "success": true
+    },
+    {
+      "mission_id": "mission-7e221e329ee6",
+      "success": true
+    }
+  ]
+}

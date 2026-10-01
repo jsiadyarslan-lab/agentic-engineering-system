@@ -1,0 +1,42 @@
+[
+  {
+    "mission_num": 1,
+    "mission_id": "mission-b572591f6889",
+    "run_id": "run-4dab8203c4fe",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 1,
+    "evidence_count": 0,
+    "verification_count": 1,
+    "event_count": 10,
+    "checkpoint_count": 1,
+    "duration_ms": 53,
+    "task_results": {
+      "task-e934f16e3531": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  },
+  {
+    "mission_num": 2,
+    "mission_id": "mission-9b3e130e4e22",
+    "run_id": "run-e0e802b0c2cb",
+    "success": true,
+    "final_state": "COMPLETED",
+    "task_count": 1,
+    "artifact_count": 2,
+    "evidence_count": 0,
+    "verification_count": 2,
+    "event_count": 20,
+    "checkpoint_count": 2,
+    "duration_ms": 8,
+    "task_results": {
+      "task-c77ae0f755fb": {
+        "state": "COMPLETED",
+        "success": true
+      }
+    }
+  }
+]

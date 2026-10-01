@@ -1,0 +1,152 @@
+{
+  "final_disposition_matrix": {
+    "timestamp": "2026-10-01T16:46:25.681184+00:00",
+    "baseline_head": "996db140fa423ec9553688af7f7128f58f580bc5",
+    "disposition_decisions": [
+      {
+        "group": "E20_CANONICAL",
+        "files": ["src/unified/operational.py"],
+        "main": true,
+        "preserve": true,
+        "mechanism": "COMMIT",
+        "reason": "Sole canonical runtime entry point for E20; produces all E20 evidence; all 20 ACs pass"
+      },
+      {
+        "group": "E20_EVIDENCE",
+        "files": ["e20_evidence/ (11 files)"],
+        "main": true,
+        "preserve": true,
+        "mechanism": "COMMIT",
+        "reason": "Immutable proof of E20 completion; required for E21 baseline; 142KB mission trace + lineage + verification"
+      },
+      {
+        "group": "EVIDENCE_REBUILD",
+        "files": ["E2_evidence/vs001_run.json"],
+        "main": true,
+        "preserve": true,
+        "mechanism": "COMMIT",
+        "reason": "Updated E2 verification result; part of evidence chain"
+      },
+      {
+        "group": "E11_TESTS",
+        "files": ["test_e11_control_plane.py", "test_e11_durable_resume.py"],
+        "main": true,
+        "preserve": true,
+        "mechanism": "COMMIT",
+        "reason": "Control plane integration tests; valid test assets for regression suite"
+      },
+      {
+        "group": "LEGACY_REFACTOR",
+        "files": [
+          "src/factory/agents/base.py", "src/factory/agents/designer.py", "src/factory/agents/explorer.py",
+          "src/factory/agents/implementer.py", "src/factory/agents/planner.py", "src/factory/agents/reviewer.py",
+          "src/factory/agents/security.py", "src/factory/agents/thinker.py", "src/factory/agents/verifier.py",
+          "src/factory/context/memory.py", "src/factory/events/bus.py", "src/factory/tools/__init__.py",
+          "src/llm/structured.py"
+        ],
+        "main": false,
+        "preserve": true,
+        "mechanism": "STASH",
+        "reason": "Incomplete refactor of legacy E1/E2 factory architecture; adds tool_registry but not integrated with unified runtime"
+      },
+      {
+        "group": "LEGACY_FACTORY",
+        "files": ["src/factory/tools/web.py", "src/factory/api_server.py"],
+        "main": false,
+        "preserve": true,
+        "mechanism": "STASH",
+        "reason": "Legacy factory web tools and API server; not used by canonical E20 runtime"
+      },
+      {
+        "group": "DEVELOPMENT_TOOLS",
+        "files": [
+          "scripts/add_checkpoint_method.py", "scripts/add_replan_events.py", "scripts/add_replan_models.py",
+          "scripts/check_tests.py", "scripts/create_manifest.py", "scripts/e20_factory_integration_proof.py",
+          "scripts/insert_e13_methods.py", "scripts/remove_duplicate_execute.py"
+        ],
+        "main": false,
+        "preserve": true,
+        "mechanism": "STASH",
+        "reason": "One-time migration/helper scripts for E13/E20; not runtime code"
+      },
+      {
+        "group": "HISTORICAL_EVIDENCE",
+        "files": [
+          ".e19_baseline.txt", "E13_FINAL_RATIFICATION_REPORT.md", "E13_RATIFICATION_REPORT.md",
+          "E14_DISCOVERY_REPORT.md", "E2_evidence/fresh_verification.json", "E2_evidence/ratification_final.json",
+          "E3-R1_evidence/", "E4_evidence/", "E5_evidence/", "E6_evidence/", "E7.1_evidence/",
+          "e8_evidence/", "e18_evidence/", "evidence/"
+        ],
+        "main": false,
+        "preserve": true,
+        "mechanism": "ARCHIVE (preserve in repo but not in main branch working tree)",
+        "reason": "Historical audit trail from E2-E19; immutable ratification/discovery reports; should be in docs/evidence/ or release artifacts"
+      },
+      {
+        "group": "DEVELOPMENT_RESIDUE",
+        "files": ["runtime/operational_demo_1/", "runtime/operational_demo_2/", "runtime/operational_demo_3/"],
+        "main": false,
+        "preserve": false,
+        "mechanism": "DISCARD (after verification)",
+        "reason": "E9 demo sandbox outputs; reproducible from source; no authoritative value"
+      },
+      {
+        "group": "DEVELOPMENT_CONFIG",
+        "files": ["src/factory/stored_conversations.json", "src/factory/stored_projects.json", "src/factory/stored_settings.json"],
+        "main": false,
+        "preserve": false,
+        "mechanism": "DISCARD",
+        "reason": "Local API server state; not source code"
+      },
+      {
+        "group": "TEMPORARY_DEBUG",
+        "files": ["test.txt", "core_test_e2.txt", "core_test_output.txt", "factory_e2_final.txt", "factory_test_e2.txt", "output.txt"],
+        "main": false,
+        "preserve": false,
+        "mechanism": "DISCARD",
+        "reason": "Test output logs and debug artifacts; no authoritative value"
+      },
+      {
+        "group": "OBSOLETE_TEST",
+        "files": ["test_create_test_file.py", "test_full_real.py", "test_orch_long.py", "test_readfile.py"],
+        "main": false,
+        "preserve": false,
+        "mechanism": "ACCEPT_DELETION",
+        "reason": "E1/E2-era integration tests; already deleted from worktree; superseded by unified runtime tests"
+      },
+      {
+        "group": "OBSOLETE_ARTIFACT",
+        "files": ["src/runtime/agent_hub_v2.db"],
+        "main": false,
+        "preserve": false,
+        "mechanism": "ACCEPT_DELETION",
+        "reason": "Legacy runtime database; already deleted from worktree; not used by canonical runtime"
+      }
+    ],
+    "summary": {
+      "commit_to_main": 15,
+      "stash_preserve": 23,
+      "archive_preserve": 21,
+      "discard": 12,
+      "accept_deletion": 5
+    },
+    "main_commit_candidates": [
+      "src/unified/operational.py",
+      "e20_evidence/baseline.txt",
+      "e20_evidence/e19_accounting.md",
+      "e20_evidence/e20_lineage.json",
+      "e20_evidence/e20_mission_trace.json",
+      "e20_evidence/e20_phase1_initial_trace.json",
+      "e20_evidence/e20_phase2_checkpoint_trace.json",
+      "e20_evidence/e20_phase3_resume_trace.json",
+      "e20_evidence/e20_phase4_human_gate_trace.json",
+      "e20_evidence/e20_phase5_human_decision_trace.json",
+      "e20_evidence/e20_phase6_continuation_trace.json",
+      "e20_evidence/e20_phase7_final_trace.json",
+      "e20_evidence/e20_verification.json",
+      "E2_evidence/vs001_run.json",
+      "test_e11_control_plane.py",
+      "test_e11_durable_resume.py"
+    ]
+  }
+}

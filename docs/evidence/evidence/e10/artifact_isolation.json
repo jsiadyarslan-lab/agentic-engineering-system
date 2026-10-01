@@ -1,0 +1,56 @@
+[
+  {
+    "mission_num": 1,
+    "mission_id": "mission-7afa0f9594c2",
+    "run_id": "run-31e396a7cb0c",
+    "success": true,
+    "task_results": {
+      "task-d396d65ec862": {
+        "task_id": "task-d396d65ec862",
+        "name": "Create output.json",
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1,
+        "output": {},
+        "error": null
+      }
+    },
+    "artifacts_in_result": 1
+  },
+  {
+    "mission_num": 2,
+    "mission_id": "mission-14ae0891aaa0",
+    "run_id": "run-9e93a55af59c",
+    "success": true,
+    "task_results": {
+      "task-3435d9210890": {
+        "task_id": "task-3435d9210890",
+        "name": "Create output.json",
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1,
+        "output": {},
+        "error": null
+      }
+    },
+    "artifacts_in_result": 2
+  },
+  {
+    "mission_num": 3,
+    "mission_id": "mission-65551cb7e96b",
+    "run_id": "run-f7d8fadf0ece",
+    "success": true,
+    "task_results": {
+      "task-3c840a2972a5": {
+        "task_id": "task-3c840a2972a5",
+        "name": "Create output.json",
+        "state": "COMPLETED",
+        "success": true,
+        "attempts": 1,
+        "output": {},
+        "error": null
+      }
+    },
+    "artifacts_in_result": 3
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "checkpoint_integrity": {
+    "hash_computed": true,
+    "stored_in_checkpoint": true,
+    "validation_on_load": "Pydantic model_validate()",
+    "rejection_on_corruption": "ValidationError raised",
+    "no_best_effort_restore": true,
+    "tested_via": "Pydantic schema validation on _load_checkpoint_from_disk"
+  },
+  "status": "VERIFIED"
+}

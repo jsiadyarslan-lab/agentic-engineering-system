@@ -1,0 +1,37 @@
+{
+  "e17_declared_ac_count": 15,
+  "e17_enumerated_ac_count": 16,
+  "e17_ac_list": [
+    "AC-01: Real Mission created",
+    "AC-02: Mission decomposed into Task Graph",
+    "AC-03: Dependencies enforced",
+    "AC-04: Parallelism demonstrated",
+    "AC-05: Agent role assignment operational",
+    "AC-06: Orchestrator makes auditable decisions",
+    "AC-07: Real failure detected",
+    "AC-08: Recovery executed",
+    "AC-09: Replan changes executable graph",
+    "AC-10: Checkpoint survives process interruption",
+    "AC-11: Resume continues from durable state",
+    "AC-12: Completed work not incorrectly rerun",
+    "AC-13: Artifact/Evidence/Verification chain real",
+    "AC-14: Human gate real OR explicitly NOT_IMPLEMENTED",
+    "AC-15: No fake/mock in production path",
+    "AC-16: Entire Mission has reproducible evidence"
+  ],
+  "e17_role_count": 8,
+  "e17_declared_role_count": 7,
+  "e17_roles_listed": [
+    "EXPLORER",
+    "ANALYST",
+    "PLANNER",
+    "DESIGNER",
+    "IMPLEMENTER",
+    "VERIFIER",
+    "ARBITER",
+    "REVIEWER"
+  ],
+  "e17_human_gate_status": "NOT_IMPLEMENTED",
+  "reconciliation_timestamp": "2026-10-01T11:22:00Z",
+  "note": "E17 report stated 15 ACs but enumerated 16. AC-05 declared 7/8 roles but all 8 roles were actually used. Human Gate = NOT_IMPLEMENTED was correctly documented."
+}

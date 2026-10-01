@@ -1,0 +1,12 @@
+{
+  "global_store": {
+    "global_artifacts": 3,
+    "global_evidence": 0,
+    "lifecycle": "ACCUMULATES"
+  },
+  "concurrent_quota": {
+    "mission_quota": "ENFORCED",
+    "task_quota": "ENFORCED",
+    "concurrent_release": "WORKING"
+  }
+}

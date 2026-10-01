@@ -1,0 +1,19 @@
+output.txt | 10 bytes | 80eff1a750bb5400... | ?????
+runtime/operational_demo_1/ | DIR | 43 files
+runtime/operational_demo_2/ | DIR | 83 files
+runtime/operational_demo_3/ | DIR | 16 files
+src/factory/stored_conversations.json | 30909 bytes | 7c86fbab5fcfcd00... | [
+  {
+    "id": "test_conv_1",
+    "title": "?? ?? ??? ??????? ???? ??? ???",
+  
+src/factory/stored_projects.json | 129 bytes | ca2168520b77a7d2... | [
+  {
+    "id": "p1",
+    "name": "Agentic Factory",
+    "path": ".",
+    "lastO
+src/factory/stored_settings.json | 154 bytes | 79ab995c48624bb2... | {
+  "display_name": "user",
+  "api_key": null,
+  "model": "nvidia/nemotron-3-ult

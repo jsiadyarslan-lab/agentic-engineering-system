@@ -1,0 +1,45 @@
+E13 BASELINE VERIFICATION
+=========================
+
+Repository: C:/Users/jaber/Documents/GitHub/agentic-engineering-system
+Branch: main
+HEAD SHA: d93379dc7aa492ab432eb9b35cb955ee0f4abf99
+Remote SHA: d93379dc7aa492ab432eb9b35cb955ee0f4abf99
+LOCAL == REMOTE: TRUE
+Worktree Dirty: TRUE (E11/E12 implementation changes in working tree, not committed)
+Timestamp: 2026-09-30T15:00:00Z
+
+Regression Test: python -m pytest tests/unified/ tests/contracts/ --tb=short
+Result: 91 passed, 1015 warnings
+Status: PASSED
+
+E12 Changes in Working Tree (not committed):
+- src/unified/domain_model.py: Updated validate_task_transition() with ASSIGNED→FAILED, COMPLETED→READY
+- src/unified/execution.py: Mechanical state enforcement in _update_task_graph_state(), execute_task_graph()
+
+E13 Scope (from Executive Order):
+1. MAX PARALLEL EXECUTION - true concurrency with max_parallel enforcement
+2. DEPENDENCY-AWARE CONCURRENCY - scheduler runs independent tasks in parallel
+3. TASK-LEVEL TIMEOUT - timeout enforcement at task level (not just command/mission)
+4. DYNAMIC TASK CREATION - add tasks to graph during execution
+5. REPLAN HOOK - orchestrator decision → graph mutation → evented
+6. GRAPH VERSIONING - every mutation produces versioned graph
+7. INTEGRATION WITH E11 CONTROL - cancel/pause/resume/human_gate during parallel execution
+8. IDEMPOTENT SCHEDULING - no duplicate task execution
+9. END-TO-END PROOF - single run demonstrating all capabilities
+
+Existing Task Engine Infrastructure (from E12):
+- Task model with state machine (PENDING, READY, ASSIGNED, RUNNING, COMPLETED, FAILED, BLOCKED, CANCELLED)
+- Attempt model with retry tracking
+- execute_task_graph with sequential execution, retry, checkpoint/resume
+- Task state machine validation (validate_task_transition)
+- Dependency resolution (_check_and_unblock_dependents)
+- Checkpoint/resume with cross-process durability
+
+Gaps to Address in E13:
+1. max_parallel parameter exists but sequential only
+2. No task-level timeout (only command-level and mission-level)
+3. No dynamic task creation
+4. No replan hook
+5. No graph versioning
+6. Mission state serialization NOT_IMPLEMENTED

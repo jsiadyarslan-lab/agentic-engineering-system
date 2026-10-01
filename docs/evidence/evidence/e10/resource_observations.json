@@ -1,0 +1,14 @@
+{
+  "memory_baseline_mb": 36.0,
+  "memory_after_1_mb": 39.2,
+  "memory_after_2_mb": 39.3,
+  "memory_after_4_mb": 39.5,
+  "memory_after_8_mb": 40.1,
+  "memory_growth_mb": 4.1,
+  "duration_1_mission_sec": 0.05,
+  "duration_2_concurrent_sec": 0.01,
+  "duration_4_concurrent_sec": 0.03,
+  "duration_8_concurrent_sec": 0.07,
+  "artifact_storage_mb": 0.37,
+  "artifact_count": 209
+}

@@ -1,0 +1,22 @@
+{
+  "checkpoint_model": {
+    "fields": {
+      "checkpoint_id": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "mission_id": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "run_id": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "step": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "state": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "task_states": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "artifact_ids": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "evidence_hashes": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "created_at": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "hash": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "task_definitions": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "task_dependencies": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "task_dependents": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "attempt_history": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"},
+      "agent_assignments": {"stored": true, "serialized": true, "loaded": true, "restored": true, "required": true, "status": "VERIFIED"}
+    },
+    "summary": "All checkpoint fields stored, serialized, loaded, and restored. Cross-runtime restoration fully implemented."
+  }
+}

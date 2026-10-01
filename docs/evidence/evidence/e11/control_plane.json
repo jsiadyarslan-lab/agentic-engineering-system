@@ -1,0 +1,38 @@
+{
+  "cancellation": {
+    "mission_state": "CANCELLED",
+    "cancellation_success": true,
+    "duplicate_cancellation_safe": true,
+    "events_emitted": true
+  },
+  "pause_resume": {
+    "pause_flag_set": false,
+    "resume_works": true
+  },
+  "human_gate": {
+    "gate_created": true,
+    "gate_info_stored": true,
+    "gate_id_matches": true,
+    "continue_decision_works": true,
+    "cancel_decision_works": true
+  },
+  "state_transitions": {
+    "RECEIVED -> ANALYZING": "VALID",
+    "ANALYZING -> PLANNING": "VALID",
+    "EXECUTING -> PAUSED": "VALID",
+    "PAUSED -> EXECUTING": "VALID",
+    "EXECUTING -> CANCEL_REQUESTED": "VALID",
+    "CANCEL_REQUESTED -> CANCELLED": "VALID",
+    "EXECUTING -> HUMAN_REQUIRED": "VALID",
+    "HUMAN_REQUIRED -> EXECUTING": "VALID",
+    "HUMAN_REQUIRED -> CANCELLED": "VALID",
+    "CANCELLED -> EXECUTING": "CORRECTLY REJECTED: ValueError",
+    "VERIFIED -> EXECUTING": "CORRECTLY REJECTED: ValueError",
+    "PAUSED -> VERIFIED": "CORRECTLY REJECTED: ValueError"
+  },
+  "concurrent_control": {
+    "multiple_pause_safe": true,
+    "multiple_cancel_safe": true,
+    "multiple_resume_safe": true
+  }
+}

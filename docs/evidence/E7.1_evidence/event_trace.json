@@ -1,0 +1,26 @@
+{
+  "test": "test_e7_cross_runtime_resume_no_rerun_completed",
+  "runtime_a_events": [
+    "MISSION_STARTED",
+    "RUN_STARTED", 
+    "TASK_CREATED x3",
+    "AGENT_SELECTED x3",
+    "TASK_STARTED x3",
+    "TASK_COMPLETED x3",
+    "CHECKPOINT_CREATED"
+  ],
+  "runtime_b_events": [
+    "CHECKPOINT_LOADED",
+    "STATE_TRANSITION x3 (restored tasks)",
+    "TASK_STARTED x1 (only pending task)",
+    "TASK_COMPLETED x1 (only pending task)"
+  ],
+  "no_rerun_proof": {
+    "completed_tasks_no_task_started": true,
+    "completed_tasks_no_agent_selected": true,
+    "completed_tasks_marked_resumed": true,
+    "agent_executions_total": 4,
+    "expected_if_rerun": 6
+  },
+  "status": "VERIFIED"
+}

@@ -1,0 +1,123 @@
+{
+  "concurrent_mission_creation": [
+    {
+      "idx": 0,
+      "success": true,
+      "mission_id": "mission-abe15d941bad"
+    },
+    {
+      "idx": 1,
+      "success": true,
+      "mission_id": "mission-1896dd2c17ad"
+    },
+    {
+      "idx": 2,
+      "success": true,
+      "mission_id": "mission-959a1928c348"
+    },
+    {
+      "idx": 3,
+      "success": false,
+      "error": "Max concurrent missions (3) exceeded. Active: 3"
+    },
+    {
+      "idx": 4,
+      "success": false,
+      "error": "Max concurrent missions (3) exceeded. Active: 3"
+    }
+  ],
+  "concurrent_task_creation": [
+    {
+      "idx": 0,
+      "success": true,
+      "task_id": "task-8621bc1071e5"
+    },
+    {
+      "idx": 1,
+      "success": true,
+      "task_id": "task-93cdfd1909cb"
+    },
+    {
+      "idx": 2,
+      "success": true,
+      "task_id": "task-3df62852f9f8"
+    },
+    {
+      "idx": 3,
+      "success": true,
+      "task_id": "task-aac1bb0b31e2"
+    },
+    {
+      "idx": 4,
+      "success": true,
+      "task_id": "task-3b07ace7cb89"
+    },
+    {
+      "idx": 5,
+      "success": true,
+      "task_id": "task-b3bbabebffe0"
+    },
+    {
+      "idx": 6,
+      "success": true,
+      "task_id": "task-60d20650af7d"
+    },
+    {
+      "idx": 7,
+      "success": true,
+      "task_id": "task-f5f068a27e0c"
+    },
+    {
+      "idx": 8,
+      "success": true,
+      "task_id": "task-36382d7b1d53"
+    },
+    {
+      "idx": 9,
+      "success": true,
+      "task_id": "task-5cd1cab00652"
+    },
+    {
+      "idx": 10,
+      "success": false,
+      "error": "Max concurrent tasks (10) exceeded. Active: 10"
+    },
+    {
+      "idx": 11,
+      "success": false,
+      "error": "Max concurrent tasks (10) exceeded. Active: 10"
+    },
+    {
+      "idx": 12,
+      "success": false,
+      "error": "Max concurrent tasks (10) exceeded. Active: 10"
+    },
+    {
+      "idx": 13,
+      "success": false,
+      "error": "Max concurrent tasks (10) exceeded. Active: 10"
+    },
+    {
+      "idx": 14,
+      "success": false,
+      "error": "Max concurrent tasks (10) exceeded. Active: 10"
+    }
+  ],
+  "quota_enforcement_under_contention": [],
+  "release_under_contention": [
+    {
+      "idx": 10,
+      "success": true,
+      "mission_id": "mission-810338ecfaeb"
+    },
+    {
+      "idx": 11,
+      "success": true,
+      "mission_id": "mission-ecd37796c466"
+    }
+  ],
+  "final_counters": {
+    "missions": 3,
+    "tasks": 10
+  }
+}

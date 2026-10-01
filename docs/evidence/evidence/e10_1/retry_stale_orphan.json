@@ -1,0 +1,19 @@
+{
+  "retry": {
+    "retry_budget": "ENFORCED",
+    "attempts": 3
+  },
+  "stale_checkpoint": {
+    "stale_checkpoint": "REJECTED_CROSS_ENGINE",
+    "resumed_run": "run-72525c5c96be",
+    "resumed_task_state": "TaskState.COMPLETED"
+  },
+  "orphaned_run": {
+    "orphaned_run": "HANDLED",
+    "final_state": "COMPLETED"
+  },
+  "orphaned_artifact": {
+    "orphaned_artifact": "VALID",
+    "artifact_count": 1
+  }
+}

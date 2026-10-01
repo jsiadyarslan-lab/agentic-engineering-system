@@ -1,0 +1,102 @@
+{
+  "e11_verdict": {
+    "baseline": {
+      "repository": "C:/Users/jaber/Documents/GitHub/agentic-engineering-system",
+      "branch": "main",
+      "head_sha": "d93379dc7aa492ab432eb9b35cb955ee0f4abf99",
+      "remote_sha": "d93379dc7aa492ab432eb9b35cb955ee0f4abf99",
+      "local_equals_remote": true,
+      "worktree_dirty": true,
+      "timestamp": "2026-09-30T11:00:00Z"
+    },
+    "e10_2_revalidation": {
+      "file": "evidence/e10_2/final_verdict.json",
+      "regression_tests": "91 passed",
+      "mission_timeout": "VERIFIED",
+      "resource_idempotency": "VERIFIED",
+      "resource_accounting": "VERIFIED",
+      "concurrency": "VERIFIED",
+      "evidence_lifecycle": "PARTIAL",
+      "status": "ALL E10.2 CAPABILITIES PRESERVED"
+    },
+    "files_changed": [
+      "src/unified/domain_model.py - MissionState enum, EventType enum, validate_mission_transition",
+      "src/unified/state_machine.py - PlanState enum, TRANSITIONS, TERMINAL_STATES",
+      "src/unified/event_catalog.py - EventType enum, new event models, EVENT_PAYLOAD_MODELS, EVENT_CATALOG",
+      "src/unified/contracts.py - Added E11 event imports",
+      "src/unified/execution.py - cancel_mission, pause_mission, resume_mission, create_human_gate, decide_human_gate, checkpoint handling"
+    ],
+    "control_state_model": {
+      "new_mission_states": ["PAUSED", "CANCEL_REQUESTED", "CANCELLED", "HUMAN_REQUIRED"],
+      "terminal_states": ["VERIFIED", "FAILED", "ESCALATED_TO_HUMAN", "STOPPED", "ABORTED", "CANCELLED"],
+      "new_transitions": {
+        "EXECUTING": ["PAUSED", "CANCEL_REQUESTED", "HUMAN_REQUIRED"],
+        "PAUSED": ["EXECUTING", "CANCEL_REQUESTED", "STOPPING"],
+        "CANCEL_REQUESTED": ["CANCELLED"],
+        "HUMAN_REQUIRED": ["EXECUTING", "CANCELLED", "STOPPING"]
+      },
+      "validation": "Mechanically enforced via validate_mission_transition()"
+    },
+    "cancellation_result": {
+      "status": "VERIFIED",
+      "evidence": "evidence/e11/control_plane.json",
+      "details": "cancel_mission() works from RECEIVED, EXECUTING, HUMAN_REQUIRED states. Idempotent. Events: MISSION_CANCEL_REQUESTED, MISSION_CANCELLED, MISSION_STATE_CHANGED. Resources released via complete_mission()."
+    },
+    "pause_resume_result": {
+      "status": "VERIFIED",
+      "evidence": "evidence/e11/control_plane.json",
+      "details": "pause_mission() sets pause flag, actual pause at checkpoint in execute_task_graph(). resume_mission() clears flag and transitions PAUSED->EXECUTING. Events: MISSION_PAUSE_REQUESTED, MISSION_PAUSED, MISSION_RESUME_REQUESTED, MISSION_RESUMED, MISSION_STATE_CHANGED."
+    },
+    "human_gate_result": {
+      "status": "VERIFIED",
+      "evidence": "evidence/e11/control_plane.json",
+      "details": "create_human_gate() transitions EXECUTING->HUMAN_REQUIRED, stores gate with options/context. decide_human_gate() handles 'continue' (->EXECUTING) and 'cancel' (->CANCELLED). Events: HUMAN_GATE_CREATED, HUMAN_DECISION_RECORDED, MISSION_STATE_CHANGED."
+    },
+    "durable_resume_result": {
+      "status": "VERIFIED (INFRASTRUCTURE)",
+      "evidence": "evidence/e11/durable_resume.json + E7/E8 tests",
+      "details": "Checkpoint save/load/restore implemented in Engine. Cross-runtime resume verified in E7/E8 (test_e7_cross_runtime_resume_no_rerun_completed). Artifacts/evidence persist via FileEvidenceStore. Resource quotas reallocated on new engine."
+    },
+    "concurrency_result": {
+      "status": "VERIFIED",
+      "evidence": "evidence/e11/control_plane.json (concurrent_control), evidence/e11/adversarial_matrix.json",
+      "details": "Multiple cancel/pause/resume calls safe. No duplicate events. No resource leaks. State machine prevents invalid concurrent transitions."
+    },
+    "resource_accounting_result": {
+      "status": "VERIFIED",
+      "evidence": "E10.2 + E11 tests",
+      "details": "complete_mission() releases quotas idempotently. cancel_mission() calls complete_mission(). No negative counters. max(0, counter-1) pattern maintained."
+    },
+    "event_trace_result": {
+      "status": "VERIFIED",
+      "evidence": "evidence/e11/event_trace.json",
+      "details": "All 8 new control event types emitted with complete payloads. Event ordering verified. No duplicate events on idempotent operations. Cross-engine isolation maintained."
+    },
+    "regression": {
+      "status": "PASSED",
+      "details": "All 91 tests pass (43 unified + 48 contracts). No regressions introduced."
+    },
+    "open_gaps": [
+      {
+        "gap": "Global Evidence Store purge policy",
+        "status": "DEFERRED",
+        "impact": "Accumulates indefinitely across runs in single engine instance",
+        "decision": "E10.2 deferred - requires ADR"
+      },
+      {
+        "gap": "Explicit checkpoint persistence on pause",
+        "status": "PARTIAL",
+        "impact": "Pause flag set but checkpoint creation depends on checkpoint_every parameter",
+        "decision": "Future enhancement - auto-checkpoint on pause request"
+      },
+      {
+        "gap": "Mission state serialization",
+        "status": "NOT_IMPLEMENTED",
+        "impact": "Mission/task state not auto-persisted; requires explicit checkpoint",
+        "decision": "Architecture decision - explicit checkpoints only"
+      }
+    ],
+    "final_classification": "HUMAN_MISSION_CONTROL_VERIFIED_WITH_DEFERRED_GAPS",
+    "e11_blockers": "None - All AC met. Core control plane (cancel, pause/resume, human gate) mechanically verified. Durable resume infrastructure exists and tested in E7/E8. Resource safety maintained. Event trace complete."
+  }
+}

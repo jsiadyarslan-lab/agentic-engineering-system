@@ -1,0 +1,82 @@
+{
+  "deleted_files_disposition": {
+    "timestamp": "2026-10-01T19:30:00.000000+00:00",
+    "commit_sha": "62ba595564525fd2ac2df7e699588f87b8466509",
+    "parent_sha": "996db140fa423ec9553688af7f7128f58f580bc5",
+    "files": [
+      {
+        "path": "src/runtime/agent_hub_v2.db",
+        "previous_sha": "f268ec0eb2db8f434d582fea91e10280f28453e9",
+        "type": "SQLite database",
+        "size_estimate": "unknown (binary)",
+        "classification": "OBSOLETE_ARTIFACT",
+        "origin_phase": "LEGACY_RUNTIME",
+        "content_summary": "Legacy runtime agent hub database (SQLite format 3)",
+        "referenced_by": [],
+        "replacement": "unified.runtime agent registry",
+        "decision": "CONFIRMED_OBSOLETE",
+        "reason": "Legacy runtime database from pre-unified architecture; not used by canonical unified.operational; superseded by unified.agent_role registry"
+      },
+      {
+        "path": "test_create_test_file.py",
+        "previous_sha": "d99537e154c0847e4904e2acdba237d542c34349",
+        "type": "Python test file",
+        "size_estimate": "~3KB",
+        "classification": "OBSOLETE_TEST",
+        "origin_phase": "E1/E2",
+        "content_summary": "Unit tests for create_test_file module (create_file, read_file, file_exists, verify_file)",
+        "referenced_by": [],
+        "replacement": "unified runtime test suite",
+        "decision": "CONFIRMED_OBSOLETE",
+        "reason": "E1/E2-era test for legacy file utility module; not related to canonical unified runtime; no references in current codebase"
+      },
+      {
+        "path": "test_full_real.py",
+        "previous_sha": "b7c35af1441213e02014323f34ca2c152c475945",
+        "type": "Python test file",
+        "size_estimate": "~1KB",
+        "classification": "OBSOLETE_TEST",
+        "origin_phase": "E1/E2",
+        "content_summary": "Integration test using legacy AgentFactoryOrchestrator with test_mode=True; creates hello.py",
+        "referenced_by": [],
+        "replacement": "E20 proof script (scripts/e20_factory_integration_proof.py)",
+        "decision": "CONFIRMED_OBSOLETE",
+        "reason": "E2-era integration test using legacy factory orchestrator; superseded by E20 canonical runtime proof using unified.operational"
+      },
+      {
+        "path": "test_orch_long.py",
+        "previous_sha": "ba5506777f538fdfa73ecbd9ec14440d39f639ca",
+        "type": "Python test file",
+        "size_estimate": "~1KB",
+        "classification": "OBSOLETE_TEST",
+        "origin_phase": "E1/E2",
+        "content_summary": "Long-running integration test (180s timeout) using legacy AgentFactoryOrchestrator; creates greeting.txt",
+        "referenced_by": [],
+        "replacement": "E20 proof script with human gate demonstration",
+        "decision": "CONFIRMED_OBSOLETE",
+        "reason": "E2-era long-running test using legacy orchestrator; superseded by E20 canonical proof with proper human gate/verification"
+      },
+      {
+        "path": "test_readfile.py",
+        "previous_sha": "b2005fdc937fb39ae585519cda9bb2099ff03907",
+        "type": "Python test file",
+        "size_estimate": "~1KB",
+        "classification": "OBSOLETE_TEST",
+        "origin_phase": "E1/E2",
+        "content_summary": "Test for legacy factory ReadFileTool using src.factory.tools; tests pyproject.toml, missing file, path escape",
+        "referenced_by": [],
+        "replacement": "unified.sandbox file operations",
+        "decision": "CONFIRMED_OBSOLETE",
+        "reason": "E2-era tool test using legacy factory.tools.ReadFileTool; unified runtime uses unified.sandbox for file operations"
+      }
+    ],
+    "summary": {
+      "total": 5,
+      "confirmed_obsolete": 5,
+      "restore_required": 0,
+      "historical_only": 0,
+      "unresolved": 0
+    },
+    "verification_result": "PASSED - All 5 deleted files confirmed obsolete, no restoration required"
+  }
+}

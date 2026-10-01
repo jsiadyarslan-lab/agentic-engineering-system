@@ -1,0 +1,13 @@
+{
+  "timeouts": "SUPPORTED",
+  "retry_bounds": "SUPPORTED",
+  "duplicate_execution": "SUPPORTED",
+  "idempotency": "SUPPORTED",
+  "stale_checkpoints": "NOT_MEASURED",
+  "orphaned_runs": "NOT_MEASURED",
+  "orphaned_artifacts": "NOT_MEASURED",
+  "partial_persistence": "NOT_MEASURED",
+  "process_termination": "NOT_MEASURED",
+  "exception_propagation": "SUPPORTED",
+  "resource_cleanup": "NOT_MEASURED"
+}

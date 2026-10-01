@@ -1,0 +1,104 @@
+{
+  "canonical_closure": {
+    "timestamp": "2026-10-01T16:46:25.681184+00:00",
+    "baseline_head": "996db140fa423ec9553688af7f7128f58f580bc5",
+    "analysis_method": "Import tracing from E20 proof script entry point through unified.operational and transitive dependencies",
+    "e20_entry_point": {
+      "script": "scripts/e20_factory_integration_proof.py",
+      "imports": [
+        "from unified.operational import OperationalExecutionEngine, OperationalExecutionResult",
+        "from unified.execution import (ExecutionEngine, create_execution_engine, TaskState, MissionState, PlanState, AgentType, SandboxBackend, ...)",
+        "from unified.agent_role import (AgentRegistry, AgentFactory, AgentLifecycleState, ...)",
+        "from unified.event_catalog import EventType, FactoryEvent",
+        "from unified.domain_model import Attempt",
+        "from unified.contracts import new_checkpoint_id"
+      ],
+      "runtime_modules_used": [
+        "unified.operational",
+        "unified.execution",
+        "unified.agent_role",
+        "unified.event_catalog",
+        "unified.domain_model",
+        "unified.contracts"
+      ]
+    },
+    "src_unified_operational_py": {
+      "file": "src/unified/operational.py",
+      "size_bytes": 44322,
+      "sha256": "03f59f0cff449684fad1918d215495bcc592d34a4326b6f8d03cfbf451020ba9",
+      "exports": [
+        "OperationalExecutionEngine",
+        "OperationalExecutionResult",
+        "run_mission_operationally"
+      ],
+      "key_methods": [
+        "OperationalExecutionEngine.__init__",
+        "OperationalExecutionEngine.plan_mission",
+        "OperationalExecutionEngine.execute_mission",
+        "OperationalExecutionEngine.resume_from_checkpoint",
+        "run_mission_operationally"
+      ],
+      "internal_imports": [
+        "unified.contracts (ToolContract, ToolRegistry, ToolExecutionContext, ToolResult, ...)",
+        "unified.agent_role (AgentRegistry, AgentFactory, AgentLifecycleState, ...)",
+        "unified.sandbox (SandboxBackend, SandboxFactory, SandboxRequest, ResourceLimits, ...)",
+        "unified.windows_adapter (WindowsExecutorAdapter)",
+        "unified.execution (ExecutionEngine, TaskState, MissionState, PlanState, AgentType, ...)",
+        "unified.domain_model (SandboxRequest)",
+        "unified.contracts (new_sandbox_id, new_checkpoint_id)"
+      ],
+      "does_not_import": [
+        "factory.tools.web",
+        "factory.api_server",
+        "factory.agents.*",
+        "factory.context.memory",
+        "factory.events.bus",
+        "llm.structured"
+      ],
+      "test_coverage": "Directly tested by scripts/e20_factory_integration_proof.py (all 20 ACs pass)",
+      "e20_evidence_relation": "Produces e20_evidence/ directory via execute_mission(); e20_mission_trace.json (142KB) documents full execution",
+      "canonical_status": "VERIFIED - Single canonical runtime entry point for E20"
+    },
+    "e20_execution_path": {
+      "phase_1_initial": "Mission creation -> plan_mission() -> task graph construction -> execute_mission()",
+      "phase_2_checkpoint": "Checkpoint creation via _create_execution_checkpoint",
+      "phase_3_resume": "New engine creation -> resume_from_checkpoint() -> restore_task_graph_from_checkpoint",
+      "phase_4_human_gate": "create_human_gate() -> MissionState.HUMAN_REQUIRED",
+      "phase_5_human_decision": "decide_human_gate() -> MissionState.EXECUTING (continue)",
+      "phase_6_continuation": "Continued execution from human gate",
+      "phase_7_final": "Final verification -> OperationalExecutionResult"
+    },
+    "dependency_closure": {
+      "unified_modules": [
+        "unified.operational",
+        "unified.execution",
+        "unified.agent_role",
+        "unified.event_catalog",
+        "unified.domain_model",
+        "unified.contracts",
+        "unified.sandbox",
+        "unified.windows_adapter",
+        "unified.state_machine",
+        "unified.agent_contract",
+        "unified.tool_contract",
+        "unified.verification_standard",
+        "unified.vertical_slice",
+        "unified.self_hosting_benchmark"
+      ],
+      "external_dependencies": [
+        "asyncio", "hashlib", "json", "os", "shlex", "subprocess", "time", "uuid",
+        "dataclasses", "datetime", "pathlib", "typing", "platform", "pydantic"
+      ],
+      "factory_modules_used": []
+    },
+    "verification": {
+      "operational_is_canonical_entry_point": true,
+      "operational_uses_only_unified_runtime": true,
+      "operational_does_not_use_legacy_factory": true,
+      "e20_evidence_produced_by_operational": true,
+      "all_20_acs_pass": true,
+      "no_other_e20_canonical_files_identified": true
+    },
+    "conclusion": "src/unified/operational.py is the SOLE E20 canonical runtime file that should be committed to main. All other untracked src/ files (web.py, api_server.py) are legacy factory and should be stashed."
+  }
+}

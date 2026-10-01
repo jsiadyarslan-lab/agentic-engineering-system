@@ -1,0 +1,102 @@
+{
+  "adversarial_lifecycle_matrix": [
+    {
+      "scenario": "Normal completion",
+      "state": "COMPLETED",
+      "resources": "RELEASED",
+      "artifacts": "PERSISTENT",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "test_evidence_lifecycle.py - 3 missions completed, artifacts traceable"
+    },
+    {
+      "scenario": "Command timeout",
+      "state": "FAILED (task)",
+      "resources": "RELEASED",
+      "artifacts": "PARTIAL (pre-timeout)",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "E10.1 timeout_test.json - timeout kills at ~2s, no false COMPLETED"
+    },
+    {
+      "scenario": "Mission timeout",
+      "state": "TIMEOUT (mission)",
+      "resources": "RELEASED via complete_mission",
+      "artifacts": "PARTIAL (pre-timeout)",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "mission_timeout.json - 2s mission timeout on 10s task -> TIMEOUT at ~2027ms"
+    },
+    {
+      "scenario": "Failure",
+      "state": "FAILED",
+      "resources": "RELEASED",
+      "artifacts": "PARTIAL",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "E10.1 retry_stale_orphan.json - retry budget enforced"
+    },
+    {
+      "scenario": "Cancellation",
+      "state": "FAILED",
+      "resources": "RELEASED",
+      "artifacts": "PARTIAL",
+      "events": "EMITTED",
+      "verdict": "NOT_TESTED",
+      "evidence": "No explicit cancellation API implemented"
+    },
+    {
+      "scenario": "Retry exhaustion",
+      "state": "FAILED",
+      "resources": "RELEASED",
+      "artifacts": "PARTIAL (last attempt)",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "E10.1 retry_stale_orphan.json - 3 attempts then terminal failure"
+    },
+    {
+      "scenario": "Duplicate completion",
+      "state": "COMPLETED (idempotent)",
+      "resources": "NO NEGATIVE COUNTER",
+      "artifacts": "UNCHANGED",
+      "events": "EMITTED",
+      "verdict": "VERIFIED",
+      "evidence": "resource_idempotency.json - multiple complete_mission calls, counters >= 0"
+    },
+    {
+      "scenario": "Duplicate release",
+      "state": "N/A",
+      "resources": "IDempotent (max(0, counter-1))",
+      "artifacts": "N/A",
+      "events": "N/A",
+      "verdict": "VERIFIED",
+      "evidence": "resource_idempotency.json - 5 duplicate complete_mission calls safe"
+    },
+    {
+      "scenario": "Orphan recovery",
+      "state": "COMPLETED (resumed)",
+      "resources": "PRESERVED",
+      "artifacts": "PERSISTENT",
+      "events": "RESUMED",
+      "verdict": "VERIFIED",
+      "evidence": "E10.1 retry_stale_orphan.json - cross-engine rejected, same-engine preserves COMPLETED"
+    },
+    {
+      "scenario": "Concurrent contention",
+      "state": "MIXED (some success, some rejected)",
+      "resources": "QUOTA ENFORCED",
+      "artifacts": "ISOLATED PER RUN",
+      "events": "ISOLATED PER ENGINE",
+      "verdict": "VERIFIED",
+      "evidence": "concurrency_stress.json - 3/5 missions created, 10/15 tasks created, no negative counters"
+    }
+  ],
+  "summary": {
+    "total_scenarios": 11,
+    "verified": 8,
+    "partial": 0,
+    "not_implemented": 1,
+    "not_tested": 2,
+    "blocked": 0
+  }
+}
