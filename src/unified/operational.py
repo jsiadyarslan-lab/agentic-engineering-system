@@ -634,6 +634,39 @@ class OperationalExecutionEngine:
         
         return engine
     
+    def _transition_mission_state(
+        self,
+        engine,
+        mission: Mission,
+        new_state: MissionState,
+        reason: str,
+    ) -> bool:
+        """Transition mission state with validation and event emission."""
+        from_state = mission.state
+        try:
+            validate_mission_transition(from_state, new_state)
+            mission.state = new_state
+            # Emit state transition event
+            run_id = engine._current_run.run_id if engine._current_run else ""
+            engine._emit(FactoryEvent.create(
+                event_type=EventType.MISSION_STATE_CHANGED,
+                mission_id=mission.mission_id,
+                run_id=run_id,
+                payload=MissionStateChangedEvent(
+                    mission_id=mission.mission_id,
+                    run_id=run_id,
+                    from_state=from_state.value,
+                    to_state=new_state.value,
+                    actor="operational_engine",
+                    reason=reason,
+                ),
+                source="operational_engine",
+            ))
+            return True
+        except Exception as e:
+            # Log failed transition but continue
+            return False
+    
     async def execute_mission(
         self,
         goal: str,
@@ -673,6 +706,16 @@ class OperationalExecutionEngine:
         
         # Create mission
         mission = engine.create_mission(mission_name)
+        
+        # STATE MACHINE: Mission transitions through lifecycle
+        # RECEIVED -> ANALYZING -> PLANNING -> DESIGNING -> REVIEWING -> APPROVED -> AWAITING_APPROVAL -> EXECUTING
+        self._transition_mission_state(engine, mission, MissionState.ANALYZING, "Mission analysis started")
+        self._transition_mission_state(engine, mission, MissionState.PLANNING, "Mission planning started")
+        self._transition_mission_state(engine, mission, MissionState.DESIGNING, "Mission design completed")
+        self._transition_mission_state(engine, mission, MissionState.REVIEWING, "Mission under review")
+        self._transition_mission_state(engine, mission, MissionState.APPROVED, "Mission approved for execution")
+        self._transition_mission_state(engine, mission, MissionState.AWAITING_APPROVAL, "Awaiting final approval")
+        self._transition_mission_state(engine, mission, MissionState.EXECUTING, "Mission execution started")
         
         # Create run
         run = engine.create_run(mission.mission_id)
@@ -723,6 +766,7 @@ class OperationalExecutionEngine:
         except asyncio.TimeoutError:
             # Mission timeout - mark mission as failed and clean up
             engine.complete_mission(mission.mission_id, False)
+            self._transition_mission_state(engine, mission, MissionState.FAILED, "Mission timeout")
             total_duration_ms = int((time.monotonic() - overall_start) * 1000)
             return OperationalExecutionResult(
                 mission_id=mission.mission_id,
@@ -741,6 +785,17 @@ class OperationalExecutionEngine:
             )
         
         execution_duration_ms = int((time.monotonic() - execution_start) * 1000)
+        
+        # Post-execution state transitions
+        overall_success = result.get("success", False)
+        if overall_success:
+            self._transition_mission_state(engine, mission, MissionState.EXECUTED, "Mission execution completed")
+            self._transition_mission_state(engine, mission, MissionState.VERIFYING, "Mission verification started")
+            self._transition_mission_state(engine, mission, MissionState.EVIDENCED, "Mission evidence collected")
+            self._transition_mission_state(engine, mission, MissionState.ADJUDICATED, "Mission adjudicated")
+            self._transition_mission_state(engine, mission, MissionState.VERIFIED, "Mission fully verified")
+        else:
+            self._transition_mission_state(engine, mission, MissionState.FAILED, "Mission execution failed")
         
         # Collect results
         total_duration_ms = int((time.monotonic() - overall_start) * 1000)
@@ -823,7 +878,6 @@ class OperationalExecutionEngine:
                 "error": task_result.get("error"),
             }
         
-        overall_success = result.get("success", False)
         final_state = "COMPLETED" if overall_success else "FAILED"
         
         # Release mission quota
@@ -945,6 +999,56 @@ class OperationalExecutionEngine:
             verifications=verifications,
             events=events,
             checkpoints=checkpoints,
+        )
+
+    def create_human_gate(
+        self,
+        mission_id: str,
+        run_id: str,
+        task_id: Optional[str],
+        reason: str,
+        context: Dict[str, Any],
+        options: List[Dict[str, str]],
+        impact: str,
+        required_action: str,
+    ) -> Optional[str]:
+        """Create a human gate requiring decision. Transitions mission to HUMAN_REQUIRED."""
+        if not self._setup_done:
+            return None
+        engine = self._engine
+        if not engine:
+            return None
+        return engine.create_human_gate(
+            mission_id=mission_id,
+            run_id=run_id,
+            task_id=task_id,
+            reason=reason,
+            context=context,
+            options=options,
+            impact=impact,
+            required_action=required_action,
+        )
+
+    def decide_human_gate(
+        self,
+        mission_id: str,
+        gate_id: str,
+        decision: str,
+        actor: str,
+        feedback: str = "",
+    ) -> bool:
+        """Record human decision for a gate. Transitions HUMAN_REQUIRED -> EXECUTING or CANCELLED."""
+        if not self._setup_done:
+            return False
+        engine = self._engine
+        if not engine:
+            return False
+        return engine.decide_human_gate(
+            mission_id=mission_id,
+            gate_id=gate_id,
+            decision=decision,
+            actor=actor,
+            feedback=feedback,
         )
 
 

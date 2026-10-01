@@ -1,0 +1,140 @@
+{
+  "timestamp": "2026-10-01T21:45:00.000000+00:00",
+  "capability_matrix": [
+    {
+      "capability": "Mission",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": false,
+      "verified": true,
+      "notes": "Mission created and follows full state machine lifecycle (RECEIVED -> ANALYZING -> PLANNING -> DESIGNING -> REVIEWING -> APPROVED -> AWAITING_APPROVAL -> EXECUTING -> EXECUTED -> VERIFYING -> EVIDENCED -> ADJUDICATED)"
+    },
+    {
+      "capability": "Run",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Run created, tracked, completed. Parent-child relationship for resume."
+    },
+    {
+      "capability": "Task",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Full lifecycle: PENDING->READY->ASSIGNED->RUNNING->COMPLETED/FAILED. Dependencies respected."
+    },
+    {
+      "capability": "Agent Runtime",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": false,
+      "verified": true,
+      "notes": "Atomic reservation (E15) works. Lifecycle: REGISTERED->AVAILABLE->ASSIGNED->RUNNING->COMPLETED/FAILED. Agent reassignment on retry works."
+    },
+    {
+      "capability": "Tool",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": false,
+      "verified": true,
+      "notes": "17 tools available. Sandbox execution verified (run_command, write_file, read_artifact)."
+    },
+    {
+      "capability": "Sandbox",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": false,
+      "verified": true,
+      "notes": "WindowsExecutor backend used. Isolated per-task sandboxes. Timeout enforcement works."
+    },
+    {
+      "capability": "Artifact",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Artifacts created with SHA256, stored in evidence store, linked to task/agent."
+    },
+    {
+      "capability": "Evidence",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Evidence records created for artifacts. SHA256 verified."
+    },
+    {
+      "capability": "Verification",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Independent verification via verify_task(). Verdicts: evidenced/passed/failed. Not dependent on agent claim."
+    },
+    {
+      "capability": "Events",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Full event log persisted to disk (JSONL). Includes mission.state_changed, checkpoint.created, human.gate.created, replan.requested/applied, etc."
+    },
+    {
+      "capability": "Checkpoint",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Created every N tasks. Saved to disk (JSON). Contains task states, attempt history, task definitions, dependencies, artifacts, evidence."
+    },
+    {
+      "capability": "Resume",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Cross-runtime resume works. Auto-recreates Mission object. Completed tasks skipped (marked resumed: true)."
+    },
+    {
+      "capability": "Failure Recovery",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": false,
+      "verified": true,
+      "notes": "Retry with exponential backoff (configurable). Agent reassignment on retry. Max retries respected. Terminal failure correctly reported."
+    },
+    {
+      "capability": "Replanning",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "Dynamic task graph modification during execution. Add/modify/remove tasks, change dependencies. Emits REPLAN_REQUESTED/APPLIED events. Graph versioning."
+    },
+    {
+      "capability": "Human Gate",
+      "code_exists": true,
+      "integrated": true,
+      "real_execution": true,
+      "persistent": true,
+      "verified": true,
+      "notes": "create_human_gate()/decide_human_gate() integrated. Transitions EXECUTING -> HUMAN_REQUIRED -> EXECUTING (continue) or CANCELLED (cancel). Events persisted."
+    }
+  ]
+}

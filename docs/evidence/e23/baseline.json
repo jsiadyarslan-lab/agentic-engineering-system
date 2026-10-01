@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-10-01T21:30:00.000000+00:00",
+  "head": "aea599b8b311324306cfe3f10ca03a0c7c1fade0",
+  "remote_head": "aea599b8b311324306cfe3f10ca03a0c7c1fade0",
+  "branch": "main",
+  "local_equals_remote": true,
+  "worktree_status": [
+    "?? docs/evidence/e21_r3/FINAL_REPORT.md",
+    "?? docs/evidence/e21_r3/disposition_actions.json",
+    "?? docs/evidence/e22/"
+  ],
+  "worktrees": 1
+}

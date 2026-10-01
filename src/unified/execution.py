@@ -2299,6 +2299,48 @@ class ExecutionEngine:
         base = Path(self.artifacts_base_dir) / "checkpoints" / mission_id
         base.mkdir(parents=True, exist_ok=True)
         return base
+    def _get_event_log_dir(self, mission_id: str) -> Path:
+        """Get event log directory for mission."""
+        base = Path(self.artifacts_base_dir) / "events" / mission_id
+        base.mkdir(parents=True, exist_ok=True)
+        return base
+    def _save_events_to_disk(self, mission_id: str) -> Path:
+        """Save event history to filesystem for durability."""
+        event_dir = self._get_event_log_dir(mission_id)
+        event_file = event_dir / "event_log.jsonl"
+        # Serialize events to JSONL
+        events_data = []
+        for event in self.event_bus.history:
+            if event.mission_id == mission_id:
+                events_data.append({
+                    "event_type": event.event_type.value,
+                    "mission_id": event.mission_id,
+                    "run_id": event.run_id,
+                    "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+                    "payload": event.payload.model_dump(mode='json') if hasattr(event.payload, 'model_dump') else (event.payload if isinstance(event.payload, dict) else str(event.payload)),
+                    "source": event.source,
+                    "correlation_id": event.correlation_id,
+                    "causation_id": event.causation_id,
+                })
+        # Write atomically
+        temp_file = event_file.with_suffix('.tmp')
+        with open(temp_file, 'w') as f:
+            for e in events_data:
+                f.write(json.dumps(e) + '\n')
+        temp_file.replace(event_file)
+        return event_file
+    def _load_events_from_disk(self, mission_id: str) -> List[Dict[str, Any]]:
+        """Load event history from filesystem."""
+        event_file = self._get_event_log_dir(mission_id) / "event_log.jsonl"
+        if not event_file.exists():
+            return []
+        events = []
+        with open(event_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    events.append(json.loads(line))
+        return events
     def _save_checkpoint_to_disk(self, checkpoint: Checkpoint) -> Path:
         """Save checkpoint to filesystem for durability."""
         checkpoint_dir = self._get_checkpoint_dir(checkpoint.mission_id)
@@ -2379,6 +2421,8 @@ class ExecutionEngine:
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
         # Persist to disk for durability
         self._save_checkpoint_to_disk(checkpoint)
+        # Persist events to disk for durability
+        self._save_events_to_disk(mission_id)
         # Emit checkpoint created
         self._emit(FactoryEvent.create(
             event_type=EventType.CHECKPOINT_CREATED,
@@ -2413,6 +2457,18 @@ class ExecutionEngine:
         # Restore to memory if loaded from disk
         if checkpoint_id not in self.checkpoints:
             self.checkpoints[checkpoint_id] = checkpoint
+        # Restore events from disk for this mission
+        self._restore_events_from_disk(checkpoint.mission_id)
+        # CRITICAL: Auto-recreate Mission object if not in memory
+        # This enables true cross-runtime resume without manual intervention
+        if checkpoint.mission_id not in self.missions:
+            # Use engine's create_mission to properly register, then fix the ID
+            mission = self.create_mission(f"Resumed: {checkpoint.mission_id}")
+            # Remove the auto-generated mission and replace with checkpoint's mission_id
+            del self.missions[mission.mission_id]
+            mission.mission_id = checkpoint.mission_id
+            self.missions[checkpoint.mission_id] = mission
+            self._current_mission = mission
         # Create new run as child of original
         new_run = self.create_run(
             mission_id=checkpoint.mission_id,
@@ -2429,6 +2485,36 @@ class ExecutionEngine:
             source="execution_engine",
         ))
         return new_run
+    def _restore_events_from_disk(self, mission_id: str) -> None:
+        """Restore event history from disk for cross-runtime resume."""
+        events_data = self._load_events_from_disk(mission_id)
+        for event_data in events_data:
+            # Reconstruct FactoryEvent from saved data
+            # Note: We don't emit these again, just restore to event bus history
+            factory_event = FactoryEvent(
+                event_type=EventType(event_data["event_type"]),
+                mission_id=event_data["mission_id"],
+                run_id=event_data["run_id"],
+                timestamp=datetime.fromisoformat(event_data["timestamp"]) if event_data["timestamp"] else datetime.now(timezone.utc),
+                payload=event_data["payload"],
+                source=event_data["source"],
+                correlation_id=event_data["correlation_id"],
+                causation_id=event_data["causation_id"],
+            )
+            # Only add if not already in history (avoid duplicates)
+            # Use event_type + mission_id + run_id + correlation_id + timestamp as dedup key
+            dedup_key = (
+                factory_event.event_type,
+                factory_event.mission_id,
+                factory_event.run_id,
+                factory_event.correlation_id,
+                factory_event.timestamp,
+            )
+            if not any(
+                (e.event_type, e.mission_id, e.run_id, e.correlation_id, e.timestamp) == dedup_key
+                for e in self.event_bus.history
+            ):
+                self.event_bus.history.append(factory_event)
     def _reconstruct_task_graph_from_checkpoint(
         self,
         run_id: str,
@@ -3027,6 +3113,193 @@ class ExecutionEngine:
             return False
         except Exception:
             return False
+    # ============================================================
+    # REPLANNING
+    # ============================================================
+    def replan_task_graph(
+        self,
+        run_id: str,
+        new_tasks: Optional[List[Dict[str, Any]]] = None,
+        modified_tasks: Optional[Dict[str, Dict[str, Any]]] = None,
+        removed_task_ids: Optional[List[str]] = None,
+        new_dependencies: Optional[Dict[str, List[str]]] = None,
+        reason: str = "Dynamic replanning",
+        actor: str = "system",
+    ) -> bool:
+        """
+        Dynamically modify the task graph during execution.
+        
+        Args:
+            run_id: Run ID containing the task graph
+            new_tasks: List of new task configs to add
+            modified_tasks: Dict of task_id -> modifications (name, description, agent_type, etc.)
+            removed_task_ids: List of task IDs to remove (must be PENDING or BLOCKED)
+            new_dependencies: Dict of task_id -> new depends_on list
+            reason: Reason for replanning
+            actor: Who initiated the replan
+            
+        Returns:
+            True if replan was applied successfully
+        """
+        if run_id not in self.task_graph:
+            return False
+        graph = self.task_graph[run_id]
+        if not graph:
+            return False
+        # Find mission_id
+        mission_id = None
+        for node in graph.values():
+            if node.get("mission_id"):
+                mission_id = node["mission_id"]
+                break
+        if not mission_id:
+            return False
+        mission = self.missions.get(mission_id)
+        if not mission or mission.state != MissionState.EXECUTING:
+            return False  # Can only replan during execution
+        # Emit replan requested
+        graph_version = getattr(self, '_graph_version', 0)
+        self._graph_version = graph_version + 1
+        proposed_changes = []
+        if new_tasks:
+            proposed_changes.extend([{"action": "add", "task": t} for t in new_tasks])
+        if modified_tasks:
+            proposed_changes.extend([{"action": "modify", "task_id": k, "changes": v} for k, v in modified_tasks.items()])
+        if removed_task_ids:
+            proposed_changes.extend([{"action": "remove", "task_id": tid} for tid in removed_task_ids])
+        if new_dependencies:
+            proposed_changes.extend([{"action": "change_dependencies", "task_id": k, "depends_on": v} for k, v in new_dependencies.items()])
+        self._emit(FactoryEvent.create(
+            event_type=EventType.REPLAN_REQUESTED,
+            mission_id=mission_id,
+            run_id=run_id,
+            payload=ReplanRequestedEvent(
+                run_id=run_id,
+                failed_task_id="",  # Not a failure-based replan
+                reason=reason,
+                proposed_changes=proposed_changes,
+                actor=actor,
+                graph_version_before=graph_version,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ),
+            source="execution_engine",
+        ))
+        # Remove tasks (only if not started)
+        if removed_task_ids:
+            for task_id in removed_task_ids:
+                if task_id in graph:
+                    task_state = graph[task_id]["state"]
+                    if task_state in (TaskState.PENDING, TaskState.BLOCKED, TaskState.READY):
+                        # Remove from graph
+                        deps = graph[task_id].get("depends_on", set())
+                        for dep_id in deps:
+                            if dep_id in graph:
+                                graph[dep_id]["dependents"].discard(task_id)
+                        dependents = graph[task_id].get("dependents", set())
+                        for dep_id in dependents:
+                            if dep_id in graph:
+                                graph[dep_id]["depends_on"].discard(task_id)
+                        del graph[task_id]
+                        # Also remove from tasks dict
+                        self.tasks.pop(task_id, None)
+        # Modify existing tasks
+        if modified_tasks:
+            for task_id, modifications in modified_tasks.items():
+                if task_id in graph:
+                    task = self.tasks.get(task_id)
+                    if task:
+                        for key, value in modifications.items():
+                            if hasattr(task, key):
+                                setattr(task, key, value)
+                            if key in graph[task_id]:
+                                graph[task_id][key] = value
+        # Add new tasks
+        if new_tasks:
+            for task_config in new_tasks:
+                task = self.create_task(
+                    run_id=run_id,
+                    mission_id=mission_id,
+                    name=task_config["name"],
+                    description=task_config.get("description", ""),
+                    agent_type=task_config.get("agent_type", AgentType.IMPLEMENTER),
+                    depends_on=task_config.get("depends_on", []),
+                    acceptance_criteria=task_config.get("acceptance_criteria", []),
+                )
+                if task_config.get("context"):
+                    task.context = task_config["context"]
+                # Add to graph
+                graph[task.task_id] = {
+                    "depends_on": set(task.depends_on),
+                    "dependents": set(),
+                    "state": TaskState.READY if not task.depends_on else TaskState.BLOCKED,
+                    "mission_id": mission_id,
+                    "name": task.name,
+                    "description": task.description,
+                    "agent_type": task.agent_type,
+                    "acceptance_criteria": task.acceptance_criteria,
+                    "max_retries": task.max_retries if hasattr(task, 'max_retries') else 2,
+                    "retry_count": 0,
+                }
+                # Add reverse dependencies
+                for dep_id in task.depends_on:
+                    if dep_id in graph:
+                        graph[dep_id]["dependents"].add(task.task_id)
+        # Update dependencies
+        if new_dependencies:
+            for task_id, depends_on in new_dependencies.items():
+                if task_id in graph:
+                    old_deps = graph[task_id]["depends_on"]
+                    graph[task_id]["depends_on"] = set(depends_on)
+                    # Update reverse dependencies
+                    for dep_id in old_deps:
+                        if dep_id in graph:
+                            graph[dep_id]["dependents"].discard(task_id)
+                    for dep_id in depends_on:
+                        if dep_id in graph:
+                            graph[dep_id]["dependents"].add(task_id)
+                    # Update task object
+                    task = self.tasks.get(task_id)
+                    if task:
+                        task.depends_on = list(depends_on)
+        # Re-evaluate READY tasks
+        for task_id, node in graph.items():
+            if node["state"] == TaskState.BLOCKED:
+                depends_on = node["depends_on"]
+                if not depends_on or all(
+                    graph.get(dep_id, {}).get("state") == TaskState.COMPLETED
+                    for dep_id in depends_on
+                ):
+                    node["state"] = TaskState.READY
+                    task = self.tasks.get(task_id)
+                    if task:
+                        task.state = TaskState.READY
+        # Emit replan applied
+        graph_version = getattr(self, '_graph_version', 0)
+        applied_changes = []
+        if new_tasks:
+            applied_changes.extend([{"action": "add", "task": t} for t in new_tasks])
+        if modified_tasks:
+            applied_changes.extend([{"action": "modify", "task_id": k, "changes": v} for k, v in modified_tasks.items()])
+        if removed_task_ids:
+            applied_changes.extend([{"action": "remove", "task_id": tid} for tid in removed_task_ids])
+        if new_dependencies:
+            applied_changes.extend([{"action": "change_dependencies", "task_id": k, "depends_on": v} for k, v in new_dependencies.items()])
+        self._emit(FactoryEvent.create(
+            event_type=EventType.REPLAN_APPLIED,
+            mission_id=mission_id,
+            run_id=run_id,
+            payload=ReplanAppliedEvent(
+                run_id=run_id,
+                replan_id=new_checkpoint_id(),
+                applied_changes=applied_changes,
+                actor=actor,
+                graph_version_before=graph_version - 1 if graph_version > 0 else 0,
+                graph_version_after=graph_version,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+            ),
+            source="execution_engine",
+        ))
+        return True
 # ============================================================
 # FACTORY FUNCTION
 # ============================================================
