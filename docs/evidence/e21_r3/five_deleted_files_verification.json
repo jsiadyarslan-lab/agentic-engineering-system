@@ -1,0 +1,59 @@
+{
+  "five_deleted_files_verification": {
+    "timestamp": "2026-10-01T20:10:00.000000+00:00",
+    "baseline": "62ba595564525fd2ac2df7e699588f87b8466509",
+    "files": [
+      {
+        "path": "src/runtime/agent_hub_v2.db",
+        "status": "CONFIRMED_OBSOLETE",
+        "code_references": 0,
+        "evidence_references": 0,
+        "test_references": 0,
+        "import_references": 0,
+        "runtime_references": 0,
+        "notes": "Legacy SQLite DB; zero references in source code or tests"
+      },
+      {
+        "path": "test_create_test_file.py",
+        "status": "CONFIRMED_OBSOLETE",
+        "code_references": 0,
+        "evidence_references": 1,
+        "test_references": 0,
+        "import_references": 0,
+        "runtime_references": 0,
+        "notes": "Only reference is in e20_evidence/baseline.txt (historical record of deletion)"
+      },
+      {
+        "path": "test_full_real.py",
+        "status": "CONFIRMED_OBSOLETE",
+        "code_references": 0,
+        "evidence_references": 1,
+        "test_references": 1,
+        "import_references": 0,
+        "runtime_references": 0,
+        "notes": "References: e20_evidence/baseline.txt (historical), phase2/audit/functional/mission-run.txt (historical test log)"
+      },
+      {
+        "path": "test_orch_long.py",
+        "status": "CONFIRMED_OBSOLETE",
+        "code_references": 0,
+        "evidence_references": 1,
+        "test_references": 0,
+        "import_references": 0,
+        "runtime_references": 0,
+        "notes": "Only reference is in e20_evidence/baseline.txt (historical record of deletion)"
+      },
+      {
+        "path": "test_readfile.py",
+        "status": "CONFIRMED_OBSOLETE",
+        "code_references": 0,
+        "evidence_references": 1,
+        "test_references": 0,
+        "import_references": 0,
+        "runtime_references": 0,
+        "notes": "Only reference is in e20_evidence/baseline.txt (historical record of deletion)"
+      }
+    ],
+    "conclusion": "ALL 5 CONFIRMED_OBSOLETE - No active code, import, or runtime references. Historical evidence references only."
+  }
+}
