@@ -267,6 +267,17 @@ class Mission(BaseModel):
         self.updated_at = datetime.now(timezone.utc)
         if new_state.is_terminal:
             self.completed_at = datetime.now(timezone.utc)
+    def to_summary_dict(self) -> Dict[str, Any]:
+            """Return a summary dictionary of the mission."""
+            return {
+                "mission_id": self.mission_id,
+                "state": self.state.value if hasattr(self.state, 'value') else str(self.state),
+                "user_request": self.user_request,
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "task_count": 0,
+                "task_counts": {}
+            }
+
 
 
 class Run(BaseModel):
