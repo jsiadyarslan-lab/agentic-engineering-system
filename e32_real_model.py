@@ -417,8 +417,8 @@ async def e32_real_model_execution():
             
             # Parse model response to determine tool action
             try:
-                import json
-                action = json.loads(response.content)
+                import json as json_module
+                action = json_module.loads(response.content)
                 if action.get('action') == 'write_file':
                     # Execute the tool action
                     test_path = action.get('path', 'test_e32_output.txt')

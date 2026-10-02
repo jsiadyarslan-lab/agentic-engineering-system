@@ -12,9 +12,33 @@ from pydantic import BaseModel
 
 import pytest
 
-from src.llm import MockLLMProvider, StructuredLLM, LLMMessage, LLMResponse, ToolCall
+from src.llm import StructuredLLM, LLMMessage, LLMResponse, ToolCall
+from src.llm.provider import LLMProvider, LLMUsage
 from src.llm.structured import ToolCallRecord, ToolChatResult, _tool_to_schema, _format_tool_result, _compute_trace_hash
 from src.factory.tools import ReadFileTool, ListDirTool, BaseTool, ToolResult
+
+
+class MockLLMProvider(LLMProvider):
+    """Mock LLM provider for testing."""
+    
+    def __init__(self):
+        super().__init__(model="mock")
+        self._call_count = 0
+    
+    @property
+    def provider_type(self):
+        from src.llm.provider import LLMProviderType
+        return LLMProviderType.LOCAL
+    
+    async def chat(self, messages: list, tools: Optional[list] = None, **kwargs) -> LLMResponse:
+        self._call_count += 1
+        return LLMResponse(
+            content="I'll use the tool.",
+            model="mock",
+            usage=LLMUsage(prompt_tokens=100, completion_tokens=50, total_tokens=150),
+            finish_reason="stop",
+            tool_calls=[],
+        )
 
 
 class MockToolProvider(MockLLMProvider):
