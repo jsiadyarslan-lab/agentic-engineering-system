@@ -32,8 +32,8 @@ try:
         ProviderType,
         ProviderConfig,
         RetryPolicy,
-        create_client_from_env,
-        auto_detect_provider,
+        create_provider_from_env,
+        LLMMessage,
     )
     PROVIDERS_AVAILABLE = True
 except ImportError:
@@ -42,8 +42,8 @@ except ImportError:
     ProviderType = None
     ProviderConfig = None
     RetryPolicy = None
-    create_client_from_env = None
-    auto_detect_provider = None
+    create_provider_from_env = None
+    LLMMessage = None
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -222,15 +222,16 @@ class LLMGateway:
         if self.config.provider_type and self.config.api_key:
             # Explicit configuration
             provider_config = ProviderConfig(
-                provider=ProviderType(self.config.provider_type),
+                provider_type=ProviderType(self.config.provider_type),
                 model=self.config.model,
                 api_key=self.config.api_key,
                 base_url=self.config.base_url,
             )
-            self._client = UnifiedLLMClient(provider_config)
+            self._client = UnifiedLLMClient.from_config(provider_config)
         else:
             # Auto-detect from environment
-            self._client = create_client_from_env()
+            provider = create_provider_from_env()
+            self._client = UnifiedLLMClient(provider)
 
         self._initialized = True
 
@@ -245,14 +246,18 @@ class LLMGateway:
     def provider_type(self) -> Optional[str]:
         """Get current provider type."""
         if self._client:
-            return self._client.provider_config.provider.value
+            return self._client.provider.config.provider_type.value
         return None
+
+    def _to_llm_messages(self, messages: List[Dict[str, str]]) -> List[LLMMessage]:
+        """Convert dict messages to LLMMessage objects."""
+        return [LLMMessage(role=m["role"], content=m["content"]) for m in messages]
 
     @property
     def model(self) -> Optional[str]:
         """Get current model."""
         if self._client:
-            return self._client.provider_config.model
+            return self._client.provider.config.model
         return None
 
     def structured_chat(
@@ -291,9 +296,10 @@ class LLMGateway:
 
         try:
             # Call structured_chat on underlying client
+            llm_messages = self._to_llm_messages(messages)
             response = self.client.structured_chat(
-                messages=messages,
-                response_model=response_model,
+                llm_messages,
+                response_model,
                 temperature=temp,
                 max_tokens=max_tok,
             )
@@ -357,8 +363,9 @@ class LLMGateway:
         max_tok = max_tokens or self.config.default_max_tokens
 
         try:
+            llm_messages = self._to_llm_messages(messages)
             response = self.client.chat(
-                messages=messages,
+                messages=llm_messages,
                 temperature=temp,
                 max_tokens=max_tok,
             )
