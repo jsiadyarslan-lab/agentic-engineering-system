@@ -42,6 +42,12 @@ class EventType(str, Enum):
     TASK_COMPLETED = "task.completed"
     TASK_FAILED = "task.failed"
     TASK_RETRY = "task.retry"
+    # LLM interactions
+    LLM_REQUESTED = "llm.requested"
+    LLM_COMPLETED = "llm.completed"
+    # Action boundaries
+    ACTION_REQUESTED = "action.requested"
+    ACTION_VALIDATED = "action.validated"
     # Tool execution
     TOOL_STARTED = "tool.started"
     TOOL_COMPLETED = "tool.completed"
@@ -241,6 +247,51 @@ class ToolFailedEvent(BaseModel):
     attempt_id: str
     error: str
     sandbox_id: Optional[str] = None
+class LLMRequestedEvent(BaseModel):
+    """LLM request initiated by agent."""
+    mission_id: str
+    run_id: str
+    task_id: str
+    agent_id: str
+    agent_type: str
+    provider: str
+    model: str
+    request_type: str  # "chat" or "structured_chat"
+class LLMCompletedEvent(BaseModel):
+    """LLM request completed."""
+    mission_id: str
+    run_id: str
+    task_id: str
+    agent_id: str
+    agent_type: str
+    provider: str
+    model: str
+    request_type: str
+    success: bool
+    tokens_used: int = 0
+    cost_usd: float = 0.0
+    error: Optional[str] = None
+class ActionRequestedEvent(BaseModel):
+    """Action requested by agent (after LLM decision)."""
+    mission_id: str
+    run_id: str
+    task_id: str
+    agent_id: str
+    action_id: str
+    attempt_id: str
+    tool_name: str
+    tool_args: Dict[str, Any]
+class ActionValidatedEvent(BaseModel):
+    """Action validated (capability/permission check passed)."""
+    mission_id: str
+    run_id: str
+    task_id: str
+    agent_id: str
+    action_id: str
+    attempt_id: str
+    tool_name: str
+    valid: bool
+    reason: Optional[str] = None
 class ArtifactCreatedEvent(BaseModel):
     artifact_id: str
     name: str
@@ -267,6 +318,14 @@ class VerificationCompleteEvent(BaseModel):
     checks_performed: List[str]
     missing_evidence: List[str]
     confidence: float
+class VerificationStartedEvent(BaseModel):
+    """Verification process started by verifier agent."""
+    verification_id: str
+    mission_id: str
+    run_id: str
+    task_id: str
+    attempt_id: str
+    status: str = "started"
 class ArbiterCalledEvent(BaseModel):
     mission_id: str
     conflict_type: str
@@ -443,11 +502,16 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.TASK_COMPLETED: TaskCompletedEvent,
     EventType.TASK_FAILED: TaskFailedEvent,
     EventType.TASK_RETRY: TaskRetryEvent,
+    EventType.LLM_REQUESTED: LLMRequestedEvent,
+    EventType.LLM_COMPLETED: LLMCompletedEvent,
+    EventType.ACTION_REQUESTED: ActionRequestedEvent,
+    EventType.ACTION_VALIDATED: ActionValidatedEvent,
     EventType.TOOL_STARTED: ToolStartedEvent,
     EventType.TOOL_COMPLETED: ToolCompletedEvent,
     EventType.TOOL_FAILED: ToolFailedEvent,
     EventType.ARTIFACT_CREATED: ArtifactCreatedEvent,
     EventType.EVIDENCE_RECORDED: EvidenceRecordedEvent,
+    EventType.VERIFICATION_STARTED: VerificationStartedEvent,
     EventType.VERIFICATION_COMPLETE: VerificationCompleteEvent,
     EventType.ARBITER_CALLED: ArbiterCalledEvent,
     EventType.ARBITER_DECIDED: ArbiterDecidedEvent,
@@ -545,6 +609,12 @@ EVENT_CONSUMERS: Dict[EventType, List[str]] = {
     EventType.PLAN_APPROVED: ["Dashboard", "EventStore", "HumanGate"],
     EventType.SECTION_START: ["Dashboard", "EventStore", "SandboxManager"],
     EventType.SECTION_COMPLETE: ["Dashboard", "EventStore", "Verifier"],
+    # LLM
+    EventType.LLM_REQUESTED: ["Dashboard", "EventStore", "Metrics", "TokenBudget"],
+    EventType.LLM_COMPLETED: ["Dashboard", "EventStore", "Metrics", "TokenBudget"],
+    # Action
+    EventType.ACTION_REQUESTED: ["Dashboard", "EventStore", "SandboxManager", "Verifier"],
+    EventType.ACTION_VALIDATED: ["Dashboard", "EventStore", "SandboxManager", "Orchestrator"],
     # Agent
     EventType.AGENT_STARTED: ["Dashboard", "EventStore"],
     EventType.AGENT_COMPLETED: ["Dashboard", "EventStore", "Orchestrator"],
@@ -712,6 +782,38 @@ EVENT_CATALOG: Dict[EventType, EventCatalogEntry] = {
         emitted_by=["AgentRuntime.execute()"],
         consumed_by=["Dashboard", "EventStore", "Orchestrator"],
         triggers=["Next agent", "Verification"],
+    ),
+    EventType.LLM_REQUESTED: EventCatalogEntry(
+        event_type=EventType.LLM_REQUESTED,
+        description="Agent requested LLM structured output",
+        payload_model="LLMRequestedEvent",
+        emitted_by=["Agent.execute()"],
+        consumed_by=["Dashboard", "EventStore", "Metrics", "TokenBudget"],
+        triggers=["LLM API call"],
+    ),
+    EventType.LLM_COMPLETED: EventCatalogEntry(
+        event_type=EventType.LLM_COMPLETED,
+        description="LLM returned structured response",
+        payload_model="LLMCompletedEvent",
+        emitted_by=["Agent.execute()"],
+        consumed_by=["Dashboard", "EventStore", "Metrics", "TokenBudget"],
+        triggers=["Action decision", "Budget update"],
+    ),
+    EventType.ACTION_REQUESTED: EventCatalogEntry(
+        event_type=EventType.ACTION_REQUESTED,
+        description="Agent requested action execution after LLM decision",
+        payload_model="ActionRequestedEvent",
+        emitted_by=["Agent.execute()"],
+        consumed_by=["Dashboard", "EventStore", "SandboxManager", "Verifier"],
+        triggers=["Action validation", "Permission check"],
+    ),
+    EventType.ACTION_VALIDATED: EventCatalogEntry(
+        event_type=EventType.ACTION_VALIDATED,
+        description="Action validated (capability/permission check passed)",
+        payload_model="ActionValidatedEvent",
+        emitted_by=["Agent.execute()"],
+        consumed_by=["Dashboard", "EventStore", "SandboxManager", "Orchestrator"],
+        triggers=["Tool execution"],
     ),
     EventType.TASK_CREATED: EventCatalogEntry(
         event_type=EventType.TASK_CREATED,
@@ -962,6 +1064,10 @@ __all__ = [
     "ArtifactCreatedEvent",
     "EvidenceRecordedEvent",
     "VerificationCompleteEvent",
+    "LLMRequestedEvent",
+    "LLMCompletedEvent",
+    "ActionRequestedEvent",
+    "ActionValidatedEvent",
     "ArbiterCalledEvent",
     "ArbiterDecidedEvent",
     "HumanRequiredEvent",
@@ -977,6 +1083,7 @@ __all__ = [
     "TokenUsageEvent",
     "BudgetWarningEvent",
     "SystemErrorEvent",
+    "VerificationStartedEvent",
     "EVENT_PAYLOAD_MODELS",
     "FactoryEvent",
     "EventBusInterface",
