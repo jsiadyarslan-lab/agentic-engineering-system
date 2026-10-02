@@ -1,0 +1,9 @@
+{
+  "phase": "PHASE_4_REAL_MODEL_CALL",
+  "timestamp": 1790903258.0925093,
+  "data": {
+    "model_calls": [],
+    "total_calls": 0,
+    "successful_calls": 0
+  }
+}

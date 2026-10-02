@@ -17,7 +17,7 @@ from typing import List
 
 import pytest
 
-from unified.contracts import (
+from src.unified.contracts import (
     AgentType,
     AgentTask,
     AgentResult,
@@ -40,14 +40,14 @@ from unified.contracts import (
     new_agent_id,
     new_action_id,
 )
-from unified.execution import ExecutionEngine, ExecutionContext
-from unified.agent_role import (
+from src.unified.execution import ExecutionEngine, ExecutionContext
+from src.unified.agent_role import (
     AgentDefinition,
     AgentLifecycleState,
     agent_registry,
 )
-from unified.test_agent import E4TestAgent, register_e4_test_agent
-from unified.execution import FileEvidenceStore
+from src.unified.test_agent import E4TestAgent, register_e4_test_agent
+from src.unified.execution import FileEvidenceStore
 
 
 # ============================================================

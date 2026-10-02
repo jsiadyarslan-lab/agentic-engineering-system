@@ -23,6 +23,7 @@ from .providers import (
     UnifiedLLMClient,
     quick_chat,
 )
+from .orchestrator_adapter import OrchestratorLLMProvider, create_orchestrator_provider, create_orchestrator_provider_from_env
 
 __all__ = [
     "LLMProvider",
@@ -50,4 +51,8 @@ __all__ = [
     "create_provider_from_env",
     "UnifiedLLMClient",
     "quick_chat",
+    # Orchestrator Adapter
+    "OrchestratorLLMProvider",
+    "create_orchestrator_provider",
+    "create_orchestrator_provider_from_env",
 ]

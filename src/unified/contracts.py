@@ -13,7 +13,7 @@ from __future__ import annotations
 # ============================================================
 # DOMAIN MODEL (Core Entities)
 # ============================================================
-from unified.domain_model import (
+from src.unified.domain_model import (
     # IDs
     new_mission_id,
     new_run_id,
@@ -75,7 +75,7 @@ from unified.domain_model import (
 # ============================================================
 # STATE MACHINE
 # ============================================================
-from unified.state_machine import (
+from src.unified.state_machine import (
     PlanState,
     SubVerdict as StateSubVerdict,
     TERMINAL_STATES,
@@ -97,7 +97,7 @@ from unified.state_machine import (
 # ============================================================
 # EVENT CATALOG
 # ============================================================
-from unified.event_catalog import (
+from src.unified.event_catalog import (
     EventType,
     EventMetadata,
     MissionStartedEvent,
@@ -165,7 +165,7 @@ from unified.event_catalog import (
 # ============================================================
 # AGENT CONTRACTS
 # ============================================================
-from unified.agent_contract import (
+from src.unified.agent_contract import (
     AgentRole,
     AgentTask,
     AgentResult,
@@ -205,7 +205,7 @@ from unified.agent_contract import (
 # ============================================================
 # AGENT ROLE (E4: Agent Registry & Lifecycle)
 # ============================================================
-from unified.agent_role import (
+from src.unified.agent_role import (
     # Lifecycle
     AgentLifecycleState,
     AGENT_LIFECYCLE_TRANSITIONS,
@@ -234,7 +234,7 @@ from unified.agent_role import (
 # ============================================================
 # TOOL CONTRACTS
 # ============================================================
-from unified.tool_contract import (
+from src.unified.tool_contract import (
     ToolCategory,
     ToolRiskLevel,
     IsolationRequirement,
@@ -279,7 +279,7 @@ from unified.tool_contract import (
 # ============================================================
 # VERIFICATION STANDARD
 # ============================================================
-from unified.verification_standard import (
+from src.unified.verification_standard import (
     CriterionType,
     VerificationMethod,
     AcceptanceCriterion,
@@ -296,7 +296,7 @@ from unified.verification_standard import (
 # ============================================================
 # VERTICAL SLICE
 # ============================================================
-from unified.vertical_slice import (
+from src.unified.vertical_slice import (
     VERTICAL_SLICE_NAME,
     VERTICAL_SLICE_ID,
     VERTICAL_SLICE_DESCRIPTION,
@@ -312,7 +312,7 @@ from unified.vertical_slice import (
 # ============================================================
 # SELF-HOSTING BENCHMARK
 # ============================================================
-from unified.self_hosting_benchmark import (
+from src.unified.self_hosting_benchmark import (
     BENCHMARK_PHILOSOPHY,
     BenchmarkLevel,
     BenchmarkMission,

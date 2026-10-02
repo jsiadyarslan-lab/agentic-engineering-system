@@ -1,0 +1,16 @@
+{
+  "providers": [
+    {
+      "name": "nvidia",
+      "type": "nvidia"
+    },
+    {
+      "name": "openai_compatible",
+      "type": "openai_compatible"
+    },
+    {
+      "name": "zai_internal",
+      "type": "zai_internal"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from unified.contracts import (
+from src.unified.contracts import (
     AgentType,
     AgentTask,
     AgentResult,
@@ -212,7 +212,7 @@ class E4TestAgent:
 # Also export a simple function to register the test agent
 def register_e4_test_agent(registry) -> None:
     """Register E4TestAgent with the registry."""
-    from unified.contracts import AgentDefinition, AgentLifecycleState
+    from src.unified.contracts import AgentDefinition, AgentLifecycleState
     
     # Register definition
     definition = AgentDefinition(

@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
-from unified.contracts import (
+from src.unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
     new_agent_id, new_action_id, new_event_id, new_grant_id,
@@ -85,15 +85,15 @@ from unified.contracts import (
     ReplanAppliedEvent,
     TaskCreatedEvent,
 )
-from unified.agent_role import (
+from src.unified.agent_role import (
     AgentCapability, AgentContext, AgentRegistry, agent_registry,
     AgentFactory, BaseAgent, AgentSelectionError, AgentLifecycleState,
 )
-from unified.sandbox import (
+from src.unified.sandbox import (
     ExecutionSandbox, SandboxBackend, SandboxManager,
     SandboxError, SandboxUnavailableError, create_sandbox_manager,
 )
-from unified.windows_adapter import WindowsExecutorAdapter
+from src.unified.windows_adapter import WindowsExecutorAdapter
 class ResourceQuotaExceededError(Exception):
     """Raised when resource quota is exceeded."""
     pass

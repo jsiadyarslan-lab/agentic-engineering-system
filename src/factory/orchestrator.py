@@ -52,7 +52,7 @@ from src.factory.events import EventBus, FactoryEvent, EventType, WebSocketEvent
 from src.substrate.windows_executor import WindowsExecutor, ExecutionResult
 from src.llm.budget import TokenBudget, get_global_budget
 from src.llm import LLMProvider, StructuredLLM
-from src.factory.tools import ToolRegistry, ReadFileTool, WriteFileTool, EditFileTool, ListDirTool, GrepTool, FindFilesTool, RunCommandTool
+from src.factory.tools import ToolRegistry, ReadFileTool, WriteFileTool, EditFileTool, ListDirTool, GrepTool, FindFilesTool, RunCommandTool, ParsePythonTool
 
 
 class MissionState(str, Enum):
@@ -202,23 +202,18 @@ class AgentFactoryOrchestrator:
     def _initialize_tool_registry(self) -> ToolRegistry:
         """Initialize and populate the tool registry."""
         registry = ToolRegistry()
-        workspace_root = self.context_manager.workspace_root if self.context_manager else Path.cwd()
         
-        # Register filesystem tools
+        # Register filesystem tools (workspace_root passed at runtime via run())
         registry.register(ReadFileTool())
         registry.register(WriteFileTool())
         registry.register(EditFileTool())
         registry.register(ListDirTool())
         registry.register(GrepTool())
         registry.register(FindFilesTool())
+        registry.register(ParsePythonTool())
         
         # Register execution tools
         registry.register(RunCommandTool())
-        
-        # Register web tools
-        registry.register(WebSearchTool())
-        registry.register(FileBrowserTool())
-        registry.register(WebFetchTool())
         
         return registry
     
@@ -228,52 +223,44 @@ class AgentFactoryOrchestrator:
             ExplorerAgent(
                 llm=self.llm_provider.get_structured_llm("explorer"),
                 context=self.context_manager,
-                grants=None,  # Explorer needs read access
-                tool_registry=self.tool_registry,
+                grants=None,
             ),
             ThinkerAgent(
                 llm=self.llm_provider.get_structured_llm("thinker"),
                 context=self.context_manager,
                 grants=None,
-                tool_registry=self.tool_registry,
             ),
             PlannerAgent(
                 llm=self.llm_provider.get_structured_llm("planner"),
                 context=self.context_manager,
                 grants=None,
-                tool_registry=self.tool_registry,
             ),
             DesignerAgent(
                 llm=self.llm_provider.get_structured_llm("designer"),
                 context=self.context_manager,
                 grants=None,
-                tool_registry=self.tool_registry,
             ),
             ReviewerAgent(
                 llm=self.llm_provider.get_structured_llm("reviewer"),
                 context=self.context_manager,
                 grants=None,
-                tool_registry=self.tool_registry,
             ),
             ImplementerAgent(
                 llm=self.llm_provider.get_structured_llm("implementer"),
                 context=self.context_manager,
-                grants=None,  # Will get write grants after human approval
-                tool_registry=self.tool_registry,
+                grants=None,
             ),
             VerifierAgent(
                 llm=self.llm_provider.get_structured_llm("verifier"),
                 context=self.context_manager,
                 grants=None,
                 test_mode=self.test_mode,
-                tool_registry=self.tool_registry,
             ),
             SecurityAgent(
                 llm=self.llm_provider.get_structured_llm("security"),
                 context=self.context_manager,
                 grants=None,
                 test_mode=self.test_mode,
-                tool_registry=self.tool_registry,
             ),
         ]
         return agents
@@ -291,7 +278,7 @@ class AgentFactoryOrchestrator:
         self._shutdown_event.clear()
         
         # Initialize context for this mission
-        await self.context_manager.initialize_mission(mission.mission_id, user_request, workspace_root=self.context_manager.workspace_root)
+        await self.context_manager.initialize_mission(mission.mission_id, user_request)
         
         # Log mission start
         self._log_decision("mission_started", {
@@ -855,7 +842,7 @@ class AgentFactoryOrchestrator:
         """
         import os
         import uuid
-        from src.llm import StructuredLLM, TokenBudget, ProviderType, ProviderConfig, UnifiedLLMClient
+        from src.llm import OrchestratorLLMProvider, TokenBudget
         from src.llm.budget import TokenLimit, BudgetScope
         from src.factory.human.chat import ChatInterface
         from src.factory.human.gate import HumanApprovalGate
@@ -863,42 +850,12 @@ class AgentFactoryOrchestrator:
         from src.factory.context.decisions import DecisionLog
         from src.substrate.windows_executor import WindowsExecutor
 
-        # Determine provider and API key
-        provider_type_enum = ProviderType(provider_type.lower())
-        
-        # Get API key from env if not provided
-        if provider_type_enum == ProviderType.NVIDIA:
-            key = api_key or os.getenv("NVIDIA_API_KEY")
-        elif provider_type_enum == ProviderType.OPENAI:
-            key = api_key or os.getenv("OPENAI_API_KEY")
-        elif provider_type_enum == ProviderType.ANTHROPIC:
-            key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        elif provider_type_enum == ProviderType.GOOGLE:
-            key = api_key or os.getenv("GOOGLE_API_KEY")
-        elif provider_type_enum == ProviderType.CUSTOM:
-            key = api_key or os.getenv("CUSTOM_API_KEY")
-        else:
-            key = api_key  # Ollama doesn't need API key
-        
-        # Create real provider
-        if provider_type_enum == ProviderType.OLLAMA:
-            # Ollama doesn't need API key
-            provider = UnifiedLLMClient.from_config(ProviderConfig(
-                provider_type=provider_type_enum,
-                model=model,
-            ))
-        else:
-            if not key:
-                raise ValueError(
-                    f"API key required for {provider_type}. "
-                    f"Set {provider_type.upper()}_API_KEY env var or pass api_key parameter."
-                )
-            provider = UnifiedLLMClient.from_config(ProviderConfig(
-                provider_type=provider_type_enum,
-                api_key=key,
-                model=model,
-            ))
-        structured_llm = StructuredLLM(provider)
+        # Create orchestrator-compatible provider (has get_structured_llm)
+        llm_provider = OrchestratorLLMProvider.from_config(
+            provider_type=provider_type,
+            model=model,
+            api_key=api_key,
+        )
 
         # Budget
         limits = budget_limits or {
@@ -911,7 +868,7 @@ class AgentFactoryOrchestrator:
 
         # Context
         mid = "prod-" + str(uuid.uuid4())[:8]
-        context_manager = await SharedContextManager.initialize_mission(mid, "production mission", workspace_root=Path.cwd())
+        context_manager = await SharedContextManager.initialize_mission(mid, "production mission")
         decision_log = DecisionLog(mission_id=mid)
 
         # Human + Chat
@@ -923,7 +880,7 @@ class AgentFactoryOrchestrator:
         )
 
         return cls(
-            llm_provider=structured_llm,
+            llm_provider=llm_provider,
             context_manager=context_manager,
             windows_executor=WindowsExecutor(),
             human_gate=human_gate,

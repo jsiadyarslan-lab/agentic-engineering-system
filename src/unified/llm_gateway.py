@@ -22,12 +22,12 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Type, TypeVar
 from pydantic import BaseModel, Field
 
-from unified.contracts import FactoryEvent, EventType, TokenUsageEvent
-from unified.domain_model import MissionState
+from src.unified.contracts import FactoryEvent, EventType, TokenUsageEvent
+from src.unified.domain_model import MissionState
 
 # Import the actual provider implementation
 try:
-    from llm.providers import (
+    from src.llm.providers import (
         UnifiedLLMClient,
         ProviderType,
         ProviderConfig,

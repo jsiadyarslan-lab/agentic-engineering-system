@@ -4,7 +4,7 @@
 وحسمًا للتصادم مع وحدة secrets القياسية في بايثون.
 """
 
-from secrets_store.store import (  # noqa: F401
+from src.secrets_store.store import (  # noqa: F401
     REDACTED,
     SecretRedactingFilter,
     delete_key,

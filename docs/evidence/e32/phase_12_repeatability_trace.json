@@ -1,0 +1,10 @@
+{
+  "phase": "PHASE_12_REPEATABILITY",
+  "timestamp": 1790903258.0927718,
+  "data": {
+    "repeatability": {
+      "tested": false,
+      "reason": "No successful first call or no API key"
+    }
+  }
+}
