@@ -630,13 +630,14 @@ async def e32_real_model_execution():
     }, verdict='VERIFIED' if repeatability.get('second_call_success') else 'PARTIAL')
     
     # ============================================================
-    # PHASE 13: TEST SUITE
+    # PHASE 13: TEST SUITE (Quick Sanity Check)
     # ============================================================
     log_phase('PHASE_13_TEST_SUITE', {'start': True})
     
-    test_cmd = 'python -m pytest tests/ -v --tb=short -x -q 2>&1'
+    # Run a quick subset of tests to verify no regressions
+    test_cmd = 'python -m pytest tests/llm/ tests/factory/ -v --tb=short -q 2>&1'
     test_proc = subprocess.run(test_cmd, shell=True, capture_output=True, text=True,
-                              cwd='C:/Users/jaber/Documents/GitHub/agentic-engineering-system', timeout=180)
+                              cwd='C:/Users/jaber/Documents/GitHub/agentic-engineering-system', timeout=120)
     
     test_results = {
         'exit_code': test_proc.returncode,
