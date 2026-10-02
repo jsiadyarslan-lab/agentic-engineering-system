@@ -1,0 +1,90 @@
+{
+  "timestamp": "2026-10-02T23:45:00.000000+00:00",
+  "test_name": "E26_MULTI_RUN_ISOLATION",
+  "phases": [
+    {
+      "phase": "PHASE_1_CREATE_MISSIONS",
+      "timestamp": 1790890730.7456183,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_1_CREATE_MISSIONS",
+      "timestamp": 1790890730.8895214,
+      "data": {
+        "missions": {
+          "Mission-A": {
+            "mission_id": "mission-c52b8cc21d0c",
+            "run_id": "run-d04aae340fc8",
+            "success": true,
+            "artifacts": 2,
+            "events": 36,
+            "checkpoints_returned": 2
+          },
+          "Mission-B": {
+            "mission_id": "mission-8c53518cf97b",
+            "run_id": "run-2e21857fa0b9",
+            "success": true,
+            "artifacts": 4,
+            "events": 72,
+            "checkpoints_returned": 4
+          },
+          "Mission-C": {
+            "mission_id": "mission-8afd733eca96",
+            "run_id": "run-df441f45ceb6",
+            "success": true,
+            "artifacts": 6,
+            "events": 108,
+            "checkpoints_returned": 6
+          }
+        },
+        "all_missions_unique": true,
+        "all_runs_unique": true,
+        "all_success": true,
+        "mission_a_artifacts": 2,
+        "mission_b_artifacts": 2,
+        "mission_c_artifacts": 2,
+        "event_isolation": true
+      }
+    },
+    {
+      "phase": "PHASE_2_CHECKPOINT_ISOLATION",
+      "timestamp": 1790890730.8895802,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "PHASE_2_CHECKPOINT_ISOLATION",
+      "timestamp": 1790890730.8895981,
+      "data": {
+        "checkpoint_isolation": true,
+        "checkpoint_details": {
+          "Mission-A": {
+            "expected_own_checkpoints": 2,
+            "actual_in_global_store": 2,
+            "match": true
+          },
+          "Mission-B": {
+            "expected_own_checkpoints": 2,
+            "actual_in_global_store": 2,
+            "match": true
+          },
+          "Mission-C": {
+            "expected_own_checkpoints": 2,
+            "actual_in_global_store": 2,
+            "match": true
+          }
+        },
+        "total_checkpoints_in_store": 6,
+        "expected_total_checkpoints": 6,
+        "total_match": true
+      }
+    }
+  ],
+  "verdicts": {
+    "PHASE_1_CREATE_MISSIONS": "VERIFIED",
+    "PHASE_2_CHECKPOINT_ISOLATION": "VERIFIED"
+  }
+}

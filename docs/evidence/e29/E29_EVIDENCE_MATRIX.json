@@ -1,0 +1,86 @@
+[
+  {
+    "claim": "Git baseline clean",
+    "artifact": "git status",
+    "evidence_ref": "E28_BASELINE.json",
+    "verifier": "baseline_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "E28 artifacts exist",
+    "artifact": "E28 evidence files",
+    "evidence_ref": "E28 evidence dir",
+    "verifier": "file_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "4 missions defined",
+    "artifact": "Mission matrix",
+    "evidence_ref": "E29_MISSION_MATRIX.json",
+    "verifier": "design_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "4 missions executed concurrently",
+    "artifact": "Concurrent execution trace",
+    "evidence_ref": "E29_CONCURRENT_EXECUTION.json",
+    "verifier": "execution_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Resource governance tested",
+    "artifact": "Quota test results",
+    "evidence_ref": "E29_RESOURCE_GOVERNANCE.json",
+    "verifier": "resource_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Mission isolation verified",
+    "artifact": "Isolation test results",
+    "evidence_ref": "E29_ISOLATION.json",
+    "verifier": "isolation_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Failure isolation verified",
+    "artifact": "Mission B failure contained",
+    "evidence_ref": "E29_FAILURE_ISOLATION.json",
+    "verifier": "failure_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Dynamic replan under concurrency",
+    "artifact": "Replan trace",
+    "evidence_ref": "E29_REPLAN.json",
+    "verifier": "replan_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Checkpoint/resume isolation",
+    "artifact": "Resume trace",
+    "evidence_ref": "E29_CHECKPOINT_RESUME.json",
+    "verifier": "resume_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Accounting consistent",
+    "artifact": "Accounting records",
+    "evidence_ref": "E29_ACCOUNTING.json",
+    "verifier": "accounting_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Truth audit passed",
+    "artifact": "Audit results",
+    "evidence_ref": "E29_TRUTH_AUDIT.json",
+    "verifier": "audit_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Recovery timing measured",
+    "artifact": "Timing data",
+    "evidence_ref": "E29_RECOVERY_TIMING.json",
+    "verifier": "timing_check",
+    "verdict": "VERIFIED"
+  }
+]

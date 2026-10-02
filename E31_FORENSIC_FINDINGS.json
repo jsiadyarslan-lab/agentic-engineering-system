@@ -1,0 +1,180 @@
+{
+  "audit_id": "E31-FOR-01",
+  "audit_type": "MODEL_PROVENANCE",
+  "target": "E31_REAL_WORKSPACE_MUTATION",
+  "timestamp": "2026-10-03T00:00:00Z",
+  "verdict": "DETERMINISTIC_TEST_HARNESS",
+  "e31_identity": {
+    "sha": "c513f8aa1b5aec05bafaa1fa9580699a37a80dde",
+    "branch": "main",
+    "remote_sha": "5a03b260ddfa6297f345bf5f5653809992eb3983",
+    "entrypoint": "e31_real_workspace.py",
+    "command": "python e31_real_workspace.py",
+    "execution_timestamp": "2026-10-02T00:05:33.995649Z",
+    "duration_seconds": 12
+  },
+  "execution_graph": {
+    "entrypoint": "e31_real_workspace.py",
+    "engine": "OperationalExecutionEngine",
+    "planner": "OperationalMissionPlanner (deterministic)",
+    "agents": [
+      "OperationalImplementerAgent (tool executor)",
+      "OperationalVerifierAgent (mechanical verifier)"
+    ],
+    "llm_gateway": "NEVER_INITIALIZED",
+    "provider": "NONE",
+    "network_calls": 0,
+    "tool_calls": 4
+  },
+  "model_provider": {
+    "provider_name": "UNKNOWN",
+    "model_name": "UNKNOWN",
+    "adapter": "NONE",
+    "gateway": "NONE",
+    "configuration_source": "NONE",
+    "credential_source": "NONE",
+    "endpoint": "NONE",
+    "request_method": "NONE",
+    "response_parser": "NONE"
+  },
+  "runtime_call_evidence": {
+    "http_requests": 0,
+    "sdk_invocations": 0,
+    "provider_client_calls": 0,
+    "network_connections": 0,
+    "response_receipts": 0,
+    "request_ids": [],
+    "response_metadata": [],
+    "usage_token_metadata": [],
+    "provider_response_ids": [],
+    "tool_calls": [
+      {
+        "task_id": "E31-Implement-Method",
+        "tool": "write_file",
+        "type": "file_io",
+        "llm_involved": false
+      },
+      {
+        "task_id": "E31-Unit-Test",
+        "tool": "write_file",
+        "type": "file_io",
+        "llm_involved": false
+      },
+      {
+        "task_id": "E31-Verification",
+        "tool": "run_command",
+        "type": "subprocess",
+        "command": "python -m pytest ...",
+        "llm_involved": false
+      },
+      {
+        "task_id": "E31-Failure-Injection",
+        "tool": "run_command",
+        "type": "subprocess",
+        "command": "python -m pytest ...",
+        "llm_involved": false
+      }
+    ]
+  },
+  "mock_fixture_audit": {
+    "mock_llm_provider": "REMOVED_FROM_CODEBASE",
+    "mock_keywords_found": [],
+    "stub_keywords_found": [],
+    "fake_keywords_found": [],
+    "fixture_keywords_found": ["pytest fixtures in test files only"],
+    "deterministic_keywords_found": [
+      "OperationalMissionPlanner: 'Simple deterministic mission planner'",
+      "OperationalImplementerAgent: hardcoded default content"
+    ],
+    "seed_fixed_response": [],
+    "hardcoded_response": [
+      "OperationalImplementerAgent: b'Operational execution output'",
+      "E31 script: method_code string written directly"
+    ],
+    "synthetic_offline": [],
+    "test_provider": [],
+    "replay_recording": [],
+    "golden_snapshot": [],
+    "usage_classification": {
+      "OperationalMissionPlanner": "PRODUCTION_PATH_DETERMINISTIC",
+      "OperationalImplementerAgent": "PRODUCTION_PATH_DETERMINISTIC",
+      "OperationalVerifierAgent": "PRODUCTION_PATH_DETERMINISTIC"
+    }
+  },
+  "output_provenance": {
+    "final_result": "to_summary_dict() method + test file + git commit",
+    "verification": "pytest exit_code=0 + independent script VERIFICATION PASSED",
+    "agent_output": "OperationalImplementerAgent.execute() -> write_file",
+    "tool_execution": "SandboxManager.write_artifact() + subprocess.run()",
+    "task_context": "{\"operation\": \"write_file\", \"path\": \"...\", \"content\": \"...\"}",
+    "master_plan": "OperationalMissionPlanner._plan_multi_task() -> hardcoded templates",
+    "mission_intake": "Hardcoded in e31_real_workspace.py",
+    "llm_response_in_chain": false,
+    "content_source": "E31 script method_code variable (deterministic string)"
+  },
+  "git_forensics": {
+    "commit_sha": "c513f8aa1b5aec05bafaa1fa9580699a37a80dde",
+    "files_changed": [
+      "src/unified/domain_model.py",
+      "tests/test_e31_mission_summary.py"
+    ],
+    "llm_related_changes": false,
+    "mock_removal_adr": "adr_index.json: Remove MockLLMProvider entirely"
+  },
+  "provenance_matrix": {
+    "layers": [
+      {"layer": "E31 Entrypoint", "expected": "real execution", "actual": "real", "evidence": "e31_real_workspace.py", "verdict": "EXECUTED"},
+      {"layer": "Agent Runtime", "expected": "real", "actual": "real", "evidence": "operational.py agents", "verdict": "EXECUTED"},
+      {"layer": "Model Selection", "expected": "configured", "actual": "none", "evidence": "No llm_gateway param in OperationalExecutionEngine", "verdict": "NOT CONFIGURED"},
+      {"layer": "LLM Gateway", "expected": "executed", "actual": "never initialized", "evidence": "No LLMGateway import/use in operational.py", "verdict": "NOT EXECUTED"},
+      {"layer": "Provider Adapter", "expected": "executed", "actual": "none", "evidence": "No provider registration", "verdict": "NOT EXECUTED"},
+      {"layer": "Network/API", "expected": "real call", "actual": "no calls", "evidence": "Only file I/O + subprocess", "verdict": "NO NETWORK CALLS"},
+      {"layer": "Model Response", "expected": "provider-originated", "actual": "none", "evidence": "No response objects", "verdict": "NO RESPONSE"},
+      {"layer": "Agent Output", "expected": "model-derived", "actual": "deterministic", "evidence": "Hardcoded content in script", "verdict": "SYNTHETIC"},
+      {"layer": "Verification", "expected": "independent", "actual": "pytest + script", "evidence": "Trace evidence", "verdict": "VERIFIED"},
+      {"layer": "Final Artifact", "expected": "traceable", "actual": "git commit", "evidence": "c513f8aa...", "verdict": "TRACEABLE"}
+    ]
+  },
+  "evidence_chain": {
+    "links": [
+      {"from": "E31", "to": "ENTRYPOINT", "id": "e31_real_workspace.py"},
+      {"from": "ENTRYPOINT", "to": "RUN_ID", "id": "run-08f9e705066c"},
+      {"from": "RUN_ID", "to": "ACTION_IDs", "id": "4 tool calls"},
+      {"from": "ACTION_IDs", "to": "AGENT_IDs", "id": "operational-implementer-001, operational-verifier-001"},
+      {"from": "AGENT_IDs", "to": "MODEL_CALL_ID", "id": "NONE - no model calls"},
+      {"from": "MODEL_CALL_ID", "to": "PROVIDER", "id": "NONE - no provider"},
+      {"from": "PROVIDER", "to": "RESPONSE", "id": "N/A"},
+      {"from": "RESPONSE", "to": "OUTPUT", "id": "Deterministic file content from script"},
+      {"from": "OUTPUT", "to": "ARTIFACTS", "id": "domain_model.py, test_e31_mission_summary.py"},
+      {"from": "ARTIFACTS", "to": "VERIFICATION", "id": "pytest + independent script"}
+    ],
+    "missing_links": [
+      "MODEL_CALL_ID -> N/A (no model calls)",
+      "PROVIDER -> N/A (no provider configured)",
+      "RESPONSE -> N/A (no response)"
+    ]
+  },
+  "gaps": [
+    {"gap": "No LLM Gateway Initialization", "description": "OperationalExecutionEngine never initializes LLMGateway", "impact": "Core gap - model path never entered"},
+    {"gap": "No Provider Configuration", "description": "No environment variables, no config, no credentials", "impact": "Cannot make real calls even if code path existed"},
+    {"gap": "Deterministic Planner", "description": "OperationalMissionPlanner uses hardcoded templates", "impact": "By design - no model needed for planning"},
+    {"gap": "Deterministic Agents", "description": "Agents execute file ops, not LLM reasoning", "impact": "By design - operational agents are tool executors"},
+    {"gap": "No Token Budget Consumption", "description": "TokenBudget never consumed", "impact": "Confirms no LLM calls"}
+  ],
+  "decision_rule_applied": {
+    "verdict": "DETERMINISTIC_TEST_HARNESS",
+    "reason": "Zero LLM model invocations in execution path; deterministic planner + tool-executor agents + mechanical verification",
+    "rule": "DETERMINISTIC_TEST_HARNESS: If execution depends on deterministic harness/fixture path"
+  },
+  "confidence": "HIGH",
+  "primary_evidence": [
+    "E31 trace tool_calls: 4 calls, all write_file/run_command",
+    "OperationalExecutionEngine source: no LLMGateway import, no provider init",
+    "OperationalImplementerAgent/VerifierAgent: no LLM calls in execute()",
+    "OperationalMissionPlanner: explicitly 'deterministic'",
+    "Environment: no LLM provider credentials configured",
+    "Git commit: only domain_model.py + test file changes"
+  ],
+  "primary_gap": "None - evidence is conclusive",
+  "next_required_action": "Use Factory Orchestrator with configured LLM provider instead of OperationalExecutionEngine for missions requiring LLM reasoning"
+}

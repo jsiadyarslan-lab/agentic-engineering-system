@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-10-03T01:00:00.000000+00:00",
+  "test_name": "E26_CHECKPOINT_INTEGRITY",
+  "phases": [
+    {
+      "phase": "CP01_CHECKPOINT_COMPLETENESS",
+      "timestamp": 1790890849.72637,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "CP01_CHECKPOINT_COMPLETENESS",
+      "timestamp": 1790890849.8976824,
+      "data": {
+        "all_fields_present": true,
+        "all_tasks_in_cp": true,
+        "task_states": {
+          "task-0760edcc2c5d": "COMPLETED",
+          "task-ef894f3fbaed": "COMPLETED",
+          "task-e63e2f731891": "COMPLETED"
+        }
+      }
+    },
+    {
+      "phase": "CP02_CHECKPOINT_SERIALIZATION",
+      "timestamp": 1790890849.8977616,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "CP02_CHECKPOINT_SERIALIZATION",
+      "timestamp": 1790890850.0925102,
+      "data": {
+        "resume_success": true,
+        "run_id_restored": "run-dfc6cc670877",
+        "task_graph_restored": true
+      }
+    },
+    {
+      "phase": "CP03_CHECKPOINT_STATE_ACCURACY",
+      "timestamp": 1790890850.092557,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "CP03_CHECKPOINT_STATE_ACCURACY",
+      "timestamp": 1790890850.092595,
+      "data": {
+        "original_states": {
+          "task-0760edcc2c5d": "COMPLETED",
+          "task-ef894f3fbaed": "COMPLETED",
+          "task-e63e2f731891": "COMPLETED"
+        },
+        "restored_states": {
+          "CP01-Task-1": "TaskState.COMPLETED",
+          "CP01-Task-2": "TaskState.COMPLETED",
+          "CP01-Task-3": "TaskState.COMPLETED"
+        },
+        "states_match": true
+      }
+    },
+    {
+      "phase": "CP04_CHECKPOINT_EVIDENCE",
+      "timestamp": 1790890850.0926743,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "CP04_CHECKPOINT_EVIDENCE",
+      "timestamp": 1790890850.0927064,
+      "data": {
+        "artifacts_before_resume": 3,
+        "artifacts_after_resume": 3,
+        "evidence_preserved": true
+      }
+    },
+    {
+      "phase": "CP05_CHECKPOINT_CORRUPTION",
+      "timestamp": 1790890850.0927544,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "CP05_CHECKPOINT_CORRUPTION",
+      "timestamp": 1790890850.095594,
+      "data": {
+        "bad_checkpoint_rejected": true
+      }
+    }
+  ],
+  "verdicts": {
+    "CP01_CHECKPOINT_COMPLETENESS": "VERIFIED",
+    "CP02_CHECKPOINT_SERIALIZATION": "VERIFIED",
+    "CP03_CHECKPOINT_STATE_ACCURACY": "VERIFIED",
+    "CP04_CHECKPOINT_EVIDENCE": "VERIFIED",
+    "CP05_CHECKPOINT_CORRUPTION": "VERIFIED"
+  }
+}

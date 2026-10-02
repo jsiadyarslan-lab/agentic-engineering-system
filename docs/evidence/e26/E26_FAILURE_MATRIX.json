@@ -1,0 +1,265 @@
+{
+  "timestamp": "2026-10-03T00:00:00.000000+00:00",
+  "test_name": "E26_FAILURE_MATRIX",
+  "phases": [
+    {
+      "phase": "F01_TASK_FAILURE",
+      "timestamp": 1790890718.6820457,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F01_TASK_FAILURE",
+      "timestamp": 1790890718.8064704,
+      "data": {
+        "result": {
+          "mission_success": false,
+          "task_1_state": "COMPLETED",
+          "task_2_state": "FAILED",
+          "task_3_state": "BLOCKED",
+          "task_2_success": false,
+          "task_3_success": false,
+          "task_2_error": "1 validation error for TaskFailedEvent\nerror\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+          "task_2_output": {}
+        }
+      }
+    },
+    {
+      "phase": "F02_DEPENDENT_BLOCKED",
+      "timestamp": 1790890718.806533,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F02_DEPENDENT_BLOCKED",
+      "timestamp": 1790890718.806556,
+      "data": {
+        "blocked_tasks": [
+          "F01-Task-3"
+        ],
+        "failed_tasks": [
+          "F01-Task-2"
+        ],
+        "task_3_blocked": true
+      }
+    },
+    {
+      "phase": "F03_TOOL_FAILURE",
+      "timestamp": 1790890718.806577,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F03_TOOL_FAILURE",
+      "timestamp": 1790890718.8146944,
+      "data": {
+        "task_success": false,
+        "task_error": "1 validation error for TaskFailedEvent\nerror\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.",
+        "mission_success": false
+      }
+    },
+    {
+      "phase": "F04_TIMEOUT",
+      "timestamp": 1790890718.8147428,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F04_TIMEOUT",
+      "timestamp": 1790890718.8245473,
+      "data": {
+        "task_success": false,
+        "task_error": "1 validation error for TaskFailedEvent\nerror\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.",
+        "mission_success": false
+      }
+    },
+    {
+      "phase": "F05_RETRY",
+      "timestamp": 1790890718.8245952,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F05_RETRY",
+      "timestamp": 1790890718.8246083,
+      "data": {
+        "status": "SKIPPED - requires persistent state across retries"
+      }
+    },
+    {
+      "phase": "F06_CHECKPOINT_RESUME",
+      "timestamp": 1790890718.8246236,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F06_CHECKPOINT_RESUME",
+      "timestamp": 1790890718.9203446,
+      "data": {
+        "result": {
+          "resume_success": true,
+          "task_2_executed": true,
+          "artifact_preserved": true
+        }
+      }
+    },
+    {
+      "phase": "F07_INVALID_TRANSITION",
+      "timestamp": 1790890718.920389,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F07_INVALID_TRANSITION",
+      "timestamp": 1790890718.9204466,
+      "data": {
+        "invalid_transition_rejected": true
+      }
+    },
+    {
+      "phase": "F08_DUPLICATE_RESUME",
+      "timestamp": 1790890718.9204724,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F08_DUPLICATE_RESUME",
+      "timestamp": 1790890718.9634652,
+      "data": {
+        "first_resume": true,
+        "second_resume": true,
+        "different_run_ids": true
+      }
+    },
+    {
+      "phase": "F09_DUPLICATE_COMPLETION",
+      "timestamp": 1790890718.9635105,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F09_DUPLICATE_COMPLETION",
+      "timestamp": 1790890718.963542,
+      "data": {
+        "duplicate_completion_rejected": true
+      }
+    },
+    {
+      "phase": "F10_PARTIAL_ARTIFACT",
+      "timestamp": 1790890718.9635546,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F10_PARTIAL_ARTIFACT",
+      "timestamp": 1790890718.9635763,
+      "data": {
+        "failed_task_no_artifact": true
+      }
+    },
+    {
+      "phase": "F11_VERIFICATION_FAILURE",
+      "timestamp": 1790890718.9635963,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F11_VERIFICATION_FAILURE",
+      "timestamp": 1790890718.9807816,
+      "data": {
+        "task_success": false,
+        "mission_success": false
+      }
+    },
+    {
+      "phase": "F12_REPLAN",
+      "timestamp": 1790890718.9808075,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F12_REPLAN",
+      "timestamp": 1790890718.9820695,
+      "data": {
+        "replan_success": true,
+        "total_tasks_after": 2
+      }
+    },
+    {
+      "phase": "F13_HUMAN_GATE",
+      "timestamp": 1790890718.9820914,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F13_HUMAN_GATE",
+      "timestamp": 1790890718.9824865,
+      "data": {
+        "gate_created": true,
+        "decision_accepted": true
+      }
+    },
+    {
+      "phase": "F14_CANCELLATION",
+      "timestamp": 1790890718.9825053,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F14_CANCELLATION",
+      "timestamp": 1790890718.983524,
+      "data": {
+        "cancel_processed": true,
+        "mission_state": "MissionState.CANCELLED"
+      }
+    },
+    {
+      "phase": "F15_RESOURCE_LIMITS",
+      "timestamp": 1790890718.9835434,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "F15_RESOURCE_LIMITS",
+      "timestamp": 1790890718.9840996,
+      "data": {
+        "max_concurrent_missions": 1,
+        "max_concurrent_tasks": 2,
+        "task_quota_enforced": true,
+        "mission_quota_enforced": true
+      }
+    }
+  ],
+  "verdicts": {
+    "F01_TASK_FAILURE": "VERIFIED",
+    "F02_DEPENDENT_BLOCKED": "VERIFIED",
+    "F03_TOOL_FAILURE": "VERIFIED",
+    "F04_TIMEOUT": "VERIFIED",
+    "F05_RETRY": "SKIPPED",
+    "F06_CHECKPOINT_RESUME": "VERIFIED",
+    "F07_INVALID_TRANSITION": "VERIFIED",
+    "F08_DUPLICATE_RESUME": "VERIFIED",
+    "F09_DUPLICATE_COMPLETION": "VERIFIED",
+    "F10_PARTIAL_ARTIFACT": "VERIFIED",
+    "F11_VERIFICATION_FAILURE": "VERIFIED",
+    "F12_REPLAN": "VERIFIED",
+    "F13_HUMAN_GATE": "VERIFIED",
+    "F14_CANCELLATION": "VERIFIED",
+    "F15_RESOURCE_LIMITS": "VERIFIED"
+  }
+}

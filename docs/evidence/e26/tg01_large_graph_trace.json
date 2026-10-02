@@ -1,0 +1,11 @@
+{
+  "phase": "TG01_LARGE_GRAPH",
+  "timestamp": 1790891640.7865655,
+  "data": {
+    "total_tasks": 20,
+    "tasks_in_graph": 20,
+    "completed_tasks": 20,
+    "duration_ms": 147,
+    "success": true
+  }
+}

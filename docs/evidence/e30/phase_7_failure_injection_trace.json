@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_7_FAILURE_INJECTION",
+  "timestamp": 1790897906.1926126,
+  "data": {
+    "failure_results": {
+      "mission_success": false,
+      "task_failed": true,
+      "error_contains_timeout": false
+    }
+  }
+}

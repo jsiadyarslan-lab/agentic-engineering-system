@@ -1,0 +1,9 @@
+{
+  "phase": "PHASE_4_RECOVERY_REPLAN",
+  "timestamp": 1790893823.3496494,
+  "data": {
+    "replan_success": true,
+    "total_tasks_after": 2,
+    "expected_total": 2
+  }
+}

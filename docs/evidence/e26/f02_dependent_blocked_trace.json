@@ -1,0 +1,13 @@
+{
+  "phase": "F02_DEPENDENT_BLOCKED",
+  "timestamp": 1790890718.806556,
+  "data": {
+    "blocked_tasks": [
+      "F01-Task-3"
+    ],
+    "failed_tasks": [
+      "F01-Task-2"
+    ],
+    "task_3_blocked": true
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-10-03T01:45:00.000000+00:00",
+  "test_name": "E26_TASK_GRAPH_STRESS",
+  "phases": [
+    {
+      "phase": "TG01_LARGE_GRAPH",
+      "timestamp": 1790891640.6385703,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "TG01_LARGE_GRAPH",
+      "timestamp": 1790891640.7865655,
+      "data": {
+        "total_tasks": 20,
+        "tasks_in_graph": 20,
+        "completed_tasks": 20,
+        "duration_ms": 147,
+        "success": true
+      }
+    },
+    {
+      "phase": "TG02_DEEP_CHAIN",
+      "timestamp": 1790891640.7866023,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "TG02_DEEP_CHAIN",
+      "timestamp": 1790891640.8974462,
+      "data": {
+        "total_tasks": 15,
+        "tasks_in_graph": 15,
+        "completed_tasks": 15,
+        "duration_ms": 110,
+        "success": true
+      }
+    },
+    {
+      "phase": "TG03_CONCURRENT_MISSIONS",
+      "timestamp": 1790891640.8974788,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "TG03_CONCURRENT_MISSIONS",
+      "timestamp": 1790891641.020773,
+      "data": {
+        "missions_run": 5,
+        "all_success": true,
+        "duration_ms": 123,
+        "total_tasks_executed": 10
+      }
+    },
+    {
+      "phase": "TG04_REPLAN_UNDER_LOAD",
+      "timestamp": 1790891641.0208042,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "TG04_REPLAN_UNDER_LOAD",
+      "timestamp": 1790891641.0224361,
+      "data": {
+        "original_tasks": 10,
+        "replan_success": true,
+        "total_tasks_after": 15,
+        "expected_total": 15,
+        "note": "Replan only works during EXECUTING state"
+      }
+    },
+    {
+      "phase": "TG05_CYCLE_DETECTION",
+      "timestamp": 1790891641.022467,
+      "data": {
+        "start": true
+      }
+    },
+    {
+      "phase": "TG05_CYCLE_DETECTION",
+      "timestamp": 1790891641.0233836,
+      "data": {
+        "cycle_handled": true,
+        "note": "Cycle detection at execution time"
+      }
+    }
+  ],
+  "verdicts": {
+    "TG01_LARGE_GRAPH": "VERIFIED",
+    "TG02_DEEP_CHAIN": "VERIFIED",
+    "TG03_CONCURRENT_MISSIONS": "VERIFIED",
+    "TG04_REPLAN_UNDER_LOAD": "VERIFIED",
+    "TG05_CYCLE_DETECTION": "VERIFIED"
+  }
+}

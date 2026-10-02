@@ -1,0 +1,11 @@
+{
+  "phase": "PHASE_3_INJECT_FAILURE",
+  "timestamp": 1790893823.3463216,
+  "data": {
+    "mission_id": "mission-618220cb869b",
+    "failure_detected": true,
+    "failed_task_state": "FAILED",
+    "task_failed_properly": true,
+    "dependent_blocked": true
+  }
+}

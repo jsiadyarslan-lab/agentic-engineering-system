@@ -1,0 +1,20 @@
+{
+  "execution_file_size": 161394,
+  "has_task_timeout": true,
+  "has_sandbox_cleanup": false,
+  "has_task_graph": true,
+  "has_checkpoint": true,
+  "has_verify": true,
+  "relevant_classes": [
+    "ExecutionEngine",
+    "Task",
+    "Checkpoint",
+    "SandboxManager"
+  ],
+  "test_files": [
+    "test_e10_execution.py",
+    "test_e10_governance.py",
+    "test_e7_e8_cross_runtime.py"
+  ],
+  "existing_test_files": []
+}

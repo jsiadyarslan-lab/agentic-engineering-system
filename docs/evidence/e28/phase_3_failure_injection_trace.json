@@ -1,0 +1,21 @@
+{
+  "phase": "PHASE_3_FAILURE_INJECTION",
+  "timestamp": 1790895295.5744848,
+  "data": {
+    "failures": {
+      "failure_a": {
+        "mission_success": false,
+        "failed_task": true,
+        "dependent_blocked": true
+      },
+      "failure_b": {
+        "mission_success": false,
+        "timeout_task_failed": true
+      },
+      "failure_c": {
+        "mission_success": false,
+        "verification_failed": true
+      }
+    }
+  }
+}

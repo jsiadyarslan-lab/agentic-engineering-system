@@ -1,0 +1,23 @@
+{
+  "MISSION-A": {
+    "completed": 3,
+    "failed": 1,
+    "unaffected": false
+  },
+  "MISSION-B": {
+    "failed_tasks": 1,
+    "blocked_tasks": 1,
+    "completed_tasks": 5,
+    "failure_contained": true
+  },
+  "MISSION-C": {
+    "completed": 2,
+    "failed": 1,
+    "unaffected": false
+  },
+  "MISSION-D": {
+    "completed": 2,
+    "failed": 2,
+    "unaffected": false
+  }
+}

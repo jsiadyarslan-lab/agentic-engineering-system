@@ -1,0 +1,12 @@
+{
+  "phase": "PHASE_6_DYNAMIC_REPLAN",
+  "timestamp": 1790896200.719309,
+  "data": {
+    "replan_result": {
+      "original_tasks": 5,
+      "new_task_id": "task-df8227efe5e0",
+      "tasks_after_replan": 6,
+      "replan_success": true
+    }
+  }
+}

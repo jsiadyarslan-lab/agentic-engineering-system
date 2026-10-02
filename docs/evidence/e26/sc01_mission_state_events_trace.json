@@ -1,0 +1,55 @@
+{
+  "phase": "SC01_MISSION_STATE_EVENTS",
+  "timestamp": 1790891492.35817,
+  "data": {
+    "mission_final_state": "MissionState.ADJUDICATED",
+    "state_events_count": 11,
+    "path_valid": true,
+    "event_states": [
+      [
+        "RECEIVED",
+        "ANALYZING"
+      ],
+      [
+        "ANALYZING",
+        "PLANNING"
+      ],
+      [
+        "PLANNING",
+        "DESIGNING"
+      ],
+      [
+        "DESIGNING",
+        "REVIEWING"
+      ],
+      [
+        "REVIEWING",
+        "APPROVED"
+      ],
+      [
+        "APPROVED",
+        "AWAITING_APPROVAL"
+      ],
+      [
+        "AWAITING_APPROVAL",
+        "EXECUTING"
+      ],
+      [
+        "EXECUTING",
+        "EXECUTED"
+      ],
+      [
+        "EXECUTED",
+        "VERIFYING"
+      ],
+      [
+        "VERIFYING",
+        "EVIDENCED"
+      ],
+      [
+        "EVIDENCED",
+        "ADJUDICATED"
+      ]
+    ]
+  }
+}

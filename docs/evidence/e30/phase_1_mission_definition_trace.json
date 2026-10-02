@@ -1,0 +1,33 @@
+{
+  "phase": "PHASE_1_MISSION_DEFINITION",
+  "timestamp": 1790897905.9519792,
+  "data": {
+    "mission": {
+      "mission_id": "E30-MISSION",
+      "goal": "Create comprehensive test suite for ExecutionEngine timeout and recovery features",
+      "description": "Implement unit tests, integration tests, and documentation for the timeout/recovery mechanisms in ExecutionEngine. This validates the existing E10.1 timeout implementation.",
+      "objective": "Production-ready test coverage for: 1) task timeout behavior, 2) sandbox cleanup on timeout, 3) checkpoint/resume with timeout, 4) failure recovery",
+      "constraints": [
+        "Must use existing test infrastructure",
+        "Must test real timeout behavior",
+        "Must integrate with checkpoint/resume",
+        "Must have independent verification"
+      ],
+      "acceptance_criteria": [
+        "Unit tests for Task timeout field",
+        "Integration test for end-to-end timeout",
+        "Test for sandbox cleanup on timeout",
+        "Test for checkpoint/resume with timeout state",
+        "Documentation for timeout feature",
+        "All tests pass independently"
+      ],
+      "risks": [
+        "Timeout flakiness in tests",
+        "Race conditions in timeout detection"
+      ],
+      "dependencies": [
+        "E10.1 timeout semantics"
+      ]
+    }
+  }
+}

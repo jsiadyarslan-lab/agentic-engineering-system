@@ -1,0 +1,58 @@
+{
+  "phase": "PHASE_4_MISSION_ISOLATION",
+  "timestamp": 1790896200.7191372,
+  "data": {
+    "isolation_results": {
+      "MISSION-A": {
+        "mission_id": "mission-76840e15e465",
+        "run_id": "run-570440d48a63",
+        "artifacts_count": 3,
+        "events_count": 52,
+        "checkpoints_count": 1,
+        "graph_tasks": 5,
+        "own_artifacts_only": true,
+        "no_cross_mission_events": true
+      },
+      "MISSION-B": {
+        "mission_id": "mission-f0a18e0db149",
+        "run_id": "run-a009a5410626",
+        "artifacts_count": 5,
+        "events_count": 75,
+        "checkpoints_count": 2,
+        "graph_tasks": 7,
+        "own_artifacts_only": true,
+        "no_cross_mission_events": true
+      },
+      "MISSION-C": {
+        "mission_id": "mission-ade306afd893",
+        "run_id": "run-7d1c005d016d",
+        "artifacts_count": 2,
+        "events_count": 39,
+        "checkpoints_count": 1,
+        "graph_tasks": 4,
+        "own_artifacts_only": true,
+        "no_cross_mission_events": true
+      },
+      "MISSION-D": {
+        "mission_id": "mission-736e7ffafd68",
+        "run_id": "run-8e3137ea9b0d",
+        "artifacts_count": 2,
+        "events_count": 50,
+        "checkpoints_count": 1,
+        "graph_tasks": 5,
+        "own_artifacts_only": true,
+        "no_cross_mission_events": true
+      },
+      "cross_mission_check": {
+        "total_artifacts": 12,
+        "per_mission": {
+          "mission-76840e15e465": 3,
+          "mission-f0a18e0db149": 5,
+          "mission-ade306afd893": 2,
+          "mission-736e7ffafd68": 2
+        },
+        "no_cross_contamination": true
+      }
+    }
+  }
+}

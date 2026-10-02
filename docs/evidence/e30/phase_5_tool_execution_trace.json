@@ -1,0 +1,28 @@
+{
+  "phase": "PHASE_5_TOOL_EXECUTION",
+  "timestamp": 1790897906.0968208,
+  "data": {
+    "tool_results": {
+      "e30_mission/design.md": {
+        "exists_in_evidence_store": true,
+        "size": 873
+      },
+      "tests/test_e30_timeout_unit.py": {
+        "exists_in_evidence_store": true,
+        "size": 2683
+      },
+      "tests/test_e30_integration.py": {
+        "exists_in_evidence_store": true,
+        "size": 2982
+      },
+      "tests/test_e30_recovery.py": {
+        "exists_in_evidence_store": true,
+        "size": 3413
+      },
+      "docs/architecture/e30_timeout_recovery.md": {
+        "exists_in_evidence_store": true,
+        "size": 948
+      }
+    }
+  }
+}

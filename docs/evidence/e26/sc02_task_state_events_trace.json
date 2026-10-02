@@ -1,0 +1,14 @@
+{
+  "phase": "SC02_TASK_STATE_EVENTS",
+  "timestamp": 1790891492.358279,
+  "data": {
+    "task_states": {
+      "SC01-Task-1": "TaskState.COMPLETED",
+      "SC01-Task-2": "TaskState.COMPLETED"
+    },
+    "all_completed": true,
+    "tasks_in_events": 2,
+    "tasks_in_graph": 2,
+    "events_match_graph": true
+  }
+}

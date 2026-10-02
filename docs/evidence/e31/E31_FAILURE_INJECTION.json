@@ -1,0 +1,6 @@
+{
+  "failure_injected": true,
+  "failure_detected": true,
+  "restored": true,
+  "test_passed_after_restore": true
+}

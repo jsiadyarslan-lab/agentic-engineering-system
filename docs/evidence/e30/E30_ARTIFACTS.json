@@ -1,0 +1,50 @@
+[
+  {
+    "artifact_id": "artifact-3c93f9278f9c",
+    "path": "e30_mission/design.md",
+    "sha256": "a3c9e88798c016f0...",
+    "size_bytes": 873,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-f860f933ab6b"
+  },
+  {
+    "artifact_id": "artifact-71df12a13dd4",
+    "path": "tests/test_e30_timeout_unit.py",
+    "sha256": "fafec857ed2a03ca...",
+    "size_bytes": 2683,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-d77fc72e32a4"
+  },
+  {
+    "artifact_id": "artifact-027c755dd27e",
+    "path": "tests/test_e30_integration.py",
+    "sha256": "b99c3f725a7bfb8a...",
+    "size_bytes": 2982,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-307c8f741b76"
+  },
+  {
+    "artifact_id": "artifact-6ec81d930a6c",
+    "path": "tests/test_e30_recovery.py",
+    "sha256": "9531bf7c8ded53dc...",
+    "size_bytes": 3413,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-39a1b3e66637"
+  },
+  {
+    "artifact_id": "artifact-e4a8252435bb",
+    "path": "docs/architecture/e30_timeout_recovery.md",
+    "sha256": "f46e45ab51d9465e...",
+    "size_bytes": 948,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-31720c275203"
+  },
+  {
+    "artifact_id": "artifact-a769b1dd46fe",
+    "path": "e30_mission/verification_summary.txt",
+    "sha256": "0bdc5a0120bf2eee...",
+    "size_bytes": 117,
+    "mission_id": "mission-d427ed0da937",
+    "created_by": "sandbox-task-c08589fbf826"
+  }
+]

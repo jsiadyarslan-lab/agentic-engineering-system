@@ -1,0 +1,17 @@
+{
+  "phase": "CP03_CHECKPOINT_STATE_ACCURACY",
+  "timestamp": 1790890850.092595,
+  "data": {
+    "original_states": {
+      "task-0760edcc2c5d": "COMPLETED",
+      "task-ef894f3fbaed": "COMPLETED",
+      "task-e63e2f731891": "COMPLETED"
+    },
+    "restored_states": {
+      "CP01-Task-1": "TaskState.COMPLETED",
+      "CP01-Task-2": "TaskState.COMPLETED",
+      "CP01-Task-3": "TaskState.COMPLETED"
+    },
+    "states_match": true
+  }
+}

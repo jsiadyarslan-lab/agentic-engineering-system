@@ -1,0 +1,20 @@
+{
+  "phase": "PHASE_4_AGENT_EXECUTION",
+  "timestamp": 1790897906.09676,
+  "data": {
+    "mission_id": "mission-d427ed0da937",
+    "run_id": "run-bbf1b3bf8dd5",
+    "success": true,
+    "execution_time_sec": 0.13,
+    "tasks_planned": 6,
+    "tasks_executed": 6,
+    "tasks_completed": 6,
+    "tasks_failed": 0,
+    "tasks_blocked": 0,
+    "artifacts_created": 6,
+    "total_artifacts": 6,
+    "verifications": 6,
+    "events_emitted": 81,
+    "checkpoints_created": 3
+  }
+}

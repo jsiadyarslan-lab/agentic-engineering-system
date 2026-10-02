@@ -1,0 +1,27 @@
+{
+  "phase": "PHASE_2_CHECKPOINT_ISOLATION",
+  "timestamp": 1790890730.8895981,
+  "data": {
+    "checkpoint_isolation": true,
+    "checkpoint_details": {
+      "Mission-A": {
+        "expected_own_checkpoints": 2,
+        "actual_in_global_store": 2,
+        "match": true
+      },
+      "Mission-B": {
+        "expected_own_checkpoints": 2,
+        "actual_in_global_store": 2,
+        "match": true
+      },
+      "Mission-C": {
+        "expected_own_checkpoints": 2,
+        "actual_in_global_store": 2,
+        "match": true
+      }
+    },
+    "total_checkpoints_in_store": 6,
+    "expected_total_checkpoints": 6,
+    "total_match": true
+  }
+}

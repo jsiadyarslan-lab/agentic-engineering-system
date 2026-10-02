@@ -1,0 +1,5 @@
+{
+  "mission_success": false,
+  "task_failed": true,
+  "error_contains_timeout": false
+}

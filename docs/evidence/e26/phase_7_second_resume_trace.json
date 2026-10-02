@@ -1,0 +1,45 @@
+{
+  "phase": "PHASE_7_SECOND_RESUME",
+  "timestamp": 1790890739.846249,
+  "data": {
+    "second_resume_success": true,
+    "new_run_id": "run-169743e72aaa",
+    "artifact_continuity_through_2_restarts": {
+      "e26_task001_setup.txt": {
+        "task_name": "Task-001-Setup",
+        "expected_source": "original",
+        "artifact_id_match": true,
+        "sha256_match": true,
+        "size_match": true,
+        "mission_id_match": true
+      },
+      "e26_task002_dataprep.txt": {
+        "task_name": "Task-002-DataPrep",
+        "expected_source": "original",
+        "artifact_id_match": true,
+        "sha256_match": true,
+        "size_match": true,
+        "mission_id_match": true
+      },
+      "e26_task004_validate.txt": {
+        "task_name": "Task-004-Validate",
+        "expected_source": "phase3",
+        "artifact_id_match": true,
+        "sha256_match": true,
+        "size_match": true,
+        "mission_id_match": true
+      },
+      "e26_task005_finalize.txt": {
+        "task_name": "Task-005-Finalize",
+        "expected_source": "phase3",
+        "artifact_id_match": true,
+        "sha256_match": true,
+        "size_match": true,
+        "mission_id_match": true
+      }
+    },
+    "all_artifacts_continuous": true,
+    "events_through_2_restarts": 102,
+    "events_monotonic": true
+  }
+}

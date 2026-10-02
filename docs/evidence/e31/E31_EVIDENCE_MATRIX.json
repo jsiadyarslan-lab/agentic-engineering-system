@@ -1,0 +1,128 @@
+[
+  {
+    "claim": "Git baseline verified",
+    "artifact": "git status",
+    "evidence_ref": "E31_BASELINE.json",
+    "verifier": "baseline_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "E30 artifacts exist",
+    "artifact": "E30 evidence files",
+    "evidence_ref": "E30 evidence dir",
+    "verifier": "file_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Mission defined autonomously",
+    "artifact": "Mission spec",
+    "evidence_ref": "E31_MISSION.json",
+    "verifier": "intake_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Discovery completed - Mission class analyzed",
+    "artifact": "domain_model.py analysis",
+    "evidence_ref": "E31_DISCOVERY.json",
+    "verifier": "discovery_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Master plan created with 3 tasks",
+    "artifact": "Task graph",
+    "evidence_ref": "E31_MASTER_PLAN.json",
+    "verifier": "plan_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Method implemented in domain_model.py",
+    "artifact": "domain_model.py",
+    "evidence_ref": "E31_IMPLEMENT_METHOD.json",
+    "verifier": "implement_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Unit test created",
+    "artifact": "test_e31_mission_summary.py",
+    "evidence_ref": "E31_UNIT_TEST.json",
+    "verifier": "test_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Unit tests executed and passed",
+    "artifact": "pytest output",
+    "evidence_ref": "E31_TEST_EXECUTION.json",
+    "verifier": "test_execution_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Workspace mutated with intended changes only",
+    "artifact": "git diff",
+    "evidence_ref": "E31_WORKSPACE_MUTATION.json",
+    "verifier": "mutation_check",
+    "verdict": "FAILED"
+  },
+  {
+    "claim": "Failure injected, detected, and recovered",
+    "artifact": "Failure test trace",
+    "evidence_ref": "E31_FAILURE_INJECTION.json",
+    "verifier": "failure_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Recovery verified - original state restored",
+    "artifact": "Post-restore test",
+    "evidence_ref": "E31_RECOVERY.json",
+    "verifier": "recovery_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Checkpoint created during mission",
+    "artifact": "Checkpoint record",
+    "evidence_ref": "E31_CHECKPOINT.json",
+    "verifier": "checkpoint_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Process interruption simulated - new engine ready",
+    "artifact": "New engine instance",
+    "evidence_ref": "E31_INTERRUPTION.json",
+    "verifier": "interrupt_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Resume from checkpoint works",
+    "artifact": "Resume result",
+    "evidence_ref": "E31_RESUME.json",
+    "verifier": "resume_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Changes committed to repository",
+    "artifact": "git commit",
+    "evidence_ref": "E31_GIT_COMMIT.json",
+    "verifier": "commit_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Independent verification passed",
+    "artifact": "Verification script + pytest + git diff",
+    "evidence_ref": "E31_VERIFICATION.json",
+    "verifier": "verification_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Security boundaries enforced",
+    "artifact": "Security audit",
+    "evidence_ref": "E31_SECURITY.json",
+    "verifier": "security_check",
+    "verdict": "VERIFIED"
+  },
+  {
+    "claim": "Complete accounting recorded",
+    "artifact": "Accounting record",
+    "evidence_ref": "E31_ACCOUNTING.json",
+    "verifier": "accounting_check",
+    "verdict": "VERIFIED"
+  }
+]

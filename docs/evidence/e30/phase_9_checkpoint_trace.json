@@ -1,0 +1,21 @@
+{
+  "phase": "PHASE_9_CHECKPOINT",
+  "timestamp": 1790897906.1927912,
+  "data": {
+    "checkpoint": {
+      "checkpoint_id": "checkpoint-5787ac75a618",
+      "mission_id": "mission-d427ed0da937",
+      "run_id": "run-bbf1b3bf8dd5",
+      "step": null,
+      "task_states": {
+        "task-f860f933ab6b": "COMPLETED",
+        "task-d77fc72e32a4": "COMPLETED",
+        "task-307c8f741b76": "COMPLETED",
+        "task-39a1b3e66637": "COMPLETED",
+        "task-31720c275203": "COMPLETED",
+        "task-c08589fbf826": "COMPLETED"
+      },
+      "artifact_count": 0
+    }
+  }
+}

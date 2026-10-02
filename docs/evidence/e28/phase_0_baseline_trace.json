@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE_0_BASELINE",
+  "timestamp": 1790895294.9719274,
+  "data": {
+    "baseline": {
+      "head_sha": "5a03b260ddfa6297f345bf5f5653809992eb3983",
+      "remote_sha": "5a03b260ddfa6297f345bf5f5653809992eb3983",
+      "local_equals_remote": true,
+      "worktree_status": "MODIFIED",
+      "branch": "main"
+    },
+    "e27_artifacts_verified": true,
+    "e27_file_count": 4
+  }
+}

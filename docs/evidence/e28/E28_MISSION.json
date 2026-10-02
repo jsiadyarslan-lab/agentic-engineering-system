@@ -1,0 +1,326 @@
+{
+  "tasks": [
+    {
+      "name": "E28-Foundation-1",
+      "description": "Foundation task 1",
+      "path": "e28_project/foundation_1.txt",
+      "content": "Foundation 1 output",
+      "depends_on": [],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/foundation_1.txt"
+      ]
+    },
+    {
+      "name": "E28-Foundation-2",
+      "description": "Foundation task 2",
+      "path": "e28_project/foundation_2.txt",
+      "content": "Foundation 2 output",
+      "depends_on": [],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/foundation_2.txt"
+      ]
+    },
+    {
+      "name": "E28-Foundation-3",
+      "description": "Foundation task 3",
+      "path": "e28_project/foundation_3.txt",
+      "content": "Foundation 3 output",
+      "depends_on": [],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/foundation_3.txt"
+      ]
+    },
+    {
+      "name": "E28-Foundation-4",
+      "description": "Foundation task 4",
+      "path": "e28_project/foundation_4.txt",
+      "content": "Foundation 4 output",
+      "depends_on": [],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/foundation_4.txt"
+      ]
+    },
+    {
+      "name": "E28-Foundation-5",
+      "description": "Foundation task 5",
+      "path": "e28_project/foundation_5.txt",
+      "content": "Foundation 5 output",
+      "depends_on": [],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/foundation_5.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-1",
+      "description": "Core service 1",
+      "path": "e28_project/core_1.txt",
+      "content": "Core 1 output",
+      "depends_on": [
+        "E28-Foundation-1",
+        "E28-Foundation-2",
+        "E28-Foundation-3"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_1.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-2",
+      "description": "Core service 2",
+      "path": "e28_project/core_2.txt",
+      "content": "Core 2 output",
+      "depends_on": [
+        "E28-Foundation-1",
+        "E28-Foundation-2",
+        "E28-Foundation-3"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_2.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-3",
+      "description": "Core service 3",
+      "path": "e28_project/core_3.txt",
+      "content": "Core 3 output",
+      "depends_on": [
+        "E28-Foundation-1",
+        "E28-Foundation-2",
+        "E28-Foundation-3"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_3.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-4",
+      "description": "Core service 4",
+      "path": "e28_project/core_4.txt",
+      "content": "Core 4 output",
+      "depends_on": [
+        "E28-Core-3"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_4.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-5",
+      "description": "Core service 5",
+      "path": "e28_project/core_5.txt",
+      "content": "Core 5 output",
+      "depends_on": [
+        "E28-Core-4"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_5.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-6",
+      "description": "Core service 6",
+      "path": "e28_project/core_6.txt",
+      "content": "Core 6 output",
+      "depends_on": [
+        "E28-Core-5"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_6.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-7",
+      "description": "Core service 7",
+      "path": "e28_project/core_7.txt",
+      "content": "Core 7 output",
+      "depends_on": [
+        "E28-Core-6"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_7.txt"
+      ]
+    },
+    {
+      "name": "E28-Core-8",
+      "description": "Core service 8",
+      "path": "e28_project/core_8.txt",
+      "content": "Core 8 output",
+      "depends_on": [
+        "E28-Core-7"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/core_8.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-1",
+      "description": "Integration layer 1",
+      "path": "e28_project/integration_1.txt",
+      "content": "Integration 1 output",
+      "depends_on": [
+        "E28-Core-4"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_1.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-2",
+      "description": "Integration layer 2",
+      "path": "e28_project/integration_2.txt",
+      "content": "Integration 2 output",
+      "depends_on": [
+        "E28-Core-5"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_2.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-3",
+      "description": "Integration layer 3",
+      "path": "e28_project/integration_3.txt",
+      "content": "Integration 3 output",
+      "depends_on": [
+        "E28-Core-6"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_3.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-4",
+      "description": "Integration layer 4",
+      "path": "e28_project/integration_4.txt",
+      "content": "Integration 4 output",
+      "depends_on": [
+        "E28-Core-7"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_4.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-5",
+      "description": "Integration layer 5",
+      "path": "e28_project/integration_5.txt",
+      "content": "Integration 5 output",
+      "depends_on": [
+        "E28-Core-8"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_5.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-6",
+      "description": "Integration layer 6",
+      "path": "e28_project/integration_6.txt",
+      "content": "Integration 6 output",
+      "depends_on": [
+        "E28-Core-8"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_6.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-7",
+      "description": "Integration layer 7",
+      "path": "e28_project/integration_7.txt",
+      "content": "Integration 7 output",
+      "depends_on": [
+        "E28-Core-8"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_7.txt"
+      ]
+    },
+    {
+      "name": "E28-API-Gateway",
+      "description": "API Gateway implementation",
+      "path": "e28_project/api_gateway.txt",
+      "content": "API Gateway",
+      "depends_on": [
+        "E28-Integration-7"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/api_gateway.txt"
+      ]
+    },
+    {
+      "name": "E28-Unit-Tests",
+      "description": "Unit test suite",
+      "path": "e28_project/unit_tests.txt",
+      "content": "Unit Tests",
+      "depends_on": [
+        "E28-API-Gateway"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/unit_tests.txt"
+      ]
+    },
+    {
+      "name": "E28-Integration-Tests",
+      "description": "Integration test suite",
+      "path": "e28_project/integration_tests.txt",
+      "content": "Integration Tests",
+      "depends_on": [
+        "E28-Unit-Tests"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/integration_tests.txt"
+      ]
+    },
+    {
+      "name": "E28-Deployment",
+      "description": "Deployment configuration",
+      "path": "e28_project/deployment.txt",
+      "content": "Deployment Config",
+      "depends_on": [
+        "E28-Integration-Tests"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/deployment.txt"
+      ]
+    },
+    {
+      "name": "E28-Failure-Target",
+      "description": "Task that will fail intentionally",
+      "path": "e28_project/failure_target.txt",
+      "content": "Will fail",
+      "depends_on": [
+        "E28-Core-4"
+      ],
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e28_project/failure_target.txt"
+      ]
+    }
+  ],
+  "total": 25
+}

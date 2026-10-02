@@ -1,0 +1,39 @@
+{
+  "phase": "PHASE_4_EXECUTE_RECOVERY",
+  "timestamp": 1790890739.8136833,
+  "data": {
+    "execution_success": false,
+    "task_results": {
+      "task-1cd829d922a4": {
+        "state": "UNKNOWN",
+        "success": false,
+        "attempts": 0
+      },
+      "task-7fb3ae2b06ba": {
+        "state": "UNKNOWN",
+        "success": true,
+        "attempts": 0
+      },
+      "task-6d45be271771": {
+        "state": "UNKNOWN",
+        "success": true,
+        "attempts": 0
+      },
+      "task-482d35921ad1": {
+        "state": "UNKNOWN",
+        "success": true,
+        "attempts": 0
+      },
+      "task-e0fa9d45d7c6": {
+        "state": "UNKNOWN",
+        "success": true,
+        "attempts": 0
+      },
+      "task-e48e068df8a5": {
+        "state": "UNKNOWN",
+        "success": true,
+        "attempts": 0
+      }
+    }
+  }
+}

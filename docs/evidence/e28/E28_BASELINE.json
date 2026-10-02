@@ -1,0 +1,10 @@
+{
+  "baseline": {
+    "head_sha": "5a03b260ddfa6297f345bf5f5653809992eb3983",
+    "remote_sha": "5a03b260ddfa6297f345bf5f5653809992eb3983",
+    "local_equals_remote": true,
+    "worktree_status": "MODIFIED",
+    "branch": "main"
+  },
+  "e27_verified": true
+}

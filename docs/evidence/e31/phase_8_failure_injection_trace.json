@@ -1,0 +1,12 @@
+{
+  "phase": "PHASE_8_FAILURE_INJECTION",
+  "timestamp": 1790899545.7048123,
+  "data": {
+    "failure_results": {
+      "failure_injected": true,
+      "failure_detected": true,
+      "restored": true,
+      "test_passed_after_restore": true
+    }
+  }
+}

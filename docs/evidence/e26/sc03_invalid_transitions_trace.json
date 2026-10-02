@@ -1,0 +1,10 @@
+{
+  "phase": "SC03_INVALID_TRANSITIONS",
+  "timestamp": 1790891492.3583405,
+  "data": {
+    "mission_invalid_rejected": true,
+    "task_invalid_rejected": true,
+    "rejected_mission": [],
+    "rejected_task": []
+  }
+}

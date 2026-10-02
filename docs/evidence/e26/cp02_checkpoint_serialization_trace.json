@@ -1,0 +1,9 @@
+{
+  "phase": "CP02_CHECKPOINT_SERIALIZATION",
+  "timestamp": 1790890850.0925102,
+  "data": {
+    "resume_success": true,
+    "run_id_restored": "run-dfc6cc670877",
+    "task_graph_restored": true
+  }
+}
