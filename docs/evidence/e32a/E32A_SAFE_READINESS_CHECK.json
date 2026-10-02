@@ -1,0 +1,176 @@
+{
+  "provider_registry": {
+    "providers": [
+      {
+        "id": 1,
+        "name": "nvidia",
+        "type": "nvidia",
+        "auth_type": "bearer",
+        "enabled": true
+      },
+      {
+        "id": 2,
+        "name": "openai_compatible",
+        "type": "openai_compatible",
+        "auth_type": "bearer",
+        "enabled": true
+      },
+      {
+        "id": 3,
+        "name": "zai_internal",
+        "type": "zai_internal",
+        "auth_type": "config_file",
+        "enabled": true
+      }
+    ],
+    "configurations": [
+      {
+        "id": 1,
+        "provider_id": 1,
+        "name": "default",
+        "base_url": "https://integrate.api.nvidia.com/v1",
+        "default_model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "enabled": true
+      },
+      {
+        "id": 2,
+        "provider_id": 2,
+        "name": "default",
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_model": "anthropic/claude-haiku-3.5",
+        "enabled": true
+      },
+      {
+        "id": 3,
+        "provider_id": 3,
+        "name": "default",
+        "base_url": "https://internal-api.z.ai/v1",
+        "default_model": "glm-4.6",
+        "enabled": true
+      }
+    ],
+    "role_mappings": [
+      {
+        "role": "thinker",
+        "provider": "openai_compatible",
+        "config": "",
+        "model": "anthropic/claude-haiku-3.5"
+      },
+      {
+        "role": "reviewer",
+        "provider": "nvidia",
+        "config": "",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
+      },
+      {
+        "role": "implementer",
+        "provider": "nvidia",
+        "config": "",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
+      },
+      {
+        "role": "verifier",
+        "provider": "nvidia",
+        "config": "",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
+      },
+      {
+        "role": "arbiter",
+        "provider": "nvidia",
+        "config": "",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
+      },
+      {
+        "role": "chat",
+        "provider": "nvidia",
+        "config": "",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b"
+      }
+    ]
+  },
+  "secrets_store": {
+    "providers_with_keys": [
+      "execution::dead-worker-g",
+      "execution::wsl2-linux",
+      "nvidia",
+      "openai_compatible"
+    ],
+    "key_status": {
+      "nvidia": {
+        "has_key": true,
+        "masked": "****"
+      },
+      "openai_compatible": {
+        "has_key": true,
+        "masked": "****"
+      },
+      "anthropic": {
+        "has_key": false,
+        "masked": "N/A"
+      },
+      "google": {
+        "has_key": false,
+        "masked": "N/A"
+      },
+      "zai_internal": {
+        "has_key": false,
+        "masked": "N/A"
+      }
+    }
+  },
+  "readiness_assessment": {
+    "nvidia": {
+      "provider_type": "nvidia",
+      "auth_type": "bearer",
+      "configurations": 1,
+      "roles_mapped": [
+        "reviewer",
+        "implementer",
+        "verifier",
+        "arbiter",
+        "chat"
+      ],
+      "credential_present": true,
+      "readiness_state": "PROVIDER_CREDENTIALED",
+      "network_probe": "NOT EXECUTED (E32A scope)",
+      "model_call": "NOT EXECUTED (E32A scope)"
+    },
+    "openai_compatible": {
+      "provider_type": "openai_compatible",
+      "auth_type": "bearer",
+      "configurations": 1,
+      "roles_mapped": [
+        "thinker"
+      ],
+      "credential_present": true,
+      "readiness_state": "PROVIDER_CREDENTIALED",
+      "network_probe": "NOT EXECUTED (E32A scope)",
+      "model_call": "NOT EXECUTED (E32A scope)"
+    },
+    "zai_internal": {
+      "provider_type": "zai_internal",
+      "auth_type": "config_file",
+      "configurations": 1,
+      "roles_mapped": [],
+      "credential_present": false,
+      "readiness_state": "PROVIDER_CREDENTIALED",
+      "network_probe": "NOT EXECUTED (E32A scope)",
+      "model_call": "NOT EXECUTED (E32A scope)"
+    }
+  },
+  "gateway_config": {
+    "provider_type": null,
+    "model": null,
+    "api_key_configured": false,
+    "base_url": null,
+    "note": "Gateway not initialized - no network calls"
+  },
+  "env_auto_detect": {
+    "NVIDIA_API_KEY": "ABSENT",
+    "OPENAI_API_KEY": "ABSENT",
+    "ANTHROPIC_API_KEY": "ABSENT",
+    "GOOGLE_API_KEY": "ABSENT",
+    "OLLAMA_API_KEY": "ABSENT",
+    "CUSTOM_API_KEY": "ABSENT"
+  }
+}

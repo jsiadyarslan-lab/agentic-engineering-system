@@ -1,0 +1,21 @@
+{
+  "constructor_params": [
+    "self",
+    "llm_provider",
+    "context_manager",
+    "windows_executor",
+    "human_gate",
+    "chat_interface",
+    "token_budget",
+    "test_mode"
+  ],
+  "llm_provider_required": true,
+  "get_structured_llm_calls": 8,
+  "llmprovider_has_get_structured_llm": false,
+  "structured_llm_wrapper": true,
+  "no_operational_import": true,
+  "no_operational_planner": true,
+  "agents_use_structured_llm": true,
+  "correct_llm_path": true,
+  "operational_engine_exists": true
+}

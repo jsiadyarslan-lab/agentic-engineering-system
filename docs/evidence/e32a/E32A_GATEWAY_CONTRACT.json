@@ -1,0 +1,55 @@
+{
+  "init_no_creds": {
+    "initialized": false,
+    "client_exists": false,
+    "provider_type": null,
+    "model": null,
+    "status": "PASSED - Gateway initializes without credentials"
+  },
+  "init_explicit_no_key": {
+    "config_provider_type": "nvidia",
+    "config_model": "nvidia/nemotron-3-ultra",
+    "config_api_key": null,
+    "initialized": false,
+    "status": "PASSED - Config accepts provider_type without api_key"
+  },
+  "init_with_key_config": {
+    "config_has_key": true,
+    "config_key_length": 17,
+    "initialized": false,
+    "status": "PASSED - Config holds key but gateway not initialized"
+  },
+  "init_error_path": {
+    "note": "Gateway.initialize() would call create_client_from_env() which requires credentials",
+    "expected_error": "ValueError: No LLM provider configured",
+    "status": "VERIFIED - Error path documented, not executed"
+  },
+  "token_budget": {
+    "budget_attached": true,
+    "budget_limits": {
+      "global": 1000000,
+      "project": 500000,
+      "mission": 500000,
+      "agent": 50000
+    },
+    "status": "PASSED - Token budget properly integrated"
+  },
+  "event_emitter": {
+    "emitter_attached": true,
+    "status": "PASSED - Event emitter properly integrated"
+  },
+  "structured_output": {
+    "mode": "function_calling",
+    "supported_modes": [
+      "json_schema",
+      "function_calling",
+      "prompt"
+    ],
+    "status": "PASSED - Config supports structured output modes"
+  },
+  "budget_thresholds": {
+    "warn_threshold": 0.8,
+    "hard_stop_threshold": 1.0,
+    "status": "PASSED - Budget thresholds configurable"
+  }
+}
