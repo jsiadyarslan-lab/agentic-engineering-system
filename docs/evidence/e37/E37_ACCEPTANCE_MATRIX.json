@@ -1,0 +1,100 @@
+{
+  "executive_order": "E37",
+  "title": "MULTI-TASK MISSION / DEPENDENCY / PARALLEL EXECUTION PROOF",
+  "timestamp": "2026-10-03T16:59:27.818047+00:00",
+  "criteria": [
+    {
+      "id": "E37-01",
+      "requirement": "AC-01: Multi-task Mission (6+ tasks)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-02",
+      "requirement": "AC-02: Dependency enforcement (A->B, A->C)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-03",
+      "requirement": "AC-03: Parallel branch execution (B||C after A)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-04",
+      "requirement": "AC-04: Real task execution",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-05",
+      "requirement": "AC-05: Convergence dependencies (F depends on D+E)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-06",
+      "requirement": "AC-06: Partial progress preservation",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-07",
+      "requirement": "AC-07: Failure isolation (B continues despite C failure)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-08",
+      "requirement": "AC-08: Recovery decision (replan triggered)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-09",
+      "requirement": "AC-09: Actual replanning (graph changed)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-10",
+      "requirement": "AC-10: State reconstruction from events",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-11",
+      "requirement": "AC-11: Kill and resume from checkpoint",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-12",
+      "requirement": "AC-12: Attempt history preserved",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-13",
+      "requirement": "AC-13: No duplicate verified work",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-14",
+      "requirement": "AC-14: Final convergence (all tasks VERIFIED/COMPLETED)",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    },
+    {
+      "id": "E37-15",
+      "requirement": "AC-15: Mission-level verification",
+      "status": "VERIFIED",
+      "evidence": "E37_EVIDENCE.json"
+    }
+  ],
+  "verified_count": 15,
+  "total_criteria": 15,
+  "final_status": "VERIFIED"
+}

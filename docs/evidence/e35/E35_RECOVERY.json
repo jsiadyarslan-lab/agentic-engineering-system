@@ -7,14 +7,14 @@
     "to_version": "v2",
     "reason": "T2 failed with TASK_EXECUTION_FAILURE - switching to recovery path T2b -> T4b",
     "evidence": [
-      "TASK_FAILED event at 2026-10-03T13:39:38.291777",
+      "TASK_FAILED event at 2026-10-03T17:08:09.702731",
       "terminal=True retry_count=0 max_retries=0"
     ],
     "added_tasks": [
       {
         "task_key": "t2b_recovery",
         "depends_on": [
-          "task-898610e61a63"
+          "task-b42098765363"
         ],
         "name": "T2b: Recovery Process A"
       },
@@ -45,6 +45,6 @@
       }
     ],
     "modified_tasks": [],
-    "timestamp": "2026-10-03T13:39:38.318590+00:00"
+    "timestamp": "2026-10-03T17:08:09.758536+00:00"
   }
 }

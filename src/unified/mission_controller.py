@@ -1037,9 +1037,46 @@ class MissionController:
         not set autonomously."""
         mission = self.engine.missions.get(mission_id)
         path = []
-        for state in (MissionState.EXECUTED, MissionState.VERIFYING, MissionState.EVIDENCED):
+        
+        # Only transition through states if not already at or beyond EVIDENCED
+        current_state = mission.state
+        target_states = [MissionState.EXECUTED, MissionState.VERIFYING, MissionState.EVIDENCED]
+        
+        # Define state order for comparison
+        state_order = {
+            MissionState.RECEIVED: 0,
+            MissionState.ANALYZING: 1,
+            MissionState.PLANNING: 2,
+            MissionState.DESIGNING: 3,
+            MissionState.REVIEWING: 4,
+            MissionState.APPROVED: 5,
+            MissionState.REVISE: 6,
+            MissionState.AWAITING_APPROVAL: 7,
+            MissionState.EXECUTING: 8,
+            MissionState.EXECUTED: 9,
+            MissionState.VERIFYING: 10,
+            MissionState.EVIDENCED: 11,
+            MissionState.VERIFIED: 12,
+            MissionState.ADJUDICATED: 13,
+            MissionState.PAUSED: 14,
+            MissionState.STOPPING: 15,
+            MissionState.STOPPED: 16,
+            MissionState.CANCEL_REQUESTED: 17,
+            MissionState.CANCELLED: 18,
+            MissionState.HUMAN_REQUIRED: 19,
+            MissionState.ESCALATED_TO_HUMAN: 20,
+        }
+        
+        current_order = state_order.get(current_state, 0)
+        
+        for state in target_states:
+            target_order = state_order.get(state, 0)
+            if current_order >= target_order:
+                # Already at or beyond this state, skip
+                continue
             self._transition_mission(mission, state, actor="mission_controller", reason=reason)
             path.append(state.value)
+            current_order = target_order
         self.engine._emit(FactoryEvent.create(
             event_type=EventType.RUN_COMPLETED,
             mission_id=mission_id,

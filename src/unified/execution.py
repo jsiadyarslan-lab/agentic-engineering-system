@@ -3451,6 +3451,9 @@ class ExecutionEngine:
                                 graph[task_id][key] = value
         # Add new tasks
         if new_tasks:
+            # Initialize runnable cache for run_id if needed
+            if run_id not in self.task_runnable_cache:
+                self.task_runnable_cache[run_id] = set()
             for task_config in new_tasks:
                 task = self.create_task(
                     run_id=run_id,
@@ -3464,10 +3467,11 @@ class ExecutionEngine:
                 if task_config.get("context"):
                     task.context = task_config["context"]
                 # Add to graph
-                graph[task.task_id] = {
+                task_id = task.task_id
+                graph[task_id] = {
                     "depends_on": set(task.depends_on),
                     "dependents": set(),
-                    "state": TaskState.READY if not task.depends_on else TaskState.BLOCKED,
+                    "state": TaskState.PENDING,
                     "mission_id": mission_id,
                     "name": task.name,
                     "description": task.description,
@@ -3479,7 +3483,65 @@ class ExecutionEngine:
                 # Add reverse dependencies
                 for dep_id in task.depends_on:
                     if dep_id in graph:
-                        graph[dep_id]["dependents"].add(task.task_id)
+                        graph[dep_id]["dependents"].add(task_id)
+                # Store task in engine
+                self.tasks[task_id] = task
+                # Determine initial state based on dependencies (like add_task_to_graph)
+                if not task.depends_on:
+                    # No dependencies - ready to run
+                    graph[task_id]["state"] = TaskState.READY
+                    task.state = TaskState.READY
+                    self.task_runnable_cache[run_id].add(task_id)
+                    # Emit event
+                    self._emit(FactoryEvent.create(
+                        event_type=EventType.TASK_CREATED,
+                        mission_id=mission_id,
+                        run_id=run_id,
+                        payload=TaskCreatedEvent(
+                            task_id=task_id,
+                            mission_id=mission_id,
+                            run_id=run_id,
+                            name=task.name,
+                            agent_type=task.agent_type,
+                            acceptance_criteria=[],
+                            depends_on=list(task.depends_on),
+                            context={},
+                        ),
+                        source="execution_engine",
+                        correlation_id=task_id,
+                    ))
+                else:
+                    # Has dependencies - check if all are completed
+                    all_completed = True
+                    for dep_id in task.depends_on:
+                        dep_node = graph.get(dep_id)
+                        if not dep_node or dep_node["state"] != TaskState.COMPLETED:
+                            all_completed = False
+                            break
+                    if all_completed:
+                        graph[task_id]["state"] = TaskState.READY
+                        task.state = TaskState.READY
+                        self.task_runnable_cache[run_id].add(task_id)
+                        self._emit(FactoryEvent.create(
+                            event_type=EventType.TASK_CREATED,
+                            mission_id=mission_id,
+                            run_id=run_id,
+                            payload=TaskCreatedEvent(
+                                task_id=task_id,
+                                mission_id=mission_id,
+                                run_id=run_id,
+                                name=task.name,
+                                agent_type=task.agent_type,
+                                acceptance_criteria=[],
+                                depends_on=list(task.depends_on),
+                                context={},
+                            ),
+                            source="execution_engine",
+                            correlation_id=task_id,
+                        ))
+                    else:
+                        graph[task_id]["state"] = TaskState.BLOCKED
+                        task.state = TaskState.BLOCKED
         # Update dependencies
         if new_dependencies:
             for task_id, depends_on in new_dependencies.items():
@@ -3509,6 +3571,10 @@ class ExecutionEngine:
                     task = self.tasks.get(task_id)
                     if task:
                         task.state = TaskState.READY
+                    # Add to runnable cache
+                    if run_id not in self.task_runnable_cache:
+                        self.task_runnable_cache[run_id] = set()
+                    self.task_runnable_cache[run_id].add(task_id)
         # Emit replan applied
         graph_version = getattr(self, '_graph_version', 0)
         applied_changes = []

@@ -1,0 +1,22 @@
+{
+  "reconstructed": {
+    "t1_setup": "COMPLETED",
+    "t3_process_b": "FAILED",
+    "t2_process_a": "COMPLETED",
+    "t4_aggregate_a": "COMPLETED",
+    "t6_final": "COMPLETED",
+    "t3_process_b_recovery": "COMPLETED",
+    "t5_aggregate_b_recovery": "COMPLETED"
+  },
+  "actual": {
+    "t1_setup": "COMPLETED",
+    "t2_process_a": "COMPLETED",
+    "t3_process_b": "FAILED",
+    "t4_aggregate_a": "COMPLETED",
+    "t6_final": "COMPLETED",
+    "t3_process_b_recovery": "COMPLETED",
+    "t5_aggregate_b_recovery": "COMPLETED"
+  },
+  "match": true,
+  "total_events": 107
+}

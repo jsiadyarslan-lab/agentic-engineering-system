@@ -1,11 +1,11 @@
 {
-  "mission_id": "mission-fa99a852e471",
-  "run_id": "run-fe6f5f711d34",
+  "mission_id": "mission-9188f81e70e5",
+  "run_id": "run-40e675e22e27",
   "plan_version": "v1",
   "tasks": [
     {
       "key": "t1_setup",
-      "task_id": "task-898610e61a63",
+      "task_id": "task-b42098765363",
       "name": "T1: Setup Environment",
       "depends_on": [],
       "acceptance_criteria": [
@@ -14,7 +14,7 @@
     },
     {
       "key": "t2_process_a",
-      "task_id": "task-28ec6f64523a",
+      "task_id": "task-58be466436dc",
       "name": "T2: Process Data Stream A",
       "depends_on": [
         "t1_setup"
@@ -25,7 +25,7 @@
     },
     {
       "key": "t3_process_b",
-      "task_id": "task-72f85a19bfb4",
+      "task_id": "task-5946862cf94a",
       "name": "T3: Process Data Stream B",
       "depends_on": [
         "t1_setup"
@@ -36,7 +36,7 @@
     },
     {
       "key": "t4_aggregate_a",
-      "task_id": "task-082c03a523b8",
+      "task_id": "task-fb28e0fc0bde",
       "name": "T4: Aggregate A Results",
       "depends_on": [
         "t2_process_a"
@@ -47,7 +47,7 @@
     },
     {
       "key": "t5_aggregate_b",
-      "task_id": "task-e5b587afa921",
+      "task_id": "task-fe0ed9b74840",
       "name": "T5: Aggregate B Results",
       "depends_on": [
         "t3_process_b"
@@ -58,7 +58,7 @@
     },
     {
       "key": "t6_final",
-      "task_id": "task-b564aaf6dcd0",
+      "task_id": "task-59feab61e04a",
       "name": "T6: Final Assembly",
       "depends_on": [
         "t4_aggregate_a",
