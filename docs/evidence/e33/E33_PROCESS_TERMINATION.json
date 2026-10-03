@@ -1,0 +1,16 @@
+{
+  "mechanism": "subprocess.Popen.kill() \u2192 TerminateProcess (Windows)",
+  "runner_pid": 8932,
+  "runner_script": "tests\\unified\\e33_mission_runner.py",
+  "handshake_at": 1791028198.0350366,
+  "kill_sent_at": "2026-10-03T11:49:58.628356+00:00",
+  "process_dead_at": "2026-10-03T11:49:58.650737+00:00",
+  "exit_code": 1,
+  "graceful_shutdown": false,
+  "state_survived": [
+    "checkpoints",
+    "events",
+    "evidence_store",
+    "mission_controller ledger"
+  ]
+}

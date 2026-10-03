@@ -1,0 +1,80 @@
+{
+  "scale": {
+    "VERIFIED": 14,
+    "PARTIAL": 0,
+    "NOT_IMPLEMENTED": 0,
+    "FAILED": 0
+  },
+  "rows": [
+    {
+      "capability": "Mission persistence",
+      "verdict": "VERIFIED",
+      "evidence": "State survived 3 runtimes incl. real process kill; see E33_DURABILITY.json + checkpoints/"
+    },
+    {
+      "capability": "Multi-task graph",
+      "verdict": "VERIFIED",
+      "evidence": "8+1 tasks (A..H + X) executed through the real engine; see E33_MISSION_SPEC.json"
+    },
+    {
+      "capability": "Dependencies",
+      "verdict": "VERIFIED",
+      "evidence": "All declared edges enforced; zero violations from event history; see E33_EXECUTION_TRACE.json"
+    },
+    {
+      "capability": "Multiple attempts",
+      "verdict": "VERIFIED",
+      "evidence": "B:2, C:2, D:4 attempts recorded; attempt history in checkpoints"
+    },
+    {
+      "capability": "Failure recovery",
+      "verdict": "VERIFIED",
+      "evidence": "F1 agent error + F2 tool error recovered via engine retry; see E33_FAILURES.json"
+    },
+    {
+      "capability": "Replanning",
+      "verdict": "VERIFIED",
+      "evidence": "Deviation at D \u2192 plan v1 invalidated \u2192 v2 (E,F removed, X added, G,H rewired); see E33_REPLAN_V2.json"
+    },
+    {
+      "capability": "Partial-work preservation",
+      "verdict": "VERIFIED",
+      "evidence": "A,B,C completed in phase 1 preserved across replan + resume; ledger verdict OK"
+    },
+    {
+      "capability": "Checkpoint",
+      "verdict": "VERIFIED",
+      "evidence": "CP1 + CP2 full-state checkpoints persisted; see E33_CHECKPOINTS.json"
+    },
+    {
+      "capability": "Process termination",
+      "verdict": "VERIFIED",
+      "evidence": "Runner process killed via TerminateProcess after CP2; exit code != 0"
+    },
+    {
+      "capability": "Cross-runtime resume",
+      "verdict": "VERIFIED",
+      "evidence": "CP1 resumed in subprocess; CP2 resumed in test process after kill"
+    },
+    {
+      "capability": "No false re-execution",
+      "verdict": "VERIFIED",
+      "evidence": "Ledger from event history: PRESERVED\u00d75, EXECUTED_POST_RESUME\u00d72, INVALIDATED\u00d72; see E33_RESUME_LEDGER.json"
+    },
+    {
+      "capability": "Event reconstruction",
+      "verdict": "VERIFIED",
+      "evidence": "Full history rebuilt from events incl. pause/kill/resume/replan/completion; see E33_EVENT_TRACE.json"
+    },
+    {
+      "capability": "Evidence reconstruction",
+      "verdict": "VERIFIED",
+      "evidence": "Evidence chain + artifacts persisted under state/evidence_store"
+    },
+    {
+      "capability": "Mission completion",
+      "verdict": "VERIFIED",
+      "evidence": "All completion conditions machine-verified; RUN_COMPLETED + MISSION_COMPLETED; state=EVIDENCED (owner-gated VERIFIED not claimed)"
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "phase1": [
+    {
+      "run_id": "run-7f18eb2a372b",
+      "max_parallel": 2,
+      "pid": 8940,
+      "wall_seconds": 0.615,
+      "success": false,
+      "paused": true,
+      "task_results": {
+        "task-c7745a86ee11": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "A",
+            "started_at": "2026-10-03T11:49:54.719312+00:00",
+            "completed_at": "2026-10-03T11:49:55.216614+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-783b7e69d6f3",
+            "artifact_path": "e33_task_a.txt",
+            "content": "E33-TASK-A-OUTPUT",
+            "sha256": "59bbc139d2bb7380b58ac81bea3e5a16b507579076684de1859686d93d6c4629"
+          },
+          "artifacts": [
+            "artifact-783b7e69d6f3"
+          ]
+        },
+        "task-30144305457c": {
+          "success": true,
+          "attempts": 2,
+          "output": {
+            "task_key": "B",
+            "started_at": "2026-10-03T11:49:54.718620+00:00",
+            "completed_at": "2026-10-03T11:49:55.134805+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-edaef3138c11",
+            "artifact_path": "e33_task_b.txt",
+            "content": "E33-TASK-B-OUTPUT",
+            "sha256": "edf52b3aaab98d42625fac60a7f2ee55a165733d292e9a58c6dfd96785ab3d79"
+          },
+          "artifacts": [
+            "artifact-edaef3138c11"
+          ]
+        },
+        "task-48ea2bf85549": {
+          "success": true,
+          "attempts": 2,
+          "output": {
+            "task_key": "C",
+            "started_at": "2026-10-03T11:49:55.247307+00:00",
+            "completed_at": "2026-10-03T11:49:55.304589+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-7c3f14778a75",
+            "artifact_path": "e33_task_c.txt",
+            "content": "E33-TASK-C-OUTPUT",
+            "sha256": "41e657a4a2a224dbfc7b1353642447ffba0ff95224bcfb7739b556613eeb6d4d"
+          },
+          "artifacts": [
+            "artifact-7c3f14778a75"
+          ]
+        }
+      }
+    }
+  ],
+  "phase3": [
+    {
+      "run_id": "run-310a8944b960",
+      "max_parallel": 1,
+      "pid": 8940,
+      "wall_seconds": 0.21,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-faeb1b61bff2": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "H",
+            "started_at": "2026-10-03T11:49:58.786104+00:00",
+            "completed_at": "2026-10-03T11:49:58.853179+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-f43728f08ecf",
+            "artifact_path": "e33_task_h.txt",
+            "content": "E33-TASK-H-OUTPUT",
+            "sha256": "e1b6cab69bced7bb970df9c4f412b8f6dd7d4d268ad92d65aafb43c268837104"
+          },
+          "artifacts": [
+            "artifact-f43728f08ecf"
+          ]
+        },
+        "task-b42900a6f84a": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "G",
+            "started_at": "2026-10-03T11:49:58.885491+00:00",
+            "completed_at": "2026-10-03T11:49:58.951425+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-c56195226536",
+            "artifact_path": "e33_task_g.txt",
+            "content": "E33-TASK-G-OUTPUT",
+            "sha256": "bd2677c0452f12dc3e32d1797d335836f6621d3b0db5a2bfee860b625172726c"
+          },
+          "artifacts": [
+            "artifact-c56195226536"
+          ]
+        },
+        "task-c7745a86ee11": {
+          "success": true,
+          "resumed": true
+        },
+        "task-30144305457c": {
+          "success": true,
+          "resumed": true
+        },
+        "task-48ea2bf85549": {
+          "success": true,
+          "resumed": true
+        },
+        "task-3ed54e17568b": {
+          "success": true,
+          "resumed": true
+        },
+        "task-a9d67f09a051": {
+          "success": true,
+          "resumed": true
+        }
+      }
+    }
+  ],
+  "parallel_capability": "SUPPORTED",
+  "parallelism_proof": {
+    "A": {
+      "started_at": "2026-10-03T11:49:54.719312+00:00",
+      "completed_at": "2026-10-03T11:49:55.216614+00:00"
+    },
+    "B": {
+      "started_at": "2026-10-03T11:49:54.718620+00:00",
+      "completed_at": "2026-10-03T11:49:55.134805+00:00"
+    },
+    "overlap": true,
+    "max_parallel": 2
+  },
+  "dependency_proof": [
+    {
+      "task": "A",
+      "task_id": "task-c7745a86ee11",
+      "dependencies": [],
+      "first_assigned_at": "2026-10-03T11:49:54.719038"
+    },
+    {
+      "task": "B",
+      "task_id": "task-30144305457c",
+      "dependencies": [],
+      "first_assigned_at": "2026-10-03T11:49:54.717326"
+    },
+    {
+      "task": "C",
+      "task_id": "task-48ea2bf85549",
+      "dependencies": [
+        "B"
+      ],
+      "first_assigned_at": "2026-10-03T11:49:55.243692",
+      "dependency_B_completed_at": "2026-10-03T11:49:55.137826"
+    },
+    {
+      "task": "D",
+      "task_id": "task-3ed54e17568b",
+      "dependencies": [
+        "A",
+        "C"
+      ],
+      "first_assigned_at": "2026-10-03T11:49:57.595579",
+      "dependency_A_completed_at": "2026-10-03T11:49:55.219890",
+      "dependency_C_completed_at": "2026-10-03T11:49:55.310628"
+    },
+    {
+      "task": "E",
+      "task_id": "task-4037b30df899",
+      "dependencies": [
+        "D"
+      ],
+      "first_assigned_at": null,
+      "dependency_D_completed_at": "2026-10-03T11:49:57.883229"
+    },
+    {
+      "task": "F",
+      "task_id": "task-07dc94188078",
+      "dependencies": [
+        "D"
+      ],
+      "first_assigned_at": null,
+      "dependency_D_completed_at": "2026-10-03T11:49:57.883229"
+    },
+    {
+      "task": "G",
+      "task_id": "task-b42900a6f84a",
+      "dependencies": [
+        "F"
+      ],
+      "first_assigned_at": "2026-10-03T11:49:58.885232",
+      "dependency_F_completed_at": null
+    },
+    {
+      "task": "H",
+      "task_id": "task-faeb1b61bff2",
+      "dependencies": [
+        "E"
+      ],
+      "first_assigned_at": "2026-10-03T11:49:58.785746",
+      "dependency_E_completed_at": null
+    },
+    {
+      "task": "X",
+      "task_id": "task-a9d67f09a051",
+      "dependencies": [
+        "D"
+      ],
+      "first_assigned_at": "2026-10-03T11:49:57.911772",
+      "dependency_D_completed_at": "2026-10-03T11:49:57.883229"
+    }
+  ],
+  "dependency_violations": []
+}

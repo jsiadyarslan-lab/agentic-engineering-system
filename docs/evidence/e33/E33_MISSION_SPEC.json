@@ -1,0 +1,95 @@
+{
+  "mission_id": "mission-1cb1415ed26c",
+  "user_request": "E33: Long-running mission autonomy \u2014 M-E33",
+  "plan_v1": {
+    "version": "v1",
+    "mission_id": "mission-1cb1415ed26c",
+    "run_id": "run-7f18eb2a372b",
+    "tasks": {
+      "A": {
+        "task_id": "task-c7745a86ee11",
+        "name": "Task-A-Discovery",
+        "depends_on": [],
+        "state": "READY"
+      },
+      "B": {
+        "task_id": "task-30144305457c",
+        "name": "Task-B-Design",
+        "depends_on": [],
+        "state": "READY"
+      },
+      "C": {
+        "task_id": "task-48ea2bf85549",
+        "name": "Task-C-Implementation",
+        "depends_on": [
+          "B"
+        ],
+        "state": "BLOCKED"
+      },
+      "D": {
+        "task_id": "task-3ed54e17568b",
+        "name": "Task-D-Integration",
+        "depends_on": [
+          "A",
+          "C"
+        ],
+        "state": "BLOCKED"
+      },
+      "E": {
+        "task_id": "task-4037b30df899",
+        "name": "Task-E-Validation",
+        "depends_on": [
+          "D"
+        ],
+        "state": "BLOCKED"
+      },
+      "F": {
+        "task_id": "task-07dc94188078",
+        "name": "Task-F-Packaging",
+        "depends_on": [
+          "D"
+        ],
+        "state": "BLOCKED"
+      },
+      "G": {
+        "task_id": "task-b42900a6f84a",
+        "name": "Task-G-Release",
+        "depends_on": [
+          "F"
+        ],
+        "state": "BLOCKED"
+      },
+      "H": {
+        "task_id": "task-faeb1b61bff2",
+        "name": "Task-H-Report",
+        "depends_on": [
+          "E"
+        ],
+        "state": "BLOCKED"
+      }
+    }
+  },
+  "declared_dependencies": {
+    "A": [],
+    "B": [],
+    "C": [
+      "B"
+    ],
+    "D": [
+      "A",
+      "C"
+    ],
+    "E": [
+      "D"
+    ],
+    "F": [
+      "D"
+    ],
+    "G": [
+      "F"
+    ],
+    "H": [
+      "E"
+    ]
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-310a8944b960",
+      "max_parallel": 1,
+      "pid": 8940,
+      "wall_seconds": 0.21,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-faeb1b61bff2": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "H",
+            "started_at": "2026-10-03T11:49:58.786104+00:00",
+            "completed_at": "2026-10-03T11:49:58.853179+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-f43728f08ecf",
+            "artifact_path": "e33_task_h.txt",
+            "content": "E33-TASK-H-OUTPUT",
+            "sha256": "e1b6cab69bced7bb970df9c4f412b8f6dd7d4d268ad92d65aafb43c268837104"
+          },
+          "artifacts": [
+            "artifact-f43728f08ecf"
+          ]
+        },
+        "task-b42900a6f84a": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "G",
+            "started_at": "2026-10-03T11:49:58.885491+00:00",
+            "completed_at": "2026-10-03T11:49:58.951425+00:00",
+            "process_pid": 8940,
+            "artifact_id": "artifact-c56195226536",
+            "artifact_path": "e33_task_g.txt",
+            "content": "E33-TASK-G-OUTPUT",
+            "sha256": "bd2677c0452f12dc3e32d1797d335836f6621d3b0db5a2bfee860b625172726c"
+          },
+          "artifacts": [
+            "artifact-c56195226536"
+          ]
+        },
+        "task-c7745a86ee11": {
+          "success": true,
+          "resumed": true
+        },
+        "task-30144305457c": {
+          "success": true,
+          "resumed": true
+        },
+        "task-48ea2bf85549": {
+          "success": true,
+          "resumed": true
+        },
+        "task-3ed54e17568b": {
+          "success": true,
+          "resumed": true
+        },
+        "task-a9d67f09a051": {
+          "success": true,
+          "resumed": true
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-c7745a86ee11",
+    "B": "task-30144305457c",
+    "C": "task-48ea2bf85549",
+    "D": "task-3ed54e17568b",
+    "G": "task-b42900a6f84a",
+    "H": "task-faeb1b61bff2",
+    "X": "task-a9d67f09a051"
+  }
+}

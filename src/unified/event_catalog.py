@@ -204,6 +204,12 @@ class TaskCreatedEvent(BaseModel):
 class TaskAssignedEvent(BaseModel):
     task_id: str
     agent_id: str
+    # E33: full traceability — the engine already passes these; they were
+    # previously dropped silently by pydantic.
+    mission_id: Optional[str] = None
+    run_id: Optional[str] = None
+    agent_type: Optional[str] = None
+    attempt_id: Optional[str] = None
 class TaskCompletedEvent(BaseModel):
     task_id: str
     mission_id: str

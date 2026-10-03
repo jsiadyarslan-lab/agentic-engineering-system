@@ -1,0 +1,206 @@
+{
+  "plan_version": "v2",
+  "failures": [
+    {
+      "failure_id": "fail-78a5567f7010",
+      "kind": "task_execution_failure",
+      "task_id": "task-30144305457c",
+      "task_key": "B",
+      "description": "Injected task execution failure (attempt 1) for B",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-03T11:49:54.717915",
+        "terminal=False retry_count=0 max_retries=2"
+      ],
+      "detected_at": "2026-10-03T11:49:57.818021+00:00",
+      "classification_reason": "Error originates from agent execution logic.",
+      "recovery_action": "retry",
+      "resolved": true,
+      "resolved_by": "engine_retry_then_completed"
+    },
+    {
+      "failure_id": "fail-9a655c5ac17f",
+      "kind": "tool_runtime_failure",
+      "task_id": "task-48ea2bf85549",
+      "task_key": "C",
+      "description": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-48ea2bf85549\\\\e33_illegal|filename.txt'",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-03T11:49:55.246564",
+        "terminal=False retry_count=0 max_retries=2"
+      ],
+      "detected_at": "2026-10-03T11:49:57.818116+00:00",
+      "classification_reason": "Error originates from the sandbox/tool layer (filesystem), not from agent logic.",
+      "recovery_action": "retry",
+      "resolved": true,
+      "resolved_by": "engine_retry_then_completed"
+    },
+    {
+      "failure_id": "fail-f0af21875f2c",
+      "kind": "plan_deviation",
+      "task_id": "task-3ed54e17568b",
+      "task_key": "D",
+      "description": "Verification failed: not_evidenced",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-03T11:49:57.815369",
+        "terminal=True retry_count=2 max_retries=2"
+      ],
+      "detected_at": "2026-10-03T11:49:57.818190+00:00",
+      "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect.",
+      "recovery_action": "replan",
+      "resolved": true,
+      "resolved_by": "replan->v2"
+    }
+  ],
+  "replans": [
+    {
+      "from_version": "v1",
+      "to_version": "v2",
+      "reason": "Deviation fail-f0af21875f2c at task D: verification against plan v1 contract failed; observed artifact defines the real downstream contract (E33-TASK-D-OUTPUT). E and F (built on the invalidated expectation) are removed; remediation task X covers the contract; G and H are rewired onto X.",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-03T11:49:57.815369",
+        "terminal=True retry_count=2 max_retries=2"
+      ],
+      "added_tasks": [
+        {
+          "task_key": "X",
+          "depends_on": [
+            "task-3ed54e17568b"
+          ],
+          "name": "Task-X-Remediation"
+        }
+      ],
+      "removed_tasks": [
+        "E",
+        "F"
+      ],
+      "invalidated_tasks": [
+        "E",
+        "F"
+      ],
+      "preserved_tasks": [
+        "A",
+        "B",
+        "C"
+      ],
+      "rewired_dependencies": [
+        {
+          "task_key": "G",
+          "new_depends_on": [
+            "X"
+          ]
+        },
+        {
+          "task_key": "H",
+          "new_depends_on": [
+            "X"
+          ]
+        }
+      ],
+      "modified_tasks": [
+        {
+          "task_key": "D",
+          "new_acceptance_criteria": [
+            "file_contains:e33_task_d.txt:E33-TASK-D-OUTPUT"
+          ]
+        }
+      ],
+      "timestamp": "2026-10-03T11:49:57.819860+00:00"
+    }
+  ],
+  "phases": [
+    {
+      "run_id": "run-7d3e270e91ea",
+      "max_parallel": 1,
+      "pid": 8932,
+      "wall_seconds": 0.222,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-3ed54e17568b": {
+          "success": false,
+          "error": "Verification failed: not_evidenced",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    },
+    {
+      "run_id": "run-7d3e270e91ea",
+      "max_parallel": 1,
+      "pid": 8932,
+      "wall_seconds": 0.181,
+      "success": false,
+      "paused": true,
+      "task_results": {
+        "task-3ed54e17568b": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "D",
+            "started_at": "2026-10-03T11:49:57.823921+00:00",
+            "completed_at": "2026-10-03T11:49:57.880165+00:00",
+            "process_pid": 8932,
+            "artifact_id": "artifact-93fce5824dc4",
+            "artifact_path": "e33_task_d.txt",
+            "content": "E33-TASK-D-OUTPUT\nE33-TASK-D-DISCOVERY: downstream-contract-changed",
+            "sha256": "1e4842e1e55cf1085a745ff588463e9c6e16a098a4823481c58cd09f4885bb26"
+          },
+          "artifacts": [
+            "artifact-93fce5824dc4"
+          ]
+        },
+        "task-a9d67f09a051": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "X",
+            "started_at": "2026-10-03T11:49:57.912163+00:00",
+            "completed_at": "2026-10-03T11:49:57.972627+00:00",
+            "process_pid": 8932,
+            "artifact_id": "artifact-92041ea7cd43",
+            "artifact_path": "e33_task_x.txt",
+            "content": "E33-TASK-X-REMEDIATION-OUTPUT",
+            "sha256": "36ff725dbc4ce04085242fbba26fd730dc433a47d4919e4395e60fe878dc0d04"
+          },
+          "artifacts": [
+            "artifact-92041ea7cd43"
+          ]
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-c7745a86ee11",
+    "B": "task-30144305457c",
+    "C": "task-48ea2bf85549",
+    "D": "task-3ed54e17568b",
+    "E": "task-4037b30df899",
+    "F": "task-07dc94188078",
+    "G": "task-b42900a6f84a",
+    "H": "task-faeb1b61bff2",
+    "X": "task-a9d67f09a051"
+  },
+  "resume1": {
+    "run_id": "run-7d3e270e91ea",
+    "resumed_from_checkpoint": "checkpoint-3861cddb7f3c",
+    "pid": 8932
+  },
+  "checkpoint_cp2": {
+    "checkpoint_id": "checkpoint-9d77c738ab09",
+    "mission_id": "mission-1cb1415ed26c",
+    "run_id": "run-7d3e270e91ea",
+    "step": 6,
+    "task_states": {
+      "task-c7745a86ee11": "COMPLETED",
+      "task-30144305457c": "COMPLETED",
+      "task-48ea2bf85549": "COMPLETED",
+      "task-3ed54e17568b": "COMPLETED",
+      "task-b42900a6f84a": "READY",
+      "task-faeb1b61bff2": "READY",
+      "task-a9d67f09a051": "COMPLETED"
+    },
+    "attempt_counts": {
+      "task-3ed54e17568b": 4,
+      "task-a9d67f09a051": 1
+    }
+  }
+}

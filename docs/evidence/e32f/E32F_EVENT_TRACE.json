@@ -1,11 +1,11 @@
 [
   {
     "event_type": "mission.started",
-    "mission_id": "mission-77a2af057e5c",
+    "mission_id": "mission-5714465fc4f2",
     "run_id": "",
     "correlation_id": "",
     "payload": {
-      "mission_id": "mission-77a2af057e5c",
+      "mission_id": "mission-5714465fc4f2",
       "user_request": "E32F: Autonomous Replanning Mission",
       "provider": null,
       "model": null
@@ -14,12 +14,12 @@
   },
   {
     "event_type": "run.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "run-492718c9b5c1",
     "payload": {
-      "run_id": "run-7ad02773e0b0",
-      "mission_id": "mission-77a2af057e5c",
+      "run_id": "run-492718c9b5c1",
+      "mission_id": "mission-5714465fc4f2",
       "run_number": 1,
       "parent_run_id": null
     },
@@ -27,11 +27,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
+      "task_id": "task-219853faae86",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -40,37 +40,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-219853faae86",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-6c915a7c"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-61f5ae25bad5",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-219853faae86",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
+      "task_id": "task-219853faae86",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -79,51 +83,55 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-219853faae86",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-6c915a7c"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-61f5ae25bad5",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-219853faae86",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-61f5ae25bad5"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-219853faae86"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
+      "task_id": "task-219853faae86",
       "from_state": "RUNNING",
       "to_state": "COMPLETED",
       "reason": "Task state updated to COMPLETED"
@@ -132,62 +140,62 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
+      "task_id": "task-06ebc779ff11",
       "from_state": "BLOCKED",
       "to_state": "READY",
-      "reason": "Dependency task-61f5ae25bad5 completed"
+      "reason": "Dependency task-219853faae86 completed"
     },
     "source": "task_graph"
   },
   {
     "event_type": "task.completed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "task_id": "task-61f5ae25bad5",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-219853faae86",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "success": true,
       "artifacts": [
-        "artifact-7f6075788d09"
+        "artifact-c7e429ac97ec"
       ],
       "evidence_hashes": [],
-      "duration_ms": 2
+      "duration_ms": 4
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "artifact.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-61f5ae25bad5",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-219853faae86",
     "payload": {
-      "artifact_id": "artifact-7f6075788d09",
+      "artifact_id": "artifact-c7e429ac97ec",
       "name": "e32f_task_a.txt",
       "path": "e32f_task_a.txt",
       "sha256": "75ef77731551e7281fdaac0ec5c8b23bacd9cbc69eabecf6d641fc883daa93c5",
       "size_bytes": 18,
       "created_by": "e32f-task-a-agent",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-61f5ae25bad5"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-219853faae86"
     },
     "source": "evidence_store"
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-f2f935b71aed",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-7467fdee3190",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 5,
       "state": "EXECUTING",
       "task_count": 5,
@@ -198,11 +206,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
+      "task_id": "task-06ebc779ff11",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -211,37 +219,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-06ebc779ff11",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-86645bc0"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-ddef8b441a94",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-06ebc779ff11",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
+      "task_id": "task-06ebc779ff11",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -250,51 +262,55 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-06ebc779ff11",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-86645bc0"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-ddef8b441a94",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-06ebc779ff11",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-ddef8b441a94"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-06ebc779ff11"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
+      "task_id": "task-06ebc779ff11",
       "from_state": "RUNNING",
       "to_state": "COMPLETED",
       "reason": "Task state updated to COMPLETED"
@@ -303,62 +319,62 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "BLOCKED",
       "to_state": "READY",
-      "reason": "Dependency task-ddef8b441a94 completed"
+      "reason": "Dependency task-06ebc779ff11 completed"
     },
     "source": "task_graph"
   },
   {
     "event_type": "task.completed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "task_id": "task-ddef8b441a94",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-06ebc779ff11",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "success": true,
       "artifacts": [
-        "artifact-51c136b6f92d"
+        "artifact-0a403afaf717"
       ],
       "evidence_hashes": [],
-      "duration_ms": 3
+      "duration_ms": 6
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "artifact.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-ddef8b441a94",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-06ebc779ff11",
     "payload": {
-      "artifact_id": "artifact-51c136b6f92d",
+      "artifact_id": "artifact-0a403afaf717",
       "name": "e32f_task_b.txt",
       "path": "e32f_task_b.txt",
       "sha256": "b3a897d1227e07aad647ae012d0bb4926efe5b701311e073c9eeb1101cae7b5d",
       "size_bytes": 18,
       "created_by": "e32f-task-a-agent",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-ddef8b441a94"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-06ebc779ff11"
     },
     "source": "evidence_store"
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-f87c0600b199",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-31359139b766",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 5,
       "state": "EXECUTING",
       "task_count": 5,
@@ -369,11 +385,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -382,37 +398,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-ba1e4d58"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -421,53 +441,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-ba1e4d58"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "verification_id": "verification-40f387df3086",
-      "task_id": "task-878d8eae10dc",
-      "attempt_id": "attempt-275d073b",
+      "verification_id": "verification-7b20d593a735",
+      "task_id": "task-2cbdcbc87dd2",
+      "attempt_id": "attempt-ba1e4d58",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -481,11 +505,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -494,11 +518,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "FAILED",
       "to_state": "READY",
       "reason": "Task state updated to READY"
@@ -507,14 +531,14 @@
   },
   {
     "event_type": "task.retry",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "attempt_id": "attempt-275d073b",
+      "task_id": "task-2cbdcbc87dd2",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "attempt_id": "attempt-ba1e4d58",
       "retry_count": 1,
       "max_retries": 2,
       "error": "Verification failed: not_evidenced"
@@ -523,11 +547,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -536,37 +560,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-b-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-b-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-8f4b6f21"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -575,53 +603,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-b-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-b-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-8f4b6f21"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "verification_id": "verification-77f1595e5acc",
-      "task_id": "task-878d8eae10dc",
-      "attempt_id": "attempt-f335f7d0",
+      "verification_id": "verification-35d39f4fb86f",
+      "task_id": "task-2cbdcbc87dd2",
+      "attempt_id": "attempt-8f4b6f21",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -635,11 +667,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -648,11 +680,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "FAILED",
       "to_state": "READY",
       "reason": "Task state updated to READY"
@@ -661,14 +693,14 @@
   },
   {
     "event_type": "task.retry",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "attempt_id": "attempt-f335f7d0",
+      "task_id": "task-2cbdcbc87dd2",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "attempt_id": "attempt-8f4b6f21",
       "retry_count": 2,
       "max_retries": 2,
       "error": "Verification failed: not_evidenced"
@@ -677,11 +709,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -690,37 +722,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-acc28ec8"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -729,53 +765,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2cbdcbc87dd2",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-acc28ec8"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-878d8eae10dc"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2cbdcbc87dd2"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "verification_id": "verification-5ce2f873469e",
-      "task_id": "task-878d8eae10dc",
-      "attempt_id": "attempt-779db283",
+      "verification_id": "verification-5dac692d58cd",
+      "task_id": "task-2cbdcbc87dd2",
+      "attempt_id": "attempt-acc28ec8",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -789,11 +829,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
+      "task_id": "task-2cbdcbc87dd2",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -802,13 +842,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-2cbdcbc87dd2",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 2,
       "max_retries": 2
@@ -817,13 +857,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-2cbdcbc87dd2",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 2,
       "max_retries": 2
@@ -832,13 +872,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-878d8eae10dc",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2cbdcbc87dd2",
     "payload": {
-      "task_id": "task-878d8eae10dc",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-2cbdcbc87dd2",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 3,
       "max_retries": 2
@@ -847,18 +887,18 @@
   },
   {
     "event_type": "plan.revised",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "run-492718c9b5c1",
     "payload": {
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "revision_number": 2,
       "changes": [
-        "Added tasks: ['task-54fd3bf2e614']",
-        "Removed tasks: ['task-878d8eae10dc']",
-        "Invalidated tasks: ['task-878d8eae10dc']",
-        "Preserved tasks: ['task-61f5ae25bad5', 'task-ddef8b441a94']",
+        "Added tasks: ['task-9f4e91c15fd9']",
+        "Removed tasks: ['task-2cbdcbc87dd2']",
+        "Invalidated tasks: ['task-2cbdcbc87dd2']",
+        "Preserved tasks: ['task-219853faae86', 'task-06ebc779ff11']",
         "Changed dependencies: 1 tasks"
       ]
     },
@@ -866,11 +906,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
+      "task_id": "task-2b972c3fd1c1",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -879,37 +919,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2b972c3fd1c1",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-e973a541"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-076adae572db",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2b972c3fd1c1",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
+      "task_id": "task-2b972c3fd1c1",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -918,51 +962,55 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-2b972c3fd1c1",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-e973a541"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-076adae572db",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2b972c3fd1c1",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-076adae572db"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2b972c3fd1c1"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
+      "task_id": "task-2b972c3fd1c1",
       "from_state": "RUNNING",
       "to_state": "COMPLETED",
       "reason": "Task state updated to COMPLETED"
@@ -971,62 +1019,62 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
+      "task_id": "task-d5a07c56b252",
       "from_state": "BLOCKED",
       "to_state": "READY",
-      "reason": "Dependency task-076adae572db completed"
+      "reason": "Dependency task-2b972c3fd1c1 completed"
     },
     "source": "task_graph"
   },
   {
     "event_type": "task.completed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "task_id": "task-076adae572db",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-2b972c3fd1c1",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "success": true,
       "artifacts": [
-        "artifact-41d275cf9bc0"
+        "artifact-8f9ce0853957"
       ],
       "evidence_hashes": [],
-      "duration_ms": 8
+      "duration_ms": 1
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "artifact.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-076adae572db",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-2b972c3fd1c1",
     "payload": {
-      "artifact_id": "artifact-41d275cf9bc0",
+      "artifact_id": "artifact-8f9ce0853957",
       "name": "e32f_task_a.txt",
       "path": "e32f_task_a.txt",
       "sha256": "75ef77731551e7281fdaac0ec5c8b23bacd9cbc69eabecf6d641fc883daa93c5",
       "size_bytes": 18,
       "created_by": "e32f-task-a-agent",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-076adae572db"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-2b972c3fd1c1"
     },
     "source": "evidence_store"
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-911d7ed8d874",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-6e2b158e5586",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 6,
       "state": "EXECUTING",
       "task_count": 6,
@@ -1037,11 +1085,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
+      "task_id": "task-d5a07c56b252",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -1050,37 +1098,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-d5a07c56b252",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-fb5ca724"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-a60f34778d48",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-d5a07c56b252",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
+      "task_id": "task-d5a07c56b252",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -1089,51 +1141,55 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-d5a07c56b252",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-fb5ca724"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-a60f34778d48",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-d5a07c56b252",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-a60f34778d48"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-d5a07c56b252"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
+      "task_id": "task-d5a07c56b252",
       "from_state": "RUNNING",
       "to_state": "COMPLETED",
       "reason": "Task state updated to COMPLETED"
@@ -1142,62 +1198,62 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
+      "task_id": "task-a004d179eff1",
       "from_state": "BLOCKED",
       "to_state": "READY",
-      "reason": "Dependency task-a60f34778d48 completed"
+      "reason": "Dependency task-d5a07c56b252 completed"
     },
     "source": "task_graph"
   },
   {
     "event_type": "task.completed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "task_id": "task-a60f34778d48",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-d5a07c56b252",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "success": true,
       "artifacts": [
-        "artifact-0486b4ad161f"
+        "artifact-a99db4014f77"
       ],
       "evidence_hashes": [],
-      "duration_ms": 4
+      "duration_ms": 2
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "artifact.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-a60f34778d48",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-d5a07c56b252",
     "payload": {
-      "artifact_id": "artifact-0486b4ad161f",
+      "artifact_id": "artifact-a99db4014f77",
       "name": "e32f_task_d.txt",
       "path": "e32f_task_d.txt",
       "sha256": "a0ac34e51c7c06d0d0274050500c20cfbcce4bc2839e4110369560fd477dfed4",
       "size_bytes": 18,
       "created_by": "e32f-task-a-agent",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-a60f34778d48"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-d5a07c56b252"
     },
     "source": "evidence_store"
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-ec92a27a96d0",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-a75e294a4bc4",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 6,
       "state": "EXECUTING",
       "task_count": 6,
@@ -1208,11 +1264,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
+      "task_id": "task-a004d179eff1",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -1221,37 +1277,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-a004d179eff1",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-2a68d614"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-942a1b7320eb",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-a004d179eff1",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
+      "task_id": "task-a004d179eff1",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -1260,51 +1320,55 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-a004d179eff1",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-2a68d614"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-942a1b7320eb",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-a004d179eff1",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-942a1b7320eb"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-a004d179eff1"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
+      "task_id": "task-a004d179eff1",
       "from_state": "RUNNING",
       "to_state": "COMPLETED",
       "reason": "Task state updated to COMPLETED"
@@ -1313,49 +1377,49 @@
   },
   {
     "event_type": "task.completed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "task_id": "task-942a1b7320eb",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-a004d179eff1",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "success": true,
       "artifacts": [
-        "artifact-0efcde68efe6"
+        "artifact-51e2f198f7a8"
       ],
       "evidence_hashes": [],
-      "duration_ms": 1
+      "duration_ms": 2
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "artifact.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-942a1b7320eb",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-a004d179eff1",
     "payload": {
-      "artifact_id": "artifact-0efcde68efe6",
+      "artifact_id": "artifact-51e2f198f7a8",
       "name": "e32f_task_e.txt",
       "path": "e32f_task_e.txt",
       "sha256": "466fda351d246f31d7b29ebf9b452857b861a092f59f41c87ede200ff9e6f4cd",
       "size_bytes": 18,
       "created_by": "e32f-task-a-agent",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-942a1b7320eb"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-a004d179eff1"
     },
     "source": "evidence_store"
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-552d71dea729",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-4488c31cf2cc",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 6,
       "state": "EXECUTING",
       "task_count": 6,
@@ -1366,13 +1430,13 @@
   },
   {
     "event_type": "checkpoint.created",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
     "correlation_id": null,
     "payload": {
-      "checkpoint_id": "checkpoint-e3fff62c90ea",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "checkpoint_id": "checkpoint-bf4c0f34fd16",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "step": 3,
       "state": "RECEIVED",
       "task_count": 5,
@@ -1383,11 +1447,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -1396,37 +1460,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-1ebf37dd"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -1435,53 +1503,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-1ebf37dd"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "verification_id": "verification-8da61d6015ff",
-      "task_id": "task-77417a638d51",
-      "attempt_id": "attempt-57b1de20",
+      "verification_id": "verification-b559f1d6fb23",
+      "task_id": "task-4471bae19552",
+      "attempt_id": "attempt-1ebf37dd",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -1495,11 +1567,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -1508,11 +1580,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "FAILED",
       "to_state": "READY",
       "reason": "Task state updated to READY"
@@ -1521,14 +1593,14 @@
   },
   {
     "event_type": "task.retry",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "attempt_id": "attempt-57b1de20",
+      "task_id": "task-4471bae19552",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "attempt_id": "attempt-1ebf37dd",
       "retry_count": 1,
       "max_retries": 2,
       "error": "Verification failed: not_evidenced"
@@ -1537,11 +1609,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -1550,37 +1622,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-b-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-b-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-7ed740dc"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -1589,53 +1665,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-b-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-b-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-7ed740dc"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-b-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "verification_id": "verification-8f9ae1601114",
-      "task_id": "task-77417a638d51",
-      "attempt_id": "attempt-7bceeb4d",
+      "verification_id": "verification-7162136aba1e",
+      "task_id": "task-4471bae19552",
+      "attempt_id": "attempt-7ed740dc",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -1649,11 +1729,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -1662,11 +1742,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "FAILED",
       "to_state": "READY",
       "reason": "Task state updated to READY"
@@ -1675,14 +1755,14 @@
   },
   {
     "event_type": "task.retry",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "attempt_id": "attempt-7bceeb4d",
+      "task_id": "task-4471bae19552",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "attempt_id": "attempt-7ed740dc",
       "retry_count": 2,
       "max_retries": 2,
       "error": "Verification failed: not_evidenced"
@@ -1691,11 +1771,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "READY",
       "to_state": "ASSIGNED",
       "reason": "Task state updated to ASSIGNED"
@@ -1704,37 +1784,41 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-ac26b5bf"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "ASSIGNED",
       "to_state": "RUNNING",
       "reason": "Task state updated to RUNNING"
@@ -1743,53 +1827,57 @@
   },
   {
     "event_type": "task.assigned",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "agent_id": "e32f-task-a-agent"
+      "task_id": "task-4471bae19552",
+      "agent_id": "e32f-task-a-agent",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-ac26b5bf"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "agent.selected",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552",
       "selection_method": "reservation"
     },
     "source": "execution_engine"
   },
   {
     "event_type": "agent.started",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
       "agent_id": "e32f-task-a-agent",
       "agent_type": "implementer",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
-      "task_id": "task-77417a638d51"
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
+      "task_id": "task-4471bae19552"
     },
     "source": "agent.implementer"
   },
   {
     "event_type": "verification.complete",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "verification_id": "verification-32773bd8afda",
-      "task_id": "task-77417a638d51",
-      "attempt_id": "attempt-6dcd9288",
+      "verification_id": "verification-4c6bda1b5b4a",
+      "task_id": "task-4471bae19552",
+      "attempt_id": "attempt-ac26b5bf",
       "verdict": "not_evidenced",
       "checks_performed": [
         "crit_0"
@@ -1803,11 +1891,11 @@
   },
   {
     "event_type": "state.transition",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
+      "task_id": "task-4471bae19552",
       "from_state": "RUNNING",
       "to_state": "FAILED",
       "reason": "Task state updated to FAILED"
@@ -1816,13 +1904,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-4471bae19552",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 2,
       "max_retries": 2
@@ -1831,13 +1919,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-4471bae19552",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 2,
       "max_retries": 2
@@ -1846,13 +1934,13 @@
   },
   {
     "event_type": "task.failed",
-    "mission_id": "mission-77a2af057e5c",
-    "run_id": "run-7ad02773e0b0",
-    "correlation_id": "task-77417a638d51",
+    "mission_id": "mission-5714465fc4f2",
+    "run_id": "run-492718c9b5c1",
+    "correlation_id": "task-4471bae19552",
     "payload": {
-      "task_id": "task-77417a638d51",
-      "mission_id": "mission-77a2af057e5c",
-      "run_id": "run-7ad02773e0b0",
+      "task_id": "task-4471bae19552",
+      "mission_id": "mission-5714465fc4f2",
+      "run_id": "run-492718c9b5c1",
       "error": "Verification failed: not_evidenced",
       "retry_count": 3,
       "max_retries": 2

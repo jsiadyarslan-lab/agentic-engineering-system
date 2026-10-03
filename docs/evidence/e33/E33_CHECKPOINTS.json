@@ -1,0 +1,35 @@
+{
+  "CP1": {
+    "checkpoint_id": "checkpoint-3861cddb7f3c",
+    "run_id": "run-7f18eb2a372b",
+    "step": 3,
+    "task_states": {
+      "task-c7745a86ee11": "COMPLETED",
+      "task-30144305457c": "COMPLETED",
+      "task-48ea2bf85549": "COMPLETED",
+      "task-3ed54e17568b": "READY",
+      "task-4037b30df899": "BLOCKED",
+      "task-07dc94188078": "BLOCKED",
+      "task-b42900a6f84a": "BLOCKED",
+      "task-faeb1b61bff2": "BLOCKED"
+    },
+    "file_sha256": "46c1c3f914756544152bb7080ec1362a35707e80fe4eb85d68645c82ea35a6b1"
+  },
+  "CP2": {
+    "checkpoint_id": "checkpoint-9d77c738ab09",
+    "run_id": "run-7d3e270e91ea",
+    "step": 6,
+    "task_states": {
+      "task-c7745a86ee11": "COMPLETED",
+      "task-30144305457c": "COMPLETED",
+      "task-48ea2bf85549": "COMPLETED",
+      "task-3ed54e17568b": "COMPLETED",
+      "task-b42900a6f84a": "READY",
+      "task-faeb1b61bff2": "READY",
+      "task-a9d67f09a051": "COMPLETED"
+    },
+    "file_sha256": "5d31310735f5ddeef6db298f51b0d92440a463154c19898c759a892ee60cccd4",
+    "created_by_process": 8932,
+    "survived_process_termination": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "mission_id": "mission-1cb1415ed26c",
+  "run_id": "run-7d3e270e91ea",
+  "checkpoint_id": "checkpoint-9d77c738ab09",
+  "plan_version": "v2",
+  "pid": 8932,
+  "completed_keys": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "X"
+  ],
+  "pending_keys": [
+    "G",
+    "H"
+  ],
+  "ready_at": 1791028198.0350366
+}

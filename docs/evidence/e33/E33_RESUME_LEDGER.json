@@ -1,0 +1,157 @@
+{
+  "resume_marker": {
+    "event": "CHECKPOINT_LOADED",
+    "checkpoint_id": "checkpoint-9d77c738ab09",
+    "timestamp": "2026-10-03T11:49:58.770081"
+  },
+  "rows": [
+    {
+      "task_key": "A",
+      "task_id": "task-c7745a86ee11",
+      "attempts_before_interruption": [
+        {
+          "attempt_id": "attempt-f20eceea",
+          "at": "2026-10-03T11:49:54.719038"
+        }
+      ],
+      "attempts_after_resume": [],
+      "final_state": "COMPLETED",
+      "expected": "PRESERVED",
+      "actual": "PRESERVED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "B",
+      "task_id": "task-30144305457c",
+      "attempts_before_interruption": [
+        {
+          "attempt_id": "attempt-58d8a7e5",
+          "at": "2026-10-03T11:49:54.717326"
+        },
+        {
+          "attempt_id": "attempt-e444f9a3",
+          "at": "2026-10-03T11:49:54.718333"
+        }
+      ],
+      "attempts_after_resume": [],
+      "final_state": "COMPLETED",
+      "expected": "PRESERVED",
+      "actual": "PRESERVED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "C",
+      "task_id": "task-48ea2bf85549",
+      "attempts_before_interruption": [
+        {
+          "attempt_id": "attempt-7de10c50",
+          "at": "2026-10-03T11:49:55.243692"
+        },
+        {
+          "attempt_id": "attempt-a07b4a9d",
+          "at": "2026-10-03T11:49:55.247010"
+        }
+      ],
+      "attempts_after_resume": [],
+      "final_state": "COMPLETED",
+      "expected": "PRESERVED",
+      "actual": "PRESERVED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "D",
+      "task_id": "task-3ed54e17568b",
+      "attempts_before_interruption": [
+        {
+          "attempt_id": "attempt-417f635c",
+          "at": "2026-10-03T11:49:57.595579"
+        },
+        {
+          "attempt_id": "attempt-bd7cc5a5",
+          "at": "2026-10-03T11:49:57.670358"
+        },
+        {
+          "attempt_id": "attempt-2595ac18",
+          "at": "2026-10-03T11:49:57.746016"
+        },
+        {
+          "attempt_id": "attempt-e3cca2b3",
+          "at": "2026-10-03T11:49:57.823610"
+        }
+      ],
+      "attempts_after_resume": [],
+      "final_state": "COMPLETED",
+      "expected": "PRESERVED",
+      "actual": "PRESERVED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "E",
+      "task_id": "task-4037b30df899",
+      "attempts_before_interruption": [],
+      "attempts_after_resume": [],
+      "total_attempts_in_history": 0,
+      "final_state": "ABSENT_FROM_FINAL_GRAPH",
+      "expected": "INVALIDATED",
+      "actual": "INVALIDATED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "F",
+      "task_id": "task-07dc94188078",
+      "attempts_before_interruption": [],
+      "attempts_after_resume": [],
+      "total_attempts_in_history": 0,
+      "final_state": "ABSENT_FROM_FINAL_GRAPH",
+      "expected": "INVALIDATED",
+      "actual": "INVALIDATED",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "G",
+      "task_id": "task-b42900a6f84a",
+      "attempts_before_interruption": [],
+      "attempts_after_resume": [
+        {
+          "attempt_id": "attempt-37967b33",
+          "at": "2026-10-03T11:49:58.885232"
+        }
+      ],
+      "final_state": "COMPLETED",
+      "expected": "EXECUTED_POST_RESUME",
+      "actual": "EXECUTED_POST_RESUME",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "H",
+      "task_id": "task-faeb1b61bff2",
+      "attempts_before_interruption": [],
+      "attempts_after_resume": [
+        {
+          "attempt_id": "attempt-d0c58d22",
+          "at": "2026-10-03T11:49:58.785746"
+        }
+      ],
+      "final_state": "COMPLETED",
+      "expected": "EXECUTED_POST_RESUME",
+      "actual": "EXECUTED_POST_RESUME",
+      "verdict": "OK"
+    },
+    {
+      "task_key": "X",
+      "task_id": "task-a9d67f09a051",
+      "attempts_before_interruption": [
+        {
+          "attempt_id": "attempt-b1ea2083",
+          "at": "2026-10-03T11:49:57.911772"
+        }
+      ],
+      "attempts_after_resume": [],
+      "final_state": "COMPLETED",
+      "expected": "PRESERVED",
+      "actual": "PRESERVED",
+      "verdict": "OK"
+    }
+  ],
+  "verdict": "NO_FALSE_REEXECUTION"
+}
