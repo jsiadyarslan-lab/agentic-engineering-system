@@ -1,17 +1,17 @@
 {
   "resume_marker": {
     "event": "CHECKPOINT_LOADED",
-    "checkpoint_id": "checkpoint-9d77c738ab09",
-    "timestamp": "2026-10-03T11:49:58.770081"
+    "checkpoint_id": "checkpoint-bddf8660d666",
+    "timestamp": "2026-10-03T11:51:43.877489"
   },
   "rows": [
     {
       "task_key": "A",
-      "task_id": "task-c7745a86ee11",
+      "task_id": "task-7d1dc8ff426c",
       "attempts_before_interruption": [
         {
-          "attempt_id": "attempt-f20eceea",
-          "at": "2026-10-03T11:49:54.719038"
+          "attempt_id": "attempt-00b5c330",
+          "at": "2026-10-03T11:51:39.611977"
         }
       ],
       "attempts_after_resume": [],
@@ -22,15 +22,15 @@
     },
     {
       "task_key": "B",
-      "task_id": "task-30144305457c",
+      "task_id": "task-58d5d0250930",
       "attempts_before_interruption": [
         {
-          "attempt_id": "attempt-58d8a7e5",
-          "at": "2026-10-03T11:49:54.717326"
+          "attempt_id": "attempt-51f8250b",
+          "at": "2026-10-03T11:51:39.610698"
         },
         {
-          "attempt_id": "attempt-e444f9a3",
-          "at": "2026-10-03T11:49:54.718333"
+          "attempt_id": "attempt-17857db2",
+          "at": "2026-10-03T11:51:39.611557"
         }
       ],
       "attempts_after_resume": [],
@@ -41,15 +41,15 @@
     },
     {
       "task_key": "C",
-      "task_id": "task-48ea2bf85549",
+      "task_id": "task-524f029df082",
       "attempts_before_interruption": [
         {
-          "attempt_id": "attempt-7de10c50",
-          "at": "2026-10-03T11:49:55.243692"
+          "attempt_id": "attempt-aab42041",
+          "at": "2026-10-03T11:51:40.075021"
         },
         {
-          "attempt_id": "attempt-a07b4a9d",
-          "at": "2026-10-03T11:49:55.247010"
+          "attempt_id": "attempt-56a0b9ac",
+          "at": "2026-10-03T11:51:40.077908"
         }
       ],
       "attempts_after_resume": [],
@@ -60,23 +60,23 @@
     },
     {
       "task_key": "D",
-      "task_id": "task-3ed54e17568b",
+      "task_id": "task-a7b3c13daca1",
       "attempts_before_interruption": [
         {
-          "attempt_id": "attempt-417f635c",
-          "at": "2026-10-03T11:49:57.595579"
+          "attempt_id": "attempt-3941ba12",
+          "at": "2026-10-03T11:51:42.489174"
         },
         {
-          "attempt_id": "attempt-bd7cc5a5",
-          "at": "2026-10-03T11:49:57.670358"
+          "attempt_id": "attempt-1a821e57",
+          "at": "2026-10-03T11:51:42.578268"
         },
         {
-          "attempt_id": "attempt-2595ac18",
-          "at": "2026-10-03T11:49:57.746016"
+          "attempt_id": "attempt-648cbfb0",
+          "at": "2026-10-03T11:51:42.672441"
         },
         {
-          "attempt_id": "attempt-e3cca2b3",
-          "at": "2026-10-03T11:49:57.823610"
+          "attempt_id": "attempt-714e7dbc",
+          "at": "2026-10-03T11:51:42.796376"
         }
       ],
       "attempts_after_resume": [],
@@ -87,7 +87,7 @@
     },
     {
       "task_key": "E",
-      "task_id": "task-4037b30df899",
+      "task_id": "task-e133da96000d",
       "attempts_before_interruption": [],
       "attempts_after_resume": [],
       "total_attempts_in_history": 0,
@@ -98,7 +98,7 @@
     },
     {
       "task_key": "F",
-      "task_id": "task-07dc94188078",
+      "task_id": "task-b1095dd57dc3",
       "attempts_before_interruption": [],
       "attempts_after_resume": [],
       "total_attempts_in_history": 0,
@@ -109,12 +109,12 @@
     },
     {
       "task_key": "G",
-      "task_id": "task-b42900a6f84a",
+      "task_id": "task-076f94e14510",
       "attempts_before_interruption": [],
       "attempts_after_resume": [
         {
-          "attempt_id": "attempt-37967b33",
-          "at": "2026-10-03T11:49:58.885232"
+          "attempt_id": "attempt-499f8e3b",
+          "at": "2026-10-03T11:51:44.062698"
         }
       ],
       "final_state": "COMPLETED",
@@ -124,12 +124,12 @@
     },
     {
       "task_key": "H",
-      "task_id": "task-faeb1b61bff2",
+      "task_id": "task-8c808c82e55a",
       "attempts_before_interruption": [],
       "attempts_after_resume": [
         {
-          "attempt_id": "attempt-d0c58d22",
-          "at": "2026-10-03T11:49:58.785746"
+          "attempt_id": "attempt-0c26ad9e",
+          "at": "2026-10-03T11:51:43.878107"
         }
       ],
       "final_state": "COMPLETED",
@@ -139,11 +139,11 @@
     },
     {
       "task_key": "X",
-      "task_id": "task-a9d67f09a051",
+      "task_id": "task-63ab1149bf18",
       "attempts_before_interruption": [
         {
-          "attempt_id": "attempt-b1ea2083",
-          "at": "2026-10-03T11:49:57.911772"
+          "attempt_id": "attempt-ee59a99f",
+          "at": "2026-10-03T11:51:43.018148"
         }
       ],
       "attempts_after_resume": [],

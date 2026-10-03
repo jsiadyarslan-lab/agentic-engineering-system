@@ -1,25 +1,25 @@
 {
-  "mission_id": "mission-1cb1415ed26c",
+  "mission_id": "mission-7ebaf6f5cf2e",
   "user_request": "E33: Long-running mission autonomy \u2014 M-E33",
   "plan_v1": {
     "version": "v1",
-    "mission_id": "mission-1cb1415ed26c",
-    "run_id": "run-7f18eb2a372b",
+    "mission_id": "mission-7ebaf6f5cf2e",
+    "run_id": "run-8c8567a1aab7",
     "tasks": {
       "A": {
-        "task_id": "task-c7745a86ee11",
+        "task_id": "task-7d1dc8ff426c",
         "name": "Task-A-Discovery",
         "depends_on": [],
         "state": "READY"
       },
       "B": {
-        "task_id": "task-30144305457c",
+        "task_id": "task-58d5d0250930",
         "name": "Task-B-Design",
         "depends_on": [],
         "state": "READY"
       },
       "C": {
-        "task_id": "task-48ea2bf85549",
+        "task_id": "task-524f029df082",
         "name": "Task-C-Implementation",
         "depends_on": [
           "B"
@@ -27,7 +27,7 @@
         "state": "BLOCKED"
       },
       "D": {
-        "task_id": "task-3ed54e17568b",
+        "task_id": "task-a7b3c13daca1",
         "name": "Task-D-Integration",
         "depends_on": [
           "A",
@@ -36,7 +36,7 @@
         "state": "BLOCKED"
       },
       "E": {
-        "task_id": "task-4037b30df899",
+        "task_id": "task-e133da96000d",
         "name": "Task-E-Validation",
         "depends_on": [
           "D"
@@ -44,7 +44,7 @@
         "state": "BLOCKED"
       },
       "F": {
-        "task_id": "task-07dc94188078",
+        "task_id": "task-b1095dd57dc3",
         "name": "Task-F-Packaging",
         "depends_on": [
           "D"
@@ -52,7 +52,7 @@
         "state": "BLOCKED"
       },
       "G": {
-        "task_id": "task-b42900a6f84a",
+        "task_id": "task-076f94e14510",
         "name": "Task-G-Release",
         "depends_on": [
           "F"
@@ -60,7 +60,7 @@
         "state": "BLOCKED"
       },
       "H": {
-        "task_id": "task-faeb1b61bff2",
+        "task_id": "task-8c808c82e55a",
         "name": "Task-H-Report",
         "depends_on": [
           "E"

@@ -4,64 +4,64 @@
   "replans": [],
   "phases": [
     {
-      "run_id": "run-310a8944b960",
+      "run_id": "run-7a6afa88c819",
       "max_parallel": 1,
-      "pid": 8940,
-      "wall_seconds": 0.21,
+      "pid": 6012,
+      "wall_seconds": 0.266,
       "success": true,
       "paused": false,
       "task_results": {
-        "task-faeb1b61bff2": {
+        "task-8c808c82e55a": {
           "success": true,
           "attempts": 1,
           "output": {
             "task_key": "H",
-            "started_at": "2026-10-03T11:49:58.786104+00:00",
-            "completed_at": "2026-10-03T11:49:58.853179+00:00",
-            "process_pid": 8940,
-            "artifact_id": "artifact-f43728f08ecf",
+            "started_at": "2026-10-03T11:51:43.878369+00:00",
+            "completed_at": "2026-10-03T11:51:44.006433+00:00",
+            "process_pid": 6012,
+            "artifact_id": "artifact-7a4ea04fab0a",
             "artifact_path": "e33_task_h.txt",
             "content": "E33-TASK-H-OUTPUT",
             "sha256": "e1b6cab69bced7bb970df9c4f412b8f6dd7d4d268ad92d65aafb43c268837104"
           },
           "artifacts": [
-            "artifact-f43728f08ecf"
+            "artifact-7a4ea04fab0a"
           ]
         },
-        "task-b42900a6f84a": {
+        "task-076f94e14510": {
           "success": true,
           "attempts": 1,
           "output": {
             "task_key": "G",
-            "started_at": "2026-10-03T11:49:58.885491+00:00",
-            "completed_at": "2026-10-03T11:49:58.951425+00:00",
-            "process_pid": 8940,
-            "artifact_id": "artifact-c56195226536",
+            "started_at": "2026-10-03T11:51:44.062915+00:00",
+            "completed_at": "2026-10-03T11:51:44.120018+00:00",
+            "process_pid": 6012,
+            "artifact_id": "artifact-dcaf8bf2f805",
             "artifact_path": "e33_task_g.txt",
             "content": "E33-TASK-G-OUTPUT",
             "sha256": "bd2677c0452f12dc3e32d1797d335836f6621d3b0db5a2bfee860b625172726c"
           },
           "artifacts": [
-            "artifact-c56195226536"
+            "artifact-dcaf8bf2f805"
           ]
         },
-        "task-c7745a86ee11": {
+        "task-7d1dc8ff426c": {
           "success": true,
           "resumed": true
         },
-        "task-30144305457c": {
+        "task-58d5d0250930": {
           "success": true,
           "resumed": true
         },
-        "task-48ea2bf85549": {
+        "task-524f029df082": {
           "success": true,
           "resumed": true
         },
-        "task-3ed54e17568b": {
+        "task-a7b3c13daca1": {
           "success": true,
           "resumed": true
         },
-        "task-a9d67f09a051": {
+        "task-63ab1149bf18": {
           "success": true,
           "resumed": true
         }
@@ -69,12 +69,12 @@
     }
   ],
   "key_map": {
-    "A": "task-c7745a86ee11",
-    "B": "task-30144305457c",
-    "C": "task-48ea2bf85549",
-    "D": "task-3ed54e17568b",
-    "G": "task-b42900a6f84a",
-    "H": "task-faeb1b61bff2",
-    "X": "task-a9d67f09a051"
+    "A": "task-7d1dc8ff426c",
+    "B": "task-58d5d0250930",
+    "C": "task-524f029df082",
+    "D": "task-a7b3c13daca1",
+    "G": "task-076f94e14510",
+    "H": "task-8c808c82e55a",
+    "X": "task-63ab1149bf18"
   }
 }

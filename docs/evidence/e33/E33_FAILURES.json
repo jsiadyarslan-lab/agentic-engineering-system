@@ -3,12 +3,12 @@
     {
       "kind": "task_execution_failure",
       "recovery_action": "retry",
-      "failure_id": "fail-78a5567f7010",
+      "failure_id": "fail-8ae44af8e251",
       "task_key": "B",
-      "task_id": "task-30144305457c",
+      "task_id": "task-58d5d0250930",
       "description": "Injected task execution failure (attempt 1) for B",
       "evidence": [
-        "TASK_FAILED event at 2026-10-03T11:49:54.717915",
+        "TASK_FAILED event at 2026-10-03T11:51:39.611262",
         "terminal=False retry_count=0 max_retries=2"
       ],
       "classification_reason": "Error originates from agent execution logic.",
@@ -18,12 +18,12 @@
     {
       "kind": "tool_runtime_failure",
       "recovery_action": "retry",
-      "failure_id": "fail-9a655c5ac17f",
+      "failure_id": "fail-0c542ac0df33",
       "task_key": "C",
-      "task_id": "task-48ea2bf85549",
-      "description": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-48ea2bf85549\\\\e33_illegal|filename.txt'",
+      "task_id": "task-524f029df082",
+      "description": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-524f029df082\\\\e33_illegal|filename.txt'",
       "evidence": [
-        "TASK_FAILED event at 2026-10-03T11:49:55.246564",
+        "TASK_FAILED event at 2026-10-03T11:51:40.077373",
         "terminal=False retry_count=0 max_retries=2"
       ],
       "classification_reason": "Error originates from the sandbox/tool layer (filesystem), not from agent logic.",
@@ -34,48 +34,48 @@
   "phase2_runner_ledger": {
     "failures": [
       {
-        "failure_id": "fail-78a5567f7010",
+        "failure_id": "fail-8ae44af8e251",
         "kind": "task_execution_failure",
-        "task_id": "task-30144305457c",
+        "task_id": "task-58d5d0250930",
         "task_key": "B",
         "description": "Injected task execution failure (attempt 1) for B",
         "evidence": [
-          "TASK_FAILED event at 2026-10-03T11:49:54.717915",
+          "TASK_FAILED event at 2026-10-03T11:51:39.611262",
           "terminal=False retry_count=0 max_retries=2"
         ],
-        "detected_at": "2026-10-03T11:49:57.818021+00:00",
+        "detected_at": "2026-10-03T11:51:42.790795+00:00",
         "classification_reason": "Error originates from agent execution logic.",
         "recovery_action": "retry",
         "resolved": true,
         "resolved_by": "engine_retry_then_completed"
       },
       {
-        "failure_id": "fail-9a655c5ac17f",
+        "failure_id": "fail-0c542ac0df33",
         "kind": "tool_runtime_failure",
-        "task_id": "task-48ea2bf85549",
+        "task_id": "task-524f029df082",
         "task_key": "C",
-        "description": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-48ea2bf85549\\\\e33_illegal|filename.txt'",
+        "description": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-524f029df082\\\\e33_illegal|filename.txt'",
         "evidence": [
-          "TASK_FAILED event at 2026-10-03T11:49:55.246564",
+          "TASK_FAILED event at 2026-10-03T11:51:40.077373",
           "terminal=False retry_count=0 max_retries=2"
         ],
-        "detected_at": "2026-10-03T11:49:57.818116+00:00",
+        "detected_at": "2026-10-03T11:51:42.790917+00:00",
         "classification_reason": "Error originates from the sandbox/tool layer (filesystem), not from agent logic.",
         "recovery_action": "retry",
         "resolved": true,
         "resolved_by": "engine_retry_then_completed"
       },
       {
-        "failure_id": "fail-f0af21875f2c",
+        "failure_id": "fail-4b7a6aa93f4c",
         "kind": "plan_deviation",
-        "task_id": "task-3ed54e17568b",
+        "task_id": "task-a7b3c13daca1",
         "task_key": "D",
         "description": "Verification failed: not_evidenced",
         "evidence": [
-          "TASK_FAILED event at 2026-10-03T11:49:57.815369",
+          "TASK_FAILED event at 2026-10-03T11:51:42.773650",
           "terminal=True retry_count=2 max_retries=2"
         ],
-        "detected_at": "2026-10-03T11:49:57.818190+00:00",
+        "detected_at": "2026-10-03T11:51:42.791003+00:00",
         "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect.",
         "recovery_action": "replan",
         "resolved": true,
@@ -86,16 +86,16 @@
       {
         "from_version": "v1",
         "to_version": "v2",
-        "reason": "Deviation fail-f0af21875f2c at task D: verification against plan v1 contract failed; observed artifact defines the real downstream contract (E33-TASK-D-OUTPUT). E and F (built on the invalidated expectation) are removed; remediation task X covers the contract; G and H are rewired onto X.",
+        "reason": "Deviation fail-4b7a6aa93f4c at task D: verification against plan v1 contract failed; observed artifact defines the real downstream contract (E33-TASK-D-OUTPUT). E and F (built on the invalidated expectation) are removed; remediation task X covers the contract; G and H are rewired onto X.",
         "evidence": [
-          "TASK_FAILED event at 2026-10-03T11:49:57.815369",
+          "TASK_FAILED event at 2026-10-03T11:51:42.773650",
           "terminal=True retry_count=2 max_retries=2"
         ],
         "added_tasks": [
           {
             "task_key": "X",
             "depends_on": [
-              "task-3ed54e17568b"
+              "task-a7b3c13daca1"
             ],
             "name": "Task-X-Remediation"
           }
@@ -135,7 +135,7 @@
             ]
           }
         ],
-        "timestamp": "2026-10-03T11:49:57.819860+00:00"
+        "timestamp": "2026-10-03T11:51:42.793137+00:00"
       }
     ]
   },

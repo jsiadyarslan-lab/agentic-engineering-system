@@ -1,10 +1,10 @@
 {
   "mechanism": "subprocess.Popen.kill() \u2192 TerminateProcess (Windows)",
-  "runner_pid": 8932,
+  "runner_pid": 10436,
   "runner_script": "tests\\unified\\e33_mission_runner.py",
-  "handshake_at": 1791028198.0350366,
-  "kill_sent_at": "2026-10-03T11:49:58.628356+00:00",
-  "process_dead_at": "2026-10-03T11:49:58.650737+00:00",
+  "handshake_at": 1791028303.1297054,
+  "kill_sent_at": "2026-10-03T11:51:43.729389+00:00",
+  "process_dead_at": "2026-10-03T11:51:43.744117+00:00",
   "exit_code": 1,
   "graceful_shutdown": false,
   "state_survived": [

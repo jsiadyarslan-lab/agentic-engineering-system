@@ -1,34 +1,34 @@
 {
-  "mission_id": "mission-1cb1415ed26c",
-  "started_at": "2026-10-03T11:49:54.706412+00:00",
-  "completed_at": "2026-10-03T11:49:59.048402+00:00",
+  "mission_id": "mission-7ebaf6f5cf2e",
+  "started_at": "2026-10-03T11:51:39.560558+00:00",
+  "completed_at": "2026-10-03T11:51:44.208071+00:00",
   "runtimes": [
     {
       "phase": 1,
-      "pid": 8940,
+      "pid": 6012,
       "runs": [
-        "run-7f18eb2a372b"
+        "run-8c8567a1aab7"
       ]
     },
     {
       "phase": 2,
-      "pid": 8932,
+      "pid": 10436,
       "runs": [
-        "run-7d3e270e91ea"
+        "run-0964cd912559"
       ],
       "terminated": true
     },
     {
       "phase": 3,
-      "pid": 8940,
+      "pid": 6012,
       "runs": [
-        "run-310a8944b960"
+        "run-7a6afa88c819"
       ]
     }
   ],
   "checkpoints": [
-    "checkpoint-3861cddb7f3c",
-    "checkpoint-9d77c738ab09"
+    "checkpoint-bb4a3ba80b31",
+    "checkpoint-bddf8660d666"
   ],
   "failures": 4,
   "restarts": 1,
@@ -40,17 +40,17 @@
   "final_state": {
     "mission_state": "EVIDENCED",
     "task_states": {
-      "task-c7745a86ee11": "COMPLETED",
-      "task-30144305457c": "COMPLETED",
-      "task-48ea2bf85549": "COMPLETED",
-      "task-3ed54e17568b": "COMPLETED",
-      "task-a9d67f09a051": "COMPLETED",
-      "task-b42900a6f84a": "COMPLETED",
-      "task-faeb1b61bff2": "COMPLETED"
+      "task-7d1dc8ff426c": "COMPLETED",
+      "task-58d5d0250930": "COMPLETED",
+      "task-524f029df082": "COMPLETED",
+      "task-a7b3c13daca1": "COMPLETED",
+      "task-63ab1149bf18": "COMPLETED",
+      "task-076f94e14510": "COMPLETED",
+      "task-8c808c82e55a": "COMPLETED"
     },
     "invalidated_tasks": {
-      "E": "task-4037b30df899",
-      "F": "task-07dc94188078"
+      "E": "task-e133da96000d",
+      "F": "task-b1095dd57dc3"
     }
   },
   "state_dir": "docs\\evidence\\e33\\state"

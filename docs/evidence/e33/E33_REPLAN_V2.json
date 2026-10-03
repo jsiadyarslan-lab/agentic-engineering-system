@@ -3,16 +3,16 @@
     {
       "from_version": "v1",
       "to_version": "v2",
-      "reason": "Deviation fail-f0af21875f2c at task D: verification against plan v1 contract failed; observed artifact defines the real downstream contract (E33-TASK-D-OUTPUT). E and F (built on the invalidated expectation) are removed; remediation task X covers the contract; G and H are rewired onto X.",
+      "reason": "Deviation fail-4b7a6aa93f4c at task D: verification against plan v1 contract failed; observed artifact defines the real downstream contract (E33-TASK-D-OUTPUT). E and F (built on the invalidated expectation) are removed; remediation task X covers the contract; G and H are rewired onto X.",
       "evidence": [
-        "TASK_FAILED event at 2026-10-03T11:49:57.815369",
+        "TASK_FAILED event at 2026-10-03T11:51:42.773650",
         "terminal=True retry_count=2 max_retries=2"
       ],
       "added_tasks": [
         {
           "task_key": "X",
           "depends_on": [
-            "task-3ed54e17568b"
+            "task-a7b3c13daca1"
           ],
           "name": "Task-X-Remediation"
         }
@@ -52,7 +52,7 @@
           ]
         }
       ],
-      "timestamp": "2026-10-03T11:49:57.819860+00:00"
+      "timestamp": "2026-10-03T11:51:42.793137+00:00"
     }
   ],
   "plan_version_after": "v2"

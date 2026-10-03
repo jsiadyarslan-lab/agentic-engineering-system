@@ -1,35 +1,35 @@
 {
   "CP1": {
-    "checkpoint_id": "checkpoint-3861cddb7f3c",
-    "run_id": "run-7f18eb2a372b",
+    "checkpoint_id": "checkpoint-bb4a3ba80b31",
+    "run_id": "run-8c8567a1aab7",
     "step": 3,
     "task_states": {
-      "task-c7745a86ee11": "COMPLETED",
-      "task-30144305457c": "COMPLETED",
-      "task-48ea2bf85549": "COMPLETED",
-      "task-3ed54e17568b": "READY",
-      "task-4037b30df899": "BLOCKED",
-      "task-07dc94188078": "BLOCKED",
-      "task-b42900a6f84a": "BLOCKED",
-      "task-faeb1b61bff2": "BLOCKED"
+      "task-7d1dc8ff426c": "COMPLETED",
+      "task-58d5d0250930": "COMPLETED",
+      "task-524f029df082": "COMPLETED",
+      "task-a7b3c13daca1": "READY",
+      "task-e133da96000d": "BLOCKED",
+      "task-b1095dd57dc3": "BLOCKED",
+      "task-076f94e14510": "BLOCKED",
+      "task-8c808c82e55a": "BLOCKED"
     },
-    "file_sha256": "46c1c3f914756544152bb7080ec1362a35707e80fe4eb85d68645c82ea35a6b1"
+    "file_sha256": "38ce00dfe1ac9167c7622eca1f98e8e82399fffbf587bb7eb6ba0452a2625dfa"
   },
   "CP2": {
-    "checkpoint_id": "checkpoint-9d77c738ab09",
-    "run_id": "run-7d3e270e91ea",
+    "checkpoint_id": "checkpoint-bddf8660d666",
+    "run_id": "run-0964cd912559",
     "step": 6,
     "task_states": {
-      "task-c7745a86ee11": "COMPLETED",
-      "task-30144305457c": "COMPLETED",
-      "task-48ea2bf85549": "COMPLETED",
-      "task-3ed54e17568b": "COMPLETED",
-      "task-b42900a6f84a": "READY",
-      "task-faeb1b61bff2": "READY",
-      "task-a9d67f09a051": "COMPLETED"
+      "task-7d1dc8ff426c": "COMPLETED",
+      "task-58d5d0250930": "COMPLETED",
+      "task-524f029df082": "COMPLETED",
+      "task-a7b3c13daca1": "COMPLETED",
+      "task-076f94e14510": "READY",
+      "task-8c808c82e55a": "READY",
+      "task-63ab1149bf18": "COMPLETED"
     },
-    "file_sha256": "5d31310735f5ddeef6db298f51b0d92440a463154c19898c759a892ee60cccd4",
-    "created_by_process": 8932,
+    "file_sha256": "189d054a8b549f2ce65eb8d9c6fedee0582ab4f389f6f5d14c58ff457d6e3e2a",
+    "created_by_process": 10436,
     "survived_process_termination": true
   }
 }
