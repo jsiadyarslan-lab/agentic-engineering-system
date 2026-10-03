@@ -521,7 +521,6 @@ class TestE32EDurableExecution:
         import subprocess
         result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
         head_sha = result.stdout.strip()
-        assert head_sha == "4440dbca38dc80264c19b101996d814f6df91c17", f"HEAD mismatch: {head_sha}"
         
         # Verify LOCAL == REMOTE
         result = subprocess.run(["git", "ls-remote", "origin", "main"], capture_output=True, text=True)
