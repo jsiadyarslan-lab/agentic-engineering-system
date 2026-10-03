@@ -1,0 +1,48 @@
+{
+  "mission_id": "mission-eb96e88651fe",
+  "run_id": "run-c570554c7126",
+  "task_results": {
+    "task-5477dd50fe10": {
+      "success": true,
+      "artifacts": [
+        "artifact-32dab86de4ee"
+      ]
+    },
+    "task-f277f62147ae": {
+      "success": true,
+      "artifacts": [
+        "artifact-8c68f3012693"
+      ]
+    },
+    "task-313f2ad11d76": {
+      "success": true,
+      "artifacts": [
+        "artifact-5e6d619baa47"
+      ]
+    },
+    "task-5bddc29d7966": {
+      "success": true,
+      "artifacts": [
+        "artifact-d3431dc7d46b"
+      ]
+    },
+    "task-ab2a61503e82": {
+      "success": true,
+      "artifacts": [
+        "artifact-856f1b28faba"
+      ]
+    },
+    "task-52a6c3b19e32": {
+      "success": true,
+      "artifacts": [
+        "artifact-ddec11f75fd0"
+      ]
+    }
+  },
+  "checkpoint_ids": [
+    "checkpoint-7429a6af9a5f",
+    "checkpoint-1c7d9522b885",
+    "checkpoint-be8f8b653d8d"
+  ],
+  "events_count": 88
+}
