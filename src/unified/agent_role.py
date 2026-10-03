@@ -12,11 +12,11 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable, Type, Set
 from pydantic import BaseModel, Field, field_validator
 import uuid
-from src.unified.domain_model import (
+from unified.domain_model import (
     AgentType,
     EventType,
 )
-from src.unified.agent_contract import (
+from unified.agent_contract import (
     AgentTask,
     AgentResult,
     Grant,
@@ -25,7 +25,7 @@ from src.unified.agent_contract import (
     EvidenceRecord,
     Verification,
 )
-from src.unified.event_catalog import FactoryEvent
+from unified.event_catalog import FactoryEvent
 # ============================================================
 # AGENT LIFECYCLE STATE MACHINE
 # ============================================================

@@ -1,0 +1,13 @@
+{
+  "checkpoint_id": "checkpoint-e3fff62c90ea",
+  "mission_id": "mission-77a2af057e5c",
+  "run_id": "run-7ad02773e0b0",
+  "step": 3,
+  "task_states": {
+    "task-61f5ae25bad5": "COMPLETED",
+    "task-ddef8b441a94": "COMPLETED",
+    "task-878d8eae10dc": "FAILED",
+    "task-a60f34778d48": "COMPLETED",
+    "task-942a1b7320eb": "COMPLETED"
+  }
+}

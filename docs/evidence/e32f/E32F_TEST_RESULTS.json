@@ -1,0 +1,20 @@
+{
+  "phase1_results": {
+    "task-61f5ae25bad5": true,
+    "task-ddef8b441a94": true,
+    "task-878d8eae10dc": false
+  },
+  "phase2_results": {
+    "task-076adae572db": true,
+    "task-a60f34778d48": true,
+    "task-942a1b7320eb": true
+  },
+  "phase3_results": {
+    "task-77417a638d51": false
+  },
+  "total_tasks": 7,
+  "deviations_handled": 2,
+  "replans": 1,
+  "checkpoints": 1,
+  "cross_runtime_resume": true
+}

@@ -1,0 +1,38 @@
+{
+  "plan_v1": "v1",
+  "plan_v2": "v2",
+  "added_tasks": [
+    {
+      "task_id": "task-54fd3bf2e614",
+      "name": "Task-Replanned-verification_failure",
+      "description": "Replanned task after verification_failure",
+      "depends_on": [
+        "task-ddef8b441a94"
+      ],
+      "agent_type": "implementer"
+    }
+  ],
+  "removed_tasks": [
+    "task-878d8eae10dc"
+  ],
+  "reordered_tasks": [],
+  "invalidated_tasks": [
+    "task-878d8eae10dc"
+  ],
+  "preserved_tasks": [
+    "task-61f5ae25bad5",
+    "task-ddef8b441a94"
+  ],
+  "changed_dependencies": [
+    {
+      "task_id": "task-a60f34778d48",
+      "new_depends_on": [
+        "task-54fd3bf2e614"
+      ]
+    }
+  ],
+  "reason": "Autonomous replan after verification_failure: Verification failed for task task-878d8eae10dc",
+  "evidence": [
+    "Verification verdict: not_evidenced"
+  ]
+}

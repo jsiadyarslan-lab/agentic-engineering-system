@@ -73,7 +73,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from src.unified.contracts import (
+from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
     new_agent_id, new_action_id, new_event_id, new_artifact_id,
@@ -109,14 +109,14 @@ from src.unified.contracts import (
     AgentContext, AgentCapability, BaseAgent,
     AgentTask, AgentResult,
 )
-from src.unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
-from src.unified.sandbox import create_sandbox_manager, SandboxBackend
-from src.unified.windows_adapter import WindowsExecutorAdapter
-from src.unified.verification_standard import Verifier, VerificationReport, CheckResult
-from src.llm.orchestrator_adapter import OrchestratorLLMProvider
-from src.llm.structured import StructuredLLM
-from src.llm.providers import LLMMessage
-from src.secrets_store import get_key
+from unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
+from unified.sandbox import create_sandbox_manager, SandboxBackend
+from unified.windows_adapter import WindowsExecutorAdapter
+from unified.verification_standard import Verifier, VerificationReport, CheckResult
+from llm.orchestrator_adapter import OrchestratorLLMProvider
+from llm.structured import StructuredLLM
+from llm.providers import LLMMessage
+from secrets_store import get_key
 
 
 # ============================================================

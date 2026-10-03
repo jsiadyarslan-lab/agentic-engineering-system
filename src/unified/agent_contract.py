@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Literal, Protocol, runtime_checkab
 from pydantic import BaseModel, Field, field_validator
 from dataclasses import dataclass, field
 
-from src.unified.domain_model import (
+from unified.domain_model import (
     AgentType,
     TaskState,
     MissionState,

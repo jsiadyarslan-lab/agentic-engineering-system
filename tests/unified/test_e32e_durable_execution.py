@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from src.unified.contracts import (
+from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
     new_agent_id, new_action_id, new_event_id, new_artifact_id,
@@ -67,14 +67,14 @@ from src.unified.contracts import (
     AgentContext, AgentCapability, BaseAgent,
     AgentTask, AgentResult,
 )
-from src.unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
-from src.unified.sandbox import create_sandbox_manager, SandboxBackend
-from src.unified.windows_adapter import WindowsExecutorAdapter
-from src.unified.verification_standard import Verifier, VerificationReport, CheckResult
-from src.llm.orchestrator_adapter import OrchestratorLLMProvider
-from src.llm.structured import StructuredLLM
-from src.llm.providers import LLMMessage
-from src.secrets_store import get_key
+from unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
+from unified.sandbox import create_sandbox_manager, SandboxBackend
+from unified.windows_adapter import WindowsExecutorAdapter
+from unified.verification_standard import Verifier, VerificationReport, CheckResult
+from llm.orchestrator_adapter import OrchestratorLLMProvider
+from llm.structured import StructuredLLM
+from llm.providers import LLMMessage
+from secrets_store import get_key
 
 
 # ============================================================
@@ -109,7 +109,7 @@ class E32ETaskAgent(BaseAgent):
         )
     
     def on_complete(self, context: AgentContext, task: AgentTask, result: AgentResult) -> None:
-        print(f"DEBUG E32ETaskAgent.on_complete: task={task.task_id}, success={result.success}")
+        pass
     
     async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
         start_time = asyncio.get_event_loop().time()
@@ -552,7 +552,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -674,6 +680,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -688,7 +703,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -798,6 +819,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -814,8 +844,14 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
         original_verifier_impl = agent_registry._implementations.get(AgentType.VERIFIER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -904,8 +940,19 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
             if original_verifier_impl:
                 agent_registry._implementations[AgentType.VERIFIER] = original_verifier_impl
+            else:
+                agent_registry._implementations.pop(AgentType.VERIFIER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -920,7 +967,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -1014,6 +1067,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -1027,7 +1089,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -1132,6 +1200,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -1145,7 +1222,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -1181,7 +1264,6 @@ class TestE32EDurableExecution:
             # Verify artifact exists in evidence store
             artifact = engine.evidence_store.get_artifact_obj(artifact_id)
             assert artifact is not None
-            print(f"DEBUG: Artifact mission_id: '{artifact.mission_id}'")
             assert artifact.sha256 != ""
             original_hash = artifact.sha256
             
@@ -1199,24 +1281,7 @@ class TestE32EDurableExecution:
             
             # Now simulate restart: save evidence to disk, create new engine instance, load evidence
             engine.evidence_store.save_to_disk(mission.mission_id)
-            
-            # Debug: check what was saved
-            store_dir = engine.evidence_store._get_evidence_store_dir(mission.mission_id)
-            artifacts_file = store_dir / "artifacts.json"
-            evidence_file = store_dir / "evidence.json"
-            if artifacts_file.exists():
-                with open(artifacts_file, 'r') as f:
-                    saved_artifacts = json.load(f)
-                print(f"DEBUG: Saved artifacts: {list(saved_artifacts.keys())}")
-            else:
-                print("DEBUG: No artifacts file found")
-            if evidence_file.exists():
-                with open(evidence_file, 'r') as f:
-                    saved_evidence = json.load(f)
-                print(f"DEBUG: Saved evidence: {list(saved_evidence.keys())}")
-            else:
-                print("DEBUG: No evidence file found")
-            
+
             engine2 = ExecutionEngine(artifacts_base_dir=temp_dir, max_retries=0)
             engine2.evidence_store.load_from_disk(mission.mission_id)
             engine2_sandbox_manager = engine2.sandbox_manager
@@ -1241,6 +1306,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)
@@ -1254,7 +1328,13 @@ class TestE32EDurableExecution:
         """
         events, collector = event_collector
         
+        # Capture original registry state BEFORE registering E32E agents
         original_impl = agent_registry._implementations.get(AgentType.IMPLEMENTER)
+        original_type_to_def = agent_registry._type_to_definition.get(AgentType.IMPLEMENTER)
+        # Also capture the old default IMPLEMENTER definition that replace_definition will pop
+        original_default_def = None
+        if original_type_to_def is not None:
+            original_default_def = agent_registry._definitions.get(original_type_to_def)
         original_defs = {}
         for key in E32E_AGENT_IDS:
             if key in agent_registry._definitions:
@@ -1353,6 +1433,15 @@ class TestE32EDurableExecution:
         finally:
             if original_impl:
                 agent_registry._implementations[AgentType.IMPLEMENTER] = original_impl
+            else:
+                agent_registry._implementations.pop(AgentType.IMPLEMENTER, None)
+            if original_type_to_def is not None:
+                agent_registry._type_to_definition[AgentType.IMPLEMENTER] = original_type_to_def
+            else:
+                agent_registry._type_to_definition.pop(AgentType.IMPLEMENTER, None)
+            # Restore the old default IMPLEMENTER definition if it was popped by replace_definition
+            if original_default_def is not None:
+                agent_registry._definitions[original_default_def.agent_id] = original_default_def
             for key, defn in original_defs.items():
                 agent_registry._definitions[key] = defn
             cleanup_e32e_agents(agent_registry)

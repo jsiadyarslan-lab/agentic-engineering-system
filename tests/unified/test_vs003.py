@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from src.unified.contracts import (
+from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id, new_agent_id,
     # Enums
@@ -42,10 +42,10 @@ from src.unified.contracts import (
     # Event Catalog
     FactoryEvent, EVENT_CATALOG,
 )
-from src.unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
-from src.unified.sandbox import SandboxManager, create_sandbox_manager
-from src.unified.windows_adapter import WindowsExecutorAdapter
-from src.unified.test_agent import E4TestAgent, register_e4_test_agent
+from unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
+from unified.sandbox import SandboxManager, create_sandbox_manager
+from unified.windows_adapter import WindowsExecutorAdapter
+from unified.test_agent import E4TestAgent, register_e4_test_agent
 
 
 class TestVS003AgentLifecycle:

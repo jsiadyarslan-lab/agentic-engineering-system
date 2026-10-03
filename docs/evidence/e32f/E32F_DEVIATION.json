@@ -1,0 +1,14 @@
+{
+  "deviation_id": "dev-1ed2e172326f",
+  "type": "verification_failure",
+  "description": "Verification failed for task task-878d8eae10dc",
+  "evidence": [
+    "Verification verdict: not_evidenced"
+  ],
+  "affected_tasks": [
+    "task-878d8eae10dc"
+  ],
+  "severity": "major",
+  "plan_validity": "invalid",
+  "replan_required": true
+}

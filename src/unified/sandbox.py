@@ -19,14 +19,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from pydantic import BaseModel, Field
 
-from src.unified.domain_model import (
+from unified.domain_model import (
     SandboxTermination,
     SandboxRequest,
     SandboxExecutionRecord,
     Artifact,
     EngineeringDomain,
 )
-from src.unified.contracts import Grant
+from unified.contracts import Grant
 
 
 # ============================================================
@@ -470,7 +470,7 @@ def create_local_substrate_adapter() -> ExecutionSandbox:
 def create_windows_executor_adapter(artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
     """Create WindowsExecutorAdapter (Windows only)."""
     try:
-        from src.unified.windows_adapter import create_windows_executor_adapter as _create
+        from unified.windows_adapter import create_windows_executor_adapter as _create
         return _create(artifacts_base_dir=artifacts_base_dir)
     except ImportError as e:
         raise SandboxUnavailableError(f"WindowsExecutorAdapter not available: {e}")

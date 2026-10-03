@@ -1,0 +1,38 @@
+{
+  "version": "v1",
+  "tasks": {
+    "task-61f5ae25bad5": {
+      "name": "Discovery",
+      "depends_on": [],
+      "agent_type": "implementer"
+    },
+    "task-ddef8b441a94": {
+      "name": "Design",
+      "depends_on": [
+        "task-61f5ae25bad5"
+      ],
+      "agent_type": "implementer"
+    },
+    "task-878d8eae10dc": {
+      "name": "Implementation",
+      "depends_on": [
+        "task-ddef8b441a94"
+      ],
+      "agent_type": "implementer"
+    },
+    "task-a60f34778d48": {
+      "name": "Test",
+      "depends_on": [
+        "task-878d8eae10dc"
+      ],
+      "agent_type": "implementer"
+    },
+    "task-942a1b7320eb": {
+      "name": "Verification",
+      "depends_on": [
+        "task-a60f34778d48"
+      ],
+      "agent_type": "implementer"
+    }
+  }
+}

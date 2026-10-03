@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set
 
-from src.unified.contracts import (
+from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
     new_agent_id, new_action_id, new_event_id, new_grant_id,
@@ -68,17 +68,17 @@ from src.unified.contracts import (
     VerificationCompleteEvent, CheckpointCreatedEvent,
     MissionStateChangedEvent, MissionCompletedEvent,
 )
-from src.unified.agent_role import (
+from unified.agent_role import (
     AgentCapability, AgentContext, AgentRegistry, agent_registry,
     AgentFactory, BaseAgent, AgentSelectionError, AgentLifecycleState,
     AgentDefinition,
 )
-from src.unified.sandbox import (
+from unified.sandbox import (
     ExecutionSandbox, SandboxBackend, SandboxManager,
     SandboxError, SandboxUnavailableError, create_sandbox_manager,
 )
-from src.unified.windows_adapter import WindowsExecutorAdapter
-from src.unified.execution import (
+from unified.windows_adapter import WindowsExecutorAdapter
+from unified.execution import (
     ExecutionEngine, create_execution_engine, ExecutionContext,
     SimpleEventBus, FileEvidenceStore,
 )

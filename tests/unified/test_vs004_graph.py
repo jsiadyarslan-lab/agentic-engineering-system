@@ -26,16 +26,16 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 
-from src.unified.contracts import (
+from unified.contracts import (
     AgentType, TaskState, EventType,
     AgentDefinition, AgentLifecycleState,
     FactoryEvent,
 )
-from src.unified.execution import create_execution_engine, ExecutionContext
-from src.unified.execution import FileEvidenceStore
-from src.unified.sandbox import create_sandbox_manager, SandboxBackend
-from src.unified.agent_role import agent_registry
-from src.unified.test_agent import E4TestAgent, register_e4_test_agent
+from unified.execution import create_execution_engine, ExecutionContext
+from unified.execution import FileEvidenceStore
+from unified.sandbox import create_sandbox_manager, SandboxBackend
+from unified.agent_role import agent_registry
+from unified.test_agent import E4TestAgent, register_e4_test_agent
 
 
 # ============================================================
@@ -45,7 +45,7 @@ from src.unified.test_agent import E4TestAgent, register_e4_test_agent
 @pytest.fixture(autouse=True)
 def clear_reservations():
     """Clear agent reservations before and after each test (E15)."""
-    from src.unified.agent_role import clear_all_reservations
+    from unified.agent_role import clear_all_reservations
     clear_all_reservations()
     yield
     clear_all_reservations()
@@ -71,7 +71,16 @@ def event_collector():
 def sandbox_manager(temp_dir):
     """Sandbox manager with artifacts directory."""
     # Register default test agent if not already registered
-    if "e4-test-agent-001" not in agent_registry._definitions:
+    # Check both _definitions and _type_to_definition since replace_definition removes old default from _definitions
+    # while _type_to_definition still points to it.
+    # Agent is properly registered only if BOTH conditions hold:
+    # 1. "e4-test-agent-001" is in _definitions
+    # 2. _type_to_definition[AgentType.IMPLEMENTER] == "e4-test-agent-001"
+    properly_registered = (
+        "e4-test-agent-001" in agent_registry._definitions and
+        agent_registry._type_to_definition.get(AgentType.IMPLEMENTER) == "e4-test-agent-001"
+    )
+    if not properly_registered:
         register_e4_test_agent(agent_registry)
     
     artifacts_base_dir = os.path.join(temp_dir, "artifacts")
@@ -149,9 +158,9 @@ class TestVS004TaskGraphOrchestration:
         self, sandbox_manager, event_collector, temp_dir
     ):
         """Test failure propagation blocks dependent tasks."""
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -220,7 +229,7 @@ class TestVS004TaskGraphOrchestration:
                 agent_registry.enable_agent("e4-test-agent-001")
             if "failing-agent-vs004" in agent_registry._definitions:
                 del agent_registry._definitions["failing-agent-vs004"]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
     @pytest.mark.asyncio
@@ -234,9 +243,9 @@ class TestVS004TaskGraphOrchestration:
         Attempt-1 FAILS, Attempt-2 SUCCEEDS.
         Both attempts preserved in history.
         """
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -340,7 +349,7 @@ class TestVS004TaskGraphOrchestration:
                 agent_registry.enable_agent("e4-test-agent-001")
             if "flaky-agent-e7" in agent_registry._definitions:
                 del agent_registry._definitions["flaky-agent-e7"]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
     @pytest.mark.asyncio
@@ -357,9 +366,9 @@ class TestVS004TaskGraphOrchestration:
         Task → TERMINAL FAILURE
         No Attempt-4 created.
         """
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -462,7 +471,7 @@ class TestVS004TaskGraphOrchestration:
                 agent_registry.enable_agent("e4-test-agent-001")
             if "always-fail-agent-e7" in agent_registry._definitions:
                 del agent_registry._definitions["always-fail-agent-e7"]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
     @pytest.mark.asyncio
@@ -767,9 +776,9 @@ class TestVS004TaskGraphOrchestration:
         agent_A_id != agent_B_id
         Reassignment recorded in events.
         """
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -892,7 +901,7 @@ class TestVS004TaskGraphOrchestration:
             for key in ["agent-a-e7", "agent-b-e7"]:
                 if key in agent_registry._definitions:
                     del agent_registry._definitions[key]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
     @pytest.mark.asyncio
@@ -914,9 +923,9 @@ class TestVS004TaskGraphOrchestration:
         self, sandbox_manager, event_collector, temp_dir
     ):
         """E7 Test: Cannot resume a run that has terminal failure."""
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -989,7 +998,7 @@ class TestVS004TaskGraphOrchestration:
                 agent_registry.enable_agent("e4-test-agent-001")
             if "always-fail-agent-e7-neg" in agent_registry._definitions:
                 del agent_registry._definitions["always-fail-agent-e7-neg"]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
     @pytest.mark.asyncio
@@ -997,9 +1006,9 @@ class TestVS004TaskGraphOrchestration:
         self, sandbox_manager, event_collector, temp_dir
     ):
         """E7 Test: Reassignment to unavailable agent fails gracefully."""
-        from src.unified.test_agent import E4TestAgent
-        from src.unified.agent_role import agent_registry
-        from src.unified.contracts import AgentDefinition
+        from unified.test_agent import E4TestAgent
+        from unified.agent_role import agent_registry
+        from unified.contracts import AgentDefinition
         
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -1074,7 +1083,7 @@ class TestVS004TaskGraphOrchestration:
                 agent_registry.enable_agent("e4-test-agent-001")
             if "good-agent-e7-neg" in agent_registry._definitions:
                 del agent_registry._definitions["good-agent-e7-neg"]
-            from src.unified.test_agent import E4TestAgent
+            from unified.test_agent import E4TestAgent
             agent_registry.replace_implementation(AgentType.IMPLEMENTER, E4TestAgent)
 
 
