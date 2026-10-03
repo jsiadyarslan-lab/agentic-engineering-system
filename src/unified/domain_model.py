@@ -557,6 +557,10 @@ class Checkpoint(BaseModel):
     task_dependents: Dict[str, List[str]] = Field(default_factory=dict)  # task_id -> [dependent task_ids]
     attempt_history: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)  # task_id -> list of attempt dicts
     agent_assignments: Dict[str, str] = Field(default_factory=dict)  # task_id -> agent_id
+    
+    # Human gate state for durability across process kill (E34)
+    human_gate: Optional[Dict[str, Any]] = Field(default=None)  # gate_id, task_id, reason, context, options, impact, required_action, created_at
+    human_decision: Optional[Dict[str, Any]] = Field(default=None)  # gate_id, decision, actor, feedback, decided_at
 
     def verify(self) -> bool:
         """Verify checkpoint integrity."""

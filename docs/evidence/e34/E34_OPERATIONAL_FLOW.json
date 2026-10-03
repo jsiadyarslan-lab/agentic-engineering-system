@@ -1,0 +1,76 @@
+{
+  "current_operational_flow": {
+    "description": "Two parallel mission execution paths existed; now unified under MissionController as official path",
+    "path_a_official": {
+      "name": "MissionController (mission_controller.py) - OFFICIAL PATH",
+      "entry_point": "MissionController.define_mission() + execute_run()",
+      "also_accessible_via": "OperationalExecutionEngine.execute_mission(use_mission_controller=True) - DEFAULT",
+      "components": [
+        "TaskSpec declarative mission definition",
+        "MissionTaskAgent pool (12 agents with deterministic failure injection)",
+        "Failure taxonomy: TASK_EXECUTION_FAILURE, TOOL_RUNTIME_FAILURE, PLAN_DEVIATION, PROCESS_INTERRUPTION",
+        "Recovery actions: RETRY, REASSIGN, REPLAN, RESUME",
+        "Mission-level replanning with dependency rewiring",
+        "Full checkpoint with task definitions, dependencies, attempt history, human_gate, human_decision",
+        "build_reexecution_ledger() for no-false-re-execution proof",
+        "verify_completion() machine-verifies all completion conditions",
+        "finalize_mission() drives to EVIDENCED (owner-gated VERIFIED)",
+        "ExecutionEngine (shared core)"
+      ],
+      "state_machine": "RECEIVED → ANALYZING → PLANNING → DESIGNING → REVIEWING → APPROVED → AWAITING_APPROVAL → EXECUTING → EXECUTED → VERIFYING → EVIDENCED (stops, VERIFIED is owner-gated, actor='user')",
+      "human_gate": "Full - create_human_gate()/decide_human_gate() via ExecutionEngine, durable via checkpoint",
+      "drives_to": "EVIDENCED (owner-gated VERIFIED reserved for human actor)",
+      "checkpoint_resume": "create_full_checkpoint() + engine.resume_from_checkpoint() with human_gate/human_decision restoration",
+      "agents": "MissionTaskAgent pool (generic context-driven agents)"
+    },
+    "path_b_legacy": {
+      "name": "OperationalMissionPlanner Path (operational.py) - LEGACY / BACKWARD COMPATIBILITY ONLY",
+      "entry_point": "OperationalExecutionEngine.execute_mission(use_mission_controller=False) - EXPLICIT OPT-IN REQUIRED",
+      "components": [
+        "OperationalMissionPlanner (templates: create_file, run_command, multi_task, file_and_verify)",
+        "OperationalImplementerAgent (writes files, runs commands via sandbox)",
+        "OperationalVerifierAgent (confirms verification passed)",
+        "ExecutionEngine (shared core)"
+      ],
+      "state_machine": "RECEIVED → ANALYZING → PLANNING → DESIGNING → REVIEWING → APPROVED → AWAITING_APPROVAL → EXECUTING → EXECUTED → VERIFYING → EVIDENCED (stops, VERIFIED requires actor='user')",
+      "human_gate": "Delegates to ExecutionEngine.create_human_gate()/decide_human_gate() - functional",
+      "drives_to": "EVIDENCED (fixed: was incorrectly driving to VERIFIED with actor='system')",
+      "checkpoint_resume": "Uses ExecutionEngine checkpoints (partial - no MissionController replan/resume capabilities)",
+      "agents": "Own agent implementations (OperationalImplementerAgent, OperationalVerifierAgent)",
+      "limitations": [
+        "No failure classification or replan capability",
+        "No attempt_history tracking",
+        "No no-false-re-execution proof",
+        "No mission-level completion verification",
+        "Cannot handle mission deviation - only simple linear missions"
+      ]
+    }
+  },
+  "shared_foundation": {
+    "ExecutionEngine": "Core orchestration (mission/run/task lifecycle, agent execution, tool invocation, artifacts, evidence, verification, state machine, events, checkpoint/resume)",
+    "contracts": "Canonical imports from unified.contracts",
+    "state_machine": "MissionState and TaskState enums with validated transitions (golden rule: VERIFIED only by actor='user')",
+    "event_catalog": "FactoryEvent with full event types including HumanGateCreatedEvent, HumanDecisionRecordedEvent",
+    "sandbox": "ExecutionSandbox with WindowsExecutorAdapter backend",
+    "agent_registry": "AgentRegistry with atomic reservation (E15)"
+  },
+  "integration_decision": {
+    "decision": "MissionController is the single official mission execution path. OperationalExecutionEngine delegates to it by default (use_mission_controller=True). Legacy path retained only for backward compatibility with explicit opt-in.",
+    "rationale": [
+      "MissionController provides the complete E33-verified autonomy stack (failure detection, classification, replan, checkpoint, resume, no-false-re-execution, completion verification)",
+      "OperationalExecutionEngine duplicates mission lifecycle logic but lacks the autonomy capabilities proven in E33",
+      "MissionController's declarative TaskSpec is more expressive and testable than OperationalMissionPlanner templates",
+      "MissionController drives to EVIDENCED (correct owner-gated VERIFIED semantics) while OperationalExecutionEngine previously drove to VERIFIED autonomously (incorrect, now fixed)",
+      "Single source of truth for mission execution eliminates competing authorities",
+      "Future UI/API consumers need one official path, not two",
+      "Golden rule (VERIFIED only by actor='user') enforced in state machine - neither path can autonomously grant VERIFIED"
+    ],
+    "architecture": "MissionController is the authoritative mission execution service. OperationalExecutionEngine wraps it for backward compatibility and simple use cases. All new development uses MissionController path."
+  },
+  "verification_authority": {
+    "VERIFIED_transition": "ONLY allowed when actor='user' (golden rule enforced in validate_mission_transition in domain_model.py:795-797)",
+    "EVIDENCED_transition": "Allowed by system/agent after verification completes",
+    "owner_gated": "MissionController.finalize_mission() stops at EVIDENCED; human (actor='user') must transition to VERIFIED",
+    "legacy_path": "Fixed to stop at EVIDENCED; cannot bypass golden rule"
+  }
+}

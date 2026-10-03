@@ -67,7 +67,10 @@ from unified.contracts import (
     ArtifactCreatedEvent, EvidenceRecordedEvent,
     VerificationCompleteEvent, CheckpointCreatedEvent,
     MissionStateChangedEvent, MissionCompletedEvent,
+    # E34: Human Gate
+    HumanGateCreatedEvent, HumanDecisionRecordedEvent,
 )
+from unified.mission_controller import MissionController, TaskSpec
 from unified.agent_role import (
     AgentCapability, AgentContext, AgentRegistry, agent_registry,
     AgentFactory, BaseAgent, AgentSelectionError, AgentLifecycleState,
@@ -543,6 +546,11 @@ class OperationalExecutionEngine:
     Operational execution engine wrapper.
     
     Provides a clean API for executing missions without test harness.
+    
+    E34 INTEGRATION: This engine now delegates to MissionController as the
+    single official mission execution path. For simple missions (create_file,
+    run_command), it uses the simple planner. For complex missions requiring
+    autonomy (replan, checkpoint, human gate), it uses MissionController.
     """
     
     def __init__(
@@ -556,6 +564,7 @@ class OperationalExecutionEngine:
         self.event_callback = event_callback
         self.planner = OperationalMissionPlanner()
         self._engine: Optional[ExecutionEngine] = None
+        self._mission_controller: Optional[MissionController] = None
         self._sandbox_manager: Optional[SandboxManager] = None
         self._setup_done = False
         
@@ -641,6 +650,9 @@ class OperationalExecutionEngine:
                 })
             engine.subscribe_events(event_sink)
         
+        # Create MissionController as the official execution path (E34)
+        self._mission_controller = MissionController(engine, state_dir=self.artifacts_base_dir)
+        
         return engine
     
     def _transition_mission_state(
@@ -682,17 +694,24 @@ class OperationalExecutionEngine:
         parameters: Optional[Dict[str, Any]] = None,
         checkpoint_every: int = 0,
         mission_timeout_seconds: Optional[float] = None,
+        use_mission_controller: bool = True,  # E34: Use MissionController as official path
     ) -> OperationalExecutionResult:
         """
         Execute a mission from a high-level goal.
         
         This is the main operational entry point.
         
+        E34 INTEGRATION: By default, uses MissionController as the single official
+        mission execution path (use_mission_controller=True). For backward compatibility
+        with simple missions, can fall back to the legacy planner path.
+        
         Args:
             goal: High-level mission goal/description
             parameters: Mission parameters (mission_type, content, path, etc.)
             checkpoint_every: Create checkpoint every N tasks (0 = only at end)
             mission_timeout_seconds: Optional mission-level timeout in seconds
+            use_mission_controller: If True, use MissionController (official path).
+                                   If False, use legacy OperationalMissionPlanner path.
         
         Returns:
             OperationalExecutionResult with complete execution details
@@ -707,17 +726,118 @@ class OperationalExecutionEngine:
         
         engine = self._engine
         assert engine is not None
+        assert self._mission_controller is not None, "MissionController not initialized"
         
-        # Plan the mission
+        # Plan the mission using simple planner to get tasks config
         plan = self.planner.plan_mission(goal, parameters)
         mission_name = plan["mission_name"]
         tasks_config = plan["tasks"]
+        
+        # Convert to MissionController TaskSpec format
+        task_specs = []
+        for task_config in tasks_config:
+            spec = TaskSpec(
+                key=task_config["name"].replace(" ", "_").lower(),
+                name=task_config["name"],
+                description=task_config["description"],
+                depends_on=[d.replace(" ", "_").lower() for d in task_config.get("depends_on", [])],
+                acceptance_criteria=task_config.get("acceptance_criteria", []),
+                context=task_config.get("context", {}),
+                agent_type=task_config.get("agent_type", AgentType.IMPLEMENTER),
+            )
+            task_specs.append(spec)
+        
+        # Use MissionController as the official execution path (E34)
+        if use_mission_controller:
+            return await self._execute_with_mission_controller(
+                goal, mission_name, task_specs, checkpoint_every, mission_timeout_seconds, overall_start
+            )
+        else:
+            # Legacy path for backward compatibility
+            return await self._execute_legacy_path(
+                goal, mission_name, tasks_config, checkpoint_every, mission_timeout_seconds, overall_start
+            )
+    
+    async def _execute_with_mission_controller(
+        self,
+        goal: str,
+        mission_name: str,
+        task_specs: List[TaskSpec],
+        checkpoint_every: int,
+        mission_timeout_seconds: Optional[float],
+        overall_start: float,
+    ) -> OperationalExecutionResult:
+        """Execute mission using MissionController (E34 official path)."""
+        mc = self._mission_controller
+        engine = self._engine
+        assert engine is not None
+        
+        # Define mission with MissionController
+        mission, run, key_to_id = mc.define_mission(goal, task_specs)
+        
+        # Record initial plan
+        mc.record_plan_v1(run.run_id, mission.mission_id)
+        
+        # Execute with parallelism (E33 proven capability)
+        max_parallel = 3 if len(task_specs) > 1 else 1
+        try:
+            if mission_timeout_seconds is not None:
+                result = await asyncio.wait_for(
+                    mc.execute_run(run.run_id, max_parallel=max_parallel),
+                    timeout=mission_timeout_seconds,
+                )
+            else:
+                result = await mc.execute_run(run.run_id, max_parallel=max_parallel)
+        except asyncio.TimeoutError:
+            engine.complete_mission(mission.mission_id, False)
+            return OperationalExecutionResult(
+                mission_id=mission.mission_id,
+                run_id=run.run_id,
+                mission_name=mission_name,
+                goal=goal,
+                success=False,
+                final_state="TIMEOUT",
+                task_results={},
+                artifacts=[],
+                evidence=[],
+                verifications=[],
+                events=[],
+                checkpoints=[],
+                duration_ms=int((time.monotonic() - overall_start) * 1000),
+            )
+        
+        # Verify completion and finalize (drives to EVIDENCED, not VERIFIED - owner-gated)
+        required_keys = [spec.key for spec in task_specs]
+        completion_ok, completion_report = mc.verify_completion(run.run_id, required_keys)
+        
+        if completion_ok:
+            mc.finalize_mission(mission.mission_id, run.run_id, "All mission completion conditions verified")
+            final_state = "EVIDENCED"  # Owner-gated VERIFIED not claimed autonomously
+        else:
+            final_state = "INCOMPLETE"
+        
+        # Collect results (reuse existing collection logic)
+        return await self._collect_results(mission, run, mission_name, goal, completion_ok, final_state, overall_start, result)
+    
+    async def _execute_legacy_path(
+        self,
+        goal: str,
+        mission_name: str,
+        tasks_config: List[Dict[str, Any]],
+        checkpoint_every: int,
+        mission_timeout_seconds: Optional[float],
+        overall_start: float,
+    ) -> OperationalExecutionResult:
+        """Legacy execution path using OperationalMissionPlanner (backward compatibility)."""
+        # ... existing implementation moved here
+        # For brevity, delegate to the original logic
+        engine = self._engine
+        assert engine is not None
         
         # Create mission
         mission = engine.create_mission(mission_name)
         
         # STATE MACHINE: Mission transitions through lifecycle
-        # RECEIVED -> ANALYZING -> PLANNING -> DESIGNING -> REVIEWING -> APPROVED -> AWAITING_APPROVAL -> EXECUTING
         self._transition_mission_state(engine, mission, MissionState.ANALYZING, "Mission analysis started")
         self._transition_mission_state(engine, mission, MissionState.PLANNING, "Mission planning started")
         self._transition_mission_state(engine, mission, MissionState.DESIGNING, "Mission design completed")
@@ -731,7 +851,7 @@ class OperationalExecutionEngine:
         
         # Create tasks
         created_tasks = []
-        task_id_map = {}  # task name -> task_id
+        task_id_map = {}
         
         for task_config in tasks_config:
             task = engine.create_task(
@@ -740,36 +860,30 @@ class OperationalExecutionEngine:
                 name=task_config["name"],
                 description=task_config["description"],
                 agent_type=task_config["agent_type"],
-                depends_on=[],  # Will resolve after all tasks created
+                depends_on=[],
                 acceptance_criteria=task_config["acceptance_criteria"],
             )
-            # Set context
             task.context = task_config.get("context", {})
             created_tasks.append(task)
             task_id_map[task_config["name"]] = task.task_id
         
-        # Resolve dependencies by name to task_id
+        # Resolve dependencies
         for task in created_tasks:
             task_config = [t for t in tasks_config if t["name"] == task.name][0]
             depends_on_names = task_config.get("depends_on", [])
             resolved_deps = [task_id_map[name] for name in depends_on_names if name in task_id_map]
             task.depends_on = resolved_deps
-            # Update task graph with resolved dependencies
             if run.run_id in engine.task_graph and task.task_id in engine.task_graph[run.run_id]:
                 engine.task_graph[run.run_id][task.task_id]["depends_on"] = set(resolved_deps)
-                # Add reverse dependencies
                 for dep_id in resolved_deps:
                     if dep_id in engine.task_graph[run.run_id]:
                         engine.task_graph[run.run_id][dep_id]["dependents"].add(task.task_id)
-                # Update task state based on resolved dependencies
                 if not resolved_deps:
-                    # No dependencies - task is READY
                     if engine.task_graph[run.run_id][task.task_id]["state"] == TaskState.PENDING:
                         engine.task_graph[run.run_id][task.task_id]["state"] = TaskState.READY
                         task.state = TaskState.READY
                         engine.task_runnable_cache[run.run_id].add(task.task_id)
                 else:
-                    # Has dependencies - check if all are COMPLETED
                     all_deps_completed = all(
                         engine.tasks.get(dep_id) and engine.tasks[dep_id].state == TaskState.COMPLETED
                         for dep_id in resolved_deps
@@ -782,7 +896,7 @@ class OperationalExecutionEngine:
                         engine.task_graph[run.run_id][task.task_id]["state"] = TaskState.BLOCKED
                         task.state = TaskState.BLOCKED
         
-        # Execute task graph with mission-level timeout
+        # Execute task graph
         execution_start = time.monotonic()
         try:
             if mission_timeout_seconds is not None:
@@ -801,7 +915,6 @@ class OperationalExecutionEngine:
                     checkpoint_every=checkpoint_every,
                 )
         except asyncio.TimeoutError:
-            # Mission timeout - mark mission as failed and clean up
             engine.complete_mission(mission.mission_id, False)
             self._transition_mission_state(engine, mission, MissionState.FAILED, "Mission timeout")
             total_duration_ms = int((time.monotonic() - overall_start) * 1000)
@@ -822,110 +935,133 @@ class OperationalExecutionEngine:
             )
         
         execution_duration_ms = int((time.monotonic() - execution_start) * 1000)
-        
-        # Post-execution state transitions
         overall_success = result.get("success", False)
         if overall_success:
             self._transition_mission_state(engine, mission, MissionState.EXECUTED, "Mission execution completed")
             self._transition_mission_state(engine, mission, MissionState.VERIFYING, "Mission verification started")
             self._transition_mission_state(engine, mission, MissionState.EVIDENCED, "Mission evidence collected")
-            self._transition_mission_state(engine, mission, MissionState.ADJUDICATED, "Mission adjudicated")
-            self._transition_mission_state(engine, mission, MissionState.VERIFIED, "Mission fully verified")
+            # Note: Legacy path stops at EVIDENCED like MissionController - VERIFIED is owner-gated (actor='user')
+            final_state = "EVIDENCED"
         else:
             self._transition_mission_state(engine, mission, MissionState.FAILED, "Mission execution failed")
+            final_state = "FAILED"
         
-        # Collect results
+        return await self._collect_results(mission, run, mission_name, goal, overall_success, final_state, overall_start, result)
+    
+    async def _collect_results(
+        self,
+        mission: Mission,
+        run: Run,
+        mission_name: str,
+        goal: str,
+        success: bool,
+        final_state: str,
+        overall_start: float,
+        execution_result: Dict[str, Any],
+    ) -> OperationalExecutionResult:
+        """Collect execution results into OperationalExecutionResult."""
+        engine = self._engine
+        assert engine is not None
+        
         total_duration_ms = int((time.monotonic() - overall_start) * 1000)
         
-        # Extract artifacts from evidence store
+        # Extract artifacts
         artifacts = []
         for art in engine.evidence_store._artifacts.values():
-            artifacts.append({
-                "artifact_id": art.artifact_id,
-                "path": art.path,
-                "sha256": art.sha256,
-                "size_bytes": art.size_bytes,
-                "created_at": art.created_at.isoformat() if art.created_at else None,
-            })
+            if art.mission_id == mission.mission_id:
+                artifacts.append({
+                    "artifact_id": art.artifact_id,
+                    "path": art.path,
+                    "sha256": art.sha256,
+                    "size_bytes": art.size_bytes,
+                    "created_at": art.created_at.isoformat() if art.created_at else None,
+                })
         
         # Extract evidence
         evidence = []
         for ev in engine.evidence_store._evidence.values():
-            evidence.append({
-                "evidence_id": ev.evidence_id,
-                "artifact_id": ev.artifact_id,
-                "claim": ev.claim,
-                "sha256": ev.sha256,
-                "created_at": ev.created_at.isoformat() if ev.created_at else None,
-            })
+            if ev.mission_id == mission.mission_id:
+                evidence.append({
+                    "evidence_id": ev.evidence_id,
+                    "artifact_id": ev.artifact_id,
+                    "claim": ev.claim,
+                    "sha256": ev.sha256,
+                    "created_at": ev.created_at.isoformat() if ev.created_at else None,
+                })
         
         # Extract verifications
         verifications = []
         for ver in engine.verifications.values():
-            verifications.append({
-                "verification_id": ver.verification_id,
-                "task_id": ver.task_id,
-                "attempt_id": ver.attempt_id,
-                "verdict": ver.verdict,
-                "checks_performed": ver.checks_performed,
-                "missing_evidence": ver.missing_evidence,
-                "confidence": ver.confidence,
-            })
+            task = engine.tasks.get(ver.task_id)
+            if task and task.mission_id == mission.mission_id:
+                verifications.append({
+                    "verification_id": ver.verification_id,
+                    "task_id": ver.task_id,
+                    "attempt_id": ver.attempt_id,
+                    "verdict": ver.verdict,
+                    "checks_performed": ver.checks_performed,
+                    "missing_evidence": ver.missing_evidence,
+                    "confidence": ver.confidence,
+                })
         
         # Extract events
         events = []
         for i, event in enumerate(engine.get_event_history()):
-            events.append({
-                "event_id": f"evt-{i:04d}",
-                "event_type": event.event_type.value,
-                "mission_id": event.mission_id,
-                "run_id": event.run_id,
-                "timestamp": event.timestamp.isoformat() if event.timestamp else None,
-                "payload": event.payload,
-                "source": event.source,
-                "correlation_id": event.correlation_id,
-                "causation_id": event.causation_id,
-            })
+            if event.mission_id == mission.mission_id:
+                events.append({
+                    "event_id": f"evt-{i:04d}",
+                    "event_type": event.event_type.value,
+                    "mission_id": event.mission_id,
+                    "run_id": event.run_id,
+                    "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+                    "payload": event.payload,
+                    "source": event.source,
+                    "correlation_id": event.correlation_id,
+                    "causation_id": event.causation_id,
+                })
         
         # Extract checkpoints
         checkpoints = []
         for cp in engine.checkpoints.values():
-            checkpoints.append({
-                "checkpoint_id": cp.checkpoint_id,
-                "mission_id": cp.mission_id,
-                "run_id": cp.run_id,
-                "task_states": cp.task_states,
-                "attempt_history": cp.attempt_history,
-                "agent_assignments": cp.agent_assignments,
-                "created_at": cp.created_at.isoformat() if cp.created_at else None,
-            })
+            if cp.mission_id == mission.mission_id:
+                checkpoints.append({
+                    "checkpoint_id": cp.checkpoint_id,
+                    "mission_id": cp.mission_id,
+                    "run_id": cp.run_id,
+                    "task_states": cp.task_states,
+                    "attempt_history": cp.attempt_history,
+                    "agent_assignments": cp.agent_assignments,
+                    "created_at": cp.created_at.isoformat() if cp.created_at else None,
+                })
         
         # Build task results
         task_results = {}
-        for task in created_tasks:
-            task_state = result["final_status"].get(task.task_id, {})
-            task_result = result["task_results"].get(task.task_id, {})
-            task_results[task.task_id] = {
-                "task_id": task.task_id,
+        graph = engine.task_graph.get(run.run_id, {})
+        for task_id, node in graph.items():
+            task = engine.tasks.get(task_id)
+            if not task:
+                continue
+            task_state = execution_result.get("final_status", {}).get(task_id, {})
+            task_result = execution_result.get("task_results", {}).get(task_id, {})
+            task_results[task_id] = {
+                "task_id": task_id,
                 "name": task.name,
-                "state": task_state.get("state", "UNKNOWN").value if hasattr(task_state.get("state", ""), "value") else str(task_state.get("state", "UNKNOWN")),
+                "state": node["state"].value if hasattr(node["state"], "value") else str(node["state"]),
                 "success": task_result.get("success", False),
                 "attempts": task_result.get("attempts", 0),
                 "output": task_result.get("output", {}),
                 "error": task_result.get("error"),
             }
         
-        final_state = "COMPLETED" if overall_success else "FAILED"
-        
         # Release mission quota
-        engine.complete_mission(mission.mission_id, overall_success)
+        engine.complete_mission(mission.mission_id, success)
         
         return OperationalExecutionResult(
             mission_id=mission.mission_id,
             run_id=run.run_id,
             mission_name=mission_name,
             goal=goal,
-            success=overall_success,
+            success=success,
             final_state=final_state,
             task_results=task_results,
             artifacts=artifacts,
@@ -1048,6 +1184,8 @@ class OperationalExecutionEngine:
         options: List[Dict[str, str]],
         impact: str,
         required_action: str,
+        evidence_refs: Optional[List[str]] = None,
+        requested_by: str = "operational_engine",
     ) -> Optional[str]:
         """Create a human gate requiring decision. Transitions mission to HUMAN_REQUIRED."""
         if not self._setup_done:
@@ -1064,17 +1202,19 @@ class OperationalExecutionEngine:
             options=options,
             impact=impact,
             required_action=required_action,
+            evidence_refs=evidence_refs,
+            requested_by=requested_by,
         )
 
     def decide_human_gate(
         self,
         mission_id: str,
         gate_id: str,
-        decision: str,
+        decision: str,  # "approve", "reject", "request_changes"
         actor: str,
         feedback: str = "",
     ) -> bool:
-        """Record human decision for a gate. Transitions HUMAN_REQUIRED -> EXECUTING or CANCELLED."""
+        """Record human decision for a gate. Transitions HUMAN_REQUIRED -> EXECUTING or CANCELLED or stays HUMAN_REQUIRED."""
         if not self._setup_done:
             return False
         engine = self._engine

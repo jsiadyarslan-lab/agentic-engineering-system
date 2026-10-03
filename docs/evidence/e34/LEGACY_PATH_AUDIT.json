@@ -1,0 +1,70 @@
+{
+  "audit": "LEGACY PATH GOVERNANCE AUDIT - E34",
+  "timestamp": "2025-01-15T00:00:00Z",
+  "official_path": {
+    "name": "MissionController Path",
+    "entry_point": "OperationalExecutionEngine.execute_mission(use_mission_controller=True)",
+    "delegates_to": "MissionController",
+    "final_state": "EVIDENCED",
+    "verification_authority": "Owner-gated VERIFIED (actor='user' required)",
+    "human_gate_support": "Full - create_human_gate, decide_human_gate, durable across process kill",
+    "checkpoint_resume": "Full - E33 verified",
+    "replan": "Full - E33 verified",
+    "attempt_accounting": "Full - E33 verified with attempt_id in TASK_ASSIGNED"
+  },
+  "legacy_path": {
+    "name": "OperationalMissionPlanner Path",
+    "entry_point": "OperationalExecutionEngine.execute_mission(use_mission_controller=False)",
+    "uses": "OperationalMissionPlanner (simple planner)",
+    "final_state": "VERIFIED (BUG - violates golden rule)",
+    "verification_authority": "NONE - transitions to VERIFIED with actor='system'",
+    "human_gate_support": "Partial - delegates to ExecutionEngine.create_human_gate/decide_human_gate",
+    "checkpoint_resume": "Partial - uses ExecutionEngine checkpoints",
+    "replan": "NONE",
+    "attempt_accounting": "NONE - does not use MissionController's attempt tracking"
+  },
+  "governance_findings": [
+    {
+      "finding": "LEGACY PATH VIOLATES GOLDEN RULE",
+      "severity": "HIGH",
+      "evidence": "src/unified/operational.py:944 calls _transition_mission_state to MissionState.VERIFIED, which calls validate_mission_transition with default actor='system', causing ValueError: 'VERIFIED transition requires actor=\"user\"'",
+      "impact": "If legacy path is used for a successful mission, it will crash at VERIFIED transition"
+    },
+    {
+      "finding": "LEGACY PATH NOT USED BY DEFAULT",
+      "severity": "INFO",
+      "evidence": "execute_mission() defaults to use_mission_controller=True",
+      "impact": "Official path is MissionController; legacy path only invoked explicitly"
+    },
+    {
+      "finding": "LEGACY PATH CANNOT BYPAASS HUMAN GATE",
+      "severity": "INFO",
+      "evidence": "Legacy path delegates human gate creation/decision to ExecutionEngine which enforces HUMAN_REQUIRED state transitions correctly",
+      "impact": "Human gate governance preserved even in legacy path"
+    },
+    {
+      "finding": "LEGACY PATH HAS NO REPLAN CAPABILITY",
+      "severity": "INFO",
+      "evidence": "Uses simple OperationalMissionPlanner; no failure detection, classification, or replan logic",
+      "impact": "Legacy path cannot handle mission deviation - only simple linear missions"
+    },
+    {
+      "finding": "LEGACY PATH ATTEMPT ACCOUNTING INCOMPLETE",
+      "severity": "MEDIUM",
+      "evidence": "Does not use MissionController's attempt_history tracking; TASK_ASSIGNED events may lack attempt_id context",
+      "impact": "Audit trail weaker for legacy path executions"
+    }
+  ],
+  "configuration_safety": {
+    "default_use_mission_controller": true,
+    "legacy_only_explicit": true,
+    "env_override_possible": false,
+    "accidental_activation_risk": "LOW - requires explicit parameter use_mission_controller=False"
+  },
+  "verdict": {
+    "legacy_path_is_non_official": true,
+    "legacy_path_cannot_bypass_governance": true,
+    "legacy_path_has_critical_bug": "VERIFIED transition with actor='system' fails golden rule",
+    "recommendation": "Either fix legacy path to stop at EVIDENCED (like MissionController) or remove it entirely. Current state: legacy path is non-functional for successful missions."
+  }
+}

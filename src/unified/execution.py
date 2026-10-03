@@ -2453,6 +2453,11 @@ class ExecutionEngine:
                 agent_assignments = {}
                 for task_id, node in graph.items():
                     agent_assignments[task_id] = node.get("agent_id", "")
+        # Capture human gate state from mission metadata for durability (E34)
+        mission = self.missions.get(mission_id)
+        human_gate = mission.metadata.get("human_gate") if mission else None
+        human_decision = mission.metadata.get("human_decision") if mission else None
+        
         checkpoint = Checkpoint(
             checkpoint_id=new_checkpoint_id(),
             mission_id=mission_id,
@@ -2467,6 +2472,8 @@ class ExecutionEngine:
             task_dependents=task_dependents or {},
             attempt_history=attempt_history or {},
             agent_assignments=agent_assignments or {},
+            human_gate=human_gate,
+            human_decision=human_decision,
         )
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
         # Persist to disk for durability
@@ -2526,6 +2533,12 @@ class ExecutionEngine:
         # Resume execution implies mission should be in EXECUTING state
         # This enables replan/human_gate to work after cross-runtime resume
         mission = self.missions[checkpoint.mission_id]
+        
+        # Restore human gate state from checkpoint for durability (E34)
+        if checkpoint.human_gate:
+            mission.metadata["human_gate"] = checkpoint.human_gate
+        if checkpoint.human_decision:
+            mission.metadata["human_decision"] = checkpoint.human_decision
         if mission.state != MissionState.EXECUTING:
             from unified.contracts import validate_mission_transition
             try:
@@ -3048,6 +3061,8 @@ class ExecutionEngine:
         options: List[Dict[str, str]],
         impact: str,
         required_action: str,
+        evidence_refs: Optional[List[str]] = None,
+        requested_by: str = "system",
     ) -> Optional[str]:
         """
         Create a human gate requiring decision.
@@ -3058,9 +3073,11 @@ class ExecutionEngine:
             task_id: Optional task ID that requires human decision
             reason: Why human decision is needed
             context: Additional context for decision
-            options: Decision options (e.g., [{"value": "continue", "label": "Continue"}, {"value": "cancel", "label": "Cancel"}])
+            options: Decision options (e.g., [{"value": "approve", "label": "Approve"}, {"value": "reject", "label": "Reject"}, {"value": "request_changes", "label": "Request Changes"}])
             impact: Impact description of the decision
             required_action: What action is required
+            evidence_refs: Optional list of evidence IDs for the human to review
+            requested_by: Who requested the human gate
         Returns:
             gate_id if created, None if mission not in executable state
         """
@@ -3076,7 +3093,7 @@ class ExecutionEngine:
             from_state = mission.state
             mission.state = MissionState.HUMAN_REQUIRED
             # Store gate info in mission metadata
-            mission.metadata["human_gate"] = {
+            gate_info = {
                 "gate_id": gate_id,
                 "task_id": task_id,
                 "reason": reason,
@@ -3084,8 +3101,12 @@ class ExecutionEngine:
                 "options": options,
                 "impact": impact,
                 "required_action": required_action,
+                "evidence_refs": evidence_refs or [],
+                "requested_by": requested_by,
+                "current_state": mission.state.value,
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
+            mission.metadata["human_gate"] = gate_info
             # Emit human gate created event
             self._emit(FactoryEvent.create(
                 EventType.HUMAN_GATE_CREATED,
@@ -3117,6 +3138,21 @@ class ExecutionEngine:
                 ),
                 run_id=run_id,
             ))
+            # Create checkpoint with human gate state for durability (E34)
+            # Capture current task graph state
+            graph = self.task_graph.get(run_id, {})
+            task_states = {tid: node["state"] for tid, node in graph.items()}
+            artifact_ids = list(self.evidence_store._artifacts.keys())
+            evidence_hashes = list(self.evidence_store._evidence.keys())
+            self.create_checkpoint(
+                mission_id=mission_id,
+                run_id=run_id,
+                step=len(task_states),
+                state=MissionState.HUMAN_REQUIRED,
+                task_states=task_states,
+                artifact_ids=artifact_ids,
+                evidence_hashes=evidence_hashes,
+            )
             return gate_id
         except Exception:
             return None
@@ -3124,17 +3160,17 @@ class ExecutionEngine:
         self,
         mission_id: str,
         gate_id: str,
-        decision: str,  # "continue" or "cancel"
+        decision: str,  # "approve", "reject", "request_changes"
         actor: str,
         feedback: str = "",
     ) -> bool:
         """
         Record human decision for a gate.
-        Transitions: HUMAN_REQUIRED -> EXECUTING (continue) or CANCELLED (cancel)
+        Transitions: HUMAN_REQUIRED -> EXECUTING (approve) or CANCELLED (reject) or stays HUMAN_REQUIRED (request_changes)
         Args:
             mission_id: Mission ID
             gate_id: Gate ID
-            decision: "continue" or "cancel"
+            decision: "approve" | "reject" | "request_changes"
             actor: Who made the decision
             feedback: Optional feedback
         Returns:
@@ -3148,12 +3184,21 @@ class ExecutionEngine:
             return False
         run_id = self._current_run.run_id if self._current_run and self._current_run.mission_id == mission_id else None
         try:
-            if decision == "continue":
+            decision_record = {
+                "gate_id": gate_id,
+                "decision": decision,
+                "actor": actor,
+                "feedback": feedback,
+                "decided_at": datetime.now(timezone.utc).isoformat(),
+            }
+            mission.metadata["human_decision"] = decision_record
+            
+            if decision == "approve":
                 from unified.contracts import validate_mission_transition
                 validate_mission_transition(MissionState.HUMAN_REQUIRED, MissionState.EXECUTING)
                 from_state = mission.state
                 mission.state = MissionState.EXECUTING
-                # Clear gate
+                # Clear gate, keep decision record
                 mission.metadata.pop("human_gate", None)
                 # Emit decision recorded
                 self._emit(FactoryEvent.create(
@@ -3163,7 +3208,7 @@ class ExecutionEngine:
                         gate_id=gate_id,
                         mission_id=mission_id,
                         run_id=run_id or "",
-                        decision="continue",
+                        decision="approve",
                         actor=actor,
                         feedback=feedback,
                     ),
@@ -3183,12 +3228,46 @@ class ExecutionEngine:
                     ),
                     run_id=run_id,
                 ))
+                # Update checkpoint with human decision for durability
+                self._update_checkpoint_human_decision(mission_id, gate_id, decision_record)
                 return True
-            elif decision == "cancel":
+            elif decision == "reject":
+                # Transition to CANCELLED
                 return self.cancel_mission(mission_id, actor, f"Human decision: {feedback}")
+            elif decision == "request_changes":
+                # Stay in HUMAN_REQUIRED, gate remains for re-review
+                # Emit decision recorded
+                self._emit(FactoryEvent.create(
+                    EventType.HUMAN_DECISION_RECORDED,
+                    mission_id,
+                    HumanDecisionRecordedEvent(
+                        gate_id=gate_id,
+                        mission_id=mission_id,
+                        run_id=run_id or "",
+                        decision="request_changes",
+                        actor=actor,
+                        feedback=feedback,
+                    ),
+                    run_id=run_id,
+                ))
+                # Update checkpoint with human decision for durability
+                self._update_checkpoint_human_decision(mission_id, gate_id, decision_record)
+                return True
             return False
         except Exception:
             return False
+    
+    def _update_checkpoint_human_decision(self, mission_id: str, gate_id: str, decision_record: Dict[str, Any]) -> None:
+        """Update the latest checkpoint with human decision for durability."""
+        # Find the latest checkpoint for this mission
+        latest_checkpoint = None
+        for cp in self.checkpoints.values():
+            if cp.mission_id == mission_id:
+                if latest_checkpoint is None or cp.created_at > latest_checkpoint.created_at:
+                    latest_checkpoint = cp
+        if latest_checkpoint:
+            latest_checkpoint.human_decision = decision_record
+            self._save_checkpoint_to_disk(latest_checkpoint)
     # ============================================================
     # REPLANNING
     # ============================================================

@@ -1,0 +1,68 @@
+{
+  "human_gate_specification": {
+    "state": "HUMAN_REQUIRED",
+    "required_fields": [
+      "mission_id",
+      "run_id",
+      "reason",
+      "decision_required",
+      "evidence_refs",
+      "current_state",
+      "requested_by",
+      "created_at"
+    ],
+    "decisions": [
+      "APPROVE",
+      "REJECT",
+      "REQUEST_CHANGES"
+    ],
+    "durability": {
+      "persisted_in_checkpoint": true,
+      "survives_process_kill": true,
+      "restored_on_resume": true
+    }
+  },
+  "implementation": {
+    "create_human_gate": {
+      "location": "ExecutionEngine.create_human_gate()",
+      "transitions": "EXECUTING -> HUMAN_REQUIRED",
+      "emits": "HumanGateCreatedEvent",
+      "persists_checkpoint": true,
+      "checkpoint_includes": ["human_gate", "human_decision"]
+    },
+    "decide_human_gate": {
+      "location": "ExecutionEngine.decide_human_gate()",
+      "transitions": "HUMAN_REQUIRED -> EXECUTING (approve) | CANCELLED (reject) | HUMAN_REQUIRED (request_changes)",
+      "emits": "HumanDecisionRecordedEvent",
+      "updates_checkpoint": true
+    },
+    "resume_from_checkpoint": {
+      "location": "ExecutionEngine.resume_from_checkpoint()",
+      "restores": ["human_gate", "human_decision"] from checkpoint to mission.metadata
+    }
+  },
+  "event_catalog": {
+    "HUMAN_GATE_CREATED": {
+      "payload": "HumanGateCreatedEvent",
+      "fields": ["gate_id", "mission_id", "run_id", "task_id", "reason", "context", "options", "impact", "required_action", "created_at"]
+    },
+    "HUMAN_DECISION_RECORDED": {
+      "payload": "HumanDecisionRecordedEvent",
+      "fields": ["gate_id", "mission_id", "run_id", "decision", "actor", "feedback", "decided_at"]
+    }
+  },
+  "state_machine": {
+    "EXECUTING": {
+      "allowed_targets": ["EXECUTED", "FAILED", "STOPPING", "CANCEL_REQUESTED", "PAUSED", "HUMAN_REQUIRED"]
+    },
+    "HUMAN_REQUIRED": {
+      "allowed_targets": ["EXECUTING", "CANCELLED", "STOPPING"]
+    }
+  },
+  "verification_authority": {
+    "agent_claim": "Agent completes task, emits TASK_COMPLETED",
+    "verifier_result": "Verifier checks acceptance criteria, emits VERIFICATION_COMPLETE",
+    "human_approval": "Human decides at HUMAN_REQUIRED gate, emits HUMAN_DECISION_RECORDED",
+    "final_mission_verification": "MissionController.verify_completion() + finalize_mission() drives to EVIDENCED; VERIFIED is owner-gated"
+  }
+}
