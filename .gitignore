@@ -21,3 +21,7 @@ runtime/**/*.db
 artifacts/
 *.db
 *.db-journal
+
+# Test evidence artifacts
+docs/evidence/e32e/pre_resume_state.json
+docs/evidence/e32e/e32d_artifact_audit.json
