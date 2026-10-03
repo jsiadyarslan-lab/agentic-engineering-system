@@ -569,7 +569,13 @@ class FactoryEvent(BaseModel):
         model = EVENT_PAYLOAD_MODELS.get(event_type)
         if model:
             # Validate payload against model
-            validated = model.model_validate(payload.model_dump())
+            if isinstance(payload, BaseModel):
+                payload_dict = payload.model_dump()
+            elif isinstance(payload, dict):
+                payload_dict = payload
+            else:
+                payload_dict = {}
+            validated = model.model_validate(payload_dict)
             payload_dict = validated.model_dump()
         else:
             payload_dict = payload.model_dump() if isinstance(payload, BaseModel) else payload
