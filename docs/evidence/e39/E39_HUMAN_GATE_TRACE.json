@@ -1,0 +1,59 @@
+{
+  "human_gate_trace_id": "E39_HUMAN_GATE_TRACE",
+  "timestamp": "2026-10-03T20:35:00.000000+00:00",
+  "description": "Verification of E38 human gate decision durability and reconstructability",
+  "original_human_gate": {
+    "source": "E38_FINAL_REPORT.md (harness.human_gate_evidence)",
+    "decision_id": "human-gate-e38-001",
+    "mission_id": "mission-f4560310e244",
+    "task_id": "task-ffc665a6fd57 (t9_human_gate)",
+    "reason": "All verification criteria met",
+    "options": ["APPROVE", "REJECT", "REQUEST_CHANGES"],
+    "selected_option": "APPROVED",
+    "actor": "simulated_human",
+    "timestamp": "2026-10-03T19:58:37.009333+00:00",
+    "pre_decision_state": "Mission state EVIDENCED, all tasks up to t8_verification COMPLETED",
+    "post_decision_state": "Mission continues to t10_final_review",
+    "resume_condition": "Human decision APPROVED allows mission to proceed past human gate",
+    "event": "agent.started for reviewer on t9_human_gate, then human_gate_evidence recorded"
+  },
+  "durability_checks": [
+    {
+      "check": "Decision recorded in persistent artifact",
+      "result": "PARTIAL",
+      "details": "Decision recorded in E38_FINAL_REPORT.md and in memory (harness.human_gate_evidence). No separate E38_HUMAN_GATE_TRACE.json file was saved by E38 harness.save_evidence()."
+    },
+    {
+      "check": "Decision reconstructable from event trace",
+      "result": "PASS",
+      "details": "E38_EVENT_TRACE.json contains agent.started for reviewer on t9_human_gate. The decision can be inferred from subsequent task t10_final_review execution."
+    },
+    {
+      "check": "Decision required for mission progression",
+      "result": "PASS",
+      "details": "Task graph shows t10_final_review depends on t9_human_gate. Without human gate completion, t10 would not execute."
+    },
+    {
+      "check": "Decision includes required metadata",
+      "result": "PASS",
+      "details": "Decision includes: decision_id, mission_id, task_id, reason, options, selected_option, actor, timestamp, pre_decision_state, post_decision_state, resume_condition"
+    },
+    {
+      "check": "System blocks without decision when HUMAN_REQUIRED",
+      "result": "NOT_TESTED",
+      "details": "E38 test simulates human gate with immediate APPROVED. No test of blocking behavior when decision withheld. This is a gap for future verification."
+    }
+  ],
+  "reconstructed_from_evidence": {
+    "event_trace_evidence": "E38_EVENT_TRACE.json shows reviewer agent.started at 2026-10-03T19:58:37.009333Z for task-ffc665a6fd57 (t9_human_gate)",
+    "artifact_evidence": "sandbox-task-ffc665a6fd57/e38_t9_human_decision.json exists with decision=APPROVED",
+    "state_trace_evidence": "E38_STATE_TRACE.json checkpoints show t9_human_gate COMPLETED before t10_final_review",
+    "final_report_evidence": "E38_FINAL_REPORT.md contains human_gate_evidence with full decision metadata"
+  },
+  "gaps_identified": [
+    "No dedicated E38_HUMAN_GATE_TRACE.json saved by E38 harness",
+    "Human gate blocking behavior not tested (decision withheld scenario)",
+    "Decision actor is 'simulated_human' not real human - acceptable for automated test but noted"
+  ],
+  "verdict": "Human gate decision is durable and reconstructable from event trace and artifacts. Gap: no dedicated trace file saved."
+}

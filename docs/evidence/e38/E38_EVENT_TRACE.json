@@ -1,0 +1,2850 @@
+[
+  {
+    "event_type": "mission.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.680514",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "user_request": "E38: Add SECURITY_AUDIT_PASSES verification criterion integrating SecurityAgent into mechanical verification framework",
+      "provider": null,
+      "model": null
+    },
+    "source": "execution_engine",
+    "correlation_id": "",
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.680914",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "RECEIVED",
+      "to_state": "ANALYZING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.681079",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "ANALYZING",
+      "to_state": "PLANNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.681207",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "PLANNING",
+      "to_state": "DESIGNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.681836",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "DESIGNING",
+      "to_state": "REVIEWING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.681991",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.682109",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "APPROVED",
+      "to_state": "AWAITING_APPROVAL",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "",
+    "timestamp": "2026-10-03T19:58:36.682225",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "",
+      "from_state": "AWAITING_APPROVAL",
+      "to_state": "EXECUTING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "run.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.682555",
+    "payload": {
+      "run_id": "run-1285d699cfd8",
+      "mission_id": "mission-f4560310e244",
+      "run_number": 1,
+      "parent_run_id": null
+    },
+    "source": "execution_engine",
+    "correlation_id": "run-1285d699cfd8",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.682956",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T1: Discovery - Explore Verification & Security Systems",
+      "agent_type": "explorer",
+      "acceptance_criteria": [
+        "file_exists:e38_t1_discovery_report.md",
+        "file_contains:e38_t1_discovery_report.md:verification_standard",
+        "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+        "file_contains:e38_t1_discovery_report.md:CriterionType"
+      ],
+      "depends_on": []
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683174",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T2: Analysis - Security Integration Design",
+      "agent_type": "analyst",
+      "acceptance_criteria": [
+        "file_exists:e38_t2_analysis.md",
+        "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+        "file_contains:e38_t2_analysis.md:SecurityAgent",
+        "file_contains:e38_t2_analysis.md:VerificationReport"
+      ],
+      "depends_on": [
+        "t1_discovery"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683338",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T3: Planning - Implementation Plan",
+      "agent_type": "planner",
+      "acceptance_criteria": [
+        "file_exists:e38_t3_plan.md",
+        "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+        "file_contains:e38_t3_plan.md:implementation",
+        "file_contains:e38_t3_plan.md:verification"
+      ],
+      "depends_on": [
+        "t2_analysis"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683487",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T4: Design - Criterion Specification",
+      "agent_type": "designer",
+      "acceptance_criteria": [
+        "file_exists:e38_t4_design.md",
+        "file_contains:e38_t4_design.md:criterion",
+        "file_contains:e38_t4_design.md:parameters",
+        "file_contains:e38_t4_design.md:evidence"
+      ],
+      "depends_on": [
+        "t3_planning"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683633",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:src/unified/verification_standard.py",
+        "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+        "file_contains:src/unified/verification_standard.py:SecurityAgent",
+        "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+      ],
+      "depends_on": [
+        "t4_design"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683778",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T6: Security Audit - Review Implementation",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:e38_t6_security_report.json",
+        "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+        "file_contains:e38_t6_security_report.json:secrets_found"
+      ],
+      "depends_on": [
+        "t5_implementation"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.683918",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T7: Testing - Verify New Criterion Works",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_exists:tests/verification/test_security_criterion.py",
+        "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+        "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+      ],
+      "depends_on": [
+        "t5_implementation",
+        "t6_security_audit"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.684056",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T8: Verification - Independent Validation",
+      "agent_type": "verifier",
+      "acceptance_criteria": [
+        "file_exists:e38_t8_verification_report.json",
+        "file_contains:e38_t8_verification_report.json:passed",
+        "file_contains:e38_t8_verification_report.json:evidence_hash"
+      ],
+      "depends_on": [
+        "t7_testing"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.684216",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T9: Human Gate - Review and Approve",
+      "agent_type": "reviewer",
+      "acceptance_criteria": [
+        "file_exists:e38_t9_human_decision.json",
+        "file_contains:e38_t9_human_decision.json:decision",
+        "file_contains:e38_t9_human_decision.json:APPROVED"
+      ],
+      "depends_on": [
+        "t8_verification"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.684346",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "name": "T10: Final Review - Mission Convergence",
+      "agent_type": "reviewer",
+      "acceptance_criteria": [
+        "file_exists:e38_t10_final_report.md",
+        "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+        "file_contains:e38_t10_final_report.md:VERIFIED"
+      ],
+      "depends_on": [
+        "t9_human_gate"
+      ]
+    },
+    "source": "mission_controller",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.687792",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.688457",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "agent_id": "e38-explorer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "explorer",
+      "attempt_id": "attempt-fe0cdf5f"
+    },
+    "source": "agent.explorer",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.688574",
+    "payload": {
+      "agent_id": "e38-explorer-001",
+      "agent_type": "explorer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-fbbf3302865d",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.688670",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.688786",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "agent_id": "e38-explorer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "explorer",
+      "attempt_id": "attempt-fe0cdf5f"
+    },
+    "source": "agent.explorer",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.688863",
+    "payload": {
+      "agent_id": "e38-explorer-001",
+      "agent_type": "explorer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-fbbf3302865d",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.689129",
+    "payload": {
+      "agent_id": "e38-explorer-001",
+      "agent_type": "explorer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-fbbf3302865d"
+    },
+    "source": "agent.explorer",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.692648",
+    "payload": {
+      "agent_id": "e38-explorer-001",
+      "agent_type": "explorer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-fbbf3302865d",
+      "success": true,
+      "output_summary": "{'task_key': 't1_discovery', 'started_at': '2026-10-03T19:58:36.689286+00:00', 'completed_at': '2026-10-03T19:58:36.692338+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-d3e09cc00f7e', 'artifac",
+      "evidence_hash": "3d78b8ffd14d3306409cacd99e74fa697da75ad16110d91aab3b2b8c835b2749",
+      "duration_ms": 3
+    },
+    "source": "agent.explorer",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.700477",
+    "payload": {
+      "verification_id": "verification-36c582a250d8",
+      "task_id": "task-fbbf3302865d",
+      "attempt_id": "attempt-fe0cdf5f",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2",
+        "crit_3"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.700575",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.700655",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-fbbf3302865d completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.700824",
+    "payload": {
+      "task_id": "task-fbbf3302865d",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-d3e09cc00f7e"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 3
+    },
+    "source": "agent.explorer",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.700913",
+    "payload": {
+      "artifact_id": "artifact-d3e09cc00f7e",
+      "name": "e38_t1_discovery_report.md",
+      "path": "e38_t1_discovery_report.md",
+      "sha256": "3d78b8ffd14d3306409cacd99e74fa697da75ad16110d91aab3b2b8c835b2749",
+      "size_bytes": 745,
+      "created_by": "e38-explorer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-fbbf3302865d"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-fbbf3302865d",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.723441",
+    "payload": {
+      "checkpoint_id": "checkpoint-33a296e33063",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 1,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.723916",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724279",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "agent_id": "e38-analyst-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "analyst",
+      "attempt_id": "attempt-c152bd54"
+    },
+    "source": "agent.analyst",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724394",
+    "payload": {
+      "agent_id": "e38-analyst-001",
+      "agent_type": "analyst",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-633383b77eee",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724477",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724595",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "agent_id": "e38-analyst-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "analyst",
+      "attempt_id": "attempt-c152bd54"
+    },
+    "source": "agent.analyst",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724680",
+    "payload": {
+      "agent_id": "e38-analyst-001",
+      "agent_type": "analyst",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-633383b77eee",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.724918",
+    "payload": {
+      "agent_id": "e38-analyst-001",
+      "agent_type": "analyst",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-633383b77eee"
+    },
+    "source": "agent.analyst",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.728226",
+    "payload": {
+      "agent_id": "e38-analyst-001",
+      "agent_type": "analyst",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-633383b77eee",
+      "success": true,
+      "output_summary": "{'task_key': 't2_analysis', 'started_at': '2026-10-03T19:58:36.725030+00:00', 'completed_at': '2026-10-03T19:58:36.727940+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-79a80b3d079f', 'artifact",
+      "evidence_hash": "68a12643da1fb4c2df249e16ae88c100841189dd7e0f26945528701c858c551e",
+      "duration_ms": 2
+    },
+    "source": "agent.analyst",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.752701",
+    "payload": {
+      "verification_id": "verification-f778783d7611",
+      "task_id": "task-633383b77eee",
+      "attempt_id": "attempt-c152bd54",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2",
+        "crit_3"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.752801",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.752876",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-633383b77eee completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.752991",
+    "payload": {
+      "task_id": "task-633383b77eee",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-79a80b3d079f"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.analyst",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.753086",
+    "payload": {
+      "artifact_id": "artifact-79a80b3d079f",
+      "name": "e38_t2_analysis.md",
+      "path": "e38_t2_analysis.md",
+      "sha256": "68a12643da1fb4c2df249e16ae88c100841189dd7e0f26945528701c858c551e",
+      "size_bytes": 1128,
+      "created_by": "e38-analyst-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-633383b77eee"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-633383b77eee",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.785538",
+    "payload": {
+      "checkpoint_id": "checkpoint-9c741c12d905",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 2,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786014",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786350",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "agent_id": "e38-planner-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "planner",
+      "attempt_id": "attempt-34677042"
+    },
+    "source": "agent.planner",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786435",
+    "payload": {
+      "agent_id": "e38-planner-001",
+      "agent_type": "planner",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-85900c7bf981",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786499",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786581",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "agent_id": "e38-planner-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "planner",
+      "attempt_id": "attempt-34677042"
+    },
+    "source": "agent.planner",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786645",
+    "payload": {
+      "agent_id": "e38-planner-001",
+      "agent_type": "planner",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-85900c7bf981",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.786831",
+    "payload": {
+      "agent_id": "e38-planner-001",
+      "agent_type": "planner",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-85900c7bf981"
+    },
+    "source": "agent.planner",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.789529",
+    "payload": {
+      "agent_id": "e38-planner-001",
+      "agent_type": "planner",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-85900c7bf981",
+      "success": true,
+      "output_summary": "{'task_key': 't3_planning', 'started_at': '2026-10-03T19:58:36.786921+00:00', 'completed_at': '2026-10-03T19:58:36.789299+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-c4317c84be13', 'artifact",
+      "evidence_hash": "16a529f1b2d06edaf4e033d575adda36907f0389121a5b79c778c14faed1df2b",
+      "duration_ms": 2
+    },
+    "source": "agent.planner",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.812661",
+    "payload": {
+      "verification_id": "verification-982104e27dc3",
+      "task_id": "task-85900c7bf981",
+      "attempt_id": "attempt-34677042",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2",
+        "crit_3"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.812797",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.812877",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-85900c7bf981 completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.812998",
+    "payload": {
+      "task_id": "task-85900c7bf981",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-c4317c84be13"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.planner",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.813090",
+    "payload": {
+      "artifact_id": "artifact-c4317c84be13",
+      "name": "e38_t3_plan.md",
+      "path": "e38_t3_plan.md",
+      "sha256": "16a529f1b2d06edaf4e033d575adda36907f0389121a5b79c778c14faed1df2b",
+      "size_bytes": 1247,
+      "created_by": "e38-planner-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-85900c7bf981"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-85900c7bf981",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.838449",
+    "payload": {
+      "checkpoint_id": "checkpoint-3ce081a6ef09",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 3,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.838772",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839048",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "agent_id": "e38-designer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "designer",
+      "attempt_id": "attempt-1433771a"
+    },
+    "source": "agent.designer",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839132",
+    "payload": {
+      "agent_id": "e38-designer-001",
+      "agent_type": "designer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-eb233959557c",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839199",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839292",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "agent_id": "e38-designer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "designer",
+      "attempt_id": "attempt-1433771a"
+    },
+    "source": "agent.designer",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839363",
+    "payload": {
+      "agent_id": "e38-designer-001",
+      "agent_type": "designer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-eb233959557c",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.839552",
+    "payload": {
+      "agent_id": "e38-designer-001",
+      "agent_type": "designer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-eb233959557c"
+    },
+    "source": "agent.designer",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.842257",
+    "payload": {
+      "agent_id": "e38-designer-001",
+      "agent_type": "designer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-eb233959557c",
+      "success": true,
+      "output_summary": "{'task_key': 't4_design', 'started_at': '2026-10-03T19:58:36.839650+00:00', 'completed_at': '2026-10-03T19:58:36.842024+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-efae0f1ffecc', 'artifact_p",
+      "evidence_hash": "a69573e85c4834f34a17c442f6ab60517287fab132d91bf8963ab05ce9495da1",
+      "duration_ms": 2
+    },
+    "source": "agent.designer",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.846488",
+    "payload": {
+      "verification_id": "verification-d6a4def0782f",
+      "task_id": "task-eb233959557c",
+      "attempt_id": "attempt-1433771a",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2",
+        "crit_3"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.846581",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.846647",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-eb233959557c completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.846748",
+    "payload": {
+      "task_id": "task-eb233959557c",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-efae0f1ffecc"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.designer",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.846831",
+    "payload": {
+      "artifact_id": "artifact-efae0f1ffecc",
+      "name": "e38_t4_design.md",
+      "path": "e38_t4_design.md",
+      "sha256": "a69573e85c4834f34a17c442f6ab60517287fab132d91bf8963ab05ce9495da1",
+      "size_bytes": 1624,
+      "created_by": "e38-designer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-eb233959557c"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-eb233959557c",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.870851",
+    "payload": {
+      "checkpoint_id": "checkpoint-ce955e7b0649",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 4,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871182",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871455",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-c6b3eed0"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871543",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-5daab2fe3998",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871607",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871699",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-c6b3eed0"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.871767",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-5daab2fe3998",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.879843",
+    "payload": {
+      "verification_id": "verification-a063c1a02f98",
+      "task_id": "task-5daab2fe3998",
+      "attempt_id": "attempt-c6b3eed0",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2",
+        "crit_3"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.879934",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.879995",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-5daab2fe3998 completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.880090",
+    "payload": {
+      "task_id": "task-5daab2fe3998",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-755a27e9685f"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 4
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.880168",
+    "payload": {
+      "artifact_id": "artifact-755a27e9685f",
+      "name": "verification_standard.py",
+      "path": "src/unified/verification_standard.py",
+      "sha256": "c1e8e733eb9187aaf673c85b5ee78a9f3a2fb2aa3850698c1dadad24fc6fba5b",
+      "size_bytes": 3401,
+      "created_by": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-5daab2fe3998"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-5daab2fe3998",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904077",
+    "payload": {
+      "checkpoint_id": "checkpoint-52693f64acfa",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 5,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904419",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904714",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-1aeac589"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904803",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-8c013e5b18fd",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904887",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.904987",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-1aeac589"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.905056",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-8c013e5b18fd",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.911408",
+    "payload": {
+      "verification_id": "verification-f59bfd7d1d0b",
+      "task_id": "task-8c013e5b18fd",
+      "attempt_id": "attempt-1aeac589",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.911508",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.911569",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-8c013e5b18fd completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.911672",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-8ce6d677216d"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.911749",
+    "payload": {
+      "artifact_id": "artifact-8ce6d677216d",
+      "name": "e38_t6_security_report.json",
+      "path": "e38_t6_security_report.json",
+      "sha256": "10ae0a2882e97b23503f9026d129de3e3deab8f720b1ecbe6f6570c4df8acb76",
+      "size_bytes": 269,
+      "created_by": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-8c013e5b18fd"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937143",
+    "payload": {
+      "checkpoint_id": "checkpoint-874b8d54f659",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 6,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937476",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937733",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-4efd2833"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937814",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-72639efc5644",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937875",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.937960",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "agent_id": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-4efd2833"
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.938025",
+    "payload": {
+      "agent_id": "e38-implementer-001",
+      "agent_type": "implementer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-72639efc5644",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.944270",
+    "payload": {
+      "verification_id": "verification-19bae3e7b9ab",
+      "task_id": "task-72639efc5644",
+      "attempt_id": "attempt-4efd2833",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.944366",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.944424",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-72639efc5644 completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.944517",
+    "payload": {
+      "task_id": "task-72639efc5644",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-a88b46ecb855"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 3
+    },
+    "source": "agent.implementer",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.944596",
+    "payload": {
+      "artifact_id": "artifact-a88b46ecb855",
+      "name": "test_security_criterion.py",
+      "path": "tests/verification/test_security_criterion.py",
+      "sha256": "e6be96a3a1a6153f3e661dad245a0af4e067b80cf1cfcd2e568413b590786504",
+      "size_bytes": 104,
+      "created_by": "e38-implementer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-72639efc5644"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-72639efc5644",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970063",
+    "payload": {
+      "checkpoint_id": "checkpoint-f9f02d860623",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 7,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970408",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970698",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "agent_id": "e38-verifier-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "verifier",
+      "attempt_id": "attempt-8f09afe3"
+    },
+    "source": "agent.verifier",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970793",
+    "payload": {
+      "agent_id": "e38-verifier-001",
+      "agent_type": "verifier",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-0de487cb9355",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970863",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.970953",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "agent_id": "e38-verifier-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "verifier",
+      "attempt_id": "attempt-8f09afe3"
+    },
+    "source": "agent.verifier",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.971025",
+    "payload": {
+      "agent_id": "e38-verifier-001",
+      "agent_type": "verifier",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-0de487cb9355",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.977676",
+    "payload": {
+      "verification_id": "verification-321c95a749da",
+      "task_id": "task-0de487cb9355",
+      "attempt_id": "attempt-8f09afe3",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.977778",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.977848",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-0de487cb9355 completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:36.977953",
+    "payload": {
+      "task_id": "task-0de487cb9355",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.verifier",
+    "correlation_id": "task-0de487cb9355",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.007544",
+    "payload": {
+      "checkpoint_id": "checkpoint-483652a42217",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 8,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.007917",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.008246",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "agent_id": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "reviewer",
+      "attempt_id": "attempt-7ec07d7e"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.008347",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-ffc665a6fd57",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.008435",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.008539",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "agent_id": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "reviewer",
+      "attempt_id": "attempt-7ec07d7e"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.009092",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-ffc665a6fd57",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.009300",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-ffc665a6fd57"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.011973",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-ffc665a6fd57",
+      "success": true,
+      "output_summary": "{'task_key': 't9_human_gate', 'started_at': '2026-10-03T19:58:37.009400+00:00', 'completed_at': '2026-10-03T19:58:37.011744+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-a4c9b5af3064', 'artifa",
+      "evidence_hash": "d1e7867352822ee9adcb7f45348cfda991dfd9f55c030b7a49747b21e534ac63",
+      "duration_ms": 2
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.015915",
+    "payload": {
+      "verification_id": "verification-372a263cd996",
+      "task_id": "task-ffc665a6fd57",
+      "attempt_id": "attempt-7ec07d7e",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.016020",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.016096",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "from_state": "BLOCKED",
+      "to_state": "READY",
+      "reason": "Dependency task-ffc665a6fd57 completed"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.016207",
+    "payload": {
+      "task_id": "task-ffc665a6fd57",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-a4c9b5af3064"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 2
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.016294",
+    "payload": {
+      "artifact_id": "artifact-a4c9b5af3064",
+      "name": "e38_t9_human_decision.json",
+      "path": "e38_t9_human_decision.json",
+      "sha256": "d1e7867352822ee9adcb7f45348cfda991dfd9f55c030b7a49747b21e534ac63",
+      "size_bytes": 118,
+      "created_by": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-ffc665a6fd57"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-ffc665a6fd57",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.043970",
+    "payload": {
+      "checkpoint_id": "checkpoint-64230ea457f4",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 9,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044326",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044629",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "agent_id": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "reviewer",
+      "attempt_id": "attempt-a2cb31e7"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044719",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-1cb4fc359306",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044789",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.assigned",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044888",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "agent_id": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "agent_type": "reviewer",
+      "attempt_id": "attempt-a2cb31e7"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.selected",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.044954",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-1cb4fc359306",
+      "selection_method": "reservation"
+    },
+    "source": "execution_engine",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.started",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.045146",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-1cb4fc359306"
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "agent.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.048789",
+    "payload": {
+      "agent_id": "e38-reviewer-001",
+      "agent_type": "reviewer",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-1cb4fc359306",
+      "success": true,
+      "output_summary": "{'task_key': 't10_final_review', 'started_at': '2026-10-03T19:58:37.045243+00:00', 'completed_at': '2026-10-03T19:58:37.048544+00:00', 'process_pid': 1588, 'artifact_id': 'artifact-4e0743c4bcbe', 'art",
+      "evidence_hash": "75da50f5ea5c2028cffdf77176ab43366babf4c0d5da92014a8c7dc44ed4a045",
+      "duration_ms": 3
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "verification.complete",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.052097",
+    "payload": {
+      "verification_id": "verification-aa1b1cd6fc00",
+      "task_id": "task-1cb4fc359306",
+      "attempt_id": "attempt-a2cb31e7",
+      "verdict": "evidenced",
+      "checks_performed": [
+        "crit_0",
+        "crit_1",
+        "crit_2"
+      ],
+      "missing_evidence": [],
+      "confidence": 1.0
+    },
+    "source": "verifier",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "state.transition",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.052188",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "from_state": "RUNNING",
+      "to_state": "COMPLETED",
+      "reason": "Task state updated to COMPLETED"
+    },
+    "source": "task_graph",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "task.completed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.052311",
+    "payload": {
+      "task_id": "task-1cb4fc359306",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "success": true,
+      "artifacts": [
+        "artifact-4e0743c4bcbe"
+      ],
+      "evidence_hashes": [],
+      "duration_ms": 3
+    },
+    "source": "agent.reviewer",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "artifact.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.052389",
+    "payload": {
+      "artifact_id": "artifact-4e0743c4bcbe",
+      "name": "e38_t10_final_report.md",
+      "path": "e38_t10_final_report.md",
+      "sha256": "75da50f5ea5c2028cffdf77176ab43366babf4c0d5da92014a8c7dc44ed4a045",
+      "size_bytes": 130,
+      "created_by": "e38-reviewer-001",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "task_id": "task-1cb4fc359306"
+    },
+    "source": "evidence_store",
+    "correlation_id": "task-1cb4fc359306",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.079840",
+    "payload": {
+      "checkpoint_id": "checkpoint-f795679d1edb",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 10,
+      "state": "EXECUTING",
+      "task_count": 10,
+      "artifact_count": 10,
+      "hash": ""
+    },
+    "source": "execution_engine",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.084250",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "from_state": "EXECUTING",
+      "to_state": "EXECUTED",
+      "actor": "mission_controller",
+      "reason": "All tasks completed successfully"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.084364",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "from_state": "EXECUTED",
+      "to_state": "VERIFYING",
+      "actor": "mission_controller",
+      "reason": "All tasks completed successfully"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "mission.state_changed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.084448",
+    "payload": {
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "from_state": "VERIFYING",
+      "to_state": "EVIDENCED",
+      "actor": "mission_controller",
+      "reason": "All tasks completed successfully"
+    },
+    "source": "mission_controller",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.086916",
+    "payload": {
+      "checkpoint_id": "checkpoint-b08d7c1661c4",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 1,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.092506",
+    "payload": {
+      "checkpoint_id": "checkpoint-4e7db49cbb9d",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 2,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.100142",
+    "payload": {
+      "checkpoint_id": "checkpoint-a41bd47cf574",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 3,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "task.failed",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.100339",
+    "payload": {
+      "task_id": "task-8c013e5b18fd",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "error": "Security audit found vulnerability in new code",
+      "retry_count": 0,
+      "max_retries": 2
+    },
+    "source": "test_harness",
+    "correlation_id": "task-8c013e5b18fd",
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.106534",
+    "payload": {
+      "checkpoint_id": "checkpoint-39560bb66d3c",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 4,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.112941",
+    "payload": {
+      "checkpoint_id": "checkpoint-3dd2cced8e22",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 5,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  },
+  {
+    "event_type": "checkpoint.created",
+    "mission_id": "mission-f4560310e244",
+    "run_id": "run-1285d699cfd8",
+    "timestamp": "2026-10-03T19:58:37.117012",
+    "payload": {
+      "checkpoint_id": "checkpoint-bf76af975865",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 6,
+      "state": "EVIDENCED",
+      "task_count": 10,
+      "artifact_count": 0,
+      "hash": ""
+    },
+    "source": "test_harness",
+    "correlation_id": null,
+    "causation_id": null
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "gap_register_id": "E39_GAP_REGISTER",
+  "source": "E39_E38_AUDIT.json",
+  "gaps": [
+    {
+      "ac_id": "AC-05",
+      "requirement": "Implementation produces real artifacts that are traceable in evidence graph",
+      "why_e38_did_not_verify": "E38 harness populates self.artifact_trace during execution but E38_EVIDENCE_GRAPH.json saved with empty artifacts array. The artifact_trace was not correctly passed to save_evidence(). Evidence store has artifacts but evidence graph does not.",
+      "required_evidence": "E38_EVIDENCE_GRAPH.json.artifacts populated with all 10+ artifacts including artifact_id, path, sha256, task_id, agent_role",
+      "required_implementation": "Fix harness.save_evidence() to include self.artifact_trace in E38_EVIDENCE_GRAPH.json. Ensure artifact_trace is populated for all tasks including recovery task.",
+      "verification_method": "Re-run E38 and verify E38_EVIDENCE_GRAPH.json.artifacts.length >= 10 with correct fields",
+      "exit_criterion": "E38_EVIDENCE_GRAPH.json.artifacts array non-empty and matches evidence_store/artifacts.json"
+    },
+    {
+      "ac_id": "AC-06",
+      "requirement": "Verifier independently validates implementation (separate agent, separate execution)",
+      "why_e38_did_not_verify": "Verifier agent (e38-verifier-001) was registered in AgentFactory but never selected for any task. All verification done by ExecutionEngine._verify_task() inline. No independent OperationalVerifierAgent execution for role tasks.",
+      "required_evidence": "E38_ROLE_TRACE.json must include 'verifier' with agent.started events. E38_VERIFICATION_TRACE.json must contain verification records from independent verifier.",
+      "required_implementation": "Modify task graph to assign t8_verification to AgentType.VERIFIER. Ensure MissionController executes verifier agent for verification task. Use OperationalVerifierAgent for independent verification.",
+      "verification_method": "Re-run E38 and verify verifier role appears in E38_ROLE_TRACE.json and E38_VERIFICATION_TRACE.json non-empty",
+      "exit_criterion": "Verifier role executed at least once with independent verification result"
+    },
+    {
+      "ac_id": "AC-10",
+      "requirement": "Replanned execution resumes correctly with updated dependency graph",
+      "why_e38_did_not_verify": "Recovery task t6_security_audit_fixed created but task graph dependencies not updated. t7_testing still depends on failed t6_security_audit instead of recovery task. Recovery task execution not verified in checkpoints.",
+      "required_evidence": "E38_TASK_GRAPH.json dependencies updated: t7_testing depends on t6_security_audit_fixed. Checkpoint_post_recovery shows recovery task COMPLETED.",
+      "required_implementation": "In harness.recover_and_replan(), update task graph dependencies to point to recovery task. Ensure recovery task executes and completes before dependent tasks.",
+      "verification_method": "Re-run E38 and verify t7_testing depends on t6_security_audit_fixed in task graph, and recovery task shows COMPLETED in checkpoint",
+      "exit_criterion": "Dependency graph correctly references recovery task; recovery task completes; dependent tasks execute after recovery"
+    },
+    {
+      "ac_id": "AC-15",
+      "requirement": "Evidence graph reconstructs why final claims are trusted (claim→requirement→artifact→evidence→verification chain)",
+      "why_e38_did_not_verify": "E38_EVIDENCE_GRAPH.json saved with empty arrays for artifacts, evidence_records, verifications. The runtime traces (artifact_trace, evidence_trace, verification_trace) were empty at save time.",
+      "required_evidence": "E38_EVIDENCE_GRAPH.json with non-empty artifacts[], evidence_records[], verifications[] showing full traceability chain",
+      "required_implementation": "Populate artifact_trace, evidence_trace, verification_trace during execution. In save_evidence(), include all three in E38_EVIDENCE_GRAPH.json. Link each verification to its evidence and artifact.",
+      "verification_method": "Re-run E38 and verify E38_EVIDENCE_GRAPH.json contains complete chain for at least one task",
+      "exit_criterion": "For at least one task: claim → requirement → task → action → artifact → evidence → verification all traceable in E38_EVIDENCE_GRAPH.json"
+    },
+    {
+      "ac_id": "AC-16",
+      "requirement": "Final result is independently verified (producer != verifier)",
+      "why_e38_did_not_verify": "Same execution path (ExecutionEngine._verify_task) both produces and verifies. No independent verifier agent execution. Producer and verifier are the same code path.",
+      "required_evidence": "E38_VERIFICATION_TRACE.json shows verification by independent agent (verifier role). Producer task (implementation) and verifier task are separate with separate agents.",
+      "required_implementation": "Separate verification task execution to OperationalVerifierAgent. Ensure verifier agent runs independently and produces verification result that is recorded separately from producer artifacts.",
+      "verification_method": "Re-run E38 and verify verifier agent executed independently, verification recorded in E38_VERIFICATION_TRACE.json with verifier identity",
+      "exit_criterion": "Independent verifier agent executes and produces verification distinct from producer artifacts"
+    },
+    {
+      "ac_id": "AC-17",
+      "requirement": "No mock replaces a required production execution path",
+      "why_e38_did_not_verify": "All role-specific tasks (explorer, analyst, planner, designer, reviewer) use ContextAgent (test harness class) not OperationalImplementerAgent/OperationalVerifierAgent. ContextAgent is a test double that directly writes artifacts without real agent logic.",
+      "required_evidence": "E38_ROLE_TRACE.json shows operational agent types (OperationalImplementerAgent, OperationalVerifierAgent) executing role tasks, not ContextAgent.",
+      "required_implementation": "Replace ContextAgent with operational agents for role tasks. Use AgentFactory to create real operational agents for each role. Or verify that ContextAgent IS the operational implementation (but it's not - it's a test harness class).",
+      "verification_method": "Re-run E38 and verify agent class names in role_trace are operational agents, not ContextAgent",
+      "exit_criterion": "All role tasks executed by operational agent implementations, not test harness mocks"
+    },
+    {
+      "ac_id": "AC-20",
+      "requirement": "E38 artifacts are reproducible from the repository (fresh execution from repo+inputs+command)",
+      "why_e38_did_not_verify": "No reproduction mechanism exists. E38 artifacts only exist in temp directory from test run. No script to re-execute from repository state and compare outputs.",
+      "required_evidence": "E39_REPRODUCTION_TRACE.json showing fresh execution from repository producing comparable artifacts. Hash comparison between original and reproduced artifacts.",
+      "required_implementation": "Create reproduction script that: 1) Checks out E38 commit, 2) Runs E38 test, 3) Captures artifacts, 4) Compares hashes with original E38 artifacts. Document environment and inputs.",
+      "verification_method": "Execute reproduction script and verify at least one artifact reproduces exactly (same hash)",
+      "exit_criterion": "At least one E38 artifact reproduced from repository with matching hash, or differences documented and explained"
+    }
+  ]
+}

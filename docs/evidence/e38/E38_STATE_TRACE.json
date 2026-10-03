@@ -1,0 +1,1697 @@
+{
+  "checkpoints": [
+    {
+      "checkpoint_id": "checkpoint-b08d7c1661c4",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 1,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "COMPLETED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.085373",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    },
+    {
+      "checkpoint_id": "checkpoint-4e7db49cbb9d",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 2,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "COMPLETED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.090733",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    },
+    {
+      "checkpoint_id": "checkpoint-a41bd47cf574",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 3,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "COMPLETED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.096959",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    },
+    {
+      "checkpoint_id": "checkpoint-39560bb66d3c",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 4,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "FAILED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.104686",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    },
+    {
+      "checkpoint_id": "checkpoint-3dd2cced8e22",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 5,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "FAILED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.111497",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    },
+    {
+      "checkpoint_id": "checkpoint-bf76af975865",
+      "mission_id": "mission-f4560310e244",
+      "run_id": "run-1285d699cfd8",
+      "step": 6,
+      "state": "EVIDENCED",
+      "task_states": {
+        "task-fbbf3302865d": "COMPLETED",
+        "task-633383b77eee": "COMPLETED",
+        "task-85900c7bf981": "COMPLETED",
+        "task-eb233959557c": "COMPLETED",
+        "task-5daab2fe3998": "COMPLETED",
+        "task-8c013e5b18fd": "FAILED",
+        "task-72639efc5644": "COMPLETED",
+        "task-0de487cb9355": "COMPLETED",
+        "task-ffc665a6fd57": "COMPLETED",
+        "task-1cb4fc359306": "COMPLETED"
+      },
+      "artifact_ids": [],
+      "evidence_hashes": [
+        "evidence-06bdbe148836",
+        "evidence-a4f951e26801",
+        "evidence-9436ccbdc512",
+        "evidence-2d0d53959628",
+        "evidence-1b65c94b3210",
+        "evidence-19a39ca2031d",
+        "evidence-3d30da0ad2ad",
+        "evidence-ce99f23267d7",
+        "evidence-2b3228cb6288"
+      ],
+      "created_at": "2026-10-03 19:58:37.113344",
+      "hash": "",
+      "task_definitions": {
+        "task-fbbf3302865d": {
+          "name": "T1: Discovery - Explore Verification & Security Systems",
+          "description": "Explore the codebase to understand the verification system (verification_standard.py) and SecurityAgent (security.py). Map the integration points for adding a SECURITY_AUDIT_PASSES criterion.",
+          "agent_type": "explorer",
+          "depends_on": [],
+          "accept_criteria": [
+            "file_exists:e38_t1_discovery_report.md",
+            "file_contains:e38_t1_discovery_report.md:verification_standard",
+            "file_contains:e38_t1_discovery_report.md:SecurityAgent",
+            "file_contains:e38_t1_discovery_report.md:CriterionType"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-633383b77eee": {
+          "name": "T2: Analysis - Security Integration Design",
+          "description": "Analyze how to integrate SecurityAgent capabilities (SAST, dependency audit, secret scanning) as a new mechanical verification criterion. Document the data flow: ImplementationResult \u2192 SecurityAgent \u2192 VerificationReport \u2192 AcceptanceCriterion check.",
+          "agent_type": "analyst",
+          "depends_on": [
+            "task-fbbf3302865d"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t2_analysis.md",
+            "file_contains:e38_t2_analysis.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t2_analysis.md:SecurityAgent",
+            "file_contains:e38_t2_analysis.md:VerificationReport"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-85900c7bf981": {
+          "name": "T3: Planning - Implementation Plan",
+          "description": "Create a detailed implementation plan for adding SECURITY_AUDIT_PASSES criterion type. Include: 1) Enum addition, 2) Verifier logic, 3) SecurityAgent integration, 4) Test criteria, 5) Acceptance criteria for the feature itself.",
+          "agent_type": "planner",
+          "depends_on": [
+            "task-633383b77eee"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t3_plan.md",
+            "file_contains:e38_t3_plan.md:SECURITY_AUDIT_PASSES",
+            "file_contains:e38_t3_plan.md:implementation",
+            "file_contains:e38_t3_plan.md:verification"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-eb233959557c": {
+          "name": "T4: Design - Criterion Specification",
+          "description": "Design the SECURITY_AUDIT_PASSES criterion specification including: criterion parameters, SecurityAgent input mapping, evidence requirements, failure modes, and integration with VerificationReport.",
+          "agent_type": "designer",
+          "depends_on": [
+            "task-85900c7bf981"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t4_design.md",
+            "file_contains:e38_t4_design.md:criterion",
+            "file_contains:e38_t4_design.md:parameters",
+            "file_contains:e38_t4_design.md:evidence"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-5daab2fe3998": {
+          "name": "T5: Implementation - Add SECURITY_AUDIT_PASSES Criterion",
+          "description": "Implement the SECURITY_AUDIT_PASSES criterion type in verification_standard.py. Add enum value, update Verifier class to handle security audit criterion, integrate SecurityAgent execution, produce evidence.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-eb233959557c"
+          ],
+          "accept_criteria": [
+            "file_exists:src/unified/verification_standard.py",
+            "file_contains:src/unified/verification_standard.py:SECURITY_AUDIT_PASSES",
+            "file_contains:src/unified/verification_standard.py:SecurityAgent",
+            "file_contains:src/unified/verification_standard.py:_verify_security_audit"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-8c013e5b18fd": {
+          "name": "T6: Security Audit - Review Implementation",
+          "description": "Run SecurityAgent (SAST, dependency audit, secret scanning) on the new implementation. This runs in parallel with implementation verification.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t6_security_report.json",
+            "file_contains:e38_t6_security_report.json:vulnerabilities_found",
+            "file_contains:e38_t6_security_report.json:secrets_found"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-72639efc5644": {
+          "name": "T7: Testing - Verify New Criterion Works",
+          "description": "Create and run tests for the new SECURITY_AUDIT_PASSES criterion. Test with both passing and failing security audit scenarios.",
+          "agent_type": "implementer",
+          "depends_on": [
+            "task-5daab2fe3998",
+            "task-8c013e5b18fd"
+          ],
+          "accept_criteria": [
+            "file_exists:tests/verification/test_security_criterion.py",
+            "file_contains:tests/verification/test_security_criterion.py:SECURITY_AUDIT_PASSES",
+            "command_succeeds:python -m pytest tests/verification/test_security_criterion.py -v"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-0de487cb9355": {
+          "name": "T8: Verification - Independent Validation",
+          "description": "Verifier independently validates the implementation against acceptance criteria. Checks: criterion enum exists, verifier handles it, security audit runs, tests pass, evidence chain complete.",
+          "agent_type": "verifier",
+          "depends_on": [
+            "task-72639efc5644"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t8_verification_report.json",
+            "file_contains:e38_t8_verification_report.json:passed",
+            "file_contains:e38_t8_verification_report.json:evidence_hash"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-ffc665a6fd57": {
+          "name": "T9: Human Gate - Review and Approve",
+          "description": "Human reviews the verification evidence and decides whether to approve the feature for production. This simulates the human governance checkpoint.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-0de487cb9355"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t9_human_decision.json",
+            "file_contains:e38_t9_human_decision.json:decision",
+            "file_contains:e38_t9_human_decision.json:APPROVED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        },
+        "task-1cb4fc359306": {
+          "name": "T10: Final Review - Mission Convergence",
+          "description": "Final review of the complete mission. Verify all artifacts, evidence chain, and mission-level convergence. Produce final mission report.",
+          "agent_type": "reviewer",
+          "depends_on": [
+            "task-ffc665a6fd57"
+          ],
+          "accept_criteria": [
+            "file_exists:e38_t10_final_report.md",
+            "file_contains:e38_t10_final_report.md:MISSION_COMPLETE",
+            "file_contains:e38_t10_final_report.md:VERIFIED"
+          ],
+          "max_retries": 2,
+          "retry_count": 0
+        }
+      },
+      "task_dependencies": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [
+          "task-fbbf3302865d"
+        ],
+        "task-85900c7bf981": [
+          "task-633383b77eee"
+        ],
+        "task-eb233959557c": [
+          "task-85900c7bf981"
+        ],
+        "task-5daab2fe3998": [
+          "task-eb233959557c"
+        ],
+        "task-8c013e5b18fd": [
+          "task-5daab2fe3998"
+        ],
+        "task-72639efc5644": [
+          "task-5daab2fe3998",
+          "task-8c013e5b18fd"
+        ],
+        "task-0de487cb9355": [
+          "task-72639efc5644"
+        ],
+        "task-ffc665a6fd57": [
+          "task-0de487cb9355"
+        ],
+        "task-1cb4fc359306": [
+          "task-ffc665a6fd57"
+        ]
+      },
+      "task_dependents": {
+        "task-fbbf3302865d": [
+          "task-633383b77eee"
+        ],
+        "task-633383b77eee": [
+          "task-85900c7bf981"
+        ],
+        "task-85900c7bf981": [
+          "task-eb233959557c"
+        ],
+        "task-eb233959557c": [
+          "task-5daab2fe3998"
+        ],
+        "task-5daab2fe3998": [
+          "task-72639efc5644",
+          "task-8c013e5b18fd"
+        ],
+        "task-8c013e5b18fd": [
+          "task-72639efc5644"
+        ],
+        "task-72639efc5644": [
+          "task-0de487cb9355"
+        ],
+        "task-0de487cb9355": [
+          "task-ffc665a6fd57"
+        ],
+        "task-ffc665a6fd57": [
+          "task-1cb4fc359306"
+        ],
+        "task-1cb4fc359306": []
+      },
+      "attempt_history": {
+        "task-fbbf3302865d": [],
+        "task-633383b77eee": [],
+        "task-85900c7bf981": [],
+        "task-eb233959557c": [],
+        "task-5daab2fe3998": [],
+        "task-8c013e5b18fd": [],
+        "task-72639efc5644": [],
+        "task-0de487cb9355": [],
+        "task-ffc665a6fd57": [],
+        "task-1cb4fc359306": []
+      },
+      "agent_assignments": {
+        "task-fbbf3302865d": "",
+        "task-633383b77eee": "",
+        "task-85900c7bf981": "",
+        "task-eb233959557c": "",
+        "task-5daab2fe3998": "",
+        "task-8c013e5b18fd": "",
+        "task-72639efc5644": "",
+        "task-0de487cb9355": "",
+        "task-ffc665a6fd57": "",
+        "task-1cb4fc359306": ""
+      },
+      "human_gate": null,
+      "human_decision": null
+    }
+  ],
+  "reconstruction": {
+    "reconstructed_task_states": {
+      "task-fbbf3302865d": "COMPLETED",
+      "task-633383b77eee": "COMPLETED",
+      "task-85900c7bf981": "COMPLETED",
+      "task-eb233959557c": "COMPLETED",
+      "task-5daab2fe3998": "COMPLETED",
+      "task-8c013e5b18fd": "COMPLETED",
+      "task-72639efc5644": "COMPLETED",
+      "task-0de487cb9355": "COMPLETED",
+      "task-ffc665a6fd57": "COMPLETED",
+      "task-1cb4fc359306": "COMPLETED"
+    },
+    "total_events": 159,
+    "event_types": [
+      "checkpoint.created",
+      "task.created",
+      "state.transition",
+      "mission.started",
+      "agent.completed",
+      "verification.complete",
+      "task.failed",
+      "task.completed",
+      "mission.state_changed",
+      "task.assigned",
+      "agent.selected",
+      "agent.started",
+      "run.started",
+      "artifact.created"
+    ]
+  }
+}
