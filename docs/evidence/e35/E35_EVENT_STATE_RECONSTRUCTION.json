@@ -1,0 +1,33 @@
+{
+  "mission_state_match": true,
+  "task_states_match": true,
+  "reconstructed_mission": "EVIDENCED",
+  "actual_mission": "EVIDENCED",
+  "reconstructed_tasks": {
+    "task-898610e61a63": "COMPLETED",
+    "task-72f85a19bfb4": "COMPLETED",
+    "task-28ec6f64523a": "FAILED",
+    "task-e5b587afa921": "COMPLETED",
+    "task-833d366b290b": "COMPLETED",
+    "task-a539c0c17f80": "COMPLETED",
+    "task-b564aaf6dcd0": "COMPLETED"
+  },
+  "actual_tasks": {
+    "task-898610e61a63": "COMPLETED",
+    "task-28ec6f64523a": "FAILED",
+    "task-72f85a19bfb4": "COMPLETED",
+    "task-e5b587afa921": "COMPLETED",
+    "task-b564aaf6dcd0": "COMPLETED",
+    "task-833d366b290b": "COMPLETED",
+    "task-a539c0c17f80": "COMPLETED"
+  },
+  "attempt_counts": {
+    "task-898610e61a63": 2,
+    "task-72f85a19bfb4": 2,
+    "task-28ec6f64523a": 2,
+    "task-e5b587afa921": 2,
+    "task-833d366b290b": 2,
+    "task-a539c0c17f80": 2,
+    "task-b564aaf6dcd0": 2
+  }
+}

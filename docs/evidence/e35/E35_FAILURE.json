@@ -1,0 +1,20 @@
+{
+  "phase": "phase1",
+  "failed_task_ids": [
+    "task-28ec6f64523a"
+  ],
+  "failed_task_keys": [
+    "t2_process_a"
+  ],
+  "completed_task_ids": [
+    "task-898610e61a63",
+    "task-72f85a19bfb4",
+    "task-e5b587afa921"
+  ],
+  "completed_task_keys": [
+    "t1_setup",
+    "t3_process_b",
+    "t5_aggregate_b"
+  ],
+  "mission_state": "EXECUTING"
+}

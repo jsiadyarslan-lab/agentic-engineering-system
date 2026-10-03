@@ -1,0 +1,8 @@
+{
+  "final_mission_state": "EVIDENCED",
+  "is_evidenced": true,
+  "verified_by_user": false,
+  "verification_authority": "actor='user' required for VERIFIED transition",
+  "mission_completed": true,
+  "plan_version": "v1"
+}

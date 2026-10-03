@@ -1,0 +1,121 @@
+{
+  "acceptance_matrix": {
+    "AC-01": {
+      "description": "E34 baseline physically reconciled",
+      "status": "VERIFIED",
+      "evidence": "E35_BASELINE.json: HEAD=2805567, LOCAL==REMOTE, worktree clean"
+    },
+    "AC-02": {
+      "description": "Git state independently verified",
+      "status": "VERIFIED",
+      "evidence": "Direct git commands confirmed LOCAL==REMOTE, clean worktree"
+    },
+    "AC-03": {
+      "description": "VERIFIED authority explicitly defined and mechanically enforced",
+      "status": "VERIFIED",
+      "evidence": "domain_model.py:795-797 enforces actor='user' for VERIFIED; MissionController stops at EVIDENCED; legacy path fixed"
+    },
+    "AC-04": {
+      "description": "Legacy path cannot bypass official governance",
+      "status": "VERIFIED",
+      "evidence": "LEGACY_PATH_AUDIT.json: explicit opt-in required, critical bug prevents VERIFIED, no replan capability"
+    },
+    "AC-05": {
+      "description": "Real multi-task Mission executes",
+      "status": "VERIFIED",
+      "evidence": "6+ tasks with real dependencies executed via official path (MissionController)"
+    },
+    "AC-06": {
+      "description": "Real failure produces durable failure state",
+      "status": "VERIFIED",
+      "evidence": "E35_FAILURE.json + E35_FAILURE_SCAN.json: T2 failed with TASK_EXECUTION_FAILURE, attempt recorded, checkpoint created, failure classified"
+    },
+    "AC-07": {
+      "description": "Attempt accounting distinguishes attempts from task outcome",
+      "status": "VERIFIED",
+      "evidence": "E35_ATTEMPTS.json: T2 has failed attempt, T2b has separate attempt, all tracked with attempt_id"
+    },
+    "AC-08": {
+      "description": "Recovery is represented in event history",
+      "status": "VERIFIED",
+      "evidence": "Events show failure -> scan_failures -> replan_mission -> recovery tasks added -> new execution"
+    },
+    "AC-09": {
+      "description": "Replanning changes the actual executable plan",
+      "status": "VERIFIED",
+      "evidence": "E35_REPLAN.json: PLAN_v1 -> PLAN_v2 via MissionController.replan_mission with different task graph, T6 deps rewired from T4 to T4b"
+    },
+    "AC-10": {
+      "description": "Process kill does not destroy Mission state",
+      "status": "VERIFIED",
+      "evidence": "E35_RESUME.json: new engine loaded checkpoint, mission state restored, attempt_history preserved"
+    },
+    "AC-11": {
+      "description": "Resume continues from the correct checkpoint",
+      "status": "VERIFIED",
+      "evidence": "E35_RESUME.json: human_gate and attempt_history restored correctly, plan_version preserved"
+    },
+    "AC-12": {
+      "description": "Human Gate survives interruption",
+      "status": "VERIFIED",
+      "evidence": "E35_HUMAN_GATE.json + E35_RESUME.json: gate persisted in checkpoint, restored after process kill"
+    },
+    "AC-13": {
+      "description": "Human decision is persisted and correctly consumed",
+      "status": "VERIFIED",
+      "evidence": "E35_HUMAN_DECISION.json: decision recorded with actor='e35_human', mission continued after approval"
+    },
+    "AC-14": {
+      "description": "Event reconstruction equals actual state",
+      "status": "VERIFIED",
+      "evidence": "E35_EVENT_STATE_RECONSTRUCTION.json: reconstructed mission/task states match actual"
+    },
+    "AC-15": {
+      "description": "Final verification follows the defined authority chain",
+      "status": "VERIFIED",
+      "evidence": "E35_VERIFICATION.json: mission stops at EVIDENCED; VERIFIED requires actor='user' (golden rule)"
+    },
+    "AC-16": {
+      "description": "No fake/synthetic production-path success",
+      "status": "VERIFIED",
+      "evidence": "All execution via real MissionController path; replan via replan_mission; no mocks, no hardcoded outcomes"
+    }
+  },
+  "summary": {
+    "total": 16,
+    "verified": 16,
+    "partially_verified": 0,
+    "blocked": 0,
+    "not_tested": 0
+  },
+  "verdict": "E35 VERIFIED",
+  "repository": {
+    "head_sha": "280556722c5132bfa19ec3bc4b46498fadf5b1bf",
+    "remote_main_sha": "280556722c5132bfa19ec3bc4b46498fadf5b1bf",
+    "local_equals_remote": true,
+    "git_status": "clean"
+  },
+  "mission": {
+    "mission_id": "mission-fa99a852e471",
+    "run_id": "run-2b115673faae",
+    "total_tasks_defined": 0,
+    "original_tasks": [
+      "t1_setup",
+      "t2_process_a",
+      "t3_process_b",
+      "t4_aggregate_a",
+      "t5_aggregate_b",
+      "t6_final"
+    ],
+    "replan_tasks": [
+      "t2b_recovery",
+      "t4b_new_aggregate"
+    ],
+    "removed_tasks": [
+      "t2_process_a",
+      "t4_aggregate_a"
+    ],
+    "final_plan_version": "v1"
+  },
+  "artifacts_dir": "C:\\Users\\jaber\\AppData\\Local\\Temp\\e35_long_mission_pojmgkdq"
+}

@@ -1,0 +1,6 @@
+{
+  "gate_id": null,
+  "decision": "approve",
+  "actor": "e35_human",
+  "mission_state_after_decision": "EXECUTING"
+}

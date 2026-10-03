@@ -1,0 +1,45 @@
+{
+  "from_version": "v1",
+  "to_version": "v2",
+  "reason": "T2 failed with TASK_EXECUTION_FAILURE - switching to recovery path T2b -> T4b",
+  "evidence": [
+    "TASK_FAILED event at 2026-10-03T13:39:38.291777",
+    "terminal=True retry_count=0 max_retries=0"
+  ],
+  "added_tasks": [
+    {
+      "task_key": "t2b_recovery",
+      "depends_on": [
+        "task-898610e61a63"
+      ],
+      "name": "T2b: Recovery Process A"
+    },
+    {
+      "task_key": "t4b_new_aggregate",
+      "depends_on": [
+        "NEW:t2b_recovery"
+      ],
+      "name": "T4b: New Aggregate A"
+    }
+  ],
+  "removed_tasks": [
+    "t2_process_a",
+    "t4_aggregate_a"
+  ],
+  "preserved_tasks": [
+    "t1_setup",
+    "t3_process_b",
+    "t5_aggregate_b"
+  ],
+  "rewired_dependencies": [
+    {
+      "task_key": "t6_final",
+      "new_depends_on": [
+        "t4b_new_aggregate",
+        "t5_aggregate_b"
+      ]
+    }
+  ],
+  "modified_tasks": [],
+  "timestamp": "2026-10-03T13:39:38.318590+00:00"
+}

@@ -1,0 +1,8 @@
+{
+  "checkpoint_id": "checkpoint-ec487d78ef6f",
+  "mission_state_before_kill": "HUMAN_REQUIRED",
+  "mission_state_after_resume": "EXECUTING",
+  "human_gate_restored": false,
+  "human_decision_restored": false,
+  "plan_version_after_resume": "v1"
+}

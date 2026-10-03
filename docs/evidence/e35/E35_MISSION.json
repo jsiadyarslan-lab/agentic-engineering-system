@@ -1,0 +1,91 @@
+{
+  "mission_id": "mission-fa99a852e471",
+  "run_id": "run-fe6f5f711d34",
+  "plan_version": "v1",
+  "tasks": [
+    {
+      "key": "t1_setup",
+      "task_id": "task-898610e61a63",
+      "name": "T1: Setup Environment",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_exists:e35_t1_setup.txt"
+      ]
+    },
+    {
+      "key": "t2_process_a",
+      "task_id": "task-28ec6f64523a",
+      "name": "T2: Process Data Stream A",
+      "depends_on": [
+        "t1_setup"
+      ],
+      "acceptance_criteria": [
+        "file_exists:e35_t2_output.txt"
+      ]
+    },
+    {
+      "key": "t3_process_b",
+      "task_id": "task-72f85a19bfb4",
+      "name": "T3: Process Data Stream B",
+      "depends_on": [
+        "t1_setup"
+      ],
+      "acceptance_criteria": [
+        "file_exists:e35_t3_output.txt"
+      ]
+    },
+    {
+      "key": "t4_aggregate_a",
+      "task_id": "task-082c03a523b8",
+      "name": "T4: Aggregate A Results",
+      "depends_on": [
+        "t2_process_a"
+      ],
+      "acceptance_criteria": [
+        "file_exists:e35_t4_output.txt"
+      ]
+    },
+    {
+      "key": "t5_aggregate_b",
+      "task_id": "task-e5b587afa921",
+      "name": "T5: Aggregate B Results",
+      "depends_on": [
+        "t3_process_b"
+      ],
+      "acceptance_criteria": [
+        "file_exists:e35_t5_output.txt"
+      ]
+    },
+    {
+      "key": "t6_final",
+      "task_id": "task-b564aaf6dcd0",
+      "name": "T6: Final Assembly",
+      "depends_on": [
+        "t4_aggregate_a",
+        "t5_aggregate_b"
+      ],
+      "acceptance_criteria": [
+        "file_exists:e35_t6_output.txt"
+      ]
+    }
+  ],
+  "dependencies": {
+    "t1_setup": [],
+    "t2_process_a": [
+      "t1_setup"
+    ],
+    "t3_process_b": [
+      "t1_setup"
+    ],
+    "t4_aggregate_a": [
+      "t2_process_a"
+    ],
+    "t5_aggregate_b": [
+      "t3_process_b"
+    ],
+    "t6_final": [
+      "t4_aggregate_a",
+      "t5_aggregate_b"
+    ]
+  }
+}

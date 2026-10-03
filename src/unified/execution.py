@@ -2362,12 +2362,33 @@ class ExecutionEngine:
         events_data = []
         for event in self.event_bus.history:
             if event.mission_id == mission_id:
+                # Serialize payload with datetime handling
+                def serialize_payload(obj):
+                    if hasattr(obj, 'model_dump'):
+                        return obj.model_dump(mode='json')
+                    elif isinstance(obj, dict):
+                        return {k: serialize_payload(v) for k, v in obj.items()}
+                    elif isinstance(obj, list):
+                        return [serialize_payload(v) for v in obj]
+                    elif isinstance(obj, datetime):
+                        return obj.isoformat()
+                    else:
+                        return obj
+                
+                payload = event.payload
+                if hasattr(payload, 'model_dump'):
+                    payload = payload.model_dump(mode='json')
+                elif isinstance(payload, dict):
+                    payload = serialize_payload(payload)
+                else:
+                    payload = str(payload)
+                
                 events_data.append({
                     "event_type": event.event_type.value,
                     "mission_id": event.mission_id,
                     "run_id": event.run_id,
                     "timestamp": event.timestamp.isoformat() if event.timestamp else None,
-                    "payload": event.payload.model_dump(mode='json') if hasattr(event.payload, 'model_dump') else (event.payload if isinstance(event.payload, dict) else str(event.payload)),
+                    "payload": payload,
                     "source": event.source,
                     "correlation_id": event.correlation_id,
                     "causation_id": event.causation_id,
@@ -2397,6 +2418,19 @@ class ExecutionEngine:
         checkpoint_file = checkpoint_dir / f"{checkpoint.checkpoint_id}.json"
         # Serialize checkpoint to JSON
         data = checkpoint.model_dump(mode='json')
+        
+        # Ensure all datetime objects are converted to ISO strings (handles nested dicts in Any fields)
+        def convert_datetime(obj):
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            elif isinstance(obj, dict):
+                return {k: convert_datetime(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_datetime(v) for v in obj]
+            return obj
+        
+        data = convert_datetime(data)
+        
         # Write atomically
         temp_file = checkpoint_file.with_suffix('.tmp')
         with open(temp_file, 'w') as f:
@@ -2477,11 +2511,23 @@ class ExecutionEngine:
         )
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
         # Persist to disk for durability
-        self._save_checkpoint_to_disk(checkpoint)
+        try:
+            self._save_checkpoint_to_disk(checkpoint)
+        except Exception as e:
+            print(f"DEBUG: _save_checkpoint_to_disk exception: {e}")
+            raise
         # Persist events to disk for durability
-        self._save_events_to_disk(mission_id)
+        try:
+            self._save_events_to_disk(mission_id)
+        except Exception as e:
+            print(f"DEBUG: _save_events_to_disk exception: {e}")
+            raise
         # Persist evidence store (artifacts & evidence) to disk for durability
-        self.evidence_store.save_to_disk(mission_id)
+        try:
+            self.evidence_store.save_to_disk(mission_id)
+        except Exception as e:
+            print(f"DEBUG: evidence_store.save_to_disk exception: {e}")
+            raise
         # Emit checkpoint created
         self._emit(FactoryEvent.create(
             event_type=EventType.CHECKPOINT_CREATED,
@@ -2539,23 +2585,56 @@ class ExecutionEngine:
             mission.metadata["human_gate"] = checkpoint.human_gate
         if checkpoint.human_decision:
             mission.metadata["human_decision"] = checkpoint.human_decision
-        if mission.state != MissionState.EXECUTING:
+        
+        # Restore mission state from checkpoint
+        # If there was a human gate, restore to HUMAN_REQUIRED; otherwise use checkpoint state
+        target_state = checkpoint.state
+        if checkpoint.human_gate and not checkpoint.human_decision:
+            # Human gate was active but no decision made - restore to HUMAN_REQUIRED
+            target_state = MissionState.HUMAN_REQUIRED
+        
+        if mission.state != target_state:
             from unified.contracts import validate_mission_transition
             try:
-                # Transition through required states to reach EXECUTING
-                required_path = [
-                    MissionState.ANALYZING,
-                    MissionState.PLANNING,
-                    MissionState.DESIGNING,
-                    MissionState.REVIEWING,
-                    MissionState.APPROVED,
-                    MissionState.AWAITING_APPROVAL,
-                    MissionState.EXECUTING,
-                ]
-                for state in required_path:
-                    if mission.state != state:
-                        validate_mission_transition(mission.state, state)
-                        mission.state = state
+                # If target is HUMAN_REQUIRED, we need to transition through EXECUTING first
+                if target_state == MissionState.HUMAN_REQUIRED:
+                    # First ensure we're in EXECUTING
+                    if mission.state != MissionState.EXECUTING:
+                        required_path = [
+                            MissionState.ANALYZING,
+                            MissionState.PLANNING,
+                            MissionState.DESIGNING,
+                            MissionState.REVIEWING,
+                            MissionState.APPROVED,
+                            MissionState.AWAITING_APPROVAL,
+                            MissionState.EXECUTING,
+                        ]
+                        for state in required_path:
+                            if mission.state != state:
+                                validate_mission_transition(mission.state, state)
+                                mission.state = state
+                    # Then transition to HUMAN_REQUIRED
+                    validate_mission_transition(MissionState.EXECUTING, MissionState.HUMAN_REQUIRED)
+                    mission.state = MissionState.HUMAN_REQUIRED
+                else:
+                    # Normal path to target state
+                    if mission.state != MissionState.EXECUTING:
+                        required_path = [
+                            MissionState.ANALYZING,
+                            MissionState.PLANNING,
+                            MissionState.DESIGNING,
+                            MissionState.REVIEWING,
+                            MissionState.APPROVED,
+                            MissionState.AWAITING_APPROVAL,
+                            MissionState.EXECUTING,
+                        ]
+                        for state in required_path:
+                            if mission.state != state:
+                                validate_mission_transition(mission.state, state)
+                                mission.state = state
+                    if target_state != MissionState.EXECUTING:
+                        validate_mission_transition(mission.state, target_state)
+                        mission.state = target_state
             except Exception:
                 pass  # Best effort
         # Create new run as child of original
@@ -3153,8 +3232,10 @@ class ExecutionEngine:
                 artifact_ids=artifact_ids,
                 evidence_hashes=evidence_hashes,
             )
+            print(f"DEBUG execution.py: create_human_gate returning gate_id={gate_id}")
             return gate_id
-        except Exception:
+        except Exception as e:
+            print(f"DEBUG execution.py: create_human_gate exception: {e}")
             return None
     def decide_human_gate(
         self,

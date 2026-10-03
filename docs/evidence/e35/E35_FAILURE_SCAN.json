@@ -1,0 +1,16 @@
+{
+  "failures": [
+    {
+      "failure_id": "fail-04359ca08a0b",
+      "task_key": "t2_process_a",
+      "task_id": "task-28ec6f64523a",
+      "kind": "task_execution_failure",
+      "recovery_action": "retry",
+      "description": "Injected task execution failure (attempt 1) for t2_process_a",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-03T13:39:38.291777",
+        "terminal=True retry_count=0 max_retries=0"
+      ]
+    }
+  ]
+}

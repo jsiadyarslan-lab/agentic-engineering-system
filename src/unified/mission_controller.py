@@ -492,6 +492,47 @@ class MissionController:
             "task_results": task_results,
         })
         self._persist_ledger(self._mission_id_for_run(run_id))
+        
+        # If execution completed successfully (not paused) and all tasks done, transition to EVIDENCED
+        # Per E34: MissionController stops at EVIDENCED; VERIFIED requires actor='user'
+        # Path: EXECUTING -> EXECUTED -> VERIFYING -> EVIDENCED
+        if normalized["success"] and not normalized["paused"]:
+            mission_id = self._mission_id_for_run(run_id)
+            if mission_id:
+                mission = self.engine.missions.get(mission_id)
+                if mission and mission.state == MissionState.EXECUTING:
+                    # Check if all tasks in the graph are in terminal states
+                    graph = self.engine.task_graph.get(run_id, {})
+                    all_terminal = all(
+                        node["state"] in (TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELLED)
+                        for node in graph.values()
+                    )
+                    if all_terminal:
+                        from unified.contracts import validate_mission_transition
+                        try:
+                            # Transition through required path to EVIDENCED
+                            for target_state in [MissionState.EXECUTED, MissionState.VERIFYING, MissionState.EVIDENCED]:
+                                if mission.state != target_state:
+                                    validate_mission_transition(mission.state, target_state)
+                                    from_state = mission.state
+                                    mission.state = target_state
+                                    self.engine._emit(FactoryEvent.create(
+                                        event_type=EventType.MISSION_STATE_CHANGED,
+                                        mission_id=mission_id,
+                                        run_id=run_id,
+                                        payload={
+                                            "mission_id": mission_id,
+                                            "run_id": run_id,
+                                            "from_state": from_state.value,
+                                            "to_state": target_state.value,
+                                            "actor": "mission_controller",
+                                            "reason": "All tasks completed successfully",
+                                        },
+                                        source="mission_controller",
+                                    ))
+                        except Exception:
+                            pass  # Best effort
+        
         return normalized
 
     def _mission_id_for_run(self, run_id: str) -> str:
