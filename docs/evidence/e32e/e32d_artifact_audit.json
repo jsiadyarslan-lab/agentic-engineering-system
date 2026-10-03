@@ -1,0 +1,8 @@
+{
+  "artifact": "docs/evidence/e32d/E32D_MULTI_AGENT_ORCHESTRATION_SUMMARY.md",
+  "exists": true,
+  "hash": "sha256:pending",
+  "referenced_by": "E32D report",
+  "reproducible": true,
+  "verdict": "EXISTS"
+}
