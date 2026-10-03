@@ -1,15 +1,15 @@
 {
   "phase": "phase1",
   "failed_task_ids": [
-    "task-58be466436dc"
+    "task-abc691d95df9"
   ],
   "failed_task_keys": [
     "t2_process_a"
   ],
   "completed_task_ids": [
-    "task-b42098765363",
-    "task-5946862cf94a",
-    "task-fe0ed9b74840"
+    "task-abd425220a96",
+    "task-9669e5e05cf6",
+    "task-a16c71954a0e"
   ],
   "completed_task_keys": [
     "t1_setup",

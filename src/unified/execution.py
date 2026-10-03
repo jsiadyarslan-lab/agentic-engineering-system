@@ -759,6 +759,7 @@ class ExecutionEngine:
                 ))
                 
                 # Execute agent with task-level timeout
+                print(f"  [ExecutionEngine] Calling execute_agent_by_id for task {task.task_id}, agent {reserved_agent_id}, timeout={task_timeout}")
                 if task_timeout:
                     try:
                         result = await asyncio.wait_for(
@@ -769,6 +770,7 @@ class ExecutionEngine:
                             ),
                             timeout=task_timeout,
                         )
+                        print(f"  [ExecutionEngine] execute_agent_by_id returned: success={result.success}, error={result.error}")
                     except asyncio.TimeoutError:
                         # Task timeout
                         task_failed = True
@@ -828,11 +830,26 @@ class ExecutionEngine:
                             break
                 else:
                     # Use execute_agent_by_id with reserved agent_id (bypasses factory reservation)
-                    result = await self.agent_factory.execute_agent_by_id(
-                        agent_id=reserved_agent_id,
-                        context=context,
-                        task=agent_task,
-                    )
+                    print(f"  [ExecutionEngine] Calling execute_agent_by_id (no timeout) for task {task.task_id}, agent {reserved_agent_id}")
+                    try:
+                        result = await self.agent_factory.execute_agent_by_id(
+                            agent_id=reserved_agent_id,
+                            context=context,
+                            task=agent_task,
+                        )
+                        print(f"  [ExecutionEngine] execute_agent_by_id returned: success={result.success}, error={result.error}")
+                    except Exception as e:
+                        print(f"  [ExecutionEngine] EXCEPTION in execute_agent_by_id: {type(e).__name__}: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        # Create a failed result
+                        result = AgentResult(
+                            task_id=task.task_id,
+                            agent_type=task.agent_type,
+                            success=False,
+                            error=f"{type(e).__name__}: {e}",
+                            error_type=type(e).__name__,
+                        )
                 
                 # Release reservation after agent execution (success or failure)
                 self.agent_registry.release_agent_reservation(attempt_id)
@@ -2234,9 +2251,13 @@ class ExecutionEngine:
                 "sha256": art.sha256,
                 "size": art.size_bytes,
             }
+        print(f"  [VERIFY] Task {task.task_id}: {len(artifacts)} artifacts in evidence_store")
+        for aid, meta in artifacts.items():
+            print(f"    Artifact: {aid}, path={meta['path']}")
         # Convert acceptance criteria from strings to AcceptanceCriterion objects
         criteria = []
         for i, criterion_str in enumerate(task.acceptance_criteria if hasattr(task, 'acceptance_criteria') else []):
+            print(f"  [VERIFY] Criterion {i}: {criterion_str}")
             if criterion_str.startswith("file_exists:"):
                 path = criterion_str.split(":", 1)[1]
                 criteria.append(AcceptanceCriterion(
@@ -2277,6 +2298,9 @@ class ExecutionEngine:
             criteria=criteria,
             artifacts=artifacts,
         )
+        print(f"  [VERIFY] Report verdict: {report.verdict}")
+        for check in report.checks:
+            print(f"    Check {check.criterion_id}: {check.criterion_type.value} - passed={check.passed}, details={check.details}")
         # Store verification
         verification = create_verification(
             task_id=context.task_id,

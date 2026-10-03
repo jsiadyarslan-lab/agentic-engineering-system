@@ -1,7 +1,7 @@
 {
   "gate_id": null,
   "task_key": "t6_final",
-  "task_id": "task-59feab61e04a",
+  "task_id": "task-bfab275c4958",
   "reason": "Human review required before final assembly T6",
   "mission_state_at_gate": "EVIDENCED",
   "plan_version": "v2"

@@ -415,7 +415,13 @@ class BaseAgent:
         self._current_task = task
         self._emit_event(
             EventType.AGENT_STARTED,
-            {"agent_id": context.agent_id, "task_id": task.task_id},
+            {
+                "agent_id": context.agent_id,
+                "agent_type": self.agent_type.value,
+                "mission_id": context.mission_id,
+                "run_id": context.run_id,
+                "task_id": task.task_id,
+            },
         )
     async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
         """Must be implemented by subclass."""
@@ -426,9 +432,13 @@ class BaseAgent:
             EventType.AGENT_COMPLETED,
             {
                 "agent_id": context.agent_id,
+                "agent_type": self.agent_type.value,
+                "mission_id": context.mission_id,
+                "run_id": context.run_id,
                 "task_id": task.task_id,
                 "success": result.success,
-                "evidence_hash": result.evidence_hash,
+                "output_summary": str(result.output)[:200] if result.output else "",
+                "evidence_hash": result.evidence_hash or "",
                 "duration_ms": result.duration_ms,
             },
         )
@@ -440,6 +450,9 @@ class BaseAgent:
             EventType.AGENT_FAILED,
             {
                 "agent_id": context.agent_id,
+                "agent_type": self.agent_type.value,
+                "mission_id": context.mission_id,
+                "run_id": context.run_id,
                 "task_id": task.task_id,
                 "error": str(error),
                 "error_type": type(error).__name__,
@@ -447,6 +460,13 @@ class BaseAgent:
         )
         self._context = None
         self._current_task = None
+    # --- Input/Output validation (optional, default: no validation) ---
+    def validate_input(self, task: AgentTask) -> List[str]:
+        """Validate task input. Return list of errors (empty = valid)."""
+        return []
+    def validate_output(self, result: AgentResult) -> List[str]:
+        """Validate agent output. Return list of errors (empty = valid)."""
+        return []
     # --- Tool permission enforcement ---
     def _check_tool_permission(self, tool_name: str) -> bool:
         """Check if agent has permission to use tool."""
@@ -981,6 +1001,120 @@ class AgentFactory:
             self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.ASSIGNED)
         return agent
     
+    async def execute_agent_by_id(
+        self,
+        agent_id: str,
+        context: AgentContext,
+        task: AgentTask,
+    ) -> AgentResult:
+        """
+        Execute an already-reserved agent by ID.
+        This is used when the caller has already reserved the agent via registry.reserve_agent().
+        
+        Args:
+            agent_id: The reserved agent ID
+            context: Execution context
+            task: The task to execute
+            
+        Returns:
+            AgentResult with success/failure
+        """
+        print(f"  [AgentFactory] execute_agent_by_id called: agent_id={agent_id}, task_id={task.task_id}, task.agent_type={task.agent_type}")
+        
+        defn = self.registry.get_definition(agent_id)
+        if not defn:
+            print(f"  [AgentFactory] ERROR: Unknown agent: {agent_id}")
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=task.agent_type,
+                success=False,
+                error=f"Unknown agent: {agent_id}",
+                error_type="AgentNotFound",
+            )
+        print(f"  [AgentFactory] Found agent definition: {defn.agent_id}, type={defn.agent_type}, state={defn.state}, enabled={defn.enabled}")
+        # Allow agents that are ASSIGNED (reserved)
+        if defn.state != AgentLifecycleState.ASSIGNED:
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error=f"Agent {agent_id} not in ASSIGNED state (state: {defn.state})",
+                error_type="AgentStateError",
+            )
+        if not defn.enabled:
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error=f"Agent {agent_id} is disabled",
+                error_type="AgentDisabled",
+            )
+        
+        # Create agent instance
+        print(f"  [AgentFactory] Creating instance for agent_type={defn.agent_type}, agent_id={agent_id}")
+        agent_class = self.registry.get_implementation(defn.agent_type)
+        print(f"  [AgentFactory] Implementation class: {agent_class}, module: {getattr(agent_class, '__module__', 'N/A')}, bases: {getattr(agent_class, '__bases__', 'N/A')}")
+        agent = self.registry.create_instance(defn.agent_type, agent_id)
+        print(f"  [AgentFactory] Created agent instance: {type(agent)}, has validate_input: {hasattr(agent, 'validate_input')}")
+        
+        # Validate input
+        errors = agent.validate_input(task)
+        if errors:
+            # Release reservation on validation failure
+            self.registry.release_agent_reservation(context.attempt_id)
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error="; ".join(errors),
+                error_type="ValidationError",
+            )
+        
+        # Execute with lifecycle
+        agent.on_start(context, task)
+        
+        # Transition to RUNNING
+        self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.RUNNING)
+        
+        try:
+            result = await agent.execute(context, task)
+        except Exception as e:
+            agent.on_failed(context, task, e)
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
+            # Release reservation AFTER setting state to terminal
+            self.registry.release_agent_reservation(context.attempt_id)
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error=f"{type(e).__name__}: {e}",
+                error_type=type(e).__name__,
+            )
+        
+        # Update lifecycle based on result BEFORE releasing reservation
+        if result.success:
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
+            agent.on_complete(context, task, result)
+        else:
+            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
+            agent.on_failed(context, task, Exception(result.error or "Unknown error"))
+        
+        # Release reservation AFTER setting terminal state
+        self.registry.release_agent_reservation(context.attempt_id)
+        
+        # Validate output
+        errors = agent.validate_output(result)
+        if errors:
+            return AgentResult(
+                task_id=task.task_id,
+                agent_type=defn.agent_type,
+                success=False,
+                error="; ".join(errors),
+                error_type="OutputValidationError",
+            )
+        
+        return result
+    
     async def execute_agent_with_reservation(
         self,
         task: AgentTask,
@@ -1028,7 +1162,11 @@ class AgentFactory:
         
         # Create agent instance
         defn = self.registry.get_definition(agent_id)
+        print(f"  [AgentFactory] Creating instance for agent_type={defn.agent_type}, agent_id={agent_id}")
+        agent_class = self.registry.get_implementation(defn.agent_type)
+        print(f"  [AgentFactory] Implementation class: {agent_class}, module: {getattr(agent_class, '__module__', 'N/A')}, bases: {getattr(agent_class, '__bases__', 'N/A')}")
         agent = self.registry.create_instance(defn.agent_type, agent_id)
+        print(f"  [AgentFactory] Created agent instance: {type(agent)}, has validate_input: {hasattr(agent, 'validate_input')}")
         
         # Validate input
         errors = agent.validate_input(task)
@@ -1130,54 +1268,6 @@ class AgentFactory:
             return AgentResult(
                 task_id=task.task_id,
                 agent_type=agent_type,
-                success=False,
-                error=str(e),
-                error_type=type(e).__name__,
-            )
-        
-        errors = agent.validate_output(result)
-        if errors:
-            result.success = False
-            result.error = "; ".join(errors)
-            result.error_type = "ValidationError"
-        
-        if result.success:
-            agent.on_complete(context, task, result)
-            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.COMPLETED)
-        else:
-            agent.on_failed(context, task, Exception(result.error or "Validation failed"))
-            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
-        return result
-
-    async def execute_agent_by_id(
-        self,
-        agent_id: str,
-        context: AgentContext,
-        task: AgentTask,
-    ) -> AgentResult:
-        """Create and execute specific agent by ID (legacy path - no atomic reservation)."""
-        agent = self.create_agent_by_id(agent_id, context)
-        
-        errors = agent.validate_input(task)
-        if errors:
-            return AgentResult(
-                task_id=task.task_id,
-                agent_type=agent.agent_type,
-                success=False,
-                error="; ".join(errors),
-                error_type="ValidationError",
-            )
-        
-        agent.on_start(context, task)
-        
-        try:
-            result = await agent.execute(context, task)
-        except Exception as e:
-            agent.on_failed(context, task, e)
-            self.registry.set_lifecycle_state(agent_id, AgentLifecycleState.FAILED)
-            return AgentResult(
-                task_id=task.task_id,
-                agent_type=agent.agent_type,
                 success=False,
                 error=str(e),
                 error_type=type(e).__name__,

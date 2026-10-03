@@ -406,12 +406,15 @@ class Verifier:
             if meta.get("path") == path or meta.get("name") == path:
                 # Read content (bounded)
                 content = self.evidence_store.get_artifact(art_id)
+                print(f"    [DEBUG _check_file_contains] art_id={art_id}, path={path}, pattern={pattern}, content_len={len(content) if content else 0}")
                 if content:
                     try:
                         text = content.decode("utf-8", errors="replace")
+                        print(f"    [DEBUG _check_file_contains] text[:200]={text[:200]}")
                         found = pattern in text
                         evidence = meta.get("sha256")
-                    except Exception:
+                    except Exception as e:
+                        print(f"    [DEBUG _check_file_contains] Exception: {e}")
                         pass
                 break
 
