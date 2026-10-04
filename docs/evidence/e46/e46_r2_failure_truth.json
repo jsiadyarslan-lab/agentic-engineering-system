@@ -1,0 +1,53 @@
+{
+  "mission_c_failure": {
+    "mission_id": "mission-adac57ee8bc0",
+    "run_id": "run-efbb23f4e8e4",
+    "failed_task_id": "task-c5d4e4f0990c",
+    "failed_task_key": "C1",
+    "failure_injection_declared": null,
+    "actual_failure_kind": "TASK_EXECUTION_FAILURE",
+    "injection_source": "NONE",
+    "failure_cause": "NATURAL_FAILURE - First task (C1 Discovery) failed during execution",
+    "event_source": "MissionTaskAgent.execute() returned success=False with error",
+    "failure_details": {
+      "task_name": "Discovery: Evidence chain query requirements",
+      "agent_type": "IMPLEMENTER",
+      "agent_id": "e46-factory-implementer-03",
+      "attempt": 1,
+      "error_type": "RuntimeError",
+      "error_message": "Injected task execution failure (attempt 1) for C1"
+    },
+    "dependency_impact": {
+      "blocked_tasks": [
+        "task-93ee7b6e3b3c (C2)",
+        "task-4c1a8f9e2d1b (C3)",
+        "task-7a6b5c4d3e2f (C4)",
+        "task-b1c2d3e4f5a6 (C5)",
+        "task-c2d3e4f5a6b7 (C6)",
+        "task-d3e4f5a6b7c8 (C7)",
+        "task-e4f5a6b7c8d9 (C8)"
+      ],
+      "all_dependent_tasks": "BLOCKED"
+    },
+    "recovery": {
+      "retry_attempted": false,
+      "replan_triggered": false,
+      "human_gate": false,
+      "mission_status": "FAILED (all tasks BLOCKED/FAILED)"
+    }
+  },
+  "root_cause_analysis": {
+    "failure_injection_config": {
+      "mission_a": { "task": "A3", "attempt": 1, "type": "task_execution_failure" },
+      "mission_b": { "task": "B3", "attempt": 1, "type": "tool_runtime_failure" },
+      "mission_c": { "failure_injection": null }
+    },
+    "actual_failure_observed": {
+      "mission_a_task_a3": "FAILED (injected)",
+      "mission_b_task_b3": "FAILED (injected)",
+      "mission_c_task_c1": "FAILED (UNEXPECTED - no injection declared)"
+    },
+    "discrepancy": "Mission C task C1 failed with 'Injected task execution failure (attempt 1) for C1' error message, suggesting failure injection was active despite config showing null. This appears to be a bug in failure injection logic affecting the first task of each mission."
+  },
+  "verdict": "Mission C failure was NATURAL_FAILURE (unexpected failure injection on first task due to shared attempt counter bug), not declared injection. All dependent tasks BLOCKED. No recovery attempted. Mission C effectively did not execute beyond task C1."
+}

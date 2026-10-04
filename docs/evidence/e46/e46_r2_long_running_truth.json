@@ -1,0 +1,32 @@
+{
+  "mission_id": "mission-8091ed4963e9",
+  "run_id": "run-7a752317d2a0",
+  "long_running_execution": {
+    "total_tasks": 12,
+    "actual_completed_tasks": 0,
+    "actual_failed_tasks": 1,
+    "actual_blocked_tasks": 11,
+    "actual_checkpoints_during_mission": 0,
+    "duration_seconds": 0.351092,
+    "failure_injected_on_task": "A3 (task-e12df27ef0d4)",
+    "human_gate_created_during_mission": false,
+    "human_gate_created_after_mission": true
+  },
+  "checkpoint_belongs_to_mission": false,
+  "checkpoint_details": {
+    "checkpoint_id": "checkpoint-e3f3f443aa70",
+    "created_by": "run_e46_demo() human gate test section (line 564-572)",
+    "created_after_mission_completion": true,
+    "purpose": "Independent test of checkpoint mechanism with human gate",
+    "contains_human_gate": true,
+    "human_gate_id": "decision-6e3857a1",
+    "mission_state_at_checkpoint": "Mission already stopped (all tasks BLOCKED/FAILED)"
+  },
+  "independent_checkpoint_test": true,
+  "interruption_matrix_claims": {
+    "source": "Manually constructed in run_e46_demo() after mission execution",
+    "not_from": "Actual mission interruption/resume cycles",
+    "scenarios_A_E": "Simulated/tested via manual checkpoint creation, not actual process interruption"
+  },
+  "verdict": "Mission A did NOT complete long-running execution with checkpoint/resume. Checkpoint test was independent, post-mission simulation. AC-03 cannot claim VERIFIED based on Mission A execution alone."
+}

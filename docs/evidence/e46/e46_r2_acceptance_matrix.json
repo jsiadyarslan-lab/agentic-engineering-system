@@ -1,0 +1,124 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-01",
+      "claim": "Multiple Missions can coexist",
+      "raw_evidence": "3 missions defined with distinct IDs, started concurrently, all present in factory.missions and factory.running_missions",
+      "contradiction": "None - all 3 missions existed simultaneously",
+      "resolution": "Confirmed by mission_isolation.json showing 3 distinct mission_ids with separate run_ids",
+      "verdict": "VERIFIED"
+    },
+    {
+      "id": "AC-02",
+      "claim": "Mission state remains isolated",
+      "raw_evidence": "Distinct task IDs, artifacts, evidence per mission. No cross-references in mission_isolation.json",
+      "contradiction": "None - 4/4 isolation flags true",
+      "resolution": "Mission A tasks (task-e12df...), Mission B tasks (task-c05b1...), Mission C tasks (task-c5d4e...) are completely separate",
+      "verdict": "VERIFIED"
+    },
+    {
+      "id": "AC-03",
+      "claim": "Long-running execution survives interruption",
+      "raw_evidence": "Mission A: 0 completed, 1 failed, 11 blocked, 0 checkpoints during execution. interruption_matrix.json claims 5 scenarios tested but these were post-mission simulations via manual checkpoint creation in demo script, not actual mission interruption",
+      "contradiction": "long_running_run.json says 0 checkpoints; interruption_matrix.json claims checkpoint_restore tested; human_gate_resume.json shows checkpoint created AFTER mission stopped",
+      "resolution": "Mission A did NOT survive interruption during its execution. Checkpoint/resume was tested independently after mission completion as a separate mechanism test. No actual process interruption + resume occurred during mission execution.",
+      "verdict": "NOT_VERIFIED"
+    },
+    {
+      "id": "AC-04",
+      "claim": "Checkpoints are durable",
+      "raw_evidence": "Checkpoint checkpoint-e3f3f443aa70 created with full state (task_states, artifact_ids, evidence_hashes, human_gate). Stored in engine.checkpoints dict.",
+      "contradiction": "Checkpoint created post-mission as test, not during mission. Durability = in-memory dict persistence, not disk persistence tested.",
+      "resolution": "Checkpoint object created and held in memory. File persistence (create_checkpoint writes to artifacts/checkpoints/) was not verified. Durability claim only partially supported.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-05",
+      "claim": "Cross-runtime resume is reliable",
+      "raw_evidence": "human_gate_resume.json shows checkpoint created, human_gate_preserved=true, decision=approve, state_transition=WAITING_HUMAN->RUNNING. But this was a simulated test in same process, not actual process termination/restart.",
+      "contradiction": "No process termination occurred. No cross-runtime (new process) resume tested. Checkpoint created and read in same runtime.",
+      "resolution": "Same-runtime checkpoint read verified. Cross-runtime (process termination -> new process -> resume) NOT tested.",
+      "verdict": "NOT_VERIFIED"
+    },
+    {
+      "id": "AC-06",
+      "claim": "Unknown execution state is handled safely",
+      "raw_evidence": "idempotency_test.json claims SAFE_DEFAULT_BLOCK, ATTEMPT_LEDGER_CHECK. But Mission C task C1 failed unexpectedly (injection bug) and no recovery was attempted - tasks just stayed BLOCKED/FAILED.",
+      "contradiction": "Unknown state handling not tested - actual unexpected failure (Mission C) led to mission stall, not safe handling.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-07",
+      "claim": "Duplicate actions are controlled",
+      "raw_evidence": "idempotency_test.json describes mechanisms. Mission A task A1 created 3 duplicate artifacts (same content, different artifact_ids) - no deduplication at artifact creation level.",
+      "contradiction": "3 duplicate artifacts created for same task (e46_A1_discovery.md) with same content but different artifact_ids. SHA256 deduplication only works if same content checked before create.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-08",
+      "claim": "Human gates survive restart",
+      "raw_evidence": "Human gate created at gate_id=decision-6e3857a1, checkpoint_id=checkpoint-e3f3f443aa70, human_gate_preserved=true. But gate created AFTER mission stopped, checkpoint created in same process, no restart occurred.",
+      "contradiction": "Human gate survival tested via manual checkpoint creation in same process, not actual process restart.",
+      "verdict": "NOT_VERIFIED"
+    },
+    {
+      "id": "AC-09",
+      "claim": "Failures produce explicit state transitions",
+      "raw_evidence": "Mission A task A3=FAILED, Mission B task B3=FAILED, Mission C task C1=FAILED. factory_failure.json shows 6 scenarios with detected/recovered/method.",
+      "contradiction": "factory_failure.json scenarios are claimed/tested but not evidenced by actual execution events. Only 3 actual failures observed (all first tasks).",
+      "resolution": "Actual failures produced explicit FAILED states. Factory failure scenarios documented but not executed.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-10",
+      "claim": "Recovery/replan remains traceable",
+      "raw_evidence": "No actual recovery/replan occurred during missions. All missions stalled after first failure. factory_failure.json documents scenarios but no replan records exist.",
+      "contradiction": "Replanning claimed REPEATABLE in scorecard but never actually triggered.",
+      "verdict": "NOT_VERIFIED"
+    },
+    {
+      "id": "AC-11",
+      "claim": "Resource limits produce explicit decisions",
+      "raw_evidence": "resource_governance.json lists 6 limits, budget_exceeded_behavior=EXPLICIT_STOP_WITH_REASON. queue_behavior.json shows max_parallel=3.",
+      "contradiction": "Limits declared but no evidence of any limit being hit or explicit decision made during execution.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-12",
+      "claim": "Evidence remains linked to execution",
+      "raw_evidence": "evidence_integrity.json shows chain_complete=true for all missions. But all evidence records have verified=false, and verifications only exist for failed tasks (not completed ones).",
+      "contradiction": "Chain exists (artifact->evidence) but verification link missing (verified=false). No completed tasks to verify.",
+      "resolution": "Artifact-evidence linkage exists. Verification linkage broken (all unverified).",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-13",
+      "claim": "Verification remains independent",
+      "raw_evidence": "4 VERIFIER agents registered but none executed. All verification done by automatic acceptance criteria checker in engine. All evidence.verified=false, verified_by=null.",
+      "contradiction": "Independent verifier agent execution never happened. Producer=Implementer, Verifier=Engine (same process), not separate agent.",
+      "resolution": "Verifier agents exist but were not used. Verification was not independent.",
+      "verdict": "NOT_VERIFIED"
+    },
+    {
+      "id": "AC-14",
+      "claim": "No silent success exists",
+      "raw_evidence": "factory_failure.json claims no_silent_recovery, no_silent_loss. idempotency_test.json claims SAFE_DEFAULT_BLOCK. But Mission C task C1 failed silently (no injection declared) and mission stalled without explicit escalation.",
+      "contradiction": "Mission C failure was silent in the sense that no alert/escalation occurred - mission just stopped with BLOCKED tasks.",
+      "verdict": "PARTIALLY_VERIFIED"
+    },
+    {
+      "id": "AC-15",
+      "claim": "No cross-mission contamination exists",
+      "raw_evidence": "mission_isolation.json shows 4/4 isolation flags true. All artifacts/evidence have correct mission_id. Task IDs distinct.",
+      "contradiction": "None found in evidence.",
+      "resolution": "Isolation confirmed by artifacts.",
+      "verdict": "VERIFIED"
+    }
+  ],
+  "summary": {
+    "total": 15,
+    "verified": 2,
+    "partially_verified": 6,
+    "not_verified": 7
+  }
+}

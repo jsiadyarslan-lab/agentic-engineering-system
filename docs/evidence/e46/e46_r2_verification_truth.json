@@ -1,0 +1,169 @@
+{
+  "verification_records_extracted": [
+    {
+      "evidence_id": "evidence-b636a8897896",
+      "mission_id": "mission-8091ed4963e9",
+      "run_id": "run-7a752317d2a0",
+      "task_id": "task-e12df27ef0d4",
+      "artifact_id": "artifact-8b6f199a6efe",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-3a875ec02cc1",
+      "mission_id": "mission-8091ed4963e9",
+      "run_id": "run-7a752317d2a0",
+      "task_id": "task-e12df27ef0d4",
+      "artifact_id": "artifact-f0cd42ac1e27",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-50dc885b6204",
+      "mission_id": "mission-8091ed4963e9",
+      "run_id": "run-7a752317d2a0",
+      "task_id": "task-e12df27ef0d4",
+      "artifact_id": "artifact-edc04a3e03f8",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-85b8e1c4e32f",
+      "mission_id": "mission-13db74c904fe",
+      "run_id": "run-63d31d3523e1",
+      "task_id": "task-c05b16c22730",
+      "artifact_id": "artifact-ba2d3f63642e",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-f0e7f3e6e77b",
+      "mission_id": "mission-13db74c904fe",
+      "run_id": "run-63d31d3523e1",
+      "task_id": "task-f2aa20d52f86",
+      "artifact_id": "artifact-0e47d413b73f",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-46075c92c564",
+      "mission_id": "mission-13db74c904fe",
+      "run_id": "run-63d31d3523e1",
+      "task_id": "task-f2aa20d52f86",
+      "artifact_id": "artifact-0e47d413b73f",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-d1a708d9f53b",
+      "mission_id": "mission-13db74c904fe",
+      "run_id": "run-63d31d3523e1",
+      "task_id": "task-f2aa20d52f86",
+      "artifact_id": "artifact-8762f1d8d5b7",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-6fa25d74170b",
+      "mission_id": "mission-adac57ee8bc0",
+      "run_id": "run-efbb23f4e8e4",
+      "task_id": "task-c5d4e4f0990c",
+      "artifact_id": "artifact-bbd38dc7f98c",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-ba93a8a10802",
+      "mission_id": "mission-adac57ee8bc0",
+      "run_id": "run-efbb23f4e8e4",
+      "task_id": "task-c5d4e4f0990c",
+      "artifact_id": "artifact-08a2cfc08075",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    },
+    {
+      "evidence_id": "evidence-d7dade0ee204",
+      "mission_id": "mission-adac57ee8bc0",
+      "run_id": "run-efbb23f4e8e4",
+      "task_id": "task-c5d4e4f0990c",
+      "artifact_id": "artifact-08a2cfc08075",
+      "verified": false,
+      "verified_by": null,
+      "verified_at": null,
+      "content_type": "artifact"
+    }
+  ],
+  "verification_records_in_engine": {
+    "total_verification_objects": 3,
+    "verifications": [
+      {
+        "verification_id": "verification-...",
+        "task_id": "task-e12df27ef0d4",
+        "attempt_id": "...",
+        "verdict": "FAILED",
+        "checks_performed": [],
+        "confidence": 0.0,
+        "sub_verdict": "PLAN_DEVIATION"
+      },
+      {
+        "verification_id": "verification-...",
+        "task_id": "task-f2aa20d52f86",
+        "attempt_id": "...",
+        "verdict": "FAILED",
+        "checks_performed": [],
+        "confidence": 0.0,
+        "sub_verdict": "PLAN_DEVIATION"
+      },
+      {
+        "verification_id": "verification-...",
+        "task_id": "task-c5d4e4f0990c",
+        "attempt_id": "...",
+        "verdict": "FAILED",
+        "checks_performed": [],
+        "confidence": 0.0,
+        "sub_verdict": "PLAN_DEVIATION"
+      }
+    ]
+  },
+  "producer_verifier_separation": {
+    "producer_agents": [
+      "e46-factory-implementer-01",
+      "e46-factory-implementer-02",
+      "e46-factory-implementer-03"
+    ],
+    "verifier_agents_registered": [
+      "e46-factory-verifier-01",
+      "e46-factory-verifier-02",
+      "e46-factory-verifier-03",
+      "e46-factory-verifier-04"
+    ],
+    "actual_verification_execution": {
+      "verifier_agent_executed": false,
+      "verification_done_by": "Automatic acceptance criteria checker (not VERIFIER agent)",
+      "producer_agent_id": "e46-factory-implementer-XX",
+      "verifier_agent_id": null,
+      "producer_neq_verifier": false,
+      "verification_mechanism": "Post-task acceptance_criteria evaluation by engine, not independent verifier agent"
+    }
+  },
+  "independent_verification_proven": false,
+  "verdict": "INDEPENDENT_VERIFICATION_NOT_PROVEN - No VERIFIER agent executed verification. All evidence records show verified=false, verified_by=null. Verification was automatic criteria checking, not independent verifier agent."
+}
