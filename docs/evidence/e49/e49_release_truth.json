@@ -1,0 +1,20 @@
+{
+  "artifact_name": "ARTIFACT_X",
+  "released_by": {
+    "mission_id": "mission-d7ac488be157",
+    "task_key": "A1",
+    "artifact_id": "artifact-b0858460e053"
+  },
+  "unblocked_task": {
+    "mission_id": "mission-e9749da3d4c6",
+    "run_id": "run-4758279c295b",
+    "task_key": "B2",
+    "task_id": "task-99953bce0c32"
+  },
+  "unblocked_at": "2026-10-04T21:12:37.265087+00:00",
+  "consumer_produced": {
+    "artifact_name": "ARTIFACT_Y",
+    "artifact_id": "artifact-614d46c316a8",
+    "task_key": "B2"
+  }
+}

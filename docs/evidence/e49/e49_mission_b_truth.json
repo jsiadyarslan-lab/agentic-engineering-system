@@ -1,0 +1,21 @@
+{
+  "mission_id": "mission-e9749da3d4c6",
+  "run_id": "run-4758279c295b",
+  "tasks": {
+    "B1": {
+      "state": "COMPLETED",
+      "role": "wait_for_artifact"
+    },
+    "B2": {
+      "state": "COMPLETED",
+      "consumes": "ARTIFACT_X",
+      "produces": "ARTIFACT_Y"
+    },
+    "B3": {
+      "state": "COMPLETED",
+      "verifies": "ARTIFACT_Y"
+    }
+  },
+  "final_state": "COMPLETED",
+  "dependency_satisfied": true
+}

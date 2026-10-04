@@ -1,0 +1,16 @@
+{
+  "mission_id": "mission-d7ac488be157",
+  "run_id": "run-1fb5cc9d6ce3",
+  "tasks": {
+    "A1": {
+      "state": "COMPLETED",
+      "produces": "ARTIFACT_X"
+    },
+    "A2": {
+      "state": "COMPLETED",
+      "verifies": "ARTIFACT_X"
+    }
+  },
+  "final_state": "COMPLETED",
+  "shared_artifact_released": true
+}

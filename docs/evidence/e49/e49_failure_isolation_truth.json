@@ -1,0 +1,9 @@
+{
+  "test": "failure_isolation",
+  "mission_a_status": "COMPLETED",
+  "mission_b_status": "COMPLETED",
+  "mission_c_status": "BLOCKED (waiting for ARTIFACT_X, not affected by A')",
+  "mission_a_prime_status": "COMPLETED (produced incompatible X v2)",
+  "isolation_verified": true,
+  "evidence": "Mission B and C states unaffected by Mission A' execution"
+}

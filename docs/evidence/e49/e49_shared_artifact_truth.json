@@ -1,0 +1,20 @@
+{
+  "artifact_name": "ARTIFACT_X",
+  "artifact_id": "artifact-b0858460e053",
+  "producer": {
+    "mission_id": "mission-d7ac488be157",
+    "run_id": "run-1fb5cc9d6ce3",
+    "task_key": "A1",
+    "task_id": "task-8a03fe363cb9",
+    "agent_id": "e33-mission-agent-01"
+  },
+  "content": "SHARED_ARTIFACT_X\nVERSION_1",
+  "released_at": "2026-10-04T21:12:36.945485+00:00",
+  "provenance": {
+    "mission_a_id": "mission-d7ac488be157",
+    "run_a_id": "run-1fb5cc9d6ce3",
+    "task_a1_id": "task-8a03fe363cb9",
+    "attempt_a1_id": "attempt-de68f92f1d04",
+    "agent_a1_id": "e33-mission-agent-01"
+  }
+}

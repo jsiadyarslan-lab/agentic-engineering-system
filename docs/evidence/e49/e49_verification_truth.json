@@ -1,0 +1,56 @@
+{
+  "mission_a": {
+    "mission_id": "mission-d7ac488be157",
+    "run_id": "run-1fb5cc9d6ce3",
+    "task_states": {
+      "task-8a03fe363cb9": "COMPLETED",
+      "task-d21f66566224": "COMPLETED"
+    },
+    "all_completed": true,
+    "artifacts": {
+      "ARTIFACT_X": "artifact-b0858460e053",
+      "content_verified": true
+    }
+  },
+  "mission_b": {
+    "mission_id": "mission-e9749da3d4c6",
+    "run_id": "run-4758279c295b",
+    "task_states": {
+      "task-0d114c40bd1f": "COMPLETED",
+      "task-99953bce0c32": "COMPLETED",
+      "task-cb577819c73b": "COMPLETED"
+    },
+    "all_completed": true,
+    "artifacts": {
+      "ARTIFACT_Y": "artifact-614d46c316a8",
+      "content_verified": true
+    },
+    "dependency_satisfied": true
+  },
+  "provenance_chain": {
+    "ARTIFACT_X": {
+      "produced_by": {
+        "mission_id": "mission-d7ac488be157",
+        "run_id": "run-1fb5cc9d6ce3",
+        "task_id": "task-8a03fe363cb9",
+        "agent_id": "e33-mission-agent-01"
+      },
+      "consumed_by": {
+        "mission_id": "mission-e9749da3d4c6",
+        "run_id": "run-4758279c295b",
+        "task_id": "task-99953bce0c32",
+        "agent_id": "e33-mission-agent-01"
+      }
+    },
+    "ARTIFACT_Y": {
+      "produced_by": {
+        "mission_id": "mission-e9749da3d4c6",
+        "run_id": "run-4758279c295b",
+        "task_id": "task-99953bce0c32",
+        "agent_id": "e33-mission-agent-01"
+      }
+    }
+  },
+  "isolation_verified": true,
+  "verified_at": "2026-10-04T21:12:37.385896+00:00"
+}

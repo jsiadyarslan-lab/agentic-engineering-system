@@ -1,0 +1,26 @@
+{
+  "mission_id": "mission-e9749da3d4c6",
+  "run_id": "run-4758279c295b",
+  "tasks": {
+    "B1": {
+      "key": "B1",
+      "name": "Wait for Artifact X",
+      "depends_on": []
+    },
+    "B2": {
+      "key": "B2",
+      "name": "Consume X Produce Y",
+      "depends_on": [
+        "B1"
+      ]
+    },
+    "B3": {
+      "key": "B3",
+      "name": "Verify Artifact Y",
+      "depends_on": [
+        "B2"
+      ]
+    }
+  },
+  "created_at": "2026-10-04T21:12:36.617249+00:00"
+}

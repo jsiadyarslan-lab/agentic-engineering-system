@@ -1,0 +1,32 @@
+{
+  "scenario": "version_conflict",
+  "original_artifact": {
+    "name": "ARTIFACT_X",
+    "artifact_id": "artifact-b0858460e053",
+    "version": "VERSION_1",
+    "producer_mission_id": "mission-d7ac488be157"
+  },
+  "new_artifact": {
+    "name": "ARTIFACT_X",
+    "artifact_id": "artifact-c10befbd7c58",
+    "version": "VERSION_2_INCOMPATIBLE",
+    "producer_mission_id": "mission-91382b6b3a86"
+  },
+  "consumer_missions": [
+    {
+      "mission_id": "mission-e9749da3d4c6",
+      "expects_version": "VERSION_1",
+      "status": "BLOCKED_FROM_CONSUMING_V2",
+      "reason": "contract_incompatible"
+    },
+    {
+      "mission_id": "mission-71a8131cd43c",
+      "expects_version": "VERSION_1",
+      "status": "BLOCKED_FROM_CONSUMING_V2",
+      "reason": "contract_incompatible"
+    }
+  ],
+  "action_taken": "REJECT_INCOMPATIBLE_ARTIFACT",
+  "evidence": "Artifact version mismatch detected, consumers protected from silent substitution",
+  "timestamp": "2026-10-04T21:12:37.382472+00:00"
+}
