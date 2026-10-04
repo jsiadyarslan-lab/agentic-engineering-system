@@ -1,0 +1,45 @@
+{
+  "results": {
+    "scenarios_tested": [
+      {
+        "type": "worker_crash",
+        "detected": true,
+        "recovered": true,
+        "method": "checkpoint_resume"
+      },
+      {
+        "type": "runtime_restart",
+        "detected": true,
+        "recovered": true,
+        "method": "checkpoint_resume"
+      },
+      {
+        "type": "tool_timeout",
+        "detected": true,
+        "recovered": true,
+        "method": "engine_retry"
+      },
+      {
+        "type": "partial_task_completion",
+        "detected": true,
+        "recovered": true,
+        "method": "attempt_ledger"
+      },
+      {
+        "type": "stale_checkpoint",
+        "detected": true,
+        "recovered": true,
+        "method": "checkpoint_validation"
+      },
+      {
+        "type": "corrupted_state",
+        "detected": true,
+        "recovered": false,
+        "method": "escalate_to_human"
+      }
+    ],
+    "no_silent_recovery": true,
+    "no_silent_loss": true,
+    "explicit_state_transitions": true
+  }
+}

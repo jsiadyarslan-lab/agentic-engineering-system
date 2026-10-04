@@ -1,0 +1,10 @@
+{
+  "results": {
+    "gate_id": "decision-6e3857a1",
+    "checkpoint_id": "checkpoint-e3f3f443aa70",
+    "human_gate_preserved": true,
+    "decision": "approve",
+    "state_transition": "WAITING_HUMAN -> RUNNING",
+    "continuation": "mission_resumed_after_decision"
+  }
+}

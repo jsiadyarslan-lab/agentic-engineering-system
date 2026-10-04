@@ -1,0 +1,15 @@
+{
+  "mission_a": {
+    "mission_id": "mission-8091ed4963e9",
+    "run_id": "run-7a752317d2a0",
+    "duration_seconds": 0.351092,
+    "total_tasks": 12,
+    "completed_tasks": 0,
+    "failed_tasks": 1,
+    "checkpoints": 0,
+    "artifacts": 3,
+    "evidence": 3,
+    "failure_injected": true,
+    "human_gate_created": true
+  }
+}

@@ -260,6 +260,9 @@ class MissionTaskAgent(BaseAgent):
                     content=content.encode("utf-8"),
                 )
                 artifact.mission_id = context.mission_id
+                # Re-store artifact with updated mission_id
+                if context.evidence_store:
+                    context.evidence_store.store_artifact(artifact)
                 artifact_id = artifact.artifact_id
                 sha256 = artifact.sha256
             else:

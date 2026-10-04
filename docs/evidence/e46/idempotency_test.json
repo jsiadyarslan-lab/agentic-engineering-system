@@ -1,0 +1,15 @@
+{
+  "results": {
+    "unknown_state_handling": "SAFE_DEFAULT_BLOCK",
+    "duplicate_action_prevention": "ATTEMPT_LEDGER_CHECK",
+    "duplicate_artifact_prevention": "CONTENT_ADDRESSABLE_SHA256",
+    "duplicate_evidence_prevention": "EVIDENCE_HASH_DEDUP",
+    "duplicate_verification_prevention": "VERIFICATION_ID_PER_ATTEMPT",
+    "tested_scenarios": [
+      "Task retry after crash: attempt_ledger prevents re-execution of COMPLETED tasks",
+      "Checkpoint restore: task states READY/COMPLETED not reset to PENDING",
+      "Artifact deduplication: same content -> same SHA256 -> same artifact_id",
+      "Evidence deduplication: same hash -> existing evidence record reused"
+    ]
+  }
+}

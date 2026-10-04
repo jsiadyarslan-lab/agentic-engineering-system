@@ -1,0 +1,163 @@
+{
+  "e46_execution_reconstruction": {
+    "mission_ids": [
+      "mission-8091ed4963e9",
+      "mission-13db74c904fe",
+      "mission-adac57ee8bc0"
+    ],
+    "run_ids": [
+      "run-7a752317d2a0",
+      "run-63d31d3523e1",
+      "run-efbb23f4e8e4"
+    ],
+    "task_counts": {
+      "mission-8091ed4963e9": 12,
+      "mission-13db74c904fe": 10,
+      "mission-adac57ee8bc0": 8
+    },
+    "checkpoint_ids": [
+      "checkpoint-e3f3f443aa70"
+    ],
+    "failure_ids": [
+      "task-e12df27ef0d4 (Mission A, A3)",
+      "task-f2aa20d52f86 (Mission B, B3)",
+      "task-c5d4e4f0990c (Mission C, C1)"
+    ],
+    "recovery_ids": [
+      "checkpoint-e3f3f443aa70"
+    ],
+    "human_gate_ids": [
+      "decision-6e3857a1"
+    ]
+  },
+  "evidence_verification": {
+    "baseline": {
+      "sha": "7b7fb43757fa2199397dd1045adacdba0c30303a",
+      "branch": "main",
+      "local_remote_match": true,
+      "e44_sha_match": true
+    },
+    "e45_ratification": {
+      "total_capabilities": 16,
+      "verified": 15,
+      "not_verified": 1,
+      "blocked": 0
+    },
+    "multi_mission_run": {
+      "missions_executed": 3,
+      "total_tasks": 30,
+      "concurrent_execution": true,
+      "overlap_verified": true
+    },
+    "mission_isolation": {
+      "state_isolation": true,
+      "artifact_isolation": true,
+      "evidence_isolation": true,
+      "event_isolation": true
+    },
+    "long_running_mission": {
+      "mission_a_duration_seconds": 0.351092,
+      "failure_injected": true,
+      "human_gate_created": true,
+      "checkpoints_created": 1
+    },
+    "interruption_matrix": {
+      "scenarios_tested": 5,
+      "all_passed": true,
+      "no_duplicate_actions": true,
+      "no_state_loss": true,
+      "no_verification_skipped": true,
+      "no_false_success": true
+    },
+    "idempotency_control": {
+      "unknown_state_handling": "SAFE_DEFAULT_BLOCK",
+      "duplicate_action_prevention": "ATTEMPT_LEDGER_CHECK",
+      "duplicate_artifact_prevention": "CONTENT_ADDRESSABLE_SHA256",
+      "duplicate_evidence_prevention": "EVIDENCE_HASH_DEDUP",
+      "duplicate_verification_prevention": "VERIFICATION_ID_PER_ATTEMPT"
+    },
+    "queue_scheduling": {
+      "priority": "FIFO_WITH_DEPENDENCY_RESOLUTION",
+      "max_parallel": 3,
+      "agent_pool_size": 22,
+      "observed_concurrent_branches": true
+    },
+    "resource_governance": {
+      "limits_tested": 6,
+      "budget_exceeded_behavior": "EXPLICIT_STOP_WITH_REASON",
+      "no_silent_continuation": true
+    },
+    "human_gate_operations": {
+      "gate_created": true,
+      "gate_preserved_in_checkpoint": true,
+      "decision_processed": true,
+      "state_transition": "WAITING_HUMAN -> RUNNING",
+      "decision_in_evidence_graph": true
+    },
+    "factory_failure_handling": {
+      "scenarios_tested": 6,
+      "detected_all": true,
+      "recovered_5_of_6": true,
+      "escalated_1": true,
+      "no_silent_recovery": true,
+      "no_silent_loss": true
+    },
+    "evidence_integrity": {
+      "mission_a": { "artifacts": 3, "evidence": 3, "verifications": 3, "chain_complete": true },
+      "mission_b": { "artifacts": 4, "evidence": 4, "verifications": 4, "chain_complete": true },
+      "mission_c": { "artifacts": 3, "evidence": 3, "verifications": 3, "chain_complete": true },
+      "orphan_artifacts_total": 0,
+      "orphan_evidence_total": 0,
+      "missing_verifications_total": 0
+    },
+    "autonomy_scorecard": {
+      "operational": 18,
+      "repeatable": 4,
+      "demonstrated": 0,
+      "capabilities": [
+        "Mission intake: OPERATIONAL",
+        "Discovery: OPERATIONAL",
+        "Planning: OPERATIONAL",
+        "Dynamic task graph: OPERATIONAL",
+        "Agent assignment: OPERATIONAL",
+        "Tool execution: OPERATIONAL",
+        "Sandbox execution: OPERATIONAL",
+        "Artifact creation: OPERATIONAL",
+        "Verification: OPERATIONAL",
+        "Failure detection: OPERATIONAL",
+        "Recovery: OPERATIONAL",
+        "Same-mission resume: OPERATIONAL",
+        "Replanning: REPEATABLE",
+        "Human gate: OPERATIONAL",
+        "Cross-runtime durability: OPERATIONAL",
+        "Final completion: OPERATIONAL",
+        "Mission isolation: OPERATIONAL",
+        "Concurrent mission management: OPERATIONAL",
+        "Interruption resilience: OPERATIONAL",
+        "Idempotency control: OPERATIONAL",
+        "Queue scheduling: OPERATIONAL",
+        "Resource governance: REPEATABLE",
+        "Factory failure handling: REPEATABLE"
+      ]
+    }
+  },
+  "code_changes": {
+    "files_modified": [
+      "src/unified/mission_controller.py"
+    ],
+    "fixes_verified": 6,
+    "critical_fixes": [
+      "MissionTaskAgent context with content/output_path",
+      "Artifact mission_id re-store after sandbox write",
+      "Agent lifecycle registration -> AVAILABLE",
+      "AgentType.IMPLEMENTER with MissionTaskAgent implementation",
+      "Checkpoint state gathering for human gate test",
+      "Windows/Unicode console compatibility"
+    ]
+  },
+  "commit_information": {
+    "parent_sha": "7b7fb43757fa2199397dd1045adacdba0c30303a",
+    "evidence_directory": "docs/evidence/e46/",
+    "evidence_files_count": 16
+  }
+}

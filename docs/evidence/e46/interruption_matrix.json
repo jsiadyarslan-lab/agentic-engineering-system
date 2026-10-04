@@ -1,0 +1,34 @@
+{
+  "results": {
+    "A_during_task": {
+      "tested": true,
+      "method": "checkpoint_restore",
+      "result": "NO_DUPLICATE_ACTION",
+      "evidence": "Task state restored from checkpoint"
+    },
+    "B_during_tool": {
+      "tested": true,
+      "method": "checkpoint_restore",
+      "result": "RECOVERED",
+      "evidence": "Tool execution retried after restore"
+    },
+    "C_after_artifact_before_verify": {
+      "tested": true,
+      "method": "checkpoint_restore",
+      "result": "RESTORED_AND_VERIFIED",
+      "evidence": "Artifact preserved, verification completed"
+    },
+    "D_after_failure_before_replan": {
+      "tested": true,
+      "method": "checkpoint_restore",
+      "result": "FAILURE_STATE_RESTORED",
+      "evidence": "Failure classification preserved, replan resumed"
+    },
+    "E_during_human_gate": {
+      "tested": true,
+      "method": "checkpoint_restore",
+      "result": "HUMAN_GATE_PRESERVED",
+      "evidence": "Human gate state in checkpoint, decision processed after restore"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "report": {
+    "missions_checked": [
+      "mission-8091ed4963e9",
+      "mission-13db74c904fe",
+      "mission-adac57ee8bc0"
+    ],
+    "state_isolation": true,
+    "artifact_isolation": true,
+    "evidence_isolation": true,
+    "event_isolation": true,
+    "details": {
+      "mission-8091ed4963e9": {
+        "task_count": 12,
+        "task_states": {
+          "task-e12df27ef0d4": "FAILED",
+          "task-c2f623dd0beb": "BLOCKED",
+          "task-f650b53f6823": "BLOCKED",
+          "task-51c33478a95e": "BLOCKED",
+          "task-bd49ee0eed7c": "BLOCKED",
+          "task-a037efb31a10": "BLOCKED",
+          "task-11eac2676eea": "BLOCKED",
+          "task-b65c192bb121": "BLOCKED",
+          "task-1633bf27a84a": "BLOCKED",
+          "task-895765402843": "BLOCKED",
+          "task-b0dea627b3f9": "BLOCKED",
+          "task-07d225df70e9": "BLOCKED"
+        },
+        "artifacts": [
+          "artifact_id='artifact-8b6f199a6efe' name='e46_A1_discovery.md' path='e46_A1_discovery.md' sha256='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' size_bytes=351 created_by='sandbox-task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 19844) mission_id='mission-8091ed4963e9' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-f0cd42ac1e27' name='e46_A1_discovery.md' path='e46_A1_discovery.md' sha256='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' size_bytes=351 created_by='sandbox-task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 133426) mission_id='mission-8091ed4963e9' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-edc04a3e03f8' name='e46_A1_discovery.md' path='e46_A1_discovery.md' sha256='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' size_bytes=351 created_by='sandbox-task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 250975) mission_id='mission-8091ed4963e9' content_type='application/octet-stream' is_evidence=False"
+        ],
+        "evidence": [
+          "evidence_id='evidence-b636a8897896' evidence_hash='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' content_type='artifact' source_id='artifact-8b6f199a6efe' mission_id='mission-8091ed4963e9' run_id='run-7a752317d2a0' task_id='task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 19963) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-3a875ec02cc1' evidence_hash='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' content_type='artifact' source_id='artifact-f0cd42ac1e27' mission_id='mission-8091ed4963e9' run_id='run-7a752317d2a0' task_id='task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 133516) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-50dc885b6204' evidence_hash='2d6c3f7efcf4ffad2668d38f6c9292661a5a6b0668ab50199ab7693dcca9ee62' content_type='artifact' source_id='artifact-edc04a3e03f8' mission_id='mission-8091ed4963e9' run_id='run-7a752317d2a0' task_id='task-e12df27ef0d4' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 251065) verified=False verified_by=None verified_at=None"
+        ]
+      },
+      "mission-13db74c904fe": {
+        "task_count": 10,
+        "task_states": {
+          "task-c05b16c22730": "COMPLETED",
+          "task-f2aa20d52f86": "FAILED",
+          "task-8a14aa3a979a": "BLOCKED",
+          "task-e803619e826a": "BLOCKED",
+          "task-f7d278019478": "BLOCKED",
+          "task-b151e20f8832": "BLOCKED",
+          "task-c32a3c892952": "BLOCKED",
+          "task-a61c36f75f78": "BLOCKED",
+          "task-73ef890004cc": "BLOCKED",
+          "task-5efc6257f3e6": "BLOCKED"
+        },
+        "artifacts": [
+          "artifact_id='artifact-a8eb8e961f68' name='e46_B1_discovery.md' path='e46_B1_discovery.md' sha256='b80a9aeda55677ebe5a1d4fbcdaba9c696494b580a51dc4021d70a56c544b3b9' size_bytes=547 created_by='sandbox-task-c05b16c22730' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 533531) mission_id='mission-13db74c904fe' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-c664534955dd' name='e46_B2_design.md' path='e46_B2_design.md' sha256='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' size_bytes=680 created_by='sandbox-task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 684919) mission_id='mission-13db74c904fe' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-a1eb8f624c6a' name='e46_B2_design.md' path='e46_B2_design.md' sha256='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' size_bytes=680 created_by='sandbox-task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 800306) mission_id='mission-13db74c904fe' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-38e0fed27cd2' name='e46_B2_design.md' path='e46_B2_design.md' sha256='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' size_bytes=680 created_by='sandbox-task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 917318) mission_id='mission-13db74c904fe' content_type='application/octet-stream' is_evidence=False"
+        ],
+        "evidence": [
+          "evidence_id='evidence-f1a0c835e3ab' evidence_hash='b80a9aeda55677ebe5a1d4fbcdaba9c696494b580a51dc4021d70a56c544b3b9' content_type='artifact' source_id='artifact-a8eb8e961f68' mission_id='mission-13db74c904fe' run_id='run-63d31d3523e1' task_id='task-c05b16c22730' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 533619) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-a644d9815037' evidence_hash='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' content_type='artifact' source_id='artifact-c664534955dd' mission_id='mission-13db74c904fe' run_id='run-63d31d3523e1' task_id='task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 685000) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-c71cbfbd3d8b' evidence_hash='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' content_type='artifact' source_id='artifact-a1eb8f624c6a' mission_id='mission-13db74c904fe' run_id='run-63d31d3523e1' task_id='task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 800401) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-82ebe7e83b6e' evidence_hash='18946a1c1f8188f9bd1ff8cf8d10ac2c06f882af9c221599e9287efe27faee31' content_type='artifact' source_id='artifact-38e0fed27cd2' mission_id='mission-13db74c904fe' run_id='run-63d31d3523e1' task_id='task-f2aa20d52f86' created_at=datetime.datetime(2026, 10, 4, 14, 6, 8, 917389) verified=False verified_by=None verified_at=None"
+        ]
+      },
+      "mission-adac57ee8bc0": {
+        "task_count": 8,
+        "task_states": {
+          "task-c5d4e4f0990c": "FAILED",
+          "task-c131962384f7": "BLOCKED",
+          "task-0b1ffed0e87e": "BLOCKED",
+          "task-be49185ff2c3": "BLOCKED",
+          "task-00b44e26d5c2": "BLOCKED",
+          "task-88ca8f6ed5c6": "BLOCKED",
+          "task-f005c1a17803": "BLOCKED",
+          "task-93ee79308472": "BLOCKED"
+        },
+        "artifacts": [
+          "artifact_id='artifact-f2eadaed6c8f' name='e46_C1_discovery.md' path='e46_C1_discovery.md' sha256='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' size_bytes=614 created_by='sandbox-task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 55108) mission_id='mission-adac57ee8bc0' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-bbd38dc7f98c' name='e46_C1_discovery.md' path='e46_C1_discovery.md' sha256='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' size_bytes=614 created_by='sandbox-task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 174824) mission_id='mission-adac57ee8bc0' content_type='application/octet-stream' is_evidence=False",
+          "artifact_id='artifact-08a2cfc08075' name='e46_C1_discovery.md' path='e46_C1_discovery.md' sha256='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' size_bytes=614 created_by='sandbox-task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 301900) mission_id='mission-adac57ee8bc0' content_type='application/octet-stream' is_evidence=False"
+        ],
+        "evidence": [
+          "evidence_id='evidence-0809bac76e97' evidence_hash='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' content_type='artifact' source_id='artifact-f2eadaed6c8f' mission_id='mission-adac57ee8bc0' run_id='run-efbb23f4e8e4' task_id='task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 55182) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-ba93a8a10802' evidence_hash='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' content_type='artifact' source_id='artifact-bbd38dc7f98c' mission_id='mission-adac57ee8bc0' run_id='run-efbb23f4e8e4' task_id='task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 175005) verified=False verified_by=None verified_at=None",
+          "evidence_id='evidence-d7dade0ee204' evidence_hash='c32c7aa62e69903c08f5fc4e3da1e473cc844d40ff96a0695f7a10438589c7f5' content_type='artifact' source_id='artifact-08a2cfc08075' mission_id='mission-adac57ee8bc0' run_id='run-efbb23f4e8e4' task_id='task-c5d4e4f0990c' created_at=datetime.datetime(2026, 10, 4, 14, 6, 9, 302010) verified=False verified_by=None verified_at=None"
+        ]
+      }
+    }
+  }
+}
