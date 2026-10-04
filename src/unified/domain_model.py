@@ -146,6 +146,7 @@ class AgentType(str, Enum):
     IMPLEMENTER = "implementer"
     VERIFIER = "verifier"
     ARBITER = "arbiter"
+    SECURITY = "security"
 
 
 class PermissionClass(str, Enum):

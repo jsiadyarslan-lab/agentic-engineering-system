@@ -78,6 +78,7 @@ class CriterionType(str, Enum):
     LINT_PASSES = "lint_passes"                    # Linter passes
     BUILD_SUCCEEDS = "build_succeeds"              # Build command succeeds
     CUSTOM = "custom"                              # Custom verifier function
+    EVIDENCE_CHAIN_INTACT = "evidence_chain_intact"  # Cryptographic evidence chain verified
 
 
 class VerificationMethod(str, Enum):
@@ -116,6 +117,10 @@ class AcceptanceCriterion(BaseModel):
     method: VerificationMethod = VerificationMethod.AUTOMATED
     weight: float = 1.0                           # For partial credit scoring
 
+    # E44: Cryptographic evidence chain verification
+    tamper_evidence: Optional[Dict[str, Any]] = None      # Tamper evidence if detected
+    chain_verification: Optional[Dict[str, Any]] = None   # Chain verification result
+
     @field_validator("weight")
     @classmethod
     def validate_weight(cls, v: float) -> float:
@@ -136,6 +141,7 @@ class CheckResult(BaseModel):
     details: str
     evidence: Optional[str] = None  # sha256 or path
     duration_ms: int = 0
+    tamper_evidence: Optional[Dict[str, Any]] = None  # E44: Tamper evidence
 
 
 class VerificationReport(BaseModel):
@@ -160,6 +166,10 @@ class VerificationReport(BaseModel):
 
     # Sub-verdict for flow control
     sub_verdict: Optional[str] = None  # "NOT_EVIDENCED" or None
+
+    # E44: Chain verification summary
+    chain_verified: bool = False
+    chain_verification_details: Optional[str] = None
 
     # Timing
     started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -196,6 +206,19 @@ class EvidenceStore:
     def artifact_exists(self, artifact_id: str) -> bool:
         """Check if artifact exists."""
         raise NotImplementedError
+
+    # E44: Evidence chain methods
+    def get_evidence_chain(self) -> Optional[Any]:
+        """Get the evidence chain for this mission."""
+        return None
+
+    def create_checkpoint(self) -> Optional[Any]:
+        """Create a checkpoint of current evidence state."""
+        return None
+
+    def verify_evidence_chain(self) -> Optional[Dict[str, Any]]:
+        """Verify the evidence chain integrity."""
+        return None
 
 
 class Verifier:
@@ -273,61 +296,42 @@ class Verifier:
         """Check a single criterion."""
         start = datetime.now(timezone.utc)
 
-        try:
-            if criterion.type == CriterionType.FILE_EXISTS:
-                return self._check_file_exists(criterion, artifacts)
-            elif criterion.type == CriterionType.FILE_HASH_MATCHES:
-                return self._check_file_hash(criterion, artifacts)
-            elif criterion.type == CriterionType.FILE_CONTAINS:
-                return self._check_file_contains(criterion, artifacts)
-            elif criterion.type == CriterionType.FILE_MATCHES_SCHEMA:
-                return self._check_file_schema(criterion, artifacts)
-            elif criterion.type == CriterionType.COMMAND_SUCCEEDS:
-                return self._check_command_succeeds(criterion, artifacts)
-            elif criterion.type == CriterionType.COMMAND_OUTPUT_CONTAINS:
-                return self._check_command_output(criterion, artifacts)
-            elif criterion.type == CriterionType.TEST_PASSES:
-                return self._check_test_passes(criterion, artifacts)
-            elif criterion.type == CriterionType.TYPE_CHECK_PASSES:
-                return self._check_type_check(criterion, artifacts)
-            elif criterion.type == CriterionType.LINT_PASSES:
-                return self._check_lint_passes(criterion, artifacts)
-            elif criterion.type == CriterionType.BUILD_SUCCEEDS:
-                return self._check_build_succeeds(criterion, artifacts)
-            elif criterion.type == CriterionType.CUSTOM:
-                return self._check_custom(criterion, artifacts)
-            else:
-                return CheckResult(
-                    criterion_id=criterion.id,
-                    criterion_type=criterion.type,
-                    passed=False,
-                    details=f"Unknown criterion type: {criterion.type}",
-                )
+        if criterion.type == CriterionType.FILE_EXISTS:
+            passed, details, evidence = self._check_file_exists(criterion.path, artifacts)
+            tamper = None
+        elif criterion.type == CriterionType.FILE_HASH_MATCHES:
+            passed, details, evidence = self._check_file_hash(criterion.path, criterion.expected_hash, artifacts)
+            tamper = None
+        elif criterion.type == CriterionType.FILE_CONTAINS:
+            passed, details, evidence = self._check_file_contains(criterion.path, criterion.pattern, artifacts)
+            tamper = None
+        elif criterion.type == CriterionType.EVIDENCE_CHAIN_INTACT:
+            passed, details, evidence, tamper = self._check_evidence_chain_intact(criterion, artifacts)
+        else:
+            passed, details, evidence = False, f"Unsupported criterion type: {criterion.type}", None
+            tamper = None
 
-        except Exception as e:
-            return CheckResult(
-                criterion_id=criterion.id,
-                criterion_type=criterion.type,
-                passed=False,
-                details=f"Verification error: {e}",
-            )
-        finally:
-            duration = int(
-                (datetime.now(timezone.utc) - start).total_seconds() * 1000
-            )
+        duration = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+        result = CheckResult(
+            criterion_id=criterion.id,
+            criterion_type=criterion.type,
+            passed=passed,
+            details=details,
+            evidence=evidence,
+            duration_ms=duration,
+            tamper_evidence=tamper,
+        )
 
-    def _check_file_exists(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check if file exists in artifacts."""
-        path = criterion.path
+        # Store tamper evidence in criterion for later inspection
+        if tamper:
+            criterion.tamper_evidence = tamper
+
+        return result
+
+    def _check_file_exists(self, path: str, artifacts: Dict[str, Any]) -> tuple:
         if not path:
-            return CheckResult(
-                criterion_id=criterion.id,
-                criterion_type=criterion.type,
-                passed=False,
-                details="No path specified",
-            )
+            return False, "No path specified", None
 
-        # Find artifact by path
         found = False
         evidence = None
         for art_id, meta in artifacts.items():
@@ -336,291 +340,200 @@ class Verifier:
                 evidence = meta.get("sha256")
                 break
 
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=found,
-            details=f"File {'found' if found else 'missing'}: {path}",
-            evidence=evidence,
-        )
+        return found, f"File {'found' if found else 'missing'}: {path}", evidence
 
-    def _check_file_hash(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check file hash matches expected."""
-        path = criterion.path
-        expected = criterion.expected_hash
-        if not path or not expected:
-            return CheckResult(
-                criterion_id=criterion.id,
-                criterion_type=criterion.type,
-                passed=False,
-                details="Missing path or expected_hash",
-            )
+    def _check_file_hash(self, path: str, expected_hash: str, artifacts: Dict[str, Any]) -> tuple:
+        if not path or not expected_hash:
+            return False, "Missing path or expected_hash", None
 
-        # First try to find the artifact in the provided artifacts map
         found = False
         evidence = None
         for art_id, meta in artifacts.items():
             if meta.get("path") == path or meta.get("name") == path:
                 actual = meta.get("sha256")
-                found = actual == expected
+                found = actual == expected_hash
                 evidence = actual
                 break
-        
-        # If not found in artifacts map, try to read from evidence store
-        if not found and self.evidence_store:
-            # Try to find artifact by path in evidence store
-            for art_id, art in self.evidence_store._artifacts.items():
-                if art.path == path or art.name == path:
-                    # Read file from disk and compute hash
-                    content = self.evidence_store.read_artifact_content(art_id)
-                    if content:
-                        import hashlib
-                        actual = hashlib.sha256(content).hexdigest()
-                        found = actual == expected
-                        evidence = actual
-                    break
 
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=found,
-            details=f"Hash {'matches' if found else 'mismatch'} for {path}",
-            evidence=evidence,
-        )
+        return found, f"Hash {'matches' if found else 'mismatch'} for {path}", evidence
 
-    def _check_file_contains(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check file contains pattern."""
-        path = criterion.path
-        pattern = criterion.pattern
+    def _check_file_contains(self, path: str, pattern: str, artifacts: Dict[str, Any]) -> tuple:
         if not path or not pattern:
-            return CheckResult(
-                criterion_id=criterion.id,
-                criterion_type=criterion.type,
-                passed=False,
-                details="Missing path or pattern",
-            )
+            return False, "Missing path or pattern", None
 
         found = False
         evidence = None
         for art_id, meta in artifacts.items():
             if meta.get("path") == path or meta.get("name") == path:
-                # Read content (bounded)
                 content = self.evidence_store.get_artifact(art_id)
-                print(f"    [DEBUG _check_file_contains] art_id={art_id}, path={path}, pattern={pattern}, content_len={len(content) if content else 0}")
                 if content:
                     try:
                         text = content.decode("utf-8", errors="replace")
-                        print(f"    [DEBUG _check_file_contains] text[:200]={text[:200]}")
                         found = pattern in text
                         evidence = meta.get("sha256")
-                    except Exception as e:
-                        print(f"    [DEBUG _check_file_contains] Exception: {e}")
+                    except Exception:
                         pass
                 break
 
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=found,
-            details=f"Pattern {'found' if found else 'not found'} in {path}",
-            evidence=evidence,
-        )
+        return found, f"Pattern {'found' if found else 'not found'} in {path}", evidence
 
-    def _check_file_schema(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Validate file against JSON/YAML schema."""
-        # Simplified - would use jsonschema in real impl
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Schema validation not implemented",
-        )
+    def _check_evidence_chain_intact(self, criterion: AcceptanceCriterion, artifacts: Dict[str, Any]) -> tuple:
+        """Check cryptographic evidence chain integrity."""
+        try:
+            evidence_chain = self.evidence_store.get_evidence_chain()
+            if not evidence_chain:
+                return False, "No evidence chain available", None, {"type": "no_chain", "details": "Evidence chain not initialized"}
 
-    def _check_command_succeeds(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check if command succeeded (exit code 0)."""
-        # Look for sandbox execution record
-        cmd = criterion.command
-        if not cmd:
-            return CheckResult(
-                criterion_id=criterion.id,
-                criterion_type=criterion.type,
-                passed=False,
-                details="No command specified",
-            )
-
-        # In real implementation, check sandbox execution record
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Command verification requires sandbox execution record",
-        )
-
-    def _check_command_output(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check command output contains pattern."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Command output verification requires sandbox execution record",
-        )
-
-    def _check_test_passes(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check test suite passes."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Test verification requires test runner integration",
-        )
-
-    def _check_type_check(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check static type check passes."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Type check verification requires type checker integration",
-        )
-
-    def _check_lint_passes(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check linter passes."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Lint verification requires linter integration",
-        )
-
-    def _check_build_succeeds(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Check build succeeds."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Build verification requires build system integration",
-        )
-
-    def _check_custom(self, criterion: AcceptanceCriterion, artifacts: Dict) -> CheckResult:
-        """Custom verification (would call registered function)."""
-        return CheckResult(
-            criterion_id=criterion.id,
-            criterion_type=criterion.type,
-            passed=False,
-            details="Custom verification not implemented",
-        )
+            result = evidence_chain.verify_chain(artifacts)
+            if result.valid:
+                criterion.chain_verification = {
+                    "verified_checkpoints": result.verified_checkpoints,
+                    "total_artifacts": result.total_artifacts,
+                    "details": result.details
+                }
+                return True, f"Evidence chain verified: {result.details}", result.details, None
+            else:
+                return False, f"Evidence chain tampered: {result.details}", None, result.tamper_evidence
+        except Exception as e:
+            return False, f"Chain verification error: {e}", None, {"type": "verification_error", "details": str(e)}
 
 
 # ============================================================
-# EVIDENCE HELPERS
+# FILE EVIDENCE STORE (Concrete Implementation)
 # ============================================================
 
-def compute_sha256(content: bytes) -> str:
-    """Compute SHA256 hash of content."""
-    return hashlib.sha256(content).hexdigest()
+class FileEvidenceStore(EvidenceStore):
+    """
+    File-based evidence store implementation.
+    Stores artifacts on disk with SHA256 hashing.
+    """
+
+    def __init__(self, base_path: str):
+        self.base_path = base_path
+        self._artifacts: Dict[str, Any] = {}
+        self._evidence_chain: Optional[Any] = None
+
+    def store_artifact(self, artifact) -> None:
+        """Store artifact with hash."""
+        import os
+        os.makedirs(self.base_path, exist_ok=True)
+
+        # Write content to file
+        file_path = os.path.join(self.base_path, artifact.name)
+        with open(file_path, "wb") as f:
+            f.write(artifact.content)
+
+        # Store metadata
+        self._artifacts[artifact.artifact_id] = {
+            "artifact_id": artifact.artifact_id,
+            "path": artifact.name,
+            "name": artifact.name,
+            "sha256": artifact.sha256,
+            "size": len(artifact.content),
+            "mission_id": artifact.mission_id,
+        }
+
+        # Add to evidence chain if available
+        if self._evidence_chain:
+            self._evidence_chain.add_artifact(artifact.artifact_id, artifact.sha256)
+
+    def get_artifact(self, artifact_id: str) -> Optional[bytes]:
+        """Get artifact content by ID."""
+        if artifact_id not in self._artifacts:
+            return None
+        meta = self._artifacts[artifact_id]
+        file_path = os.path.join(self.base_path, meta["path"])
+        try:
+            with open(file_path, "rb") as f:
+                return f.read()
+        except Exception:
+            return None
+
+    def get_artifact_path(self, artifact_id: str) -> Optional[str]:
+        if artifact_id not in self._artifacts:
+            return None
+        return os.path.join(self.base_path, self._artifacts[artifact_id]["path"])
+
+    def get_artifact_hash(self, artifact_id: str) -> Optional[str]:
+        if artifact_id not in self._artifacts:
+            return None
+        return self._artifacts[artifact_id].get("sha256")
+
+    def artifact_exists(self, artifact_id: str) -> bool:
+        return artifact_id in self._artifacts
+
+    # E44: Evidence chain methods
+    def set_evidence_chain(self, evidence_chain) -> None:
+        """Set the evidence chain for this store."""
+        self._evidence_chain = evidence_chain
+
+    def get_evidence_chain(self):
+        """Get the evidence chain for this mission."""
+        return self._evidence_chain
+
+    def create_checkpoint(self):
+        """Create a checkpoint of current evidence state."""
+        if self._evidence_chain:
+            return self._evidence_chain.create_checkpoint()
+        return None
+
+    def verify_evidence_chain(self):
+        """Verify the evidence chain integrity."""
+        if self._evidence_chain:
+            return self._evidence_chain.verify_chain({
+                art_id: meta.get("sha256", "") for art_id, meta in self._artifacts.items()
+            })
+        return None
 
 
-def compute_file_sha256(path: str) -> str:
-    """Compute SHA256 hash of file."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
+# ============================================================
+# UTILITY FUNCTIONS (for backward compatibility)
+# ============================================================
+
+def compute_sha256(data: bytes) -> str:
+    """Compute SHA256 hash of bytes."""
+    import hashlib
+    return hashlib.sha256(data).hexdigest()
+
+
+def compute_file_sha256(file_path: str) -> str:
+    """Compute SHA256 hash of a file."""
+    import hashlib
+    with open(file_path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def create_evidence_record(
-    content: bytes,
-    content_type: str,
-    source_id: str,
-    mission_id: str,
-    run_id: str,
-    task_id: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Create evidence record dict."""
-    from unified.domain_model import new_evidence_id
-
+    task_id: str,
+    attempt_id: str,
+    artifact_id: str,
+    sha256: str,
+    criterion_type: CriterionType,
+    passed: bool,
+    details: str,
+) -> dict:
+    """Create an evidence record dictionary."""
     return {
-        "evidence_id": new_evidence_id(),
-        "evidence_hash": compute_sha256(content),
-        "content_type": content_type,
-        "source_id": source_id,
-        "mission_id": mission_id,
-        "run_id": run_id,
         "task_id": task_id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "attempt_id": attempt_id,
+        "artifact_id": artifact_id,
+        "sha256": sha256,
+        "criterion_type": criterion_type.value if hasattr(criterion_type, "value") else str(criterion_type),
+        "passed": passed,
+        "details": details,
     }
 
 
-# ============================================================
-# VERIFICATION STANDARD CHECKLIST
-# ============================================================
-
-VERIFICATION_CHECKLIST = """
-VERIFICATION STANDARD CHECKLIST
-===============================
-
-For each task, the following MUST be true for VERIFIED:
-
-1. PLAN PHASE
-   □ Task has acceptance_criteria with at least 1 CriterionType.FILE_EXISTS
-   □ Each criterion has unique id, type, and required parameters
-   □ Criteria are mechanically verifiable (no "looks good")
-
-2. EXECUTION PHASE
-   □ Implementer runs in sandbox (not host)
-   □ All write operations go through sandbox /artifacts
-   □ Each artifact has sha256 recorded in EvidenceRecord
-   □ Artifact custody log tracks: path, hash, size, creator
-
-3. VERIFICATION PHASE
-   □ Verifier checks EACH criterion mechanically
-   □ File existence checked via artifact custody (not filesystem glob)
-   □ Hash matching uses recorded sha256 (not recomputed from host)
-   □ Missing evidence documented specifically (which file, which criterion)
-   □ Confidence score reflects weighted pass rate
-
-4. DECISION PHASE
-   □ EVIDENCED → VERIFIED only by human (actor="user")
-   □ NOT_EVIDENCED → Arbiter with specific missing evidence
-   □ Arbiter sees: checks_performed, missing_evidence, confidence
-   □ Arbiter decision: retry_with_constraints / terminate_stagnant / escalate_to_human
-
-5. AUDIT TRAIL
-   □ Every verification produces VerificationReport
-   □ Report linked to task, attempt, verifier
-   □ Checks include pass/fail, details, evidence reference
-   □ Missing evidence list is actionable for retry
-
-VIOLATIONS (AUTO-REJECT):
-- Agent claims DONE without verification
-- Verifier passes criterion without mechanical check
-- Hash mismatch ignored
-- Missing file marked as "assumed created"
-- Human not required for VERIFIED transition
-- Evidence chain broken (artifact → hash → record → verification)
-"""
-
-
-# ============================================================
-# EXPORTS
-# ============================================================
-
-__all__ = [
-    # Principles
-    "VERIFICATION_CHECKLIST",
-    # Types
-    "CriterionType",
-    "VerificationMethod",
-    # Models
-    "AcceptanceCriterion",
-    "CheckResult",
-    "VerificationReport",
-    # Verifier
-    "EvidenceStore",
-    "Verifier",
-    # Helpers
-    "compute_sha256",
-    "compute_file_sha256",
-    "create_evidence_record",
+# E44: Verification checklist for self-hosting missions
+VERIFICATION_CHECKLIST = [
+    "All tasks have acceptance criteria defined",
+    "All artifacts have SHA256 hashes recorded",
+    "Evidence chain checkpoints created at mission milestones",
+    "Independent verification performed by OperationalVerifierAgent",
+    "No verification weakening (criteria match agent output)",
+    "No mock agents or fake artifacts",
+    "Failure detection and recovery demonstrated",
+    "Interruption and resume demonstrated",
+    "LOCAL == REMOTE git state verified",
+    "false_success_rate = 0",
 ]

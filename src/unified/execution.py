@@ -683,6 +683,9 @@ class ExecutionEngine:
                 attempt.agent_id = reserved_agent_id
                 context.agent_id = reserved_agent_id
                 
+                # Update task with assigned agent for checkpoint tracking
+                task.assigned_agent_id = reserved_agent_id
+                
                 # Emit TASK_ASSIGNED event with reserved agent
                 self._emit(FactoryEvent.create(
                     event_type=EventType.TASK_ASSIGNED,
@@ -723,6 +726,9 @@ class ExecutionEngine:
                 reserved_agent_id = reservation.agent_id
                 attempt.agent_id = reserved_agent_id
                 context.agent_id = reserved_agent_id
+                
+                # Update task with assigned agent for checkpoint tracking
+                task.assigned_agent_id = reserved_agent_id
                 
                 # Emit TASK_ASSIGNED event with reserved agent
                 self._emit(FactoryEvent.create(
@@ -869,7 +875,7 @@ class ExecutionEngine:
                     # else: success, no verification needed
                 else:
                     task_failed = True
-                    failure_error = result.error
+                    failure_error = result.error or "Unknown error"
                 if not task_failed:
                     # Task succeeded - update task graph state to COMPLETED
                     self._update_task_graph_state(run_id, task.task_id, TaskState.COMPLETED)
