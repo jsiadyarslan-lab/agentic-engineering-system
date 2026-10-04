@@ -1,0 +1,38 @@
+{
+  "verification_verdict": "COMPLETE",
+  "verification_events": 1,
+  "implementer_producer": null,
+  "verifier_agent": "e48-verifier-01",
+  "producer_ne_verifier": true,
+  "required_keys": [
+    "A",
+    "X",
+    "B",
+    "C",
+    "D"
+  ],
+  "checks": {
+    "all_required_tasks_present": {
+      "passed": true,
+      "missing": []
+    },
+    "all_required_tasks_completed": {
+      "passed": true,
+      "not_completed": []
+    },
+    "all_dependencies_satisfied": {
+      "passed": true,
+      "violations": []
+    },
+    "no_unresolved_work": {
+      "passed": true,
+      "unresolved": []
+    },
+    "verification_history": {
+      "passed": true,
+      "evidenced_verifications": 5,
+      "not_evidenced_verifications": 0,
+      "note": "not_evidenced entries belong to failed attempts corrected by replan"
+    }
+  }
+}

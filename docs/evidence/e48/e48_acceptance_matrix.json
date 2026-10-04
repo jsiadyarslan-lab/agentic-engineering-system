@@ -1,0 +1,62 @@
+{
+  "AC-01": {
+    "claim": "Initial Plan (PLAN V1)",
+    "raw_evidence": "Plan V1 defined: plan_v1_run-d9b5, tasks: A\u2192B\u2192C\u2192D",
+    "actual_result": "Plan V1 created and Task A executed successfully",
+    "verdict": "VERIFIED"
+  },
+  "AC-02": {
+    "claim": "Reality Discovery",
+    "raw_evidence": "Discovery event: fail-c30c602df0be, Task B context: requires_prerequisite_X",
+    "actual_result": "Task B discovered it requires prerequisite X not in original plan",
+    "verdict": "VERIFIED"
+  },
+  "AC-03": {
+    "claim": "Plan Invalidation",
+    "raw_evidence": "FailureRecord kind=PLAN_DEVIATION, plan_version_before=v1",
+    "actual_result": "System declared PLAN V1 invalid due to discovery",
+    "verdict": "VERIFIED"
+  },
+  "AC-04": {
+    "claim": "Explicit Replan Decision",
+    "raw_evidence": "ReplanDecision: replan_decision_fail-c30c602df0be, decision=REPLAN_REQUIRED (not RETRY)",
+    "actual_result": "Orchestrator explicitly decided REPLAN, not RETRY",
+    "verdict": "VERIFIED"
+  },
+  "AC-05": {
+    "claim": "Plan Versioning",
+    "raw_evidence": "Plan V1: plan_v1_run-d9b5, Plan V2: plan_v2_run-d9b5, parent_plan_id=plan_v1_run-d9b5",
+    "actual_result": "PLAN V2 created as independent entity with parent reference",
+    "verdict": "VERIFIED"
+  },
+  "AC-06": {
+    "claim": "Task Graph Change",
+    "raw_evidence": "ADDED: ['X'], REMOVED: [], MODIFIED: ['B'], DEP_CHANGES: {'B': {'before': ['A'], 'after': ['X']}}",
+    "actual_result": "Real graph diff: X added, B modified, B\u2192X dependency created",
+    "verdict": "VERIFIED"
+  },
+  "AC-07": {
+    "claim": "State Preservation",
+    "raw_evidence": "Task A completed in V1, preserved in V2, NOT re-executed: False",
+    "actual_result": "Completed Task A preserved, not re-executed",
+    "verdict": "VERIFIED"
+  },
+  "AC-08": {
+    "claim": "Continuation",
+    "raw_evidence": "New task X executed, replanned B executed, downstream C/D continued: True",
+    "actual_result": "Execution continued from new plan state",
+    "verdict": "VERIFIED"
+  },
+  "AC-09": {
+    "claim": "Independent Verification",
+    "raw_evidence": "VERIFIER agent events: 1, producer=None != verifier=e48-verifier-01",
+    "actual_result": "Independent VERIFIER agent verified completion",
+    "verdict": "VERIFIED"
+  },
+  "AC-10": {
+    "claim": "Completion",
+    "raw_evidence": "verify_completion verdict=COMPLETE, final_state=EVIDENCED",
+    "actual_result": "Mission reached EVIDENCED",
+    "verdict": "VERIFIED"
+  }
+}

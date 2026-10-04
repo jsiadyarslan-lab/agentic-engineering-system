@@ -1,0 +1,101 @@
+{
+  "plan_id": "plan_v2_run-d9b5",
+  "version": "v2",
+  "parent_plan_id": "plan_v1_run-d9b5",
+  "mission_id": "mission-6078e081214c",
+  "run_id": "run-d9b52cebd71a",
+  "replan_record": {
+    "from_version": "v1",
+    "to_version": "v2",
+    "reason": "Task B discovered requirement for prerequisite X. Plan V1 invalid.",
+    "added_tasks": [
+      {
+        "task_key": "X",
+        "depends_on": [
+          "task-7e1e2c159c1e"
+        ],
+        "name": "Task X: Prerequisite for B"
+      }
+    ],
+    "removed_tasks": [],
+    "preserved_tasks": [
+      "A"
+    ],
+    "rewired_dependencies": [
+      {
+        "task_key": "B",
+        "new_depends_on": [
+          "X"
+        ]
+      },
+      {
+        "task_key": "C",
+        "new_depends_on": [
+          "B"
+        ]
+      },
+      {
+        "task_key": "D",
+        "new_depends_on": [
+          "C"
+        ]
+      }
+    ],
+    "modified_tasks": [
+      {
+        "task_key": "B",
+        "new_acceptance_criteria": [
+          "file_exists:e48_task_b_output.txt",
+          "file_contains:e48_task_b_output.txt:PROCESSED_WITH_X"
+        ]
+      }
+    ],
+    "timestamp": "2026-10-04T20:45:30.115817+00:00"
+  },
+  "tasks": {
+    "A": {
+      "key": "A",
+      "task_id": "task-7e1e2c159c1e",
+      "name": "",
+      "depends_on": [],
+      "state": "TaskState.COMPLETED"
+    },
+    "B": {
+      "key": "B",
+      "task_id": "task-bf3f326041c0",
+      "name": "",
+      "depends_on": [
+        "X"
+      ],
+      "state": "TaskState.BLOCKED"
+    },
+    "C": {
+      "key": "C",
+      "task_id": "task-da348e0bad53",
+      "name": "",
+      "depends_on": [
+        "B"
+      ],
+      "state": "TaskState.BLOCKED"
+    },
+    "D": {
+      "key": "D",
+      "task_id": "task-02d77122e8ae",
+      "name": "",
+      "depends_on": [
+        "C"
+      ],
+      "state": "TaskState.BLOCKED"
+    },
+    "X": {
+      "key": "X",
+      "task_id": "task-44a2f45d1ca6",
+      "name": "Task X: Prerequisite for B",
+      "depends_on": [
+        "A"
+      ],
+      "state": "TaskState.READY"
+    }
+  },
+  "created_at": "2026-10-04T20:45:30.117649+00:00"
+}
