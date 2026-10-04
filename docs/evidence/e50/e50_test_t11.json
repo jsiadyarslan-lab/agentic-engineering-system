@@ -1,0 +1,33 @@
+{
+  "test_id": "T11",
+  "name": "Provenance traversal",
+  "passed": true,
+  "evidence": {
+    "chain_id": "prov-8c20807c048b",
+    "links": [
+      {
+        "event": "artifact_produced",
+        "artifact_id": "artifact-7d8f48c4989c",
+        "artifact_name": "ARTIFACT_X",
+        "version": "v1",
+        "producer_mission_id": "mission-49bae9cd9b2c",
+        "producer_run_id": "run-77819bb47ba5",
+        "producer_task_id": "task-20a74ae068cd",
+        "timestamp": "2026-10-04T22:07:49.032443+00:00"
+      },
+      {
+        "event": "dependency_satisfied",
+        "dependency_id": "dep-28471bf48015",
+        "consumer_mission_id": "mission-64b0a844b6b4",
+        "consumer_run_id": "run-5969c73f8eb3",
+        "consumer_task_id": "task-cee6112b1fb2",
+        "consumer_task_key": "B1",
+        "artifact_id": "artifact-7d8f48c4989c",
+        "timestamp": "2026-10-04T22:07:49.032482+00:00"
+      }
+    ],
+    "has_production": true,
+    "has_consumption": true
+  },
+  "error": null
+}

@@ -1,0 +1,192 @@
+{
+  "total": 12,
+  "passed": 12,
+  "failed": 0,
+  "results": [
+    {
+      "test_id": "T01",
+      "name": "Producer -> Consumer success",
+      "passed": true,
+      "evidence": {
+        "dep_id": "dep-fd4c47d8ae63",
+        "dep_state": "RELEASED",
+        "b2_state": "READY",
+        "artifact_x_id": "artifact-c501d105a2e3",
+        "contract_decision": "ACCEPT"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T02",
+      "name": "Consumer before artifact",
+      "passed": true,
+      "evidence": {
+        "dep_id": "dep-2e3a24f35488",
+        "dep_state": "WAITING",
+        "b2_state": "BLOCKED"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T03",
+      "name": "Verification releases consumer",
+      "passed": true,
+      "evidence": {
+        "dep_b_state": "RELEASED",
+        "dep_c_state": "RELEASED",
+        "b2_state": "READY",
+        "c2_state": "READY"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T04",
+      "name": "Producer failure isolation",
+      "passed": true,
+      "evidence": {
+        "dep_state": "FAILED",
+        "b2_state": "BLOCKED",
+        "producer_failed": true
+      },
+      "error": null
+    },
+    {
+      "test_id": "T05",
+      "name": "Version mismatch",
+      "passed": true,
+      "evidence": {
+        "dep_state": "INCOMPATIBLE",
+        "contract_decision": "REJECT",
+        "decision_reason": "Version mismatch: v1 != v2"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T06",
+      "name": "Contract/schema mismatch",
+      "passed": true,
+      "evidence": {
+        "dep_state": "INCOMPATIBLE",
+        "contract_decision": "REJECT",
+        "decision_reason": "Schema mismatch"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T07",
+      "name": "Multi-consumer release",
+      "passed": true,
+      "evidence": {
+        "note": "Verified in T03"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T08",
+      "name": "Dependency invalidation",
+      "passed": true,
+      "evidence": {
+        "dep_state": "REPLANNING",
+        "contract_decision": "HUMAN_REQUIRED",
+        "b2_state": "BLOCKED"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T09",
+      "name": "Restart while waiting",
+      "passed": true,
+      "evidence": {
+        "dep_state_before": "WAITING",
+        "dep_state_after": "WAITING",
+        "b2_state_before": "BLOCKED",
+        "b2_state_after": "BLOCKED",
+        "note": "In-process durability verified; cross-process needs checkpoint integration"
+      },
+      "error": null
+    },
+    {
+      "test_id": "T10",
+      "name": "Concurrent resolution",
+      "passed": true,
+      "evidence": {
+        "states": {
+          "consumer_0": "RELEASED",
+          "consumer_1": "RELEASED",
+          "consumer_2": "RELEASED"
+        },
+        "all_released": true
+      },
+      "error": null
+    },
+    {
+      "test_id": "T11",
+      "name": "Provenance traversal",
+      "passed": true,
+      "evidence": {
+        "chain_id": "prov-8c20807c048b",
+        "links": [
+          {
+            "event": "artifact_produced",
+            "artifact_id": "artifact-7d8f48c4989c",
+            "artifact_name": "ARTIFACT_X",
+            "version": "v1",
+            "producer_mission_id": "mission-49bae9cd9b2c",
+            "producer_run_id": "run-77819bb47ba5",
+            "producer_task_id": "task-20a74ae068cd",
+            "timestamp": "2026-10-04T22:07:49.032443+00:00"
+          },
+          {
+            "event": "dependency_satisfied",
+            "dependency_id": "dep-28471bf48015",
+            "consumer_mission_id": "mission-64b0a844b6b4",
+            "consumer_run_id": "run-5969c73f8eb3",
+            "consumer_task_id": "task-cee6112b1fb2",
+            "consumer_task_key": "B1",
+            "artifact_id": "artifact-7d8f48c4989c",
+            "timestamp": "2026-10-04T22:07:49.032482+00:00"
+          }
+        ],
+        "has_production": true,
+        "has_consumption": true
+      },
+      "error": null
+    },
+    {
+      "test_id": "T12",
+      "name": "Duplicate release protection",
+      "passed": true,
+      "evidence": {
+        "dep_state": "RELEASED",
+        "released_count": 1,
+        "all_transitions": [
+          {
+            "from": "UNRESOLVED",
+            "to": "WAITING",
+            "actor": "dependency_engine",
+            "trigger": "register_dependency",
+            "reason": "Dependency registered, waiting for ARTIFACT_X vv1",
+            "timestamp": "2026-10-04T22:07:49.044837+00:00"
+          },
+          {
+            "from": "WAITING",
+            "to": "SATISFIED",
+            "actor": "dependency_engine",
+            "trigger": "contract_check",
+            "reason": "Contract satisfied: version=v1, schema_match, verified",
+            "timestamp": "2026-10-04T22:07:49.158166+00:00"
+          },
+          {
+            "from": "SATISFIED",
+            "to": "RELEASED",
+            "actor": "dependency_engine",
+            "trigger": "unblock_consumer",
+            "reason": "Consumer unblocked, artifact ARTIFACT_X verified and contract satisfied",
+            "timestamp": "2026-10-04T22:07:49.158197+00:00"
+          }
+        ]
+      },
+      "error": null
+    }
+  ]
+}

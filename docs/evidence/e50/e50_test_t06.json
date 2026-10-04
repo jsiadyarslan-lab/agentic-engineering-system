@@ -1,0 +1,11 @@
+{
+  "test_id": "T06",
+  "name": "Contract/schema mismatch",
+  "passed": true,
+  "evidence": {
+    "dep_state": "INCOMPATIBLE",
+    "contract_decision": "REJECT",
+    "decision_reason": "Schema mismatch"
+  },
+  "error": null
+}
