@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-10-05T13:35:30.101356+00:00",
+  "rule": "No test may write to, modify, or delete canonical evidence (docs/evidence/**) or any fixed canonical path. Every test run gets TEST_ROOT / TEMP_EVIDENCE_ROOT / TEMP_ARTIFACT_ROOT.",
+  "audit_scope": [
+    "tests/unified/test_e32e_durable_execution.py",
+    "tests/unified/test_e32f_autonomous_replanning.py",
+    "tests/unified/test_e33_mission_autonomy.py",
+    "tests/unified/e33_mission_runner.py"
+  ],
+  "violations_found": [
+    {
+      "test": "E33 (tests/unified/test_e33_mission_autonomy.py)",
+      "positions": [
+        "REPO_ROOT / 'docs' / 'evidence' / 'e33' as EVIDENCE_DIR (all _dump() evidence exports)",
+        "EVIDENCE_DIR / 'state' as STATE_DIR \u2014 engine artifacts_base_dir (checkpoints/, events/, evidence_store/, sandbox-task-*)",
+        "evidence_env fixture: shutil.rmtree(STATE_DIR) \u2014 DELETED 34 tracked canonical evidence files on every run"
+      ],
+      "pre_fix_proof": {
+        "description": "One pre-fix E33 run (this session, authentic) mutated canonical evidence:",
+        "deleted_tracked": 34,
+        "modified_tracked": 1,
+        "untracked_added": 7,
+        "deleted_sample": [
+          "docs/evidence/e33/state/checkpoints/mission-7ebaf6f5cf2e/checkpoint-67c77a4b9c8e.json",
+          "docs/evidence/e33/state/checkpoints/mission-7ebaf6f5cf2e/checkpoint-6c7c03c91209.json",
+          "docs/evidence/e33/state/checkpoints/mission-7ebaf6f5cf2e/checkpoint-b1f43555abd0.json",
+          "docs/evidence/e33/state/checkpoints/mission-7ebaf6f5cf2e/checkpoint-bb4a3ba80b31.json",
+          "docs/evidence/e33/state/checkpoints/mission-7ebaf6f5cf2e/checkpoint-bddf8660d666.json"
+        ],
+        "modified": [
+          "docs/evidence/e33/E33_MISSION_SPEC.json"
+        ]
+      }
+    },
+    {
+      "test": "E32e (tests/unified/test_e32e_durable_execution.py)",
+      "positions": [
+        "open(Path('docs/evidence/e32e/pre_resume_state.json'), 'w') \u2014 line 671 (cwd-relative canonical write)"
+      ]
+    },
+    {
+      "test": "E32f (tests/unified/test_e32f_autonomous_replanning.py)",
+      "positions": [
+        "open(Path('docs/evidence/e32f/E32F_PLAN_V1.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_DEVIATION.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_REPLAN_V2.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_PLAN_DIFF.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_CHECKPOINT.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_RESUME_AFTER_REPLAN.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_EVENT_TRACE.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_EVIDENCE_CHAIN.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_TEST_RESULTS.json'), 'w')",
+        "open(Path('docs/evidence/e32f/E32F_ACCEPTANCE_MATRIX.json'), 'w')"
+      ]
+    }
+  ],
+  "containment_mechanism": {
+    "module": "tests/unified/containment.py",
+    "roots": {
+      "TEST_ROOT": "tempfile.mkdtemp(prefix='unified-test-') (or $UNIFIED_TEST_ROOT override)",
+      "TEMP_EVIDENCE_ROOT": "TEST_ROOT/evidence \u2014 all test evidence dumps",
+      "TEMP_ARTIFACT_ROOT": "TEST_ROOT/state \u2014 all engine state (checkpoints, events, evidence store, sandbox)"
+    },
+    "writes_directly_to_docs_evidence": "NONE (verified: zero docs/evidence references remain in the three suites outside comments)"
+  },
+  "containment_proof": {
+    "method": "full recursive sha256 inventory of docs/evidence/ before and after running E32e + E32f + E33",
+    "run": "UNIFIED_TEST_ROOT=/tmp/e2r2_proof_run pytest tests/unified/test_e32e_durable_execution.py tests/unified/test_e32f_autonomous_replanning.py tests/unified/test_e33_mission_autonomy.py",
+    "results": "2 passed (E33 baseline + full mission), 10 skipped (NVIDIA key, honest)",
+    "before_tree_sha256": "0e42f5216d65da39147f50deb39725eef1536f4d2a69494d5a93b67f9528111d",
+    "after_tree_sha256": "0e42f5216d65da39147f50deb39725eef1536f4d2a69494d5a93b67f9528111d",
+    "before_file_count": 1011,
+    "after_file_count": 1011,
+    "added": [],
+    "removed": [],
+    "modified_content": [],
+    "touched_only_identical_content": [],
+    "canonical_evidence_mutation": 0,
+    "verdict": "CONTAINMENT_PROVEN",
+    "git_status_docs_evidence_after_run": "clean (0 entries)"
+  },
+  "out_of_scope_writers_disclosed": [
+    {
+      "test": "tests/e35/test_long_mission.py",
+      "position": "Path('docs/evidence/e35') copies (line ~934)"
+    },
+    {
+      "test": "tests/e37/test_multi_task_mission.py",
+      "position": "evidence_dir 'docs/evidence/e36/' reference"
+    },
+    {
+      "test": "tests/e43/test_adversarial.py",
+      "positions": [
+        "Path('docs/evidence/e42') read",
+        "Path('docs/evidence/e43') writes"
+      ]
+    },
+    {
+      "note": "These suites are OUTSIDE the E2-R2 \u00a73 inspection scope (E32e/E32f/E33) and outside the \u00a710 regression matrix scope (unified/factory/core). Disclosed for a future phase; not modified here (scope discipline)."
+    }
+  ],
+  "path_exclusivity_audit": {
+    "canonical": {
+      "construction": "MissionController(P2) over ExecutionEngine(P1) \u2014 explicit construction",
+      "proof": "E2-R2/golden-path-trace.json (13/13 links), E2-R2/durability-trace.json, E33 2/2 PASS"
+    },
+    "p3_adapter": {
+      "module": "src/unified/operational.py::OperationalExecutionEngine",
+      "delegates_to": "MissionController over ExecutionEngine (line 2137: MissionController(engine, ...)); docstring: 'delegates to MissionController as the single official mission execution path'",
+      "wired_as_execution_substrate": false
+    },
+    "p4_legacy": {
+      "module": "src/core/orchestrator.py::Orchestrator",
+      "legacy_surfaces": [
+        "src/missions.py (live mission runner, order 006)",
+        "src/missions_textstats.py (line 536)",
+        "src/api/routes.py mission endpoints (run_mission / run_textstats_mission imports)"
+      ],
+      "auto_selected_for_new_missions": false,
+      "deleted": false,
+      "migrated": false,
+      "modified_by_e2r2": false
+    },
+    "p5_legacy": {
+      "module": "src/factory/orchestrator.py::AgentFactoryOrchestrator",
+      "legacy_surfaces": [
+        "src/factory/cli.py",
+        "run_cockpit.py"
+      ],
+      "auto_selected_for_new_missions": false,
+      "deleted": false,
+      "migrated": false,
+      "modified_by_e2r2": false
+    },
+    "p6_experimental": {
+      "module": "run_e50_dependency_engine.py::DependencyEngine (E50/E51)",
+      "production_integrated": false,
+      "proof": "src/unified/execution.py references it ONLY behind hasattr(self,'dependency_engine') (line 1485) \u2014 the engine never attaches it; only E50/E51 test runners attach it explicitly",
+      "deleted": false,
+      "migrated": false,
+      "modified_by_e2r2": false
+    },
+    "git_diff_proof": "E2-R2 changed only: src/unified/execution.py, src/unified/mission_controller.py, tests/unified/{test_e32e,test_e32f,test_e33,containment.py}. P3/P4/P5/P6 files have EMPTY diff vs baseline."
+  }
+}

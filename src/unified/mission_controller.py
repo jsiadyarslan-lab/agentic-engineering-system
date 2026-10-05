@@ -222,18 +222,35 @@ class MissionTaskAgent(BaseAgent):
             if fail_mode == "tool_runtime":
                 sandbox = context.sandbox_manager
                 try:
-                    # Real tool failure: '|' is an illegal filename character on
-                    # Windows; the filesystem rejects the open() inside the
-                    # sandbox adapter and the error propagates from the tool layer.
+                    # Real tool failure, portable across runtimes (E2-R2 §6
+                    # root-cause repair of the E33 cross-runtime regression):
+                    # first durably write a guard FILE through the real sandbox,
+                    # then attempt to write an artifact UNDER that file. The
+                    # parent path exists as a regular file, so the filesystem
+                    # rejects the write on EVERY supported runtime with a real
+                    # OSError (FileExistsError from the adapter's
+                    # Path.mkdir(parents=True, exist_ok=True) on POSIX and
+                    # Windows alike) and the error propagates from the tool
+                    # layer. The previous injection used a Windows-illegal
+                    # filename character ('|') which POSIX accepts, so on Linux
+                    # the sandbox accepted the write and the injection degraded
+                    # to a synthetic agent-level failure.
                     await sandbox.write_artifact(
                         sandbox_id=context.sandbox_id,
-                        path="e33_illegal|filename.txt",
+                        path="e33_tool_failure_guard.txt",
+                        content=b"e33 tool failure probe guard",
+                    )
+                    await sandbox.write_artifact(
+                        sandbox_id=context.sandbox_id,
+                        path="e33_tool_failure_guard.txt/e33_child.txt",
                         content=b"e33 tool failure probe",
                     )
-                    # If the platform accepted the path, no failure occurred.
+                    # Unreachable on a compliant runtime: writing under a
+                    # regular file cannot succeed. Kept as an honest failure
+                    # marker if some runtime ever permits it.
                     return _result(
                         False,
-                        error="tool_runtime injection: sandbox accepted illegal path (unexpected)",
+                        error="tool_runtime injection: sandbox accepted file-as-directory path (unexpected)",
                         error_type="AssertionError",
                     )
                 except Exception as e:

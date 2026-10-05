@@ -2635,6 +2635,18 @@ class ExecutionEngine:
         if checkpoint.human_gate and not checkpoint.human_decision:
             # Human gate was active but no decision made - restore to HUMAN_REQUIRED
             target_state = MissionState.HUMAN_REQUIRED
+        elif target_state == MissionState.PAUSED:
+            # E2-R2 §6 (E33 cross-runtime regression, layer 2): resuming FROM
+            # a pause means continuing execution. A checkpoint taken while the
+            # mission was paused records state=PAUSED, but the resume operation
+            # itself moves the mission back to EXECUTING — the state machine's
+            # PAUSED->EXECUTING edge exists exactly for this, and the documented
+            # resume contract ("resume execution implies EXECUTING — this
+            # enables replan to work after cross-runtime resume") predates the
+            # E34 state-restoration change. Restoring INTO PAUSED left resumed
+            # missions unable to replan (replan_task_graph is EXECUTING-gated),
+            # which broke cross-runtime replan flows like E33 phase 2.
+            target_state = MissionState.EXECUTING
         
         if mission.state != target_state:
             from unified.contracts import validate_mission_transition

@@ -25,6 +25,12 @@ from dataclasses import dataclass, field
 
 import pytest
 
+# E2-R2 §3 — TEST ARTIFACT CONTAINMENT: evidence dumps go to the
+# isolated TEMP root; canonical evidence (docs/evidence/**) is never touched.
+from containment import evidence_dir as _contained_evidence_dir
+
+E32E_EVIDENCE_DIR = _contained_evidence_dir("e32e")
+
 from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
@@ -668,7 +674,7 @@ class TestE32EDurableExecution:
                 "events_count": len(events),
             }
             
-            with open(Path("docs/evidence/e32e/pre_resume_state.json"), 'w') as f:
+            with open(E32E_EVIDENCE_DIR / "pre_resume_state.json", 'w') as f:
                 json.dump(pre_resume_state, f, indent=2, default=str)
             
             print("\n=== E32E CHECKPOINT/RESUME TEST PHASE 1 COMPLETE ===")

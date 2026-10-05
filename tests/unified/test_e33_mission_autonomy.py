@@ -29,7 +29,9 @@ a durable object — not merely execute a task and replan inside it:
                             re-execution, verify mission completion, finalize
                             (RUN_COMPLETED + MISSION_COMPLETED, state → EVIDENCED)
 
-Every claim is exported as a re-examinable artifact under docs/evidence/e33/.
+Every claim is exported as a re-examinable artifact under the run's ISOLATED
+temp evidence root (tests/unified/containment.py — E2-R2 §3: tests never
+write canonical evidence under docs/evidence/).
 """
 import asyncio
 import hashlib
@@ -62,9 +64,14 @@ from unified.mission_controller import (
     E33_MISSION_AGENT_ID,
 )
 
+# E2-R2 §3 — TEST ARTIFACT CONTAINMENT:
+# all test outputs (evidence dumps + engine state) live under an isolated
+# TEMP root; canonical evidence (docs/evidence/**) is never touched.
+from containment import TEST_ROOT, TEMP_EVIDENCE_ROOT, TEMP_ARTIFACT_ROOT
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = REPO_ROOT / "docs" / "evidence" / "e33"
-STATE_DIR = EVIDENCE_DIR / "state"
+EVIDENCE_DIR = TEMP_EVIDENCE_ROOT / "e33"
+STATE_DIR = TEMP_ARTIFACT_ROOT / "e33" / "state"
 RUNNER_SCRIPT = Path(__file__).resolve().parent / "e33_mission_runner.py"
 
 
@@ -142,7 +149,11 @@ def mission_specs() -> list:
 
 @pytest.fixture
 def evidence_env():
-    """Fresh evidence + state dirs per test run (state itself is preserved as evidence)."""
+    """Fresh ISOLATED evidence + state dirs per test run (E2-R2 §3 containment).
+
+    The engine state produced by the run is preserved inside the isolated
+    TEST_ROOT as run evidence; canonical evidence is never read or written.
+    """
     import shutil
     if STATE_DIR.exists():
         shutil.rmtree(STATE_DIR)
@@ -566,7 +577,8 @@ class TestE33MissionAutonomy:
                     },
                     "invalidated_tasks": {"E": full_key_map["E"], "F": full_key_map["F"]},
                 },
-                "state_dir": str(STATE_DIR.relative_to(REPO_ROOT)),
+                # E2-R2 §3: state lives in the isolated TEMP root (never docs/evidence)
+                "state_dir": str(STATE_DIR),
             })
 
             acceptance = {

@@ -1,0 +1,208 @@
+{
+  "generated_at": "2026-10-05T13:29:25.823343+00:00",
+  "mission": {
+    "mission_id": "mission-8f552d71e463",
+    "name": "E2-R2: Canonical path hardening \u2014 golden path + durability + event ledger (M-E2R2)",
+    "final_state": "EVIDENCED"
+  },
+  "run": {
+    "run_id": "run-571ebe6ef8d5"
+  },
+  "canonical_path": "P1 Unified ExecutionEngine (src/unified/execution.py) + P2 MissionController (src/unified/mission_controller.py)",
+  "golden_path": [
+    {
+      "link": "MISSION",
+      "proof": {
+        "mission_id": "mission-8f552d71e463",
+        "events": [
+          "mission.started"
+        ],
+        "event_count": 1,
+        "mission_state_final": "EVIDENCED"
+      }
+    },
+    {
+      "link": "RUN",
+      "proof": {
+        "run_id": "run-571ebe6ef8d5",
+        "events": [
+          "run.started"
+        ],
+        "event_count": 1
+      }
+    },
+    {
+      "link": "TASK",
+      "proof": {
+        "task_ids": {
+          "A": "task-705cb124b503",
+          "B": "task-9d857c161151",
+          "C": "task-340cf384a2d2",
+          "D": "task-9e393dc4026e"
+        },
+        "events": [
+          "task.created"
+        ],
+        "event_count": 4
+      }
+    },
+    {
+      "link": "MISSION CONTROLLER",
+      "proof": {
+        "module": "src/unified/mission_controller.py::MissionController",
+        "plan_v1_recorded": true,
+        "phase_log_entries": 1,
+        "ledger_on_disk": "mission_controller/mission-8f552d71e463/ledger.json",
+        "completion_verified": true
+      }
+    },
+    {
+      "link": "UNIFIED EXECUTION ENGINE",
+      "proof": {
+        "module": "src/unified/execution.py::ExecutionEngine",
+        "task_graph_nodes": 4,
+        "events": [
+          "task.retry",
+          "state.transition"
+        ],
+        "all_tasks_completed": true
+      }
+    },
+    {
+      "link": "AGENT RUNTIME",
+      "proof": {
+        "events": [
+          "task.assigned"
+        ],
+        "event_count": 8,
+        "agent_factory": "AgentFactory over agent_registry (unified.agent_role)",
+        "mission_agent": "MissionTaskAgent (registered by register_mission_agent)"
+      }
+    },
+    {
+      "link": "TOOL",
+      "proof": {
+        "tool_invocations": "write_artifact via SandboxManager (engine tool layer)",
+        "artifacts_written": 0
+      }
+    },
+    {
+      "link": "SANDBOX",
+      "proof": {
+        "sandbox_dirs": [
+          "sandbox-task-340cf384a2d2",
+          "sandbox-task-705cb124b503",
+          "sandbox-task-9d857c161151",
+          "sandbox-task-9e393dc4026e"
+        ]
+      }
+    },
+    {
+      "link": "ARTIFACT",
+      "proof": {
+        "artifacts_on_disk": {},
+        "artifact_store": "evidence_store/mission-8f552d71e463/artifacts.json",
+        "artifact_records": 4
+      }
+    },
+    {
+      "link": "EVIDENCE",
+      "proof": {
+        "evidence_store": "evidence_store/mission-8f552d71e463/evidence.json",
+        "evidence_records": 4,
+        "events": [
+          "evidence.recorded"
+        ]
+      }
+    },
+    {
+      "link": "VERIFICATION",
+      "proof": {
+        "verifier": "Verifier over FileEvidenceStore (mechanical acceptance criteria)",
+        "verifications": [
+          {
+            "task_key": "verification-35da23cb7b70",
+            "verdict": "evidenced",
+            "criteria": []
+          },
+          {
+            "task_key": "verification-ecd582500bc4",
+            "verdict": "evidenced",
+            "criteria": []
+          },
+          {
+            "task_key": "verification-150defd2ebe9",
+            "verdict": "evidenced",
+            "criteria": []
+          },
+          {
+            "task_key": "verification-d1c8178615b3",
+            "verdict": "evidenced",
+            "criteria": []
+          }
+        ],
+        "completion_report": {
+          "run_id": "run-571ebe6ef8d5",
+          "required_task_keys": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "checks": {
+            "all_required_tasks_present": {
+              "passed": true,
+              "missing": []
+            },
+            "all_required_tasks_completed": {
+              "passed": true,
+              "not_completed": []
+            },
+            "all_dependencies_satisfied": {
+              "passed": true,
+              "violations": []
+            },
+            "no_unresolved_work": {
+              "passed": true,
+              "unresolved": []
+            },
+            "verification_history": {
+              "passed": true,
+              "evidenced_verifications": 4,
+              "not_evidenced_verifications": 0,
+              "note": "not_evidenced entries belong to failed attempts corrected by replan"
+            }
+          },
+          "verdict": "COMPLETE"
+        }
+      }
+    },
+    {
+      "link": "STATE",
+      "proof": {
+        "mission_state_machine": "domain_model.validate_mission_transition (13 honest states)",
+        "final_mission_state": "EVIDENCED",
+        "final_task_states": {
+          "A": "COMPLETED",
+          "B": "COMPLETED",
+          "C": "COMPLETED",
+          "D": "COMPLETED"
+        },
+        "events": [
+          "mission.state_changed"
+        ]
+      }
+    },
+    {
+      "link": "EVENT HISTORY",
+      "proof": {
+        "event_log_on_disk": "events/mission-8f552d71e463/event_log.jsonl",
+        "event_log_exists": true,
+        "events_in_memory": 65,
+        "distinct_event_types": 13
+      }
+    }
+  ],
+  "links_proven": 13,
+  "verdict": "GOLDEN_PATH_VERIFIED"
+}

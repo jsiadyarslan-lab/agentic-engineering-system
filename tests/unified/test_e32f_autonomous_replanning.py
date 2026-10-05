@@ -28,6 +28,12 @@ from enum import Enum
 
 import pytest
 
+# E2-R2 §3 — TEST ARTIFACT CONTAINMENT: evidence dumps go to the
+# isolated TEMP root; canonical evidence (docs/evidence/**) is never touched.
+from containment import evidence_dir as _contained_evidence_dir
+
+E32F_EVIDENCE_DIR = _contained_evidence_dir("e32f")
+
 from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
@@ -699,7 +705,7 @@ class TestE32FAutonomousReplanning:
                 }
             }
             
-            with open(Path("docs/evidence/e32f/E32F_PLAN_V1.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_PLAN_V1.json", 'w') as f:
                 json.dump(original_plan, f, indent=2)
             
             # ============================================================
@@ -752,7 +758,7 @@ class TestE32FAutonomousReplanning:
                     return f"<function {obj.__name__}>"
                 return str(obj)
             
-            with open(Path("docs/evidence/e32f/E32F_DEVIATION.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_DEVIATION.json", 'w') as f:
                 json.dump({
                     "deviation_id": deviation.deviation_id,
                     "type": deviation.deviation_type.value,
@@ -789,7 +795,7 @@ class TestE32FAutonomousReplanning:
                     return obj.isoformat()
                 return str(obj)
             
-            with open(Path("docs/evidence/e32f/E32F_REPLAN_V2.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_REPLAN_V2.json", 'w') as f:
                 json.dump({
                     "plan_v1": plan_diff.plan_v1_id,
                     "plan_v2": plan_diff.plan_v2_id,
@@ -804,7 +810,7 @@ class TestE32FAutonomousReplanning:
                 }, f, indent=2, default=json_serializable)
             
             # Save plan diff
-            with open(Path("docs/evidence/e32f/E32F_PLAN_DIFF.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_PLAN_DIFF.json", 'w') as f:
                 json.dump({
                     "plan_v1": plan_diff.plan_v1_id,
                     "plan_v2": plan_diff.plan_v2_id,
@@ -862,7 +868,7 @@ class TestE32FAutonomousReplanning:
                 evidence_hashes=[ev.evidence_hash for ev in engine.evidence_store._evidence.values()],
             )
             
-            with open(Path("docs/evidence/e32f/E32F_CHECKPOINT.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_CHECKPOINT.json", 'w') as f:
                 json.dump({
                     "checkpoint_id": checkpoint.checkpoint_id,
                     "mission_id": checkpoint.mission_id,
@@ -913,7 +919,7 @@ class TestE32FAutonomousReplanning:
                         assert artifact.artifact_id == artifact_id
                         assert artifact.sha256 != ""
             
-            with open(Path("docs/evidence/e32f/E32F_RESUME_AFTER_REPLAN.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_RESUME_AFTER_REPLAN.json", 'w') as f:
                 json.dump({
                     "resumed": True,
                     "tasks_restored": len(engine2.tasks),
@@ -953,7 +959,7 @@ class TestE32FAutonomousReplanning:
             # ============================================================
             # FINAL VERIFICATION
             # ============================================================
-            with open(Path("docs/evidence/e32f/E32F_EVENT_TRACE.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_EVENT_TRACE.json", 'w') as f:
                 event_trace = []
                 for e in events:
                     event_trace.append({
@@ -966,7 +972,7 @@ class TestE32FAutonomousReplanning:
                     })
                 json.dump(event_trace, f, indent=2)
             
-            with open(Path("docs/evidence/e32f/E32F_EVIDENCE_CHAIN.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_EVIDENCE_CHAIN.json", 'w') as f:
                 evidence_chain = []
                 for eid, ev in engine.evidence_store._evidence.items():
                     evidence_chain.append({
@@ -980,7 +986,7 @@ class TestE32FAutonomousReplanning:
                     })
                 json.dump(evidence_chain, f, indent=2)
             
-            with open(Path("docs/evidence/e32f/E32F_TEST_RESULTS.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_TEST_RESULTS.json", 'w') as f:
                 json.dump({
                     "phase1_results": {tid: tr["success"] for tid, tr in task_results1.items()},
                     "phase2_results": {tid: tr["success"] for tid, tr in task_results2.items()},
@@ -992,7 +998,7 @@ class TestE32FAutonomousReplanning:
                     "cross_runtime_resume": True,
                 }, f, indent=2)
             
-            with open(Path("docs/evidence/e32f/E32F_ACCEPTANCE_MATRIX.json"), 'w') as f:
+            with (E32F_EVIDENCE_DIR / "E32F_ACCEPTANCE_MATRIX.json", 'w') as f:
                 json.dump({
                     "AC-01": "PASS - Baseline verified",
                     "AC-02": "PASS - Mission executes through real production path",
