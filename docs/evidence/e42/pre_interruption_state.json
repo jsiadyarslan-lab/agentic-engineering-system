@@ -1,0 +1,28 @@
+{
+  "checkpoint_id": "checkpoint-0a4647512f19",
+  "mission_id": "mission-16e490fbd7b5",
+  "run_id": "run-dbeea0c9eec4",
+  "task_states": {
+    "task-ba92df38c12c": "{'depends_on': set(), 'dependents': {'task-ffe046485c6e'}, 'state': <TaskState.COMPLETED: 'COMPLETED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-ffe046485c6e": "{'depends_on': {'task-ba92df38c12c'}, 'dependents': {'task-48b68ad4635b'}, 'state': <TaskState.COMPLETED: 'COMPLETED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-48b68ad4635b": "{'depends_on': {'task-ffe046485c6e'}, 'dependents': {'task-4c7400f003f5'}, 'state': <TaskState.COMPLETED: 'COMPLETED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-4c7400f003f5": "{'depends_on': {'task-48b68ad4635b'}, 'dependents': {'task-33f5514860a8'}, 'state': <TaskState.COMPLETED: 'COMPLETED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-33f5514860a8": "{'depends_on': {'task-4c7400f003f5'}, 'dependents': {'task-d47350e3f9b8', 'task-47d3bb1773fd'}, 'state': <TaskState.FAILED: 'FAILED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-d47350e3f9b8": "{'depends_on': {'task-33f5514860a8'}, 'dependents': {'task-3b158b0469be', 'task-7a134df08403'}, 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-47d3bb1773fd": "{'depends_on': {'task-33f5514860a8'}, 'dependents': {'task-3b158b0469be', 'task-7a134df08403'}, 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-7a134df08403": "{'depends_on': {'task-d47350e3f9b8', 'task-47d3bb1773fd'}, 'dependents': {'task-6728032a1571'}, 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-6728032a1571": "{'depends_on': {'task-7a134df08403'}, 'dependents': {'task-cbfea638cc3c', 'task-5a69c4098495', 'task-ba97e1a6eae7', 'task-3790ddf20fa9'}, 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-cbfea638cc3c": "{'depends_on': {'task-6728032a1571'}, 'dependents': set(), 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-ba97e1a6eae7": "{'depends_on': {'task-6728032a1571'}, 'dependents': set(), 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-5a69c4098495": "{'depends_on': {'task-6728032a1571'}, 'dependents': set(), 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-3790ddf20fa9": "{'depends_on': {'task-6728032a1571'}, 'dependents': set(), 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5'}",
+    "task-3b158b0469be": "{'depends_on': {'task-d47350e3f9b8', 'task-47d3bb1773fd'}, 'dependents': set(), 'state': <TaskState.BLOCKED: 'BLOCKED'>, 'mission_id': 'mission-16e490fbd7b5', 'name': 'T8-recovery: Verification - Retry With Fixed Artifacts', 'description': 'Retry verification after fixing artifact issues', 'agent_type': <AgentType.VERIFIER: 'verifier'>, 'acceptance_criteria': ['file_exists:e42_t8_recovery_verification.json', 'file_contains:e42_t8_recovery_verification.json:passed', 'file_contains:e42_t8_recovery_verification.json:evidence_hash'], 'max_retries': 2, 'retry_count': 0}"
+  },
+  "completed_tasks": [
+    "task-ba92df38c12c",
+    "task-ffe046485c6e",
+    "task-48b68ad4635b",
+    "task-4c7400f003f5"
+  ],
+  "timestamp": "2026-10-03T23:09:05.475227+00:00"
+}

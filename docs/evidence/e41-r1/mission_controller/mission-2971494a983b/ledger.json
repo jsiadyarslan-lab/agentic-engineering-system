@@ -1,0 +1,33 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-445da6b6553b",
+      "max_parallel": 1,
+      "pid": 5280,
+      "wall_seconds": 0.021,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-9e8d156333f3": {
+          "success": false,
+          "error": "Verification failed: not_evidenced",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "t1_discovery": "task-9e8d156333f3",
+    "t2_analysis": "task-aa6c463c061d",
+    "t3_planning": "task-7fa6481619ba",
+    "t4_implementation": "task-51d6d7b17535",
+    "t5_security_audit": "task-72fed83934fc",
+    "t6_testing": "task-a8eb549dcd0d",
+    "t7_verification": "task-624b8e7ec1c1",
+    "t8_final_review": "task-7871615e6ca7"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "test_id": "E51-T09",
+  "name": "Release after restart",
+  "passed": true,
+  "evidence": {
+    "dep_state": "RELEASED",
+    "b2_state": "READY",
+    "consumer_executed": true
+  },
+  "error": null
+}

@@ -1,0 +1,98 @@
+{
+  "artifact-fa9cda740379": {
+    "artifact_id": "artifact-fa9cda740379",
+    "name": "e41_t1_discovery_report.md",
+    "path": "e41_t1_discovery_report.md",
+    "sha256": "0f6b755a3cfe8ca9e3779478fa8a7bdc118a1ea738e480e7be342311d98870e2",
+    "size_bytes": 366,
+    "created_by": "sandbox-task-a3ab217e9542",
+    "created_at": "2026-10-03T21:43:41.858628",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-43d7f455cd9d": {
+    "artifact_id": "artifact-43d7f455cd9d",
+    "name": "e41_t2_analysis.md",
+    "path": "e41_t2_analysis.md",
+    "sha256": "c79e51b91419d50f97aca9536b7b03abaf7e5a796f64310652362fe0d5617e00",
+    "size_bytes": 396,
+    "created_by": "sandbox-task-9cadac3fe87b",
+    "created_at": "2026-10-03T21:43:41.878857",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-328d18c8ffd7": {
+    "artifact_id": "artifact-328d18c8ffd7",
+    "name": "e41_t3_plan.md",
+    "path": "e41_t3_plan.md",
+    "sha256": "2af75888a5f2802004dcb0394679f3f484f92b279e8d4a39fb92e5b8c48b192b",
+    "size_bytes": 210,
+    "created_by": "sandbox-task-44d045b80c0a",
+    "created_at": "2026-10-03T21:43:41.901147",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-223b716c8106": {
+    "artifact_id": "artifact-223b716c8106",
+    "name": "e33_task-f4c3af1c639d.txt",
+    "path": "e33_task-f4c3af1c639d.txt",
+    "sha256": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "size_bytes": 10,
+    "created_by": "sandbox-task-f4c3af1c639d",
+    "created_at": "2026-10-03T21:43:41.922060",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-8eb7c44a2336": {
+    "artifact_id": "artifact-8eb7c44a2336",
+    "name": "e41_t5_security_report.json",
+    "path": "e41_t5_security_report.json",
+    "sha256": "3a48aa73200c99b27ba1f446cb2df0447746e42cc7cfa5791de119b1b04990af",
+    "size_bytes": 422,
+    "created_by": "sandbox-task-1d6c80f7ee94",
+    "created_at": "2026-10-03T21:43:41.945381",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-1acd08018223": {
+    "artifact_id": "artifact-1acd08018223",
+    "name": "e33_task-56d2fde21b32.txt",
+    "path": "e33_task-56d2fde21b32.txt",
+    "sha256": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "size_bytes": 10,
+    "created_by": "sandbox-task-56d2fde21b32",
+    "created_at": "2026-10-03T21:43:41.973291",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-7bf9ead4ca5f": {
+    "artifact_id": "artifact-7bf9ead4ca5f",
+    "name": "e41_t7_verification_report.json",
+    "path": "e41_t7_verification_report.json",
+    "sha256": "1351251a3a8f9495a4a5adc8fa7ce584106dc26832af1d8cf71c4d53a03148ee",
+    "size_bytes": 246,
+    "created_by": "sandbox-task-02d87f7bde2d",
+    "created_at": "2026-10-03T21:43:41.994103",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-b857ccd0a807": {
+    "artifact_id": "artifact-b857ccd0a807",
+    "name": "e41_t8_final_report.md",
+    "path": "e41_t8_final_report.md",
+    "sha256": "c1a23f6bf39729db2ebc5ffd4f6efa19d862161767a7278b4cbbe58b6847f61a",
+    "size_bytes": 431,
+    "created_by": "sandbox-task-9c83425d45b9",
+    "created_at": "2026-10-03T21:43:42.020579",
+    "mission_id": "mission-c647ff359f32",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  }
+}

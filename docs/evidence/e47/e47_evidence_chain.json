@@ -1,0 +1,11 @@
+[
+  {
+    "evidence_id": "evidence-9200e79a26af",
+    "evidence_hash": "2c3f1488a6dc172d678eccd65de5597bcd87a9395adf3134fc65247b89cd57cb",
+    "content_type": "artifact",
+    "source_id": "artifact-10ff0d05c150",
+    "mission_id": "mission-d5a3ebf12461",
+    "run_id": "run-782b086302b4",
+    "task_id": "task-0d830d2c7c7d"
+  }
+]

@@ -1,0 +1,89 @@
+{
+  "version": "v1",
+  "mission_id": "mission-111ee18b964d",
+  "run_id": "run-ff426e6b786f",
+  "tasks": {
+    "A": {
+      "task_id": "task-cb0a663e3729",
+      "name": "Discovery Analysis",
+      "depends_on": [],
+      "state": "READY"
+    },
+    "B": {
+      "task_id": "task-2e5ae8822580",
+      "name": "Design FileSizeCriterion",
+      "depends_on": [
+        "A"
+      ],
+      "state": "BLOCKED"
+    },
+    "C": {
+      "task_id": "task-d43ea4cd87d3",
+      "name": "Implement FileSizeCriterion",
+      "depends_on": [
+        "B"
+      ],
+      "state": "BLOCKED"
+    },
+    "D": {
+      "task_id": "task-af5ce8943887",
+      "name": "Unit Tests for FileSizeCriterion",
+      "depends_on": [
+        "C"
+      ],
+      "state": "BLOCKED"
+    },
+    "E": {
+      "task_id": "task-aa581212a864",
+      "name": "Integration Tests for FileSizeCriterion",
+      "depends_on": [
+        "C"
+      ],
+      "state": "BLOCKED"
+    },
+    "F": {
+      "task_id": "task-f4290a71ff9a",
+      "name": "VerifierAgent Integration",
+      "depends_on": [
+        "C"
+      ],
+      "state": "BLOCKED"
+    },
+    "G": {
+      "task_id": "task-ecc72e2afde0",
+      "name": "Update Documentation",
+      "depends_on": [
+        "C"
+      ],
+      "state": "BLOCKED"
+    },
+    "H": {
+      "task_id": "task-d17a25e5bdb5",
+      "name": "Create Example Mission",
+      "depends_on": [
+        "C"
+      ],
+      "state": "BLOCKED"
+    },
+    "I": {
+      "task_id": "task-6903c5fd72a3",
+      "name": "Verification Gate - Run Tests",
+      "depends_on": [
+        "E",
+        "D",
+        "F"
+      ],
+      "state": "BLOCKED"
+    },
+    "J": {
+      "task_id": "task-83486cfed17d",
+      "name": "Final Review & Complete",
+      "depends_on": [
+        "I",
+        "H",
+        "G"
+      ],
+      "state": "BLOCKED"
+    }
+  }
+}

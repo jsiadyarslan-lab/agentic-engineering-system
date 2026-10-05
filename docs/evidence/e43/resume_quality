@@ -1,0 +1,74 @@
+[
+  {
+    "resume_point": "before_task",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "during_task",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "after_task",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "between_dependencies",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "after_checkpoint",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "during_recovery",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "after_replan",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  },
+  {
+    "resume_point": "before_verification",
+    "tasks_completed_before": 2,
+    "tasks_reexecuted": 0,
+    "tasks_preserved": 2,
+    "state_restored": true,
+    "evidence_restored": true,
+    "final_outcome": "SUCCESS"
+  }
+]

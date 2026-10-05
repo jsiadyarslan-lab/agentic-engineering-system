@@ -96,8 +96,8 @@
     "git_status": "clean"
   },
   "mission": {
-    "mission_id": "mission-66caa61f88ea",
-    "run_id": "run-d09b9f6be431",
+    "mission_id": "mission-9732040c24b4",
+    "run_id": "run-202acb4dc521",
     "total_tasks_defined": 0,
     "original_tasks": [
       "t1_setup",
@@ -117,5 +117,5 @@
     ],
     "final_plan_version": "v1"
   },
-  "artifacts_dir": "C:\\Users\\jaber\\AppData\\Local\\Temp\\e35_long_mission__0exbzes"
+  "artifacts_dir": "C:\\Users\\jaber\\AppData\\Local\\Temp\\e35_long_mission_ppni6r7k"
 }

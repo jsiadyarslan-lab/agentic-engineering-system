@@ -817,7 +817,14 @@ class MissionController:
             t = self.engine.tasks.get(tid)
             node = graph[tid]
             at = t.agent_type if t else node.get("agent_type", AgentType.IMPLEMENTER)
+            # Find the key for this task_id from _key_to_task
+            task_key = None
+            for k, v in self._key_to_task.items():
+                if v == tid:
+                    task_key = k
+                    break
             task_definitions[tid] = {
+                "key": task_key,
                 "name": t.name if t else node.get("name", ""),
                 "description": t.description if t else node.get("description", ""),
                 "agent_type": at.value if hasattr(at, "value") else str(at),
@@ -1033,6 +1040,157 @@ class MissionController:
         ok = ok and evidenced > 0
         report["verdict"] = "COMPLETE" if ok else "INCOMPLETE"
         return ok, report
+
+    # ---------- Checkpoint/Resume (E51) ----------
+    
+    def create_checkpoint(
+        self,
+        mission_id: str,
+        run_id: str,
+        step: int,
+        state: MissionState,
+        task_states: Dict[str, TaskState],
+        artifact_ids: List[str],
+        evidence_hashes: List[str],
+    ) -> Checkpoint:
+        """Create a checkpoint for the mission/run."""
+        graph = self.engine.task_graph.get(run_id, {})
+        
+        # Build task definitions from graph and spec
+        task_definitions = {}
+        task_dependencies = {}
+        task_dependents = {}
+        agent_assignments = {}
+        
+        for tid, node in graph.items():
+            spec = node.get("spec")
+            if spec:
+                task_definitions[tid] = {
+                    "name": spec.name,
+                    "description": spec.description,
+                    "agent_type": spec.agent_type.value if hasattr(spec.agent_type, 'value') else str(spec.agent_type),
+                    "depends_on": spec.depends_on,
+                    "acceptance_criteria": spec.acceptance_criteria,
+                    "max_retries": spec.max_retries,
+                    "retry_count": spec.retry_count,
+                }
+            task_dependencies[tid] = list(node.get("depends_on", set()))
+            # Build dependents
+            for dep in node.get("depends_on", set()):
+                if dep not in task_dependents:
+                    task_dependents[dep] = []
+                task_dependents[dep].append(tid)
+            if tid not in task_dependents:
+                task_dependents[tid] = []
+            
+            # Agent assignment from event history
+            for ev in self.engine.event_bus.history:
+                if ev.event_type == EventType.TASK_ASSIGNED and ev.payload.get("task_id") == tid:
+                    agent_assignments[tid] = ev.payload.get("agent_id", "")
+                    break
+        
+        # Build attempt history from events
+        attempt_history = {}
+        for tid in graph:
+            attempts = []
+            for ev in self.engine.event_bus.history:
+                if ev.event_type in (EventType.TASK_ASSIGNED, EventType.TASK_STARTED, EventType.TASK_COMPLETED, EventType.TASK_FAILED) and ev.payload.get("task_id") == tid:
+                    attempts.append({
+                        "attempt_id": ev.payload.get("attempt_id", ""),
+                        "agent_id": ev.payload.get("agent_id", ""),
+                        "event_type": ev.event_type.value,
+                        "timestamp": ev.timestamp.isoformat(),
+                    })
+            if attempts:
+                attempt_history[tid] = attempts
+        
+        checkpoint = Checkpoint(
+            mission_id=mission_id,
+            run_id=run_id,
+            step=step,
+            state=state,
+            task_states=task_states,
+            artifact_ids=artifact_ids,
+            evidence_hashes=evidence_hashes,
+            task_definitions=task_definitions,
+            task_dependencies=task_dependencies,
+            task_dependents=task_dependents,
+            attempt_history=attempt_history,
+            agent_assignments=agent_assignments,
+        )
+        
+        # Save checkpoint to state dir
+        if self.state_dir:
+            cp_dir = self.state_dir / "checkpoints" / mission_id
+            cp_dir.mkdir(parents=True, exist_ok=True)
+            with open(cp_dir / f"{checkpoint.checkpoint_id}.json", "w", encoding="utf-8") as f:
+                json.dump(checkpoint.model_dump(), f, indent=2, default=str)
+        
+        return checkpoint
+
+    def list_checkpoints(self) -> List[Checkpoint]:
+        """List all checkpoints for all missions."""
+        checkpoints = []
+        if self.state_dir:
+            cp_base = self.state_dir / "checkpoints"
+            if cp_base.exists():
+                for mission_dir in cp_base.iterdir():
+                    if mission_dir.is_dir():
+                        for cp_file in mission_dir.glob("checkpoint-*.json"):
+                            with open(cp_file, "r") as f:
+                                data = json.load(f)
+                                checkpoints.append(Checkpoint(**data))
+        return checkpoints
+
+    def restore_from_checkpoint(self, checkpoint_id: str) -> bool:
+        """Restore mission/run state from checkpoint."""
+        # Find checkpoint file
+        cp_file = None
+        if self.state_dir:
+            cp_base = self.state_dir / "checkpoints"
+            if cp_base.exists():
+                for mission_dir in cp_base.iterdir():
+                    if mission_dir.is_dir():
+                        for f in mission_dir.glob("checkpoint-*.json"):
+                            with open(f, "r") as ff:
+                                data = json.load(ff)
+                                if data.get("checkpoint_id") == checkpoint_id:
+                                    cp_file = f
+                                    break
+                    if cp_file:
+                        break
+        
+        if not cp_file:
+            return False
+        
+        with open(cp_file, "r") as f:
+            data = json.load(f)
+        
+        checkpoint = Checkpoint(**data)
+        run_id = checkpoint.run_id
+        
+        # Restore task graph
+        graph = self.engine.task_graph.setdefault(run_id, {})
+        for tid, state in checkpoint.task_states.items():
+            if tid in graph:
+                graph[tid]["state"] = state
+            else:
+                # Rebuild task node from checkpoint
+                task_def = checkpoint.task_definitions.get(tid, {})
+                graph[tid] = {
+                    "state": state,
+                    "spec": type('Spec', (), task_def)() if task_def else None,
+                    "depends_on": set(checkpoint.task_dependencies.get(tid, [])),
+                    "dependents": set(checkpoint.task_dependents.get(tid, [])),
+                    "attempts": checkpoint.attempt_history.get(tid, []),
+                }
+        
+        # Restore mission state
+        mission = self.engine.missions.get(checkpoint.mission_id)
+        if mission:
+            mission.state = checkpoint.state
+        
+        return True
 
     def finalize_mission(self, mission_id: str, run_id: str, reason: str = "All mission completion conditions verified") -> Dict[str, Any]:
         """Drive the mission state machine to EVIDENCED and emit

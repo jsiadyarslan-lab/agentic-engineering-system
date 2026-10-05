@@ -1,0 +1,10 @@
+{
+  "process_a_checkpoint": "checkpoint-4a12f2388936",
+  "process_a_step": 7,
+  "process_b_resumed_run": "run-5082cf28d5ff",
+  "tasks_completed_before_kill": 0,
+  "tasks_completed_after_resume": 7,
+  "no_reexecution_of_completed": true,
+  "final_mission_state": "MissionState.EVIDENCED",
+  "timestamp": "2026-10-03T22:44:21.702292+00:00"
+}

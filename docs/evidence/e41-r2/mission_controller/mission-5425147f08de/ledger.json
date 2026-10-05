@@ -1,0 +1,198 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-649a899a7cf8",
+      "max_parallel": 1,
+      "pid": 8224,
+      "wall_seconds": 0.211,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-00557858f1ef": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41r2_t1_discovery_report.md",
+            "artifact_id": "artifact-4ddaebbaa764",
+            "sha256": "0f6b755a3cfe8ca9e3779478fa8a7bdc118a1ea738e480e7be342311d98870e2",
+            "size_bytes": 366,
+            "role": "explorer"
+          },
+          "artifacts": [
+            "artifact-4ddaebbaa764"
+          ]
+        },
+        "task-f76795421e8d": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41r2_t2_analysis.md",
+            "artifact_id": "artifact-4ffd5b9fb139",
+            "sha256": "c79e51b91419d50f97aca9536b7b03abaf7e5a796f64310652362fe0d5617e00",
+            "size_bytes": 396,
+            "role": "analyst"
+          },
+          "artifacts": [
+            "artifact-4ffd5b9fb139"
+          ]
+        },
+        "task-d038cd20bfd2": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41r2_t3_plan.md",
+            "artifact_id": "artifact-bb3865224f5d",
+            "sha256": "2af75888a5f2802004dcb0394679f3f484f92b279e8d4a39fb92e5b8c48b192b",
+            "size_bytes": 210,
+            "role": "planner"
+          },
+          "artifacts": [
+            "artifact-bb3865224f5d"
+          ]
+        },
+        "task-213092d2a4e1": {
+          "success": true,
+          "attempts": 2,
+          "output": {
+            "task_key": "t4_implementation",
+            "started_at": "2026-10-03T22:35:10.081174+00:00",
+            "completed_at": "2026-10-03T22:35:10.084103+00:00",
+            "process_pid": 8224,
+            "artifact_id": "artifact-dd8904e298ea",
+            "artifact_path": "e33_task-213092d2a4e1.txt",
+            "content": "E33-OUTPUT",
+            "sha256": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0"
+          },
+          "artifacts": [
+            "artifact-dd8904e298ea"
+          ]
+        },
+        "task-db6addd6154c": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "security_audit",
+            "target_path": "src/unified/verification_standard.py",
+            "scan_types": [
+              "sast",
+              "deps",
+              "secrets"
+            ],
+            "severity_threshold": "medium",
+            "verdict": "passed",
+            "artifact_id": "artifact-7eb41e4daced",
+            "artifact_path": "e41r2_t5_security_report.json",
+            "sha256": "cf78d2c9a5df86ae5b50d443332faa5464cbe84f1c4ceb23f7240c59a9e181c9",
+            "evidence_hash": "cf78d2c9a5df86ae5b50d443332faa5464cbe84f1c4ceb23f7240c59a9e181c9",
+            "findings": {
+              "target_path": "src/unified/verification_standard.py",
+              "scan_types": [
+                "sast",
+                "deps",
+                "secrets"
+              ],
+              "severity_threshold": "medium",
+              "exclude_patterns": [
+                "**/__pycache__/**",
+                "**/*.pyc"
+              ],
+              "vulnerabilities_found": 0,
+              "secrets_found": 0,
+              "dependencies_scanned": 0,
+              "sast_issues": [],
+              "permission_issues": [],
+              "sandbox_violations": [],
+              "filesystem_issues": [],
+              "network_issues": [],
+              "scan_duration_ms": 1,
+              "secret_details": []
+            },
+            "role": "security"
+          },
+          "artifacts": [
+            "artifact-7eb41e4daced"
+          ]
+        },
+        "task-737061542e27": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "t6_testing",
+            "started_at": "2026-10-03T22:35:10.121212+00:00",
+            "completed_at": "2026-10-03T22:35:10.123254+00:00",
+            "process_pid": 8224,
+            "artifact_id": "artifact-0390fa4b445a",
+            "artifact_path": "e33_task-737061542e27.txt",
+            "content": "E33-OUTPUT",
+            "sha256": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0"
+          },
+          "artifacts": [
+            "artifact-0390fa4b445a"
+          ]
+        },
+        "task-c0bd74ff3888": {
+          "success": true,
+          "attempts": 2,
+          "output": {
+            "operation": "verify",
+            "criteria_checked": [
+              "file_exists:e41r2_t7_verification_report.json",
+              "file_contains:e41r2_t7_verification_report.json:passed"
+            ],
+            "verdict": "evidenced",
+            "checks": [
+              {
+                "criterion_id": "crit_0",
+                "criterion": "file_exists:e41r2_t7_verification_report.json",
+                "passed": true,
+                "details": "File found: e41r2_t7_verification_report.json",
+                "evidence": "c8b36c1126683f18140b0995e3f5562e4ab5ff370f941ede0d4976b0936608e3"
+              },
+              {
+                "criterion_id": "crit_1",
+                "criterion": "file_contains:e41r2_t7_verification_report.json:passed",
+                "passed": true,
+                "details": "Pattern found in e41r2_t7_verification_report.json",
+                "evidence": "c8b36c1126683f18140b0995e3f5562e4ab5ff370f941ede0d4976b0936608e3"
+              }
+            ],
+            "artifact_id": "artifact-d153af508ab3",
+            "sha256": "2ff750aa59a5b2d03779634394b6183629d79b4839017840c9980c1a84a546c1"
+          },
+          "artifacts": []
+        },
+        "task-bb5ae8e601e0": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41r2_t8_final_report.md",
+            "artifact_id": "artifact-23f81e25dc7e",
+            "sha256": "6211806079e9bdc23600e7cfeb4df69b8b19f95170062c071e6938a55fb225b0",
+            "size_bytes": 596,
+            "role": "reviewer"
+          },
+          "artifacts": [
+            "artifact-23f81e25dc7e"
+          ]
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "t1_discovery": "task-00557858f1ef",
+    "t2_analysis": "task-f76795421e8d",
+    "t3_planning": "task-d038cd20bfd2",
+    "t4_implementation": "task-213092d2a4e1",
+    "t5_security_audit": "task-db6addd6154c",
+    "t6_testing": "task-737061542e27",
+    "t7_verification": "task-c0bd74ff3888",
+    "t8_final_review": "task-bb5ae8e601e0"
+  }
+}

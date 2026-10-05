@@ -1,0 +1,9 @@
+{
+  "missing_artifact": true,
+  "incorrect_artifact": true,
+  "tampered_artifact": true,
+  "failed_test": true,
+  "incomplete_task": true,
+  "invalid_verification": true,
+  "stale_evidence": true
+}

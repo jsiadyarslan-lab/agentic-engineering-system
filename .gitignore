@@ -22,6 +22,12 @@ artifacts/
 *.db
 *.db-journal
 
+# Runtime state - not source baseline (E2-R0)
+runtime/missions/
+runtime/e44_artifacts/
+runtime/e44_artifacts_resume/
+agent_hub_v2.db
+
 # Test evidence artifacts
 docs/evidence/e32e/pre_resume_state.json
 docs/evidence/e32e/e32d_artifact_audit.json

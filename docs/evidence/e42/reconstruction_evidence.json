@@ -1,0 +1,46 @@
+{
+  "total_events": 104,
+  "event_types": {
+    "mission.started": 1,
+    "mission.state_changed": 7,
+    "run.started": 1,
+    "task.created": 13,
+    "state.transition": 27,
+    "task.assigned": 14,
+    "agent.selected": 14,
+    "verification.complete": 7,
+    "task.completed": 4,
+    "artifact.created": 4,
+    "checkpoint.created": 5,
+    "task.retry": 2,
+    "task.failed": 3,
+    "replan.requested": 1,
+    "replan.applied": 1
+  },
+  "reconstruction_match": true,
+  "reconstructed_states": {
+    "task-ba92df38c12c": "COMPLETED",
+    "task-ffe046485c6e": "COMPLETED",
+    "task-48b68ad4635b": "COMPLETED",
+    "task-4c7400f003f5": "COMPLETED",
+    "task-33f5514860a8": "FAILED"
+  },
+  "actual_states": {
+    "task-ba92df38c12c": "COMPLETED",
+    "task-ffe046485c6e": "COMPLETED",
+    "task-48b68ad4635b": "COMPLETED",
+    "task-4c7400f003f5": "COMPLETED",
+    "task-33f5514860a8": "FAILED",
+    "task-d47350e3f9b8": "BLOCKED",
+    "task-47d3bb1773fd": "BLOCKED",
+    "task-7a134df08403": "BLOCKED",
+    "task-6728032a1571": "BLOCKED",
+    "task-cbfea638cc3c": "BLOCKED",
+    "task-ba97e1a6eae7": "BLOCKED",
+    "task-5a69c4098495": "BLOCKED",
+    "task-3790ddf20fa9": "BLOCKED",
+    "task-3b158b0469be": "BLOCKED"
+  },
+  "evidence_count": 3,
+  "artifact_count": 7
+}

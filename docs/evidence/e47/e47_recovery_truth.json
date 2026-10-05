@@ -1,0 +1,21 @@
+{
+  "mission_id": "mission-d5a3ebf12461",
+  "run_id": "run-782b086302b4",
+  "task_a_recovered": true,
+  "recovery_method": "manual_recover_failed_task",
+  "retry_count": 0,
+  "attempt_history": [
+    {
+      "attempt_id": "attempt-35f57d95",
+      "state": "FAILED",
+      "success": false,
+      "error": "Injected task execution failure (attempt 1) for A"
+    },
+    {
+      "attempt_id": "attempt-eeaa314d",
+      "state": "COMPLETED",
+      "success": true,
+      "error": null
+    }
+  ]
+}

@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
+# Import DependencyState locally to avoid circular import
 from unified.contracts import (
     # IDs
     new_mission_id, new_run_id, new_task_id, new_attempt_id,
@@ -1471,14 +1472,26 @@ class ExecutionEngine:
         for dep_id in dependents:
             if dep_id not in graph:
                 continue
-            # Check if all dependencies are completed
+            # Check if all task dependencies are completed
             all_deps_completed = True
             for req_dep_id in graph[dep_id]["depends_on"]:
                 req_task = self.tasks.get(req_dep_id)
                 if not req_task or req_task.state != TaskState.COMPLETED:
                     all_deps_completed = False
                     break
-            if all_deps_completed:
+            
+            # Also check artifact dependencies via DependencyEngine
+            artifact_deps_satisfied = True
+            if hasattr(self, 'dependency_engine') and self.dependency_engine:
+                # Local import to avoid circular dependency
+                from run_e50_dependency_engine import DependencyState
+                for dep in self.dependency_engine.get_all_dependencies():
+                    if dep.consumer_run_id == run_id and dep.consumer_task_id == dep_id:
+                        if dep.state not in (DependencyState.SATISFIED, DependencyState.RELEASED):
+                            artifact_deps_satisfied = False
+                            break
+            
+            if all_deps_completed and artifact_deps_satisfied:
                 # Unblock the dependent
                 if graph[dep_id]["state"] == TaskState.BLOCKED:
                     graph[dep_id]["state"] = TaskState.READY

@@ -1,0 +1,39 @@
+{
+  "artifact_id": "artifact-xyz789",
+  "path": "hello.txt",
+  "sha256": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
+  "size_bytes": 11,
+  "content": "Hello World",
+  "created_by": {
+    "agent_id": "e43-implementer-001",
+    "agent_type": "IMPLEMENTER",
+    "implementation": "OperationalImplementerAgent",
+    "tool": "write",
+    "tool_args": {"path": "hello.txt", "content": "Hello World"}
+  },
+  "verification": {
+    "verifier": "OperationalVerifierAgent",
+    "criteria": [
+      {
+        "type": "file_exists",
+        "params": {"path": "hello.txt"},
+        "passed": true,
+        "details": "File found: hello.txt"
+      },
+      {
+        "type": "file_contains",
+        "params": {"path": "hello.txt", "pattern": "Hello World"},
+        "passed": true,
+        "details": "Pattern found: Hello World"
+      }
+    ],
+    "verdict": "EVIDENCED",
+    "independent_check": true
+  },
+  "evidence_chain": [
+    "TASK_CREATED → TASK_ASSIGNED → AGENT_STARTED → TOOL_STARTED → TOOL_COMPLETED → ARTIFACT_CREATED → VERIFICATION_STARTED → VERIFICATION_PASSED → TASK_COMPLETED"
+  ],
+  "no_mock": true,
+  "no_fabrication": true,
+  "verifiable_independently": true
+}

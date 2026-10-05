@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/static/app-shell.css?v=3.6.0">
   <link rel="stylesheet" href="/static/project-live.css?v=3.6.0">
   <link rel="stylesheet" href="/static/control-center.css?v=3.6.0">
+  <link rel="stylesheet" href="/static/factory-control.css?v=3.6.0">
 </head>
 <body>
   <div class="app">
@@ -31,6 +32,7 @@
       <nav class="side-nav" id="side-nav" aria-label="التنقل الأساسي">
         <button class="side-nav-item" data-nav="chat" title="المحادثات">💬 <span>المحادثات</span></button>
         <button class="side-nav-item" data-nav="runs" title="التشغيلات النشطة">● <span>التشغيلات</span> <em class="nav-badge" id="runs-badge" hidden></em></button>
+        <button class="side-nav-item" data-nav="factory" title="غرفة التحكم بالمصنع">⚙ <span>مصنع الوكلاء</span></button>
         <button class="side-nav-item" data-nav="archive" title="المشاريع المؤرشفة">🗂 <span>الأرشيف</span></button>
       </nav>
 
@@ -124,6 +126,16 @@
           <span class="cc-sub">المشاريع المؤرشفة تبقى كاملة وقابلة للاسترجاع</span>
         </header>
         <div class="cc-scroll"><div class="cc-body" id="archive-body"></div></div>
+      </section>
+
+      <!-- FACTORY CONTROL ROOM — غرفة التحكم بالمصنع -->
+      <section class="cc-view" id="factory-view" hidden>
+        <header class="cc-head">
+          <button class="icon-btn" id="factory-back" title="عودة للمحادثة">→</button>
+          <span class="cc-title">FACTORY CONTROL ROOM</span>
+          <span class="cc-sub" id="factory-system-status">SYSTEM: DISCONNECTED</span>
+        </header>
+        <div class="cc-scroll"><div class="cc-body" id="factory-body"></div></div>
       </section>
 
       <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
@@ -267,5 +279,6 @@
   <script src="/static/workflow-view.js?v=3.6.0"></script>
   <script src="/static/control-center.js?v=3.6.0"></script>
   <script src="/static/projects.js?v=3.6.0"></script>
+  <script src="/static/factory-control.js?v=3.6.0"></script>
 </body>
 </html>

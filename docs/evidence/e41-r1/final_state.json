@@ -1,0 +1,18 @@
+{
+  "mission_id": "mission-8a8354e0c38f",
+  "run_id": "run-e4ec7aa0ef23",
+  "mission_state": "EVIDENCED",
+  "run_state": "RECEIVED",
+  "tasks": {
+    "t1_discovery": "COMPLETED",
+    "t2_analysis": "COMPLETED",
+    "t3_planning": "COMPLETED",
+    "t4_implementation": "COMPLETED",
+    "t5_security_audit": "COMPLETED",
+    "t6_testing": "COMPLETED",
+    "t7_verification": "COMPLETED",
+    "t8_final_review": "COMPLETED"
+  },
+  "total_events": 114,
+  "total_checkpoints": 8
+}

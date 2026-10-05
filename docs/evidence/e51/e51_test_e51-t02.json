@@ -1,0 +1,10 @@
+{
+  "test_id": "E51-T02",
+  "name": "Blocked consumer",
+  "passed": true,
+  "evidence": {
+    "dep_state": "WAITING",
+    "b2_state": "BLOCKED"
+  },
+  "error": null
+}

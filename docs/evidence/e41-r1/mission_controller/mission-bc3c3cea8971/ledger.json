@@ -1,0 +1,63 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-7903fa01e5f3",
+      "max_parallel": 1,
+      "pid": 8892,
+      "wall_seconds": 0.174,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-fb7bbe82f162": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41_t1_discovery_report.md",
+            "artifact_id": "artifact-c9699f4dc7d3",
+            "sha256": "0f6b755a3cfe8ca9e3779478fa8a7bdc118a1ea738e480e7be342311d98870e2",
+            "size_bytes": 366,
+            "role": "explorer"
+          },
+          "artifacts": [
+            "artifact-c9699f4dc7d3"
+          ]
+        },
+        "task-ee13987ac41d": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "operation": "write_file",
+            "path": "e41_t2_analysis.md",
+            "artifact_id": "artifact-9ed2452166f8",
+            "sha256": "c79e51b91419d50f97aca9536b7b03abaf7e5a796f64310652362fe0d5617e00",
+            "size_bytes": 396,
+            "role": "analyst"
+          },
+          "artifacts": [
+            "artifact-9ed2452166f8"
+          ]
+        },
+        "task-b4559a38d984": {
+          "success": false,
+          "error": "Verification failed: not_evidenced",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "t1_discovery": "task-fb7bbe82f162",
+    "t2_analysis": "task-ee13987ac41d",
+    "t3_planning": "task-b4559a38d984",
+    "t4_implementation": "task-d88f3bb2a404",
+    "t5_security_audit": "task-48839bde796b",
+    "t6_testing": "task-15ba3481fd9d",
+    "t7_verification": "task-8243524c524e",
+    "t8_final_review": "task-5c50d113a657"
+  }
+}

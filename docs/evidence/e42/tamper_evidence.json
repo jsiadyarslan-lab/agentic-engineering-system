@@ -1,0 +1,8 @@
+{
+  "case_a_valid": "VERIFIED - valid artifact passes independent verification",
+  "case_b_tampered": "FAILED - tampered artifact content rejected",
+  "case_c_wrong_hash": "FAILED - wrong expected hash rejected",
+  "case_d_missing": "FAILED - missing artifact rejected",
+  "verified_in": "E41-R2 test_verifier_tamper.py",
+  "all_cases_passed": true
+}

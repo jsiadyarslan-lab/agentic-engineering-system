@@ -1,0 +1,19 @@
+{
+  "process": "A",
+  "checkpoint_id": "checkpoint-4a12f2388936",
+  "step": 7,
+  "task_states": {
+    "task-aa1899e71c34": "TaskState.COMPLETED",
+    "task-d5080036c3b2": "TaskState.COMPLETED",
+    "task-6dfc7068bf2f": "TaskState.COMPLETED",
+    "task-9f394e951662": "TaskState.COMPLETED",
+    "task-c046b7aa8f0a": "TaskState.COMPLETED",
+    "task-c36fdd9fec01": "TaskState.COMPLETED",
+    "task-6ca21f55001b": "TaskState.COMPLETED"
+  },
+  "artifact_count": 8,
+  "evidence_count": 1,
+  "task_definitions_count": 7,
+  "agent_assignments_count": 7,
+  "timestamp": "2026-10-03T22:44:21.627411+00:00"
+}

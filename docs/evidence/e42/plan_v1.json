@@ -1,0 +1,19 @@
+{
+  "version": "v1",
+  "tasks": [
+    "t1_discovery",
+    "t2_analysis",
+    "t3_planning",
+    "t4_design",
+    "t5_implementation",
+    "t6_security_audit",
+    "t7_testing",
+    "t8_verification",
+    "t9_human_gate",
+    "t10_final_review",
+    "t11_documentation",
+    "t12_integration_test",
+    "t13_security_review",
+    "t8_recovery"
+  ]
+}

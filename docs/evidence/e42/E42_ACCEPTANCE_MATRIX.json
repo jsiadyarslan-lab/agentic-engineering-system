@@ -1,0 +1,93 @@
+{
+  "executive_order": "E42",
+  "title": "LONG-RUNNING AUTONOMOUS MISSION",
+  "baseline": "HEAD 4f2b83b (E39 commit)",
+  "timestamp": "2026-10-03T23:09:05.621116+00:00",
+  "acceptance_criteria": {
+    "AC-01": {
+      "description": "Mission \u0645\u062a\u0639\u062f\u062f\u0629 \u0627\u0644\u0645\u0647\u0627\u0645 \u062d\u0642\u064a\u0642\u064a\u0629 (12+ tasks)",
+      "status": "VERIFIED",
+      "evidence": "E42_TASK_GRAPH.json shows 14 tasks"
+    },
+    "AC-02": {
+      "description": "Task Graph \u062d\u0642\u064a\u0642\u064a \u0645\u0639 dependencies",
+      "status": "VERIFIED",
+      "evidence": "E42_TASK_GRAPH.json shows dependency graph"
+    },
+    "AC-03": {
+      "description": "Parallel execution \u062d\u0642\u064a\u0642\u064a (T6 || T7 after T5)",
+      "status": "VERIFIED",
+      "evidence": "E42_EVENT_TRACE.json shows parallel execution"
+    },
+    "AC-04": {
+      "description": "Failure \u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644 Mission",
+      "status": "VERIFIED",
+      "evidence": "E42_FAILURE_TRACE.json"
+    },
+    "AC-05": {
+      "description": "Recovery \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "E42_REPLAN_TRACE.json"
+    },
+    "AC-06": {
+      "description": "Replanning \u062d\u0642\u064a\u0642\u064a (Plan V1 -> V2)",
+      "status": "VERIFIED",
+      "evidence": "plan_v1.json, plan_v2.json"
+    },
+    "AC-07": {
+      "description": "Dynamic task creation \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "Recovery tasks created dynamically during replan"
+    },
+    "AC-08": {
+      "description": "Dependency mutation \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "Dependencies rewired after replan"
+    },
+    "AC-09": {
+      "description": "Checkpoint persistence \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "E42_CHECKPOINT_TRACE.json, pre_interruption_state.json"
+    },
+    "AC-10": {
+      "description": "Cross-runtime resume \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "resume_trace.json, post_resume_state.json"
+    },
+    "AC-11": {
+      "description": "No false re-execution after resume",
+      "status": "VERIFIED",
+      "evidence": "resume_trace.json shows completed tasks preserved"
+    },
+    "AC-12": {
+      "description": "Independent verification \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "OperationalVerifierAgent validates T8 independently"
+    },
+    "AC-13": {
+      "description": "Tamper detection \u062d\u0642\u064a\u0642\u064a",
+      "status": "VERIFIED",
+      "evidence": "E42_TAMPER_EVIDENCE.json, E41-R2 verifier_tamper_results.json"
+    },
+    "AC-14": {
+      "description": "Event history \u0643\u0627\u0645\u0644\u0629",
+      "status": "VERIFIED",
+      "evidence": "E42_EVENT_TRACE.json has all required event types"
+    },
+    "AC-15": {
+      "description": "Mission reconstruction \u0645\u0645\u0643\u0646",
+      "status": "VERIFIED",
+      "evidence": "reconstruction_evidence.json shows match"
+    },
+    "AC-16": {
+      "description": "Human gate \u0639\u0646\u062f \u0627\u0644\u062d\u0627\u062c\u0629 \u0641\u0642\u0637",
+      "status": "VERIFIED",
+      "evidence": "E42_HUMAN_GATE_TRACE.json"
+    },
+    "AC-17": {
+      "description": "Final outcome \u0645\u062f\u0639\u0648\u0645 \u0628\u0640Evidence \u0648\u0644\u064a\u0633 claim",
+      "status": "VERIFIED",
+      "evidence": "E42_EVIDENCE_GRAPH.json, final_state.json"
+    }
+  }
+}

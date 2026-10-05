@@ -1,0 +1,156 @@
+[
+  {
+    "failure_type": "tool_failure",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for tool_failure"
+  },
+  {
+    "failure_type": "agent_failure",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for agent_failure"
+  },
+  {
+    "failure_type": "timeout",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for timeout"
+  },
+  {
+    "failure_type": "process_crash",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for process_crash"
+  },
+  {
+    "failure_type": "partial_completion",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for partial_completion"
+  },
+  {
+    "failure_type": "dependency_failure",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for dependency_failure"
+  },
+  {
+    "failure_type": "verification_failure",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for verification_failure"
+  },
+  {
+    "failure_type": "artifact_corruption",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for artifact_corruption"
+  },
+  {
+    "failure_type": "state_inconsistency",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for state_inconsistency"
+  },
+  {
+    "failure_type": "replan_trigger",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for replan_trigger"
+  },
+  {
+    "failure_type": "concurrent_task_conflict",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for concurrent_task_conflict"
+  },
+  {
+    "failure_type": "invalid_dependency_mutation",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for invalid_dependency_mutation"
+  },
+  {
+    "failure_type": "human_gate_interruption",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for human_gate_interruption"
+  },
+  {
+    "failure_type": "resume_after_interruption",
+    "detected": false,
+    "classified": true,
+    "event_emitted": false,
+    "state_updated": true,
+    "evidence_preserved": true,
+    "recovery_decision": "none",
+    "final_verification": false,
+    "notes": "Basic failure test for resume_after_interruption"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "test_id": "E51-T06",
+  "name": "State restoration",
+  "passed": true,
+  "evidence": {
+    "checkpoints_found": 4,
+    "checkpoint_ids": [
+      "checkpoint-f6e45e4a7249",
+      "checkpoint-f0f2677100ba",
+      "checkpoint-9deb3a9bcdbf",
+      "checkpoint-e009d181e24f"
+    ]
+  },
+  "error": null
+}

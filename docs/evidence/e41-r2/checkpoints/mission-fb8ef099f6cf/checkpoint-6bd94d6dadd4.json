@@ -1,0 +1,372 @@
+{
+  "checkpoint_id": "checkpoint-6bd94d6dadd4",
+  "mission_id": "mission-fb8ef099f6cf",
+  "run_id": "run-6d0115f12b8a",
+  "step": 7,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-494d8d8fa58f": "COMPLETED",
+    "task-a02a2071c73a": "COMPLETED",
+    "task-0210983bd2fd": "COMPLETED",
+    "task-f32896fada21": "COMPLETED",
+    "task-41201c7acafc": "READY",
+    "task-17e55b43762e": "BLOCKED",
+    "task-2c7c0391b2e2": "BLOCKED"
+  },
+  "artifact_ids": [
+    "artifact-94dbe29ac974",
+    "artifact-9e1db583f4a5",
+    "artifact-f4b7352b2f01",
+    "artifact-7e43b70d4434"
+  ],
+  "evidence_hashes": [
+    "evidence-28d271e51020"
+  ],
+  "created_at": "2026-10-03T22:42:25.478131",
+  "hash": "",
+  "task_definitions": {
+    "task-494d8d8fa58f": {
+      "task_id": "task-494d8d8fa58f",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T1: Discovery",
+      "description": "Explore the codebase.",
+      "agent_type": "explorer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_exists:kr_t1_discovery.md",
+        "file_contains:kr_t1_discovery.md:verification"
+      ],
+      "assigned_agent_id": "kill-resume-explorer-001",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "write_file",
+        "path": "kr_t1_discovery.md",
+        "content": "# T1 Discovery Report\n\n## verification standard\nCriterionType: ['file_exists', 'file_hash_matches', 'file_contains', 'command_succeeds']",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t1_discovery"
+      },
+      "created_at": "2026-10-03T22:42:25.404518",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-a02a2071c73a": {
+      "task_id": "task-a02a2071c73a",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T2: Analysis",
+      "description": "Analyze requirements.",
+      "agent_type": "analyst",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-494d8d8fa58f"
+      ],
+      "acceptance_criteria": [
+        "file_exists:kr_t2_analysis.md"
+      ],
+      "assigned_agent_id": "kill-resume-analyst-001",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "write_file",
+        "path": "kr_t2_analysis.md",
+        "content": "# T2 Analysis Report",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t2_analysis"
+      },
+      "created_at": "2026-10-03T22:42:25.404647",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-0210983bd2fd": {
+      "task_id": "task-0210983bd2fd",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T3: Planning",
+      "description": "Create implementation plan.",
+      "agent_type": "planner",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-a02a2071c73a"
+      ],
+      "acceptance_criteria": [
+        "file_exists:kr_t3_plan.md"
+      ],
+      "assigned_agent_id": "kill-resume-planner-001",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "write_file",
+        "path": "kr_t3_plan.md",
+        "content": "# T3 implementation plan",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t3_planning"
+      },
+      "created_at": "2026-10-03T22:42:25.404735",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-f32896fada21": {
+      "task_id": "task-f32896fada21",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T4: Implementation",
+      "description": "Implement the feature.",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-0210983bd2fd"
+      ],
+      "acceptance_criteria": [
+        "command_succeeds:python -c \"print('implemented')\""
+      ],
+      "assigned_agent_id": "kill-resume-implementer-001",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "run_command",
+        "command": "python -c \"print('implemented')\"",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t4_implementation"
+      },
+      "created_at": "2026-10-03T22:42:25.404806",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-41201c7acafc": {
+      "task_id": "task-41201c7acafc",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T5: Security Audit",
+      "description": "Run security audit.",
+      "agent_type": "security",
+      "state": "READY",
+      "depends_on": [
+        "task-f32896fada21"
+      ],
+      "acceptance_criteria": [
+        "file_exists:kr_t5_security.json"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "security_audit",
+        "target_path": "src/unified/verification_standard.py",
+        "scan_types": [
+          "sast",
+          "deps",
+          "secrets"
+        ],
+        "output_path": "kr_t5_security.json",
+        "working_dir": ".",
+        "timeout_seconds": 120,
+        "task_key": "t5_security"
+      },
+      "created_at": "2026-10-03T22:42:25.404866",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-17e55b43762e": {
+      "task_id": "task-17e55b43762e",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T6: Verification",
+      "description": "Independent verification.",
+      "agent_type": "verifier",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-41201c7acafc"
+      ],
+      "acceptance_criteria": [
+        "file_exists:kr_t6_verification.json"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "write_file",
+        "output_path": "kr_t6_verification.json",
+        "content": "{\"passed\": true, \"verdict\": \"evidenced\"}",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t6_verification"
+      },
+      "created_at": "2026-10-03T22:42:25.404935",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-2c7c0391b2e2": {
+      "task_id": "task-2c7c0391b2e2",
+      "run_id": "run-6d0115f12b8a",
+      "mission_id": "mission-fb8ef099f6cf",
+      "name": "T7: Final Review",
+      "description": "Final review.",
+      "agent_type": "reviewer",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-17e55b43762e"
+      ],
+      "acceptance_criteria": [
+        "file_exists:kr_t7_review.md"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "operation": "write_file",
+        "path": "kr_t7_review.md",
+        "content": "# Final Review\n\nMISSION_COMPLETE",
+        "working_dir": ".",
+        "timeout_seconds": 60,
+        "task_key": "t7_review"
+      },
+      "created_at": "2026-10-03T22:42:25.404995",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-494d8d8fa58f": [],
+    "task-a02a2071c73a": [
+      "task-494d8d8fa58f"
+    ],
+    "task-0210983bd2fd": [
+      "task-a02a2071c73a"
+    ],
+    "task-f32896fada21": [
+      "task-0210983bd2fd"
+    ],
+    "task-41201c7acafc": [
+      "task-f32896fada21"
+    ],
+    "task-17e55b43762e": [
+      "task-41201c7acafc"
+    ],
+    "task-2c7c0391b2e2": [
+      "task-17e55b43762e"
+    ]
+  },
+  "task_dependents": {
+    "task-494d8d8fa58f": [
+      "task-a02a2071c73a"
+    ],
+    "task-a02a2071c73a": [
+      "task-0210983bd2fd"
+    ],
+    "task-0210983bd2fd": [
+      "task-f32896fada21"
+    ],
+    "task-f32896fada21": [
+      "task-41201c7acafc"
+    ],
+    "task-41201c7acafc": [
+      "task-17e55b43762e"
+    ],
+    "task-17e55b43762e": [
+      "task-2c7c0391b2e2"
+    ],
+    "task-2c7c0391b2e2": []
+  },
+  "attempt_history": {
+    "task-494d8d8fa58f": [
+      {
+        "attempt_id": "attempt-c900f4b2",
+        "task_id": "task-494d8d8fa58f",
+        "agent_id": "kill-resume-explorer-001",
+        "state": "COMPLETED",
+        "started_at": "2026-10-03T22:42:25.407658",
+        "completed_at": "2026-10-03T22:42:25.413972Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-a02a2071c73a": [
+      {
+        "attempt_id": "attempt-6360443b",
+        "task_id": "task-a02a2071c73a",
+        "agent_id": "kill-resume-analyst-001",
+        "state": "COMPLETED",
+        "started_at": "2026-10-03T22:42:25.429584",
+        "completed_at": "2026-10-03T22:42:25.433654Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-0210983bd2fd": [
+      {
+        "attempt_id": "attempt-9b92618d",
+        "task_id": "task-0210983bd2fd",
+        "agent_id": "kill-resume-planner-001",
+        "state": "COMPLETED",
+        "started_at": "2026-10-03T22:42:25.451168",
+        "completed_at": "2026-10-03T22:42:25.455980Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-f32896fada21": [
+      {
+        "attempt_id": "attempt-0c6e66cf",
+        "task_id": "task-f32896fada21",
+        "agent_id": "kill-resume-implementer-001",
+        "state": "COMPLETED",
+        "started_at": "2026-10-03T22:42:25.473769",
+        "completed_at": "2026-10-03T22:42:25.477716Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-494d8d8fa58f": "kill-resume-explorer-001",
+    "task-a02a2071c73a": "kill-resume-analyst-001",
+    "task-0210983bd2fd": "kill-resume-planner-001",
+    "task-f32896fada21": "kill-resume-implementer-001"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

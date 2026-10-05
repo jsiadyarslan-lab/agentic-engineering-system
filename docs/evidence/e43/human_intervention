@@ -1,0 +1,8 @@
+{
+  "total_missions": 10,
+  "human_interventions": 1,
+  "necessary_interventions": 1,
+  "unnecessary_interventions": 0,
+  "missed_interventions": 0,
+  "intervention_rate": 0.1
+}

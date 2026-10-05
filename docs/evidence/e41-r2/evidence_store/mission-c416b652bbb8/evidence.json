@@ -1,0 +1,15 @@
+{
+  "evidence-44dcdfb2a701": {
+    "evidence_id": "evidence-44dcdfb2a701",
+    "evidence_hash": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "content_type": "artifact",
+    "source_id": "artifact-574ec38d3461",
+    "mission_id": "mission-c416b652bbb8",
+    "run_id": "run-e557a468677e",
+    "task_id": "task-b27fa2ef8c6d",
+    "created_at": "2026-10-03T22:41:35.973364",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  }
+}

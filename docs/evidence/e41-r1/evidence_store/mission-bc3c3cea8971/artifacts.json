@@ -1,0 +1,26 @@
+{
+  "artifact-c9699f4dc7d3": {
+    "artifact_id": "artifact-c9699f4dc7d3",
+    "name": "e41_t1_discovery_report.md",
+    "path": "e41_t1_discovery_report.md",
+    "sha256": "0f6b755a3cfe8ca9e3779478fa8a7bdc118a1ea738e480e7be342311d98870e2",
+    "size_bytes": 366,
+    "created_by": "sandbox-task-fb7bbe82f162",
+    "created_at": "2026-10-03T21:29:00.233906",
+    "mission_id": "mission-bc3c3cea8971",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-9ed2452166f8": {
+    "artifact_id": "artifact-9ed2452166f8",
+    "name": "e41_t2_analysis.md",
+    "path": "e41_t2_analysis.md",
+    "sha256": "c79e51b91419d50f97aca9536b7b03abaf7e5a796f64310652362fe0d5617e00",
+    "size_bytes": 396,
+    "created_by": "sandbox-task-ee13987ac41d",
+    "created_at": "2026-10-03T21:29:00.304315",
+    "mission_id": "mission-bc3c3cea8971",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  }
+}

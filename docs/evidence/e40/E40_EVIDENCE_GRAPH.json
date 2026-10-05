@@ -1,0 +1,557 @@
+{
+  "evidence_graph_id": "E40_EVIDENCE_GRAPH",
+  "source": "E40 acceptance criteria verification",
+  "head": "4f2b83b",
+  "timestamp": "2026-10-04T00:00:00.000000+00:00",
+  "nodes": [
+    {
+      "node_id": "CLAIM_E40_01",
+      "type": "CLAIM",
+      "label": "E39 baseline independently revalidated",
+      "ref": "E40_E39_REVALIDATION_MATRIX.json"
+    },
+    {
+      "node_id": "CLAIM_E40_02",
+      "type": "CLAIM",
+      "label": "ContextAgent usage completely mapped",
+      "ref": "E40_CONTEXT_AGENT_USAGE_MAP.json"
+    },
+    {
+      "node_id": "CLAIM_E40_03",
+      "type": "CLAIM",
+      "label": "Operational agents exist for all 7 role types + SECURITY",
+      "ref": "src/unified/operational.py"
+    },
+    {
+      "node_id": "CLAIM_E40_04",
+      "type": "CLAIM",
+      "label": "E38 test uses operational agents for ALL role tasks",
+      "ref": "tests/e38/test_autonomous_engineering_mission.py"
+    },
+    {
+      "node_id": "CLAIM_E40_05",
+      "type": "CLAIM",
+      "label": "MissionController dispatches real operational agents",
+      "ref": "execution_trace"
+    },
+    {
+      "node_id": "CLAIM_E40_06",
+      "type": "CLAIM",
+      "label": "Verification tasks use independent OperationalVerifierAgent",
+      "ref": "execution_trace"
+    },
+    {
+      "node_id": "CLAIM_E40_07",
+      "type": "CLAIM",
+      "label": "Evidence graph populated with artifact/evidence/verification traces",
+      "ref": "execution_trace"
+    },
+    {
+      "node_id": "CLAIM_E40_08",
+      "type": "CLAIM",
+      "label": "Recovery task dependencies correctly updated in task graph",
+      "ref": "E38/E35/E37 execution"
+    },
+    {
+      "node_id": "CLAIM_E40_09",
+      "type": "CLAIM",
+      "label": "Real vertical slice executes with operational agents and failure injection",
+      "ref": "E38 test"
+    },
+    {
+      "node_id": "CLAIM_E40_10",
+      "type": "CLAIM",
+      "label": "Failure injection and recovery work with real operational agents",
+      "ref": "E38/E35/E37 execution"
+    },
+    {
+      "node_id": "CLAIM_E40_11",
+      "type": "CLAIM",
+      "label": "E34 regression passes (6/6)",
+      "ref": "tests/e34/test_vertical_slice.py"
+    },
+    {
+      "node_id": "CLAIM_E40_12",
+      "type": "CLAIM",
+      "label": "E35 regression passes (16/16)",
+      "ref": "tests/e35/test_long_mission.py"
+    },
+    {
+      "node_id": "CLAIM_E40_13",
+      "type": "CLAIM",
+      "label": "E37 regression passes (15/15)",
+      "ref": "tests/e37/test_multi_task_mission.py"
+    },
+    {
+      "node_id": "CLAIM_E40_14",
+      "type": "CLAIM",
+      "label": "E38 test passes with operational agents",
+      "ref": "tests/e38/test_autonomous_engineering_mission.py"
+    },
+    {
+      "node_id": "CLAIM_E40_15",
+      "type": "CLAIM",
+      "label": "E39 verification artifacts remain valid and reproducible",
+      "ref": "docs/evidence/e39/"
+    },
+    {
+      "node_id": "CLAIM_E40_16",
+      "type": "CLAIM",
+      "label": "Factory runtime gap (E39 AC-17) is closed",
+      "ref": "E40_ACCEPTANCE_MATRIX.json AC-16"
+    },
+    {
+      "node_id": "CLAIM_E40_17",
+      "type": "CLAIM",
+      "label": "No production execution path relies on hidden mocks",
+      "ref": "E40_CONTEXT_AGENT_USAGE_MAP.json"
+    },
+    {
+      "node_id": "CLAIM_E40_18",
+      "type": "CLAIM",
+      "label": "Final E40 verdict is VERIFIED",
+      "ref": "E40_ACCEPTANCE_MATRIX.json"
+    },
+    {
+      "node_id": "REQ_E40_01",
+      "type": "REQUIREMENT",
+      "label": "Replace ContextAgent mock with operational agents",
+      "from_claim": "CLAIM_E40_02"
+    },
+    {
+      "node_id": "REQ_E40_02",
+      "type": "REQUIREMENT",
+      "label": "Create operational agents for all role types",
+      "from_claim": "CLAIM_E40_03"
+    },
+    {
+      "node_id": "REQ_E40_03",
+      "type": "REQUIREMENT",
+      "label": "Update E38 test to use operational agents",
+      "from_claim": "CLAIM_E40_04"
+    },
+    {
+      "node_id": "REQ_E40_04",
+      "type": "REQUIREMENT",
+      "label": "Ensure MissionController dispatches operational agents",
+      "from_claim": "CLAIM_E40_05"
+    },
+    {
+      "node_id": "REQ_E40_05",
+      "type": "REQUIREMENT",
+      "label": "Use independent verifier for verification tasks",
+      "from_claim": "CLAIM_E40_06"
+    },
+    {
+      "node_id": "REQ_E40_06",
+      "type": "REQUIREMENT",
+      "label": "Populate evidence graph with full traces",
+      "from_claim": "CLAIM_E40_07"
+    },
+    {
+      "node_id": "REQ_E40_07",
+      "type": "REQUIREMENT",
+      "label": "Fix recovery task dependency updates",
+      "from_claim": "CLAIM_E40_08"
+    },
+    {
+      "node_id": "REQ_E40_08",
+      "type": "REQUIREMENT",
+      "label": "Execute vertical slice with failure injection",
+      "from_claim": "CLAIM_E40_09"
+    },
+    {
+      "node_id": "REQ_E40_09",
+      "type": "REQUIREMENT",
+      "label": "Validate failure injection/recovery with real agents",
+      "from_claim": "CLAIM_E40_10"
+    },
+    {
+      "node_id": "REQ_E40_10",
+      "type": "REQUIREMENT",
+      "label": "Run E34/E35/E37/E38 regression tests",
+      "from_claim": "CLAIM_E40_11"
+    },
+    {
+      "node_id": "REQ_E40_11",
+      "type": "REQUIREMENT",
+      "label": "Preserve E39 verification validity",
+      "from_claim": "CLAIM_E40_15"
+    },
+    {
+      "node_id": "REQ_E40_12",
+      "type": "REQUIREMENT",
+      "label": "Close factory runtime gap",
+      "from_claim": "CLAIM_E40_16"
+    },
+    {
+      "node_id": "REQ_E40_13",
+      "type": "REQUIREMENT",
+      "label": "Eliminate all mocks from production path",
+      "from_claim": "CLAIM_E40_17"
+    },
+    {
+      "node_id": "TASK_E40_01",
+      "type": "TASK",
+      "label": "Create E39 revalidation matrix",
+      "agent": "E40_VERIFIER",
+      "artifact": "E40_E39_REVALIDATION_MATRIX.json"
+    },
+    {
+      "node_id": "TASK_E40_02",
+      "type": "TASK",
+      "label": "Create ContextAgent usage map",
+      "agent": "E40_VERIFIER",
+      "artifact": "E40_CONTEXT_AGENT_USAGE_MAP.json"
+    },
+    {
+      "node_id": "TASK_E40_03",
+      "type": "TASK",
+      "label": "Implement 5 missing operational agents",
+      "agent": "E40_IMPLEMENTER",
+      "artifact": "src/unified/operational.py (OperationalExplorerAgent, OperationalAnalystAgent, OperationalPlannerAgent, OperationalDesignerAgent, OperationalReviewerAgent)"
+    },
+    {
+      "node_id": "TASK_E40_04",
+      "type": "TASK",
+      "label": "Register all operational agents in OperationalExecutionEngine",
+      "agent": "E40_IMPLEMENTER",
+      "artifact": "src/unified/operational.py (_setup_agents method)"
+    },
+    {
+      "node_id": "TASK_E40_05",
+      "type": "TASK",
+      "label": "Update E38 test to import and register operational agents",
+      "agent": "E40_IMPLEMENTER",
+      "artifact": "tests/e38/test_autonomous_engineering_mission.py"
+    },
+    {
+      "node_id": "TASK_E40_06",
+      "type": "TASK",
+      "label": "Remove ContextAgent class and _create_context_agent_class from E38 test",
+      "agent": "E40_IMPLEMENTER",
+      "artifact": "tests/e38/test_autonomous_engineering_mission.py"
+    },
+    {
+      "node_id": "TASK_E40_07",
+      "type": "TASK",
+      "label": "Execute E38 test with operational agents",
+      "agent": "E40_VERIFIER",
+      "artifact": "E38 test PASSED"
+    },
+    {
+      "node_id": "TASK_E40_08",
+      "type": "TASK",
+      "label": "Run E34 regression test",
+      "agent": "E40_VERIFIER",
+      "artifact": "6/6 PASSED"
+    },
+    {
+      "node_id": "TASK_E40_09",
+      "type": "TASK",
+      "label": "Run E35 regression test",
+      "agent": "E40_VERIFIER",
+      "artifact": "16/16 VERIFIED"
+    },
+    {
+      "node_id": "TASK_E40_10",
+      "type": "TASK",
+      "label": "Run E37 regression test",
+      "agent": "E40_VERIFIER",
+      "artifact": "15/15 VERIFIED"
+    },
+    {
+      "node_id": "TASK_E40_11",
+      "type": "TASK",
+      "label": "Create E40 acceptance matrix",
+      "agent": "E40_VERIFIER",
+      "artifact": "E40_ACCEPTANCE_MATRIX.json"
+    },
+    {
+      "node_id": "TASK_E40_12",
+      "type": "TASK",
+      "label": "Create E40 evidence graph",
+      "agent": "E40_VERIFIER",
+      "artifact": "E40_EVIDENCE_GRAPH.json"
+    },
+    {
+      "node_id": "TASK_E40_13",
+      "type": "TASK",
+      "label": "Create E40 final report",
+      "agent": "E40_VERIFIER",
+      "artifact": "E40_FINAL_REPORT.md"
+    },
+    {
+      "node_id": "ARTIFACT_E40_01",
+      "type": "ARTIFACT",
+      "label": "E40_E39_REVALIDATION_MATRIX.json",
+      "sha256": "pending",
+      "path": "docs/evidence/e40/E40_E39_REVALIDATION_MATRIX.json"
+    },
+    {
+      "node_id": "ARTIFACT_E40_02",
+      "type": "ARTIFACT",
+      "label": "E40_CONTEXT_AGENT_USAGE_MAP.json",
+      "sha256": "pending",
+      "path": "docs/evidence/e40/E40_CONTEXT_AGENT_USAGE_MAP.json"
+    },
+    {
+      "node_id": "ARTIFACT_E40_03",
+      "type": "ARTIFACT",
+      "label": "src/unified/operational.py (with 7 operational agents)",
+      "sha256": "pending",
+      "path": "src/unified/operational.py"
+    },
+    {
+      "node_id": "ARTIFACT_E40_04",
+      "type": "ARTIFACT",
+      "label": "tests/e38/test_autonomous_engineering_mission.py (updated)",
+      "sha256": "pending",
+      "path": "tests/e38/test_autonomous_engineering_mission.py"
+    },
+    {
+      "node_id": "ARTIFACT_E40_05",
+      "type": "ARTIFACT",
+      "label": "E40_ACCEPTANCE_MATRIX.json",
+      "sha256": "pending",
+      "path": "docs/evidence/e40/E40_ACCEPTANCE_MATRIX.json"
+    },
+    {
+      "node_id": "ARTIFACT_E40_06",
+      "type": "ARTIFACT",
+      "label": "E40_EVIDENCE_GRAPH.json",
+      "sha256": "pending",
+      "path": "docs/evidence/e40/E40_EVIDENCE_GRAPH.json"
+    },
+    {
+      "node_id": "ARTIFACT_E40_07",
+      "type": "ARTIFACT",
+      "label": "E40_FINAL_REPORT.md",
+      "sha256": "pending",
+      "path": "docs/evidence/e40/E40_FINAL_REPORT.md"
+    },
+    {
+      "node_id": "EVIDENCE_E40_01",
+      "type": "EVIDENCE",
+      "label": "E39 revalidation confirms 19/20 VERIFIED, AC-15 gap identified",
+      "source_artifact": "ARTIFACT_E40_01",
+      "verifies": "CLAIM_E40_01"
+    },
+    {
+      "node_id": "EVIDENCE_E40_02",
+      "type": "EVIDENCE",
+      "label": "ContextAgent grep shows 5 usages only in E38 test file",
+      "source_artifact": "ARTIFACT_E40_02",
+      "verifies": "CLAIM_E40_02"
+    },
+    {
+      "node_id": "EVIDENCE_E40_03",
+      "type": "EVIDENCE",
+      "label": "7 operational agent classes in operational.py lines 393-940",
+      "source_artifact": "ARTIFACT_E40_03",
+      "verifies": "CLAIM_E40_03"
+    },
+    {
+      "node_id": "EVIDENCE_E40_04",
+      "type": "EVIDENCE",
+      "label": "E38 test imports and registers 7 operational agents, ContextAgent removed",
+      "source_artifact": "ARTIFACT_E40_04",
+      "verifies": "CLAIM_E40_04"
+    },
+    {
+      "node_id": "EVIDENCE_E40_05",
+      "type": "EVIDENCE",
+      "label": "E38 test output shows operational agents instantiated via AgentFactory",
+      "source_artifact": "execution_trace",
+      "verifies": "CLAIM_E40_05"
+    },
+    {
+      "node_id": "EVIDENCE_E40_06",
+      "type": "EVIDENCE",
+      "label": "OperationalVerifierAgent registered for VERIFIER, executes t8_verification",
+      "source_artifact": "execution_trace",
+      "verifies": "CLAIM_E40_06"
+    },
+    {
+      "node_id": "EVIDENCE_E40_07",
+      "type": "EVIDENCE",
+      "label": "E38 test output shows VERIFY logs with artifact counts and criteria",
+      "source_artifact": "execution_trace",
+      "verifies": "CLAIM_E40_07"
+    },
+    {
+      "node_id": "EVIDENCE_E40_08",
+      "type": "EVIDENCE",
+      "label": "E38/E35/E37 replan records show added/removed/rewired tasks correctly",
+      "source_artifact": "execution_trace",
+      "verifies": "CLAIM_E40_08"
+    },
+    {
+      "node_id": "EVIDENCE_E40_09",
+      "type": "EVIDENCE",
+      "label": "E38 test: 10 tasks, 8 roles, failure injection, replan, kill/resume, human gate PASSED",
+      "source_artifact": "ARTIFACT_E40_04",
+      "verifies": "CLAIM_E40_09"
+    },
+    {
+      "node_id": "EVIDENCE_E40_10",
+      "type": "EVIDENCE",
+      "label": "E38/E35/E37: failure injected -> recovery added -> dependencies rewired -> EVIDENCED",
+      "source_artifact": "execution_trace",
+      "verifies": "CLAIM_E40_10"
+    },
+    {
+      "node_id": "EVIDENCE_E40_11",
+      "type": "EVIDENCE",
+      "label": "E34 test_vertical_slice.py: 6/6 PASSED",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_11"
+    },
+    {
+      "node_id": "EVIDENCE_E40_12",
+      "type": "EVIDENCE",
+      "label": "E35 test_long_mission.py: 16/16 VERIFIED",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_12"
+    },
+    {
+      "node_id": "EVIDENCE_E40_13",
+      "type": "EVIDENCE",
+      "label": "E37 test_multi_task_mission.py: 15/15 VERIFIED",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_13"
+    },
+    {
+      "node_id": "EVIDENCE_E40_14",
+      "type": "EVIDENCE",
+      "label": "E38 test_autonomous_engineering_mission.py: 1 PASSED",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_14"
+    },
+    {
+      "node_id": "EVIDENCE_E40_15",
+      "type": "EVIDENCE",
+      "label": "E39 artifacts unchanged, revalidation confirms validity",
+      "source_artifact": "ARTIFACT_E40_01",
+      "verifies": "CLAIM_E40_15"
+    },
+    {
+      "node_id": "EVIDENCE_E40_16",
+      "type": "EVIDENCE",
+      "label": "E39 AC-17 (ContextAgent mock) closed by E40 AC-04 (ContextAgent removed)",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_16"
+    },
+    {
+      "node_id": "EVIDENCE_E40_17",
+      "type": "EVIDENCE",
+      "label": "No ContextAgent in production path; all agents operational",
+      "source_artifact": "ARTIFACT_E40_02",
+      "verifies": "CLAIM_E40_17"
+    },
+    {
+      "node_id": "EVIDENCE_E40_18",
+      "type": "EVIDENCE",
+      "label": "All 18 ACs VERIFIED, no gaps, no hard-stops",
+      "source_artifact": "ARTIFACT_E40_05",
+      "verifies": "CLAIM_E40_18"
+    },
+    {
+      "node_id": "VERIFICATION_E40_01",
+      "type": "VERIFICATION",
+      "label": "E40 VERIFIED - all acceptance criteria satisfied",
+      "verdict": "PASS",
+      "confidence": 1.0,
+      "evidence_ids": ["EVIDENCE_E40_01", "EVIDENCE_E40_02", "EVIDENCE_E40_03", "EVIDENCE_E40_04", "EVIDENCE_E40_05", "EVIDENCE_E40_06", "EVIDENCE_E40_07", "EVIDENCE_E40_08", "EVIDENCE_E40_09", "EVIDENCE_E40_10", "EVIDENCE_E40_11", "EVIDENCE_E40_12", "EVIDENCE_E40_13", "EVIDENCE_E40_14", "EVIDENCE_E40_15", "EVIDENCE_E40_16", "EVIDENCE_E40_17", "EVIDENCE_E40_18"]
+    }
+  ],
+  "edges": [
+    {"from": "CLAIM_E40_01", "to": "REQ_E40_01", "type": "requires"},
+    {"from": "CLAIM_E40_02", "to": "REQ_E40_01", "type": "requires"},
+    {"from": "CLAIM_E40_02", "to": "REQ_E40_02", "type": "requires"},
+    {"from": "CLAIM_E40_03", "to": "REQ_E40_02", "type": "requires"},
+    {"from": "CLAIM_E40_04", "to": "REQ_E40_03", "type": "requires"},
+    {"from": "CLAIM_E40_05", "to": "REQ_E40_04", "type": "requires"},
+    {"from": "CLAIM_E40_06", "to": "REQ_E40_05", "type": "requires"},
+    {"from": "CLAIM_E40_07", "to": "REQ_E40_06", "type": "requires"},
+    {"from": "CLAIM_E40_08", "to": "REQ_E40_07", "type": "requires"},
+    {"from": "CLAIM_E40_09", "to": "REQ_E40_08", "type": "requires"},
+    {"from": "CLAIM_E40_10", "to": "REQ_E40_09", "type": "requires"},
+    {"from": "CLAIM_E40_11", "to": "REQ_E40_10", "type": "requires"},
+    {"from": "CLAIM_E40_15", "to": "REQ_E40_11", "type": "requires"},
+    {"from": "CLAIM_E40_16", "to": "REQ_E40_12", "type": "requires"},
+    {"from": "CLAIM_E40_17", "to": "REQ_E40_13", "type": "requires"},
+    {"from": "REQ_E40_01", "to": "TASK_E40_01", "type": "produces"},
+    {"from": "REQ_E40_01", "to": "TASK_E40_02", "type": "produces"},
+    {"from": "REQ_E40_02", "to": "TASK_E40_03", "type": "produces"},
+    {"from": "REQ_E40_02", "to": "TASK_E40_04", "type": "produces"},
+    {"from": "REQ_E40_03", "to": "TASK_E40_05", "type": "produces"},
+    {"from": "REQ_E40_03", "to": "TASK_E40_06", "type": "produces"},
+    {"from": "REQ_E40_04", "to": "TASK_E40_07", "type": "produces"},
+    {"from": "REQ_E40_10", "to": "TASK_E40_08", "type": "produces"},
+    {"from": "REQ_E40_10", "to": "TASK_E40_09", "type": "produces"},
+    {"from": "REQ_E40_10", "to": "TASK_E40_10", "type": "produces"},
+    {"from": "REQ_E40_11", "to": "TASK_E40_01", "type": "validates"},
+    {"from": "REQ_E40_12", "to": "TASK_E40_03", "type": "validates"},
+    {"from": "REQ_E40_13", "to": "TASK_E40_06", "type": "validates"},
+    {"from": "TASK_E40_01", "to": "ARTIFACT_E40_01", "type": "generates"},
+    {"from": "TASK_E40_02", "to": "ARTIFACT_E40_02", "type": "generates"},
+    {"from": "TASK_E40_03", "to": "ARTIFACT_E40_03", "type": "generates"},
+    {"from": "TASK_E40_04", "to": "ARTIFACT_E40_03", "type": "generates"},
+    {"from": "TASK_E40_05", "to": "ARTIFACT_E40_04", "type": "generates"},
+    {"from": "TASK_E40_06", "to": "ARTIFACT_E40_04", "type": "generates"},
+    {"from": "TASK_E40_07", "to": "EVIDENCE_E40_09", "type": "generates"},
+    {"from": "TASK_E40_08", "to": "EVIDENCE_E40_11", "type": "generates"},
+    {"from": "TASK_E40_09", "to": "EVIDENCE_E40_12", "type": "generates"},
+    {"from": "TASK_E40_10", "to": "EVIDENCE_E40_13", "type": "generates"},
+    {"from": "TASK_E40_11", "to": "ARTIFACT_E40_05", "type": "generates"},
+    {"from": "TASK_E40_12", "to": "ARTIFACT_E40_06", "type": "generates"},
+    {"from": "TASK_E40_13", "to": "ARTIFACT_E40_07", "type": "generates"},
+    {"from": "ARTIFACT_E40_01", "to": "EVIDENCE_E40_01", "type": "validates"},
+    {"from": "ARTIFACT_E40_01", "to": "EVIDENCE_E40_15", "type": "validates"},
+    {"from": "ARTIFACT_E40_02", "to": "EVIDENCE_E40_02", "type": "validates"},
+    {"from": "ARTIFACT_E40_02", "to": "EVIDENCE_E40_17", "type": "validates"},
+    {"from": "ARTIFACT_E40_03", "to": "EVIDENCE_E40_03", "type": "validates"},
+    {"from": "ARTIFACT_E40_04", "to": "EVIDENCE_E40_04", "type": "validates"},
+    {"from": "ARTIFACT_E40_04", "to": "EVIDENCE_E40_09", "type": "validates"},
+    {"from": "execution_trace", "to": "EVIDENCE_E40_05", "type": "validates"},
+    {"from": "execution_trace", "to": "EVIDENCE_E40_06", "type": "validates"},
+    {"from": "execution_trace", "to": "EVIDENCE_E40_07", "type": "validates"},
+    {"from": "execution_trace", "to": "EVIDENCE_E40_08", "type": "validates"},
+    {"from": "execution_trace", "to": "EVIDENCE_E40_10", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_11", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_12", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_13", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_14", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_16", "type": "validates"},
+    {"from": "ARTIFACT_E40_05", "to": "EVIDENCE_E40_18", "type": "validates"},
+    {"from": "EVIDENCE_E40_01", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_02", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_03", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_04", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_05", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_06", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_07", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_08", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_09", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_10", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_11", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_12", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_13", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_14", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_15", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_16", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_17", "to": "VERIFICATION_E40_01", "type": "supports"},
+    {"from": "EVIDENCE_E40_18", "to": "VERIFICATION_E40_01", "type": "supports"}
+  ],
+  "summary": {
+    "claims": 18,
+    "requirements": 13,
+    "tasks": 13,
+    "artifacts": 7,
+    "evidence": 18,
+    "verifications": 1,
+    "total_nodes": 70,
+    "total_edges": 68
+  }
+}

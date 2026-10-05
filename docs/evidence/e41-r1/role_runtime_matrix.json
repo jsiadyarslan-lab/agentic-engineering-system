@@ -1,0 +1,100 @@
+{
+  "role_runtime_matrix": [
+    {
+      "role": "EXPLORER",
+      "agent_type": "EXPLORER",
+      "implementation_class": "OperationalExplorerAgent",
+      "registration_path": "src/unified/operational.py:397-572, _setup_agents() line 1539",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.EXPLORER) -> OperationalExplorerAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalExplorerAgent for AgentType.EXPLORER. E38 test registers e38-explorer-001 with implementation_class=unified.operational.OperationalExplorerAgent",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:159 (t1_discovery), line 490-509 agent_type=AgentType.EXPLORER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "THINKER / ANALYST",
+      "agent_type": "ANALYST",
+      "implementation_class": "OperationalAnalystAgent",
+      "registration_path": "src/unified/operational.py:574-748, _setup_agents() line 1540",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.ANALYST) -> OperationalAnalystAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalAnalystAgent for AgentType.ANALYST. E38 test registers e38-analyst-001 with implementation_class=unified.operational.OperationalAnalystAgent",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:160 (t2_analysis), line 512-532 agent_type=AgentType.ANALYST",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "PLANNER",
+      "agent_type": "PLANNER",
+      "implementation_class": "OperationalPlannerAgent",
+      "registration_path": "src/unified/operational.py:751-926, _setup_agents() line 1541",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.PLANNER) -> OperationalPlannerAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalPlannerAgent for AgentType.PLANNER. E38 test registers e38-planner-001 with implementation_class=unified.operational.OperationalPlannerAgent",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:161 (t3_planning), line 535-555 agent_type=AgentType.PLANNER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "DESIGNER",
+      "agent_type": "DESIGNER",
+      "implementation_class": "OperationalDesignerAgent",
+      "registration_path": "src/unified/operational.py:928-1092, _setup_agents() line 1542",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.DESIGNER) -> OperationalDesignerAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalDesignerAgent for AgentType.DESIGNER. E38 test registers e38-designer-001 with implementation_class=unified.operational.OperationalDesignerAgent",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:162 (t4_design), line 558-578 agent_type=AgentType.DESIGNER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "REVIEWER",
+      "agent_type": "REVIEWER",
+      "implementation_class": "OperationalReviewerAgent",
+      "registration_path": "src/unified/operational.py:1094-1258, _setup_agents() line 1543",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.REVIEWER) -> OperationalReviewerAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalReviewerAgent for AgentType.REVIEWER. E38 test registers e38-reviewer-001 with implementation_class=unified.operational.OperationalReviewerAgent",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:166 (t10_final_review), line ~1000 agent_type=AgentType.REVIEWER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "IMPLEMENTER",
+      "agent_type": "IMPLEMENTER",
+      "implementation_class": "OperationalImplementerAgent",
+      "registration_path": "src/unified/operational.py:94-282, _setup_agents() line 1537-1538",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.IMPLEMENTER) -> OperationalImplementerAgent.execute() OR MissionTaskAgent.execute() for MissionController path",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalImplementerAgent for AgentType.IMPLEMENTER (line 1537-1538). E38 test registers e38-implementer-001 with implementation_class=unified.operational.OperationalImplementerAgent. Also used by MissionTaskAgent for implementation tasks.",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:163 (t5_implementation, t7_testing), lines 581-683, 700-750 agent_type=AgentType.IMPLEMENTER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05, AC-06",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "VERIFIER",
+      "agent_type": "VERIFIER",
+      "implementation_class": "OperationalVerifierAgent",
+      "registration_path": "src/unified/operational.py:285-390, _setup_agents() line 1538-1539",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.VERIFIER) -> OperationalVerifierAgent.execute()",
+      "production_path": "VERIFIED: OperationalExecutionEngine._setup_agents() registers OperationalVerifierAgent for AgentType.VERIFIER (line 1538-1539). E38 test registers e38-verifier-001 with implementation_class=unified.operational.OperationalVerifierAgent. Used for independent verification tasks (t8_verification).",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:164 (t8_verification), line ~780 agent_type=AgentType.VERIFIER",
+      "verification_reference": "E40_ACCEPTANCE_MATRIX.json AC-03, AC-04, AC-05, AC-06",
+      "verdict": "OPERATIONAL"
+    },
+    {
+      "role": "SECURITY",
+      "agent_type": "SECURITY",
+      "implementation_class": "OperationalSecurityAgent",
+      "registration_path": "src/unified/operational.py:1282-1652 (added by E41), _setup_agents() line 1914-1926 (agent definition) + line 1931 (replace_implementation)",
+      "dispatch_path": "AgentFactory.execute_agent_by_id() -> agent_registry.get_implementation(AgentType.SECURITY) -> OperationalSecurityAgent.execute()",
+      "production_path": "VERIFIED: E41 added OperationalSecurityAgent class (lines 1282-1652) with real security audit capabilities (SAST, dependency audit, secret scanning, permission checks, sandbox validation, filesystem/network analysis). _setup_agents() registers operational-security-001 and replaces implementation for AgentType.SECURITY. E38 test registers e38-security-001 and uses AgentType.SECURITY for t6_security_audit with operation=security_audit.",
+      "test_reference": "tests/e38/test_autonomous_engineering_mission.py:167 (security role), line ~688 t6_security_audit agent_type=AgentType.SECURITY, context operation=security_audit",
+      "verification_reference": "E41 HARD STOP RESOLVED: SECURITY now has operational execution path",
+      "verdict": "OPERATIONAL"
+    }
+  ],
+  "summary": {
+    "total_roles": 8,
+    "operational": 8,
+    "not_operational": 0,
+    "security_gap": false,
+    "hard_stop_triggered": false,
+    "note": "E41 resolved SECURITY gap by: 1) Added AgentType.SECURITY enum value (domain_model.py), 2) Created OperationalSecurityAgent class with real security audit capabilities (sast, deps, secrets, permissions, sandbox, filesystem, network), 3) Registered in OperationalExecutionEngine._setup_agents(), 4) Updated E38 test to use AgentType.SECURITY with security_audit operation. All 8 roles now have operational execution paths."
+  }
+}

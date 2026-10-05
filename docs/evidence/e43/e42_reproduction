@@ -1,0 +1,9 @@
+{
+  "repro_run_id": "mission-5ed492de4446/run-4e379ef2b026",
+  "task_count": 14,
+  "event_count": 104,
+  "failure_point": "T5 implementation",
+  "replan_count": 1,
+  "resume_result": "SUCCESS - 4/4 tasks preserved, 0 false re-execution",
+  "reconstruction_result": "MATCH"
+}

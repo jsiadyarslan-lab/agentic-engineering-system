@@ -1,0 +1,98 @@
+{
+  "artifact-3b698b9de1cd": {
+    "artifact_id": "artifact-3b698b9de1cd",
+    "name": "kr_t1_discovery.md",
+    "path": "kr_t1_discovery.md",
+    "sha256": "87db40b296fa99282bd7e80bf63a22e5155ba489b91e2d9e93351aec69524f04",
+    "size_bytes": 136,
+    "created_by": "sandbox-task-3e62ad3671e6",
+    "created_at": "2026-10-03T22:44:01.366530",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-00bc3ec1ee25": {
+    "artifact_id": "artifact-00bc3ec1ee25",
+    "name": "kr_t2_analysis.md",
+    "path": "kr_t2_analysis.md",
+    "sha256": "04ce8e94d095b83ea0f14fedf7351c93303a8d97bedcf1957cc69501b2750ce7",
+    "size_bytes": 20,
+    "created_by": "sandbox-task-a6a4d3f2bba6",
+    "created_at": "2026-10-03T22:44:01.389875",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-b01ceb21b10b": {
+    "artifact_id": "artifact-b01ceb21b10b",
+    "name": "kr_t3_plan.md",
+    "path": "kr_t3_plan.md",
+    "sha256": "410bf10a8b71d10291cfeb5b52dfe0018a4442249adaa86ca3cbf2e1d354a193",
+    "size_bytes": 24,
+    "created_by": "sandbox-task-c85af710b8dd",
+    "created_at": "2026-10-03T22:44:01.407343",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-c49eb7b4a5fe": {
+    "artifact_id": "artifact-c49eb7b4a5fe",
+    "name": "e33_task-94f6a240f5d8.txt",
+    "path": "e33_task-94f6a240f5d8.txt",
+    "sha256": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "size_bytes": 10,
+    "created_by": "sandbox-task-94f6a240f5d8",
+    "created_at": "2026-10-03T22:44:01.427127",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-93ec101c8a86": {
+    "artifact_id": "artifact-93ec101c8a86",
+    "name": "kr_t5_security.json",
+    "path": "kr_t5_security.json",
+    "sha256": "b1ce55f104278ea2e91667a0c127edae67a93a7eaa42be4877c23e8059d463a0",
+    "size_bytes": 391,
+    "created_by": "sandbox-task-3e06f80478b8",
+    "created_at": "2026-10-03T22:44:01.453554",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-0c7e5c539b78": {
+    "artifact_id": "artifact-0c7e5c539b78",
+    "name": "kr_t6_verification.json",
+    "path": "kr_t6_verification.json",
+    "sha256": "49ac32aa28ca8b60ba7756c7e6c63adfd48362e17e3371a7005c76d73cbafc6b",
+    "size_bytes": 440,
+    "created_by": "sandbox-task-8efe86e541e4",
+    "created_at": "2026-10-03T22:44:01.474344",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-6af31b4d320e": {
+    "artifact_id": "artifact-6af31b4d320e",
+    "name": "kr_t6_verification.json",
+    "path": "kr_t6_verification.json",
+    "sha256": "02ce9348abad51c70fb2d8f1e36358fafcf801c2e0e242fce2280d58322ade77",
+    "size_bytes": 564,
+    "created_by": "sandbox-task-8efe86e541e4",
+    "created_at": "2026-10-03T22:44:01.476858",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-63758013edc6": {
+    "artifact_id": "artifact-63758013edc6",
+    "name": "kr_t7_review.md",
+    "path": "kr_t7_review.md",
+    "sha256": "0d7936427f676f11b8f4fb5f62ae169f945a208880840bc1645ea34c98e6b113",
+    "size_bytes": 32,
+    "created_by": "sandbox-task-d4dd545f478f",
+    "created_at": "2026-10-03T22:44:01.506322",
+    "mission_id": "mission-7f78ffbbe887",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  }
+}

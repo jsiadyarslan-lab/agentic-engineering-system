@@ -1,0 +1,15 @@
+{
+  "evidence-28d271e51020": {
+    "evidence_id": "evidence-28d271e51020",
+    "evidence_hash": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "content_type": "artifact",
+    "source_id": "artifact-7e43b70d4434",
+    "mission_id": "mission-fb8ef099f6cf",
+    "run_id": "run-6d0115f12b8a",
+    "task_id": "task-f32896fada21",
+    "created_at": "2026-10-03T22:42:25.477154",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  }
+}

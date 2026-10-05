@@ -1,0 +1,277 @@
+{
+  "checkpoint_id": "checkpoint-dcbbb16cefd1",
+  "mission_id": "mission-a4d000ec9778",
+  "run_id": "run-2ad90733c75e",
+  "step": 3,
+  "state": "PAUSED",
+  "task_states": {
+    "task-b016bb2a7791": "COMPLETED",
+    "task-83b91f5239b3": "COMPLETED",
+    "task-5dcf806456e9": "COMPLETED",
+    "task-307a84e50202": "READY",
+    "task-292748de1b6d": "BLOCKED",
+    "task-e8397ed802cd": "BLOCKED",
+    "task-0695f421b3a6": "BLOCKED",
+    "task-1322182fb97c": "BLOCKED"
+  },
+  "artifact_ids": [
+    "artifact-b27b329d0e28",
+    "artifact-a8f8ee0368cd",
+    "artifact-723927531a7c"
+  ],
+  "evidence_hashes": [
+    "59bbc139d2bb7380b58ac81bea3e5a16b507579076684de1859686d93d6c4629",
+    "edf52b3aaab98d42625fac60a7f2ee55a165733d292e9a58c6dfd96785ab3d79",
+    "41e657a4a2a224dbfc7b1353642447ffba0ff95224bcfb7739b556613eeb6d4d"
+  ],
+  "created_at": "2026-10-04T11:39:59.582381",
+  "hash": "",
+  "task_definitions": {
+    "task-b016bb2a7791": {
+      "name": "Task-A-Discovery",
+      "description": "Discover requirements (independent branch 1)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_a.txt:E33-TASK-A-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-A-OUTPUT",
+        "output_path": "e33_task_a.txt",
+        "sleep_s": 0.4,
+        "task_key": "A"
+      }
+    },
+    "task-83b91f5239b3": {
+      "name": "Task-B-Design",
+      "description": "Design solution (independent branch 2; first attempt fails at agent level)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_b.txt:E33-TASK-B-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 1,
+      "context": {
+        "content": "E33-TASK-B-OUTPUT",
+        "output_path": "e33_task_b.txt",
+        "sleep_s": 0.4,
+        "fail_attempt_1": "task_execution",
+        "task_key": "B"
+      }
+    },
+    "task-5dcf806456e9": {
+      "name": "Task-C-Implementation",
+      "description": "Implement (depends on B; first attempt fails at tool layer)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_c.txt:E33-TASK-C-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 1,
+      "context": {
+        "content": "E33-TASK-C-OUTPUT",
+        "output_path": "e33_task_c.txt",
+        "sleep_s": 0.05,
+        "fail_attempt_1": "tool_runtime",
+        "task_key": "C"
+      }
+    },
+    "task-307a84e50202": {
+      "name": "Task-D-Integration",
+      "description": "Integrate (depends on A,C); plan v1 contract is invalidated by the observed output",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_d.txt:E33-SPEC-V1-CONTRACT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-D-OUTPUT\nE33-TASK-D-DISCOVERY: downstream-contract-changed",
+        "output_path": "e33_task_d.txt",
+        "sleep_s": 0.05,
+        "task_key": "D"
+      }
+    },
+    "task-292748de1b6d": {
+      "name": "Task-E-Validation",
+      "description": "Validate against D (invalidated by the deviation at D)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_e.txt:E33-TASK-E-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-E-OUTPUT",
+        "output_path": "e33_task_e.txt",
+        "sleep_s": 0.05,
+        "task_key": "E"
+      }
+    },
+    "task-e8397ed802cd": {
+      "name": "Task-F-Packaging",
+      "description": "Package D outputs (invalidated by the deviation at D)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_f.txt:E33-TASK-F-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-F-OUTPUT",
+        "output_path": "e33_task_f.txt",
+        "sleep_s": 0.05,
+        "task_key": "F"
+      }
+    },
+    "task-0695f421b3a6": {
+      "name": "Task-G-Release",
+      "description": "Release (depends on F; rewired onto X by replan v2)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_g.txt:E33-TASK-G-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-G-OUTPUT",
+        "output_path": "e33_task_g.txt",
+        "sleep_s": 0.05,
+        "task_key": "G"
+      }
+    },
+    "task-1322182fb97c": {
+      "name": "Task-H-Report",
+      "description": "Final report (depends on E; rewired onto X by replan v2)",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:e33_task_h.txt:E33-TASK-H-OUTPUT"
+      ],
+      "max_retries": 2,
+      "retry_count": 0,
+      "context": {
+        "content": "E33-TASK-H-OUTPUT",
+        "output_path": "e33_task_h.txt",
+        "sleep_s": 0.05,
+        "task_key": "H"
+      }
+    }
+  },
+  "task_dependencies": {
+    "task-b016bb2a7791": [],
+    "task-83b91f5239b3": [],
+    "task-5dcf806456e9": [
+      "task-83b91f5239b3"
+    ],
+    "task-307a84e50202": [
+      "task-b016bb2a7791",
+      "task-5dcf806456e9"
+    ],
+    "task-292748de1b6d": [
+      "task-307a84e50202"
+    ],
+    "task-e8397ed802cd": [
+      "task-307a84e50202"
+    ],
+    "task-0695f421b3a6": [
+      "task-e8397ed802cd"
+    ],
+    "task-1322182fb97c": [
+      "task-292748de1b6d"
+    ]
+  },
+  "task_dependents": {
+    "task-b016bb2a7791": [
+      "task-307a84e50202"
+    ],
+    "task-83b91f5239b3": [
+      "task-5dcf806456e9"
+    ],
+    "task-5dcf806456e9": [
+      "task-307a84e50202"
+    ],
+    "task-307a84e50202": [
+      "task-292748de1b6d",
+      "task-e8397ed802cd"
+    ],
+    "task-292748de1b6d": [
+      "task-1322182fb97c"
+    ],
+    "task-e8397ed802cd": [
+      "task-0695f421b3a6"
+    ],
+    "task-0695f421b3a6": [],
+    "task-1322182fb97c": []
+  },
+  "attempt_history": {
+    "task-b016bb2a7791": [
+      {
+        "attempt_id": "attempt-9ffccd86",
+        "task_id": "task-b016bb2a7791",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "success": true,
+        "error": null,
+        "started_at": "2026-10-04T11:39:59.035756",
+        "completed_at": "2026-10-04T11:39:59.451012+00:00"
+      }
+    ],
+    "task-83b91f5239b3": [
+      {
+        "attempt_id": "attempt-50a40ebb",
+        "task_id": "task-83b91f5239b3",
+        "agent_id": "e33-mission-agent-02",
+        "state": "FAILED",
+        "success": false,
+        "error": "Injected task execution failure (attempt 1) for B",
+        "started_at": "2026-10-04T11:39:59.040396",
+        "completed_at": "2026-10-04T11:39:59.041334+00:00"
+      },
+      {
+        "attempt_id": "attempt-fa5a0023",
+        "task_id": "task-83b91f5239b3",
+        "agent_id": "e33-mission-agent-03",
+        "state": "COMPLETED",
+        "success": true,
+        "error": null,
+        "started_at": "2026-10-04T11:39:59.042297",
+        "completed_at": "2026-10-04T11:39:59.475691+00:00"
+      }
+    ],
+    "task-5dcf806456e9": [
+      {
+        "attempt_id": "attempt-7243e045",
+        "task_id": "task-5dcf806456e9",
+        "agent_id": "e33-mission-agent-01",
+        "state": "FAILED",
+        "success": false,
+        "error": "Tool/runtime failure from sandbox layer: OSError: [Errno 22] Invalid argument: 'C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\docs\\\\evidence\\\\e33\\\\state\\\\sandbox-task-5dcf806456e9\\\\e33_illegal|filename.txt'",
+        "started_at": "2026-10-04T11:39:59.490952",
+        "completed_at": "2026-10-04T11:39:59.493287+00:00"
+      },
+      {
+        "attempt_id": "attempt-e181784d",
+        "task_id": "task-5dcf806456e9",
+        "agent_id": "e33-mission-agent-02",
+        "state": "COMPLETED",
+        "success": true,
+        "error": null,
+        "started_at": "2026-10-04T11:39:59.493727",
+        "completed_at": "2026-10-04T11:39:59.562632+00:00"
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-b016bb2a7791": "",
+    "task-83b91f5239b3": "",
+    "task-5dcf806456e9": "",
+    "task-307a84e50202": "",
+    "task-292748de1b6d": "",
+    "task-e8397ed802cd": "",
+    "task-0695f421b3a6": "",
+    "task-1322182fb97c": ""
+  },
+  "human_gate": null,
+  "human_decision": null
+}

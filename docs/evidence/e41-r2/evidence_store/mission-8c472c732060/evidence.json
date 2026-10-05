@@ -1,0 +1,28 @@
+{
+  "evidence-6316a01ff599": {
+    "evidence_id": "evidence-6316a01ff599",
+    "evidence_hash": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "content_type": "artifact",
+    "source_id": "artifact-1a75b3aa5f7f",
+    "mission_id": "mission-8c472c732060",
+    "run_id": "run-996046958cf1",
+    "task_id": "task-c26a6f9f236e",
+    "created_at": "2026-10-03T22:39:35.464951",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-bad6bf898f7e": {
+    "evidence_id": "evidence-bad6bf898f7e",
+    "evidence_hash": "4228847a46b4ce6eba788d4204e01bf32702076809c255734f41118218004af0",
+    "content_type": "artifact",
+    "source_id": "artifact-962b998d1ea3",
+    "mission_id": "mission-8c472c732060",
+    "run_id": "run-996046958cf1",
+    "task_id": "task-4fb5fff8e3fb",
+    "created_at": "2026-10-03T22:39:35.525544",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  }
+}

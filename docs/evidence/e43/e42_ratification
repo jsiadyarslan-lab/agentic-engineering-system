@@ -1,0 +1,14 @@
+{
+  "E42_ACCEPTANCE_MATRIX.json": "FOUND + PARSES",
+  "E42_FINAL_REPORT.md": "FOUND",
+  "E42_TASK_GRAPH.json": "FOUND + PARSES",
+  "E42_EVENT_TRACE.json": "FOUND + PARSES",
+  "E42_FAILURE_TRACE.json": "FOUND + PARSES",
+  "E42_REPLAN_TRACE.json": "FOUND + PARSES",
+  "E42_CHECKPOINT_TRACE.json": "FOUND + PARSES",
+  "resume_trace.json": "FOUND + PARSES",
+  "E42_TAMPER_EVIDENCE.json": "FOUND + PARSES",
+  "reconstruction_evidence.json": "FOUND + PARSES",
+  "E42_EVIDENCE_GRAPH.json": "FOUND + PARSES",
+  "E42_HUMAN_GATE_TRACE.json": "FOUND + PARSES"
+}

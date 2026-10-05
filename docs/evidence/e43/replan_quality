@@ -1,0 +1,13 @@
+{
+  "responds_to_failure": true,
+  "preserves_completed": true,
+  "no_false_reexecution": true,
+  "dependencies_correct": true,
+  "justified_task_changes": true,
+  "event_history_coherent": true,
+  "plan_v1_tasks": 3,
+  "plan_v2_tasks": 4,
+  "tasks_added": 1,
+  "tasks_removed": 0,
+  "dependencies_changed": 1
+}

@@ -86,7 +86,9 @@ from unified.mission_controller import (
 from unified.execution import create_execution_engine, ExecutionEngine
 from unified.domain_model import Mission, Run, Task, Checkpoint, validate_mission_transition
 from unified.operational import (
-    OperationalImplementerAgent, OperationalVerifierAgent,
+    OperationalExplorerAgent, OperationalAnalystAgent, OperationalPlannerAgent,
+    OperationalDesignerAgent, OperationalImplementerAgent, OperationalVerifierAgent,
+    OperationalReviewerAgent, OperationalSecurityAgent
 )
 from unified.agent_role import (
     AgentRegistry, agent_registry, AgentDefinition,
@@ -148,35 +150,38 @@ class E38TestHarness:
         self.engine = create_execution_engine(artifacts_base_dir=str(self.artifacts_dir))
         
         # Register agent definitions for all agent types used in E38
-        # We'll create simple context-driven implementations for each role
+        # E40: Use operational agents for ALL role tasks (no ContextAgent mock)
+        from unified.operational import (
+            OperationalExplorerAgent, OperationalAnalystAgent, OperationalPlannerAgent,
+            OperationalDesignerAgent, OperationalImplementerAgent, OperationalVerifierAgent,
+            OperationalReviewerAgent
+        )
         
         agent_types = [
-            (AgentType.EXPLORER, "explorer", "Explorer", "Exploration and discovery"),
-            (AgentType.ANALYST, "analyst", "Analyst", "Analysis and requirements"),
-            (AgentType.PLANNER, "planner", "Planner", "Planning and task decomposition"),
-            (AgentType.DESIGNER, "designer", "Designer", "Design and architecture"),
-            (AgentType.IMPLEMENTER, "implementer", "Implementer", "Implementation and coding"),
-            (AgentType.VERIFIER, "verifier", "Verifier", "Verification and validation"),
-            (AgentType.REVIEWER, "reviewer", "Reviewer", "Review and approval"),
+            (AgentType.EXPLORER, "explorer", "Explorer", "Exploration and discovery", OperationalExplorerAgent),
+            (AgentType.ANALYST, "analyst", "Analyst", "Analysis and requirements", OperationalAnalystAgent),
+            (AgentType.PLANNER, "planner", "Planner", "Planning and task decomposition", OperationalPlannerAgent),
+            (AgentType.DESIGNER, "designer", "Designer", "Design and architecture", OperationalDesignerAgent),
+            (AgentType.IMPLEMENTER, "implementer", "Implementer", "Implementation and coding", OperationalImplementerAgent),
+            (AgentType.VERIFIER, "verifier", "Verifier", "Verification and validation", OperationalVerifierAgent),
+            (AgentType.REVIEWER, "reviewer", "Reviewer", "Review and approval", OperationalReviewerAgent),
+            (AgentType.SECURITY, "security", "Security", "Security audit and scanning", OperationalSecurityAgent),
         ]
         
-        for agent_type, agent_id_suffix, name, description in agent_types:
-            # Create a context-driven agent similar to MissionTaskAgent but with operational context support
-            impl_class = self._create_context_agent_class(agent_type, name, description)
-            
+        for agent_type, agent_id_suffix, name, description, impl_class in agent_types:
             agent_def = AgentDefinition(
                 agent_id=f"e38-{agent_id_suffix}-001",
                 agent_type=agent_type,
                 name=name,
                 version="1.0",
-                description=f"{description} (E38)",
+                description=f"{description} (E38 - operational)",
                 tools=["write_artifact", "read_artifact", "run_command"],
                 permissions=["write", "read", "execute"],
                 max_tokens=50000,
                 timeout_seconds=300,
                 requires_sandbox=True,
                 supported_domains=["file_operations", "code_execution", "data_processing"],
-                implementation_class=f"tests.e38.test_autonomous_engineering_mission.{impl_class.__name__}",
+                implementation_class=f"unified.operational.{impl_class.__name__}",
                 state=AgentLifecycleState.REGISTERED,
             )
             
@@ -188,10 +193,6 @@ class E38TestHarness:
                 self.engine.agent_registry.enable_agent(f"e38-{agent_id_suffix}-001")
             
             self.engine.agent_registry.replace_implementation(agent_type, impl_class)
-        
-        # Also register operational agents
-        self.engine.agent_registry.replace_implementation(AgentType.IMPLEMENTER, OperationalImplementerAgent)
-        self.engine.agent_registry.replace_implementation(AgentType.VERIFIER, OperationalVerifierAgent)
         
         self.mc = MissionController(self.engine, state_dir=str(self.artifacts_dir))
         
@@ -234,248 +235,8 @@ class E38TestHarness:
         
         print("  Factory agents registered: explorer, analyst, planner, designer, implementer, verifier, security, reviewer")
         print("  MissionTaskAgent pool registered for MissionController execution")
-        print("  OperationalImplementerAgent and OperationalVerifierAgent registered")
+        print("  Operational agents: Explorer, Analyst, Planner, Designer, Implementer, Verifier, Reviewer, Security")
         print("Setup complete.")
-    
-    def _create_context_agent_class(self, agent_type: AgentType, name: str, description: str):
-        """Create a simple context-driven agent class for the given agent type."""
-        # Use a closure to capture agent_type
-        from unified.agent_role import BaseAgent, AgentContext, AgentTask, AgentResult
-        from unified.domain_model import AgentType as DomainAgentType
-        
-        # Capture the agent_type value for the class
-        captured_agent_type = agent_type
-        captured_name = name
-        
-        class ContextAgent(BaseAgent):
-            agent_type = captured_agent_type
-            agent_role = captured_name
-            
-            def __init__(self):
-                super().__init__(DomainAgentType(captured_agent_type))
-                self.artifact_trace = []
-            
-            async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
-                import asyncio
-                import hashlib
-                import json
-                from datetime import datetime, timezone
-                
-                print(f"    [{captured_name}] EXECUTE CALLED! task_id={task.task_id}, context keys={list(getattr(task, 'context', {}).keys())}")
-                
-                start_time = asyncio.get_event_loop().time()
-                started_at = datetime.now(timezone.utc).isoformat()
-                
-                def _result(success: bool, **kw: Any) -> AgentResult:
-                    duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
-                    base = dict(
-                        task_id=task.task_id,
-                        agent_type=self.agent_type,
-                        success=success,
-                        output={
-                            "task_key": (getattr(task, "context", {}) or {}).get("task_key", ""),
-                            "started_at": started_at,
-                            "completed_at": datetime.now(timezone.utc).isoformat(),
-                            "process_pid": __import__('os').getpid(),
-                        },
-                        duration_ms=duration_ms,
-                    )
-                    base.update(kw)
-                    return AgentResult(**base)
-                
-                ctx = dict(getattr(task, "context", {}) or {})
-                operation = ctx.get("operation", "write_file")
-                
-                try:
-                    if operation == "write_file":
-                        content = str(ctx.get("content", f"{name} output"))
-                        output_path = str(ctx.get("path", f"e38_{task.task_id}.txt"))
-                        sleep_s = float(ctx.get("sleep_s", 0.0))
-                        if sleep_s > 0:
-                            await asyncio.sleep(sleep_s)
-                        
-                        sandbox = context.sandbox_manager
-                        print(f"    [{name}] sandbox_manager: {sandbox}, sandbox_id: {context.sandbox_id}")
-                        artifact = None
-                        if sandbox is not None:
-                            artifact = await sandbox.write_artifact(
-                                sandbox_id=context.sandbox_id,
-                                path=output_path,
-                                content=content.encode("utf-8"),
-                            )
-                            print(f"    [{name}] artifact created: {artifact.artifact_id}, path: {artifact.path}")
-                            artifact.mission_id = context.mission_id
-                            artifact_id = artifact.artifact_id
-                            sha256 = artifact.sha256
-                        else:
-                            print(f"    [{name}] WARNING: sandbox is None!")
-                            artifact_id = f"artifact-{hashlib.sha256(output_path.encode()).hexdigest()[:12]}"
-                            sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
-                        
-                        from unified.contracts import create_evidence, new_evidence_id, EvidenceRecord
-                        evidence = EvidenceRecord(
-                            evidence_id=new_evidence_id(),
-                            evidence_hash=sha256,
-                            content_type="artifact",
-                            source_id=artifact_id,
-                            mission_id=context.mission_id,
-                            run_id=context.run_id,
-                            task_id=context.task_id,
-                        )
-                        context.evidence_store.store_evidence(evidence)
-                        
-                        self.artifact_trace.append({
-                            "task_id": task.task_id,
-                            "artifact_id": artifact_id,
-                            "path": output_path,
-                            "sha256": sha256,
-                        })
-                        
-                        return _result(
-                            True,
-                            output={
-                                "task_key": ctx.get("task_key", ""),
-                                "started_at": started_at,
-                                "completed_at": datetime.now(timezone.utc).isoformat(),
-                                "process_pid": __import__('os').getpid(),
-                                "artifact_id": artifact_id,
-                                "artifact_path": output_path,
-                                "content": content,
-                                "sha256": sha256,
-                            },
-                            evidence_hash=sha256,
-                            artifacts=[artifact_id],
-                        )
-                    
-                    elif operation == "run_command":
-                        import subprocess
-                        command = ctx.get("command", "echo 'hello'")
-                        working_dir = ctx.get("working_dir", ".")
-                        timeout_seconds = ctx.get("timeout_seconds", 300)
-                        
-                        print(f"    [{name}] Running command: {command}")
-                        
-                        # Parse command
-                        import shlex
-                        import sys
-                        import os
-                        
-                        if sys.platform == "win32" and command.strip().startswith("python "):
-                            command = sys.executable + " " + command[len("python "):]
-                        
-                        # On Windows, use shell=True for commands with complex quoting
-                        # On Unix, use shlex.split
-                        if sys.platform == "win32":
-                            # Use shell=True on Windows to handle complex quoting
-                            loop = asyncio.get_event_loop()
-                            result = await loop.run_in_executor(
-                                None,
-                                lambda: subprocess.run(
-                                    command,
-                                    capture_output=True,
-                                    text=True,
-                                    timeout=timeout_seconds,
-                                    cwd=working_dir,
-                                    shell=True,
-                                )
-                            )
-                        else:
-                            args = shlex.split(command)
-                            loop = asyncio.get_event_loop()
-                            result = await loop.run_in_executor(
-                                None,
-                                lambda: subprocess.run(
-                                    args,
-                                    capture_output=True,
-                                    text=True,
-                                    timeout=timeout_seconds,
-                                    cwd=working_dir,
-                                )
-                            )
-                        
-                        stdout = result.stdout
-                        stderr = result.stderr
-                        exit_code = result.returncode
-                        
-                        print(f"    [{name}] Exit code: {exit_code}, stdout: {stdout[:200] if stdout else ''}")
-                        
-                        # Create artifact with command output
-                        content = f"Command: {command}\nExit code: {exit_code}\nStdout:\n{stdout}\nStderr:\n{stderr}"
-                        output_path = ctx.get("output_path", f"e38_{task.task_id}_cmd_output.txt")
-                        
-                        sandbox = context.sandbox_manager
-                        if sandbox is not None:
-                            artifact = await sandbox.write_artifact(
-                                sandbox_id=context.sandbox_id,
-                                path=output_path,
-                                content=content.encode("utf-8"),
-                            )
-                            artifact.mission_id = context.mission_id
-                            artifact_id = artifact.artifact_id
-                            sha256 = artifact.sha256
-                        else:
-                            artifact_id = f"artifact-{hashlib.sha256(output_path.encode()).hexdigest()[:12]}"
-                            sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
-                        
-                        from unified.contracts import new_evidence_id, EvidenceRecord
-                        evidence = EvidenceRecord(
-                            evidence_id=new_evidence_id(),
-                            evidence_hash=sha256,
-                            content_type="artifact",
-                            source_id=artifact_id,
-                            mission_id=context.mission_id,
-                            run_id=context.run_id,
-                            task_id=context.task_id,
-                        )
-                        context.evidence_store.store_evidence(evidence)
-                        
-                        success = exit_code == 0
-                        
-                        self.artifact_trace.append({
-                            "task_id": task.task_id,
-                            "artifact_id": artifact_id,
-                            "path": output_path,
-                            "sha256": sha256,
-                        })
-                        
-                        return _result(
-                            success,
-                            output={
-                                "task_key": ctx.get("task_key", ""),
-                                "started_at": started_at,
-                                "completed_at": datetime.now(timezone.utc).isoformat(),
-                                "process_pid": __import__('os').getpid(),
-                                "artifact_id": artifact_id,
-                                "artifact_path": output_path,
-                                "exit_code": exit_code,
-                                "stdout": stdout,
-                                "stderr": stderr,
-                                "sha256": sha256,
-                            },
-                            evidence_hash=sha256,
-                            artifacts=[artifact_id],
-                            error=stderr if not success else None,
-                        )
-                    
-                    else:
-                        return _result(
-                            False,
-                            error=f"Unknown operation: {operation}",
-                            error_type="ValueError",
-                        )
-                        
-                except Exception as e:
-                    import traceback
-                    print(f"    [{name}] EXCEPTION: {type(e).__name__}: {e}")
-                    traceback.print_exc()
-                    return _result(
-                        False,
-                        error=f"{type(e).__name__}: {e}",
-                        error_type=type(e).__name__,
-                    )
-        
-        ContextAgent.__name__ = f"E38{name}Agent"
-        return ContextAgent
 
     def define_mission(self):
         """Define the E38 mission with real engineering tasks."""
@@ -696,14 +457,17 @@ class Verifier:
                 ],
                 depends_on=["t5_implementation"],
                 context={
-                    "operation": "write_file",
-                    "content": "{\n  \"vulnerabilities_found\": 0,\n  \"secrets_found\": 0,\n  \"dependencies_scanned\": 15,\n  \"sast_issues\": [],\n  \"scan_duration_ms\": 1250,\n  \"scan_types\": [\"sast\", \"deps\", \"secrets\"],\n  \"target_path\": \"src/unified/verification_standard.py\",\n  \"severity_threshold\": \"medium\"\n}",
+                    "operation": "security_audit",
+                    "target_path": "src/unified/verification_standard.py",
+                    "scan_types": ["sast", "deps", "secrets"],
+                    "severity_threshold": "medium",
+                    "exclude_patterns": ["**/__pycache__/**", "**/*.pyc"],
                     "output_path": "e38_t6_security_report.json",
                     "working_dir": ".",
                     "timeout_seconds": 120,
                     "task_key": "t6_security_audit",
                 },
-                agent_type=AgentType.IMPLEMENTER,  # Use implementer to run security audit command
+                agent_type=AgentType.SECURITY,
             ),
             
             # Phase 7: TESTING

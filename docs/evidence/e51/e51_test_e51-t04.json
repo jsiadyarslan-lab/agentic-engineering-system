@@ -1,0 +1,23 @@
+{
+  "test_id": "E51-T04",
+  "name": "Checkpoint saves dependency state",
+  "passed": true,
+  "evidence": {
+    "pre_crash": {
+      "dep_state": "BLOCKED",
+      "b2_state": "BLOCKED",
+      "artifact_registry": {
+        "artifact_id": "artifact-8bd3be3b3190",
+        "version": "v1",
+        "schema_hash": "77257c89141a7974",
+        "producer_mission_id": "mission-bfde9494006c",
+        "producer_run_id": "run-d0512d5ce7cc",
+        "producer_task_id": "task-ff60701b9388",
+        "verified": false,
+        "registered_at": "2026-10-04T23:06:38.017828+00:00"
+      },
+      "checkpoint_id": "checkpoint-9deb3a9bcdbf"
+    }
+  },
+  "error": null
+}

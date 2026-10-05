@@ -1,0 +1,46 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-5082cf28d5ff",
+      "max_parallel": 1,
+      "pid": 7376,
+      "wall_seconds": 0.0,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-aa1899e71c34": {
+          "success": true,
+          "resumed": true
+        },
+        "task-d5080036c3b2": {
+          "success": true,
+          "resumed": true
+        },
+        "task-6dfc7068bf2f": {
+          "success": true,
+          "resumed": true
+        },
+        "task-9f394e951662": {
+          "success": true,
+          "resumed": true
+        },
+        "task-c046b7aa8f0a": {
+          "success": true,
+          "resumed": true
+        },
+        "task-c36fdd9fec01": {
+          "success": true,
+          "resumed": true
+        },
+        "task-6ca21f55001b": {
+          "success": true,
+          "resumed": true
+        }
+      }
+    }
+  ],
+  "key_map": {}
+}

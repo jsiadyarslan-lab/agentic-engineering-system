@@ -1,0 +1,7 @@
+{
+  "process": "A",
+  "terminated": true,
+  "signal": "SIGKILL",
+  "checkpoint_id": "checkpoint-0a4647512f19",
+  "timestamp": "2026-10-03T23:09:05.476965+00:00"
+}

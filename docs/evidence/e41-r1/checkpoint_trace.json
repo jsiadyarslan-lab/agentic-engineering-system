@@ -1,0 +1,221 @@
+{
+  "checkpoints": [
+    {
+      "checkpoint_id": "checkpoint-ae99ef09ce69",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "READY",
+        "task-49e793b9f924": "BLOCKED",
+        "task-836d7ff0cd19": "BLOCKED",
+        "task-59edcf33b51b": "BLOCKED",
+        "task-b31cf7e0b326": "BLOCKED",
+        "task-18035cde09f2": "BLOCKED",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6"
+      ],
+      "evidence_hashes": [],
+      "created_at": "2026-10-03T21:44:11.914325"
+    },
+    {
+      "checkpoint_id": "checkpoint-e3febdd16a71",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "READY",
+        "task-836d7ff0cd19": "BLOCKED",
+        "task-59edcf33b51b": "BLOCKED",
+        "task-b31cf7e0b326": "BLOCKED",
+        "task-18035cde09f2": "BLOCKED",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11"
+      ],
+      "evidence_hashes": [],
+      "created_at": "2026-10-03T21:44:11.937514"
+    },
+    {
+      "checkpoint_id": "checkpoint-f44cb1d2817b",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "READY",
+        "task-59edcf33b51b": "BLOCKED",
+        "task-b31cf7e0b326": "BLOCKED",
+        "task-18035cde09f2": "BLOCKED",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5"
+      ],
+      "evidence_hashes": [],
+      "created_at": "2026-10-03T21:44:11.956969"
+    },
+    {
+      "checkpoint_id": "checkpoint-14ec1e2e8161",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "COMPLETED",
+        "task-59edcf33b51b": "READY",
+        "task-b31cf7e0b326": "BLOCKED",
+        "task-18035cde09f2": "BLOCKED",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5",
+        "artifact-46c42c77ae48"
+      ],
+      "evidence_hashes": [
+        "evidence-1738a2816935"
+      ],
+      "created_at": "2026-10-03T21:44:11.974722"
+    },
+    {
+      "checkpoint_id": "checkpoint-f07f3e3c207b",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "COMPLETED",
+        "task-59edcf33b51b": "COMPLETED",
+        "task-b31cf7e0b326": "READY",
+        "task-18035cde09f2": "BLOCKED",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5",
+        "artifact-46c42c77ae48",
+        "artifact-dcaafafdd399"
+      ],
+      "evidence_hashes": [
+        "evidence-1738a2816935"
+      ],
+      "created_at": "2026-10-03T21:44:11.996544"
+    },
+    {
+      "checkpoint_id": "checkpoint-3c1dcc7eccc5",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "COMPLETED",
+        "task-59edcf33b51b": "COMPLETED",
+        "task-b31cf7e0b326": "COMPLETED",
+        "task-18035cde09f2": "READY",
+        "task-3c8ba103c35f": "BLOCKED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5",
+        "artifact-46c42c77ae48",
+        "artifact-dcaafafdd399",
+        "artifact-f9f062182aeb"
+      ],
+      "evidence_hashes": [
+        "evidence-1738a2816935",
+        "evidence-6c43e48aca74"
+      ],
+      "created_at": "2026-10-03T21:44:12.015062"
+    },
+    {
+      "checkpoint_id": "checkpoint-fb1be08a6154",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "COMPLETED",
+        "task-59edcf33b51b": "COMPLETED",
+        "task-b31cf7e0b326": "COMPLETED",
+        "task-18035cde09f2": "COMPLETED",
+        "task-3c8ba103c35f": "READY"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5",
+        "artifact-46c42c77ae48",
+        "artifact-dcaafafdd399",
+        "artifact-f9f062182aeb",
+        "artifact-5f012bd0b808"
+      ],
+      "evidence_hashes": [
+        "evidence-1738a2816935",
+        "evidence-6c43e48aca74"
+      ],
+      "created_at": "2026-10-03T21:44:12.037941"
+    },
+    {
+      "checkpoint_id": "checkpoint-77735cf8d864",
+      "mission_id": "mission-8a8354e0c38f",
+      "run_id": "run-e4ec7aa0ef23",
+      "step": 8,
+      "state": "EXECUTING",
+      "task_states": {
+        "task-c63b2b0e5261": "COMPLETED",
+        "task-5616d728cbc9": "COMPLETED",
+        "task-49e793b9f924": "COMPLETED",
+        "task-836d7ff0cd19": "COMPLETED",
+        "task-59edcf33b51b": "COMPLETED",
+        "task-b31cf7e0b326": "COMPLETED",
+        "task-18035cde09f2": "COMPLETED",
+        "task-3c8ba103c35f": "COMPLETED"
+      },
+      "artifact_ids": [
+        "artifact-122c3c0cdbc6",
+        "artifact-b675c99a8b11",
+        "artifact-fad6442d17a5",
+        "artifact-46c42c77ae48",
+        "artifact-dcaafafdd399",
+        "artifact-f9f062182aeb",
+        "artifact-5f012bd0b808",
+        "artifact-83d22b85f72d"
+      ],
+      "evidence_hashes": [
+        "evidence-1738a2816935",
+        "evidence-6c43e48aca74"
+      ],
+      "created_at": "2026-10-03T21:44:12.060557"
+    }
+  ]
+}

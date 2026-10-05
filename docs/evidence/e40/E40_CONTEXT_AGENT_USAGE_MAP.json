@@ -1,0 +1,105 @@
+{
+  "usage_map_id": "E40_CONTEXT_AGENT_USAGE_MAP",
+  "source": "Full repository grep for ContextAgent and _create_context_agent_class",
+  "head": "4f2b83b",
+  "timestamp": "2026-10-04T00:00:00.000000+00:00",
+  "summary": "ContextAgent is ONLY used in the E38 test harness (tests/e38/test_autonomous_engineering_mission.py). It is registered as the implementation for ALL 7 agent types used in the E38 mission (EXPLORER, ANALYST, PLANNER, DESIGNER, IMPLEMENTER, VERIFIER, REVIEWER). This is a test harness mock that directly writes artifacts without real agent logic. It is NOT used anywhere else in the production codebase.",
+  "usages": [
+    {
+      "location": "tests/e38/test_autonomous_engineering_mission.py:153-190",
+      "usage": "REGISTRATION",
+      "runtime_path": "PRODUCTION - MissionController executes through ExecutionEngine which uses AgentFactory.execute_agent_by_id to dispatch to registered implementations",
+      "production": true,
+      "test": false,
+      "details": "AgentFactory.replace_implementation(agent_type, ContextAgent) called for all 7 agent types. ContextAgent class is dynamically created per-role via _create_context_agent_class(). Each role gets a unique class name (E38ExplorerAgent, E38AnalystAgent, etc.) but all share the same base ContextAgent implementation.",
+      "replacement": "Replace with operational agents per role type. Need operational agents for: EXPLORER, ANALYST, PLANNER, DESIGNER, REVIEWER (currently missing). IMPLEMENTER and VERIFIER already have OperationalImplementerAgent and OperationalVerifierAgent but they are NOT used for role tasks due to registration order (lines 192-194 come AFTER line 190)."
+    },
+    {
+      "location": "tests/e38/test_autonomous_engineering_mission.py:165",
+      "usage": "INSTANTIATION",
+      "runtime_path": "PRODUCTION - Called during test setup for each agent type registration",
+      "production": true,
+      "test": false,
+      "details": "impl_class = self._create_context_agent_class(agent_type, name, description) creates a new class inheriting from ContextAgent with agent_type set. This class is then registered via AgentFactory.replace_implementation().",
+      "replacement": "Remove this call. Register operational agent classes directly."
+    },
+    {
+      "location": "tests/e38/test_autonomous_engineering_mission.py:190",
+      "usage": "REPLACEMENT",
+      "runtime_path": "PRODUCTION - AgentFactory.replace_implementation() sets the implementation class for the agent type in AgentRegistry._implementations",
+      "production": true,
+      "test": false,
+      "details": "self.engine.agent_registry.replace_implementation(agent_type, impl_class) overwrites any previous implementation for this agent type. This is called for all 7 types, then lines 192-194 overwrite IMPLEMENTER and VERIFIER with operational agents. But by this point, the agent definitions already reference ContextAgent as their implementation_class (line 179).",
+      "replacement": "Register operational agents FIRST, or remove ContextAgent registration entirely for role types."
+    },
+    {
+      "location": "tests/e38/test_autonomous_engineering_mission.py:192-194",
+      "usage": "PARTIAL REPLACEMENT",
+      "runtime_path": "PRODUCTION - Attempts to register operational agents for IMPLEMENTER and VERIFIER but too late for role tasks",
+      "production": true,
+      "test": false,
+      "details": "OperationalImplementerAgent and OperationalVerifierAgent registered for AgentType.IMPLEMENTER and AgentType.VERIFIER. However, the E38 mission uses MissionTaskAgent (a different class) for implementation tasks (t5_implementation, t7_testing), and the role tasks (t1-t4, t6, t8-t10) use the ContextAgent registrations. The operational agents are never selected because the agent definitions specify ContextAgent as implementation_class.",
+      "replacement": "Ensure operational agents are registered and used for ALL role tasks, not just implementation tasks."
+    },
+    {
+      "location": "tests/e38/test_autonomous_engineering_mission.py:240-350",
+      "usage": "DEFINITION",
+      "runtime_path": "PRODUCTION - ContextAgent class definition with execute() method that directly writes artifacts to sandbox",
+      "production": true,
+      "test": false,
+      "details": "ContextAgent(BaseAgent) implements execute() with operations: write_file, run_command, read_artifact. It directly calls sandbox_manager.write_artifact() and creates EvidenceRecords. No real agent logic - just artifact generation. Uses task.context for parameters (path, content, operation, output_path). Has artifact_trace list but it's instance-level and not properly persisted.",
+      "replacement": "Create operational agent classes for each role type with proper agent logic, lifecycle hooks, and evidence integration."
+    }
+  ],
+  "agent_types_affected": [
+    {
+      "agent_type": "EXPLORER",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalExplorerAgent (to be created)",
+      "tasks_using": ["t1_discovery"]
+    },
+    {
+      "agent_type": "ANALYST",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalAnalystAgent (to be created)",
+      "tasks_using": ["t2_analysis"]
+    },
+    {
+      "agent_type": "PLANNER",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalPlannerAgent (to be created)",
+      "tasks_using": ["t3_planning"]
+    },
+    {
+      "agent_type": "DESIGNER",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalDesignerAgent (to be created)",
+      "tasks_using": ["t4_design"]
+    },
+    {
+      "agent_type": "IMPLEMENTER",
+      "current_implementation": "ContextAgent (mock) - but MissionTaskAgent used for t5/t7",
+      "required_implementation": "OperationalImplementerAgent (exists) for role tasks, MissionTaskAgent for implementation tasks",
+      "tasks_using": ["t5_implementation (MissionTaskAgent)", "t7_testing (MissionTaskAgent)"]
+    },
+    {
+      "agent_type": "VERIFIER",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalVerifierAgent (exists)",
+      "tasks_using": ["t8_verification"]
+    },
+    {
+      "agent_type": "REVIEWER",
+      "current_implementation": "ContextAgent (mock)",
+      "required_implementation": "OperationalReviewerAgent (to be created)",
+      "tasks_using": ["t10_final_review"]
+    },
+    {
+      "agent_type": "SECURITY",
+      "current_implementation": "AgentType.IMPLEMENTER used via MissionTaskAgent (AgentType.SECURITY not in enum)",
+      "required_implementation": "OperationalSecurityAgent (to be created) or use OperationalImplementerAgent with security context",
+      "tasks_using": ["t6_security_audit"]
+    }
+  ],
+  "conclusion": "ContextAgent is a test harness mock registered for ALL 7 agent types in the E38 production execution path. No production code uses ContextAgent outside the E38 test. E40 must: (1) Create operational agents for EXPLORER, ANALYST, PLANNER, DESIGNER, REVIEWER, SECURITY; (2) Ensure OperationalImplementerAgent and OperationalVerifierAgent are used for their respective role tasks; (3) Register operational agents instead of ContextAgent in E38 test; (4) Verify all role tasks execute through real operational agents."
+}

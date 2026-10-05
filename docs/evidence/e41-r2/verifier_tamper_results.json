@@ -1,0 +1,102 @@
+{
+  "case_a": {
+    "expected": "VERIFIED",
+    "actual": "VERIFIED",
+    "passed": true,
+    "details": {
+      "operation": "verify",
+      "criteria_checked": [
+        "file_exists:test_valid.txt",
+        "file_contains:test_valid.txt:Hello, World!"
+      ],
+      "verdict": "evidenced",
+      "checks": [
+        {
+          "criterion_id": "crit_0",
+          "criterion": "file_exists:test_valid.txt",
+          "passed": true,
+          "details": "File found: test_valid.txt",
+          "evidence": "29cf56d278dfac6788e7c0a89450c42ca461023ba2342aaeb9ccf76db78276ea"
+        },
+        {
+          "criterion_id": "crit_1",
+          "criterion": "file_contains:test_valid.txt:Hello, World!",
+          "passed": true,
+          "details": "Pattern found in test_valid.txt",
+          "evidence": "29cf56d278dfac6788e7c0a89450c42ca461023ba2342aaeb9ccf76db78276ea"
+        }
+      ]
+    }
+  },
+  "case_b": {
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "passed": true,
+    "details": {
+      "operation": "verify",
+      "criteria_checked": [
+        "file_exists:test_tampered.txt",
+        "file_contains:test_tampered.txt:Hello, World!"
+      ],
+      "verdict": "failed",
+      "checks": [
+        {
+          "criterion_id": "crit_0",
+          "criterion": "file_exists:test_tampered.txt",
+          "passed": true,
+          "details": "File found: test_tampered.txt",
+          "evidence": "9c364cd79a9f8c184378c07459997c23f5afecdb4a7893d977301c5968872f1a"
+        },
+        {
+          "criterion_id": "crit_1",
+          "criterion": "file_contains:test_tampered.txt:Hello, World!",
+          "passed": false,
+          "details": "Pattern not found in test_tampered.txt",
+          "evidence": "9c364cd79a9f8c184378c07459997c23f5afecdb4a7893d977301c5968872f1a"
+        }
+      ]
+    }
+  },
+  "case_c": {
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "passed": true,
+    "details": {
+      "operation": "verify",
+      "criteria_checked": [
+        "file_hash_matches:test_hash.txt:0000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "verdict": "failed",
+      "checks": [
+        {
+          "criterion_id": "crit_0",
+          "criterion": "file_hash_matches:test_hash.txt:0000000000000000000000000000000000000000000000000000000000000000",
+          "passed": false,
+          "details": "Hash mismatch for test_hash.txt",
+          "evidence": "db94c3f41da664a626a948a5a7455e8ce36c4c925413e8635ef46cd1a519a719"
+        }
+      ]
+    }
+  },
+  "case_d": {
+    "expected": "FAILED",
+    "actual": "FAILED",
+    "passed": true,
+    "details": {
+      "operation": "verify",
+      "criteria_checked": [
+        "file_exists:nonexistent.txt"
+      ],
+      "verdict": "failed",
+      "checks": [
+        {
+          "criterion_id": "crit_0",
+          "criterion": "file_exists:nonexistent.txt",
+          "passed": false,
+          "details": "File missing: nonexistent.txt",
+          "evidence": null
+        }
+      ]
+    }
+  }
+}

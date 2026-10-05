@@ -1,0 +1,10 @@
+{
+  "mission_id": "mission-d5a3ebf12461",
+  "run_id": "run-23cf12cbfab9",
+  "process_a_pid": 8464,
+  "process_b_pid": 3612,
+  "checkpoint_id": "checkpoint-286db357cb84",
+  "verdict": "COMPLETE",
+  "final_state": "EVIDENCED",
+  "process_a_ne_process_b": true
+}
