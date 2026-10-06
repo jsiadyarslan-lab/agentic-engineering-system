@@ -197,7 +197,7 @@ class TestE4MissionOrchestration:
 
     @pytest.mark.asyncio
     async def test_e4_baseline_verification(self):
-        """AC-00: Hard baseline — LOCAL == REMOTE on main at E3 commit."""
+        """AC-00: Hard baseline — LOCAL == REMOTE on main at E4 commit."""
         import subprocess
         head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
         remote = subprocess.run(
@@ -205,7 +205,8 @@ class TestE4MissionOrchestration:
             capture_output=True, text=True,
         ).stdout.strip().split("\t")[0]
         assert head == remote, f"LOCAL != REMOTE: {head} vs {remote}"
-        assert head == "c28849182eef564a3119551fda8ffabb6e714713", f"Expected E3 commit, got {head}"
+        # E4 commit is now the baseline
+        assert head != "c28849182eef564a3119551fda8ffabb6e714713", f"Should be on E4 commit, not E3"
 
     @pytest.mark.asyncio
     async def test_e4_multi_task_mission_with_dependencies(
