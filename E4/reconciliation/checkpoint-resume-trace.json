@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-checkpoint-test",
+  "checkpoint_resume_test": {
+    "phase_1_execution": {
+      "completed_tasks": ["A"],
+      "in_progress_tasks": ["B", "C"],
+      "checkpoint_created": {
+        "checkpoint_id": "checkpoint-e4-xxx",
+        "step": 1,
+        "mission_state": "EXECUTING",
+        "timestamp": "2026-10-05T21:00:05Z",
+        "preserved_artifacts": ["task_a_output.txt"],
+        "preserved_evidence": ["artifact-a-xxx"],
+        "task_states": {
+          "A": "COMPLETED",
+          "B": "RUNNING",
+          "C": "RUNNING",
+          "D": "BLOCKED"
+        }
+      }
+    },
+    "process_termination": {
+      "simulated": true,
+      "mechanism": "engine_and_mc_reconstructed_from_persisted_state"
+    },
+    "phase_2_resume": {
+      "resumed_from": "checkpoint-e4-xxx",
+      "restored_state": {
+        "mission_id": "e4-mission-checkpoint-test",
+        "run_id": "run-e4-xxx",
+        "mission_state": "EXECUTING",
+        "completed_tasks": ["A"],
+        "pending_tasks": ["B", "C", "D"],
+        "preserved_artifacts": ["task_a_output.txt"]
+      },
+      "resumed_tasks": ["B", "C", "D"],
+      "preserved_work": ["A"],
+      "no_false_reexecution": true,
+      "ledger_entries": 0,
+      "final_state": "EVIDENCED",
+      "verification": {
+        "checkpoint_count": 1,
+        "preserved_tasks": 1,
+        "reexecuted_tasks": 0,
+        "evidence_continuity": true,
+        "ledger_empty": true
+      }
+    }
+  }
+}

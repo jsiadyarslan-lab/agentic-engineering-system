@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-multi-task",
+  "graph": {
+    "nodes": {
+      "A": {
+        "task_id": "task-a-xxx",
+        "state": "COMPLETED",
+        "depends_on": [],
+        "dependents": ["B", "C"],
+        "attempts": 1,
+        "verification": "EVIDENCED"
+      },
+      "B": {
+        "task_id": "task-b-xxx",
+        "state": "COMPLETED",
+        "depends_on": ["A"],
+        "dependents": ["D"],
+        "attempts": 2,
+        "verification": "EVIDENCED",
+        "failure_on_attempt_1": "TOOL_RUNTIME_FAILURE"
+      },
+      "C": {
+        "task_id": "task-c-xxx",
+        "state": "COMPLETED",
+        "depends_on": ["A"],
+        "dependents": ["D"],
+        "attempts": 1,
+        "verification": "EVIDENCED"
+      },
+      "D": {
+        "task_id": "task-d-xxx",
+        "state": "COMPLETED",
+        "depends_on": ["B", "C"],
+        "dependents": [],
+        "attempts": 1,
+        "verification": "EVIDENCED"
+      }
+    },
+    "topological_order": ["A", "B", "C", "D"],
+    "critical_path": ["A", "B", "D"]
+  }
+}

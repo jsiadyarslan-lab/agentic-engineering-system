@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-multi-task",
+  "task_lifecycles": {
+    "A": {
+      "key": "A",
+      "transitions": [
+        {"from": "PENDING", "to": "READY", "trigger": "no_dependencies", "evidence": "TaskCreatedEvent"},
+        {"from": "READY", "to": "RUNNING", "trigger": "execution_started", "evidence": "TaskAssignedEvent"},
+        {"from": "RUNNING", "to": "VERIFYING", "trigger": "agent_completed", "evidence": "AgentCompletedEvent"},
+        {"from": "VERIFYING", "to": "VERIFIED", "trigger": "verification_passed", "evidence": "VerificationCompleteEvent"}
+      ],
+      "attempts": 1,
+      "final_state": "VERIFIED",
+      "artifacts": ["task_a_output.txt"],
+      "evidence_records": 1
+    },
+    "B": {
+      "key": "B",
+      "transitions": [
+        {"from": "PENDING", "to": "BLOCKED", "trigger": "depends_on_A", "evidence": "TaskCreatedEvent"},
+        {"from": "BLOCKED", "to": "READY", "trigger": "A_completed", "evidence": "DependencyResolvedEvent"},
+        {"from": "READY", "to": "RUNNING", "trigger": "execution_started", "evidence": "TaskAssignedEvent"},
+        {"from": "RUNNING", "to": "FAILED", "trigger": "tool_runtime_failure", "evidence": "AgentFailedEvent + ToolFailedEvent"},
+        {"from": "FAILED", "to": "READY", "trigger": "retry_scheduled", "evidence": "TaskRetryEvent"},
+        {"from": "READY", "to": "RUNNING", "trigger": "retry_execution", "evidence": "TaskAssignedEvent"},
+        {"from": "RUNNING", "to": "VERIFYING", "trigger": "agent_completed", "evidence": "AgentCompletedEvent"},
+        {"from": "VERIFYING", "to": "VERIFIED", "trigger": "verification_passed", "evidence": "VerificationCompleteEvent"}
+      ],
+      "attempts": 2,
+      "final_state": "VERIFIED",
+      "artifacts": ["task_b_output.txt"],
+      "evidence_records": 2,
+      "failure": {
+        "kind": "TOOL_RUNTIME_FAILURE",
+        "recovery_action": "RETRY",
+        "attempt": 1,
+        "resolved": true
+      }
+    },
+    "C": {
+      "key": "C",
+      "transitions": [
+        {"from": "PENDING", "to": "BLOCKED", "trigger": "depends_on_A", "evidence": "TaskCreatedEvent"},
+        {"from": "BLOCKED", "to": "READY", "trigger": "A_completed", "evidence": "DependencyResolvedEvent"},
+        {"from": "READY", "to": "RUNNING", "trigger": "execution_started", "evidence": "TaskAssignedEvent"},
+        {"from": "RUNNING", "to": "VERIFYING", "trigger": "agent_completed", "evidence": "AgentCompletedEvent"},
+        {"from": "VERIFYING", "to": "VERIFIED", "trigger": "verification_passed", "evidence": "VerificationCompleteEvent"}
+      ],
+      "attempts": 1,
+      "final_state": "VERIFIED",
+      "artifacts": ["task_c_output.txt"],
+      "evidence_records": 1
+    },
+    "D": {
+      "key": "D",
+      "transitions": [
+        {"from": "PENDING", "to": "BLOCKED", "trigger": "depends_on_B_C", "evidence": "TaskCreatedEvent"},
+        {"from": "BLOCKED", "to": "READY", "trigger": "B_and_C_completed", "evidence": "DependencyResolvedEvent"},
+        {"from": "READY", "to": "RUNNING", "trigger": "execution_started", "evidence": "TaskAssignedEvent"},
+        {"from": "RUNNING", "to": "VERIFYING", "trigger": "agent_completed", "evidence": "AgentCompletedEvent"},
+        {"from": "VERIFYING", "to": "VERIFIED", "trigger": "verification_passed", "evidence": "VerificationCompleteEvent"}
+      ],
+      "attempts": 1,
+      "final_state": "VERIFIED",
+      "artifacts": ["task_d_output.txt"],
+      "evidence_records": 1
+    }
+  }
+}

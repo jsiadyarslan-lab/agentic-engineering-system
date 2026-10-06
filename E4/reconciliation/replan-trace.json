@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-replan-test",
+  "replan_cycle": {
+    "trigger": "PLAN_DEVIATION",
+    "failed_task": "B",
+    "deviation_type": "PLAN_DEVIATION",
+    "deviation_description": "Verification failed - acceptance criteria not met",
+    "plan_version_before": "v1",
+    "plan_version_after": "v2",
+    "replan_actions": {
+      "added_tasks": [
+        {
+          "key": "B2",
+          "name": "B2-Remediation",
+          "depends_on": ["A"],
+          "description": "Remediation for failed data processing"
+        }
+      ],
+      "invalidated_tasks": [],
+      "rewired_dependencies": [
+        {
+          "task_key": "D",
+          "old_depends_on": ["B", "C"],
+          "new_depends_on": ["B2", "C"],
+          "reason": "Rewire D to depend on remediation task B2 instead of failed B"
+        }
+      ],
+      "preserved_tasks": ["A", "C"],
+      "modified_tasks": {}
+    },
+    "replan_record": {
+      "from_version": "v1",
+      "to_version": "v2",
+      "reason": "Remediate failed Task B, rewire D to depend on B2",
+      "evidence": ["VerificationCompleteEvent for B showing failure"],
+      "timestamp": "2026-10-05T21:00:05Z"
+    },
+    "resume_execution": {
+      "b2_executed": true,
+      "b2_verification": "EVIDENCED",
+      "d_executed_after_b2_c": true,
+      "d_verification": "EVIDENCED",
+      "no_false_reexecution": {
+        "task_a_attempts": 1,
+        "task_c_attempts": 1
+      }
+    },
+    "final_state": "EVIDENCED"
+  }
+}

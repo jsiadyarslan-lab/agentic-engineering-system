@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "baseline_sha": "c28849182eef564a3119551fda8ffabb6e714713",
+  "test_suites": {
+    "E4_multi_task_mission": {
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "details": {
+        "test_e4_baseline_verification": "PASSED",
+        "test_e4_multi_task_mission_with_dependencies": "PASSED",
+        "test_e4_task_lifecycle_tracking": "PASSED",
+        "test_e4_failure_injection_and_isolation": "PASSED",
+        "test_e4_replanning_on_failure": "PASSED",
+        "test_e4_checkpoint_and_resume": "PASSED",
+        "test_e4_event_reconstruction": "PASSED",
+        "test_e4_independent_verification_per_task": "PASSED",
+        "test_e4_e32e_regression": "PASSED",
+        "test_e4_e32f_regression": "PASSED",
+        "test_e4_e33_regression": "PASSED",
+        "test_e4_e3_regression": "PASSED",
+        "test_e4_no_p1_p2_modification": "PASSED",
+        "test_e4_no_legacy_paths": "PASSED",
+        "test_e4_no_new_execution_substrate": "PASSED",
+        "test_e4_no_new_agent_types": "PASSED"
+      }
+    },
+    "E32e_durable_execution": {
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "details": {
+        "test_e32e_baseline_verification": "PASSED",
+        "test_e32e_full_mission_checkpoint_resume": "PASSED",
+        "test_e32e_cross_runtime_resume": "PASSED",
+        "test_e32e_failure_detection_and_recovery": "PASSED",
+        "test_e32e_replanning_on_deviation": "PASSED",
+        "test_e32e_human_gate_pause_resume": "PASSED",
+        "test_e32e_evidence_continuity": "PASSED",
+        "test_e32e_duplicate_execution_prevention": "PASSED"
+      }
+    },
+    "E32f_autonomous_replanning": {
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "details": {
+        "test_e32f_baseline_verification": "PASSED",
+        "test_e32f_autonomous_replanning_full_cycle": "PASSED"
+      }
+    },
+    "E33_mission_autonomy": {
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "details": {
+        "test_e33_baseline_verification": "PASSED",
+        "test_e33_full_mission_autonomy": "PASSED"
+      }
+    },
+    "E3_canonical_orchestrator": {
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "details": {
+        "test_e3_baseline_verification": "PASSED",
+        "test_e3_vertical_slice_markdown_report": "PASSED",
+        "test_e3_failure_recovery_replan": "PASSED",
+        "test_e3_checkpoint_resume_durability": "PASSED",
+        "test_e3_independent_verification": "PASSED",
+        "test_e3_event_streaming": "PASSED",
+        "test_e3_uses_real_mission_controller": "PASSED",
+        "test_e3_no_legacy_paths": "PASSED"
+      }
+    }
+  },
+  "summary": {
+    "total_tests": 36,
+    "total_passed": 36,
+    "total_failed": 0,
+    "pass_rate": "100%",
+    "regressions": 0
+  }
+}

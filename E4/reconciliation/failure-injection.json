@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-multi-task",
+  "failure_injection": {
+    "target_task": "B",
+    "failure_type": "tool_runtime",
+    "injection_point": "first_attempt",
+    "mechanism": "sandbox_file_exists_error",
+    "guard_file": "e33_tool_failure_guard.txt",
+    "error": "FileExistsError: [WinError 183] Cannot create a file when that file already exists",
+    "detected_by": "ExecutionEngine.execute_agent_by_id",
+    "classified_by": "MissionController.scan_failures",
+    "failure_record": {
+      "failure_id": "failure-b-xxx",
+      "task_id": "task-b-xxx",
+      "kind": "TOOL_RUNTIME_FAILURE",
+      "description": "Tool/runtime failure from sandbox layer: FileExistsError",
+      "recovery_action": "RETRY",
+      "evidence": ["FileExistsError on guard file"],
+      "attempt": 1,
+      "resolved": true,
+      "resolved_by": "engine_retry"
+    }
+  },
+  "isolation_verification": {
+    "task_a_attempts": 1,
+    "task_a_re_executed": false,
+    "task_c_completed_independently": true,
+    "task_d_blocked_until_b_c_complete": true,
+    "no_cascading_failures": true
+  }
+}

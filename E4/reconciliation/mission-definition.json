@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_goal": "Multi-task mission with dependency graph A→B, A→C, B+C→D",
+  "mission_id": "e4-mission-multi-task",
+  "task_graph": {
+    "tasks": [
+      {
+        "key": "A",
+        "name": "A-DataCollection",
+        "description": "Collect raw data",
+        "agent_type": "IMPLEMENTER",
+        "depends_on": [],
+        "acceptance_criteria": ["file_contains:task_a_output.txt:RAW_DATA_COLLECTED"],
+        "context": {
+          "task_key": "A",
+          "content": "RAW_DATA_COLLECTED",
+          "output_path": "task_a_output.txt",
+          "sleep_s": 0.2
+        }
+      },
+      {
+        "key": "B",
+        "name": "B-Processing",
+        "description": "Process collected data",
+        "agent_type": "IMPLEMENTER",
+        "depends_on": ["A"],
+        "acceptance_criteria": ["file_contains:task_b_output.txt:PROCESSED_DATA"],
+        "context": {
+          "task_key": "B",
+          "content": "PROCESSED_DATA",
+          "output_path": "task_b_output.txt",
+          "sleep_s": 0.2,
+          "fail_attempt_1": "tool_runtime"
+        }
+      },
+      {
+        "key": "C",
+        "name": "C-Validation",
+        "description": "Validate processing results",
+        "agent_type": "IMPLEMENTER",
+        "depends_on": ["A"],
+        "acceptance_criteria": ["file_contains:task_c_output.txt:VALIDATION_PASSED"],
+        "context": {
+          "task_key": "C",
+          "content": "VALIDATION_PASSED",
+          "output_path": "task_c_output.txt",
+          "sleep_s": 0.2
+        }
+      },
+      {
+        "key": "D",
+        "name": "D-ReportGeneration",
+        "description": "Generate final report",
+        "agent_type": "IMPLEMENTER",
+        "depends_on": ["B", "C"],
+        "acceptance_criteria": ["file_contains:task_d_output.txt:FINAL_REPORT"],
+        "context": {
+          "task_key": "D",
+          "content": "FINAL_REPORT",
+          "output_path": "task_d_output.txt",
+          "sleep_s": 0.2
+        }
+      }
+    ],
+    "edges": [
+      {"from": "A", "to": "B"},
+      {"from": "A", "to": "C"},
+      {"from": "B", "to": "D"},
+      {"from": "C", "to": "D"}
+    ]
+  }
+}

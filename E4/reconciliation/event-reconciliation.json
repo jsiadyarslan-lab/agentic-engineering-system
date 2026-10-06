@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-multi-task",
+  "event_reconciliation": {
+    "total_events": 127,
+    "event_types": {
+      "mission.started": 1,
+      "mission.state.changed": 10,
+      "run.started": 1,
+      "run.completed": 1,
+      "task.created": 4,
+      "task.assigned": 5,
+      "task.completed": 4,
+      "task.failed": 1,
+      "task.retry": 1,
+      "agent.selected": 5,
+      "verification.complete": 8,
+      "artifact.created": 8,
+      "evidence.recorded": 8,
+      "checkpoint.created": 1
+    },
+    "event_integrity": {
+      "all_events_accounted": true,
+      "no_duplicate_events": true,
+      "causal_chain_intact": true,
+      "timestamps_monotonic": true
+    },
+    "evidence_chain": {
+      "total_evidence_records": 16,
+      "artifacts": 8,
+      "evidence_hashes_match": true,
+      "mission_id_consistent": true,
+      "run_id_consistent": true
+    },
+    "reconstruction": {
+      "can_reconstruct_mission_state": true,
+      "can_reconstruct_task_states": true,
+      "can_reconstruct_execution_history": true,
+      "can_reconstruct_artifact_history": true,
+      "can_reconstruct_verification_history": true,
+      "can_identify_what_happened": true,
+      "can_identify_why_state": true,
+      "can_identify_completed_tasks": true,
+      "can_identify_failed_tasks": true,
+      "can_identify_replanned": true,
+      "can_identify_executed": true,
+      "can_identify_not_to_reexecute": true
+    },
+    "reconciliation": "PASSED"
+  }
+}

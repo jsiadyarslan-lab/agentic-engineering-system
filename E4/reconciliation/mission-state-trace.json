@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-10-05T21:00:00Z",
+  "mission_id": "e4-mission-multi-task",
+  "state_transitions": [
+    {
+      "state": "PLANNED",
+      "trigger": "mission_defined",
+      "evidence": "MissionDefinedEvent",
+      "timestamp": "2026-10-05T21:00:01Z"
+    },
+    {
+      "state": "READY",
+      "trigger": "plan_recorded_v1",
+      "evidence": "PlanRecordedEvent",
+      "timestamp": "2026-10-05T21:00:02Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "execution_started",
+      "evidence": "ExecutionStartedEvent",
+      "timestamp": "2026-10-05T21:00:03Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "task_a_completed",
+      "evidence": "TaskCompletedEvent",
+      "timestamp": "2026-10-05T21:00:04Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "task_b_failed_retry",
+      "evidence": "TaskFailedEvent + RetryEvent",
+      "timestamp": "2026-10-05T21:00:05Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "task_c_completed",
+      "evidence": "TaskCompletedEvent",
+      "timestamp": "2026-10-05T21:00:06Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "task_b_retry_completed",
+      "evidence": "TaskCompletedEvent",
+      "timestamp": "2026-10-05T21:00:07Z"
+    },
+    {
+      "state": "EXECUTING",
+      "trigger": "task_d_completed",
+      "evidence": "TaskCompletedEvent",
+      "timestamp": "2026-10-05T21:00:08Z"
+    },
+    {
+      "state": "VERIFYING",
+      "trigger": "all_tasks_completed",
+      "evidence": "MissionCompletionVerifiedEvent",
+      "timestamp": "2026-10-05T21:00:09Z"
+    },
+    {
+      "state": "EVIDENCED",
+      "trigger": "mission_finalized",
+      "evidence": "MissionFinalizedEvent",
+      "timestamp": "2026-10-05T21:00:10Z"
+    }
+  ]
+}
