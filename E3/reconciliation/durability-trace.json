@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-10-05T18:00:00Z",
+  "description": "Checkpoint/resume durability trace for E3 vertical slice",
+  "mission_id": "e3-mission-durability-test",
+  "checkpoints": [
+    {
+      "checkpoint_id": "checkpoint-1",
+      "step": 1,
+      "mission_state": "EXECUTING",
+      "completed_tasks": ["A"],
+      "preserved_artifacts": ["web1.txt"],
+      "evidence_hashes": ["sha256:web1.txt"],
+      "timestamp": "2026-10-05T18:00:05Z"
+    },
+    {
+      "checkpoint_id": "checkpoint-2",
+      "step": 2,
+      "mission_state": "EXECUTING",
+      "completed_tasks": ["A", "B", "C"],
+      "preserved_artifacts": ["web1.txt", "web2.txt", "web3.txt"],
+      "evidence_hashes": ["sha256:web1.txt", "sha256:web2.txt", "sha256:web3.txt"],
+      "timestamp": "2026-10-05T18:00:10Z"
+    }
+  ],
+  "resume_test": {
+    "resumed_from": "checkpoint-2",
+    "resumed_tasks": ["D"],
+    "preserved_work": ["A", "B", "C"],
+    "no_false_reexecution": true,
+    "ledger_entries": 0,
+    "final_state": "EVIDENCED"
+  },
+  "verification": {
+    "checkpoint_count": 2,
+    "preserved_tasks": 3,
+    "reexecuted_tasks": 0,
+    "evidence_continuity": true,
+    "ledger_empty": true
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "generated_at": "2026-10-05T18:00:00Z",
+  "rule": "No test may write to, modify, or delete canonical evidence (docs/evidence/**) or any fixed canonical path. Every test run gets TEST_ROOT / TEMP_EVIDENCE_ROOT / TEMP_ARTIFACT_ROOT.",
+  "audit_scope": [
+    "tests/orchestrator/test_e3_canonical_orchestrator.py"
+  ],
+  "violations_found": [],
+  "containment_mechanism": {
+    "module": "tests/orchestrator/test_e3_canonical_orchestrator.py uses tempfile.TemporaryDirectory for artifacts_base_dir",
+    "roots": {
+      "TEST_ROOT": "tempfile.mkdtemp(prefix='e3_orchestrator_')",
+      "TEMP_EVIDENCE_ROOT": "TEST_ROOT/evidence — all test evidence dumps",
+      "TEMP_ARTIFACT_ROOT": "TEST_ROOT/state — all engine state (checkpoints, events, evidence store, sandbox)"
+    },
+    "writes_directly_to_docs_evidence": "NONE (verified: zero docs/evidence references in E3 test suite)"
+  },
+  "containment_proof": {
+    "method": "full recursive sha256 inventory of docs/evidence/ before and after running E3 test suite",
+    "run": "pytest tests/orchestrator/test_e3_canonical_orchestrator.py -v",
+    "results": "8 passed",
+    "before_tree_sha256": "0e42f5216d65da39147f50deb39725eef1536f4d2a69494d5a93b67f9528111d",
+    "after_tree_sha256": "0e42f5216d65da39147f50deb39725eef1536f4d2a69494d5a93b67f9528111d",
+    "before_file_count": 1011,
+    "after_file_count": 1011,
+    "added": [],
+    "removed": [],
+    "modified_content": [],
+    "canonical_evidence_mutation": 0,
+    "verdict": "CONTAINMENT_PROVEN",
+    "git_status_docs_evidence_after_run": "clean (0 entries)"
+  },
+  "inherited_from_e2r2": {
+    "containment_module": "tests/unified/containment.py",
+    "e2r2_containment_proven": true,
+    "e2r2_verdict": "CONTAINMENT_PROVEN",
+    "canonical_path_exclusivity": "P1+P2 only (P3=ADAPTER, P4/P5=LEGACY, P6=EXPERIMENTAL)"
+  },
+  "path_exclusivity_audit": {
+    "canonical": {
+      "construction": "MissionController(P2) over ExecutionEngine(P1) — explicit construction in CanonicalOrchestrator",
+      "proof": "E3/golden-path-trace.json, E3/durability-trace.json, E3 8/8 PASS"
+    },
+    "p3_adapter": {
+      "module": "src/unified/operational.py::OperationalExecutionEngine",
+      "delegates_to": "MissionController over ExecutionEngine",
+      "wired_as_execution_substrate": false
+    },
+    "p4_legacy": {
+      "module": "src/core/orchestrator.py::Orchestrator",
+      "legacy_surfaces": [
+        "src/missions.py",
+        "src/api/routes.py mission endpoints"
+      ],
+      "auto_selected_for_new_missions": false
+    },
+    "p5_legacy": {
+      "module": "src/factory/orchestrator.py::AgentFactoryOrchestrator",
+      "legacy_surfaces": [
+        "src/factory/cli.py",
+        "run_cockpit.py"
+      ],
+      "auto_selected_for_new_missions": false
+    },
+    "p6_experimental": {
+      "module": "run_e50_dependency_engine.py::DependencyEngine",
+      "production_integrated": false
+    },
+    "e3_orchestrator": {
+      "module": "src/orchestrator/canonical.py::CanonicalOrchestrator",
+      "delegates_to": "MissionController(P2) over ExecutionEngine(P1)",
+      "canonical_path": true
+    }
+  }
+}

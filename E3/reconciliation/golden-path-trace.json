@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-10-05T18:00:00Z",
+  "mission_goal": "Create a markdown report from 3 web sources",
+  "mission_id": "e3-mission-golden-path",
+  "description": "Golden path trace for E3 vertical slice mission",
+  "phases": [
+    {
+      "phase": "goal_decomposition",
+      "agent": "e3-thinker",
+      "events": [
+        "task.created",
+        "task.assigned",
+        "task.completed",
+        "artifact.created (e3_decomposed_specs.json)"
+      ],
+      "output": "4 TaskSpecs: A=web_search_1, B=web_search_2, C=web_search_3, D=write_report"
+    },
+    {
+      "phase": "plan_approval",
+      "events": [
+        "human.required",
+        "human.decision.recorded (approved)"
+      ],
+      "output": "Plan approved"
+    },
+    {
+      "phase": "mission_definition",
+      "events": [
+        "mission.started",
+        "mission.state.changed (ANALYZING→PLANNING→DESIGNING→REVIEWING→APPROVED→EXECUTING)",
+        "run.started",
+        "task.created (×4)",
+        "task.created (×4 verifier tasks)"
+      ]
+    },
+    {
+      "phase": "execution",
+      "agent_pool": "e33-mission-agent-01..08",
+      "events": [
+        "task.assigned (A)",
+        "task.completed (A) - artifact: web1.txt",
+        "task.assigned (B)",
+        "task.completed (B) - artifact: web2.txt",
+        "task.assigned (C)",
+        "task.completed (C) - artifact: web3.txt",
+        "task.assigned (D)",
+        "task.completed (D) - artifact: report.md"
+      ]
+    },
+    {
+      "phase": "independent_verification",
+      "agent": "e3-verifier",
+      "events": [
+        "verification.complete (A) - evidenced",
+        "verification.complete (B) - evidenced",
+        "verification.complete (C) - evidenced",
+        "verification.complete (D) - evidenced"
+      ],
+      "verification_events": 8,
+      "evidence_sources": 8
+    },
+    {
+      "phase": "completion",
+      "events": [
+        "mission.completion.verified",
+        "mission.finalized",
+        "mission.state.changed (EXECUTING→EXECUTED→VERIFYING→EVIDENCED)",
+        "run.completed"
+      ],
+      "final_state": "EVIDENCED"
+    }
+  ],
+  "total_events": 119,
+  "total_evidence": 8,
+  "reexecution_ledger": [],
+  "checkpoints": 2,
+  "no_false_reexecution": true
+}

@@ -1,0 +1,87 @@
+{
+  "decision_timestamp": "2026-10-05T17:00:00Z",
+  "baseline_sha": "ea109e785189bebd0fc4eeb03577981e774ccfe9",
+  "canonical_execution_substrate": "P1+P2",
+  "canonical_orchestrator_design": {
+    "name": "Canonical Orchestrator",
+    "purpose": "Coordination layer above MissionController+ExecutionEngine for goal acceptance, plan generation, approval gating, role coordination, and independent verification",
+    "scope": "MINIMAL — only what P1+P2 cannot do alone",
+    "components": [
+      {
+        "name": "GoalDecomposer",
+        "purpose": "Translate natural language goal → List[TaskSpec] for MissionController.define_mission()",
+        "implementation": "IMPLEMENTER agent with planner context (no new agent type)",
+        "contracts": "Uses existing TaskSpec, MissionController.define_mission"
+      },
+      {
+        "name": "PlanApprovalGate",
+        "purpose": "Present generated plan to owner for approval/revision",
+        "implementation": "MissionController human_gate protocol + custom event",
+        "contracts": "MissionState.HUMAN_REQUIRED, HumanDecisionEvent"
+      },
+      {
+        "name": "RoleCoordinator",
+        "purpose": "Coordinate Thinker→Verifier roles for plan generation and independent verification",
+        "implementation": "MissionController executes Thinker task, then Verifier task after execution",
+        "contracts": "Existing AgentType.PLANNER/VERIFIER, AgentFactory"
+      },
+      {
+        "name": "EventStreamer",
+        "purpose": "SSE endpoint for canonical mission events",
+        "implementation": "Thin FastAPI endpoint over MissionController event bus",
+        "contracts": "Existing FactoryEvent, EventType catalog"
+      }
+    ],
+    "explicitly_excluded": [
+      "5-role cycle (Thinker/Reviewer/Implementer/Verifier/Arbiter) — P5 legacy",
+      "Project/Phase/Step abstraction — P4 legacy",
+      "DB-backed durability — P4 legacy",
+      "PDF report generation — P5 legacy",
+      "Arbitration mechanism — P5 legacy",
+      "Thread-based SSE streaming — P5 legacy",
+      "New agent types — reuse IMPLEMENTER/VERIFIER with context"
+    ],
+    "integration_contract": {
+      "input": "Natural language mission goal",
+      "delegates_to": [
+        "MissionController.define_mission(specs)",
+        "MissionController.record_plan_v1()",
+        "MissionController.execute_run()",
+        "MissionController.scan_failures()",
+        "MissionController.replan_mission()",
+        "MissionController.verify_completion()",
+        "MissionController.finalize_mission()"
+      ],
+      "observes": "MissionController event bus (FactoryEvent)",
+      "output": "EVIDENCED mission with full event trace, evidence chain, no false re-execution ledger"
+    }
+  },
+  "vertical_slice_mission": {
+    "goal": "Create a markdown report from 3 web sources",
+    "steps": [
+      "1. GoalDecomposer → TaskSpecs (web_search × 3, write_file × 1)",
+      "2. PlanApprovalGate → owner approval (auto-approve in test)",
+      "3. MissionController.define_mission + execute_run",
+      "4. Verifier agent checks evidence independently",
+      "5. On failure → MissionController.replan_mission",
+      "6. MissionController.verify_completion + finalize_mission → EVIDENCED"
+    ],
+    "failure_injection": "One web_search fails (tool_runtime_failure) → engine retry → if exhausted → replan",
+    "verification": "Event trace reconstructable, no false re-execution, checkpoint/resume works"
+  },
+  "scope_guards": {
+    "must_not_modify": [
+      "P1 (ExecutionEngine) — only use public API",
+      "P2 (MissionController) — only use public API",
+      "P4/P5 legacy paths",
+      "Database/infrastructure",
+      "UI/Control Room"
+    ],
+    "must_not_introduce": [
+      "New execution substrate",
+      "New agent types beyond IMPLEMENTER/VERIFIER",
+      "Arbitration layer",
+      "Project/phase abstraction"
+    ]
+  }
+}
