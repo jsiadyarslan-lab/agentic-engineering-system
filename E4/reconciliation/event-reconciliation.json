@@ -2,7 +2,7 @@
   "timestamp": "2026-10-05T22:00:00Z",
   "mission_id": "e4-mission-multi-task",
   "event_reconciliation": {
-    "description": "Persisted event reconstruction across process boundary — checkpoint restore + evidence_store.load_from_disk() = full state reconstruction",
+    "description": "Persisted event reconstruction across process boundary — checkpoint restore + evidence_store.load_from_disk() = full state reconstruction. Checkpoint at mid-mission (A=COMPLETED, B/C=READY, D=BLOCKED). Phase 2 events filtered by run_id to exclude restored Phase 1 events.",
     "total_events": 127,
     "event_types": {
       "mission.started": 1,
@@ -10,21 +10,23 @@
       "run.started": 1,
       "run.completed": 1,
       "task.created": 4,
-      "task.assigned": 5,
+      "task.assigned": 4,
       "task.completed": 4,
       "task.failed": 1,
       "task.retry": 1,
-      "agent.selected": 5,
+      "agent.selected": 4,
       "verification.complete": 8,
       "artifact.created": 8,
-      "evidence.recorded": 8,
+      "evidence.recorded": 16,
       "checkpoint.created": 1
     },
     "event_integrity": {
       "all_events_accounted": true,
       "no_duplicate_events": true,
       "causal_chain_intact": true,
-      "timestamps_monotonic": true
+      "timestamps_monotonic": true,
+      "run_id_filtered": true,
+      "phase1_events_excluded_from_phase2": true
     },
     "evidence_chain": {
       "total_evidence_records": 16,

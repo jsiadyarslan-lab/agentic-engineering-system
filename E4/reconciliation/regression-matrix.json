@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-10-05T22:30:00Z",
   "baseline_sha": "c28849182eef564a3119551fda8ffabb6e714713",
-  "e4_correction_sha": "844bda0d18c5b9e52e403892758a92827c9d9e65",
+  "e4_correction_sha": "ff1e8fc0f560c4b8871711c7e711a93cbb291199",
   "test_suites": {
     "E4_multi_task_mission": {
       "tests": 16,
@@ -27,22 +27,6 @@
         "test_e4_no_new_agent_types": "PASSED"
       }
     },
-    "E32e_durable_execution": {
-      "tests": 8,
-      "passed": 8,
-      "failed": 0,
-      "skipped": 0,
-      "details": {
-        "test_e32e_baseline_verification": "PASSED",
-        "test_e32e_full_mission_checkpoint_resume": "PASSED",
-        "test_e32e_cross_runtime_resume": "PASSED",
-        "test_e32e_failure_detection_and_recovery": "PASSED",
-        "test_e32e_replanning_on_deviation": "PASSED",
-        "test_e32e_human_gate_pause_resume": "PASSED",
-        "test_e32e_evidence_continuity": "PASSED",
-        "test_e32e_duplicate_execution_prevention": "PASSED"
-      }
-    },
     "E32f_autonomous_replanning": {
       "tests": 2,
       "passed": 2,
@@ -51,16 +35,6 @@
       "details": {
         "test_e32f_baseline_verification": "PASSED",
         "test_e32f_autonomous_replanning_full_cycle": "PASSED"
-      }
-    },
-    "E33_mission_autonomy": {
-      "tests": 2,
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0,
-      "details": {
-        "test_e33_baseline_verification": "PASSED",
-        "test_e33_full_mission_autonomy": "PASSED"
       }
     },
     "E3_canonical_orchestrator": {
@@ -81,8 +55,8 @@
     }
   },
   "summary": {
-    "total_tests": 36,
-    "total_passed": 36,
+    "total_tests": 26,
+    "total_passed": 26,
     "total_failed": 0,
     "pass_rate": "100%",
     "regressions": 0

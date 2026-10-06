@@ -724,47 +724,6 @@ class ExecutionEngine:
                 # Update task state to RUNNING
                 self._update_task_graph_state(run_id, task.task_id, TaskState.RUNNING)
                 
-                reserved_agent_id = reservation.agent_id
-                attempt.agent_id = reserved_agent_id
-                context.agent_id = reserved_agent_id
-                
-                # Update task with assigned agent for checkpoint tracking
-                task.assigned_agent_id = reserved_agent_id
-                
-                # Emit TASK_ASSIGNED event with reserved agent
-                self._emit(FactoryEvent.create(
-                    event_type=EventType.TASK_ASSIGNED,
-                    mission_id=context.mission_id,
-                    run_id=context.run_id,
-                    payload=TaskAssignedEvent(
-                        task_id=context.task_id,
-                        mission_id=context.mission_id,
-                        run_id=context.run_id,
-                        agent_id=reserved_agent_id,
-                        agent_type=task.agent_type,
-                        attempt_id=context.attempt_id,
-                    ),
-                    source=f"agent.{task.agent_type.value}",
-                    correlation_id=context.task_id,
-                ))
-                
-                # Emit AGENT_SELECTED event (for backward compatibility with tests)
-                self._emit(FactoryEvent.create(
-                    event_type=EventType.AGENT_SELECTED,
-                    mission_id=context.mission_id,
-                    run_id=context.run_id,
-                    payload=AgentSelectedEvent(
-                        agent_id=reserved_agent_id,
-                        agent_type=task.agent_type.value,
-                        mission_id=context.mission_id,
-                        run_id=context.run_id,
-                        task_id=context.task_id,
-                        selection_method="reservation",
-                    ),
-                    source="execution_engine",
-                    correlation_id=context.task_id,
-                ))
-                
                 # Execute agent with task-level timeout
                 print(f"  [ExecutionEngine] Calling execute_agent_by_id for task {task.task_id}, agent {reserved_agent_id}, timeout={task_timeout}")
                 if task_timeout:

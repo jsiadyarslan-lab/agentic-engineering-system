@@ -2,26 +2,26 @@
   "timestamp": "2026-10-05T22:00:00Z",
   "mission_id": "e4-mission-checkpoint-test",
   "checkpoint_resume_test": {
-    "description": "REAL process boundary checkpoint/resume test — full mission execution → checkpoint → NEW engine+MC (simulating process death) → restore_from_checkpoint + evidence_store.load_from_disk() → verify NO false re-execution",
+    "description": "TRUE mid-mission interruption checkpoint/resume test — execute ONLY Task A → checkpoint (A=COMPLETED, B/C=READY, D=BLOCKED) → NEW engine+MC (simulating process death) → restore_from_checkpoint + evidence_store.load_from_disk() → resume → B/C/D execute fresh, A NOT re-executed",
     "phase_1_execution": {
-      "description": "Execute full 4-task mission to completion (A→B, A→C, B+C→D)",
-      "completed_tasks": ["A", "B", "C", "D"],
+      "description": "Execute ONLY Task A (no dependencies), then create checkpoint at mid-mission state",
+      "completed_tasks": ["A"],
       "task_states": {
         "A": "COMPLETED",
-        "B": "COMPLETED",
-        "C": "COMPLETED",
-        "D": "COMPLETED"
+        "B": "READY",
+        "C": "READY",
+        "D": "BLOCKED"
       },
       "checkpoint_created": {
-        "checkpoint_id": "checkpoint-e4-xxx",
-        "step": 4,
+        "checkpoint_id": "checkpoint-e4-mid-mission",
+        "step": 1,
         "mission_state": "EXECUTING",
         "timestamp": "2026-10-05T22:00:05Z",
         "preserved_task_states": {
           "A": "COMPLETED",
-          "B": "COMPLETED",
-          "C": "COMPLETED",
-          "D": "COMPLETED"
+          "B": "READY",
+          "C": "READY",
+          "D": "BLOCKED"
         }
       }
     },
@@ -33,27 +33,28 @@
     },
     "phase_2_resume": {
       "description": "Restore from checkpoint in new runtime",
-      "resumed_from": "checkpoint-e4-xxx",
+      "resumed_from": "checkpoint-e4-mid-mission",
       "restored_state": {
         "mission_id": "e4-mission-checkpoint-test",
-        "run_id": "run-e4-xxx",
+        "run_id": "run-e4-phase2",
         "mission_state": "EXECUTING",
-        "completed_tasks": ["A", "B", "C", "D"],
+        "completed_tasks": ["A"],
         "task_graph_restored": true,
-        "evidence_store_loaded": true
+        "evidence_store_loaded": true,
+        "runnable_cache_excludes_A": true
       },
-      "resumed_tasks": [],
-      "preserved_work": ["A", "B", "C", "D"],
+      "resumed_tasks": ["B", "C", "D"],
+      "preserved_work": ["A"],
       "no_false_reexecution": true,
       "ledger_entries": 0,
       "final_state": "EVIDENCED",
       "verification": {
         "checkpoint_count": 1,
-        "preserved_tasks": 4,
+        "preserved_tasks": 1,
         "reexecuted_tasks": 0,
         "evidence_continuity": true,
         "ledger_empty": true,
-        "attempt_ledger": "All 4 tasks show 1 attempt total (before + after resume)"
+        "attempt_ledger": "Task A: 1 attempt total (preserved). Tasks B/C/D: 1 attempt each (fresh execution in phase 2)"
       }
     }
   }
