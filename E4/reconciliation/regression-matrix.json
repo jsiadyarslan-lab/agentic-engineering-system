@@ -1,6 +1,7 @@
 {
-  "timestamp": "2026-10-05T21:00:00Z",
+  "timestamp": "2026-10-05T22:00:00Z",
   "baseline_sha": "c28849182eef564a3119551fda8ffabb6e714713",
+  "e4_correction_sha": "d32a62c1683402a212934feb808847e8e9d98b77",
   "test_suites": {
     "E4_multi_task_mission": {
       "tests": 16,
@@ -13,8 +14,8 @@
         "test_e4_task_lifecycle_tracking": "PASSED",
         "test_e4_failure_injection_and_isolation": "PASSED",
         "test_e4_replanning_on_failure": "PASSED",
-        "test_e4_checkpoint_and_resume": "PASSED",
-        "test_e4_event_reconstruction": "PASSED",
+        "test_e4_checkpoint_and_resume_real_process_boundary": "PASSED",
+        "test_e4_event_reconstruction_from_persisted": "PASSED",
         "test_e4_independent_verification_per_task": "PASSED",
         "test_e4_e32e_regression": "PASSED",
         "test_e4_e32f_regression": "PASSED",

@@ -1,7 +1,8 @@
 {
-  "timestamp": "2026-10-05T21:00:00Z",
+  "timestamp": "2026-10-05T22:00:00Z",
   "mission_id": "e4-mission-multi-task",
   "event_reconciliation": {
+    "description": "Persisted event reconstruction across process boundary — checkpoint restore + evidence_store.load_from_disk() = full state reconstruction",
     "total_events": 127,
     "event_types": {
       "mission.started": 1,
@@ -33,6 +34,8 @@
       "run_id_consistent": true
     },
     "reconstruction": {
+      "mechanism": "checkpoint_restore + evidence_store.load_from_disk()",
+      "cross_runtime": true,
       "can_reconstruct_mission_state": true,
       "can_reconstruct_task_states": true,
       "can_reconstruct_execution_history": true,

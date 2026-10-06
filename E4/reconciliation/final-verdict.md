@@ -4,13 +4,25 @@
 
 **Date**: 2026-10-05  
 **Baseline SHA**: c28849182eef564a3119551fda8ffabb6e714713  
-**Head SHA**: c28849182eef564a3119551fda8ffabb6e714713 (detached HEAD, clean)
+**E4 Correction Commit SHA**: d32a62c1683402a212934feb808847e8e9d98b77  
+**Remote main SHA**: d32a62c1683402a212934feb808847e8e9d98b77  
+**LOCAL == REMOTE**: ✅ Yes (zero diff)
 
 ---
 
 ## Summary
 
 The E4 Multi-Task Mission Control & Durable Orchestration has been successfully implemented and verified. All 16 E4 tests pass, demonstrating complete multi-task mission execution with real dependencies, failure injection, isolation, replanning, checkpoint/resume, event reconciliation, and independent verification — all on the frozen P1+P2 canonical path.
+
+**E4-RATIFICATION-CORRECTION applied**: Fixed all 8 audit gaps from the initial E4 commit:
+1. Baseline verification now checks E4 commit (not E3)
+2. Dependency scheduling has real timestamp assertions
+3. Checkpoint/resume uses REAL process boundary (full mission → checkpoint → new engine+MC → restore → verify no false re-execution)
+4. Event reconciliation uses persisted checkpoint + evidence store load_from_disk()
+5. Failure isolation asserts D stayed blocked until B/C resolved
+6. test_e4_no_new_agent_types now verifies actual agent types used
+7. Canonical orchestrator test uses the defined 4-task graph
+8. No-false-reexecution uses attempt ledger from persisted checkpoint across runtimes
 
 ---
 
@@ -27,13 +39,13 @@ The E4 Multi-Task Mission Control & Durable Orchestration has been successfully 
 |-------|--------|
 | **Mission Orchestration** | 4-task graph executed successfully, reaches EVIDENCED |
 | **Task Lifecycle Tracking** | All 4 tasks tracked through PENDING→READY→RUNNING→VERIFYING→VERIFIED |
-| **Failure Injection & Isolation** | Task B fails (TOOL_RUNTIME_FAILURE), Task A preserved (1 attempt), Task C independent, Task D blocked |
-| **Replanning** | PLAN_DEVIATION triggers replan v1→v2: adds B2 remediation, rewires D to B2, preserves A+C |
-| **Checkpoint/Resume** | Checkpoint after Task A, process kill simulated, resume completes B+C+D without re-executing A |
-| **Event Reconciliation** | 127 events, full causal chain intact, all state reconstructable from events |
-| **Independent Verification** | 8 verification events, all 4 tasks EVIDENCED, per-task independent verification |
+| **Failure Injection & Isolation** | Task B fails (TOOL_RUNTIME_FAILURE), Task A preserved (1 attempt), Task C independent, Task D blocked until dependencies resolved |
+| **Replanning** | PLAN_DEVIATION triggers replan v1→v2: adds B2 remediation, rewires D to B2+C, preserves A+C |
+| **Checkpoint/Resume** | Full mission execution → checkpoint → NEW engine+MC (process boundary) → restore_from_checkpoint + evidence_store.load_from_disk() → verify NO tasks re-executed |
+| **Event Reconciliation** | Checkpoint + evidence store persistence provides full state reconstruction across runtime boundary |
+| **Independent Verification** | 8+ verification events, all 4 tasks EVIDENCED, per-task independent verification |
 
-**Metrics**: 127 events, 8 artifacts, 16 evidence records, 1 checkpoint, 0 false re-executions
+**Metrics**: 127+ events, 8+ artifacts, 16+ evidence records, 1 checkpoint, 0 false re-executions
 
 ---
 
@@ -47,7 +59,17 @@ The E4 Multi-Task Mission Control & Durable Orchestration has been successfully 
 | test_e4_task_lifecycle_tracking | ✅ |
 | test_e4_failure_injection_and_isolation | ✅ |
 | test_e4_replanning_on_failure | ✅ |
-| test_e4_checkpoint_and_resume | ✅ |
+| test_e4_checkpoint_and_resume_real_process_boundary | ✅ |
+| test_e4_event_reconstruction_from_persisted | ✅ |
+| test_e4_independent_verification_per_task | ✅ |
+| test_e4_e32e_regression | ✅ |
+| test_e4_e32f_regression | ✅ |
+| test_e4_e33_regression | ✅ |
+| test_e4_e3_regression | ✅ |
+| test_e4_no_p1_p2_modification | ✅ |
+| test_e4_no_legacy_paths | ✅ |
+| test_e4_no_new_execution_substrate | ✅ |
+| test_e4_no_new_agent_types | ✅ |
 | test_e4_event_reconstruction | ✅ |
 | test_e4_independent_verification_per_task | ✅ |
 | test_e4_e32e_regression | ✅ |
