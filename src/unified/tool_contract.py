@@ -854,6 +854,7 @@ class ToolExecutionContext(BaseModel):
 class ToolResult(BaseModel):
     """Result of tool execution with audit info."""
     tool_name: str
+    action_id: Optional[str] = None  # Link to Action record (optional for backward compatibility)
     success: bool
     output: Optional[Dict[str, Any]] = None
     error: Optional[str] = None

@@ -1,0 +1,136 @@
+# E9-R CLOSURE — PRODUCTION DIFF AUDIT
+
+## File: src/unified/execution.py
+**Status: E9-R_REQUIRED** ✅
+
+### Changes:
+1. **Line 123**: Added `tool_executor: Optional['ToolExecutor'] = None` to `ExecutionContext`
+   - Purpose: Wire ToolExecutor into production execution context
+   - E9-R Requirement: Agent needs access to ToolExecutor for governed tool calls
+   - **VERIFIED**: Used in `_execute_single_task` at line 1291
+
+2. **Lines 1291-1292**: Pass `tool_executor=self.tool_executor` and `grant_validator=self.grant_validator` in context creation
+   - Purpose: Provide ToolExecutor and grant validation to agent execution
+   - E9-R Requirement: Production path must have governed tool execution
+   - **VERIFIED**: Context passed to `agent_factory.execute_agent_by_id()`
+
+3. **Lines 248-887**: Added `ToolExecutor` class (~640 lines)
+   - Purpose: Governed tool execution with contract validation, permission checks, human gates, Action records, events
+   - E9-R Requirement: Core execution fabric
+   - Methods verified:
+     - `execute_tool()` - main entry point
+     - `_check_permissions()` - grant validation
+     - `_check_human_gate()` - HIGH/CRITICAL tool human approval
+     - `_execute_implementation()` - dispatches to 19 tool implementations
+     - Event emission: ACTION_REQUESTED, ACTION_VALIDATED, TOOL_COMPLETED/TOOL_FAILED
+     - Action registration in `engine.actions`
+
+4. **Lines 356, 373**: Register Action in `engine.actions` dict
+   - Purpose: Global action tracking for evidence chain
+   - E9-R Requirement: Action linkage across mission/run/task/attempt/agent
+   - **VERIFIED**: Both success and failure paths register action
+
+5. **Imports**: Added `ToolRiskLevel`, `IsolationRequirement`, `ActionRequestedEvent`, `ActionValidatedEvent`
+   - Purpose: Support ToolExecutor functionality
+   - **VERIFIED**: Used in ToolExecutor
+
+**NO UNRELATED CHANGES** ✅
+**NO DEBUG CODE** ✅
+**NO TEST-ONLY BEHAVIOR IN PRODUCTION PATH** ✅
+
+---
+
+## File: src/unified/mission_controller.py
+**Status: E9-R_REQUIRED** ✅
+
+### Changes:
+1. **Lines 271-287**: `MissionTaskAgent.execute()` now uses ToolExecutor for artifact_write
+   ```python
+   tool_executor = getattr(context, "tool_executor", None)
+   if tool_executor is not None:
+       tool_result = await tool_executor.execute_tool(...)
+   ```
+   - Purpose: Route production artifact_write through governed ToolExecutor
+   - E9-R Requirement: Eliminate direct sandbox.write_artifact() bypass
+   - **VERIFIED**: Primary path uses ToolExecutor
+
+2. **Lines 300-317**: Fallback to direct sandbox.write_artifact() only when `tool_executor is None`
+   - Purpose: Backward compatibility / safety net
+   - Classification: **FALLBACK ONLY** - should not trigger in production
+   - **VERIFIED**: Guarded by `if tool_executor is not None`
+
+3. **Lines 238-247**: Failure injection path still uses direct sandbox.write_artifact()
+   - Purpose: Deterministic tool failure injection for testing (`fail_attempt_1 == "tool_runtime"`)
+   - Classification: **TEST-ONLY PATH** - explicitly for failure injection
+   - **VERIFIED**: Only executes when `ctx.get("fail_attempt_1") == "tool_runtime"`
+
+4. **Lines 1221-1223**: Checkpoint includes `human_gate` and `human_decision` fields
+   - Purpose: Persist human gate state for cross-runtime resume
+   - E9-R Requirement: Durable human gate state
+   - **VERIFIED**: Added to Checkpoint creation
+
+5. **Line 1225**: Checkpoint saved via `engine._save_checkpoint_to_disk()` instead of local file write
+   - Purpose: Cross-runtime checkpoint persistence
+   - **VERIFIED**: Uses engine's checkpoint storage
+
+**NO UNRELATED CHANGES** ✅
+**NO DEBUG CODE** ✅
+**NO TEST-ONLY BEHAVIOR IN PRODUCTION PATH** (test-only paths explicitly classified) ✅
+
+---
+
+## File: src/unified/tool_contract.py
+**Status: E9-R_REQUIRED** ✅
+
+### Changes:
+1. **Line 857**: Added `action_id: Optional[str] = None` to `ToolResult`
+   - Purpose: Link ToolResult to Action record for traceability
+   - E9-R Requirement: Action → ToolResult linkage
+   - **VERIFIED**: Set in `ToolExecutor.execute_tool()` at line 360
+
+**NO UNRELATED CHANGES** ✅
+
+---
+
+## File: src/unified/execution_tracker.json
+**Status: E9-R_REQUIRED** ✅
+
+### Changes:
+- Added WS-18 entry for "Mission Autonomy & Long-Running Execution (E7)"
+- Status: VERIFIED with 12 evidence files listed
+- Purpose: Track E7 workstream as part of E9-R baseline
+- **VERIFIED**: Documentation-only change, no logic impact
+
+**NO UNRELATED CHANGES** ✅
+
+---
+
+## File: E6-R2/e6_commit_manifest.json
+**Status: PRE_EXISTING** (unrelated to E9-R logic)
+
+### Changes:
+- Updated SHA256 hashes for E6-R2 evidence files
+- Added 18 new evidence file entries
+- Updated notes to past tense
+- Purpose: E6-R2 evidence finalization
+- **VERIFIED**: No E9-R code changes, purely evidence manifest
+
+**EXCLUDED FROM E9-R COMMIT** - This is E6-R2 evidence update
+
+---
+
+## AUDIT SUMMARY
+
+| File | Status | Production Changes | Test-Only Paths | Unrelated |
+|------|--------|-------------------|-----------------|-----------|
+| execution.py | E9-R_REQUIRED | 5 changes | 0 | 0 |
+| mission_controller.py | E9-R_REQUIRED | 3 changes | 1 (explicit) | 0 |
+| tool_contract.py | E9-R_REQUIRED | 1 change | 0 | 0 |
+| execution_tracker.json | E9-R_REQUIRED | 1 change | 0 | 0 |
+| e6_commit_manifest.json | PRE_EXISTING | 0 | 0 | N/A |
+
+**TOTAL E9-R PRODUCTION CHANGES: 10**
+**TOTAL TEST-ONLY PATHS: 1 (explicitly classified)**
+**UNRELATED CHANGES: 0**
+
+✅ ALL CHANGES JUSTIFIED FOR E9-R

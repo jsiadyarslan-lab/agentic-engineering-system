@@ -1,0 +1,52 @@
+{
+  "entrypoint": "ExecutionEngine.execute_task_graph_parallel()",
+  "call_chain": [
+    "ExecutionEngine.execute_task_graph_parallel(run_id, ...)",
+    "  -> ExecutionEngine._execute_single_task(run_id, task, sandbox_manager, event_collector, ...)",
+    "      -> Creates ExecutionContext with mission_id, run_id, task_id, attempt_id, agent_type, sandbox_id, sandbox_manager, event_emitter, evidence_store, grant_validator",
+    "      -> agent_factory.execute_agent_by_id(reserved_agent_id, context, agent_task)",
+    "          -> AgentRegistry.get_definition(agent_id) -> AgentDefinition",
+    "          -> AgentRegistry.create_instance(agent_type, agent_id) -> MissionTaskAgent",
+    "          -> MissionTaskAgent.execute(context, task)  <-- PRODUCTION BYPASS HERE"
+  ],
+  "tool_call_sites": [
+    {
+      "location": "src/unified/mission_controller.py:274-278",
+      "code": "artifact = await sandbox.write_artifact(sandbox_id=context.sandbox_id, path=output_path, content=content.encode('utf-8'))",
+      "tool_equivalent": "artifact_write",
+      "classification": "DIRECT BYPASS",
+      "description": "MissionTaskAgent.execute() directly calls sandbox.write_artifact() instead of going through ToolExecutor"
+    },
+    {
+      "location": "src/unified/mission_controller.py:238-247",
+      "code": "await sandbox.write_artifact(sandbox_id=context.sandbox_id, path='e33_tool_failure_guard.txt', content=b'e33 tool failure probe guard')\nawait sandbox.write_artifact(sandbox_id=context.sandbox_id, path='e33_tool_failure_guard.txt/e33_child.txt', content=b'e33 tool failure probe')",
+      "tool_equivalent": "artifact_write",
+      "classification": "DIRECT BYPASS",
+      "description": "Failure injection path also directly calls sandbox.write_artifact()"
+    }
+  ],
+  "direct_bypasses": [
+    {
+      "file": "src/unified/mission_controller.py",
+      "class": "MissionTaskAgent",
+      "method": "execute",
+      "lines": "271-278, 238-247",
+      "bypass_type": "SANDBOX_DIRECT",
+      "tool_executor_available": false,
+      "reason": "ExecutionContext does not have tool_executor reference; agent directly uses sandbox_manager"
+    }
+  ],
+  "tool_executor_usage": [
+    {
+      "location": "src/unified/execution.py:937-943",
+      "code": "self.tool_executor = ToolExecutor(engine=self, tool_registry=self.tool_registry, sandbox_manager=self.sandbox_manager, evidence_store=self.evidence_store, event_bus=self.event_bus)",
+      "status": "INSTANTIATED BUT NOT USED IN PRODUCTION PATH"
+    },
+    {
+      "location": "run_e9_fabric.py",
+      "code": "tool_executor = engine.tool_executor; await tool_executor.execute_tool(context, 'write_file', {...})",
+      "status": "USED ONLY IN ISOLATED TEST HARNESS"
+    }
+  ],
+  "verdict": "ToolExecutor exists and is instantiated in ExecutionEngine.__init__, but the production agent execution path (MissionTaskAgent.execute) bypasses it entirely by directly calling sandbox.write_artifact(). The ExecutionContext passed to agents does not include a tool_executor reference."
+}

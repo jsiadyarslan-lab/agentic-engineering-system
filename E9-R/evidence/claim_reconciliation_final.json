@@ -1,0 +1,85 @@
+{
+  "reconciliation": {
+    "E9-R Claims": [
+      {
+        "claim": "ToolExecutor integrated into production execution path",
+        "observed": true,
+        "evidence": "production_execution_path_final.json, vertical_slice.json",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "MissionTaskAgent uses ToolExecutor for artifact_write",
+        "observed": true,
+        "evidence": "src/unified/mission_controller.py:271-287, vertical_slice.json",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "Action records created and linked to Mission/Run/Task/Attempt/Agent",
+        "observed": true,
+        "evidence": "action_ledger.json, vertical_slice.json",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "Required events emitted: ACTION_REQUESTED, ACTION_VALIDATED, TOOL_COMPLETED",
+        "observed": true,
+        "evidence": "event_trace.json, vertical_slice.json",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "Grant validation enforced for tool execution",
+        "observed": true,
+        "evidence": "grant_validation.json, test_results.json (E9-06, E9-07)",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "Human gate mechanism works for HIGH/CRITICAL risk tools",
+        "observed": true,
+        "evidence": "human_gate_result.json, test_results.json (E9-12, E9-13, E9-14)",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "No direct sandbox.write_artifact() in production path",
+        "observed": true,
+        "evidence": "bypass_audit.json",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "No mock in production execution path",
+        "observed": true,
+        "evidence": "test_results.json (E9-16), source code audit",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "All 17 E9 criteria pass",
+        "observed": true,
+        "evidence": "test_results.json (run_e9_fabric.py: 17/17 PASS)",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "E8 regression green (negative tests pass)",
+        "observed": true,
+        "evidence": "test_results.json (4/4 REJECTED)",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "E9-R vertical slice production test passes",
+        "observed": true,
+        "evidence": "test_results.json (E9-R/test_production_integration.py: PASS)",
+        "verdict": "VERIFIED"
+      },
+      {
+        "claim": "Evidence artifacts created and durable",
+        "observed": true,
+        "evidence": "E9-R/evidence/*.json files",
+        "verdict": "VERIFIED"
+      }
+    ],
+    "summary": {
+      "total_claims": 12,
+      "verified": 12,
+      "observed": 0,
+      "contradicted": 0,
+      "unverified": 0
+    }
+  }
+}

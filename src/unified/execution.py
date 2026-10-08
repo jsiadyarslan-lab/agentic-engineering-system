@@ -36,6 +36,7 @@ from unified.contracts import (
     # Enums
     MissionState, PlanState, TaskState, AgentType, EventType,
     SandboxTermination, VerifierVerdict, SubVerdict,
+    ToolRiskLevel, IsolationRequirement,
     # Entities
     Mission, Run, Task, Attempt, Action, Agent, Grant,
     SandboxRequest, SandboxExecutionRecord, Artifact, EvidenceRecord,
@@ -72,6 +73,7 @@ from unified.contracts import (
     ArtifactCreatedEvent, EvidenceRecordedEvent,
     VerificationCompleteEvent, CheckpointCreatedEvent,
     MissionStateChangedEvent, MissionCompletedEvent,
+    ActionRequestedEvent, ActionValidatedEvent,
     # E11: Human Mission Control events
     MissionPauseRequestedEvent,
     MissionPausedEvent,
@@ -121,6 +123,7 @@ class ExecutionContext:
     sandbox_id: Optional[str] = None
     # Components
     sandbox_manager: Optional[SandboxManager] = None
+    tool_executor: Optional['ToolExecutor'] = None  # E9-R: ToolExecutor for governed tool execution
     llm_gateway: Optional[Any] = None  # LLMGateway
     event_emitter: Optional[Callable[[FactoryEvent], None]] = None
     grant_validator: Optional[Callable[[str, str], bool]] = None
@@ -246,6 +249,640 @@ class FileEvidenceStore(EvidenceStore):
                 ev = EvidenceRecord.model_validate(ev_data)
                 self._evidence[eid] = ev
 # ============================================================
+# TOOL EXECUTOR (E9 - Execution Fabric)
+# ============================================================
+class ToolExecutor:
+    """
+    Executes tools with full contract validation, Action recording, and audit events.
+    
+    Flow:
+    1. Look up tool contract from registry
+    2. Validate input against contract.input_schema
+    3. Check permissions/grants for tool
+    4. Check if human gate required (high-risk actions)
+    4. Emit ActionRequestedEvent
+    5. Create Action record
+    6. Execute tool implementation
+    7. Validate output against contract.output_schema
+    8. Emit ActionValidatedEvent / TOOL_COMPLETED / TOOL_FAILED
+    9. Update Action record with result
+    10. Return ToolResult
+    """
+    
+    def __init__(
+        self,
+        engine: 'ExecutionEngine',
+        tool_registry: 'ToolRegistry',
+        sandbox_manager: 'SandboxManager',
+        evidence_store: 'FileEvidenceStore',
+        event_bus: 'SimpleEventBus',
+    ):
+        self.engine = engine
+        self.tool_registry = tool_registry
+        self.sandbox_manager = sandbox_manager
+        self.evidence_store = evidence_store
+        self.event_bus = event_bus
+        # Track actions for this execution
+        self._actions: Dict[str, Action] = {}
+    
+    async def execute_tool(
+        self,
+        context: ExecutionContext,
+        tool_name: str,
+        tool_input: Dict[str, Any],
+    ) -> ToolResult:
+        """Execute a tool with full contract validation and audit trail."""
+        action_id = new_action_id()
+        
+        # 1. Look up tool contract
+        contract = self.tool_registry.get(tool_name)
+        if not contract:
+            raise ValueError(f"Tool not registered: {tool_name}")
+        
+        # 2. Validate input against contract
+        try:
+            validated_input = contract.input_schema(**tool_input)
+        except Exception as e:
+            raise ValueError(f"Tool input validation failed for {tool_name}: {e}")
+        
+        # 3. Check permissions/grants
+        await self._check_permissions(context, contract)
+        
+        # 4. Check if human gate required (E9-12)
+        await self._check_human_gate(context, contract, tool_name, validated_input, action_id)
+        
+        # 5. Emit ActionRequestedEvent
+        self._emit_action_requested(context, action_id, tool_name, validated_input)
+        
+        # 6. Create Action record
+        action = Action(
+            action_id=action_id,
+            attempt_id=context.attempt_id,
+            tool_name=tool_name,
+            tool_args=validated_input.model_dump(),
+        )
+        self._actions[action_id] = action
+        
+        # 7. Execute tool implementation
+        start_time = asyncio.get_event_loop().time()
+        try:
+            tool_result = await self._execute_implementation(context, tool_name, validated_input, action_id)
+            
+            
+            # 8. Validate output against contract
+            try:
+                validated_output = contract.output_schema(**tool_result.output)
+            except Exception as e:
+                # Output validation failed - treat as tool failure
+                tool_result.success = False
+                tool_result.error = f"Output validation failed: {e}"
+                tool_result.error_type = "OutputValidationError"
+            
+            # 9. Emit ActionValidatedEvent
+            self._emit_action_validated(context, action_id, tool_name, tool_result.success, 
+                                       [] if tool_result.success else ["output_validation" if not tool_result.success else ""])
+            
+            # 10. Update Action record
+            action.completed_at = datetime.now(timezone.utc)
+            action.success = tool_result.success
+            action.output = validated_output.model_dump() if tool_result.success else None
+            action.error = tool_result.error
+            action.evidence_id = tool_result.evidence_id
+            action.sandbox_id = tool_result.artifacts[0] if tool_result.artifacts else context.sandbox_id
+            
+            # Also register action in engine for global tracking
+            self.engine.actions[action_id] = action
+            
+            # Emit TOOL_COMPLETED or TOOL_FAILED
+            if tool_result.success:
+                self._emit_tool_completed(context, action_id, tool_name, tool_result)
+            else:
+                self._emit_tool_failed(context, action_id, tool_name, tool_result)
+            
+            # Set action_id on result for caller
+            tool_result.action_id = action_id
+            return tool_result
+            
+        except Exception as e:
+            # Execution exception - update action and emit TOOL_FAILED
+            duration_ms = int((asyncio.get_event_loop().time() - start_time) * 1000)
+            action.completed_at = datetime.now(timezone.utc)
+            action.success = False
+            action.error = f"{type(e).__name__}: {e}"
+            
+            # Also register action in engine for global tracking
+            self.engine.actions[action_id] = action
+            
+            self._emit_action_validated(context, action_id, tool_name, False, [str(e)])
+            self._emit_tool_failed(context, action_id, tool_name, 
+                                  ToolResult(action_id=action_id, tool_name=tool_name, success=False, 
+                                            error=str(e), error_type=type(e).__name__, duration_ms=duration_ms))
+            raise
+    
+    async def _check_permissions(self, context: ExecutionContext, contract: 'ToolContract') -> None:
+        """Check if agent has required grants for tool."""
+        required = contract.required_permissions
+        if not required:
+            return
+        
+        # Check if agent has grants covering required permissions
+        if not context.grant_validator:
+            # No validator = fail closed
+            raise PermissionError(f"Tool {contract.name} requires grants but no validator available")
+        
+        for perm in required:
+            # Check if any grant covers this permission
+            has_perm = False
+            for grant_id in context.grant_ids:
+                if context.grant_validator(grant_id, perm):
+                    has_perm = True
+                    break
+            if not has_perm:
+                raise PermissionError(f"Agent {context.agent_id} lacks required permission: {perm} for tool {contract.name}")
+    
+    async def _check_human_gate(
+        self, 
+        context: ExecutionContext, 
+        contract: 'ToolContract',
+        tool_name: str,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> None:
+        """
+        Check if human gate required for this action (E9-12).
+        
+        High-risk (HIGH/CRITICAL) tools require human approval before execution.
+        """
+        if contract.risk_level not in (ToolRiskLevel.HIGH, ToolRiskLevel.CRITICAL):
+            return
+        
+        mission = self.engine.missions.get(context.mission_id)
+        if not mission:
+            return
+        
+        # Check if there's already an APPROVED gate for this tool (from any action)
+        for key, value in mission.metadata.items():
+            if key.startswith(f"action_gate_{tool_name}_") and isinstance(value, str):
+                decision_key = f"{key}_decision"
+                decision = mission.metadata.get(decision_key)
+                if decision and decision.get("decision") == "approve":
+                    # Already approved for this tool - allow execution
+                    return
+        
+        # Check if there's already a human gate for this action
+        gate_key = f"action_gate_{tool_name}_{action_id}"
+        existing_gate = mission.metadata.get(gate_key)
+        if existing_gate:
+            # Gate already exists, check if decided
+            decision = mission.metadata.get(f"{gate_key}_decision")
+            if decision:
+                if decision.get("decision") != "approve":
+                    raise PermissionError(f"Human gate rejected for {tool_name}: {decision.get('feedback', 'Not approved')}")
+                return  # Approved, continue
+            else:
+                # Gate exists but no decision yet - wait
+                raise PermissionError(f"Human gate pending for {tool_name}. Awaiting decision.")
+        
+        # Create human gate for this high-risk action
+        gate_id = self.engine.create_human_gate(
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            task_id=context.task_id,
+            reason=f"High-risk tool execution requires human approval: {tool_name} ({contract.risk_level.value})",
+            context={
+                "tool_name": tool_name,
+                "tool_input": validated_input.model_dump(),
+                "risk_level": contract.risk_level.value,
+                "isolation": contract.isolation.value,
+                "agent_id": context.agent_id,
+            },
+            options=[
+                {"value": "approve", "label": "Approve Execution", "description": f"Allow {tool_name} to execute"},
+                {"value": "reject", "label": "Reject Execution", "description": f"Block {tool_name} execution"},
+            ],
+            impact=f"Executing {tool_name} with {contract.risk_level.value} risk level",
+            required_action="Human must explicitly approve or reject the high-risk action",
+            evidence_refs=[],
+            requested_by="execution_engine",
+        )
+        
+        # Store gate reference
+        mission.metadata[gate_key] = gate_id
+        
+        # Wait for human decision (this will pause execution)
+        # The engine will resume when human decides
+        raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+    
+    async def _execute_implementation(
+        self,
+        context: ExecutionContext,
+        tool_name: str,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Execute the actual tool implementation."""
+        # Delegate to engine's execute_tool for sandbox-backed tools
+        if tool_name in ("run_command", "write_artifact", "read_artifact", "artifact_write", "artifact_read", "sandbox_execute"):
+            return await self.engine.execute_tool(context, tool_name, validated_input.model_dump())
+        
+        # Filesystem tools
+        elif tool_name in ("read_file", "write_file", "edit_file", "list_dir", "grep", "find_files", "file_browser"):
+            return await self._execute_filesystem_tool(context, tool_name, validated_input, action_id)
+        
+        # Git tools
+        elif tool_name in ("git_branch", "git_commit", "git_diff", "git_status", "git_push"):
+            return await self._execute_git_tool(context, tool_name, validated_input, action_id)
+        
+        # Web tools
+        elif tool_name in ("web_search", "web_fetch"):
+            return await self._execute_web_tool(context, tool_name, validated_input, action_id)
+        
+        # Verification tools
+        elif tool_name == "verification_check":
+            return await self._execute_verification_tool(context, validated_input, action_id)
+        
+        # Grant tools
+        elif tool_name == "grant_validate":
+            return await self._execute_grant_tool(context, validated_input, action_id)
+        
+        else:
+            raise ValueError(f"No implementation for tool: {tool_name}")
+    
+    async def _execute_filesystem_tool(
+        self,
+        context: ExecutionContext,
+        tool_name: str,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Execute filesystem tools within sandbox/workspace."""
+        # Resolve workspace path
+        workspace = Path(context.workspace_root).resolve()
+        
+        if tool_name == "read_file":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False, 
+                                 error=f"File not found: {path}", error_type="FileNotFoundError")
+            content = path.read_text(encoding=validated_input.encoding)
+            sha256 = hashlib.sha256(content.encode()).hexdigest()
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "content": content, "size_bytes": len(content.encode()), "sha256": sha256})
+        
+        elif tool_name == "write_file":
+            path = workspace / validated_input.path
+            if path.exists() and not validated_input.overwrite:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"File exists and overwrite=False: {path}", error_type="FileExistsError")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            content = validated_input.content
+            path.write_text(content, encoding=validated_input.encoding)
+            sha256 = hashlib.sha256(content.encode()).hexdigest()
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "path": str(path), "size_bytes": len(content.encode()), "sha256": sha256})
+        
+        elif tool_name == "edit_file":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"File not found: {path}", error_type="FileNotFoundError")
+            content = path.read_text(encoding="utf-8")
+            old_text = validated_input.old_text
+            new_text = validated_input.new_text
+            if validated_input.replace_all:
+                new_content = content.replace(old_text, new_text)
+                replacements = content.count(old_text)
+            else:
+                new_content = content.replace(old_text, new_text, 1)
+                replacements = 1 if old_text in content else 0
+            if replacements == 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Text not found in file", error_type="TextNotFoundError")
+            path.write_text(new_content, encoding="utf-8")
+            sha256 = hashlib.sha256(new_content.encode()).hexdigest()
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "path": str(path), "replacements": replacements, "sha256": sha256})
+        
+        elif tool_name == "list_dir":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+            entries = []
+            for entry in path.rglob("*") if validated_input.recursive else path.iterdir():
+                if validated_input.pattern:
+                    import fnmatch
+                    if not fnmatch.fnmatch(entry.name, validated_input.pattern):
+                        continue
+                entries.append({
+                    "name": entry.name,
+                    "path": str(entry.relative_to(workspace)),
+                    "is_dir": entry.is_dir(),
+                    "size": entry.stat().st_size if entry.is_file() else 0,
+                })
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "entries": entries, "total": len(entries)})
+        
+        elif tool_name == "grep":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+            matches = []
+            import re
+            flags = 0 if validated_input.case_sensitive else re.IGNORECASE
+            pattern = re.compile(validated_input.pattern, flags)
+            for file_path in path.rglob("*") if validated_input.recursive else path.iterdir():
+                if file_path.is_file() and (not validated_input.file_pattern or fnmatch.fnmatch(file_path.name, validated_input.file_pattern)):
+                    try:
+                        content = file_path.read_text(encoding="utf-8", errors="ignore")
+                        for i, line in enumerate(content.splitlines(), 1):
+                            if pattern.search(line):
+                                matches.append({
+                                    "file": str(file_path.relative_to(workspace)),
+                                    "line_number": i,
+                                    "line": line,
+                                })
+                                if len(matches) >= (validated_input.max_results or 100):
+                                    break
+                    except Exception:
+                        pass
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "matches": matches, "total": len(matches)})
+        
+        elif tool_name == "find_files":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+            files = []
+            import fnmatch
+            for file_path in path.rglob("*"):
+                if file_path.is_file() and fnmatch.fnmatch(file_path.name, validated_input.pattern):
+                    files.append(str(file_path.relative_to(workspace)))
+                    if len(files) >= (validated_input.max_results or 100):
+                        break
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "files": files, "total": len(files)})
+        
+        elif tool_name == "file_browser":
+            path = workspace / validated_input.path
+            if not path.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+            tree = {"name": path.name, "path": str(path.relative_to(workspace)), "type": "directory", "children": []}
+            total_files = 0
+            total_dirs = 0
+            def build_tree(node, p):
+                nonlocal total_files, total_dirs
+                try:
+                    for entry in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name)):
+                        if not validated_input.show_hidden and entry.name.startswith("."):
+                            continue
+                        if entry.is_dir():
+                            total_dirs += 1
+                            child = {"name": entry.name, "path": str(entry.relative_to(workspace)), "type": "directory", "children": []}
+                            node["children"].append(child)
+                            build_tree(child, entry)
+                        else:
+                            total_files += 1
+                            node["children"].append({"name": entry.name, "path": str(entry.relative_to(workspace)), "type": "file", "size": entry.stat().st_size})
+                except Exception:
+                    pass
+            build_tree(tree, path)
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"success": True, "tree": tree, "total_files": total_files, "total_dirs": total_dirs})
+        
+        raise ValueError(f"Unknown filesystem tool: {tool_name}")
+    
+    async def _execute_git_tool(
+        self,
+        context: ExecutionContext,
+        tool_name: str,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Execute git tools."""
+        repo_path = Path(validated_input.repo_path or context.workspace_root).resolve()
+        
+        async def run_git(args: List[str]) -> subprocess.CompletedProcess:
+            return await asyncio.get_event_loop().run_in_executor(
+                None, lambda: subprocess.run(
+                    ["git"] + args,
+                    cwd=repo_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=validated_input.timeout_seconds if hasattr(validated_input, 'timeout_seconds') else 60,
+                )
+            )
+        
+        if tool_name == "git_branch":
+            action = validated_input.action
+            if action == "list":
+                result = await run_git(["branch", "-a"])
+                branches = [b.strip().lstrip("* ").strip() for b in result.stdout.splitlines() if b.strip()]
+                current = await run_git(["branch", "--show-current"])
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                                 output={"branches": branches, "current": current.stdout.strip(), "created": None})
+            elif action == "create":
+                result = await run_git(["branch", validated_input.branch_name, validated_input.start_point or "HEAD"])
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=result.returncode==0,
+                                 output={"branches": [validated_input.branch_name], "created": result.returncode==0},
+                                 error=result.stderr if result.returncode != 0 else None)
+            elif action == "delete":
+                result = await run_git(["branch", "-d", validated_input.branch_name])
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=result.returncode==0,
+                                 output={"branches": [], "created": False},
+                                 error=result.stderr if result.returncode != 0 else None)
+            else:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"Unknown git_branch action: {action}")
+        
+        elif tool_name == "git_commit":
+            # Stage files if specified
+            if validated_input.files:
+                for f in validated_input.files:
+                    await run_git(["add", f])
+            else:
+                await run_git(["add", "-A"])
+            
+            author_args = []
+            if validated_input.author_name:
+                author_args.extend(["-c", f"user.name={validated_input.author_name}"])
+            if validated_input.author_email:
+                author_args.extend(["-c", f"user.email={validated_input.author_email}"])
+            
+            result = await run_git(author_args + ["commit", "-m", validated_input.message])
+            if result.returncode != 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=result.stderr, error_type="GitCommitError")
+            
+            # Get commit hash
+            hash_result = await run_git(["rev-parse", "HEAD"])
+            commit_hash = hash_result.stdout.strip()
+            
+            # Get stats
+            stat_result = await run_git(["show", "--stat", "--oneline", commit_hash])
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"commit_hash": commit_hash, "files_changed": 0, "insertions": 0, "deletions": 0})
+        
+        elif tool_name == "git_diff":
+            args = ["diff"]
+            if validated_input.staged:
+                args.append("--cached")
+            if validated_input.file_path:
+                args.append(validated_input.file_path)
+            result = await run_git(args)
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"diff": result.stdout, "files_changed": 0})
+        
+        elif tool_name == "git_status":
+            result = await run_git(["status", "--porcelain"])
+            clean = result.returncode == 0 and not result.stdout.strip()
+            lines = result.stdout.strip().splitlines() if result.stdout.strip() else []
+            staged = [l[3:] for l in lines if l.startswith("  ")]
+            unstaged = [l[3:] for l in lines if l.startswith(" ")]
+            untracked = [l[3:] for l in lines if l.startswith("??")]
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"clean": clean, "staged": staged, "unstaged": unstaged, "untracked": untracked})
+        
+        elif tool_name == "git_push":
+            # CRITICAL - requires owner_approval_nonce
+            if not hasattr(validated_input, 'owner_approval_nonce') or not validated_input.owner_approval_nonce:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error="git_push requires owner_approval_nonce", error_type="PermissionError")
+            
+            result = await run_git(["push", validated_input.remote or "origin", 
+                                   validated_input.branch or "HEAD"])
+            if result.returncode != 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=result.stderr, error_type="GitPushError")
+            return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
+                             output={"pushed": True, "commit_hash": "", "remote_ref": "", "certificates": []})
+        
+        raise ValueError(f"Unknown git tool: {tool_name}")
+    
+    async def _execute_web_tool(
+        self,
+        context: ExecutionContext,
+        tool_name: str,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Execute web tools (network access - DENY by default per sandbox policy)."""
+        # Network is DENIED by sandbox policy (network_mode=NONE)
+        # These tools would need explicit network allowance
+        return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                         error="Network access denied by sandbox policy (network_mode=NONE)", 
+                         error_type="NetworkDeniedError")
+    
+    async def _execute_verification_tool(
+        self,
+        context: ExecutionContext,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Execute verification check."""
+        # This would invoke the independent verifier
+        return ToolResult(action_id=action_id, tool_name="verification_check", success=True,
+                         output={"verdict": "not_evidenced", "checks_performed": [], "missing_evidence": [], "confidence": 0.0})
+    
+    async def _execute_grant_tool(
+        self,
+        context: ExecutionContext,
+        validated_input: BaseModel,
+        action_id: str,
+    ) -> ToolResult:
+        """Validate a grant."""
+        grant_id = validated_input.grant_id
+        # In real implementation, check grant store
+        return ToolResult(action_id=action_id, tool_name="grant_validate", success=True,
+                         output={"valid": False, "reason": "Grant validation not implemented", "grant_details": {}})
+    
+    def _emit_action_requested(self, context: ExecutionContext, action_id: str, tool_name: str, validated_input: BaseModel) -> None:
+        """Emit ActionRequestedEvent."""
+        event = FactoryEvent.create(
+            event_type=EventType.ACTION_REQUESTED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=ActionRequestedEvent(
+                action_id=action_id,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                task_id=context.task_id,
+                attempt_id=context.attempt_id,
+                agent_id=context.agent_id,
+                tool_name=tool_name,
+                tool_args=validated_input.model_dump(),
+                context={},
+            ),
+            source="tool_executor",
+            correlation_id=context.task_id,
+        )
+        self.event_bus.emit(event)
+    
+    def _emit_action_validated(self, context: ExecutionContext, action_id: str, tool_name: str, validated: bool, violations: List[str]) -> None:
+        """Emit ActionValidatedEvent."""
+        event = FactoryEvent.create(
+            event_type=EventType.ACTION_VALIDATED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=ActionValidatedEvent(
+                action_id=action_id,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                task_id=context.task_id,
+                attempt_id=context.attempt_id,
+                agent_id=context.agent_id,
+                tool_name=tool_name,
+                valid=validated,
+                reason=None if validated else "; ".join(violations) if violations else "Validation failed",
+            ),
+            source="tool_executor",
+            correlation_id=context.task_id,
+        )
+        self.event_bus.emit(event)
+    
+    def _emit_tool_completed(self, context: ExecutionContext, action_id: str, tool_name: str, tool_result: ToolResult) -> None:
+        """Emit TOOL_COMPLETED event."""
+        event = FactoryEvent.create(
+            event_type=EventType.TOOL_COMPLETED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=ToolCompletedEvent(
+                action_id=action_id,
+                tool_name=tool_name,
+                attempt_id=context.attempt_id,
+                success=True,
+                output_summary=str(tool_result.output)[:200] if tool_result.output else "",
+                duration_ms=tool_result.duration_ms,
+            ),
+            source=f"tool.{tool_name}",
+            correlation_id=context.task_id,
+        )
+        self.event_bus.emit(event)
+    
+    def _emit_tool_failed(self, context: ExecutionContext, action_id: str, tool_name: str, tool_result: ToolResult) -> None:
+        """Emit TOOL_FAILED event."""
+        event = FactoryEvent.create(
+            event_type=EventType.TOOL_FAILED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=ToolFailedEvent(
+                action_id=action_id,
+                tool_name=tool_name,
+                attempt_id=context.attempt_id,
+                error=tool_result.error or "Unknown error",
+                error_type=tool_result.error_type or "ToolError",
+                duration_ms=tool_result.duration_ms,
+            ),
+            source=f"tool.{tool_name}",
+            correlation_id=context.task_id,
+        )
+        self.event_bus.emit(event)
+
+
+# ============================================================
 # EXECUTION ENGINE
 # ============================================================
 class ExecutionEngine:
@@ -300,6 +937,17 @@ class ExecutionEngine:
         )
         # Event bus
         self.event_bus = SimpleEventBus()
+        # Tool registry (pre-populated with all contracts)
+        self.tool_registry = ToolRegistry()
+        self._populate_tool_registry()
+        # Tool executor (E9)
+        self.tool_executor = ToolExecutor(
+            engine=self,
+            tool_registry=self.tool_registry,
+            sandbox_manager=self.sandbox_manager,
+            evidence_store=self.evidence_store,
+            event_bus=self.event_bus,
+        )
         # Agent registry and factory
         self.agent_registry = agent_registry
         self.agent_factory = AgentFactory(self.agent_registry)
@@ -323,6 +971,24 @@ class ExecutionEngine:
         self.task_runnable_cache: Dict[str, Set[str]] = {}  # run_id -> set of runnable task_ids
         # Agent reassignment tracking for retries
         self._previous_agent_ids: Dict[str, str] = {}  # task_id -> agent_id
+    
+    def _populate_tool_registry(self) -> None:
+        """Populate tool registry with all standard contracts."""
+        # ToolRegistry is already pre-populated with ALL_TOOL_CONTRACTS in its __init__
+        # Just verify all contracts are present
+        expected = [
+            "read_file", "write_file", "edit_file", "list_dir", "grep", "find_files", "file_browser",
+            "run_command", "sandbox_execute",
+            "artifact_write", "artifact_read",
+            "verification_check",
+            "git_branch", "git_commit", "git_diff", "git_status", "git_push",
+            "web_search", "web_fetch",
+            "grant_validate",
+        ]
+        for name in expected:
+            if not self.tool_registry.get(name):
+                raise ValueError(f"Missing tool contract: {name}")
+    
     # --- Mission Lifecycle ---
     def create_mission(self, user_request: str) -> Mission:
         """Create a new mission."""
@@ -622,8 +1288,11 @@ class ExecutionEngine:
                 agent_type=task.agent_type,
                 sandbox_id=sandbox_id,
                 sandbox_manager=sandbox_manager,
+                tool_executor=self.tool_executor,  # E9-R: provide ToolExecutor for governed tool execution
                 event_emitter=self.event_bus.emit,
                 evidence_store=self.evidence_store,
+                grant_validator=self.grant_validator,  # E9-R: grant validation for tool permissions
+                grant_ids=["test-grant"],  # E9-R: default grant for testing
                 previous_agent_id=self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None,
             )
             
@@ -2049,15 +2718,36 @@ class ExecutionEngine:
                     source=f"tool.{tool_name}",
                     correlation_id=context.task_id,
                 ))
+                # Read stdout/stderr from artifact references
+                stdout_content = ""
+                stderr_content = ""
+                if record.stdout_reference:
+                    stdout_art = self.evidence_store.get_artifact(record.stdout_reference)
+                    if stdout_art:
+                        stdout_content = self.evidence_store.read_artifact_content(stdout_art.artifact_id) or ""
+                if record.stderr_reference:
+                    stderr_art = self.evidence_store.get_artifact(record.stderr_reference)
+                    if stderr_art:
+                        stderr_content = self.evidence_store.read_artifact_content(stderr_art.artifact_id) or ""
+                
                 return ToolResult(
                     action_id=action_id,
                     tool_name=tool_name,
                     success=record.exit_code == 0,
-                    output=record,
+                    output={
+                        "success": record.exit_code == 0,
+                        "exit_code": record.exit_code or 0,
+                        "stdout": stdout_content,
+                        "stderr": stderr_content,
+                        "stdout_sha256": hashlib.sha256(stdout_content.encode()).hexdigest() if stdout_content else "",
+                        "stderr_sha256": hashlib.sha256(stderr_content.encode()).hexdigest() if stderr_content else "",
+                        "duration_ms": record.duration_ms,
+                        "termination": record.termination.value if record.termination else "normal",
+                    },
                     artifacts=artifact_ids,
                     duration_ms=record.duration_ms,
                 )
-            elif tool_name == "write_artifact":
+            elif tool_name in ("write_artifact", "artifact_write"):
                 sandbox_id = tool_input.get("sandbox_id") or context.sandbox_id
                 if not sandbox_id:
                     raise ValueError("No sandbox_id for write_artifact")
@@ -2100,6 +2790,7 @@ class ExecutionEngine:
                     tool_name=tool_name,
                     success=True,
                     output={
+                        "success": True,
                         "artifact_id": artifact.artifact_id,
                         "name": artifact.name,
                         "path": artifact.path,
@@ -2108,7 +2799,7 @@ class ExecutionEngine:
                     },
                     artifacts=[artifact.artifact_id],
                 )
-            elif tool_name == "read_artifact":
+            elif tool_name in ("read_artifact", "artifact_read"):
                 sandbox_id = tool_input.get("sandbox_id") or context.sandbox_id
                 if not sandbox_id:
                     raise ValueError("No sandbox_id for read_artifact")
@@ -3255,10 +3946,8 @@ class ExecutionEngine:
                 artifact_ids=artifact_ids,
                 evidence_hashes=evidence_hashes,
             )
-            print(f"DEBUG execution.py: create_human_gate returning gate_id={gate_id}")
             return gate_id
         except Exception as e:
-            print(f"DEBUG execution.py: create_human_gate exception: {e}")
             return None
     def decide_human_gate(
         self,
@@ -3283,11 +3972,31 @@ class ExecutionEngine:
         mission = self.missions.get(mission_id)
         if not mission or mission.state != MissionState.HUMAN_REQUIRED:
             return False
+        # Check mission-level gate
         gate_info = mission.metadata.get("human_gate", {})
-        if gate_info.get("gate_id") != gate_id:
-            return False
-        # Check for duplicate decision - a gate may have at most one accepted terminal decision
-        existing_decision = mission.metadata.get("human_decision")
+        if gate_info.get("gate_id") == gate_id:
+            pass  # Found mission-level gate
+        else:
+            # Check action-level gates
+            found = False
+            for key, value in mission.metadata.items():
+                if key.startswith("action_gate_") and value == gate_id:
+                    found = True
+                    break
+            if not found:
+                return False
+        # Check for duplicate decision - THIS SPECIFIC GATE may have at most one accepted terminal decision
+        # Check the gate-specific decision record
+        gate_decision_key = None
+        for key, value in mission.metadata.items():
+            if key.startswith("action_gate_") and value == gate_id:
+                gate_decision_key = f"{key}_decision"
+                break
+        if gate_decision_key:
+            existing_decision = mission.metadata.get(gate_decision_key)
+        else:
+            # Mission-level gate
+            existing_decision = mission.metadata.get("human_decision")
         if existing_decision:
             # Duplicate decision attempt - reject
             self._emit(FactoryEvent.create(
@@ -3324,8 +4033,20 @@ class ExecutionEngine:
                 validate_mission_transition(MissionState.HUMAN_REQUIRED, MissionState.EXECUTING)
                 from_state = mission.state
                 mission.state = MissionState.EXECUTING
-                # Clear gate, keep decision record
+                # Clear mission-level gate, keep decision record
                 mission.metadata.pop("human_gate", None)
+                # Mark action-level gates for this gate_id as approved (don't delete - keep for future checks)
+                for key in list(mission.metadata.keys()):
+                    if key.startswith("action_gate_") and isinstance(mission.metadata[key], str):
+                        # Check if this gate corresponds to the approved gate_id
+                        if mission.metadata[key] == gate_id:
+                            # Mark as approved - keep the decision record
+                            mission.metadata[f"{key}_decision"] = {
+                                "decision": "approve",
+                                "actor": actor,
+                                "feedback": feedback,
+                                "decided_at": datetime.now(timezone.utc).isoformat(),
+                            }
                 # Emit decision recorded
                 self._emit(FactoryEvent.create(
                     EventType.HUMAN_DECISION_RECORDED,

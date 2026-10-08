@@ -1,0 +1,89 @@
+# E9-R CLOSURE — WORKTREE INVENTORY
+
+## Classification Rules:
+- E9-R_REQUIRED: Source changes needed for E9-R governance integration
+- E9-R_EVIDENCE: Evidence artifacts from E9-R execution
+- E9-R_TEST_FIX: Test files that need fixing for E9-R
+- PRE_EXISTING: Files from E8/E7/E6 etc. already in repo history
+- UNRELATED: Files not related to E9-R
+- UNKNOWN: Cannot determine classification
+
+---
+
+## MODIFIED TRACKED (5)
+
+| File | Classification | Justification |
+|------|----------------|---------------|
+| src/unified/execution.py | **E9-R_REQUIRED** | ToolExecutor class + context wiring + Action registration |
+| src/unified/mission_controller.py | **E9-R_REQUIRED** | MissionTaskAgent uses ToolExecutor for artifact_write |
+| src/unified/tool_contract.py | **E9-R_REQUIRED** | action_id field in ToolResult |
+| src/unified/execution_tracker.json | **E9-R_REQUIRED** | E7 workstream entry added (part of E9-R baseline) |
+| E6-R2/e6_commit_manifest.json | **PRE_EXISTING** | E6-R2 evidence manifest update (unrelated to E9-R logic) |
+
+---
+
+## UNTRACKED — PRE_EXISTING (Historical Evidence)
+
+| Path | Classification | Notes |
+|------|----------------|-------|
+| E2-R/reconciliation/* | PRE_EXISTING | E2-R reconciliation artifacts |
+| E2-R/runtime_backup/ | PRE_EXISTING | E2-R backup |
+| E5/ | PRE_EXISTING | E5 evidence |
+| E6-R2/FINAL_REPORT.md | PRE_EXISTING | E6-R2 final report |
+| E6-R2/evidence/ | PRE_EXISTING | E6-R2 evidence dir |
+| E6-R2/reconciliation.json | PRE_EXISTING | E6-R2 reconciliation |
+| E7/ | PRE_EXISTING | E7 evidence |
+| E8-R/ | PRE_EXISTING | E8-R evidence |
+| E8/ | PRE_EXISTING | E8 evidence |
+| E9/ | PRE_EXISTING | E9 evidence |
+| docs/evidence/e2-r/ | PRE_EXISTING | E2-R docs |
+| run_e6r2_repair.py | PRE_EXISTING | E6-R2 test harness |
+| run_e7_mission.py | PRE_EXISTING | E7 test harness |
+| run_e9_fabric.py | **E9-R_TEST_FIX** | E9 test harness (needs grant_validator fix for resume) |
+| collect_e5_evidence.py | PRE_EXISTING | E5 collector |
+| tests/orchestrator/test_e5_agent_runtime_integration.py | PRE_EXISTING | E5 test |
+
+---
+
+## UNTRACKED — E9-R_EVIDENCE (Current Closure Artifacts)
+
+| Path | Classification | Notes |
+|------|----------------|-------|
+| E9-R/evidence/baseline.txt | **E9-R_EVIDENCE** | This file |
+| E9-R/evidence/worktree_inventory.json | **E9-R_EVIDENCE** | This file |
+| E9-R/evidence/production_diff_audit.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/vertical_slice.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/action_ledger.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/event_trace.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/grant_validation.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/human_gate_result.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/test_results.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/bypass_audit.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/evidence/claim_reconciliation.json | **E9-R_EVIDENCE** | To be created |
+| E9-R/production_execution_path_after.json | **E9-R_EVIDENCE** | Already created |
+| E9-R/evidence/execution_fabric_audit_after.json | **E9-R_EVIDENCE** | Already created |
+| E9-R/evidence/e9r_claim_reconciliation.json | **E9-R_EVIDENCE** | Already created |
+| E9-R/evidence/FINAL_REPORT.md | **E9-R_EVIDENCE** | Already created |
+| E9-R/test_production_integration.py | **E9-R_TEST_FIX** | Test harness (needs fixes) |
+
+---
+
+## UNKNOWN (Require Investigation)
+
+None identified at this time.
+
+---
+
+## SUMMARY
+
+| Category | Count |
+|----------|-------|
+| E9-R_REQUIRED | 4 (source) + 1 (tracker) = 5 |
+| E9-R_EVIDENCE | 12 (to commit) |
+| E9-R_TEST_FIX | 2 (run_e9_fabric.py, test_production_integration.py) |
+| PRE_EXISTING | ~30 dirs/files |
+| UNRELATED | 0 |
+| UNKNOWN | 0 |
+
+**E9-R Commit Scope:** 5 modified tracked + 12 new evidence = 17 files
+**E9-R Test Fixes:** 2 test harness files (separate commit or same)

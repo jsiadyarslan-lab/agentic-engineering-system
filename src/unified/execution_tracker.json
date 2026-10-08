@@ -410,6 +410,42 @@
       "evidence": [],
       "verification": "10 concurrent missions; security audit clean",
       "exit_criteria": "Scale targets met; no critical vulnerabilities"
+    },
+    {
+      "id": "WS-18",
+      "name": "Mission Autonomy & Long-Running Execution (E7)",
+      "phase": 9,
+      "description": "Multi-task mission with adaptive replan, cross-process resume, independent verification",
+      "deliverables": [
+        "5-task mission (A->B->C->D->E) with real dependencies",
+        "UNRECOVERABLE_FAILURE triggering true replan (not retry)",
+        "Replan adds remediation task (TASK_X) and rewires dependencies (TASK_D->TASK_X)",
+        "Checkpoint captures full task graph state for cross-runtime resume",
+        "Process B (new Python process) resumes from Process A checkpoint",
+        "Independent verifier reads only persisted evidence (separate process)",
+        "Negative tests: corrupted evidence rejected, missing checkpoint rejects resume",
+        "Complete attempt ledger: SUCCESS, FAILED, REPLAN, VERIFICATION, RESUME"
+      ],
+      "dependencies": [
+        "WS-14"
+      ],
+      "status": "VERIFIED",
+      "evidence": [
+        "run_e7_mission.py",
+        "E7/evidence/final_mission_state.json",
+        "E7/evidence/checkpoint_post_replan.json",
+        "E7/evidence/checkpoint_final.json",
+        "E7/evidence/resume_trace.json",
+        "E7/evidence/replan_trace.json",
+        "E7/evidence/attempt_ledger.json",
+        "E7/evidence/independent_audit.json",
+        "E7/evidence/negative_verification.json",
+        "E7/evidence/negative_resume.json",
+        "E7/evidence/event_history.json",
+        "E7/evidence/test_results.json (12/12 VERIFIED)"
+      ],
+      "verification": "E7 mission executes 5+1 tasks; TASK_C fails unrecoverably; replan adds TASK_X and rewires TASK_D; checkpoint saved; new process resumes; independent verifier confirms all artifacts; negative tests pass; all 12 criteria verified",
+      "exit_criteria": "All E7-01 through E7-12 criteria VERIFIED with persisted evidence"
     }
   ],
   "phase_summary": [

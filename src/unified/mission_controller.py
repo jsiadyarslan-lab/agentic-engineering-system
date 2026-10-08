@@ -260,7 +260,7 @@ class MissionTaskAgent(BaseAgent):
                         error_type=type(e).__name__,
                     )
 
-        # ---- Normal production path: real sandbox write + evidence ----
+        # ---- Normal production path: real sandbox write via ToolExecutor + evidence ----
         try:
             content = str(ctx.get("content", "E33-OUTPUT"))
             output_path = str(ctx.get("output_path", f"e33_{task.task_id}.txt"))
@@ -268,34 +268,66 @@ class MissionTaskAgent(BaseAgent):
             if sleep_s > 0:
                 await asyncio.sleep(sleep_s)
 
-            sandbox = context.sandbox_manager
-            artifact = None
-            if sandbox is not None:
-                artifact = await sandbox.write_artifact(
-                    sandbox_id=context.sandbox_id,
-                    path=output_path,
-                    content=content.encode("utf-8"),
+            # E9-R: Use ToolExecutor for governed artifact_write execution
+            tool_executor = getattr(context, "tool_executor", None)
+            artifact_id = None
+            sha256 = None
+            
+            if tool_executor is not None:
+                # Execute through ToolExecutor (governed path)
+                tool_result = await tool_executor.execute_tool(
+                    context=context,
+                    tool_name="artifact_write",
+                    tool_input={
+                        "sandbox_id": context.sandbox_id,
+                        "path": output_path,
+                        "content": content,
+                        "encoding": "utf-8",
+                    }
                 )
-                artifact.mission_id = context.mission_id
-                # Re-store artifact with updated mission_id
-                if context.evidence_store:
-                    context.evidence_store.store_artifact(artifact)
-                artifact_id = artifact.artifact_id
-                sha256 = artifact.sha256
+                if tool_result.success and tool_result.output:
+                    artifact_id = tool_result.output.get("artifact_id", "")
+                    sha256 = tool_result.output.get("sha256", "")
+                    # Action ID is available for traceability
+                    action_id = tool_result.action_id
+                else:
+                    # Tool execution failed
+                    return _result(
+                        False,
+                        error=tool_result.error or "Tool execution failed",
+                        error_type=tool_result.error_type or "ToolExecutionError",
+                    )
             else:
-                artifact_id = f"artifact-{hashlib.sha256(output_path.encode()).hexdigest()[:12]}"
-                sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
+                # Fallback: direct sandbox call (should not happen in production)
+                sandbox = context.sandbox_manager
+                artifact = None
+                if sandbox is not None:
+                    artifact = await sandbox.write_artifact(
+                        sandbox_id=context.sandbox_id,
+                        path=output_path,
+                        content=content.encode("utf-8"),
+                    )
+                    artifact.mission_id = context.mission_id
+                    if context.evidence_store:
+                        context.evidence_store.store_artifact(artifact)
+                    artifact_id = artifact.artifact_id
+                    sha256 = artifact.sha256
+                else:
+                    artifact_id = f"artifact-{hashlib.sha256(output_path.encode()).hexdigest()[:12]}"
+                    sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-            evidence = EvidenceRecord(
-                evidence_id=new_evidence_id(),
-                evidence_hash=sha256,
-                content_type="artifact",
-                source_id=artifact_id,
-                mission_id=context.mission_id,
-                run_id=context.run_id,
-                task_id=context.task_id,
-            )
-            context.evidence_store.store_evidence(evidence)
+            # Evidence is recorded by ToolExecutor, but we verify/record here for compatibility
+            if artifact_id and sha256 and context.evidence_store:
+                evidence = EvidenceRecord(
+                    evidence_id=new_evidence_id(),
+                    evidence_hash=sha256,
+                    content_type="artifact",
+                    source_id=artifact_id,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    task_id=context.task_id,
+                )
+                context.evidence_store.store_evidence(evidence)
 
             return _result(
                 True,
@@ -308,9 +340,10 @@ class MissionTaskAgent(BaseAgent):
                     "artifact_path": output_path,
                     "content": content,
                     "sha256": sha256,
+                    "action_id": action_id if tool_executor is not None else None,
                 },
                 evidence_hash=sha256,
-                artifacts=[artifact_id],
+                artifacts=[artifact_id] if artifact_id else [],
             )
         except Exception as e:
             return _result(
@@ -474,12 +507,16 @@ class MissionController:
 
     async def execute_run(self, run_id: str, max_parallel: int = 1, task_timeout: Optional[float] = None) -> Dict[str, Any]:
         """Execute the graph for a run through the engine's real production path."""
+        import traceback
+        print(f"DEBUG MC: execute_run called for run_id={run_id}")
+        print(f"DEBUG MC: Call stack:\n{''.join(traceback.format_stack()[:-1])}")
         t0 = time.time()
         result = await self.engine.execute_task_graph(
             run_id=run_id,
             max_parallel=max_parallel,
             task_timeout=task_timeout,
         )
+        print(f"DEBUG MC: execute_task_graph returned, result keys={list(result.keys())}, human_gate={result.get('human_gate')}, paused={result.get('paused')}")
         # Normalize the engine's result shapes: the pause paths merge junk keys
         # ("results", "paused", "pause_info") into task_results, and the inner
         # pause path nests real task entries under "results".
@@ -495,13 +532,26 @@ class MissionController:
             for tid, r in raw.items()
             if isinstance(r, dict)
         }
-        normalized = {
-            "success": result.get("success", False),
-            "paused": result.get("paused", False),
-            "pause_info": result.get("pause_info"),
-            "task_results": task_results,
-            "final_status": result.get("final_status") or self.engine.get_task_graph_status(run_id),
-        }
+        # Handle human gate pause (E8)
+        human_gate = result.get("human_gate", False)
+        gate_info = result.get("gate_info", {})
+        if human_gate:
+            # Human gate pauses execution - treat as paused
+            normalized = {
+                "success": False,
+                "paused": True,
+                "pause_info": {"human_gate": True, "gate_info": gate_info},
+                "task_results": task_results,
+                "final_status": self.engine.get_task_graph_status(run_id),
+            }
+        else:
+            normalized = {
+                "success": result.get("success", False),
+                "paused": result.get("paused", False),
+                "pause_info": result.get("pause_info"),
+                "task_results": task_results,
+                "final_status": result.get("final_status") or self.engine.get_task_graph_status(run_id),
+            }
         self.phase_log.append({
             "run_id": run_id,
             "max_parallel": max_parallel,
@@ -1073,23 +1123,25 @@ class MissionController:
         """Create a checkpoint for the mission/run."""
         graph = self.engine.task_graph.get(run_id, {})
         
-        # Build task definitions from graph and spec
+        # Build task definitions from graph and Task objects
         task_definitions = {}
         task_dependencies = {}
         task_dependents = {}
         agent_assignments = {}
         
         for tid, node in graph.items():
-            spec = node.get("spec")
-            if spec:
+            # Get task definition from engine.tasks
+            task_obj = self.engine.tasks.get(tid)
+            if task_obj:
                 task_definitions[tid] = {
-                    "name": spec.name,
-                    "description": spec.description,
-                    "agent_type": spec.agent_type.value if hasattr(spec.agent_type, 'value') else str(spec.agent_type),
-                    "depends_on": spec.depends_on,
-                    "acceptance_criteria": spec.acceptance_criteria,
-                    "max_retries": spec.max_retries,
-                    "retry_count": spec.retry_count,
+                    "name": task_obj.name,
+                    "description": task_obj.description,
+                    "agent_type": task_obj.agent_type.value if hasattr(task_obj.agent_type, 'value') else str(task_obj.agent_type),
+                    "depends_on": task_obj.depends_on,
+                    "acceptance_criteria": task_obj.acceptance_criteria,
+                    "max_retries": task_obj.max_retries,
+                    "retry_count": task_obj.retry_count,
+                    "context": task_obj.context,
                 }
             task_dependencies[tid] = list(node.get("depends_on", set()))
             # Build dependents
@@ -1110,16 +1162,51 @@ class MissionController:
         attempt_history = {}
         for tid in graph:
             attempts = []
+            # Track the current attempt state
+            current_attempt = {}
             for ev in self.engine.event_bus.history:
-                if ev.event_type in (EventType.TASK_ASSIGNED, EventType.TASK_STARTED, EventType.TASK_COMPLETED, EventType.TASK_FAILED) and ev.payload.get("task_id") == tid:
-                    attempts.append({
-                        "attempt_id": ev.payload.get("attempt_id", ""),
-                        "agent_id": ev.payload.get("agent_id", ""),
-                        "event_type": ev.event_type.value,
-                        "timestamp": ev.timestamp.isoformat(),
-                    })
+                if ev.payload.get("task_id") == tid:
+                    if ev.event_type == EventType.TASK_ASSIGNED:
+                        # New attempt started
+                        if current_attempt:
+                            attempts.append(current_attempt)
+                        current_attempt = {
+                            "attempt_id": ev.payload.get("attempt_id", ""),
+                            "task_id": tid,
+                            "agent_id": ev.payload.get("agent_id", ""),
+                            "state": "ASSIGNED",
+                            "success": False,
+                            "error": "",
+                            "started_at": ev.timestamp.isoformat() if ev.timestamp else "",
+                            "completed_at": "",
+                        }
+                    elif ev.event_type == EventType.TASK_STARTED:
+                        if current_attempt:
+                            current_attempt["state"] = "RUNNING"
+                    elif ev.event_type == EventType.TASK_COMPLETED:
+                        if current_attempt:
+                            current_attempt["state"] = "COMPLETED"
+                            current_attempt["success"] = True
+                            current_attempt["completed_at"] = ev.timestamp.isoformat() if ev.timestamp else ""
+                            attempts.append(current_attempt)
+                            current_attempt = {}
+                    elif ev.event_type == EventType.TASK_FAILED:
+                        if current_attempt:
+                            current_attempt["state"] = "FAILED"
+                            current_attempt["success"] = False
+                            current_attempt["error"] = ev.payload.get("error", "Task failed")
+                            current_attempt["completed_at"] = ev.timestamp.isoformat() if ev.timestamp else ""
+                            attempts.append(current_attempt)
+                            current_attempt = {}
+            if current_attempt:
+                attempts.append(current_attempt)
             if attempts:
                 attempt_history[tid] = attempts
+        
+        # Get human gate/decision from mission metadata for durability (E34)
+        mission = self.engine.missions.get(mission_id)
+        human_gate = mission.metadata.get("human_gate") if mission else None
+        human_decision = mission.metadata.get("human_decision") if mission else None
         
         checkpoint = Checkpoint(
             mission_id=mission_id,
@@ -1134,14 +1221,13 @@ class MissionController:
             task_dependents=task_dependents,
             attempt_history=attempt_history,
             agent_assignments=agent_assignments,
+            human_gate=human_gate,
+            human_decision=human_decision,
         )
         
-        # Save checkpoint to state dir
-        if self.state_dir:
-            cp_dir = self.state_dir / "checkpoints" / mission_id
-            cp_dir.mkdir(parents=True, exist_ok=True)
-            with open(cp_dir / f"{checkpoint.checkpoint_id}.json", "w", encoding="utf-8") as f:
-                json.dump(checkpoint.model_dump(), f, indent=2, default=str)
+        # Save checkpoint via engine for cross-runtime resume
+        self.engine.checkpoints[checkpoint.checkpoint_id] = checkpoint
+        self.engine._save_checkpoint_to_disk(checkpoint)
         
         return checkpoint
 
