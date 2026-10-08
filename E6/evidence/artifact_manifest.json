@@ -1,0 +1,72 @@
+{
+  "artifact-4026093e1140": {
+    "artifact_id": "artifact-4026093e1140",
+    "name": "task_a_output.txt",
+    "path": "task_a_output.txt",
+    "sha256": "f61557f6b25b0ea5a500856dd53e9ba87cdec3049fee06428f5b0db05a76c239",
+    "size_bytes": 42,
+    "created_by": "sandbox-task-fbe64948907e",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-e8ba944386b7": {
+    "artifact_id": "artifact-e8ba944386b7",
+    "name": "e33_tool_failure_guard.txt",
+    "path": "e33_tool_failure_guard.txt",
+    "sha256": "e2817e10c0faf8940fc714304c96dea829b9b4345ee20af56a341a2083dc8dbb",
+    "size_bytes": 28,
+    "created_by": "sandbox-task-bea1e68a9047",
+    "mission_id": "",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-6c9d1c14f48b": {
+    "artifact_id": "artifact-6c9d1c14f48b",
+    "name": "task_b_output.txt",
+    "path": "task_b_output.txt",
+    "sha256": "a93b570869ffc6ccfa96e4b3b373010c446dc7cf34e24b80609ff3e4e4f8fdc0",
+    "size_bytes": 36,
+    "created_by": "sandbox-task-95885b057938",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-a89daceb532b": {
+    "artifact_id": "artifact-a89daceb532b",
+    "name": "task_c_output.txt",
+    "path": "task_c_output.txt",
+    "sha256": "bd66a3d566fc5bc14cb616f87872c9218c8afd82712f1bba7e6c45f18a1ee219",
+    "size_bytes": 37,
+    "created_by": "sandbox-task-bea1e68a9047",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-64893490dbca": {
+    "artifact_id": "artifact-64893490dbca",
+    "name": "task_d_output.txt",
+    "path": "task_d_output.txt",
+    "sha256": "9a17aa4be7507ca08a07cd5075509adc570ed26149f29b5fbbe3422ccb1dd260",
+    "size_bytes": 34,
+    "created_by": "sandbox-task-788a2580fd4f",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-0edd64abad00": {
+    "artifact_id": "artifact-0edd64abad00",
+    "name": "task_e_output.txt",
+    "path": "task_e_output.txt",
+    "sha256": "0f6b00b5ef7a07ff77bb360205c4c57161b36c99b507f23b18905b6c736d12d9",
+    "size_bytes": 36,
+    "created_by": "sandbox-task-c856c39f6aa8",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  },
+  "artifact-b4c0b8e5a159": {
+    "artifact_id": "artifact-b4c0b8e5a159",
+    "name": "task_c_remediation_output.txt",
+    "path": "task_c_remediation_output.txt",
+    "sha256": "e83564b0918aa440628138ce467d70f6c7dafd2f6da76c58960a81457e7f3b46",
+    "size_bytes": 45,
+    "created_by": "sandbox-task-ab05827b8afc",
+    "mission_id": "mission-a3ac0af541af",
+    "content_type": "application/octet-stream"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "commit_message": "E6: Durable Mission Orchestration - implementation, tests, evidence collector, and E6-R reconciliation",
+  "files": [
+    {
+      "path": "tests/orchestrator/test_e6_durable_mission_orchestration.py",
+      "sha256": "7bf49c12930043efb02b2bd5b3f3ae375bec9f68f0127348d43c0a3187c0c503",
+      "classification": "test",
+      "role": "E6 test suite (18 tests covering: multi-task orchestration, checkpoint/resume, failure/replan, no false re-execution, event history, independent verification, regression matrix, scope guards)"
+    },
+    {
+      "path": "collect_e6_evidence.py",
+      "sha256": "01b1563d8884088594d5dfab3eb996ccefa9f984fe7bc93f35c3d4344c09c198",
+      "classification": "collector",
+      "role": "E6 evidence generation script producing 17 evidence artifacts"
+    },
+    {
+      "path": "E6/evidence/baseline.txt",
+      "sha256": "61d76d32ec647b226b895c3257c3988c0d4e71b972a3741de1ab24071770d133",
+      "classification": "evidence",
+      "role": "Baseline SHA references"
+    },
+    {
+      "path": "E6/evidence/e5_reconciliation.json",
+      "sha256": "ea367a60627a7f3e85eb177ce010f814ad799f0ca0416a8aee30b81380f61256",
+      "classification": "evidence",
+      "role": "E5 evidence reconciliation (11/11 verified)"
+    },
+    {
+      "path": "E6/evidence/mission.json",
+      "sha256": "0a86b23a6a9c43ffcbfb1bbdd6bb44d0d12a9ce86da586f6d7497bcc309fac74",
+      "classification": "evidence",
+      "role": "Mission/run/task mapping"
+    },
+    {
+      "path": "E6/evidence/run.json",
+      "sha256": "9c3f18a5375acb06f7442bb6fed3dce2ba1948298f8a4663478240a6d50f3cf3",
+      "classification": "evidence",
+      "role": "Run metadata"
+    },
+    {
+      "path": "E6/evidence/task_graph.json",
+      "sha256": "c5de258dae9d6fdcfe233289fdc271447e3938b40d2b8a85d729630f559501ff",
+      "classification": "evidence",
+      "role": "Task graph DAG structure"
+    },
+    {
+      "path": "E6/evidence/checkpoint.json",
+      "sha256": "bc547abc9a9cde9dbfe70e6dbb3042b3d336da5b31adf56b29ee220d1151724f",
+      "classification": "evidence",
+      "role": "Checkpoint (KNOWN INSUFFICIENT - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/interruption_record.json",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "classification": "evidence",
+      "role": "Interruption record (KNOWN EMPTY - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/resume_record.json",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "classification": "evidence",
+      "role": "Resume record (KNOWN EMPTY - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/attempt_ledger.json",
+      "sha256": "d055af6581ef2275aa62e7474889942309a0793b902ec43c3b59e7d26ab2532a",
+      "classification": "evidence",
+      "role": "Attempt ledger (KNOWN INCOMPLETE - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/failure_record.json",
+      "sha256": "b2cf25075fa5cadf3ff653153e4c3272b7faa66ac7761f3d4cdf3ee3ca0b75df",
+      "classification": "evidence",
+      "role": "Failure record (KNOWN: engine retry not replan - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/replan_record.json",
+      "sha256": "6de2a8642b6a7838fa815eaf53da3a691cfdce86bee44ef113c275cc33fd0d54",
+      "classification": "evidence",
+      "role": "Replan record (KNOWN post-hoc - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/verification_record.json",
+      "sha256": "c2a8b65d1fcc8c0c7c98879d114163e45a2de7b5f2ae1e15fab415dd4ffe2b51",
+      "classification": "evidence",
+      "role": "Verification record (KNOWN not independent - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/event_trace.json",
+      "sha256": "be6237702a81b4b49759ccb8823c1e22944d76a89b649e7c81e6ec47b3c572fc",
+      "classification": "evidence",
+      "role": "Event trace (KNOWN single process - will be regenerated in E6-R2)"
+    },
+    {
+      "path": "E6/evidence/artifact_manifest.json",
+      "sha256": "92b43dc30da76921b82e77e66f91b890472f46cad58e9801fbef6bd8f721fe25",
+      "classification": "evidence",
+      "role": "Artifact manifest (7 task outputs only)"
+    },
+    {
+      "path": "E6/evidence/final_run_state.json",
+      "sha256": "84a3262eb3f3f9aaff98f10dff0585ade3d4e148be2fc70c5cc1d13795f42f51",
+      "classification": "evidence",
+      "role": "Final run state"
+    },
+    {
+      "path": "E6/evidence/task_state_trace.json",
+      "sha256": "d055af6581ef2275aa62e7474889942309a0793b902ec43c3b59e7d26ab2532a",
+      "classification": "evidence",
+      "role": "Task state trace"
+    },
+    {
+      "path": "E6/evidence/test_results.json",
+      "sha256": "eafe5fb55f7b99b541f1ef1b4726eb24bda2d903a20620d4eeb774f35783766a",
+      "classification": "evidence",
+      "role": "Test results summary"
+    },
+    {
+      "path": "E6-R/reconciliation.json",
+      "sha256": "4f7b9e245b4d9a76aa29cf721b0bf110ff9dd8ecd635ff93f99ef4e53f8e0fe0",
+      "classification": "report",
+      "role": "E6-R reconciliation result (RATIFICATION BLOCKED)"
+    },
+    {
+      "path": "E6-R/FINAL_REPORT.md",
+      "sha256": "8bc2326f4f76378bc6bf067c830b1a1d04f7402d1853b48f146fd4106185d3a9",
+      "classification": "report",
+      "role": "E6-R final report"
+    },
+    {
+      "path": "E6-R2/baseline_inventory.json",
+      "sha256": "TO_BE_COMPUTED",
+      "classification": "report",
+      "role": "E6-R2 baseline inventory"
+    }
+  ],
+  "notes": [
+    "E6-R1 evidence artifacts are committed as-is for provenance but are known insufficient per E6-R reconciliation",
+    "E6-R2 will regenerate checkpoint, interruption, resume, attempt_ledger, failure, replan, verification, event_trace with proper cross-process demonstration",
+    "E6-R2 will add: independent verification from separate process, negative verification tests, negative resume test, complete attempt ledger across all missions"
+  ]
+}

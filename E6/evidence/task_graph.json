@@ -1,0 +1,25 @@
+{
+  "key_to_task": {
+    "TASK_A": "task-fbe64948907e",
+    "TASK_B": "task-95885b057938",
+    "TASK_C": "task-bea1e68a9047",
+    "TASK_D": "task-788a2580fd4f",
+    "TASK_E": "task-c856c39f6aa8"
+  },
+  "dependencies": {
+    "TASK_A": [],
+    "TASK_B": [
+      "TASK_A"
+    ],
+    "TASK_C": [
+      "TASK_A"
+    ],
+    "TASK_D": [
+      "TASK_B",
+      "TASK_C"
+    ],
+    "TASK_E": [
+      "TASK_D"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "from_version": "v1",
+  "to_version": "v2",
+  "reason": "Recover from TASK_C tool_runtime failure",
+  "evidence": [
+    "TASK_FAILED event at 2026-10-08T00:25:34.693511",
+    "terminal=False retry_count=0 max_retries=2"
+  ],
+  "added_tasks": [
+    {
+      "task_key": "TASK_C_REMEDIATION",
+      "depends_on": [
+        "task-fbe64948907e"
+      ],
+      "name": "TASK_C_REMEDIATION"
+    }
+  ],
+  "removed_tasks": [],
+  "invalidated_tasks": [],
+  "preserved_tasks": [
+    "TASK_A",
+    "TASK_B",
+    "TASK_C",
+    "TASK_D",
+    "TASK_E"
+  ],
+  "rewired_dependencies": [
+    {
+      "task_key": "TASK_D",
+      "new_depends_on": [
+        "TASK_C_REMEDIATION"
+      ]
+    }
+  ],
+  "modified_tasks": [],
+  "timestamp": "2026-10-08T00:25:35.694703+00:00"
+}

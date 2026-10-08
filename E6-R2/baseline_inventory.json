@@ -1,0 +1,156 @@
+{
+  "baseline_sha": "711557c99788a5671e5aabceecaf90142a8cc42e",
+  "baseline_status": "clean (LOCAL == REMOTE)",
+  "baseline_timestamp": "2026-10-08T01:00:00Z",
+  "local_equals_remote": true,
+  "worktree_state": "DIRTY (E6-R2 relevant untracked files listed below)",
+  "inventory": [
+    {
+      "path": "E6\\evidence\\baseline.txt",
+      "sha256": "61d76d32ec647b226b895c3257c3988c0d4e71b972a3741de1ab24071770d133",
+      "size": 250,
+      "classification": "evidence",
+      "role": "E6-R1 baseline reference"
+    },
+    {
+      "path": "E6\\evidence\\e5_reconciliation.json",
+      "sha256": "ea367a60627a7f3e85eb177ce010f814ad799f0ca0416a8aee30b81380f61256",
+      "size": 831,
+      "classification": "evidence",
+      "role": "E5 evidence reconciliation"
+    },
+    {
+      "path": "E6\\evidence\\checkpoint.json",
+      "sha256": "bc547abc9a9cde9dbfe70e6dbb3042b3d336da5b31adf56b29ee220d1151724f",
+      "size": 50,
+      "classification": "evidence",
+      "role": "E6-R1 checkpoint (INSUFFICIENT - only checkpoint_id)"
+    },
+    {
+      "path": "E6\\evidence\\mission.json",
+      "sha256": "0a86b23a6a9c43ffcbfb1bbdd6bb44d0d12a9ce86da586f6d7497bcc309fac74",
+      "size": 324,
+      "classification": "evidence",
+      "role": "E6-R1 mission/run mapping"
+    },
+    {
+      "path": "E6\\evidence\\run.json",
+      "sha256": "9c3f18a5375acb06f7442bb6fed3dce2ba1948298f8a4663478240a6d50f3cf3",
+      "size": 77,
+      "classification": "evidence",
+      "role": "E6-R1 run metadata"
+    },
+    {
+      "path": "E6\\evidence\\task_graph.json",
+      "sha256": "c5de258dae9d6fdcfe233289fdc271447e3938b40d2b8a85d729630f559501ff",
+      "size": 434,
+      "classification": "evidence",
+      "role": "E6-R1 task graph structure"
+    },
+    {
+      "path": "E6\\evidence\\task_state_trace.json",
+      "sha256": "d055af6581ef2275aa62e7474889942309a0793b902ec43c3b59e7d26ab2532a",
+      "size": 2215,
+      "classification": "evidence",
+      "role": "E6-R1 task state trace (INCOMPLETE - missing missions 1-2)"
+    },
+    {
+      "path": "E6\\evidence\\artifact_manifest.json",
+      "sha256": "92b43dc30da76921b82e77e66f91b890472f46cad58e9801fbef6bd8f721fe25",
+      "size": 2783,
+      "classification": "evidence",
+      "role": "E6-R1 artifact manifest (7 artifacts only)"
+    },
+    {
+      "path": "E6\\evidence\\attempt_ledger.json",
+      "sha256": "d055af6581ef2275aa62e7474889942309a0793b902ec43c3b59e7d26ab2532a",
+      "size": 2215,
+      "classification": "evidence",
+      "role": "E6-R1 attempt ledger (INCOMPLETE - only mission 3)"
+    },
+    {
+      "path": "E6\\evidence\\event_trace.json",
+      "sha256": "be6237702a81b4b49759ccb8823c1e22944d76a89b649e7c81e6ec47b3c572fc",
+      "size": 51330,
+      "classification": "evidence",
+      "role": "E6-R1 event trace (single process only)"
+    },
+    {
+      "path": "E6\\evidence\\failure_record.json",
+      "sha256": "b2cf25075fa5cadf3ff653153e4c3272b7faa66ac7761f3d4cdf3ee3ca0b75df",
+      "size": 803,
+      "classification": "evidence",
+      "role": "E6-R1 failure record (engine retry, not replan)"
+    },
+    {
+      "path": "E6\\evidence\\final_run_state.json",
+      "sha256": "84a3262eb3f3f9aaff98f10dff0585ade3d4e148be2fc70c5cc1d13795f42f51",
+      "size": 443,
+      "classification": "evidence",
+      "role": "E6-R1 final state"
+    },
+    {
+      "path": "E6\\evidence\\interruption_record.json",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "classification": "evidence",
+      "role": "E6-R1 interruption record (EMPTY {})"
+    },
+    {
+      "path": "E6\\evidence\\replan_record.json",
+      "sha256": "6de2a8642b6a7838fa815eaf53da3a691cfdce86bee44ef113c275cc33fd0d54",
+      "size": 793,
+      "classification": "evidence",
+      "role": "E6-R1 replan record (post-hoc)"
+    },
+    {
+      "path": "E6\\evidence\\resume_record.json",
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "size": 2,
+      "classification": "evidence",
+      "role": "E6-R1 resume record (EMPTY {})"
+    },
+    {
+      "path": "E6\\evidence\\test_results.json",
+      "sha256": "eafe5fb55f7b99b541f1ef1b4726eb24bda2d903a20620d4eeb774f35783766a",
+      "size": 55,
+      "classification": "evidence",
+      "role": "E6-R1 test results (minimal)"
+    },
+    {
+      "path": "E6\\evidence\\verification_record.json",
+      "sha256": "c2a8b65d1fcc8c0c7c98879d114163e45a2de7b5f2ae1e15fab415dd4ffe2b51",
+      "size": 1943,
+      "classification": "evidence",
+      "role": "E6-R1 verification (NOT INDEPENDENT)"
+    },
+    {
+      "path": "E6-R\\reconciliation.json",
+      "sha256": "4f7b9e245b4d9a76aa29cf721b0bf110ff9dd8ecd635ff93f99ef4e53f8e0fe0",
+      "size": 5861,
+      "classification": "report",
+      "role": "E6-R reconciliation result"
+    },
+    {
+      "path": "E6-R\\FINAL_REPORT.md",
+      "sha256": "8bc2326f4f76378bc6bf067c830b1a1d04f7402d1853b48f146fd4106185d3a9",
+      "size": 9014,
+      "classification": "report",
+      "role": "E6-R final report"
+    },
+    {
+      "path": "collect_e6_evidence.py",
+      "sha256": "01b1563d8884088594d5dfab3eb996ccefa9f984fe7bc93f35c3d4344c09c198",
+      "size": 31909,
+      "classification": "collector",
+      "role": "E6 evidence generation script"
+    },
+    {
+      "path": "tests\\orchestrator\\test_e6_durable_mission_orchestration.py",
+      "sha256": "7bf49c12930043efb02b2bd5b3f3ae375bec9f68f0127348d43c0a3187c0c503",
+      "size": 62493,
+      "classification": "test",
+      "role": "E6 test suite (18 tests)"
+    }
+  ]
+}
