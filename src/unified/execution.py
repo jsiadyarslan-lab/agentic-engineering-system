@@ -1395,7 +1395,6 @@ class ExecutionEngine:
                 self._update_task_graph_state(run_id, task.task_id, TaskState.RUNNING)
                 
                 # Execute agent with task-level timeout
-                print(f"  [ExecutionEngine] Calling execute_agent_by_id for task {task.task_id}, agent {reserved_agent_id}, timeout={task_timeout}")
                 if task_timeout:
                     try:
                         result = await asyncio.wait_for(
@@ -1406,7 +1405,6 @@ class ExecutionEngine:
                             ),
                             timeout=task_timeout,
                         )
-                        print(f"  [ExecutionEngine] execute_agent_by_id returned: success={result.success}, error={result.error}")
                     except asyncio.TimeoutError:
                         # Task timeout
                         task_failed = True
@@ -1466,18 +1464,13 @@ class ExecutionEngine:
                             break
                 else:
                     # Use execute_agent_by_id with reserved agent_id (bypasses factory reservation)
-                    print(f"  [ExecutionEngine] Calling execute_agent_by_id (no timeout) for task {task.task_id}, agent {reserved_agent_id}")
                     try:
                         result = await self.agent_factory.execute_agent_by_id(
                             agent_id=reserved_agent_id,
                             context=context,
                             task=agent_task,
                         )
-                        print(f"  [ExecutionEngine] execute_agent_by_id returned: success={result.success}, error={result.error}")
                     except Exception as e:
-                        print(f"  [ExecutionEngine] EXCEPTION in execute_agent_by_id: {type(e).__name__}: {e}")
-                        import traceback
-                        traceback.print_exc()
                         # Create a failed result
                         result = AgentResult(
                             task_id=task.task_id,
@@ -1904,18 +1897,11 @@ class ExecutionEngine:
                         pass  # Transition failed, continue execution
                 # Check for human gate
                 if mission and mission.state == MissionState.HUMAN_REQUIRED:
-                    print(f"DEBUG EXECUTION: Human gate detected! mission.state={mission.state}, gate_info={mission.metadata.get('human_gate', {})}")
                     gate_info = mission.metadata.get("human_gate", {})
                     # Cancel running tasks
                     for task_id, running_task in running_tasks.items():
                         running_task.cancel()
-                    print(f"DEBUG EXECUTION: About to return with human_gate=True")
                     return {"results": results, "human_gate": True, "gate_info": gate_info}
-                else:
-                    if mission:
-                        print(f"DEBUG EXECUTION: No human gate. mission.state={mission.state}, expected HUMAN_REQUIRED")
-                    else:
-                        print(f"DEBUG EXECUTION: No mission object")
             # Get runnable tasks (READY state)
             runnable = self.get_runnable_tasks(run_id)
             # Filter out already running tasks

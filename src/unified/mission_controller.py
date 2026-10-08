@@ -298,23 +298,8 @@ class MissionTaskAgent(BaseAgent):
                         error_type=tool_result.error_type or "ToolExecutionError",
                     )
             else:
-                # Fallback: direct sandbox call (should not happen in production)
-                sandbox = context.sandbox_manager
-                artifact = None
-                if sandbox is not None:
-                    artifact = await sandbox.write_artifact(
-                        sandbox_id=context.sandbox_id,
-                        path=output_path,
-                        content=content.encode("utf-8"),
-                    )
-                    artifact.mission_id = context.mission_id
-                    if context.evidence_store:
-                        context.evidence_store.store_artifact(artifact)
-                    artifact_id = artifact.artifact_id
-                    sha256 = artifact.sha256
-                else:
-                    artifact_id = f"artifact-{hashlib.sha256(output_path.encode()).hexdigest()[:12]}"
-                    sha256 = hashlib.sha256(content.encode("utf-8")).hexdigest()
+                # E9-R1: Fail closed - ToolExecutor must be available in production
+                raise RuntimeError("ToolExecutor not available in ExecutionContext. Production execution requires governed tool execution via ToolExecutor.")
 
             # Evidence is recorded by ToolExecutor, but we verify/record here for compatibility
             if artifact_id and sha256 and context.evidence_store:
@@ -507,16 +492,12 @@ class MissionController:
 
     async def execute_run(self, run_id: str, max_parallel: int = 1, task_timeout: Optional[float] = None) -> Dict[str, Any]:
         """Execute the graph for a run through the engine's real production path."""
-        import traceback
-        print(f"DEBUG MC: execute_run called for run_id={run_id}")
-        print(f"DEBUG MC: Call stack:\n{''.join(traceback.format_stack()[:-1])}")
         t0 = time.time()
         result = await self.engine.execute_task_graph(
             run_id=run_id,
             max_parallel=max_parallel,
             task_timeout=task_timeout,
         )
-        print(f"DEBUG MC: execute_task_graph returned, result keys={list(result.keys())}, human_gate={result.get('human_gate')}, paused={result.get('paused')}")
         # Normalize the engine's result shapes: the pause paths merge junk keys
         # ("results", "paused", "pause_info") into task_results, and the inner
         # pause path nests real task entries under "results".
