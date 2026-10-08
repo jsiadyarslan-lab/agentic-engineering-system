@@ -81,6 +81,7 @@ from unified.contracts import (
     MissionCancelledEvent,
     HumanGateCreatedEvent,
     HumanDecisionRecordedEvent,
+    HumanDecisionRejectedEvent,
     # E13: Replan events
     ReplanRequestedEvent,
     ReplanAppliedEvent,
@@ -1234,11 +1235,18 @@ class ExecutionEngine:
                         pass  # Transition failed, continue execution
                 # Check for human gate
                 if mission and mission.state == MissionState.HUMAN_REQUIRED:
+                    print(f"DEBUG EXECUTION: Human gate detected! mission.state={mission.state}, gate_info={mission.metadata.get('human_gate', {})}")
                     gate_info = mission.metadata.get("human_gate", {})
                     # Cancel running tasks
                     for task_id, running_task in running_tasks.items():
                         running_task.cancel()
+                    print(f"DEBUG EXECUTION: About to return with human_gate=True")
                     return {"results": results, "human_gate": True, "gate_info": gate_info}
+                else:
+                    if mission:
+                        print(f"DEBUG EXECUTION: No human gate. mission.state={mission.state}, expected HUMAN_REQUIRED")
+                    else:
+                        print(f"DEBUG EXECUTION: No mission object")
             # Get runnable tasks (READY state)
             runnable = self.get_runnable_tasks(run_id)
             # Filter out already running tasks
@@ -2712,13 +2720,14 @@ class ExecutionEngine:
             for task_id, attempts in checkpoint.attempt_history.items():
                 for attempt_data in attempts:
                     # Reconstruct Attempt objects
+                    # Use task_id from outer loop (checkpoint key) since attempt_data may not have it
                     attempt = Attempt(
                         attempt_id=attempt_data["attempt_id"],
-                        task_id=attempt_data["task_id"],
-                        agent_id=attempt_data["agent_id"],
+                        task_id=task_id,  # Use outer loop key
+                        agent_id=attempt_data.get("agent_id", ""),
                         state=TaskState(attempt_data["state"]),
-                        success=attempt_data["success"],
-                        error=attempt_data["error"],
+                        success=attempt_data.get("success", False),
+                        error=attempt_data.get("error", ""),
                         started_at=datetime.fromisoformat(attempt_data["started_at"]) if isinstance(attempt_data.get("started_at"), str) else attempt_data.get("started_at"),
                         completed_at=datetime.fromisoformat(attempt_data["completed_at"]) if isinstance(attempt_data.get("completed_at"), str) else attempt_data.get("completed_at"),
                     )
@@ -3276,6 +3285,28 @@ class ExecutionEngine:
             return False
         gate_info = mission.metadata.get("human_gate", {})
         if gate_info.get("gate_id") != gate_id:
+            return False
+        # Check for duplicate decision - a gate may have at most one accepted terminal decision
+        existing_decision = mission.metadata.get("human_decision")
+        if existing_decision:
+            # Duplicate decision attempt - reject
+            self._emit(FactoryEvent.create(
+                EventType.HUMAN_DECISION_REJECTED,
+                mission_id,
+                HumanDecisionRejectedEvent(
+                    gate_id=gate_id,
+                    mission_id=mission_id,
+                    run_id=self._current_run.run_id if self._current_run and self._current_run.mission_id == mission_id else "",
+                    attempted_decision=decision,
+                    actor=actor,
+                    feedback=feedback,
+                    reason="Duplicate decision - gate already decided",
+                    existing_decision=existing_decision.get("decision"),
+                    existing_actor=existing_decision.get("actor"),
+                    existing_decided_at=existing_decision.get("decided_at"),
+                ),
+                run_id=self._current_run.run_id if self._current_run and self._current_run.mission_id == mission_id else None,
+            ))
             return False
         run_id = self._current_run.run_id if self._current_run and self._current_run.mission_id == mission_id else None
         try:

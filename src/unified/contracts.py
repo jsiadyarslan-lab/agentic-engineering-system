@@ -162,6 +162,7 @@ from unified.event_catalog import (
     MissionCancelledEvent,
     HumanGateCreatedEvent,
     HumanDecisionRecordedEvent,
+    HumanDecisionRejectedEvent,
     # E13: Replan events
     ReplanRequestedEvent,
     ReplanAppliedEvent,

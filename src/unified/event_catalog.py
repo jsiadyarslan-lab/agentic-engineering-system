@@ -103,6 +103,7 @@ class EventType(str, Enum):
     MISSION_CANCELLED = "mission.cancelled"
     HUMAN_GATE_CREATED = "human.gate_created"
     HUMAN_DECISION_RECORDED = "human.decision_recorded"
+    HUMAN_DECISION_REJECTED = "human.decision_rejected"
 # ============================================================
 # EVENT SCHEMAS (Pydantic Models)
 # ============================================================
@@ -426,6 +427,17 @@ class HumanDecisionRecordedEvent(BaseModel):
     actor: str
     feedback: str
     decided_at: datetime = Field(default_factory=datetime.utcnow)
+class HumanDecisionRejectedEvent(BaseModel):
+    gate_id: str
+    mission_id: str
+    run_id: str
+    attempted_decision: str
+    actor: str
+    feedback: str
+    reason: str
+    existing_decision: Optional[str] = None
+    existing_actor: Optional[str] = None
+    existing_decided_at: Optional[datetime] = None
 class GrantIssuedEvent(BaseModel):
     grant_id: str
     grantor: str
@@ -541,6 +553,7 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.MISSION_CANCELLED: MissionCancelledEvent,
     EventType.HUMAN_GATE_CREATED: HumanGateCreatedEvent,
     EventType.HUMAN_DECISION_RECORDED: HumanDecisionRecordedEvent,
+    EventType.HUMAN_DECISION_REJECTED: HumanDecisionRejectedEvent,
     # E13: Replan events
     EventType.REPLAN_REQUESTED: ReplanRequestedEvent,
     EventType.REPLAN_APPLIED: ReplanAppliedEvent,
@@ -1006,6 +1019,14 @@ EVENT_CATALOG: Dict[EventType, EventCatalogEntry] = {
         emitted_by=["HumanGate.decide()"],
         consumed_by=["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
         triggers=["Mission continues or cancels"],
+    ),
+    EventType.HUMAN_DECISION_REJECTED: EventCatalogEntry(
+        event_type=EventType.HUMAN_DECISION_REJECTED,
+        description="Duplicate human decision rejected for gate",
+        payload_model="HumanDecisionRejectedEvent",
+        emitted_by=["HumanGate.decide() - duplicate attempt"],
+        consumed_by=["Dashboard", "EventStore", "Orchestrator", "HumanGate"],
+        triggers=["Audit trail", "Governance violation recorded"],
     ),
     # E13: Replan events
     EventType.REPLAN_REQUESTED: EventCatalogEntry(
