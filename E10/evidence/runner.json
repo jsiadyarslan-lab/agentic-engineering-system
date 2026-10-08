@@ -1,0 +1,83 @@
+{
+  "status": "E10_CHAIN_COMPLETE",
+  "runner_pid": 4072,
+  "started_at_utc": "2026-10-08T23:01:30.725722+00:00",
+  "workdir": "/tmp/e10_proof_aw5nfnwf",
+  "process_a": {
+    "runner_observed_pid": 4073,
+    "self_reported_pid": 4073,
+    "pid_match": true,
+    "start": "2026-10-08T23:01:28.763608+00:00",
+    "end": "2026-10-08T23:01:29.228716+00:00",
+    "termination": "SIGKILL (runner observed exit code -9)"
+  },
+  "process_b": {
+    "runner_observed_pid": 4075,
+    "self_reported_pid": 4075,
+    "pid_match": true,
+    "start": "2026-10-08T23:01:29.536598+00:00",
+    "end": "2026-10-08T23:01:29.861554+00:00"
+  },
+  "pid_difference": true,
+  "stage_exit_codes": {
+    "PROCESS_A": -9,
+    "PROCESS_B": 0,
+    "TAMPER": 0,
+    "VERIFIER": 0
+  },
+  "stages": [
+    {
+      "stage": "PROCESS_A",
+      "script": "e10_process_a.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/repo/E10/e10_process_a.py",
+        "/tmp/e10_proof_aw5nfnwf"
+      ],
+      "runner_observed_pid": 4073,
+      "exit_code": -9,
+      "wall_seconds": 0.769,
+      "stdout_tail": "PLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-ffdc2be3e5e6: 2 artifacts in evidence_store\n    Artifact: artifact-5f8aaa6de581, path=task_a_output.txt\n    Artifact: artifact-f0b26fa12f95, path=task_c_output.txt\n  [VERIFY] Criterion 0: file_exists:task_c_output.txt\n  [VERIFY] Criterion 1: file_contains:task_c_output.txt:E10_TASK_C_COMPLETE\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_c_output.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_c_output.txt\n  [AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-01, task_id=task-f514257179cd, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e33-mission-agent-01, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-f514257179cd: 3 artifacts in evidence_store\n    Artifact: artifact-5f8aaa6de581, path=task_a_output.txt\n    Artifact: artifact-f0b26fa12f95, path=task_c_output.txt\n    Artifact: artifact-ceb7c74655ea, path=task_b_output.txt\n  [VERIFY] Criterion 0: file_exists:task_b_output.txt\n  [VERIFY] Criterion 1: file_contains:task_b_output.txt:E10_TASK_B_COMPLETE\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_b_output.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_b_output.txt\n[PROCESS_A] execute_run paused=True states={'TASK_A': 'COMPLETED', 'TASK_B': 'COMPLETED', 'TASK_C': 'COMPLETED', 'TASK_D': 'READY', 'TASK_E': 'BLOCKED'}\n[PROCESS_A] checkpoint=checkpoint-5223bdb3b2d4 hash=0f71f5440d2e5490...\n[PROCESS_A] durable state verified on disk; committing SIGKILL on self\n[PROCESS_A] pid=4073 terminating at 2026-10-08T23:01:29.228716+00:00\n"
+    },
+    {
+      "stage": "PROCESS_B",
+      "script": "e10_process_b.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/repo/E10/e10_process_b.py",
+        "/tmp/e10_proof_aw5nfnwf"
+      ],
+      "runner_observed_pid": 4075,
+      "exit_code": 0,
+      "wall_seconds": 0.68,
+      "stdout_tail": "-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-0569e3828191: 4 artifacts in evidence_store\n    Artifact: artifact-5f8aaa6de581, path=task_a_output.txt\n    Artifact: artifact-f0b26fa12f95, path=task_c_output.txt\n    Artifact: artifact-ceb7c74655ea, path=task_b_output.txt\n    Artifact: artifact-955fb59dd079, path=task_d_output.txt\n  [VERIFY] Criterion 0: file_exists:task_d_output.txt\n  [VERIFY] Criterion 1: file_contains:task_d_output.txt:E10_TASK_D_COMPLETE\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_d_output.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_d_output.txt\n  [AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-01, task_id=task-3369566dc873, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e33-mission-agent-01, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-3369566dc873: 5 artifacts in evidence_store\n    Artifact: artifact-5f8aaa6de581, path=task_a_output.txt\n    Artifact: artifact-f0b26fa12f95, path=task_c_output.txt\n    Artifact: artifact-ceb7c74655ea, path=task_b_output.txt\n    Artifact: artifact-955fb59dd079, path=task_d_output.txt\n    Artifact: artifact-1b7f8de9a0e1, path=task_e_output.txt\n  [VERIFY] Criterion 0: file_exists:task_e_output.txt\n  [VERIFY] Criterion 1: file_contains:task_e_output.txt:E10_TASK_E_COMPLETE\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_e_output.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_e_output.txt\n[PROCESS_B] continuation success=True\n[PROCESS_B] mission completed and verified; final_state=EVIDENCED\n[PROCESS_B] pid=4075 end=2026-10-08T23:01:29.861554+00:00\n"
+    },
+    {
+      "stage": "TAMPER",
+      "script": "e10_tamper.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/repo/E10/e10_tamper.py",
+        "/tmp/e10_proof_aw5nfnwf/_tamper_copy"
+      ],
+      "runner_observed_pid": 4076,
+      "exit_code": 0,
+      "wall_seconds": 0.441,
+      "stdout_tail": "[TAMPER] pid=4076 workdir=/tmp/e10_proof_aw5nfnwf/_tamper_copy\n[TAMPER] mutated step: 3 -> 999 in /tmp/e10_proof_aw5nfnwf/_tamper_copy/artifacts/checkpoints/mission-c6eddd9d34cc/checkpoint-5223bdb3b2d4.json\n[TAMPER] resume_result=REJECTED mismatch_detected=True no_execution=True\n"
+    },
+    {
+      "stage": "VERIFIER",
+      "script": "e10_verifier.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/repo/E10/e10_verifier.py",
+        "/tmp/e10_proof_aw5nfnwf"
+      ],
+      "runner_observed_pid": 4077,
+      "exit_code": 0,
+      "wall_seconds": 0.367,
+      "stdout_tail": "[VERIFIER] pid=4077 \u2014 reading ONLY persistent state\n[VERIFIER] verdict=VERIFIED\n  PASS  all_required_tasks_terminal\n  PASS  acceptance_criteria_satisfied\n  PASS  expected_artifacts_present\n  PASS  artifact_hashes_valid\n  PASS  evidence_valid\n  PASS  dependencies_satisfied\n  PASS  dependency_ordering_verified\n  PASS  attempt_history_consistent\n  PASS  no_unsafe_duplicate_side_effects\n  PASS  final_mission_state_valid\n  PASS  mission_identity_preserved\n  PASS  run_lineage_verified\n  PASS  event_history_durable_no_restoration_duplicates\n  PASS  completed_work_preserved_across_processes\n"
+    }
+  ],
+  "total_wall_seconds": 2.262
+}

@@ -601,7 +601,10 @@ class TestE6MultiTaskOrchestration:
         e5_evidence_dir = Path("C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\E5\\integration")
         collector.save_e5_reconciliation(e5_evidence_dir)
         
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -665,7 +668,10 @@ class TestE6MultiTaskOrchestration:
     async def test_e6_parallel_execution(self, temp_dir: str, evidence_dir: Path):
         """Prove TASK_B and TASK_C can execute in parallel (after TASK_A)."""
         
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -710,7 +716,10 @@ class TestE6CheckpointResume:
         
         collector = E6EvidenceCollector(evidence_dir)
         
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -771,7 +780,10 @@ class TestE6CheckpointResume:
         collector = E6EvidenceCollector(evidence_dir)
         
         # Phase 1: Execute and checkpoint
-        engine1 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine1 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry, pool_size=4)
         
@@ -832,7 +844,10 @@ class TestE6CheckpointResume:
         print(f"  Pending tasks: {pending_tasks}")
         
         # Phase 2: NEW PROCESS - Resume from checkpoint
-        engine2 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine2 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry, pool_size=4)
         
@@ -926,7 +941,10 @@ class TestE6FailureRecovery:
         
         collector = E6EvidenceCollector(evidence_dir)
         
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -1025,7 +1043,10 @@ class TestE6FailureRecovery:
     async def test_e6_verification_after_recovery(self, temp_dir: str, evidence_dir: Path):
         """Prove recovered execution passes through canonical verification."""
         
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -1185,7 +1206,10 @@ class TestE6NoFalseReexecution:
         """Prove attempt ledger shows exactly what executed before/after resume."""
         
         # Phase 1: Execute and checkpoint
-        engine1 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine1 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry, pool_size=4)
         
@@ -1223,7 +1247,10 @@ class TestE6NoFalseReexecution:
         fix_checkpoint_for_resume(checkpoint, mc1, mission.mission_id)
         
         # Phase 2: Resume in new engine
-        engine2 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine2 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry, pool_size=4)
         
@@ -1269,7 +1296,10 @@ class TestE6EventHistory:
         if temp_dir is None:
             temp_dir = tempfile.mkdtemp(prefix="e6_")
             
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         
@@ -1327,7 +1357,10 @@ class TestE6IndependentVerification:
         if temp_dir is None:
             temp_dir = tempfile.mkdtemp(prefix="e6_")
             
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry, pool_size=4)
         

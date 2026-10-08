@@ -1,0 +1,414 @@
+{
+  "status": "INDEPENDENT_VERIFICATION_COMPLETE",
+  "verifier_pid": 4077,
+  "verdict": "VERIFIED",
+  "mission_id": "mission-c6eddd9d34cc",
+  "run_1": "run-9413e86379de",
+  "run_2": "run-802bff18f344",
+  "original_checkpoint_id": "checkpoint-5223bdb3b2d4",
+  "final_checkpoint_id": "checkpoint-ed917ce5d76a",
+  "truth_sources": {
+    "checkpoints_dir": "/tmp/e10_proof_aw5nfnwf/artifacts/checkpoints/mission-c6eddd9d34cc",
+    "event_log": "/tmp/e10_proof_aw5nfnwf/artifacts/events/mission-c6eddd9d34cc/event_log.jsonl",
+    "artifacts_json": "/tmp/e10_proof_aw5nfnwf/artifacts/evidence_store/mission-c6eddd9d34cc/artifacts.json",
+    "evidence_json": "/tmp/e10_proof_aw5nfnwf/artifacts/evidence_store/mission-c6eddd9d34cc/evidence.json"
+  },
+  "checks": {
+    "all_required_tasks_terminal": {
+      "claim": "all 5 required tasks in terminal COMPLETED state",
+      "observed": {
+        "TASK_A": "COMPLETED",
+        "TASK_B": "COMPLETED",
+        "TASK_C": "COMPLETED",
+        "TASK_D": "COMPLETED",
+        "TASK_E": "COMPLETED"
+      },
+      "passed": true
+    },
+    "acceptance_criteria_satisfied": {
+      "claim": "each task's artifact file exists and contains its marker",
+      "observed": {
+        "TASK_A": {
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-6fe43387d129/task_a_output.txt",
+          "exists": true,
+          "contains_marker": true
+        },
+        "TASK_B": {
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-f514257179cd/task_b_output.txt",
+          "exists": true,
+          "contains_marker": true
+        },
+        "TASK_C": {
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-ffdc2be3e5e6/task_c_output.txt",
+          "exists": true,
+          "contains_marker": true
+        },
+        "TASK_D": {
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-0569e3828191/task_d_output.txt",
+          "exists": true,
+          "contains_marker": true
+        },
+        "TASK_E": {
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-3369566dc873/task_e_output.txt",
+          "exists": true,
+          "contains_marker": true
+        }
+      },
+      "passed": true
+    },
+    "expected_artifacts_present": {
+      "claim": "exactly one governed artifact per task (5 total)",
+      "observed": {
+        "TASK_A": [
+          "artifact-5f8aaa6de581"
+        ],
+        "TASK_B": [
+          "artifact-ceb7c74655ea"
+        ],
+        "TASK_C": [
+          "artifact-f0b26fa12f95"
+        ],
+        "TASK_D": [
+          "artifact-955fb59dd079"
+        ],
+        "TASK_E": [
+          "artifact-1b7f8de9a0e1"
+        ]
+      },
+      "passed": true
+    },
+    "artifact_hashes_valid": {
+      "claim": "sha256(content on disk) == recorded artifact sha256 for every artifact",
+      "observed": {
+        "artifact-5f8aaa6de581": {
+          "task": "TASK_A",
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-6fe43387d129/task_a_output.txt",
+          "recomputed_sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+          "recorded_sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+          "match": true
+        },
+        "artifact-f0b26fa12f95": {
+          "task": "TASK_C",
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-ffdc2be3e5e6/task_c_output.txt",
+          "recomputed_sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+          "recorded_sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+          "match": true
+        },
+        "artifact-ceb7c74655ea": {
+          "task": "TASK_B",
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-f514257179cd/task_b_output.txt",
+          "recomputed_sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+          "recorded_sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+          "match": true
+        },
+        "artifact-955fb59dd079": {
+          "task": "TASK_D",
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-0569e3828191/task_d_output.txt",
+          "recomputed_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "recorded_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "match": true
+        },
+        "artifact-1b7f8de9a0e1": {
+          "task": "TASK_E",
+          "file": "/tmp/e10_proof_aw5nfnwf/artifacts/sandbox-task-3369566dc873/task_e_output.txt",
+          "recomputed_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+          "recorded_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+          "match": true
+        }
+      },
+      "passed": true
+    },
+    "evidence_valid": {
+      "claim": "every evidence record carries a real content hash equal to its artifact sha256",
+      "observed": {
+        "evidence-085787e9cc07": {
+          "evidence_hash": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-047faf676951": {
+          "evidence_hash": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-4529a50fbf3e": {
+          "evidence_hash": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-c5d63bf46d8a": {
+          "evidence_hash": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-be20a777b1a4": {
+          "evidence_hash": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-e4a8c9c2589d": {
+          "evidence_hash": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-3e8f52ff62db": {
+          "evidence_hash": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-c7ee40c2be0e": {
+          "evidence_hash": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-032d56064477": {
+          "evidence_hash": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        },
+        "evidence-a784c9a46f00": {
+          "evidence_hash": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+          "is_content_hash": true,
+          "source_artifact_exists": true,
+          "hash_matches_source_artifact": true,
+          "mission_linked": true
+        }
+      },
+      "passed": true
+    },
+    "dependencies_satisfied": {
+      "claim": "every declared dependency is COMPLETED in the final state",
+      "observed": {
+        "violations": [],
+        "dependency_map": {
+          "TASK_A": [],
+          "TASK_B": [
+            "TASK_A"
+          ],
+          "TASK_C": [
+            "TASK_A"
+          ],
+          "TASK_D": [
+            "TASK_C",
+            "TASK_B"
+          ],
+          "TASK_E": [
+            "TASK_D"
+          ]
+        }
+      },
+      "passed": true
+    },
+    "dependency_ordering_verified": {
+      "claim": "for every edge dep->task: TASK_COMPLETED(dep) <= TASK_STARTED(task)",
+      "observed": {
+        "TASK_A -> TASK_B": true,
+        "TASK_A -> TASK_C": true,
+        "TASK_C -> TASK_D": true,
+        "TASK_B -> TASK_D": true,
+        "TASK_D -> TASK_E": true
+      },
+      "passed": true
+    },
+    "attempt_history_consistent": {
+      "claim": "A/B/C: exactly 1 pre-crash attempt, 0 post-resume; D/E: exactly 1 post-resume attempt",
+      "observed": {
+        "TASK_A": {
+          "attempts_pre_resume": 1,
+          "attempts_post_resume": 0,
+          "attempt_ids": [
+            "attempt-4fa1b431"
+          ],
+          "agents": [
+            "e33-mission-agent-01"
+          ],
+          "passed": true
+        },
+        "TASK_C": {
+          "attempts_pre_resume": 1,
+          "attempts_post_resume": 0,
+          "attempt_ids": [
+            "attempt-96d9a20a"
+          ],
+          "agents": [
+            "e33-mission-agent-01"
+          ],
+          "passed": true
+        },
+        "TASK_B": {
+          "attempts_pre_resume": 1,
+          "attempts_post_resume": 0,
+          "attempt_ids": [
+            "attempt-d9471912"
+          ],
+          "agents": [
+            "e33-mission-agent-01"
+          ],
+          "passed": true
+        },
+        "TASK_D": {
+          "attempts_pre_resume": 0,
+          "attempts_post_resume": 1,
+          "attempt_ids": [
+            "attempt-2fb2fba3"
+          ],
+          "agents": [
+            "e33-mission-agent-01"
+          ],
+          "passed": true
+        },
+        "TASK_E": {
+          "attempts_pre_resume": 0,
+          "attempts_post_resume": 1,
+          "attempt_ids": [
+            "attempt-6e6b77bd"
+          ],
+          "agents": [
+            "e33-mission-agent-01"
+          ],
+          "passed": true
+        }
+      },
+      "passed": true
+    },
+    "no_unsafe_duplicate_side_effects": {
+      "claim": "each task produced exactly one artifact record and one file (identity/count/hash basis)",
+      "observed": {
+        "artifact_records_per_task": {
+          "TASK_A": 1,
+          "TASK_C": 1,
+          "TASK_B": 1,
+          "TASK_D": 1,
+          "TASK_E": 1
+        },
+        "evidence_records_total": 10,
+        "sandbox_files_per_task": {
+          "TASK_A": [
+            "task_a_output.txt"
+          ],
+          "TASK_B": [
+            "task_b_output.txt"
+          ],
+          "TASK_C": [
+            "task_c_output.txt"
+          ],
+          "TASK_D": [
+            "task_d_output.txt"
+          ],
+          "TASK_E": [
+            "task_e_output.txt"
+          ]
+        }
+      },
+      "passed": true
+    },
+    "final_mission_state_valid": {
+      "claim": "final durable checkpoint records mission state EVIDENCED (not just a success flag)",
+      "observed": {
+        "state": "EVIDENCED",
+        "original_checkpoint_state": "PAUSED"
+      },
+      "passed": true
+    },
+    "mission_identity_preserved": {
+      "claim": "same mission_id across original and final durable checkpoints",
+      "observed": {
+        "original": "mission-c6eddd9d34cc",
+        "final": "mission-c6eddd9d34cc"
+      },
+      "passed": true
+    },
+    "run_lineage_verified": {
+      "claim": "RUN_2 (resumed) is linked to RUN_1 through durable records: checkpoint(run_id=RUN_1) + CHECKPOINT_LOADED(run_id=RUN_2)",
+      "observed": {
+        "run_1_from_original_checkpoint": "run-9413e86379de",
+        "checkpoint_loaded_event": {
+          "run_id": "run-802bff18f344",
+          "payload_checkpoint_id": "checkpoint-5223bdb3b2d4",
+          "resumed_run": "run-802bff18f344"
+        }
+      },
+      "passed": true
+    },
+    "event_history_durable_no_restoration_duplicates": {
+      "claim": "event log reloadable; original history preserved exactly once; no duplicate tuples introduced by restoration",
+      "observed": {
+        "total_events": 112,
+        "events_before_resume_boundary": 73,
+        "duplicate_tuples": 0,
+        "checkpoints_loaded_events": 1
+      },
+      "passed": true
+    },
+    "completed_work_preserved_across_processes": {
+      "claim": "artifacts of tasks completed before termination keep identity and hash after resume",
+      "observed": {
+        "TASK_A": {
+          "artifact_ids_before": [
+            "artifact-5f8aaa6de581"
+          ],
+          "artifact_ids_after": [
+            "artifact-5f8aaa6de581"
+          ],
+          "sha256_before": [
+            "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790"
+          ],
+          "sha256_after": [
+            "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790"
+          ],
+          "passed": true
+        },
+        "TASK_B": {
+          "artifact_ids_before": [
+            "artifact-ceb7c74655ea"
+          ],
+          "artifact_ids_after": [
+            "artifact-ceb7c74655ea"
+          ],
+          "sha256_before": [
+            "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0"
+          ],
+          "sha256_after": [
+            "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0"
+          ],
+          "passed": true
+        },
+        "TASK_C": {
+          "artifact_ids_before": [
+            "artifact-f0b26fa12f95"
+          ],
+          "artifact_ids_after": [
+            "artifact-f0b26fa12f95"
+          ],
+          "sha256_before": [
+            "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811"
+          ],
+          "sha256_after": [
+            "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811"
+          ],
+          "passed": true
+        }
+      },
+      "passed": true
+    }
+  },
+  "missing_checks": []
+}

@@ -101,6 +101,20 @@ from unified.windows_adapter import WindowsExecutorAdapter
 class ResourceQuotaExceededError(Exception):
     """Raised when resource quota is exceeded."""
     pass
+
+
+class CheckpointParseError(Exception):
+    """E10 section 22: checkpoint file could not be parsed — restore fails closed."""
+
+
+class CheckpointIntegrityError(Exception):
+    """E10-CI-04/05: checkpoint integrity hash mismatch — resume must be REJECTED
+    and no task execution may start from this checkpoint."""
+
+
+class ResumeFailedError(Exception):
+    """E10 section 22: critical restoration failure (events/evidence/mission/graph/
+    state) — resume fails closed with an explicit reason, never best-effort."""
 # ============================================================
 # EXECUTION CONTEXT
 # ============================================================
@@ -1186,9 +1200,18 @@ class ExecutionEngine:
         task_states = {}
         for task_id, node in graph.items():
             task_states[task_id] = node["state"]
-        # Gather artifact IDs and evidence hashes from evidence store
-        artifact_ids = list(self.evidence_store._artifacts.keys()) if hasattr(self.evidence_store, '_artifacts') else []
-        evidence_hashes = list(self.evidence_store._evidence.keys()) if hasattr(self.evidence_store, '_evidence') else []
+        # Gather artifact IDs and evidence hashes from evidence store.
+        # E10 section 6: evidence_hashes must contain ACTUAL content hashes
+        # (EvidenceRecord.evidence_hash, i.e. sha256), NOT evidence IDs.
+        # Scope both collections to THIS mission.
+        artifact_ids = [
+            aid for aid, art in getattr(self.evidence_store, '_artifacts', {}).items()
+            if getattr(art, 'mission_id', '') == mission_id
+        ]
+        evidence_hashes = [
+            ev.evidence_hash for ev in getattr(self.evidence_store, '_evidence', {}).values()
+            if getattr(ev, 'mission_id', '') == mission_id
+        ]
         # Gather task definitions
         task_definitions = {}
         task_dependencies = {}
@@ -1525,7 +1548,8 @@ class ExecutionEngine:
                             run_id=context.run_id,
                             success=True,
                             artifacts=task_artifacts,
-                            evidence_hashes=result.evidence_ids if hasattr(result, 'evidence_ids') else [],
+                            # E10 section 6: actual content hash, not evidence IDs
+                            evidence_hashes=[result.evidence_hash] if getattr(result, 'evidence_hash', '') else [],
                             duration_ms=result.duration_ms if hasattr(result, 'duration_ms') else 0,
                         ),
                         source=f"agent.{task.agent_type.value}",
@@ -2599,7 +2623,8 @@ class ExecutionEngine:
                     run_id=context.run_id,
                     success=True,
                     artifacts=result.artifacts if result.artifacts else [],
-                    evidence_hashes=result.evidence_ids if result.evidence_ids else [],
+                    # E10 section 6: actual content hash, not evidence IDs
+                    evidence_hashes=[result.evidence_hash] if getattr(result, 'evidence_hash', '') else [],
                     duration_ms=result.duration_ms if result.duration_ms else 0,
                 ),
                 source=f"agent.{agent_type.value}",
@@ -3125,13 +3150,31 @@ class ExecutionEngine:
         temp_file.replace(checkpoint_file)
         return checkpoint_file
     def _load_checkpoint_from_disk(self, mission_id: str, checkpoint_id: str) -> Optional[Checkpoint]:
-        """Load checkpoint from filesystem."""
+        """Load checkpoint from filesystem.
+
+        E10-CI-04: a checkpoint read from durable storage is parse-checked and
+        integrity-verified BEFORE it is handed to any execution path. A missing
+        file still returns None; a corrupt or tampered file RAISES (fail closed).
+        """
         checkpoint_file = self._get_checkpoint_dir(mission_id) / f"{checkpoint_id}.json"
         if not checkpoint_file.exists():
             return None
-        with open(checkpoint_file, 'r') as f:
-            data = json.load(f)
-        return Checkpoint.model_validate(data)
+        try:
+            with open(checkpoint_file, 'r') as f:
+                data = json.load(f)
+            checkpoint = Checkpoint.model_validate(data)
+        except Exception as e:
+            raise CheckpointParseError(
+                f"Checkpoint {checkpoint_id} (mission {mission_id}) failed to parse "
+                f"from {checkpoint_file}: {type(e).__name__}: {e}"
+            ) from e
+        if not checkpoint.verify():
+            raise CheckpointIntegrityError(
+                f"Checkpoint {checkpoint_id} (mission {mission_id}) integrity "
+                f"verification FAILED: stored_hash={checkpoint.hash!r} "
+                f"recomputed_hash={checkpoint.compute_integrity_hash()!r}"
+            )
+        return checkpoint
     def create_checkpoint(
         self,
         mission_id: str,
@@ -3196,6 +3239,10 @@ class ExecutionEngine:
             human_gate=human_gate,
             human_decision=human_decision,
         )
+        # E10-CI-02: compute the real integrity hash over the canonical
+        # serialized payload BEFORE persisting, so the durable record is
+        # self-verifiable after process death.
+        checkpoint.hash = checkpoint.compute_integrity_hash()
         self.checkpoints[checkpoint.checkpoint_id] = checkpoint
         # Persist to disk for durability
         try:
@@ -3246,13 +3293,34 @@ class ExecutionEngine:
             checkpoint = self._load_checkpoint_from_disk(mission_id, checkpoint_id)
         if not checkpoint:
             return None
+        # E10-CI-04: no execution may start before successful integrity
+        # verification — applies to BOTH the in-memory and the disk-loaded path
+        # (an unhashed/legacy checkpoint cannot be verified, therefore FAILS).
+        if not checkpoint.verify():
+            raise CheckpointIntegrityError(
+                f"Checkpoint {checkpoint_id} integrity verification FAILED on resume: "
+                f"stored_hash={checkpoint.hash!r} "
+                f"recomputed_hash={checkpoint.compute_integrity_hash()!r}"
+            )
         # Restore to memory if loaded from disk
         if checkpoint_id not in self.checkpoints:
             self.checkpoints[checkpoint_id] = checkpoint
-        # Restore events from disk for this mission
-        self._restore_events_from_disk(checkpoint.mission_id)
-        # Restore evidence store (artifacts & evidence) from disk for durability
-        self.evidence_store.load_from_disk(checkpoint.mission_id)
+        # E10 section 22: critical restoration path — fail closed. Any error in
+        # event/evidence restoration is a corrupt restore, never best-effort.
+        try:
+            self._restore_events_from_disk(checkpoint.mission_id)
+        except Exception as e:
+            raise ResumeFailedError(
+                f"RESUME_FAILED: event history restoration failed for mission "
+                f"{checkpoint.mission_id}: {type(e).__name__}: {e}"
+            ) from e
+        try:
+            self.evidence_store.load_from_disk(checkpoint.mission_id)
+        except Exception as e:
+            raise ResumeFailedError(
+                f"RESUME_FAILED: evidence store restoration failed for mission "
+                f"{checkpoint.mission_id}: {type(e).__name__}: {e}"
+            ) from e
         # CRITICAL: Auto-recreate Mission object if not in memory
         # This enables true cross-runtime resume without manual intervention
         if checkpoint.mission_id not in self.missions:
@@ -3334,15 +3402,29 @@ class ExecutionEngine:
                     if target_state != MissionState.EXECUTING:
                         validate_mission_transition(mission.state, target_state)
                         mission.state = target_state
-            except Exception:
-                pass  # Best effort
+            except Exception as e:
+                # E10 section 22: state restoration is part of the critical
+                # restore path. Resuming with a wrong mission state would
+                # corrupt the mission lifecycle — fail closed with reason.
+                raise ResumeFailedError(
+                    f"RESUME_FAILED: mission state restoration failed for "
+                    f"{checkpoint.mission_id}: cannot reach "
+                    f"{target_state.value} from {mission.state.value}: "
+                    f"{type(e).__name__}: {e}"
+                ) from e
         # Create new run as child of original
         new_run = self.create_run(
             mission_id=checkpoint.mission_id,
             parent_run_id=checkpoint.run_id,
         )
-        # Reconstruct the task graph from checkpoint
-        self._reconstruct_task_graph_from_checkpoint(new_run.run_id, checkpoint)
+        # Reconstruct the task graph from checkpoint (E10 section 22: fail closed)
+        try:
+            self._reconstruct_task_graph_from_checkpoint(new_run.run_id, checkpoint)
+        except Exception as e:
+            raise ResumeFailedError(
+                f"RESUME_FAILED: task graph reconstruction failed for checkpoint "
+                f"{checkpoint_id}: {type(e).__name__}: {e}"
+            ) from e
         # Emit checkpoint loaded
         self._emit(FactoryEvent.create(
             event_type=EventType.CHECKPOINT_LOADED,
@@ -3390,7 +3472,10 @@ class ExecutionEngine:
         """Reconstruct the full task graph from checkpoint for cross-runtime resume."""
         # Initialize task graph for this run
         self.task_graph[run_id] = {}
-        # Restore attempt history
+        # Restore attempt history (E10 section 19: durable attempt ledger —
+        # restored into BOTH the internal _attempts map and the public
+        # engine.attempts ledger so post-resume checkpoints keep the full
+        # pre-crash attempt history).
         if checkpoint.attempt_history:
             if not hasattr(self, '_attempts'):
                 self._attempts = {}
@@ -3409,6 +3494,7 @@ class ExecutionEngine:
                         completed_at=datetime.fromisoformat(attempt_data["completed_at"]) if isinstance(attempt_data.get("completed_at"), str) else attempt_data.get("completed_at"),
                     )
                     self._attempts[attempt.attempt_id] = attempt
+                    self.attempts[attempt.attempt_id] = attempt
         # Reconstruct each task
         for task_id, state in checkpoint.task_states.items():
             # Get task definition from checkpoint
@@ -3921,8 +4007,15 @@ class ExecutionEngine:
             # Capture current task graph state
             graph = self.task_graph.get(run_id, {})
             task_states = {tid: node["state"] for tid, node in graph.items()}
-            artifact_ids = list(self.evidence_store._artifacts.keys())
-            evidence_hashes = list(self.evidence_store._evidence.keys())
+            # E10 section 6: actual content hashes, mission-scoped (not evidence IDs)
+            artifact_ids = [
+                aid for aid, art in getattr(self.evidence_store, '_artifacts', {}).items()
+                if getattr(art, 'mission_id', '') == mission_id
+            ]
+            evidence_hashes = [
+                ev.evidence_hash for ev in getattr(self.evidence_store, '_evidence', {}).values()
+                if getattr(ev, 'mission_id', '') == mission_id
+            ]
             self.create_checkpoint(
                 mission_id=mission_id,
                 run_id=run_id,

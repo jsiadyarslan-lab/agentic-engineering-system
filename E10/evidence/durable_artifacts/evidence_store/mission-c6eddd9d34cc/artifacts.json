@@ -1,0 +1,62 @@
+{
+  "artifact-5f8aaa6de581": {
+    "artifact_id": "artifact-5f8aaa6de581",
+    "name": "task_a_output.txt",
+    "path": "task_a_output.txt",
+    "sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "size_bytes": 31,
+    "created_by": "sandbox-task-6fe43387d129",
+    "created_at": "2026-10-08T23:01:28.916321",
+    "mission_id": "mission-c6eddd9d34cc",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-f0b26fa12f95": {
+    "artifact_id": "artifact-f0b26fa12f95",
+    "name": "task_c_output.txt",
+    "path": "task_c_output.txt",
+    "sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "size_bytes": 33,
+    "created_by": "sandbox-task-ffdc2be3e5e6",
+    "created_at": "2026-10-08T23:01:29.069927",
+    "mission_id": "mission-c6eddd9d34cc",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-ceb7c74655ea": {
+    "artifact_id": "artifact-ceb7c74655ea",
+    "name": "task_b_output.txt",
+    "path": "task_b_output.txt",
+    "sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "size_bytes": 32,
+    "created_by": "sandbox-task-f514257179cd",
+    "created_at": "2026-10-08T23:01:29.223485",
+    "mission_id": "mission-c6eddd9d34cc",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-955fb59dd079": {
+    "artifact_id": "artifact-955fb59dd079",
+    "name": "task_d_output.txt",
+    "path": "task_d_output.txt",
+    "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+    "size_bytes": 26,
+    "created_by": "sandbox-task-0569e3828191",
+    "created_at": "2026-10-08T23:01:29.692077",
+    "mission_id": "mission-c6eddd9d34cc",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-1b7f8de9a0e1": {
+    "artifact_id": "artifact-1b7f8de9a0e1",
+    "name": "task_e_output.txt",
+    "path": "task_e_output.txt",
+    "sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+    "size_bytes": 26,
+    "created_by": "sandbox-task-3369566dc873",
+    "created_at": "2026-10-08T23:01:29.846639",
+    "mission_id": "mission-c6eddd9d34cc",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  }
+}

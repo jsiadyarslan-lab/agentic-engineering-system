@@ -217,7 +217,10 @@ class TestE33MissionAutonomy:
             # ================================================================
             # PHASE 1 — test process: definition + execution with F1, F2 → CP1
             # ================================================================
-            engine1 = ExecutionEngine(artifacts_base_dir=str(STATE_DIR), max_retries=0)
+            engine1 = ExecutionEngine(
+        artifacts_base_dir=str(STATE_DIR), max_retries=0,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
             controller1 = MissionController(engine1, state_dir=str(STATE_DIR))
 
             mission, run1, keys1 = controller1.define_mission(
@@ -368,7 +371,10 @@ class TestE33MissionAutonomy:
             # ================================================================
             # PHASE 3 — new runtime: resume CP2, complete pending work, verify
             # ================================================================
-            engine3 = ExecutionEngine(artifacts_base_dir=str(STATE_DIR), max_retries=0)
+            engine3 = ExecutionEngine(
+        artifacts_base_dir=str(STATE_DIR), max_retries=0,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
             controller3 = MissionController(engine3, state_dir=str(STATE_DIR))
             run3 = engine3.resume_from_checkpoint(cp2_id, mission_id=mission_id)
             assert run3 is not None, "Cross-runtime resume from killed process failed"

@@ -41,7 +41,10 @@ async def main() -> int:
 
     register_mission_agent(agent_registry)
 
-    engine = ExecutionEngine(artifacts_base_dir=state_dir, max_retries=0)
+    engine = ExecutionEngine(
+        artifacts_base_dir=state_dir, max_retries=0,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
     engine.event_bus.subscribe(lambda e: None)
     controller = MissionController(engine, state_dir=state_dir)
 

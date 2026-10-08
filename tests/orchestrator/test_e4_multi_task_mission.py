@@ -248,7 +248,10 @@ class TestE4MissionOrchestration:
         - All tasks produce verified artifacts
         """
         # Use fresh engine and MC to avoid E3 agent interference
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
         
@@ -453,7 +456,10 @@ class TestE4FailureIsolation:
         """
         # Create fresh engine and MissionController WITHOUT E3 agent registrations
         # to avoid e3-thinker being selected for mission tasks
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
         
@@ -572,7 +578,10 @@ class TestE4Replanning:
         5. Verify all tasks complete
         """
         # Create fresh engine and MissionController WITHOUT E3 agent registrations
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
         
@@ -711,7 +720,10 @@ class TestE4CheckpointResume:
         # ============================================================
         # PHASE 1: INITIAL EXECUTION - ONLY TASK A
         # ============================================================
-        engine1 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine1 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry)
         
@@ -794,7 +806,10 @@ class TestE4CheckpointResume:
         # ============================================================
         # PHASE 2: SIMULATE PROCESS DEATH - NEW ENGINE (all in-memory state GONE)
         # ============================================================
-        engine2 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine2 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry)
         
@@ -929,7 +944,10 @@ class TestE4EventReconciliation:
         - Reconstruct: mission state, task states, execution history, artifact history, verification history
         """
         # Runtime 1: Execute mission to completion
-        engine1 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine1 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry)
         
@@ -951,7 +969,10 @@ class TestE4EventReconciliation:
         # ============================================================
         # PROCESS DEATH: All in-memory state lost
         # ============================================================
-        engine2 = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine2 = ExecutionEngine(
+        artifacts_base_dir=temp_dir,
+        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+    )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry)
         
@@ -1065,7 +1086,10 @@ class TestE4IndependentVerification:
         import hashlib, json
         
         # Create fresh engine and MC
-        engine = ExecutionEngine(artifacts_base_dir=temp_dir)
+        engine = ExecutionEngine(
+            artifacts_base_dir=temp_dir,
+            grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment)
+        )
         
         # Register mission agent pool (IMPLEMENTER via MissionTaskAgent)
         register_mission_agent(engine.agent_registry, pool_size=8)

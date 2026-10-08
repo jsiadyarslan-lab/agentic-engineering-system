@@ -75,7 +75,10 @@ from unified.domain_model import (
     EvidenceRecord,
     new_evidence_id,
 )
-from unified.execution import ExecutionEngine
+from unified.execution import (
+    ExecutionEngine,
+    CheckpointIntegrityError,
+)
 
 
 # ============================================================
@@ -1205,6 +1208,8 @@ class MissionController:
             human_gate=human_gate,
             human_decision=human_decision,
         )
+        # E10-CI-02: real integrity hash over canonical payload before persisting
+        checkpoint.hash = checkpoint.compute_integrity_hash()
         
         # Save checkpoint via engine for cross-runtime resume
         self.engine.checkpoints[checkpoint.checkpoint_id] = checkpoint
@@ -1251,6 +1256,14 @@ class MissionController:
             data = json.load(f)
         
         checkpoint = Checkpoint(**data)
+        # E10-CI-04 / section 22: reject unverifyable or tampered checkpoints
+        # before touching any engine state.
+        if not checkpoint.verify():
+            raise CheckpointIntegrityError(
+                f"Checkpoint {checkpoint_id} integrity verification FAILED on restore: "
+                f"stored_hash={checkpoint.hash!r} "
+                f"recomputed_hash={checkpoint.compute_integrity_hash()!r}"
+            )
         run_id = checkpoint.run_id
         
         # Restore task graph

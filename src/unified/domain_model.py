@@ -7,6 +7,9 @@ All models are frozen Pydantic v2 for immutability and validation.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
@@ -563,10 +566,27 @@ class Checkpoint(BaseModel):
     human_gate: Optional[Dict[str, Any]] = Field(default=None)  # gate_id, task_id, reason, context, options, impact, required_action, created_at
     human_decision: Optional[Dict[str, Any]] = Field(default=None)  # gate_id, decision, actor, feedback, decided_at
 
+    def canonical_payload(self) -> str:
+        """E10-CI-01: Canonical serialized representation for integrity hashing.
+
+        Deterministic: sorted keys, compact separators, UTF-8. The integrity
+        hash field itself is excluded (it covers the payload, not itself).
+        """
+        data = self.model_dump(mode="json", exclude={"hash"})
+        return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+    def compute_integrity_hash(self) -> str:
+        """E10-CI-02: sha256 over the canonical serialized representation."""
+        return hashlib.sha256(self.canonical_payload().encode("utf-8")).hexdigest()
+
     def verify(self) -> bool:
-        """Verify checkpoint integrity."""
-        # Recompute hash and compare
-        return True  # Implementation in checkpoint manager
+        """Verify checkpoint integrity: recompute hash over canonical payload
+        and compare with the stored hash (constant-time). A checkpoint with an
+        empty/unset hash cannot be verified and therefore FAILS (fail-closed,
+        E10 section 7: JSON without integrity verification is not evidence)."""
+        if not self.hash:
+            return False
+        return hmac.compare_digest(self.compute_integrity_hash(), self.hash)
 
 
 # ============================================================
