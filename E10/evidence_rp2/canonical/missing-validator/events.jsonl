@@ -1,0 +1,562 @@
+[
+  {
+    "event_type": "mission.started",
+    "timestamp": "2026-10-09T17:43:57.802573",
+    "correlation_id": "",
+    "source": "execution_engine",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "user_request": "E10-RP2 auth case: missing-validator",
+      "provider": null,
+      "model": null
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802618",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "RECEIVED",
+      "to_state": "ANALYZING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802654",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "ANALYZING",
+      "to_state": "PLANNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802672",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "PLANNING",
+      "to_state": "DESIGNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802686",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "DESIGNING",
+      "to_state": "REVIEWING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802701",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802716",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "APPROVED",
+      "to_state": "AWAITING_APPROVAL",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:57.802742",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "",
+      "from_state": "AWAITING_APPROVAL",
+      "to_state": "EXECUTING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "run.started",
+    "timestamp": "2026-10-09T17:43:57.802786",
+    "correlation_id": "run-c797cd4e84d6",
+    "source": "execution_engine",
+    "payload": {
+      "run_id": "run-c797cd4e84d6",
+      "mission_id": "mission-d733df6b4470",
+      "run_number": 1,
+      "parent_run_id": null
+    }
+  },
+  {
+    "event_type": "task.created",
+    "timestamp": "2026-10-09T17:43:57.802840",
+    "correlation_id": "task-2c0442e59800",
+    "source": "mission_controller",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "name": "Write A",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:auth_a.txt:RP2_AUTH_A"
+      ],
+      "depends_on": []
+    }
+  },
+  {
+    "event_type": "task.created",
+    "timestamp": "2026-10-09T17:43:57.802875",
+    "correlation_id": "task-bf72c3895437",
+    "source": "mission_controller",
+    "payload": {
+      "task_id": "task-bf72c3895437",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "name": "Write B",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:auth_b.txt:RP2_AUTH_B"
+      ],
+      "depends_on": [
+        "A"
+      ]
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.803514",
+    "correlation_id": "run-c797cd4e84d6",
+    "source": "mission_controller",
+    "payload": {
+      "entity_type": "plan_review",
+      "entity_id": "v1",
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "trigger": "canonical_orchestrator",
+      "review_id": "review-994473d4d771",
+      "failed_checks": [],
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.803680",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:57.803932",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "agent_id": "e3-thinker",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-545774b0"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:57.803955",
+    "correlation_id": "task-2c0442e59800",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.803973",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:57.804051",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:57.824339",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.824404",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:57.824433",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "retry_count": 0,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.824448",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "FAILED",
+      "to_state": "READY",
+      "reason": "Task state updated to READY"
+    }
+  },
+  {
+    "event_type": "task.retry",
+    "timestamp": "2026-10-09T17:43:57.824466",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "attempt_id": "attempt-545774b0",
+      "retry_count": 1,
+      "max_retries": 2,
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.824481",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:57.824560",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "agent_id": "e33-mission-agent-01",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-027fdaca"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:57.824576",
+    "correlation_id": "task-2c0442e59800",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.824587",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:57.824652",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:57.844915",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.844953",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:57.844976",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "retry_count": 1,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.844990",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "FAILED",
+      "to_state": "READY",
+      "reason": "Task state updated to READY"
+    }
+  },
+  {
+    "event_type": "task.retry",
+    "timestamp": "2026-10-09T17:43:57.845006",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "attempt_id": "attempt-027fdaca",
+      "retry_count": 2,
+      "max_retries": 2,
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.845019",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:57.845087",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "agent_id": "e3-thinker",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-6ce36615"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:57.845102",
+    "correlation_id": "task-2c0442e59800",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.845113",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:57.845163",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:57.865377",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "task_id": "task-2c0442e59800",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:57.865409",
+    "correlation_id": "task-2c0442e59800",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:57.865431",
+    "correlation_id": "task-2c0442e59800",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "retry_count": 2,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:57.865444",
+    "correlation_id": "task-2c0442e59800",
+    "source": "execution_engine",
+    "payload": {
+      "task_id": "task-2c0442e59800",
+      "mission_id": "mission-d733df6b4470",
+      "run_id": "run-c797cd4e84d6",
+      "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+      "retry_count": 3,
+      "max_retries": 2
+    }
+  }
+]

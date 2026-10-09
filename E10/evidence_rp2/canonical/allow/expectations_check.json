@@ -1,0 +1,17 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "True (want True)"
+  },
+  {
+    "expectation": "files_written",
+    "pass": true,
+    "detail": "files=['sandbox-task-62069acebb77/auth_a.txt', 'sandbox-task-b4850f839d64/auth_b.txt']"
+  },
+  {
+    "expectation": "permission_errors_exact",
+    "pass": true,
+    "detail": "0"
+  }
+]

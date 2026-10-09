@@ -1,0 +1,33 @@
+{
+  "case": "deny-read-only",
+  "mission_id": "mission-93c8d8874707",
+  "result": {
+    "success": false,
+    "final_state": "EXECUTING",
+    "error": ""
+  },
+  "permission_errors": 4,
+  "side_effects": {
+    "sandbox_files": [],
+    "performed_journal_records": 0
+  },
+  "replans": 0,
+  "verifier_failures": 1,
+  "B_attempts": 0,
+  "grant": {
+    "grant_id": "grant-e22cd164e66a",
+    "validator": "eoe.engine_bridge (REAL)",
+    "grant_ids_passed": [
+      "grant-e22cd164e66a"
+    ],
+    "admission_usage_log_entries": 0,
+    "admission_usage_log": [],
+    "ledger_events": [
+      {
+        "kind": "grant.issued",
+        "grant_id": "grant-e22cd164e66a",
+        "kind_type": "PATH_GRANT"
+      }
+    ]
+  }
+}

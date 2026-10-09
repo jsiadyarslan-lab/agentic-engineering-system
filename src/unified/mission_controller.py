@@ -770,6 +770,43 @@ class MissionController:
             tid for tid, node in graph.items()
             if node["state"] == TaskState.COMPLETED and tid not in invalidate_task_ids
         ]
+
+        # E10-RP2 §3.5: a VERIFIER-triggered replan happens AFTER the run
+        # finished (mission reached EVIDENCED through
+        # EXECUTED -> VERIFYING -> EVIDENCED inside execute_run). The
+        # engine's replan_task_graph only operates on an EXECUTING
+        # mission, so the mission must re-enter execution through the
+        # LEGAL state-machine path EVIDENCED -> ADJUDICATED -> EXECUTING
+        # (adjudication semantics: verification challenged the outcome, a
+        # decision was made, execution re-enters under the corrected
+        # plan). Each hop is validated + durably emitted.
+        if mission_id:
+            mission_obj = self.engine.missions.get(mission_id)
+            if mission_obj is not None and mission_obj.state != MissionState.EXECUTING:
+                return_paths = {
+                    MissionState.EVIDENCED: [MissionState.ADJUDICATED, MissionState.EXECUTING],
+                    MissionState.VERIFYING: [MissionState.EVIDENCED, MissionState.ADJUDICATED, MissionState.EXECUTING],
+                    MissionState.EXECUTED: [MissionState.VERIFYING, MissionState.EVIDENCED, MissionState.ADJUDICATED, MissionState.EXECUTING],
+                    MissionState.ADJUDICATED: [MissionState.EXECUTING],
+                }
+                for target in return_paths.get(mission_obj.state, []):
+                    validate_mission_transition(mission_obj.state, target)
+                    from_state = mission_obj.state
+                    mission_obj.state = target
+                    self.engine._emit(FactoryEvent.create(
+                        event_type=EventType.MISSION_STATE_CHANGED,
+                        mission_id=mission_id,
+                        run_id=run_id,
+                        payload={
+                            "mission_id": mission_id,
+                            "run_id": run_id,
+                            "from_state": from_state.value,
+                            "to_state": target.value,
+                            "actor": "mission_controller",
+                            "reason": "verification-triggered replan: re-enter execution under the corrected plan",
+                        },
+                        source="mission_controller",
+                    ))
         added_descriptions = [
             {"task_key": s.get("context", {}).get("task_key", ""), "depends_on": s.get("depends_on", []), "name": s.get("name", "")}
             for s in add_specs
@@ -1333,13 +1370,144 @@ class MissionController:
                 evidenced += 1
             else:
                 not_evidenced += 1
+
+        # E10-RP2 §3 — VERIFICATION TRUTH (per-task latest-verdict +
+        # plan-version validity). The pre-RP2 rule (``evidenced > 0``) let
+        # ANY evidenced verification anywhere — another task's, or a stale
+        # one predating a criteria correction — cover a CURRENT unresolved
+        # not_evidenced result. The new rule, per required task T that has
+        # acceptance criteria:
+        #   1. T must have been verified at all;
+        #   2. T's LATEST verification verdict must be evidenced/passed
+        #      (older evidenced + newer unresolved not_evidenced FAILS;
+        #      newer evidenced resolves an older not_evidenced —
+        #      historical failures never block success forever);
+        #   3. that latest evidenced verification must be VERSION-VALID:
+        #      performed at/after the plan version in which T's criteria
+        #      were last set (a criteria correction invalidates older
+        #      evidence — resolution needs NEWER valid evidence bound to
+        #      the corrected task + corrected plan).
+        # Plan version per event: the payload's plan_version when the
+        # emitter stamped it (canonical verifier), else derived from the
+        # controller's own replan records by timestamp (engine
+        # verify_task events carry no version).
+        def _pv_payload(ev, name, default=None):
+            p = ev.payload
+            if hasattr(p, "get"):
+                try:
+                    return p.get(name, default)
+                except Exception:
+                    return default
+            return getattr(p, name, default)
+
+        def _replan_touched_ids(r) -> set:
+            """task ids + keys whose criteria were (re)set by replan r."""
+            touched = set()
+            for m in r.modified_tasks:
+                key = m.get("task_key", "")
+                touched.add(key)
+                touched.add(self._key_to_task.get(key, key))
+            for a in r.added_tasks:
+                key = a.get("task_key", "")
+                touched.add(key)
+                touched.add(self._key_to_task.get(key, key))
+            return touched
+
+        replan_marks = [
+            (r.timestamp, r.to_version, _replan_touched_ids(r))
+            for r in self.replans
+        ]
+        version_order = {"v1": 0}
+        for i, r in enumerate(self.replans, start=1):
+            version_order[r.to_version] = i
+
+        def _version_at(ts_iso: str) -> str:
+            version = "v1"
+            for rts, to_v, _t in replan_marks:
+                if str(rts) <= str(ts_iso):
+                    version = to_v
+            return version
+
+        def _criteria_version(task_id: str, task_key: str) -> str:
+            version = "v1"
+            for _rts, to_v, touched in replan_marks:
+                if task_id in touched or task_key in touched:
+                    version = to_v
+            return version
+
+        per_task: Dict[str, list] = {}
+        for e in verif_events:
+            tid = _pv_payload(e, "task_id", "") or e.correlation_id or ""
+            if not tid:
+                continue
+            verdict = _pv_payload(e, "verdict", "")
+            stamped = _pv_payload(e, "plan_version", None)
+            plan_version = stamped if stamped is not None else _version_at(e.timestamp.isoformat())
+            per_task.setdefault(tid, []).append({
+                "verdict": verdict,
+                "attempt_id": _pv_payload(e, "attempt_id", ""),
+                "plan_version": plan_version,
+                "timestamp": e.timestamp.isoformat(),
+                "stamped_by_emitter": stamped is not None,
+            })
+
+        verification_failures = []
+        per_task_report = {}
+        for k in required_keys:
+            tid = self._key_to_task.get(k, "")
+            task_obj = self.engine.tasks.get(tid)
+            if task_obj is None or not getattr(task_obj, "acceptance_criteria", None):
+                continue  # only tasks that HAD criteria need verification
+            history = sorted(per_task.get(tid, []), key=lambda v: v["timestamp"])
+            crit_version = _criteria_version(tid, k)
+            entry = {
+                "task_key": k,
+                "verifications": len(history),
+                "criteria_version": crit_version,
+            }
+            if not history:
+                verification_failures.append({
+                    "task": k, "reason": "no_verification",
+                    "detail": "required task with criteria was never verified"})
+                entry["latest_verdict"] = None
+            else:
+                latest = history[-1]
+                entry["latest_verdict"] = latest["verdict"]
+                entry["latest_plan_version"] = latest["plan_version"]
+                if latest["verdict"] not in ("evidenced", "passed"):
+                    verification_failures.append({
+                        "task": k,
+                        "reason": "current_unresolved_verification_failure",
+                        "detail": (
+                            f"latest verification verdict={latest['verdict']!r} "
+                            f"@{latest['timestamp']} (plan {latest['plan_version']}) — "
+                            "a current unresolved failure cannot be covered by "
+                            "another task's or an older evidenced result")})
+                elif (version_order.get(latest["plan_version"], 0)
+                        < version_order.get(crit_version, 0)):
+                    verification_failures.append({
+                        "task": k,
+                        "reason": "stale_evidence_for_corrected_criteria",
+                        "detail": (
+                            f"latest evidenced verification is under plan "
+                            f"{latest['plan_version']} but the task's criteria "
+                            f"were last set in {crit_version} — corrected "
+                            "criteria need newer valid evidence")})
+            per_task_report[k] = entry
+
         report["checks"]["verification_history"] = {
-            "passed": evidenced > 0,
+            "passed": evidenced > 0 and not verification_failures,
             "evidenced_verifications": evidenced,
             "not_evidenced_verifications": not_evidenced,
-            "note": "not_evidenced entries belong to failed attempts corrected by replan",
+            "per_task": per_task_report,
+            "verification_failures": verification_failures,
+            "rule": (
+                "per-task latest-verdict + plan-version validity "
+                "(E10-RP2 §3): a current unresolved not_evidenced result "
+                "cannot be covered by another task's success or by stale "
+                "evidence predating a criteria correction"),
         }
-        ok = ok and evidenced > 0
+        ok = ok and evidenced > 0 and not verification_failures
         report["verdict"] = "COMPLETE" if ok else "INCOMPLETE"
         return ok, report
 

@@ -348,6 +348,16 @@ class VerificationCompleteEvent(BaseModel):
     checks_performed: List[str]
     missing_evidence: List[str]
     confidence: float
+    # E10-RP2 §3 — verification truth bindings (all optional + backward
+    # compatible): a verification result is bound to the task it verified,
+    # the ATTEMPT that produced the verified artifact (not a fresh random
+    # id), the plan version it was performed under, and the run. Older
+    # emitters (engine verify_task) leave them None; MissionController
+    # .verify_completion derives the plan version by timestamp for those.
+    plan_version: Optional[str] = None
+    run_id: Optional[str] = None
+    verifier_attempt_id: Optional[str] = None
+    criteria_source: Optional[str] = None  # "task.acceptance_criteria" | "engine.verify_task" | ...
 class VerificationStartedEvent(BaseModel):
     """Verification process started by verifier agent."""
     verification_id: str

@@ -1,0 +1,112 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "plan_reviews": [
+    {
+      "review_id": "review-6e2450523a30",
+      "run_id": "run-b5f49ec30525",
+      "mission_id": "mission-137f3aced5d4",
+      "plan_version": "v1",
+      "verdict": "approved",
+      "reviewer": "canonical_orchestrator",
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "no replan on record; current plan_version='v1'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": true,
+          "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "no replan on record"
+        }
+      ],
+      "reasons": [],
+      "reviewed_at": "2026-10-09T17:43:54.396387+00:00"
+    }
+  ],
+  "phases": [
+    {
+      "run_id": "run-b5f49ec30525",
+      "max_parallel": 1,
+      "pid": 4654,
+      "wall_seconds": 0.047,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-62069acebb77": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "A",
+            "started_at": "2026-10-09T17:43:54.397189+00:00",
+            "completed_at": "2026-10-09T17:43:54.418595+00:00",
+            "process_pid": 4654,
+            "artifact_id": "artifact-e14426a0b121",
+            "artifact_path": "auth_a.txt",
+            "content": "RP2_AUTH_A",
+            "sha256": "27479d926415935f692e2497776a2617527647d54c488ec9dece7ca3c21f06c6",
+            "action_id": "action-f479a483"
+          },
+          "artifacts": [
+            "artifact-e14426a0b121"
+          ]
+        },
+        "task-b4850f839d64": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "B",
+            "started_at": "2026-10-09T17:43:54.420892+00:00",
+            "completed_at": "2026-10-09T17:43:54.442059+00:00",
+            "process_pid": 4654,
+            "artifact_id": "artifact-0b0315c8146c",
+            "artifact_path": "auth_b.txt",
+            "content": "RP2_AUTH_B",
+            "sha256": "7a2d3fa14c169d9d6097c89c48b1fe9646dbf0b64bfc02fd4cc5f634320cd31e",
+            "action_id": "action-8742200e"
+          },
+          "artifacts": [
+            "artifact-0b0315c8146c"
+          ]
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-62069acebb77",
+    "B": "task-b4850f839d64"
+  }
+}

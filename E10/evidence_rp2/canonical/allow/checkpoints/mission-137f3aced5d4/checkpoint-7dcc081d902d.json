@@ -1,0 +1,135 @@
+{
+  "checkpoint_id": "checkpoint-7dcc081d902d",
+  "mission_id": "mission-137f3aced5d4",
+  "run_id": "run-b5f49ec30525",
+  "step": 2,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-62069acebb77": "COMPLETED",
+    "task-b4850f839d64": "COMPLETED"
+  },
+  "artifact_ids": [
+    "artifact-e14426a0b121",
+    "artifact-0b0315c8146c"
+  ],
+  "evidence_hashes": [
+    "27479d926415935f692e2497776a2617527647d54c488ec9dece7ca3c21f06c6",
+    "27479d926415935f692e2497776a2617527647d54c488ec9dece7ca3c21f06c6",
+    "7a2d3fa14c169d9d6097c89c48b1fe9646dbf0b64bfc02fd4cc5f634320cd31e",
+    "7a2d3fa14c169d9d6097c89c48b1fe9646dbf0b64bfc02fd4cc5f634320cd31e"
+  ],
+  "created_at": "2026-10-09T17:43:54.442363",
+  "hash": "bcbc45a2c02ce275ffba5bc22fa852d21b5cc83729531fcdab6548e1609b2c73",
+  "task_definitions": {
+    "task-62069acebb77": {
+      "task_id": "task-62069acebb77",
+      "run_id": "run-b5f49ec30525",
+      "mission_id": "mission-137f3aced5d4",
+      "name": "Write A",
+      "description": "First write",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_contains:auth_a.txt:RP2_AUTH_A"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_AUTH_A",
+        "output_path": "auth_a.txt",
+        "sleep_s": 0.02,
+        "task_key": "A"
+      },
+      "created_at": "2026-10-09T17:43:54.395920",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-b4850f839d64": {
+      "task_id": "task-b4850f839d64",
+      "run_id": "run-b5f49ec30525",
+      "mission_id": "mission-137f3aced5d4",
+      "name": "Write B",
+      "description": "Second write (depends on A)",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-62069acebb77"
+      ],
+      "acceptance_criteria": [
+        "file_contains:auth_b.txt:RP2_AUTH_B"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_AUTH_B",
+        "output_path": "auth_b.txt",
+        "sleep_s": 0.02,
+        "task_key": "B"
+      },
+      "created_at": "2026-10-09T17:43:54.395967",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-62069acebb77": [],
+    "task-b4850f839d64": [
+      "task-62069acebb77"
+    ]
+  },
+  "task_dependents": {
+    "task-62069acebb77": [
+      "task-b4850f839d64"
+    ],
+    "task-b4850f839d64": []
+  },
+  "attempt_history": {
+    "task-62069acebb77": [
+      {
+        "attempt_id": "attempt-8dc9c037",
+        "task_id": "task-62069acebb77",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:54.396830",
+        "completed_at": "2026-10-09T17:43:54.418927Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-b4850f839d64": [
+      {
+        "attempt_id": "attempt-f2e0796a",
+        "task_id": "task-b4850f839d64",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:54.420690",
+        "completed_at": "2026-10-09T17:43:54.442276Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-62069acebb77": "e3-thinker",
+    "task-b4850f839d64": "e3-thinker"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

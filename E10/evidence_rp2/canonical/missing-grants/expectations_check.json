@@ -1,0 +1,22 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "False (want False)"
+  },
+  {
+    "expectation": "files_written",
+    "pass": true,
+    "detail": "files=[]"
+  },
+  {
+    "expectation": "error_contains",
+    "pass": true,
+    "detail": " | PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write | PermissionError: Agent e33-mission-agent-01 lacks required permission: write for tool artifact_write | Permiss"
+  },
+  {
+    "expectation": "zero_performed_journal_records",
+    "pass": true,
+    "detail": "{'sandbox_files': [], 'performed_journal_records': 0}"
+  }
+]

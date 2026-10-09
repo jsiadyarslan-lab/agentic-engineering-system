@@ -1,0 +1,22 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "True (want True)"
+  },
+  {
+    "expectation": "B_attempts",
+    "pass": true,
+    "detail": "2 (want 2)"
+  },
+  {
+    "expectation": "replans",
+    "pass": true,
+    "detail": "0"
+  },
+  {
+    "expectation": "verifier_failures",
+    "pass": true,
+    "detail": "0"
+  }
+]

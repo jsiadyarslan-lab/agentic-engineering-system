@@ -1,0 +1,209 @@
+{
+  "checkpoint_id": "checkpoint-923c326995e4",
+  "mission_id": "mission-cca4d9098ef7",
+  "run_id": "run-6b7a01d986f5",
+  "step": 4,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-d18faef0f165": "COMPLETED",
+    "task-0ea0c68a65f5": "COMPLETED",
+    "task-008f928bac9c": "READY",
+    "task-d6c268e5bf0e": "BLOCKED"
+  },
+  "artifact_ids": [
+    "artifact-7fc717a7c9fc",
+    "artifact-1b3f19c23340"
+  ],
+  "evidence_hashes": [
+    "f6c4e505cc7b065061eb044fc072e8f7b0d06673a372543da4769f39877bd727",
+    "f6c4e505cc7b065061eb044fc072e8f7b0d06673a372543da4769f39877bd727",
+    "c4e3bbbec745964f4d7a60ff83a5758523749085eeec2902456e26697f561518",
+    "c4e3bbbec745964f4d7a60ff83a5758523749085eeec2902456e26697f561518"
+  ],
+  "created_at": "2026-10-09T17:43:53.323748",
+  "hash": "2e49344a6e0809db6334978cdcec9fa9e5d68039165a6dc1552000cce522b09a",
+  "task_definitions": {
+    "task-d18faef0f165": {
+      "task_id": "task-d18faef0f165",
+      "run_id": "run-6b7a01d986f5",
+      "mission_id": "mission-cca4d9098ef7",
+      "name": "Foundation A",
+      "description": "Foundation task",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_contains:task_a.txt:RP2_A_OUTPUT"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_A_OUTPUT",
+        "output_path": "task_a.txt",
+        "sleep_s": 0.05,
+        "task_key": "A"
+      },
+      "created_at": "2026-10-09T17:43:53.216942",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-0ea0c68a65f5": {
+      "task_id": "task-0ea0c68a65f5",
+      "run_id": "run-6b7a01d986f5",
+      "mission_id": "mission-cca4d9098ef7",
+      "name": "Right branch C",
+      "description": "Right branch (v1 criteria match reality)",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-d18faef0f165"
+      ],
+      "acceptance_criteria": [
+        "file_contains:task_c.txt:RP2_C_REALITY_ACTUAL"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_C_REALITY_ACTUAL",
+        "output_path": "task_c.txt",
+        "sleep_s": 0.05,
+        "task_key": "C"
+      },
+      "created_at": "2026-10-09T17:43:53.216997",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-008f928bac9c": {
+      "task_id": "task-008f928bac9c",
+      "run_id": "run-6b7a01d986f5",
+      "mission_id": "mission-cca4d9098ef7",
+      "name": "Merge D - controlled engine-level deviation",
+      "description": "Merge built on the plan v1 expectation of C",
+      "agent_type": "implementer",
+      "state": "READY",
+      "depends_on": [
+        "task-0ea0c68a65f5"
+      ],
+      "acceptance_criteria": [
+        "file_contains:task_d.txt:RP2_D_PLAN_EXPECTED"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_D_REALITY_ACTUAL",
+        "output_path": "task_d.txt",
+        "sleep_s": 0.05,
+        "task_key": "D"
+      },
+      "created_at": "2026-10-09T17:43:53.217031",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-d6c268e5bf0e": {
+      "task_id": "task-d6c268e5bf0e",
+      "run_id": "run-6b7a01d986f5",
+      "mission_id": "mission-cca4d9098ef7",
+      "name": "Report E",
+      "description": "Final report",
+      "agent_type": "implementer",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-008f928bac9c"
+      ],
+      "acceptance_criteria": [
+        "file_contains:task_e.txt:RP2_E_OUTPUT"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_E_OUTPUT",
+        "output_path": "task_e.txt",
+        "sleep_s": 0.05,
+        "task_key": "E"
+      },
+      "created_at": "2026-10-09T17:43:53.217055",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-d18faef0f165": [],
+    "task-0ea0c68a65f5": [
+      "task-d18faef0f165"
+    ],
+    "task-008f928bac9c": [
+      "task-0ea0c68a65f5"
+    ],
+    "task-d6c268e5bf0e": [
+      "task-008f928bac9c"
+    ]
+  },
+  "task_dependents": {
+    "task-d18faef0f165": [
+      "task-0ea0c68a65f5"
+    ],
+    "task-0ea0c68a65f5": [
+      "task-008f928bac9c"
+    ],
+    "task-008f928bac9c": [
+      "task-d6c268e5bf0e"
+    ],
+    "task-d6c268e5bf0e": []
+  },
+  "attempt_history": {
+    "task-d18faef0f165": [
+      {
+        "attempt_id": "attempt-47f82ee2",
+        "task_id": "task-d18faef0f165",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:53.217871",
+        "completed_at": "2026-10-09T17:43:53.270168Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-0ea0c68a65f5": [
+      {
+        "attempt_id": "attempt-e2ec2fa1",
+        "task_id": "task-0ea0c68a65f5",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:53.271946",
+        "completed_at": "2026-10-09T17:43:53.323611Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-d18faef0f165": "e3-thinker",
+    "task-0ea0c68a65f5": "e3-thinker"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

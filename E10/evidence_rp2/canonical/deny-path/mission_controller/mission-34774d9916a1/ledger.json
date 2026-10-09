@@ -1,0 +1,82 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "plan_reviews": [
+    {
+      "review_id": "review-e0c3498e5ee5",
+      "run_id": "run-a3f482717b4c",
+      "mission_id": "mission-34774d9916a1",
+      "plan_version": "v1",
+      "verdict": "approved",
+      "reviewer": "canonical_orchestrator",
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "no replan on record; current plan_version='v1'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": true,
+          "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "no replan on record"
+        }
+      ],
+      "reasons": [],
+      "reviewed_at": "2026-10-09T17:43:56.957698+00:00"
+    }
+  ],
+  "phases": [
+    {
+      "run_id": "run-a3f482717b4c",
+      "max_parallel": 1,
+      "pid": 4657,
+      "wall_seconds": 0.062,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-e58629baffae": {
+          "success": false,
+          "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-e58629baffae",
+    "B": "task-291c089d0702"
+  }
+}

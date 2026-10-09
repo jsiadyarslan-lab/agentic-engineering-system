@@ -1,0 +1,150 @@
+{
+  "checkpoint_id": "checkpoint-51bafa0f11a0",
+  "mission_id": "mission-1cc457c8ef00",
+  "run_id": "run-864a30fb3b48",
+  "step": 2,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-0dd751c2d870": "COMPLETED",
+    "task-68954741ee76": "COMPLETED"
+  },
+  "artifact_ids": [
+    "artifact-b45be230d686",
+    "artifact-00a3081473ca"
+  ],
+  "evidence_hashes": [
+    "0ca16c3ffe93327d1545dfe371d3b48bc83b19cdb9cdd8e77642b65fe4f7ce4a",
+    "0ca16c3ffe93327d1545dfe371d3b48bc83b19cdb9cdd8e77642b65fe4f7ce4a",
+    "a0f0626908e99c418119ada664513450abb3903abfcf9758c5ebce79a945760f",
+    "a0f0626908e99c418119ada664513450abb3903abfcf9758c5ebce79a945760f"
+  ],
+  "created_at": "2026-10-09T17:43:59.603339",
+  "hash": "e57fbebf61d9077b4b8bcb143f1fb322df2fca1cc27b9bf3bcd6a68e13d2e1a7",
+  "task_definitions": {
+    "task-0dd751c2d870": {
+      "task_id": "task-0dd751c2d870",
+      "run_id": "run-864a30fb3b48",
+      "mission_id": "mission-1cc457c8ef00",
+      "name": "Write A",
+      "description": "First write",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_contains:tf_a.txt:RP2_TF_A"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_TF_A",
+        "output_path": "tf_a.txt",
+        "sleep_s": 0.02,
+        "task_key": "A"
+      },
+      "created_at": "2026-10-09T17:43:59.552623",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-68954741ee76": {
+      "task_id": "task-68954741ee76",
+      "run_id": "run-864a30fb3b48",
+      "mission_id": "mission-1cc457c8ef00",
+      "name": "Write B with first-attempt tool failure",
+      "description": "Real tool failure on attempt 1, engine retry recovers",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-0dd751c2d870"
+      ],
+      "acceptance_criteria": [
+        "file_contains:tf_b.txt:RP2_TF_B"
+      ],
+      "assigned_agent_id": "e33-mission-agent-01",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_TF_B",
+        "output_path": "tf_b.txt",
+        "sleep_s": 0.02,
+        "fail_attempt_1": "tool_runtime",
+        "task_key": "B"
+      },
+      "created_at": "2026-10-09T17:43:59.552695",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 1
+    }
+  },
+  "task_dependencies": {
+    "task-0dd751c2d870": [],
+    "task-68954741ee76": [
+      "task-0dd751c2d870"
+    ]
+  },
+  "task_dependents": {
+    "task-0dd751c2d870": [
+      "task-68954741ee76"
+    ],
+    "task-68954741ee76": []
+  },
+  "attempt_history": {
+    "task-0dd751c2d870": [
+      {
+        "attempt_id": "attempt-9a796f64",
+        "task_id": "task-0dd751c2d870",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:59.553588",
+        "completed_at": "2026-10-09T17:43:59.576956Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-68954741ee76": [
+      {
+        "attempt_id": "attempt-b7cc3c33",
+        "task_id": "task-68954741ee76",
+        "agent_id": "e3-thinker",
+        "state": "FAILED",
+        "started_at": "2026-10-09T17:43:59.580370",
+        "completed_at": "2026-10-09T17:43:59.581304Z",
+        "action_ids": [],
+        "success": false,
+        "error": "Tool/runtime failure from sandbox layer: FileExistsError: [Errno 17] File exists: '/home/z/my-project/e10rp2_work/E10/evidence_rp2/canonical/tool-fail/sandbox-task-68954741ee76/e33_tool_failure_guard.txt'",
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      },
+      {
+        "attempt_id": "attempt-5639c010",
+        "task_id": "task-68954741ee76",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:59.581408",
+        "completed_at": "2026-10-09T17:43:59.603245Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-0dd751c2d870": "e3-thinker",
+    "task-68954741ee76": "e33-mission-agent-01"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

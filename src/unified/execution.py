@@ -1093,6 +1093,7 @@ class ExecutionEngine:
         max_concurrent_tasks: int = 50,
         max_retries: int = 3,
         max_artifacts_per_run: int = 100,
+        grant_ids: Optional[List[str]] = None,
     ):
         self.sandbox_backend = sandbox_backend
         self.artifacts_base_dir = artifacts_base_dir or os.path.join(
@@ -1100,6 +1101,14 @@ class ExecutionEngine:
         )
         self.default_limits = default_limits or {}
         self.grant_validator = grant_validator
+        # E10-RP2 §2: grant identity is now an explicit construction
+        # parameter. None keeps the E9-R legacy default (the historical
+        # 'test-grant' string) for existing batteries — but NOTE: any REAL
+        # validator (e.g. the EOE engine bridge) rejects that legacy id
+        # because it is not in the grants ledger, so the governed path
+        # stays fail-closed with real validators. Real deployments inject
+        # the owner-approved EOE grant ids here.
+        self.grant_ids = grant_ids
         # Resource quotas
         self.max_concurrent_missions = max_concurrent_missions
         self.max_concurrent_tasks = max_concurrent_tasks
@@ -1486,7 +1495,14 @@ class ExecutionEngine:
                 event_emitter=self.event_bus.emit,
                 evidence_store=self.evidence_store,
                 grant_validator=self.grant_validator,  # E9-R: grant validation for tool permissions
-                grant_ids=["test-grant"],  # E9-R: default grant for testing
+                # E10-RP2 §2: explicit grant identity injection. None =>
+                # E9-R legacy default ['test-grant'] (rejected by any real
+                # validator — unknown grant id; fail-closed preserved).
+                grant_ids=(
+                    list(self.grant_ids)
+                    if self.grant_ids is not None
+                    else ["test-grant"]
+                ),
                 previous_agent_id=self._previous_agent_ids.get(task.task_id) if task.retry_count > 0 else None,
             )
             
@@ -5104,6 +5120,7 @@ def create_execution_engine(
     max_concurrent_tasks: int = 50,
     max_retries: int = 3,
     max_artifacts_per_run: int = 100,
+    grant_ids: Optional[List[str]] = None,
 ) -> ExecutionEngine:
     """Create execution engine with default configuration."""
     return ExecutionEngine(
@@ -5115,6 +5132,7 @@ def create_execution_engine(
         max_concurrent_tasks=max_concurrent_tasks,
         max_retries=max_retries,
         max_artifacts_per_run=max_artifacts_per_run,
+        grant_ids=grant_ids,
     )
 # ============================================================
 # EXPORTS

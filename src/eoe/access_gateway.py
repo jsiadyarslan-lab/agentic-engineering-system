@@ -253,6 +253,58 @@ class AccessAdmission:
         self._now = now
         self.usage_log: list[dict] = []
 
+    def admit_grant_id(
+        self,
+        grant_id: str,
+        *,
+        write: bool,
+        path: str = "",
+        depth: int = 0,
+    ) -> EoeGrant:
+        """E10-RP2 §2: قبول وصول مربوط بمنحة بعينها (لا أي منحة تغطي).
+
+        نفس دلالات ``admit_access`` تمامًا (توقيع، سارية، حالة، نطاق،
+        تغطية المسار، العمق) لكن للمنحة التي قدّمها طرف التنفيذ
+        بهويتها — وليس أول منحة سارية تطابق. تُستخدم من جسر المحرك
+        الموحّد (``eoe.engine_bridge``) الذي يربط سياسة منح EOE
+        بـ``grant_validator`` في مسار التنفيذ المحكوم: المحرك يقدّم
+        ``grant_id`` محددًا، فلا يجوز أن تغطيه منحة أخرى.
+        """
+        if not grant_id:
+            raise AccessDenied(AccessRejection.NOT_APPROVED, "معرّف منحة فارغ")
+        now = self._now()
+        self._ledger.sweep_expired(now)
+        grant = self._ledger.lookup(grant_id)
+        if grant is None:
+            raise AccessDenied(
+                AccessRejection.NOT_APPROVED,
+                f"منحة غير معروفة: {grant_id} — رفض fail-closed",
+            )
+        if grant.state is not EoeGrantState.APPROVED:
+            raise AccessDenied(
+                AccessRejection.NOT_APPROVED,
+                f"المنحة {grant_id} حالتها {grant.state.value} — لا وصول",
+            )
+        problem = self._check(
+            grant, write=write, path=path, repo="", branch="",
+            host_port="", depth=depth, now=now,
+        )
+        if problem is not None:
+            rejection = next(
+                (r for r in AccessRejection if r.value == problem),
+                AccessRejection.PATH_NOT_COVERED,
+            )
+            raise AccessDenied(rejection, problem)
+        self.usage_log.append(
+            {"grant_id": grant.grant_id, "kind": grant.kind.value,
+             "at": now, "write": write, "target": path}
+        )
+        self._ledger.events.append(
+            {"kind": "grant.used", "grant_id": grant.grant_id,
+             "kind_type": grant.kind.value}
+        )
+        return grant
+
     def admit_access(
         self,
         *,

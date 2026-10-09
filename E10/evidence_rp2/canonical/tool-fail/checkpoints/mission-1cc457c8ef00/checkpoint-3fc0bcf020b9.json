@@ -1,0 +1,116 @@
+{
+  "checkpoint_id": "checkpoint-3fc0bcf020b9",
+  "mission_id": "mission-1cc457c8ef00",
+  "run_id": "run-864a30fb3b48",
+  "step": 2,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-0dd751c2d870": "COMPLETED",
+    "task-68954741ee76": "READY"
+  },
+  "artifact_ids": [
+    "artifact-b45be230d686"
+  ],
+  "evidence_hashes": [
+    "0ca16c3ffe93327d1545dfe371d3b48bc83b19cdb9cdd8e77642b65fe4f7ce4a",
+    "0ca16c3ffe93327d1545dfe371d3b48bc83b19cdb9cdd8e77642b65fe4f7ce4a"
+  ],
+  "created_at": "2026-10-09T17:43:59.577070",
+  "hash": "64fb46c0dcda1e76fe840864659af750490e4571ebad271ac5e830ed1f7a9767",
+  "task_definitions": {
+    "task-0dd751c2d870": {
+      "task_id": "task-0dd751c2d870",
+      "run_id": "run-864a30fb3b48",
+      "mission_id": "mission-1cc457c8ef00",
+      "name": "Write A",
+      "description": "First write",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_contains:tf_a.txt:RP2_TF_A"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_TF_A",
+        "output_path": "tf_a.txt",
+        "sleep_s": 0.02,
+        "task_key": "A"
+      },
+      "created_at": "2026-10-09T17:43:59.552623",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-68954741ee76": {
+      "task_id": "task-68954741ee76",
+      "run_id": "run-864a30fb3b48",
+      "mission_id": "mission-1cc457c8ef00",
+      "name": "Write B with first-attempt tool failure",
+      "description": "Real tool failure on attempt 1, engine retry recovers",
+      "agent_type": "implementer",
+      "state": "READY",
+      "depends_on": [
+        "task-0dd751c2d870"
+      ],
+      "acceptance_criteria": [
+        "file_contains:tf_b.txt:RP2_TF_B"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_TF_B",
+        "output_path": "tf_b.txt",
+        "sleep_s": 0.02,
+        "fail_attempt_1": "tool_runtime",
+        "task_key": "B"
+      },
+      "created_at": "2026-10-09T17:43:59.552695",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-0dd751c2d870": [],
+    "task-68954741ee76": [
+      "task-0dd751c2d870"
+    ]
+  },
+  "task_dependents": {
+    "task-0dd751c2d870": [
+      "task-68954741ee76"
+    ],
+    "task-68954741ee76": []
+  },
+  "attempt_history": {
+    "task-0dd751c2d870": [
+      {
+        "attempt_id": "attempt-9a796f64",
+        "task_id": "task-0dd751c2d870",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:59.553588",
+        "completed_at": "2026-10-09T17:43:59.576956Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-0dd751c2d870": "e3-thinker"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

@@ -1,0 +1,142 @@
+{
+  "written_before_any_cycle": true,
+  "note": "Fixed BEFORE observing any outcome (order §4 discipline). Success criteria are never changed after the fact.",
+  "run_resolution_cycle": {
+    "result": {
+      "success": true
+    },
+    "reviews": [
+      "approved",
+      "rejected",
+      "approved",
+      "approved"
+    ],
+    "replans": [
+      {
+        "from_version": "v1",
+        "to_version": "v2",
+        "invalidated": [
+          "E"
+        ],
+        "modified": [
+          "C",
+          "D"
+        ],
+        "added": [
+          "X"
+        ]
+      },
+      {
+        "from_version": "v2",
+        "to_version": "v3",
+        "invalidated": [],
+        "modified": [
+          "C"
+        ],
+        "added": []
+      }
+    ],
+    "verifier_failure_recorded_for_C": true,
+    "verifier_failure_resolved_by_newer_evidence": true,
+    "mixed_state_seen": true,
+    "C_latest_verdict": "evidenced",
+    "C_criteria_version": "v3",
+    "historical_not_evidenced_preserved": true,
+    "attempts_per_key": {
+      "A": 1,
+      "C": 1,
+      "D": 4,
+      "X": 1,
+      "E": 0
+    },
+    "attempts_note": "D=4 calibrated in diagnostic round #1 (a crashed run, disclosed in the report): the engine retries the verification-failed task (initial + 2 retries) then the recovered re-execution completes — same observed pattern as E10-RP1's C=4. Never relaxed after a passing run.",
+    "files": {
+      "task_a.txt": "present",
+      "task_c.txt": "present",
+      "task_d.txt": "present",
+      "task_x.txt": "present",
+      "task_e.txt": "absent"
+    },
+    "duplicate_continuation": {
+      "zero_new_attempts": true,
+      "journal_unchanged": true
+    }
+  },
+  "run_mixed_blocked_cycle": {
+    "result": {
+      "success": false
+    },
+    "reviews": [
+      "approved",
+      "rejected",
+      "approved"
+    ],
+    "replans": [
+      {
+        "from_version": "v1",
+        "to_version": "v2",
+        "invalidated": [
+          "E"
+        ],
+        "modified": [
+          "C",
+          "D"
+        ],
+        "added": [
+          "X"
+        ]
+      }
+    ],
+    "verifier_failure_recorded_for_C": true,
+    "verifier_failure_resolved_by_newer_evidence": false,
+    "C_latest_verdict": "not_evidenced",
+    "completion_check_failed_reason": "current_unresolved_verification_failure",
+    "attempts_per_key": {
+      "A": 1,
+      "C": 1,
+      "D": 4,
+      "X": 1,
+      "E": 0
+    }
+  },
+  "auth_cases": {
+    "allow": {
+      "result_success": true,
+      "files_written": true,
+      "grant_state": "APPROVED",
+      "permission_errors": 0
+    },
+    "deny_revoked": {
+      "result_success": false,
+      "files_written": false,
+      "permission_errors_min": 1
+    },
+    "deny_read_only": {
+      "result_success": false,
+      "files_written": false,
+      "permission_errors_min": 1
+    },
+    "deny_path_uncovered": {
+      "result_success": false,
+      "files_written": false,
+      "permission_errors_min": 1
+    },
+    "missing_validator": {
+      "result_success": false,
+      "files_written": false,
+      "error_contains": "no validator available"
+    },
+    "missing_grants": {
+      "result_success": false,
+      "files_written": false,
+      "error_contains": "lacks required permission"
+    }
+  },
+  "tool_fail_case": {
+    "result_success": true,
+    "B_attempts": 2,
+    "replans": 0,
+    "verifier_failures": 0,
+    "no_unjustified_replan": true
+  }
+}

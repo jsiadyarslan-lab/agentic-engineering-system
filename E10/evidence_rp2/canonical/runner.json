@@ -1,0 +1,118 @@
+{
+  "phase": "E10-RP2 — CANONICAL EXECUTION AUTHORIZATION & VERIFICATION TRUTH",
+  "verdict": "E10RP2_CHAIN_PROVEN",
+  "runs": [
+    {
+      "name": "resolution",
+      "script": "e10rp2_cycle.py",
+      "args": [
+        "--mode",
+        "resolution"
+      ],
+      "exit": 0,
+      "verdict": "[CYCLE mode=resolution] verdict=CYCLE_PROVEN checks=18/18",
+      "out_dir": "E10/evidence_rp2/canonical/resolution",
+      "stdout_tail": "ASS] reviews: ['approved', 'rejected', 'approved', 'approved']\n  [PASS] replans: [{'v': 'v2', 'inv': ['E'], 'mod': ['C', 'D']}, {'v': 'v3', 'inv': [], 'mod': ['C']}]\n  [PASS] verifier_failure_recorded_for_C: [('C', <FailureKind.PLAN_DEVIATION: 'plan_deviation'>, True, 'replan->v3')]\n  [PASS] verifier_failure_resolved_by_newer_evidence: replan->v3\n  [PASS] mixed_state_seen (A evidenced while C not_evidenced): A history: ['evidenced', 'evidenced', 'evidenced']; C history: ['evidenced', 'not_evidenced', 'evidenced']\n  [PASS] C_latest_verdict: evidenced\n  [PASS] C_criteria_version: v3\n  [PASS] historical_not_evidenced_preserved: True\n  [PASS] attempts_per_key: {'A': 1, 'C': 1, 'D': 4, 'E': 0, 'X': 1}\n  [PASS] files.task_a.txt.present: {'present': True, 'contains_reality': None}\n  [PASS] files.task_c.txt.present: {'present': True, 'contains_reality': True}\n  [PASS] files.task_d.txt.present: {'present': True, 'contains_reality': None}\n  [PASS] files.task_x.txt.present: {'present': True, 'contains_reality': None}\n  [PASS] files.task_e.txt.absent: {'present': False, 'contains_reality': None}\n  [PASS] duplicate.zero_new_attempts: {'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}\n  [PASS] duplicate.journal_unchanged: {'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}\n  [PASS] duplicate.result_success: {'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}\n"
+    },
+    {
+      "name": "mixed_blocked",
+      "script": "e10rp2_cycle.py",
+      "args": [
+        "--mode",
+        "mixed-blocked"
+      ],
+      "exit": 0,
+      "verdict": "[CYCLE mode=mixed-blocked] verdict=CYCLE_PROVEN checks=8/8",
+      "out_dir": "E10/evidence_rp2/canonical/mixed_blocked",
+      "stdout_tail": "nt_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-verifier, task_id=verify-task-4b8eaa103959-9f8101f2, task.agent_type=AgentType.VERIFIER\n  [AgentFactory] Found agent definition: e3-verifier, type=AgentType.VERIFIER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.VERIFIER, agent_id=e3-verifier\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n[CYCLE mode=mixed-blocked] verdict=CYCLE_PROVEN checks=8/8\n  [PASS] result.success: False (want False)\n  [PASS] reviews: ['approved', 'rejected', 'approved']\n  [PASS] replans: [{'v': 'v2', 'inv': ['E'], 'mod': ['C', 'D']}]\n  [PASS] verifier_failure_recorded_for_C: [('C', <FailureKind.PLAN_DEVIATION: 'plan_deviation'>, False, '')]\n  [PASS] verifier_failure_resolved_by_newer_evidence: False\n  [PASS] C_latest_verdict: not_evidenced\n  [PASS] completion_check_failed_reason: ['current_unresolved_verification_failure']\n  [PASS] attempts_per_key: {'A': 1, 'C': 1, 'D': 4, 'E': 0, 'X': 1}\n"
+    },
+    {
+      "name": "allow",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "allow"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=allow] verdict=CASE_PROVEN checks=3/3",
+      "out_dir": "E10/evidence_rp2/canonical/allow",
+      "stdout_tail": "entType.VERIFIER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.VERIFIER, agent_id=e3-verifier\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-verifier, task_id=verify-task-b4850f839d64-9166fdf0, task.agent_type=AgentType.VERIFIER\n  [AgentFactory] Found agent definition: e3-verifier, type=AgentType.VERIFIER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.VERIFIER, agent_id=e3-verifier\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n[AUTH case=allow] verdict=CASE_PROVEN checks=3/3\n  [PASS] result.success: True (want True)\n  [PASS] files_written: files=['sandbox-task-62069acebb77/auth_a.txt', 'sandbox-task-b4850f839d64/auth_b.txt']\n  [PASS] permission_errors_exact: 0\n"
+    },
+    {
+      "name": "deny-revoked",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "deny-revoked"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=deny-revoked] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/deny-revoked",
+      "stdout_tail": "state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-thinker, task_id=task-dda4d3398ebc, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e3-thinker, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e3-thinker\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n[AUTH case=deny-revoked] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: False (want False)\n  [PASS] files_written: files=[]\n  [PASS] permission_errors: 4\n  [PASS] zero_performed_journal_records: {'sandbox_files': [], 'performed_journal_records': 0}\n"
+    },
+    {
+      "name": "deny-read-only",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "deny-read-only"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=deny-read-only] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/deny-read-only",
+      "stdout_tail": "ate=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-thinker, task_id=task-b41b8ad5efe2, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e3-thinker, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e3-thinker\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n[AUTH case=deny-read-only] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: False (want False)\n  [PASS] files_written: files=[]\n  [PASS] permission_errors: 4\n  [PASS] zero_performed_journal_records: {'sandbox_files': [], 'performed_journal_records': 0}\n"
+    },
+    {
+      "name": "deny-path",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "deny-path"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=deny-path] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/deny-path",
+      "stdout_tail": "R, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-thinker, task_id=task-e58629baffae, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e3-thinker, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e3-thinker\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n[AUTH case=deny-path] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: False (want False)\n  [PASS] files_written: files=[]\n  [PASS] permission_errors: 4\n  [PASS] zero_performed_journal_records: {'sandbox_files': [], 'performed_journal_records': 0}\n"
+    },
+    {
+      "name": "missing-validator",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "missing-validator"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=missing-validator] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/missing-validator",
+      "stdout_tail": "ator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-thinker, task_id=task-2c0442e59800, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e3-thinker, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e3-thinker\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n[AUTH case=missing-validator] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: False (want False)\n  [PASS] files_written: files=[]\n  [PASS] error_contains:  | PermissionError: Tool artifact_write requires grants but no validator available | PermissionError: Tool artifact_write requires grants but no validator available | PermissionError: Tool artifact_write re\n  [PASS] zero_performed_journal_records: {'sandbox_files': [], 'performed_journal_records': 0}\n"
+    },
+    {
+      "name": "missing-grants",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "missing-grants"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=missing-grants] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/missing-grants",
+      "stdout_tail": "strator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-thinker, task_id=task-3c82ae598273, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e3-thinker, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e3-thinker\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3AgentWrapper'>, has validate_input: True\n[AUTH case=missing-grants] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: False (want False)\n  [PASS] files_written: files=[]\n  [PASS] error_contains:  | PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write | PermissionError: Agent e33-mission-agent-01 lacks required permission: write for tool artifact_write | Permiss\n  [PASS] zero_performed_journal_records: {'sandbox_files': [], 'performed_journal_records': 0}\n"
+    },
+    {
+      "name": "tool-fail",
+      "script": "e10rp2_auth.py",
+      "args": [
+        "--case",
+        "tool-fail"
+      ],
+      "exit": 0,
+      "verdict": "[AUTH case=tool-fail] verdict=CASE_PROVEN checks=4/4",
+      "out_dir": "E10/evidence_rp2/canonical/tool-fail",
+      "stdout_tail": "  [AgentFactory] Found agent definition: e3-verifier, type=AgentType.VERIFIER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.VERIFIER, agent_id=e3-verifier\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n  [AgentFactory] execute_agent_by_id called: agent_id=e3-verifier, task_id=verify-task-68954741ee76-9153c220, task.agent_type=AgentType.VERIFIER\n  [AgentFactory] Found agent definition: e3-verifier, type=AgentType.VERIFIER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.VERIFIER, agent_id=e3-verifier\n  [AgentFactory] Implementation class: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, module: orchestrator.canonical, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'orchestrator.canonical.RoleCoordinator._register_agents.<locals>.E3VerifierAgent'>, has validate_input: True\n[AUTH case=tool-fail] verdict=CASE_PROVEN checks=4/4\n  [PASS] result.success: True (want True)\n  [PASS] B_attempts: 2 (want 2)\n  [PASS] replans: 0\n  [PASS] verifier_failures: 0\n"
+    }
+  ],
+  "failed": [],
+  "duration_s": 8.4,
+  "expectations": "E10/evidence_rp2_expectations.json (pre-registered)",
+  "control_inputs": "ScriptedDecomposerProvider (planning boundary) + decision providers (replanning decision boundary) — disclosed, decision boundaries only; everything else is production code under test. Authorization is the REAL EOE grants contract in every run."
+}

@@ -1,0 +1,562 @@
+[
+  {
+    "event_type": "mission.started",
+    "timestamp": "2026-10-09T17:43:56.102194",
+    "correlation_id": "",
+    "source": "execution_engine",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "user_request": "E10-RP2 auth case: deny-read-only",
+      "provider": null,
+      "model": null
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102243",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "RECEIVED",
+      "to_state": "ANALYZING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102265",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "ANALYZING",
+      "to_state": "PLANNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102281",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "PLANNING",
+      "to_state": "DESIGNING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102295",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "DESIGNING",
+      "to_state": "REVIEWING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102311",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102326",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "APPROVED",
+      "to_state": "AWAITING_APPROVAL",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "mission.state_changed",
+    "timestamp": "2026-10-09T17:43:56.102339",
+    "correlation_id": null,
+    "source": "mission_controller",
+    "payload": {
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "",
+      "from_state": "AWAITING_APPROVAL",
+      "to_state": "EXECUTING",
+      "actor": "mission_controller",
+      "reason": "Mission definition (E33)"
+    }
+  },
+  {
+    "event_type": "run.started",
+    "timestamp": "2026-10-09T17:43:56.102382",
+    "correlation_id": "run-43d4e0ad8de1",
+    "source": "execution_engine",
+    "payload": {
+      "run_id": "run-43d4e0ad8de1",
+      "mission_id": "mission-93c8d8874707",
+      "run_number": 1,
+      "parent_run_id": null
+    }
+  },
+  {
+    "event_type": "task.created",
+    "timestamp": "2026-10-09T17:43:56.102436",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "mission_controller",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "name": "Write A",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:auth_a.txt:RP2_AUTH_A"
+      ],
+      "depends_on": []
+    }
+  },
+  {
+    "event_type": "task.created",
+    "timestamp": "2026-10-09T17:43:56.102471",
+    "correlation_id": "task-f2f3dc636394",
+    "source": "mission_controller",
+    "payload": {
+      "task_id": "task-f2f3dc636394",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "name": "Write B",
+      "agent_type": "implementer",
+      "acceptance_criteria": [
+        "file_contains:auth_b.txt:RP2_AUTH_B"
+      ],
+      "depends_on": [
+        "A"
+      ]
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.103140",
+    "correlation_id": "run-43d4e0ad8de1",
+    "source": "mission_controller",
+    "payload": {
+      "entity_type": "plan_review",
+      "entity_id": "v1",
+      "from_state": "REVIEWING",
+      "to_state": "APPROVED",
+      "trigger": "canonical_orchestrator",
+      "review_id": "review-046a81a6d79e",
+      "failed_checks": [],
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.103303",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:56.103614",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "agent_id": "e3-thinker",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-47b6402b"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:56.103656",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.103678",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:56.103773",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:56.124197",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.124261",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:56.124291",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+      "retry_count": 0,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.124308",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "FAILED",
+      "to_state": "READY",
+      "reason": "Task state updated to READY"
+    }
+  },
+  {
+    "event_type": "task.retry",
+    "timestamp": "2026-10-09T17:43:56.124328",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "attempt_id": "attempt-47b6402b",
+      "retry_count": 1,
+      "max_retries": 2,
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.124342",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:56.124421",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "agent_id": "e33-mission-agent-01",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-89b0b3f7"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:56.124437",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.124449",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:56.124505",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:56.144915",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e33-mission-agent-01",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "error": "PermissionError: Agent e33-mission-agent-01 lacks required permission: write for tool artifact_write",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.144953",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:56.144977",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "error": "PermissionError: Agent e33-mission-agent-01 lacks required permission: write for tool artifact_write",
+      "retry_count": 1,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.144990",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "FAILED",
+      "to_state": "READY",
+      "reason": "Task state updated to READY"
+    }
+  },
+  {
+    "event_type": "task.retry",
+    "timestamp": "2026-10-09T17:43:56.145007",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "attempt_id": "attempt-89b0b3f7",
+      "retry_count": 2,
+      "max_retries": 2,
+      "error": "PermissionError: Agent e33-mission-agent-01 lacks required permission: write for tool artifact_write"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.145021",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "READY",
+      "to_state": "ASSIGNED",
+      "reason": "Task state updated to ASSIGNED"
+    }
+  },
+  {
+    "event_type": "task.assigned",
+    "timestamp": "2026-10-09T17:43:56.145096",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "agent_id": "e3-thinker",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "agent_type": "implementer",
+      "attempt_id": "attempt-f8d35c69"
+    }
+  },
+  {
+    "event_type": "agent.selected",
+    "timestamp": "2026-10-09T17:43:56.145113",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "execution_engine",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "selection_method": "reservation"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.145125",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "ASSIGNED",
+      "to_state": "RUNNING",
+      "reason": "Task state updated to RUNNING"
+    }
+  },
+  {
+    "event_type": "agent.started",
+    "timestamp": "2026-10-09T17:43:56.145329",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2"
+    }
+  },
+  {
+    "event_type": "agent.failed",
+    "timestamp": "2026-10-09T17:43:56.165679",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "agent_id": "e3-thinker",
+      "agent_type": "implementer",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "task_id": "task-b41b8ad5efe2",
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+      "error_type": "Exception"
+    }
+  },
+  {
+    "event_type": "state.transition",
+    "timestamp": "2026-10-09T17:43:56.165715",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "task_graph",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "from_state": "RUNNING",
+      "to_state": "FAILED",
+      "reason": "Task state updated to FAILED"
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:56.165748",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "agent.implementer",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+      "retry_count": 2,
+      "max_retries": 2
+    }
+  },
+  {
+    "event_type": "task.failed",
+    "timestamp": "2026-10-09T17:43:56.165762",
+    "correlation_id": "task-b41b8ad5efe2",
+    "source": "execution_engine",
+    "payload": {
+      "task_id": "task-b41b8ad5efe2",
+      "mission_id": "mission-93c8d8874707",
+      "run_id": "run-43d4e0ad8de1",
+      "error": "PermissionError: Agent e3-thinker lacks required permission: write for tool artifact_write",
+      "retry_count": 3,
+      "max_retries": 2
+    }
+  }
+]

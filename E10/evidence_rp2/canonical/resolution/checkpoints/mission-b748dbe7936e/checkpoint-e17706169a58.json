@@ -1,0 +1,295 @@
+{
+  "checkpoint_id": "checkpoint-e17706169a58",
+  "mission_id": "mission-b748dbe7936e",
+  "run_id": "run-07ccdda8fcab",
+  "step": 4,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-db90ad821caa": "COMPLETED",
+    "task-b487d4587bfb": "COMPLETED",
+    "task-f3227ef22158": "COMPLETED",
+    "task-87356edfaacb": "COMPLETED"
+  },
+  "artifact_ids": [
+    "artifact-e1138d6a704e",
+    "artifact-b3416d3fc2a6",
+    "artifact-6b9a81c3a535",
+    "artifact-fae49d975409"
+  ],
+  "evidence_hashes": [
+    "f6c4e505cc7b065061eb044fc072e8f7b0d06673a372543da4769f39877bd727",
+    "f6c4e505cc7b065061eb044fc072e8f7b0d06673a372543da4769f39877bd727",
+    "c4e3bbbec745964f4d7a60ff83a5758523749085eeec2902456e26697f561518",
+    "c4e3bbbec745964f4d7a60ff83a5758523749085eeec2902456e26697f561518",
+    "e0136e5ae430c48e3973b874d7a7a6904a064971d6acc4e0ddc8fc0bac87e997",
+    "e0136e5ae430c48e3973b874d7a7a6904a064971d6acc4e0ddc8fc0bac87e997",
+    "e0136e5ae430c48e3973b874d7a7a6904a064971d6acc4e0ddc8fc0bac87e997",
+    "e0136e5ae430c48e3973b874d7a7a6904a064971d6acc4e0ddc8fc0bac87e997",
+    "e0136e5ae430c48e3973b874d7a7a6904a064971d6acc4e0ddc8fc0bac87e997",
+    "c6d281e29f281272499cd25093951d26f44b5eefefdc8a928880b5c0c0cd158f",
+    "c6d281e29f281272499cd25093951d26f44b5eefefdc8a928880b5c0c0cd158f"
+  ],
+  "created_at": "2026-10-09T17:43:52.392799",
+  "hash": "4e7fa38100c5da5f63250df6755eb85746cc659f57c3329597dbf0480af9a1d6",
+  "task_definitions": {
+    "task-db90ad821caa": {
+      "task_id": "task-db90ad821caa",
+      "run_id": "run-07ccdda8fcab",
+      "mission_id": "mission-b748dbe7936e",
+      "name": "Foundation A",
+      "description": "Foundation task",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_contains:task_a.txt:RP2_A_OUTPUT"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_A_OUTPUT",
+        "output_path": "task_a.txt",
+        "sleep_s": 0.05,
+        "task_key": "A"
+      },
+      "created_at": "2026-10-09T17:43:52.020308",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-b487d4587bfb": {
+      "task_id": "task-b487d4587bfb",
+      "run_id": "run-07ccdda8fcab",
+      "mission_id": "mission-b748dbe7936e",
+      "name": "Right branch C",
+      "description": "Right branch (v1 criteria match reality)",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-db90ad821caa"
+      ],
+      "acceptance_criteria": [
+        "file_contains:task_c.txt:RP2_C_WRONG_GUESS"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_C_REALITY_ACTUAL",
+        "output_path": "task_c.txt",
+        "sleep_s": 0.05,
+        "task_key": "C"
+      },
+      "created_at": "2026-10-09T17:43:52.020355",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-f3227ef22158": {
+      "task_id": "task-f3227ef22158",
+      "run_id": "run-07ccdda8fcab",
+      "mission_id": "mission-b748dbe7936e",
+      "name": "Merge D - controlled engine-level deviation",
+      "description": "Merge built on the plan v1 expectation of C",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-b487d4587bfb"
+      ],
+      "acceptance_criteria": [
+        "file_contains:task_d.txt:RP2_D_REALITY_ACTUAL"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "content": "RP2_D_REALITY_ACTUAL",
+        "output_path": "task_d.txt",
+        "sleep_s": 0.05,
+        "task_key": "D"
+      },
+      "created_at": "2026-10-09T17:43:52.020388",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-87356edfaacb": {
+      "task_id": "task-87356edfaacb",
+      "run_id": "run-07ccdda8fcab",
+      "mission_id": "mission-b748dbe7936e",
+      "name": "X - remediation after engine deviation at D",
+      "description": "Remediation task required by replan v2: covers the report contract under OBSERVED REALITY, replacing the invalidated E whose plan assumed D's v1 product.",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-f3227ef22158"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_x.txt",
+        "file_contains:task_x.txt:RP2_X_OUTPUT"
+      ],
+      "assigned_agent_id": "e3-thinker",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "X",
+        "content": "RP2_X_OUTPUT: remediation report under observed reality",
+        "output_path": "task_x.txt",
+        "sleep_s": 0.05
+      },
+      "created_at": "2026-10-09T17:43:52.284546",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-db90ad821caa": [],
+    "task-b487d4587bfb": [
+      "task-db90ad821caa"
+    ],
+    "task-f3227ef22158": [
+      "task-b487d4587bfb"
+    ],
+    "task-87356edfaacb": [
+      "task-f3227ef22158"
+    ]
+  },
+  "task_dependents": {
+    "task-db90ad821caa": [
+      "task-b487d4587bfb"
+    ],
+    "task-b487d4587bfb": [
+      "task-f3227ef22158"
+    ],
+    "task-f3227ef22158": [
+      "task-87356edfaacb"
+    ],
+    "task-87356edfaacb": []
+  },
+  "attempt_history": {
+    "task-db90ad821caa": [
+      {
+        "attempt_id": "attempt-64ea4daa",
+        "task_id": "task-db90ad821caa",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:52.021292",
+        "completed_at": "2026-10-09T17:43:52.073693Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-b487d4587bfb": [
+      {
+        "attempt_id": "attempt-844aded5",
+        "task_id": "task-b487d4587bfb",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:52.075526",
+        "completed_at": "2026-10-09T17:43:52.127314Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-f3227ef22158": [
+      {
+        "attempt_id": "attempt-8a10cfab",
+        "task_id": "task-f3227ef22158",
+        "agent_id": "e3-thinker",
+        "state": "FAILED",
+        "started_at": "2026-10-09T17:43:52.129216",
+        "completed_at": "2026-10-09T17:43:52.180890Z",
+        "action_ids": [],
+        "success": false,
+        "error": "Verification failed: not_evidenced",
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      },
+      {
+        "attempt_id": "attempt-a76a3fc0",
+        "task_id": "task-f3227ef22158",
+        "agent_id": "e33-mission-agent-01",
+        "state": "FAILED",
+        "started_at": "2026-10-09T17:43:52.180979",
+        "completed_at": "2026-10-09T17:43:52.232402Z",
+        "action_ids": [],
+        "success": false,
+        "error": "Verification failed: not_evidenced",
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      },
+      {
+        "attempt_id": "attempt-165d62f0",
+        "task_id": "task-f3227ef22158",
+        "agent_id": "e3-thinker",
+        "state": "FAILED",
+        "started_at": "2026-10-09T17:43:52.232490",
+        "completed_at": "2026-10-09T17:43:52.283837Z",
+        "action_ids": [],
+        "success": false,
+        "error": "Verification failed: not_evidenced",
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      },
+      {
+        "attempt_id": "attempt-bdf92e07",
+        "task_id": "task-f3227ef22158",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:52.286507",
+        "completed_at": "2026-10-09T17:43:52.337956Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-87356edfaacb": [
+      {
+        "attempt_id": "attempt-36ac6b5c",
+        "task_id": "task-87356edfaacb",
+        "agent_id": "e3-thinker",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T17:43:52.340979",
+        "completed_at": "2026-10-09T17:43:52.392635Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-db90ad821caa": "e3-thinker",
+    "task-b487d4587bfb": "e3-thinker",
+    "task-f3227ef22158": "e3-thinker",
+    "task-87356edfaacb": "e3-thinker"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

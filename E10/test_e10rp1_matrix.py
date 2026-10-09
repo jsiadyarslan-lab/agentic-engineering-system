@@ -88,7 +88,11 @@ def test_RP1_T01_stubs_removed_and_path_wired():
     assert "self.mc.replan_mission(" in src
     assert "self.mc.recover_failed_task(" in src
     assert 'reviewer="canonical_orchestrator"' in src
-    assert 'verdict="not_evidenced"' in src  # verifier failure recorded, not dropped
+    # verifier failure recorded, not dropped — E10-RP2 moved the emission
+    # INTO run_verifier with full bindings (task/producing attempt/plan
+    # version) and BOTH verdicts; the RP1-era separate bare not_evidenced
+    # emission no longer exists (disclosed in E10_RP2_REPORT §regression).
+    assert 'verdict="evidenced" if result.success else "not_evidenced"' in src
 
 
 def test_RP1_T02_e3_e4_fixtures_opt_out_explicitly():

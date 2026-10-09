@@ -1,0 +1,82 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "plan_reviews": [
+    {
+      "review_id": "review-994473d4d771",
+      "run_id": "run-c797cd4e84d6",
+      "mission_id": "mission-d733df6b4470",
+      "plan_version": "v1",
+      "verdict": "approved",
+      "reviewer": "canonical_orchestrator",
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "no replan on record; current plan_version='v1'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": true,
+          "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "no replan on record"
+        }
+      ],
+      "reasons": [],
+      "reviewed_at": "2026-10-09T17:43:57.803274+00:00"
+    }
+  ],
+  "phases": [
+    {
+      "run_id": "run-c797cd4e84d6",
+      "max_parallel": 1,
+      "pid": 4658,
+      "wall_seconds": 0.062,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-2c0442e59800": {
+          "success": false,
+          "error": "PermissionError: Tool artifact_write requires grants but no validator available",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-2c0442e59800",
+    "B": "task-bf72c3895437"
+  }
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "False (want False)"
+  },
+  {
+    "expectation": "files_written",
+    "pass": true,
+    "detail": "files=[]"
+  },
+  {
+    "expectation": "permission_errors",
+    "pass": true,
+    "detail": "4"
+  },
+  {
+    "expectation": "zero_performed_journal_records",
+    "pass": true,
+    "detail": "{'sandbox_files': [], 'performed_journal_records': 0}"
+  }
+]

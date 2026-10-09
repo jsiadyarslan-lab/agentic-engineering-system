@@ -1,0 +1,62 @@
+{
+  "case": "tool-fail",
+  "mission_id": "mission-1cc457c8ef00",
+  "result": {
+    "success": true,
+    "final_state": "EVIDENCED",
+    "error": ""
+  },
+  "permission_errors": 0,
+  "side_effects": {
+    "sandbox_files": [
+      "sandbox-task-0dd751c2d870/tf_a.txt",
+      "sandbox-task-68954741ee76/e33_tool_failure_guard.txt",
+      "sandbox-task-68954741ee76/tf_b.txt"
+    ],
+    "performed_journal_records": 2
+  },
+  "replans": 0,
+  "verifier_failures": 0,
+  "B_attempts": 2,
+  "grant": {
+    "grant_id": "grant-da216d542837",
+    "validator": "eoe.engine_bridge (REAL)",
+    "grant_ids_passed": [
+      "grant-da216d542837"
+    ],
+    "admission_usage_log_entries": 2,
+    "admission_usage_log": [
+      {
+        "grant_id": "grant-da216d542837",
+        "kind": "PATH_GRANT",
+        "at": 1791567839.5742383,
+        "write": true,
+        "target": "/home/z/my-project/e10rp2_work/E10/evidence_rp2/canonical/tool-fail"
+      },
+      {
+        "grant_id": "grant-da216d542837",
+        "kind": "PATH_GRANT",
+        "at": 1791567839.6017666,
+        "write": true,
+        "target": "/home/z/my-project/e10rp2_work/E10/evidence_rp2/canonical/tool-fail"
+      }
+    ],
+    "ledger_events": [
+      {
+        "kind": "grant.issued",
+        "grant_id": "grant-da216d542837",
+        "kind_type": "PATH_GRANT"
+      },
+      {
+        "kind": "grant.used",
+        "grant_id": "grant-da216d542837",
+        "kind_type": "PATH_GRANT"
+      },
+      {
+        "kind": "grant.used",
+        "grant_id": "grant-da216d542837",
+        "kind_type": "PATH_GRANT"
+      }
+    ]
+  }
+}

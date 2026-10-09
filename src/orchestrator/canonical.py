@@ -62,6 +62,7 @@ from unified.contracts import (
 from unified.mission_controller import TaskSpec, register_mission_agent, MissionTaskAgent
 from unified.execution import ExecutionEngine, FileEvidenceStore, create_execution_engine
 from unified.mission_controller import MissionController, register_mission_agent
+from unified.mission_controller import FailureRecord, FailureKind, RecoveryAction
 from unified.agent_role import AgentFactory
 from unified.sandbox import create_sandbox_manager, SandboxBackend
 
@@ -603,27 +604,99 @@ Rules:
                 def __init__(self):
                     super().__init__(agent_type=AgentType.VERIFIER)
                     self.evidence_store = evidence_store
-                
+
+                def _resolve_current_file(self, base_dir: Path, rel_path: str) -> Optional[Path]:
+                    """Resolve a criterion path against the LIVE sandbox
+                    trees (current disk state, not recorded history) — the
+                    most recent write wins when several sandboxes hold the
+                    same relative path."""
+                    candidates = sorted(
+                        (p for p in Path(base_dir).glob(f"sandbox-*/{rel_path}") if p.is_file()),
+                        key=lambda p: p.stat().st_mtime,
+                    )
+                    return candidates[-1] if candidates else None
+
+                def _check_criteria_now(self, base_dir: Path, criteria: List[str]) -> Tuple[bool, List[str]]:
+                    """E10-RP2 §3: mechanical check of the task's CURRENT
+                    acceptance criteria against the CURRENT on-disk state.
+                    The engine's verify_task checks the artifact AS RECORDED
+                    at write time (evidence store); this layer re-checks
+                    reality as it stands at verification time. Unknown
+                    criterion types FAIL (fail-closed) — unlike the engine
+                    which skips them at execution time."""
+                    all_ok = True
+                    missing: List[str] = []
+                    for c in criteria:
+                        if c.startswith("file_exists:"):
+                            path = c.split(":", 1)[1]
+                            if self._resolve_current_file(base_dir, path) is None:
+                                all_ok = False
+                                missing.append(f"file_exists failed: {path} not on disk")
+                        elif c.startswith("file_contains:"):
+                            parts = c.split(":", 2)
+                            path = parts[1] if len(parts) > 2 else ""
+                            pattern = parts[2] if len(parts) > 2 else ""
+                            f = self._resolve_current_file(base_dir, path)
+                            if f is None:
+                                all_ok = False
+                                missing.append(f"file_contains failed: {path} not on disk")
+                            else:
+                                try:
+                                    if pattern not in f.read_text(encoding="utf-8", errors="replace"):
+                                        all_ok = False
+                                        missing.append(
+                                            f"file_contains failed: {pattern!r} not in {path} (current content)")
+                                except Exception as e:
+                                    all_ok = False
+                                    missing.append(f"file_contains error on {path}: {e}")
+                        elif c.startswith("file_hash_matches:"):
+                            import hashlib
+                            parts = c.split(":", 2)
+                            path = parts[1] if len(parts) > 2 else ""
+                            expected = parts[2] if len(parts) > 2 else ""
+                            f = self._resolve_current_file(base_dir, path)
+                            if f is None:
+                                all_ok = False
+                                missing.append(f"file_hash_matches failed: {path} not on disk")
+                            else:
+                                actual = hashlib.sha256(f.read_bytes()).hexdigest()
+                                if actual != expected:
+                                    all_ok = False
+                                    missing.append(
+                                        f"file_hash_matches failed: {path} hash {actual[:12]}... != expected")
+                        else:
+                            all_ok = False
+                            missing.append(f"unsupported criterion (fail-closed): {c}")
+                    return all_ok, missing
+
                 async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
-                    # Independent verification of target task artifacts
+                    # E10-RP2 §3: verify the target task's CURRENT criteria
+                    # against the CURRENT on-disk artifacts (reality), not
+                    # merely artifact existence and not the recorded
+                    # evidence-store history.
                     target_artifacts = task.context.get("target_artifacts", [])
                     target_task_id = task.context.get("target_task_id", "")
-                    
-                    # For now, just verify artifacts exist
-                    verified = len(target_artifacts) > 0
-                    
+                    target_criteria = task.context.get("target_criteria", [])
+                    base_dir = Path(task.context.get("artifacts_base_dir", "."))
+
+                    criteria_ok, missing = self._check_criteria_now(base_dir, target_criteria) \
+                        if target_criteria else (len(target_artifacts) > 0, [])
+                    verified = criteria_ok
+
                     from unified.contracts import new_artifact_id, new_evidence_id
                     import hashlib
                     verify_json = json.dumps({
                         "target_task_id": target_task_id,
                         "target_artifacts": target_artifacts,
+                        "criteria": target_criteria,
                         "verified": verified,
+                        "missing_evidence": missing,
                         "verdict": "evidenced" if verified else "not_evidenced"
                     }, indent=2)
                     artifact_bytes = verify_json.encode('utf-8')
                     artifact_id = new_artifact_id()
                     sha256 = hashlib.sha256(artifact_bytes).hexdigest()
-                    
+
                     from unified.domain_model import Artifact, EvidenceRecord
                     artifact = Artifact(
                         artifact_id=artifact_id,
@@ -636,23 +709,34 @@ Rules:
                         content_type="application/json"
                     )
                     self.evidence_store.store_artifact(artifact)
-                    
+
                     evidence = EvidenceRecord(
                         evidence_id=new_evidence_id(),
                         evidence_hash=sha256,
-                        content_type="verification",
+                        # E10-RP2 repair of a PRE-EXISTING defect (proven
+                        # from the committed RP1 evidence): the old code
+                        # passed content_type="verification", which the
+                        # EvidenceRecord contract REJECTS (pydantic
+                        # ValidationError). Every orchestrator-level
+                        # verification at the RP1 baseline therefore FAILED
+                        # internally (all published canonical_orchestrator
+                        # verification.complete events are not_evidenced)
+                        # while the loose evidenced>0 rule still reported
+                        # success. "report" is the contract's valid type for
+                        # verification outputs.
+                        content_type="report",
                         source_id=artifact_id,
                         mission_id=context.mission_id,
                         run_id=context.run_id,
                         task_id=context.task_id,
                     )
                     self.evidence_store.store_evidence(evidence)
-                    
+
                     return AgentResult(
                         task_id=task.task_id,
                         agent_type=AgentType.VERIFIER,
                         success=verified,
-                        output={"verification": verify_json},
+                        output={"verification": verify_json, "missing_evidence": missing},
                         evidence_hash=sha256,
                         artifacts=[artifact_id]
                     )
@@ -741,10 +825,43 @@ Rules:
         
         return await factory.execute_agent_by_id("e3-thinker", agent_context, task)
     
+    def _producing_attempt_id(self, task_id: str) -> str:
+        """E10-RP2 §3.2: the attempt that PRODUCED the verified artifact —
+        the task's latest COMPLETED attempt in the engine's attempt
+        records. Empty string when provenance cannot be established
+        (fail-closed: the caller treats that as unverifiable)."""
+        attempts = [
+            (getattr(a, "completed_at", None) or "", aid, a)
+            for aid, a in self.mc.engine.attempts.items()
+            if getattr(a, "task_id", None) == task_id
+            and getattr(a, "state", None) is not None
+            and str(getattr(a.state, "name", getattr(a, "state", ""))) == "COMPLETED"
+        ]
+        if not attempts:
+            # fallback: any attempt for the task (latest by insertion order)
+            related = [
+                (aid, a) for aid, a in self.mc.engine.attempts.items()
+                if getattr(a, "task_id", None) == task_id
+            ]
+            return related[-1][0] if related else ""
+        attempts.sort(key=lambda t: str(t[0]))
+        return attempts[-1][1]
+
     async def run_verifier(self, mission_id: str, run_id: str, task_id: str, artifacts: List[str]) -> AgentResult:
-        """Run Verifier to independently check task outputs."""
+        """Run Verifier to independently check task outputs.
+
+        E10-RP2 §3: the verification is bound to the target task's CURRENT
+        acceptance criteria, the producing attempt, the plan version, and
+        the run. VERIFICATION_COMPLETE is emitted for BOTH verdicts
+        (evidenced and not_evidenced) — a failed verification was
+        previously invisible at this layer (only recorded later by the
+        orchestrator with an unrelated random attempt id)."""
         engine = self.mc.engine
-        
+        target_task = engine.tasks.get(task_id)
+        target_criteria = list(getattr(target_task, "acceptance_criteria", []) or [])
+        producing_attempt_id = self._producing_attempt_id(task_id)
+        plan_version = getattr(self.mc, "plan_version", "v1")
+
         # Create verification task (NOT in engine's task graph to avoid "unresolved work" checks)
         verify_task = AgentTask(
             task_id=f"verify-{task_id}-{uuid.uuid4().hex[:8]}",
@@ -758,12 +875,16 @@ Rules:
             context={
                 "role": "verifier",
                 "target_task_id": task_id,
-                "target_artifacts": artifacts
+                "target_artifacts": artifacts,
+                "target_criteria": target_criteria,
+                "artifacts_base_dir": engine.artifacts_base_dir,
+                "producing_attempt_id": producing_attempt_id,
+                "plan_version": plan_version,
             }
         )
-        
+
         factory = AgentFactory(agent_registry)
-        
+
         # Reserve verifier agent
         agent_registry.enable_agent("e3-verifier")
         attempt_id = __import__('unified.contracts', fromlist=['new_attempt_id']).new_attempt_id()
@@ -774,7 +895,7 @@ Rules:
             attempt_id=attempt_id,
             owner="verifier"
         )
-        
+
         agent_context = AgentContext(
             mission_id=mission_id,
             run_id=run_id,
@@ -787,29 +908,44 @@ Rules:
             event_emitter=lambda e: None,
             evidence_store=engine.evidence_store,
         )
-        
+
         result = await factory.execute_agent_by_id("e3-verifier", agent_context, verify_task)
-        
-        # Emit VERIFICATION_COMPLETE event for MissionController.verify_completion()
-        if result.success:
-            from unified.contracts import new_verification_id, new_attempt_id
-            engine._emit(__import__('unified.contracts', fromlist=['FactoryEvent']).FactoryEvent.create(
-                event_type=EventType.VERIFICATION_COMPLETE,
-                mission_id=mission_id,
+
+        # Emit VERIFICATION_COMPLETE for BOTH verdicts (E10-RP2 §3) —
+        # bound to the target task, the PRODUCING attempt (not a random
+        # id), the plan version, and the run. Missing provenance is
+        # recorded in the payload (fail-closed: an attempt that cannot be
+        # established is disclosed, not fabricated).
+        missing_evidence = list(
+            (result.output or {}).get("missing_evidence", [])
+        ) if not result.success else []
+        if not producing_attempt_id:
+            missing_evidence = list(missing_evidence) + [
+                "producing attempt could not be established for the verified task"]
+
+        from unified.contracts import new_verification_id
+        engine._emit(FactoryEvent.create(
+            event_type=EventType.VERIFICATION_COMPLETE,
+            mission_id=mission_id,
+            run_id=run_id,
+            payload=VerificationCompleteEvent(
+                verification_id=new_verification_id(),
+                task_id=task_id,
+                attempt_id=producing_attempt_id or "unestablished",
+                verdict="evidenced" if result.success else "not_evidenced",
+                checks_performed=["criteria_current_state_check"]
+                + [f"criterion:{c}" for c in target_criteria],
+                missing_evidence=missing_evidence,
+                confidence=1.0 if result.success else 0.0,
+                plan_version=plan_version,
                 run_id=run_id,
-                payload=__import__('unified.contracts', fromlist=['VerificationCompleteEvent']).VerificationCompleteEvent(
-                    verification_id=new_verification_id(),
-                    task_id=task_id,
-                    attempt_id=new_attempt_id(),
-                    verdict="evidenced" if result.success else "not_evidenced",
-                    checks_performed=["artifact_verification"],
-                    missing_evidence=[],
-                    confidence=1.0 if result.success else 0.0,
-                ),
-                source="canonical_orchestrator",
-                correlation_id=verify_task.task_id,
-            ))
-        
+                verifier_attempt_id=reservation.attempt_id,
+                criteria_source="task.acceptance_criteria",
+            ),
+            source="canonical_orchestrator",
+            correlation_id=verify_task.task_id,
+        ))
+
         return result
 
 
@@ -891,6 +1027,7 @@ class CanonicalOrchestrator:
         replan_decision_provider: Optional[Callable[..., Optional[Dict[str, Any]]]] = None,
         max_review_rounds: int = 3,
         grant_validator: Optional[Callable[[str, str], bool]] = None,
+        grant_ids: Optional[List[str]] = None,
     ):
         self.llm_provider = llm_provider
         self.artifacts_base_dir = artifacts_base_dir
@@ -919,11 +1056,18 @@ class CanonicalOrchestrator:
         # the same construction pattern as E9-R / E10-RP engines. Default
         # None keeps the old behavior for callers that do not opt in.
         self.grant_validator = grant_validator
+        # E10-RP2 §2: grant IDENTITY is injected alongside the validator.
+        # Real deployments pass the owner-approved EOE grant ids (see
+        # eoe.engine_bridge.build_engine_grant_validator); None keeps the
+        # engine's E9-R legacy default (rejected by any real validator —
+        # fail-closed preserved).
+        self.grant_ids = grant_ids
 
         # Core P1+P2 components
         self.engine = create_execution_engine(
             artifacts_base_dir=artifacts_base_dir,
             grant_validator=grant_validator,
+            grant_ids=grant_ids,
         )
         # E10-RP1 §2.1: explicit review-gate policy for the canonical path.
         self.mc = MissionController(
@@ -944,6 +1088,10 @@ class CanonicalOrchestrator:
         # State
         self._current_mission: Optional[OrchestratorMission] = None
         self._event_queue: Optional[asyncio.Queue] = None
+        # E10-RP2 §3.5: open verifier-detected failures (task_id ->
+        # FailureRecord) — dedup + resolution marking when newer valid
+        # evidence arrives for the same task.
+        self._open_verifier_failures: Dict[str, Any] = {}
     
     async def execute_mission(self, goal: str) -> OrchestratorResult:
         """Execute a mission from goal to completion."""
@@ -1071,38 +1219,85 @@ class CanonicalOrchestrator:
                     # through with the failed result; completion verification
                     # below reports INCOMPLETE honestly (no fabricated success).
             
-            # 6. Run Verifier on completed tasks (independent verification)
-            task_results = result.get("task_results", {})
-            for task_id, tr in task_results.items():
-                if tr.get("success") and tr.get("artifacts"):
+            # 6. E10-RP2 §3 — VERIFICATION TRUTH LOOP.
+            # Verify EVERY completed required task that has acceptance
+            # criteria — against the task's CURRENT criteria and the
+            # CURRENT on-disk state (preserved tasks included: a criteria
+            # correction on a completed task invalidates its older
+            # evidence). A verifier-detected failure that represents a plan
+            # deviation (criteria vs current reality) flows into the
+            # EXISTING decision -> replan_mission -> review gate ->
+            # continuation path — the E10-RP1 disclosed gap "verifier ->
+            # replan wiring" is closed here. Tool/runtime verifier errors
+            # are recorded but never auto-classified as deviations (§3.5).
+            # The loop is bounded by max_review_rounds; without a valid
+            # decision the failure stays unresolved and verify_completion
+            # below reports INCOMPLETE honestly — no fabricated success.
+            verification_round = 0
+            while True:
+                verifier_failures = []
+                tool_error_failures = []
+                graph_now = self.mc.engine.task_graph.get(mc_run.run_id, {})
+                for key, tid in list(self.mc._key_to_task.items()):
+                    node = graph_now.get(tid)
+                    if node is None or node.get("state") != TaskState.COMPLETED:
+                        continue
+                    task_obj = self.mc.engine.tasks.get(tid)
+                    if task_obj is None or not getattr(task_obj, "acceptance_criteria", None):
+                        continue
+                    tr = (result.get("task_results", {}) or {}).get(tid, {})
                     verify_result = await self.role_coordinator.run_verifier(
-                        mc_mission.mission_id, mc_run.run_id, task_id, tr["artifacts"]
+                        mc_mission.mission_id, mc_run.run_id, tid,
+                        tr.get("artifacts", []) or [],
                     )
-                    # Record verification result (E10-RP1 §2.5: this was a
-                    # `pass` stub whose comment claimed it "could trigger
-                    # replan here" while doing nothing. The failure is now
-                    # RECORDED durably as a not_evidenced verification and is
-                    # visible to verify_completion below. Wiring verifier
-                    # failures into the replanning decision path remains a
-                    # DISCLOSED GAP — it is NOT claimed here.)
                     if not verify_result.success:
-                        from unified.contracts import new_verification_id, new_attempt_id
-                        self.mc.engine._emit(FactoryEvent.create(
-                            event_type=EventType.VERIFICATION_COMPLETE,
-                            mission_id=mc_mission.mission_id,
-                            run_id=mc_run.run_id,
-                            payload=VerificationCompleteEvent(
-                                verification_id=new_verification_id(),
-                                task_id=task_id,
-                                attempt_id=new_attempt_id(),
-                                verdict="not_evidenced",
-                                checks_performed=["artifact_verification"],
-                                missing_evidence=[],
-                                confidence=0.0,
-                            ),
-                            source="canonical_orchestrator",
-                            correlation_id=task_id,
-                        ))
+                        rec = self._record_verifier_failure(
+                            tid, key, verify_result, mc_run.run_id)
+                        if rec is None:
+                            continue
+                        if rec.recovery_action == RecoveryAction.REPLAN:
+                            verifier_failures.append((tid, key, rec))
+                        else:
+                            # §3.5: verifier TOOL/RUNTIME errors are recorded
+                            # (and block completion through the per-task
+                            # latest-verdict rule — the verification is a
+                            # current unresolved result) but NEVER feed the
+                            # replanning path.
+                            tool_error_failures.append((tid, key, rec))
+                    else:
+                        self._resolve_verifier_failure(tid)
+                if not verifier_failures:
+                    break
+                if (self.replan_decision_provider is None
+                        or verification_round + 1 >= self.max_review_rounds):
+                    # No decision source, or rounds exhausted: leave the
+                    # failure unresolved — completion verification below
+                    # will (and must) report it.
+                    break
+                replan_outcome = await self._run_replanning_cycle(
+                    mc_run.run_id, verifier_failures[0][2]
+                )
+                if replan_outcome is not None and replan_outcome.get("approved"):
+                    result = replan_outcome["result"]
+                    verification_round += 1
+                    continue
+                if replan_outcome is not None and replan_outcome.get("blocked"):
+                    # Review rejected the correction and no revision
+                    # recovered it: continuation REFUSED (fail-closed).
+                    return OrchestratorResult(
+                        mission_id=mission_id,
+                        goal=goal,
+                        success=False,
+                        final_state="PLAN_REVIEW_REJECTED",
+                        event_trace=self.mc.export_event_trace(mc_mission.mission_id),
+                        evidence_chain=self.mc.export_evidence_chain(mc_mission.mission_id),
+                        duration_ms=int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000),
+                        error="Plan review REJECTED after verifier-detected deviation; "
+                              "continuation REFUSED (fail-closed): "
+                              + "; ".join(replan_outcome["review"].reasons),
+                    )
+                # No valid decision: the mission fails honestly below.
+                break
             
             # 7. Verify completion and finalize
             # E10-RP1: required keys follow the LIVE graph — after a replan the
@@ -1206,6 +1401,81 @@ class CanonicalOrchestrator:
             return False
         return all(isinstance(t, str) and t for t in recover)
 
+    def _record_verifier_failure(self, task_id: str, task_key: str,
+                                 verify_result: Any, run_id: str) -> Optional[FailureRecord]:
+        """E10-RP2 §3.5: record a verifier-detected failure as a
+        PLAN_DEVIATION FailureRecord (criteria vs current reality) and
+        hand it to the replanning decision path.
+
+        Classification guard (§3.5): a verifier result whose error is a
+        TOOL/RUNTIME error (the verification machinery itself failed) is
+        recorded as TOOL_RUNTIME_FAILURE (retry territory) and NEVER
+        feeds replanning. Only a clean criteria-vs-reality mismatch is a
+        plan deviation.
+
+        Dedup: one OPEN verifier failure per task — repeated failing
+        verification rounds for the same task do not stack records; the
+        open record is resolved by _resolve_verifier_failure when newer
+        valid evidence arrives (§3.4), or by replan_mission when the
+        deviation it carried is answered by an approved replan."""
+        error_text = str(getattr(verify_result, "error", "") or "")
+        output = getattr(verify_result, "output", None) or {}
+        missing = list(output.get("missing_evidence", []) or []) if isinstance(output, dict) else []
+        tool_error = ("Tool/runtime failure" in error_text
+                      or "sandbox" in error_text.lower()
+                      or "Verification failed" not in error_text and not missing)
+
+        existing_open = self._open_verifier_failures.get(task_id)
+        if existing_open is not None:
+            return existing_open  # still unresolved — no stacking
+
+        if tool_error and not missing:
+            kind = FailureKind.TOOL_RUNTIME_FAILURE
+            recovery = RecoveryAction.RETRY
+            reason = ("Verifier machinery error (tool/runtime) — retry "
+                      "territory; never auto-classified as plan deviation (§3.5)")
+        else:
+            kind = FailureKind.PLAN_DEVIATION
+            recovery = RecoveryAction.REPLAN
+            reason = ("Verifier verdict not_evidenced against the task's "
+                      "CURRENT acceptance criteria and CURRENT on-disk "
+                      "state: observed reality deviates from the plan's "
+                      "expectation (E10-RP2 §3.5)")
+        import hashlib as _hl
+        record = FailureRecord(
+            failure_id=f"fail-{_hl.sha256(f'{task_id}verifier{datetime.now(timezone.utc).isoformat()}'.encode()).hexdigest()[:12]}",
+            kind=kind,
+            task_id=task_id,
+            task_key=task_key,
+            description=(
+                "Verification failed (orchestrator verifier): "
+                + (error_text if error_text else "criteria not evidenced")
+                + ("" if not missing else " | missing: " + "; ".join(missing[:3]))),
+            evidence=[
+                f"VERIFICATION_COMPLETE not_evidenced for task {task_key} "
+                f"(run {run_id}, plan {getattr(self.mc, 'plan_version', 'v1')})",
+                *(f"missing_evidence: {m}" for m in missing[:5]),
+            ],
+            detected_at=datetime.now(timezone.utc).isoformat(),
+            classification_reason=reason,
+            recovery_action=recovery,
+        )
+        self.mc.failures.append(record)
+        if kind is FailureKind.PLAN_DEVIATION:
+            self._open_verifier_failures[task_id] = record
+        return record
+
+    def _resolve_verifier_failure(self, task_id: str) -> None:
+        """§3.4: a NEWER evidenced verification for the same task resolves
+        the open verifier failure (resolution requires newer valid
+        evidence — the historical not_evidenced stays in the durable
+        event log, never erased)."""
+        rec = self._open_verifier_failures.pop(task_id, None)
+        if rec is not None and not rec.resolved:
+            rec.resolved = True
+            rec.resolved_by = (f"newer_evidence@{getattr(self.mc, 'plan_version', 'v1')} "
+                               "(latest verification verdict evidenced)")
+
     async def _run_replanning_cycle(
         self, run_id: str, deviation: Any
     ) -> Optional[Dict[str, Any]]:
@@ -1298,13 +1568,17 @@ def create_canonical_orchestrator(
     replan_decision_provider: Optional[Callable[..., Optional[Dict[str, Any]]]] = None,
     max_review_rounds: int = 3,
     grant_validator: Optional[Callable[[str, str], bool]] = None,
+    grant_ids: Optional[List[str]] = None,
 ) -> CanonicalOrchestrator:
     """Create canonical orchestrator with default configuration.
 
     E10-RP1: the canonical default enables the plan review gate
     (require_plan_review=True) — the gated policy IS the operational path;
     callers that deliberately want the legacy ungated behavior must opt out
-    explicitly."""
+    explicitly.
+    E10-RP2 §2: grant_validator + grant_ids carry the REAL authorization
+    (e.g. the EOE engine bridge + owner-approved grant ids). Without them
+    the governed write path fails closed (PermissionError)."""
     return CanonicalOrchestrator(
         llm_provider=llm_provider,
         artifacts_base_dir=artifacts_base_dir,
@@ -1314,6 +1588,7 @@ def create_canonical_orchestrator(
         replan_decision_provider=replan_decision_provider,
         max_review_rounds=max_review_rounds,
         grant_validator=grant_validator,
+        grant_ids=grant_ids,
     )
 
 

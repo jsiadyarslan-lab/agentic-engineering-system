@@ -1,0 +1,38 @@
+{
+  "case": "deny-revoked",
+  "mission_id": "mission-25e46a4228d0",
+  "result": {
+    "success": false,
+    "final_state": "EXECUTING",
+    "error": ""
+  },
+  "permission_errors": 4,
+  "side_effects": {
+    "sandbox_files": [],
+    "performed_journal_records": 0
+  },
+  "replans": 0,
+  "verifier_failures": 1,
+  "B_attempts": 0,
+  "grant": {
+    "grant_id": "grant-98f2bb9abf3e",
+    "validator": "eoe.engine_bridge (REAL)",
+    "grant_ids_passed": [
+      "grant-98f2bb9abf3e"
+    ],
+    "admission_usage_log_entries": 0,
+    "admission_usage_log": [],
+    "ledger_events": [
+      {
+        "kind": "grant.issued",
+        "grant_id": "grant-98f2bb9abf3e",
+        "kind_type": "PATH_GRANT"
+      },
+      {
+        "kind": "grant.revoked",
+        "grant_id": "grant-98f2bb9abf3e",
+        "kind_type": "PATH_GRANT"
+      }
+    ]
+  }
+}

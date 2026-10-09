@@ -1,0 +1,42 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "False (want False)"
+  },
+  {
+    "expectation": "reviews",
+    "pass": true,
+    "detail": "['approved', 'rejected', 'approved']"
+  },
+  {
+    "expectation": "replans",
+    "pass": true,
+    "detail": "[{'v': 'v2', 'inv': ['E'], 'mod': ['C', 'D']}]"
+  },
+  {
+    "expectation": "verifier_failure_recorded_for_C",
+    "pass": true,
+    "detail": "[('C', <FailureKind.PLAN_DEVIATION: 'plan_deviation'>, False, '')]"
+  },
+  {
+    "expectation": "verifier_failure_resolved_by_newer_evidence",
+    "pass": true,
+    "detail": "False"
+  },
+  {
+    "expectation": "C_latest_verdict",
+    "pass": true,
+    "detail": "not_evidenced"
+  },
+  {
+    "expectation": "completion_check_failed_reason",
+    "pass": true,
+    "detail": "['current_unresolved_verification_failure']"
+  },
+  {
+    "expectation": "attempts_per_key",
+    "pass": true,
+    "detail": "{'A': 1, 'C': 1, 'D': 4, 'E': 0, 'X': 1}"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "True (want True)"
+  },
+  {
+    "expectation": "reviews",
+    "pass": true,
+    "detail": "['approved', 'rejected', 'approved', 'approved']"
+  },
+  {
+    "expectation": "replans",
+    "pass": true,
+    "detail": "[{'v': 'v2', 'inv': ['E'], 'mod': ['C', 'D']}, {'v': 'v3', 'inv': [], 'mod': ['C']}]"
+  },
+  {
+    "expectation": "verifier_failure_recorded_for_C",
+    "pass": true,
+    "detail": "[('C', <FailureKind.PLAN_DEVIATION: 'plan_deviation'>, True, 'replan->v3')]"
+  },
+  {
+    "expectation": "verifier_failure_resolved_by_newer_evidence",
+    "pass": true,
+    "detail": "replan->v3"
+  },
+  {
+    "expectation": "mixed_state_seen (A evidenced while C not_evidenced)",
+    "pass": true,
+    "detail": "A history: ['evidenced', 'evidenced', 'evidenced']; C history: ['evidenced', 'not_evidenced', 'evidenced']"
+  },
+  {
+    "expectation": "C_latest_verdict",
+    "pass": true,
+    "detail": "evidenced"
+  },
+  {
+    "expectation": "C_criteria_version",
+    "pass": true,
+    "detail": "v3"
+  },
+  {
+    "expectation": "historical_not_evidenced_preserved",
+    "pass": true,
+    "detail": "True"
+  },
+  {
+    "expectation": "attempts_per_key",
+    "pass": true,
+    "detail": "{'A': 1, 'C': 1, 'D': 4, 'E': 0, 'X': 1}"
+  },
+  {
+    "expectation": "files.task_a.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': None}"
+  },
+  {
+    "expectation": "files.task_c.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': True}"
+  },
+  {
+    "expectation": "files.task_d.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': None}"
+  },
+  {
+    "expectation": "files.task_x.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': None}"
+  },
+  {
+    "expectation": "files.task_e.txt.absent",
+    "pass": true,
+    "detail": "{'present': False, 'contains_reality': None}"
+  },
+  {
+    "expectation": "duplicate.zero_new_attempts",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  },
+  {
+    "expectation": "duplicate.journal_unchanged",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  },
+  {
+    "expectation": "duplicate.result_success",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  }
+]
