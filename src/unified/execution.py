@@ -488,8 +488,12 @@ class ToolExecutor:
         except Exception as e:
             raise ValueError(f"Tool input validation failed for {tool_name}: {e}")
         
-        # 3. Check permissions/grants
-        await self._check_permissions(context, contract)
+        # 3. Check permissions/grants — E10-RP2.1 §2: governed writes and
+        # reads present the ACTUAL resolved target path (and, for path-aware
+        # validators, the honest depth) to the authorization decision. A
+        # target that cannot be contained inside its sandbox root is
+        # rejected HERE — before any event, journal record, or side effect.
+        await self._check_permissions(context, contract, tool_input)
         
         # 4. Check if human gate required (E9-12)
         await self._check_human_gate(context, contract, tool_name, validated_input, action_id)
@@ -562,26 +566,105 @@ class ToolExecutor:
                                             error=str(e), error_type=type(e).__name__, duration_ms=duration_ms))
             raise
     
-    async def _check_permissions(self, context: ExecutionContext, contract: 'ToolContract') -> None:
-        """Check if agent has required grants for tool."""
+    # E10-RP2.1 §2 — the write/read tool families whose inputs carry a
+    # concrete sandbox target. Only these can be path-grounded.
+    _PATH_BEARING_TOOLS = frozenset({
+        "artifact_write", "write_artifact", "artifact_read", "read_artifact",
+    })
+
+    @staticmethod
+    def _contained_write_target(
+        artifacts_base_dir: str, sandbox_id: str, path: str
+    ) -> Path:
+        """E10-RP2.1 §2 — resolve the ACTUAL absolute write/read target and
+        PROVE it stays inside the task sandbox root
+        ``<artifacts_base_dir>/<sandbox_id>``.
+
+        Fail-closed (PermissionError) on any escape: relative traversal
+        (``..``), an ABSOLUTE ``path`` (pathlib join would REPLACE the base
+        entirely), or a symlinked component that resolves outside the
+        sandbox root. The caller MUST reject the operation before any side
+        effect when this raises — the rejection then provably leaves no new
+        file and no journal record.
+        """
+        base = Path(artifacts_base_dir) / sandbox_id
+        base_resolved = base.resolve()
+        target = (base / path).resolve()
+        if target != base_resolved and not target.is_relative_to(base_resolved):
+            raise PermissionError(
+                "SANDBOX_CONTAINMENT_VIOLATION: the requested target "
+                f"{str(target)!r} resolves outside the sandbox root "
+                f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
+                f"path={path!r}) — the write is refused before any side "
+                "effect (E10-RP2.1 §2.3)"
+            )
+        return target
+
+    async def _check_permissions(
+        self,
+        context: ExecutionContext,
+        contract: 'ToolContract',
+        tool_input: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Check if agent has required grants for tool.
+
+        E10-RP2.1 §2: for path-bearing governed tools (artifact_write /
+        artifact_read families) the authorization decision is grounded to
+        the ACTUAL contained target path. Path-aware validators (built by
+        ``eoe.engine_bridge.build_engine_grant_validator``; marked with
+        ``__path_aware__``) receive it and enforce the grant's path scope
+        and depth limit on the real target. Legacy 2-arg validators keep
+        the permission-name check (test fixtures only — never the
+        operational path, which wires only the bridge).
+        """
         required = contract.required_permissions
         if not required:
             return
-        
+
+        # E10-RP2.1 §2 — resolve the concrete target ONCE for path-bearing
+        # tools. An uncontainable target is rejected here, fail-closed,
+        # before ANY event/journal/side effect (order §2.6: a rejection
+        # must leave no new file and no `performed` journal record).
+        actual_target: Optional[str] = None
+        if tool_input is not None and contract.name in self._PATH_BEARING_TOOLS:
+            sandbox_id = tool_input.get("sandbox_id") or context.sandbox_id
+            rel_path = tool_input.get("path", "output.txt")
+            if sandbox_id and rel_path:
+                target = self._contained_write_target(
+                    self.engine.artifacts_base_dir, sandbox_id, rel_path
+                )
+                actual_target = str(target)
+
         # Check if agent has grants covering required permissions
         if not context.grant_validator:
             # No validator = fail closed
             raise PermissionError(f"Tool {contract.name} requires grants but no validator available")
-        
+
+        path_aware = bool(getattr(context.grant_validator, "__path_aware__", False))
         for perm in required:
             # Check if any grant covers this permission
             has_perm = False
             for grant_id in context.grant_ids:
-                if context.grant_validator(grant_id, perm):
+                if path_aware and actual_target is not None:
+                    # The full per-operation decision: grant covers the
+                    # ACTUAL resolved path with the honest depth (computed
+                    # inside the admission contract from the path itself).
+                    if context.grant_validator(grant_id, perm, actual_target):
+                        has_perm = True
+                        break
+                elif context.grant_validator(grant_id, perm):
                     has_perm = True
                     break
             if not has_perm:
-                raise PermissionError(f"Agent {context.agent_id} lacks required permission: {perm} for tool {contract.name}")
+                raise PermissionError(
+                    f"Agent {context.agent_id} lacks required permission: {perm} for tool {contract.name}"
+                    + (
+                        f" (target {actual_target!r} not covered by any presented grant — "
+                        "path/depth scoped authorization, E10-RP2.1 §2)"
+                        if path_aware and actual_target is not None
+                        else ""
+                    )
+                )
     
     async def _check_human_gate(
         self, 
@@ -3121,8 +3204,18 @@ class ExecutionEngine:
             fail-closed error; never silently skipped, never re-performed.
         """
         if not context.mission_id or not context.task_id:
-            # legacy caller without logical identity: unchanged behavior
+            # legacy caller without logical identity: unchanged behavior —
+            # EXCEPT the containment proof, which applies to every write
+            # through this engine (E10-RP2.1 §2.3: no write may escape its
+            # sandbox root, regardless of the caller's identity model).
+            ToolExecutor._contained_write_target(self.artifacts_base_dir, sandbox_id, path)
             return await self.sandbox_manager.write_artifact(sandbox_id, path, content)
+
+        # E10-RP2.1 §2 — defense in depth: the permission gate already
+        # rejected uncontainable targets, but this entry re-proves
+        # containment BEFORE any journal record (intent included), so a
+        # rejection here leaves zero journal footprint (order §2.6).
+        ToolExecutor._contained_write_target(self.artifacts_base_dir, sandbox_id, path)
 
         content_sha = hashlib.sha256(content).hexdigest()
 

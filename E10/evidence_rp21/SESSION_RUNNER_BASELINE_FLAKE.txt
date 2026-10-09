@@ -1,0 +1,22 @@
+=== E10-RP2.1 two-state probe: run_e10rp2.py re-run at BASELINE 631f6fb (throwaway worktree) ===
+Command: python3 E10/run_e10rp2.py (into the committed evidence dirs, twice)
+Run 1 verdict: E10RP2_CHAIN_FAILED runs=9 failed=['mixed_blocked','deny-revoked','deny-read-only','missing-validator','missing-grants']
+Run 2:
+[RUNNER] tool-fail: exit=1 | [AUTH case=tool-fail] verdict=CASE_FAILED checks=3/4
+[RUNNER] verdict=E10RP2_CHAIN_FAILED runs=9 failed=['resolution', 'mixed_blocked', 'deny-read-only', 'deny-path', 'tool-fail'] duration=9.2s
+
+ROOT CAUSE (pre-existing, NOT an RP2.1 regression): the session runner writes into the
+committed evidence dirs WITHOUT cleaning them; find_mission_id = next(iterdir()) then
+picks a STALE mission id from the accumulated mission_controller/ dirs -> the event
+filter matches nothing -> permission_errors=0 -> check fails. Nondeterministic by
+directory iteration order. Reproduces IDENTICALLY at baseline 631f6fb WITHOUT any
+RP2.1 change. The RP2 matrix (test_e10rp2_matrix.py) runs the same 9 scenarios in
+FRESH temp dirs and passes 22/22 at BOTH states.
+
+## Two-state failure-set comparison (order §5)
+Branch (RP2.1) failure set == Baseline (631f6fb) failure set: IDENTICAL (verified by set diff)
+- e3+e4: 5F/4P/15S both states — same 5 names
+- e6: 4F/14P both states — same 4 names
+- e33+e32f: 1F/1P/2S both states — same name
+- e35: exit 1, 'RuntimeError: T2 failure not detected' both states
+- e37: exit 1, 'E37 PARTIALLY VERIFIED (4/15)' both states

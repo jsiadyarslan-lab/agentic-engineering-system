@@ -259,7 +259,7 @@ class AccessAdmission:
         *,
         write: bool,
         path: str = "",
-        depth: int = 0,
+        depth: "int | None" = None,
     ) -> EoeGrant:
         """E10-RP2 §2: قبول وصول مربوط بمنحة بعينها (لا أي منحة تغطي).
 
@@ -269,6 +269,62 @@ class AccessAdmission:
         الموحّد (``eoe.engine_bridge``) الذي يربط سياسة منح EOE
         بـ``grant_validator`` في مسار التنفيذ المحكوم: المحرك يقدّم
         ``grant_id`` محددًا، فلا يجوز أن تغطيه منحة أخرى.
+
+        E10-RP2.1 §2 — عقد العمق الصريح: ``depth=None`` (الافتراضي
+        الجديد) يعني "احسب العمق الحقيقي للمسار المطلوب تحت هدف المنحة".
+        اصطلاح العمق: depth(path, T) = عدد مكوّنات المسار تحت الهدف T
+        (الهدف نفسه = 0؛ ملف مباشر تحت الهدف = 1؛ ملف داخل مجلد واحد
+        تحت الهدف = 2). بالتالي منحة ``max_depth=0`` لا تجيز أي كتابة
+        ملف تحت الهدف (أي ملف على عمق >= 1) — الحد مطبق على المسار
+        الفعلي المطلوب، لا قيمة ثابتة يمررها المستدعي.
+        """
+        if not grant_id:
+            raise AccessDenied(AccessRejection.NOT_APPROVED, "معرّف منحة فارغ")
+        now = self._now()
+        self._ledger.sweep_expired(now)
+        grant = self._ledger.lookup(grant_id)
+        if grant is None:
+            raise AccessDenied(
+                AccessRejection.NOT_APPROVED,
+                f"منحة غير معروفة: {grant_id} — رفض fail-closed",
+            )
+        if grant.state is not EoeGrantState.APPROVED:
+            raise AccessDenied(
+                AccessRejection.NOT_APPROVED,
+                f"المنحة {grant_id} حالتها {grant.state.value} — لا وصول",
+            )
+        # E10-RP2.1 §2.3: honest depth — computed from the ACTUAL requested
+        # path relative to the grant target, never a caller-fixed constant.
+        effective_depth = depth
+        if effective_depth is None:
+            effective_depth = self._actual_depth(grant, path)
+        problem = self._check(
+            grant, write=write, path=path, repo="", branch="",
+            host_port="", depth=effective_depth, now=now,
+        )
+        if problem is not None:
+            rejection = next(
+                (r for r in AccessRejection if r.value == problem),
+                AccessRejection.PATH_NOT_COVERED,
+            )
+            raise AccessDenied(rejection, problem)
+        self.usage_log.append(
+            {"grant_id": grant.grant_id, "kind": grant.kind.value,
+             "at": now, "write": write, "target": path}
+        )
+        self._ledger.events.append(
+            {"kind": "grant.used", "grant_id": grant.grant_id,
+             "kind_type": grant.kind.value}
+        )
+        return grant
+
+    def admit_grant_kind(self, grant_id: str, *, write: bool) -> EoeGrant:
+        """E10-RP2.1 §2 — البوابة الخشنة: صلاحية المنحة ونطاقها مقابل
+        نوع العملية (قراءة/كتابة) بلا مسار.
+
+        شرط لازم فقط — لا يكفي أبدًا لتجويز عملية ملموسة: القرار الكامل
+        يتطلب المسار الفعلي والعمق (``admit_grant_id`` بصيغته الموسعة).
+        تفحص: الوجود، الحالة (APPROVED)، التوقيع، السارية، النطاق.
         """
         if not grant_id:
             raise AccessDenied(AccessRejection.NOT_APPROVED, "معرّف منحة فارغ")
@@ -286,24 +342,37 @@ class AccessAdmission:
                 f"المنحة {grant_id} حالتها {grant.state.value} — لا وصول",
             )
         problem = self._check(
-            grant, write=write, path=path, repo="", branch="",
-            host_port="", depth=depth, now=now,
+            grant, write=write, path="", repo="", branch="",
+            host_port="", depth=0, now=now, kind_only=True,
         )
         if problem is not None:
             rejection = next(
                 (r for r in AccessRejection if r.value == problem),
-                AccessRejection.PATH_NOT_COVERED,
+                AccessRejection.NOT_APPROVED,
             )
             raise AccessDenied(rejection, problem)
-        self.usage_log.append(
-            {"grant_id": grant.grant_id, "kind": grant.kind.value,
-             "at": now, "write": write, "target": path}
-        )
-        self._ledger.events.append(
-            {"kind": "grant.used", "grant_id": grant.grant_id,
-             "kind_type": grant.kind.value}
-        )
         return grant
+
+    @staticmethod
+    def _actual_depth(grant: EoeGrant, path: str) -> int:
+        """E10-RP2.1 §2.3 — العمق الحقيقي للمسار المطلوب تحت هدف المنحة.
+
+        اصطلاح العمق (صريح ومختبر): عدد مكوّنات المسار تحت الهدف.
+        الهدف نفسه = 0، ملف مباشر تحته = 1، وهكذا. إذا كان المسار
+        خارج الهدف أصلًا فالعمق لا يهم (فحص التغطية سيرفض) — نعيد
+        عددًا كبيرًا كي لا يمر أي فحص عمق بالخطأ.
+        """
+        if grant.kind is not GrantKind.PATH_GRANT or not path:
+            return 0
+        target = grant.target.rstrip("/")
+        if path == target:
+            return 0
+        if not path.startswith(target + "/"):
+            # خارج نطاق المنحة — فحص التغطية يرفض؛ عمق كبير كي لا
+            # يوحي فحص العمق بأي سماح.
+            return 1 << 30
+        rel = path[len(target) + 1:]
+        return len([p for p in rel.split("/") if p not in ("", ".")])
 
     def admit_access(
         self,
@@ -364,8 +433,14 @@ class AccessAdmission:
         host_port: str,
         depth: int,
         now: float,
+        kind_only: bool = False,
     ) -> str | None:
-        """سبب الرفض أو None إن كانت المنحة تغطي الطلب."""
+        """سبب الرفض أو None إن كانت المنحة تغطي الطلب.
+
+        ``kind_only=True`` (بوابة خشنة): تفحص التوقيع/السارية/الإبطال/
+        النطاق فقط — لا تغطية مسار ولا عمق ولا فرع ولا مضيف (لا مسار
+        ملموسًا في هذا الوضع أصلًا).
+        """
         if not self._grantor.verify(grant):
             return AccessRejection.BAD_SIGNATURE.value
         if now >= grant.expires_at:
@@ -374,6 +449,8 @@ class AccessAdmission:
             return AccessRejection.REVOKED.value
         if write and grant.scope is not GrantScope.READ_WRITE:
             return AccessRejection.INSUFFICIENT_SCOPE.value
+        if kind_only:
+            return None
         if grant.kind is GrantKind.PATH_GRANT:
             if not path.startswith(grant.target.rstrip("/") + "/") and path != grant.target:
                 return AccessRejection.PATH_NOT_COVERED.value

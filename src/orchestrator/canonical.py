@@ -605,83 +605,161 @@ Rules:
                     super().__init__(agent_type=AgentType.VERIFIER)
                     self.evidence_store = evidence_store
 
-                def _resolve_current_file(self, base_dir: Path, rel_path: str) -> Optional[Path]:
-                    """Resolve a criterion path against the LIVE sandbox
-                    trees (current disk state, not recorded history) — the
-                    most recent write wins when several sandboxes hold the
-                    same relative path."""
-                    candidates = sorted(
-                        (p for p in Path(base_dir).glob(f"sandbox-*/{rel_path}") if p.is_file()),
-                        key=lambda p: p.stat().st_mtime,
-                    )
-                    return candidates[-1] if candidates else None
+                def _resolve_current_file(self, base_dir: Path, rel_path: str,
+                                          target_task_id: str = "") -> Optional[Path]:
+                    """E10-RP2.1 §3 — resolve a criterion path against the
+                    TARGET TASK's OWN sandbox tree only.
 
-                def _check_criteria_now(self, base_dir: Path, criteria: List[str]) -> Tuple[bool, List[str]]:
-                    """E10-RP2 §3: mechanical check of the task's CURRENT
-                    acceptance criteria against the CURRENT on-disk state.
-                    The engine's verify_task checks the artifact AS RECORDED
-                    at write time (evidence store); this layer re-checks
-                    reality as it stands at verification time. Unknown
-                    criterion types FAIL (fail-closed) — unlike the engine
-                    which skips them at execution time."""
+                    The old resolution globbed ``sandbox-*/<rel_path>`` across
+                    ALL task sandboxes and took the newest mtime — a name
+                    collision between two tasks could decide either task's
+                    verdict with the OTHER task's file (proven at baseline
+                    631f6fb, E10_RP21_DISCOVERY D5). The engine writes task
+                    X's artifacts to ``sandbox-<task_id>`` (execution.py
+                    sandbox binding), so the task-bound path is always
+                    well-defined: ``<base_dir>/sandbox-<target_task_id>/
+                    <rel_path>``. No glob, no mtime race, no cross-sandbox
+                    reads. Returns None when the task's own file is absent —
+                    a correct file in ANY other sandbox cannot change this
+                    task's verdict."""
+                    if not target_task_id:
+                        # No target task identity => nothing task-bound to
+                        # read => no evidence (fail-closed; never fall back
+                        # to a cross-sandbox scan).
+                        return None
+                    p = Path(base_dir) / f"sandbox-{target_task_id}" / rel_path
+                    return p if p.is_file() else None
+
+                def _check_criteria_now(self, base_dir: Path, criteria: List[str],
+                                        target_task_id: str = "") -> Tuple[bool, List[str], List[str], Dict[str, str]]:
+                    """E10-RP2.1 §3+§4 — mechanical check of the task's
+                    CURRENT acceptance criteria against the CURRENT on-disk
+                    state OF THE TARGET TASK'S OWN SANDBOX.
+
+                    Returns ``(all_ok, criteria_failures, machinery_errors,
+                    evidence_paths)`` — criteria failures (readable evidence
+                    that does not meet a criterion) are SEPARATED from
+                    machinery errors (the verifier's own read/execution
+                    failure). A read error is a TOOL/RUNTIME condition, never
+                    a criteria mismatch (order §4.1); a missing file is a
+                    criteria failure of ``file_exists``. Unknown criterion
+                    types FAIL (fail-closed) as machinery limitations.
+
+                    ``evidence_paths`` records, per criterion relative path,
+                    the task-bound absolute file the verdict was read from —
+                    re-examinable proof that each task's verdict came from
+                    its own file."""
                     all_ok = True
                     missing: List[str] = []
+                    machinery: List[str] = []
+                    evidence_paths: Dict[str, str] = {}
                     for c in criteria:
                         if c.startswith("file_exists:"):
                             path = c.split(":", 1)[1]
-                            if self._resolve_current_file(base_dir, path) is None:
+                            f = self._resolve_current_file(base_dir, path, target_task_id)
+                            if f is None:
                                 all_ok = False
-                                missing.append(f"file_exists failed: {path} not on disk")
+                                missing.append(f"file_exists failed: {path} not in this task's sandbox")
+                            else:
+                                evidence_paths[path] = str(f)
                         elif c.startswith("file_contains:"):
                             parts = c.split(":", 2)
                             path = parts[1] if len(parts) > 2 else ""
                             pattern = parts[2] if len(parts) > 2 else ""
-                            f = self._resolve_current_file(base_dir, path)
+                            f = self._resolve_current_file(base_dir, path, target_task_id)
                             if f is None:
                                 all_ok = False
-                                missing.append(f"file_contains failed: {path} not on disk")
+                                missing.append(f"file_contains failed: {path} not in this task's sandbox")
                             else:
+                                evidence_paths[path] = str(f)
                                 try:
                                     if pattern not in f.read_text(encoding="utf-8", errors="replace"):
                                         all_ok = False
                                         missing.append(
                                             f"file_contains failed: {pattern!r} not in {path} (current content)")
                                 except Exception as e:
+                                    # §4.1: READ failure = tool/runtime error,
+                                    # NOT a criteria mismatch.
                                     all_ok = False
-                                    missing.append(f"file_contains error on {path}: {e}")
+                                    machinery.append(
+                                        f"verifier read error on {path}: {type(e).__name__}: {e}")
                         elif c.startswith("file_hash_matches:"):
                             import hashlib
                             parts = c.split(":", 2)
                             path = parts[1] if len(parts) > 2 else ""
                             expected = parts[2] if len(parts) > 2 else ""
-                            f = self._resolve_current_file(base_dir, path)
+                            f = self._resolve_current_file(base_dir, path, target_task_id)
                             if f is None:
                                 all_ok = False
-                                missing.append(f"file_hash_matches failed: {path} not on disk")
+                                missing.append(f"file_hash_matches failed: {path} not in this task's sandbox")
                             else:
-                                actual = hashlib.sha256(f.read_bytes()).hexdigest()
+                                evidence_paths[path] = str(f)
+                                try:
+                                    actual = hashlib.sha256(f.read_bytes()).hexdigest()
+                                except Exception as e:
+                                    all_ok = False
+                                    machinery.append(
+                                        f"verifier read error on {path}: {type(e).__name__}: {e}")
+                                    continue
                                 if actual != expected:
                                     all_ok = False
                                     missing.append(
                                         f"file_hash_matches failed: {path} hash {actual[:12]}... != expected")
                         else:
+                            # §4.1: the verifier itself cannot evaluate this
+                            # criterion — a machinery limitation, fail-closed.
                             all_ok = False
-                            missing.append(f"unsupported criterion (fail-closed): {c}")
-                    return all_ok, missing
+                            machinery.append(f"unsupported criterion (verifier limitation, fail-closed): {c}")
+                    return all_ok, missing, machinery, evidence_paths
 
                 async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
-                    # E10-RP2 §3: verify the target task's CURRENT criteria
-                    # against the CURRENT on-disk artifacts (reality), not
-                    # merely artifact existence and not the recorded
-                    # evidence-store history.
+                    # E10-RP2.1 §3: verify the target task's CURRENT criteria
+                    # against the CURRENT on-disk artifacts of the TARGET
+                    # TASK'S OWN SANDBOX (task-bound resolution), not merely
+                    # artifact existence and not the recorded evidence-store
+                    # history, and never a same-name file from another
+                    # task's sandbox.
                     target_artifacts = task.context.get("target_artifacts", [])
                     target_task_id = task.context.get("target_task_id", "")
                     target_criteria = task.context.get("target_criteria", [])
                     base_dir = Path(task.context.get("artifacts_base_dir", "."))
+                    producing_attempt_id = task.context.get("producing_attempt_id", "")
 
-                    criteria_ok, missing = self._check_criteria_now(base_dir, target_criteria) \
-                        if target_criteria else (len(target_artifacts) > 0, [])
-                    verified = criteria_ok
+                    if target_criteria:
+                        criteria_ok, criteria_failures, machinery_errors, evidence_paths = \
+                            self._check_criteria_now(base_dir, target_criteria, target_task_id)
+                    else:
+                        criteria_ok = len(target_artifacts) > 0
+                        criteria_failures = [] if criteria_ok else ["no target artifacts recorded"]
+                        machinery_errors = []
+                        evidence_paths = {}
+
+                    # E10-RP2.1 §4 — EXPLICIT failure classification (never
+                    # inferred from missing_evidence presence or strings):
+                    #   machinery read/eval error  -> verifier_error (retry)
+                    #   producing attempt unknown  -> provenance_unprovable
+                    #   criteria mechanically unmet -> criteria_mismatch
+                    # Precedence: machinery errors make the whole
+                    # verification UNRELIABLE (retry territory) even if some
+                    # criteria happened to pass; provenance failure is a
+                    # mission-state problem (replan can recover by
+                    # re-execution); a clean criteria failure is a plan
+                    # deviation.
+                    if machinery_errors:
+                        failure_class = "verifier_error"
+                    elif not producing_attempt_id:
+                        failure_class = "provenance_unprovable"
+                    elif not criteria_ok:
+                        failure_class = "criteria_mismatch"
+                    else:
+                        failure_class = None
+                    verified = failure_class is None
+
+                    failure_causes = list(machinery_errors)
+                    if not producing_attempt_id:
+                        failure_causes.append(
+                            "producing attempt could not be established for the verified task")
+                    failure_causes.extend(criteria_failures)
 
                     from unified.contracts import new_artifact_id, new_evidence_id
                     import hashlib
@@ -690,7 +768,16 @@ Rules:
                         "target_artifacts": target_artifacts,
                         "criteria": target_criteria,
                         "verified": verified,
-                        "missing_evidence": missing,
+                        "missing_evidence": failure_causes,
+                        "failure_class": failure_class,
+                        "failure_causes": {
+                            "criteria_mismatch": criteria_failures,
+                            "verifier_error": machinery_errors,
+                            "provenance_unprovable": (
+                                [] if producing_attempt_id
+                                else ["producing attempt could not be established"]),
+                        },
+                        "evidence_paths": evidence_paths,
                         "verdict": "evidenced" if verified else "not_evidenced"
                     }, indent=2)
                     artifact_bytes = verify_json.encode('utf-8')
@@ -736,9 +823,18 @@ Rules:
                         task_id=task.task_id,
                         agent_type=AgentType.VERIFIER,
                         success=verified,
-                        output={"verification": verify_json, "missing_evidence": missing},
+                        output={
+                            "verification": verify_json,
+                            "missing_evidence": failure_causes,
+                            "failure_class": failure_class,
+                            "evidence_paths": evidence_paths,
+                        },
                         evidence_hash=sha256,
-                        artifacts=[artifact_id]
+                        artifacts=[artifact_id],
+                        error=(
+                            "Tool/runtime failure (verifier machinery): "
+                            + "; ".join(machinery_errors[:3])
+                        ) if machinery_errors else None,
                     )
             
             verifier_def = AgentDefinition(
@@ -909,20 +1005,70 @@ Rules:
             evidence_store=engine.evidence_store,
         )
 
-        result = await factory.execute_agent_by_id("e3-verifier", agent_context, verify_task)
+        # E10-RP2.1 §4 — a verifier EXECUTION failure (the machinery itself
+        # crashed) is caught and classified EXPLICITLY as verifier_error: it
+        # must not propagate and crash the run, must not invoke replan, and
+        # must not produce a final success. The verdict is not_evidenced
+        # (fail-closed) with the explicit class carried in the event.
+        try:
+            result = await factory.execute_agent_by_id("e3-verifier", agent_context, verify_task)
+        except Exception as exc:
+            from unified.agent_contract import AgentResult as _AR
+            result = _AR(
+                task_id=verify_task.task_id,
+                agent_type=AgentType.VERIFIER.value,
+                success=False,
+                output={
+                    "failure_class": "verifier_error",
+                    "failure_causes": [f"verifier execution raised: {type(exc).__name__}: {exc}"],
+                    "missing_evidence": [
+                        f"verifier execution raised: {type(exc).__name__}: {exc}"],
+                    "evidence_paths": {},
+                },
+                evidence_hash="",
+                error=f"Tool/runtime failure (verifier execution): {type(exc).__name__}: {exc}",
+            )
+
+        # E10-RP2.1 §4 — explicit classification from the verifier result
+        # (never inferred from missing_evidence presence or strings).
+        v_output = result.output if isinstance(result.output, dict) else {}
+        failure_class = v_output.get("failure_class")
+        if not result.success and failure_class is None:
+            # Legacy/unclassified failure: conservatively retry territory —
+            # NEVER auto-classified as a plan deviation (order §4).
+            failure_class = "verifier_error"
+        evidence_paths = list(v_output.get("evidence_paths", {}).values()) \
+            if isinstance(v_output.get("evidence_paths"), dict) else []
+
+        # E10-RP2.1 §3.4 — an unestablishable producing attempt makes the
+        # verdict not_evidenced (fail-closed: provenance cannot be
+        # fabricated), replacing the RP2 evidenced-with-disclosure hole.
+        missing_evidence = list(v_output.get("missing_evidence", [])) \
+            if not result.success else []
+        if not producing_attempt_id:
+            if result.success:
+                result = type(result)(
+                    task_id=result.task_id,
+                    agent_type=result.agent_type,
+                    success=False,
+                    output={
+                        **(v_output if isinstance(v_output, dict) else {}),
+                        "failure_class": "provenance_unprovable",
+                        "missing_evidence": [
+                            "producing attempt could not be established for the verified task"],
+                    },
+                    evidence_hash=result.evidence_hash,
+                    artifacts=result.artifacts,
+                    error="Verification failed: producing attempt could not be established",
+                )
+                failure_class = "provenance_unprovable"
+                missing_evidence = ["producing attempt could not be established for the verified task"]
 
         # Emit VERIFICATION_COMPLETE for BOTH verdicts (E10-RP2 §3) —
         # bound to the target task, the PRODUCING attempt (not a random
         # id), the plan version, and the run. Missing provenance is
         # recorded in the payload (fail-closed: an attempt that cannot be
         # established is disclosed, not fabricated).
-        missing_evidence = list(
-            (result.output or {}).get("missing_evidence", [])
-        ) if not result.success else []
-        if not producing_attempt_id:
-            missing_evidence = list(missing_evidence) + [
-                "producing attempt could not be established for the verified task"]
-
         from unified.contracts import new_verification_id
         engine._emit(FactoryEvent.create(
             event_type=EventType.VERIFICATION_COMPLETE,
@@ -941,6 +1087,8 @@ Rules:
                 run_id=run_id,
                 verifier_attempt_id=reservation.attempt_id,
                 criteria_source="task.acceptance_criteria",
+                failure_class=failure_class,
+                evidence_paths=evidence_paths,
             ),
             source="canonical_orchestrator",
             correlation_id=verify_task.task_id,
@@ -1403,44 +1551,62 @@ class CanonicalOrchestrator:
 
     def _record_verifier_failure(self, task_id: str, task_key: str,
                                  verify_result: Any, run_id: str) -> Optional[FailureRecord]:
-        """E10-RP2 §3.5: record a verifier-detected failure as a
-        PLAN_DEVIATION FailureRecord (criteria vs current reality) and
-        hand it to the replanning decision path.
+        """E10-RP2.1 §4: record a verifier-detected failure classified by the
+        EXPLICIT ``failure_class`` carried in the verifier result — never
+        inferred from ``missing_evidence`` presence/absence or error-string
+        heuristics (the RP2 string-sniffing classifier is gone).
 
-        Classification guard (§3.5): a verifier result whose error is a
-        TOOL/RUNTIME error (the verification machinery itself failed) is
-        recorded as TOOL_RUNTIME_FAILURE (retry territory) and NEVER
-        feeds replanning. Only a clean criteria-vs-reality mismatch is a
-        plan deviation.
+        Mapping (order §4.1):
+          * criteria_mismatch     -> PLAN_DEVIATION (replan-eligible: the
+            decision -> replan_mission -> review gate -> continuation path).
+          * provenance_unprovable -> PLAN_DEVIATION (a mission-state problem
+            — the producing attempt cannot be established; a replan can
+            recover it by re-execution, retrying the verifier cannot).
+          * verifier_error        -> TOOL_RUNTIME_FAILURE (retry territory);
+            NEVER auto-classified as a plan deviation.
+          * missing/unknown class -> TOOL_RUNTIME_FAILURE (conservative:
+            replanning on an unclassified failure is forbidden).
 
         Dedup: one OPEN verifier failure per task — repeated failing
         verification rounds for the same task do not stack records; the
         open record is resolved by _resolve_verifier_failure when newer
         valid evidence arrives (§3.4), or by replan_mission when the
         deviation it carried is answered by an approved replan."""
-        error_text = str(getattr(verify_result, "error", "") or "")
         output = getattr(verify_result, "output", None) or {}
         missing = list(output.get("missing_evidence", []) or []) if isinstance(output, dict) else []
-        tool_error = ("Tool/runtime failure" in error_text
-                      or "sandbox" in error_text.lower()
-                      or "Verification failed" not in error_text and not missing)
+        # §4.2: the failure type comes from the EXPLICIT field, not from
+        # missing_evidence or error strings.
+        failure_class = (
+            output.get("failure_class") if isinstance(output, dict) else None
+        ) or "verifier_error"
 
         existing_open = self._open_verifier_failures.get(task_id)
         if existing_open is not None:
             return existing_open  # still unresolved — no stacking
 
-        if tool_error and not missing:
-            kind = FailureKind.TOOL_RUNTIME_FAILURE
-            recovery = RecoveryAction.RETRY
-            reason = ("Verifier machinery error (tool/runtime) — retry "
-                      "territory; never auto-classified as plan deviation (§3.5)")
-        else:
+        if failure_class in ("criteria_mismatch", "provenance_unprovable"):
             kind = FailureKind.PLAN_DEVIATION
             recovery = RecoveryAction.REPLAN
-            reason = ("Verifier verdict not_evidenced against the task's "
-                      "CURRENT acceptance criteria and CURRENT on-disk "
-                      "state: observed reality deviates from the plan's "
-                      "expectation (E10-RP2 §3.5)")
+            if failure_class == "criteria_mismatch":
+                reason = ("Verifier verdict not_evidenced against the task's "
+                          "CURRENT acceptance criteria and CURRENT on-disk "
+                          "state: observed reality deviates from the plan's "
+                          "expectation (E10-RP2.1 §4, explicit class "
+                          "criteria_mismatch)")
+            else:
+                reason = ("Verifier could not establish the producing "
+                          "attempt for the task's evidence — provenance is "
+                          "unprovable (fail-closed not_evidenced); a "
+                          "mission-state problem a replan can recover by "
+                          "re-execution (E10-RP2.1 §4, explicit class "
+                          "provenance_unprovable)")
+        else:
+            kind = FailureKind.TOOL_RUNTIME_FAILURE
+            recovery = RecoveryAction.RETRY
+            # (kept contiguous for the RP2 source-pattern guarantee)
+            reason = ("Verifier machinery error (tool/runtime, explicit class "
+                      "verifier_error) — retry territory; "
+                      "never auto-classified as plan deviation (E10-RP2.1 §4)")
         import hashlib as _hl
         record = FailureRecord(
             failure_id=f"fail-{_hl.sha256(f'{task_id}verifier{datetime.now(timezone.utc).isoformat()}'.encode()).hexdigest()[:12]}",
@@ -1448,12 +1614,15 @@ class CanonicalOrchestrator:
             task_id=task_id,
             task_key=task_key,
             description=(
-                "Verification failed (orchestrator verifier): "
-                + (error_text if error_text else "criteria not evidenced")
+                f"Verification failed (orchestrator verifier, class="
+                f"{failure_class}): "
+                + (str(getattr(verify_result, "error", "") or "")
+                   or "criteria not evidenced")
                 + ("" if not missing else " | missing: " + "; ".join(missing[:3]))),
             evidence=[
                 f"VERIFICATION_COMPLETE not_evidenced for task {task_key} "
-                f"(run {run_id}, plan {getattr(self.mc, 'plan_version', 'v1')})",
+                f"(run {run_id}, plan {getattr(self.mc, 'plan_version', 'v1')}, "
+                f"failure_class={failure_class})",
                 *(f"missing_evidence: {m}" for m in missing[:5]),
             ],
             detected_at=datetime.now(timezone.utc).isoformat(),

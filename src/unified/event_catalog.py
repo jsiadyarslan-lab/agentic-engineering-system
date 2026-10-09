@@ -358,6 +358,21 @@ class VerificationCompleteEvent(BaseModel):
     run_id: Optional[str] = None
     verifier_attempt_id: Optional[str] = None
     criteria_source: Optional[str] = None  # "task.acceptance_criteria" | "engine.verify_task" | ...
+    # E10-RP2.1 §4 — EXPLICIT failure classification (no inference from
+    # missing_evidence presence or error-string heuristics):
+    #   criteria_mismatch    — evidence read OK, criteria mechanically unmet
+    #                         (replan-eligible plan deviation)
+    #   provenance_unprovable — the producing attempt cannot be established
+    #                         (fail-closed not_evidenced; mission-state problem)
+    #   verifier_error       — read/execution/verifier-machinery failure
+    #                         (retry territory; NEVER auto-replan)
+    # None on success; absent for legacy emitters.
+    failure_class: Optional[str] = None
+    # E10-RP2.1 §3 — the task-bound evidence sources the verdict was read
+    # from (sandbox of the TARGET task), for re-examination.
+    evidence_paths: Optional[List[str]] = None
+
+
 class VerificationStartedEvent(BaseModel):
     """Verification process started by verifier agent."""
     verification_id: str

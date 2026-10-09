@@ -598,11 +598,27 @@ class WindowsExecutorAdapter:
         outcome record. The file content and its parent directory are fsynced
         before returning: after this call the side effect is on disk, not just
         in the page cache (aligns artifact durability with journal durability
-        — see E10_CW1_R1_DISCOVERY §4)."""
+        — see E10_CW1_R1_DISCOVERY §4).
+
+        E10-RP2.1 §2.3: STRUCTURAL CONTAINMENT (last line of defense). The
+        resolved target must stay inside ``<artifacts_base_dir>/<sandbox_id>``:
+        relative traversal (``..``), an ABSOLUTE ``path`` (which would
+        REPLACE the base in pathlib join semantics), and symlink escapes are
+        rejected fail-closed BEFORE any filesystem effect."""
         artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
         os.makedirs(artifacts_dir, exist_ok=True)
-        
-        file_path = Path(artifacts_dir) / path
+
+        # E10-RP2.1 §2.3 — containment proof for the concrete target.
+        base_resolved = Path(artifacts_dir).resolve()
+        file_path = (base_resolved / path).resolve()
+        if file_path != base_resolved and not file_path.is_relative_to(base_resolved):
+            raise SandboxError(
+                "SANDBOX_CONTAINMENT_VIOLATION: artifact write target "
+                f"{str(file_path)!r} resolves outside the sandbox root "
+                f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
+                f"path={path!r}) — refused with zero side effects "
+                "(E10-RP2.1 §2.3)"
+            )
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(file_path, 'wb') as f:

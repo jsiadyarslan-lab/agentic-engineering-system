@@ -339,13 +339,31 @@ class SandboxManager:
 
         E10-CW1-R1: `artifact_id` carries the PLANNED identity fixed by the
         durable intent record BEFORE the side effect — the same identity must
-        survive a crash between the intent and the outcome record."""
+        survive a crash between the intent and the outcome record.
+
+        E10-RP2.1 §2.3: STRUCTURAL CONTAINMENT — the resolved target must
+        stay inside ``<artifacts_base_dir>/<sandbox_id>``. Traversal
+        (``..``), absolute paths, and symlink escapes are rejected
+        fail-closed BEFORE any filesystem effect, for EVERY writer (governed
+        engine path, legacy callers, direct tests)."""
         # Allow writing to any sandbox_id - create directory if needed
         if sandbox_id not in self._active:
             # Create sandbox directory structure
             import os
             artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
             os.makedirs(artifacts_dir, exist_ok=True)
+        # E10-RP2.1 §2.3 — containment proof for the concrete target.
+        base = Path(self.sandbox.artifacts_base_dir) / sandbox_id
+        base_resolved = base.resolve()
+        target = (base / path).resolve()
+        if target != base_resolved and not target.is_relative_to(base_resolved):
+            raise SandboxError(
+                "SANDBOX_CONTAINMENT_VIOLATION: artifact write target "
+                f"{str(target)!r} resolves outside the sandbox root "
+                f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
+                f"path={path!r}) — refused with zero side effects "
+                "(E10-RP2.1 §2.3)"
+            )
         if artifact_id is not None:
             try:
                 artifact = await self.sandbox.write_artifact(
