@@ -1,0 +1,272 @@
+{
+  "mode": "blocked",
+  "mission_id": "mission-ba12fbd9cda8",
+  "run_id": "run-d8d2232e718b",
+  "result": {
+    "success": false,
+    "final_state": "PLAN_REVIEW_REJECTED",
+    "error": "Plan review REJECTED after replanning; continuation REFUSED (fail-closed): C6_plan_executable_no_failed_tasks: failed_tasks=['C'] (a FAILED task makes the plan not executable)",
+    "orchestrator_mission_id": "e3-mission-5f828ee1",
+    "duration_ms": 718,
+    "event_count": 107,
+    "evidence_count": 8
+  },
+  "reviews": [
+    {
+      "review_id": "review-be377465712c",
+      "run_id": "run-d8d2232e718b",
+      "mission_id": "mission-ba12fbd9cda8",
+      "plan_version": "v1",
+      "verdict": "approved",
+      "reviewer": "canonical_orchestrator",
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "no replan on record; current plan_version='v1'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": true,
+          "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "no replan on record"
+        }
+      ],
+      "reasons": [],
+      "reviewed_at": "2026-10-09T16:21:55.033339+00:00"
+    },
+    {
+      "review_id": "review-e87ea3223dd9",
+      "run_id": "run-d8d2232e718b",
+      "mission_id": "mission-ba12fbd9cda8",
+      "plan_version": "v2",
+      "verdict": "rejected",
+      "reviewer": "canonical_orchestrator",
+      "note": "post-replan review (plan v2) before continuation",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "replan chain v1->v2; current plan_version='v2'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "invalidated=['D']; completed-among-them=none"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "completed_in_graph=['A', 'B']; replan_preserved=['A', 'B']"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "added=['X']; problems=none"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "problems=none"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": false,
+          "detail": "failed_tasks=['C'] (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "failures resolved by 'replan->v2': ['fail-471207e5b6e7']; replan_evidence == deviation_evidence: True"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "modified=['C']; unapplied=none"
+        }
+      ],
+      "reasons": [
+        "C6_plan_executable_no_failed_tasks: failed_tasks=['C'] (a FAILED task makes the plan not executable)"
+      ],
+      "reviewed_at": "2026-10-09T16:21:55.301380+00:00"
+    }
+  ],
+  "replan": {
+    "from_version": "v1",
+    "to_version": "v2",
+    "reason": "Deviation fail-471207e5b6e7 at task C: verification against the plan v1 assumption ('RP1_C_PLAN_EXPECTED') failed with verdict not_evidenced; the observed artifact defines the real contract ('RP1_C_REALITY_ACTUAL'). D (whose product embeds the invalidated expectation) is removed; remediation X covers the merge under reality; E is rewired onto X; C's criteria are corrected to observed reality.",
+    "evidence": [
+      "TASK_FAILED event at 2026-10-09T16:21:55.244574",
+      "terminal=True retry_count=2 max_retries=2"
+    ],
+    "added_tasks": [
+      {
+        "task_key": "X",
+        "depends_on": [
+          "task-6ba26012f2f9"
+        ],
+        "name": "X - remediation after deviation at C"
+      }
+    ],
+    "removed_tasks": [
+      "D"
+    ],
+    "invalidated_tasks": [
+      "D"
+    ],
+    "preserved_tasks": [
+      "A",
+      "B"
+    ],
+    "rewired_dependencies": [
+      {
+        "task_key": "E",
+        "new_depends_on": [
+          "X"
+        ]
+      }
+    ],
+    "modified_tasks": [
+      {
+        "task_key": "C",
+        "new_acceptance_criteria": [
+          "file_exists:task_c.txt",
+          "file_contains:task_c.txt:RP1_C_REALITY_ACTUAL"
+        ]
+      }
+    ],
+    "timestamp": "2026-10-09T16:21:55.300926+00:00"
+  },
+  "deviation": {
+    "failure_id": "fail-471207e5b6e7",
+    "kind": "plan_deviation",
+    "task_id": "task-6ba26012f2f9",
+    "task_key": "C",
+    "description": "Verification failed: not_evidenced",
+    "evidence": [
+      "TASK_FAILED event at 2026-10-09T16:21:55.244574",
+      "terminal=True retry_count=2 max_retries=2"
+    ],
+    "detected_at": "2026-10-09T16:21:55.300583+00:00",
+    "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect.",
+    "recovery_action": "replan",
+    "resolved": true,
+    "resolved_by": "replan->v2"
+  },
+  "attempts_per_key": {
+    "A": 1,
+    "B": 1,
+    "C": 3,
+    "D": 0,
+    "E": 0,
+    "X": 0
+  },
+  "states": {
+    "A": "COMPLETED",
+    "B": "COMPLETED",
+    "C": "FAILED",
+    "D": "REMOVED",
+    "E": "BLOCKED",
+    "X": "BLOCKED"
+  },
+  "journal": {
+    "performed_per_path": {
+      "task_a.txt": 1,
+      "task_c.txt": 1,
+      "task_b.txt": 1
+    },
+    "reconciled_per_path": {
+      "task_c.txt": 2
+    },
+    "total_records": 8
+  },
+  "files": {
+    "task_a.txt": {
+      "present": true,
+      "contains_reality": null
+    },
+    "task_b.txt": {
+      "present": true,
+      "contains_reality": null
+    },
+    "task_c.txt": {
+      "present": true,
+      "contains_reality": true
+    },
+    "task_d.txt": {
+      "present": false,
+      "contains_reality": null
+    },
+    "task_x.txt": {
+      "present": false,
+      "contains_reality": null
+    },
+    "task_e.txt": {
+      "present": false,
+      "contains_reality": null
+    }
+  },
+  "ordering": {
+    "chain": {
+      "review_v1_approved": "2026-10-09T16:21:55.033612",
+      "replan_requested": "2026-10-09T16:21:55.300699",
+      "review_v2_rejected": "2026-10-09T16:21:55.301854"
+    },
+    "attempt_count": 5,
+    "invariants": {
+      "zero_attempts_after_rejection": true
+    }
+  },
+  "duplicate_continuation": null,
+  "providers": {
+    "decomposer_llm_calls": 1,
+    "decision_log": [
+      {
+        "stage": "replan",
+        "deviation": "fail-471207e5b6e7",
+        "task_key": "C"
+      },
+      {
+        "stage": "revision",
+        "decision": null
+      }
+    ],
+    "disclosure": "ScriptedDecomposerProvider (planning boundary) + decision provider (replanning decision boundary) \u2014 predetermined control inputs, disclosed; NOT claimed as independent planning or untested self-intelligence"
+  },
+  "real_components": {
+    "mission_controller": "MissionController",
+    "execution_engine": "ExecutionEngine",
+    "require_plan_review": true,
+    "grant_validator_supplied": "E9-R test pattern (allow-all, disclosed)"
+  }
+}

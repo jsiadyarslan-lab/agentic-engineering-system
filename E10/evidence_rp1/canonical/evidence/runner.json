@@ -1,0 +1,26 @@
+{
+  "session": "/home/z/my-project/e10rp1_work/E10/evidence_rp1/canonical",
+  "started_at": "2026-10-09T16:21:53.051675+00:00",
+  "stages": [
+    {
+      "name": "FULL",
+      "pid": 6809,
+      "exit": 0,
+      "wall_s": 1.256,
+      "rc_as_expected": true
+    },
+    {
+      "name": "BLOCKED",
+      "pid": 6810,
+      "exit": 0,
+      "wall_s": 1.082,
+      "rc_as_expected": true
+    }
+  ],
+  "distinct_pids": [
+    6809,
+    6810,
+    6811
+  ],
+  "verdict": "E10RP1_CHAIN_PROVEN"
+}

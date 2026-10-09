@@ -105,12 +105,19 @@ def evidence_store(temp_dir):
 
 @pytest.fixture
 def canonical_orchestrator(temp_dir, llm_provider):
-    """Create canonical orchestrator with auto-approve for testing."""
+    """Create canonical orchestrator with auto-approve for testing.
+
+    E10-RP1: require_plan_review=False is EXPLICIT here — the E4 tests drive
+    orchestrator.mc directly (define_mission/execute_run) for parallelism and
+    multi-task mechanics; the gated canonical policy is proven by
+    E10/test_e10rp1_matrix.py.
+    """
     orchestrator = create_canonical_orchestrator(
         llm_provider=llm_provider,
         artifacts_base_dir=temp_dir,
         auto_approve_plans=True,
         max_parallel=2,  # Allow parallel for B and C
+        require_plan_review=False,
     )
     yield orchestrator
 

@@ -1,0 +1,241 @@
+{
+  "plan_version": "v2",
+  "failures": [
+    {
+      "failure_id": "fail-471207e5b6e7",
+      "kind": "plan_deviation",
+      "task_id": "task-6ba26012f2f9",
+      "task_key": "C",
+      "description": "Verification failed: not_evidenced",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-09T16:21:55.244574",
+        "terminal=True retry_count=2 max_retries=2"
+      ],
+      "detected_at": "2026-10-09T16:21:55.300583+00:00",
+      "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect.",
+      "recovery_action": "replan",
+      "resolved": true,
+      "resolved_by": "replan->v2"
+    }
+  ],
+  "replans": [
+    {
+      "from_version": "v1",
+      "to_version": "v2",
+      "reason": "Deviation fail-471207e5b6e7 at task C: verification against the plan v1 assumption ('RP1_C_PLAN_EXPECTED') failed with verdict not_evidenced; the observed artifact defines the real contract ('RP1_C_REALITY_ACTUAL'). D (whose product embeds the invalidated expectation) is removed; remediation X covers the merge under reality; E is rewired onto X; C's criteria are corrected to observed reality.",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-09T16:21:55.244574",
+        "terminal=True retry_count=2 max_retries=2"
+      ],
+      "added_tasks": [
+        {
+          "task_key": "X",
+          "depends_on": [
+            "task-6ba26012f2f9"
+          ],
+          "name": "X - remediation after deviation at C"
+        }
+      ],
+      "removed_tasks": [
+        "D"
+      ],
+      "invalidated_tasks": [
+        "D"
+      ],
+      "preserved_tasks": [
+        "A",
+        "B"
+      ],
+      "rewired_dependencies": [
+        {
+          "task_key": "E",
+          "new_depends_on": [
+            "X"
+          ]
+        }
+      ],
+      "modified_tasks": [
+        {
+          "task_key": "C",
+          "new_acceptance_criteria": [
+            "file_exists:task_c.txt",
+            "file_contains:task_c.txt:RP1_C_REALITY_ACTUAL"
+          ]
+        }
+      ],
+      "timestamp": "2026-10-09T16:21:55.300926+00:00"
+    }
+  ],
+  "plan_reviews": [
+    {
+      "review_id": "review-be377465712c",
+      "run_id": "run-d8d2232e718b",
+      "mission_id": "mission-ba12fbd9cda8",
+      "plan_version": "v1",
+      "verdict": "approved",
+      "reviewer": "canonical_orchestrator",
+      "note": "initial plan (v1) review before first execution (E10-RP1 \u00a72.2)",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "no replan on record; current plan_version='v1'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": true,
+          "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "no replan on record"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "no replan on record"
+        }
+      ],
+      "reasons": [],
+      "reviewed_at": "2026-10-09T16:21:55.033339+00:00"
+    },
+    {
+      "review_id": "review-e87ea3223dd9",
+      "run_id": "run-d8d2232e718b",
+      "mission_id": "mission-ba12fbd9cda8",
+      "plan_version": "v2",
+      "verdict": "rejected",
+      "reviewer": "canonical_orchestrator",
+      "note": "post-replan review (plan v2) before continuation",
+      "checks": [
+        {
+          "check": "C1_version_chain",
+          "passed": true,
+          "detail": "replan chain v1->v2; current plan_version='v2'"
+        },
+        {
+          "check": "C2_no_completed_destroyed",
+          "passed": true,
+          "detail": "invalidated=['D']; completed-among-them=none"
+        },
+        {
+          "check": "C3_preserved_matches_reality",
+          "passed": true,
+          "detail": "completed_in_graph=['A', 'B']; replan_preserved=['A', 'B']"
+        },
+        {
+          "check": "C4_added_tasks_present",
+          "passed": true,
+          "detail": "added=['X']; problems=none"
+        },
+        {
+          "check": "C5_rewire_blocked_correctness",
+          "passed": true,
+          "detail": "problems=none"
+        },
+        {
+          "check": "C6_plan_executable_no_failed_tasks",
+          "passed": false,
+          "detail": "failed_tasks=['C'] (a FAILED task makes the plan not executable)"
+        },
+        {
+          "check": "C7_causality_deviation_to_replan",
+          "passed": true,
+          "detail": "failures resolved by 'replan->v2': ['fail-471207e5b6e7']; replan_evidence == deviation_evidence: True"
+        },
+        {
+          "check": "C8_corrected_criteria_applied",
+          "passed": true,
+          "detail": "modified=['C']; unapplied=none"
+        }
+      ],
+      "reasons": [
+        "C6_plan_executable_no_failed_tasks: failed_tasks=['C'] (a FAILED task makes the plan not executable)"
+      ],
+      "reviewed_at": "2026-10-09T16:21:55.301380+00:00"
+    }
+  ],
+  "phases": [
+    {
+      "run_id": "run-d8d2232e718b",
+      "max_parallel": 1,
+      "pid": 6810,
+      "wall_seconds": 0.267,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-20f1b21e8f93": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "A",
+            "started_at": "2026-10-09T16:21:55.034210+00:00",
+            "completed_at": "2026-10-09T16:21:55.086337+00:00",
+            "process_pid": 6810,
+            "artifact_id": "artifact-281b20b7d894",
+            "artifact_path": "task_a.txt",
+            "content": "RP1_A_OUTPUT",
+            "sha256": "f52ddc11084a71509491190c9a23059c349abdf9c40cc7a54423ca01cce75553",
+            "action_id": "action-c642dddc"
+          },
+          "artifacts": [
+            "artifact-281b20b7d894"
+          ]
+        },
+        "task-6ba26012f2f9": {
+          "success": false,
+          "error": "Verification failed: not_evidenced",
+          "terminal": true,
+          "attempts": 3
+        },
+        "task-ee07317fbd95": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "B",
+            "started_at": "2026-10-09T16:21:55.244866+00:00",
+            "completed_at": "2026-10-09T16:21:55.296457+00:00",
+            "process_pid": 6810,
+            "artifact_id": "artifact-f4b675c76571",
+            "artifact_path": "task_b.txt",
+            "content": "RP1_B_OUTPUT",
+            "sha256": "e62b714ed85c136471857779b1472586768b25b6c684ea8ee621e4ad9bb08cf8",
+            "action_id": "action-fa39795c"
+          },
+          "artifacts": [
+            "artifact-f4b675c76571"
+          ]
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "A": "task-20f1b21e8f93",
+    "B": "task-ee07317fbd95",
+    "C": "task-6ba26012f2f9",
+    "D": "task-16d9686c13b9",
+    "E": "task-5f7bc9245048",
+    "X": "task-27c7db3ebc76"
+  }
+}

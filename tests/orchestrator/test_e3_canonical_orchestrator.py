@@ -104,12 +104,19 @@ def evidence_store(temp_dir):
 
 @pytest.fixture
 def canonical_orchestrator(temp_dir, llm_provider):
-    """Create canonical orchestrator with auto-approve for testing."""
+    """Create canonical orchestrator with auto-approve for testing.
+
+    E10-RP1: require_plan_review=False is EXPLICIT here — these E3 tests
+    exercise the vertical-slice mechanics (decomposition, approval gate,
+    events, evidence) and historically drive orchestrator.mc directly;
+    the gated canonical policy is proven by E10/test_e10rp1_matrix.py.
+    """
     orchestrator = create_canonical_orchestrator(
         llm_provider=llm_provider,
         artifacts_base_dir=temp_dir,
         auto_approve_plans=True,
         max_parallel=1,
+        require_plan_review=False,
     )
     yield orchestrator
 
@@ -265,11 +272,15 @@ class TestE3CanonicalOrchestrator:
         and verifies no false re-execution.
         """
         # Create orchestrator
+        # E10-RP1: explicit opt-out — this test drives orchestrator.mc
+        # directly (define_mission/execute_run) to exercise checkpoint
+        # durability; the gated policy is proven in E10/test_e10rp1_matrix.py.
         orchestrator = create_canonical_orchestrator(
             llm_provider=llm_provider,
             artifacts_base_dir=temp_dir,
             auto_approve_plans=True,
             max_parallel=1,
+            require_plan_review=False,
         )
         
         goal = "Create a simple report with 2 tasks that can be checkpointed"

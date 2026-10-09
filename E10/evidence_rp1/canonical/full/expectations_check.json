@@ -1,0 +1,137 @@
+[
+  {
+    "expectation": "result.success",
+    "pass": true,
+    "detail": "True (want True)"
+  },
+  {
+    "expectation": "result.final_state",
+    "pass": true,
+    "detail": "'EVIDENCED' (want 'EVIDENCED')"
+  },
+  {
+    "expectation": "reviews",
+    "pass": true,
+    "detail": "['approved', 'rejected', 'approved']"
+  },
+  {
+    "expectation": "review_v2_first_failing_check",
+    "pass": true,
+    "detail": "['C6_plan_executable_no_failed_tasks']"
+  },
+  {
+    "expectation": "replan.from_version",
+    "pass": true,
+    "detail": "v1"
+  },
+  {
+    "expectation": "replan.to_version",
+    "pass": true,
+    "detail": "v2"
+  },
+  {
+    "expectation": "replan.invalidated",
+    "pass": true,
+    "detail": "['D']"
+  },
+  {
+    "expectation": "replan.preserved",
+    "pass": true,
+    "detail": "['A', 'B']"
+  },
+  {
+    "expectation": "replan.added",
+    "pass": true,
+    "detail": "['X']"
+  },
+  {
+    "expectation": "replan.rewired",
+    "pass": true,
+    "detail": "[{'task_key': 'E', 'new_depends_on': ['X']}]"
+  },
+  {
+    "expectation": "replan.modified",
+    "pass": true,
+    "detail": "['C']"
+  },
+  {
+    "expectation": "deviation.linked_to_replan",
+    "pass": true,
+    "detail": "resolved_by=replan->v2; evidence_match=True"
+  },
+  {
+    "expectation": "deviation.kind_plan_deviation",
+    "pass": true,
+    "detail": "FailureKind.PLAN_DEVIATION"
+  },
+  {
+    "expectation": "attempts_per_key",
+    "pass": true,
+    "detail": "{'A': 1, 'B': 1, 'C': 4, 'D': 0, 'E': 1, 'X': 1}"
+  },
+  {
+    "expectation": "journal_performed_per_path",
+    "pass": true,
+    "detail": "{'task_a.txt': 1, 'task_c.txt': 1, 'task_b.txt': 1, 'task_x.txt': 1, 'task_e.txt': 1}"
+  },
+  {
+    "expectation": "journal_reconciled_task_c",
+    "pass": true,
+    "detail": "{'task_c.txt': 3}"
+  },
+  {
+    "expectation": "files.task_d.txt.absent",
+    "pass": true,
+    "detail": "{'present': False, 'contains_reality': None}"
+  },
+  {
+    "expectation": "files.task_c.txt.contains RP1_C_REALITY_A",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': True}"
+  },
+  {
+    "expectation": "files.task_x.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': None}"
+  },
+  {
+    "expectation": "files.task_e.txt.present",
+    "pass": true,
+    "detail": "{'present': True, 'contains_reality': None}"
+  },
+  {
+    "expectation": "ordering.no_attempt_before_v1_review",
+    "pass": true,
+    "detail": "True"
+  },
+  {
+    "expectation": "ordering.no_attempt_between_replan_and_v2_approval",
+    "pass": true,
+    "detail": "True"
+  },
+  {
+    "expectation": "ordering.first_continuation_attempt_after_v2_approval",
+    "pass": true,
+    "detail": "True"
+  },
+  {
+    "expectation": "ordering.replan_lt_reject_lt_recover_lt_approve",
+    "pass": true,
+    "detail": "True"
+  },
+  {
+    "expectation": "duplicate.zero_new_attempts",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  },
+  {
+    "expectation": "duplicate.journal_unchanged",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  },
+  {
+    "expectation": "duplicate.result_success",
+    "pass": true,
+    "detail": "{'result_success': True, 'zero_new_attempts': True, 'journal_unchanged': True, 'new_events': 0}"
+  }
+]

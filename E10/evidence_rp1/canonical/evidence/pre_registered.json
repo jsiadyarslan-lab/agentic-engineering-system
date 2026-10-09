@@ -1,0 +1,98 @@
+{
+  "written_before_any_cycle": true,
+  "note": "Fixed BEFORE observing any outcome (order \u00a74 discipline). Success criteria are never changed after the fact.",
+  "run_a_full_cycle": {
+    "result": {
+      "success": true,
+      "final_state": "EVIDENCED"
+    },
+    "reviews": [
+      "approved",
+      "rejected",
+      "approved"
+    ],
+    "review_v2_first_failing_check": "C6_plan_executable_no_failed_tasks",
+    "replan": {
+      "from_version": "v1",
+      "to_version": "v2",
+      "invalidated": [
+        "D"
+      ],
+      "preserved": [
+        "A",
+        "B"
+      ],
+      "added": [
+        "X"
+      ],
+      "rewired": {
+        "E": [
+          "X"
+        ]
+      },
+      "modified": [
+        "C"
+      ]
+    },
+    "attempts_per_key": {
+      "A": 1,
+      "B": 1,
+      "C": 4,
+      "X": 1,
+      "E": 1,
+      "D": 0
+    },
+    "journal_performed_per_path": {
+      "task_a.txt": 1,
+      "task_b.txt": 1,
+      "task_c.txt": 1,
+      "task_x.txt": 1,
+      "task_e.txt": 1
+    },
+    "journal_reconciled_task_c": 3,
+    "files": {
+      "task_d.txt": "absent",
+      "task_c.txt": "contains RP1_C_REALITY_ACTUAL",
+      "task_x.txt": "present",
+      "task_e.txt": "present"
+    },
+    "ordering_invariants": {
+      "no_attempt_before_v1_review": true,
+      "no_attempt_between_replan_and_v2_approval": true,
+      "first_continuation_attempt_after_v2_approval": true,
+      "replan_lt_reject_lt_recover_lt_approve": true
+    },
+    "duplicate_continuation": {
+      "zero_new_attempts": true,
+      "journal_unchanged": true,
+      "result_success": true
+    }
+  },
+  "run_b_blocked_cycle": {
+    "result": {
+      "success": false,
+      "final_state": "PLAN_REVIEW_REJECTED"
+    },
+    "reviews": [
+      "approved",
+      "rejected"
+    ],
+    "review_v2_failing_check": "C6_plan_executable_no_failed_tasks",
+    "attempts_per_key": {
+      "A": 1,
+      "B": 1,
+      "C": 3,
+      "X": 0,
+      "E": 0,
+      "D": 0
+    },
+    "c_final_state": "FAILED",
+    "zero_attempts_after_rejection": true,
+    "files": {
+      "task_d.txt": "absent",
+      "task_x.txt": "absent",
+      "task_e.txt": "absent"
+    }
+  },
+  "written_at": "2026-10-09T16:21:53.051675+00:00"
+}

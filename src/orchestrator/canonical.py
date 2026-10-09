@@ -681,14 +681,19 @@ Rules:
                 super().__init__(agent_type=AgentType.IMPLEMENTER)
                 self._mission_agent = MissionTaskAgent()
                 self._thinker_agent = E3ThinkerAgent()
-            
+
             async def execute(self, context: AgentContext, task: AgentTask) -> AgentResult:
-                # Check if this is the Thinker agent
-                if context.agent_id == "e3-thinker":
-                    # Delegate to Thinker agent logic
+                # E10-RP1 §2 correction (pre-existing at baseline, proven by
+                # two-state probe at ac70eb6e): dispatch by the TASK's declared
+                # role, NOT by the reserved agent_id. The engine's reservation
+                # can hand the thinker (an IMPLEMENTER in the shared pool) to a
+                # MISSION task; routing that to the thinker's plan-generation
+                # produced an ungoverned evidence-store artifact instead of
+                # MissionTaskAgent's governed sandbox write. Planning tasks
+                # (role decomposer/thinker) still go to the thinker.
+                role = (getattr(task, "context", None) or {}).get("role", "mission")
+                if role in ("decomposer", "thinker"):
                     return await self._thinker_agent.execute(context, task)
-                
-                # Default to MissionTaskAgent behavior
                 return await self._mission_agent.execute(context, task)
         
         # Replace the IMPLEMENTER implementation with our wrapper
@@ -881,16 +886,51 @@ class CanonicalOrchestrator:
         llm_provider: Any,
         artifacts_base_dir: str = ".",
         auto_approve_plans: bool = True,
-        max_parallel: int = 1
+        max_parallel: int = 1,
+        require_plan_review: bool = True,
+        replan_decision_provider: Optional[Callable[..., Optional[Dict[str, Any]]]] = None,
+        max_review_rounds: int = 3,
+        grant_validator: Optional[Callable[[str, str], bool]] = None,
     ):
         self.llm_provider = llm_provider
         self.artifacts_base_dir = artifacts_base_dir
         self.auto_approve_plans = auto_approve_plans
         self.max_parallel = max_parallel
         
+        # E10-RP1 §2.1: the canonical operational path enables the plan
+        # review gate EXPLICITLY as policy (default ON). It never relies on
+        # MissionController's library default (require_plan_review=False).
+        self.require_plan_review = require_plan_review
+        # E10-RP1 §2.3: the replanning decision is supplied by an explicit,
+        # disclosed source at the replanning decision boundary. The
+        # orchestrator wires the PATH (detect -> classify -> decide ->
+        # replan_mission -> review gate -> continuation); this provider
+        # supplies the decision CONTENT. None => no replan (fail-closed:
+        # the mission then fails honestly instead of fabricating a replan).
+        self.replan_decision_provider = replan_decision_provider
+        self.max_review_rounds = max(1, int(max_review_rounds))
+        
+        # E10-RP1 §2 correction (pre-existing at baseline, proven by two-state
+        # probe at ac70eb6e): the canonical engine was built WITHOUT a grant
+        # validator, so the governed tool path (E9-R) rejected EVERY mission
+        # write ('PermissionError: Tool artifact_write requires grants but no
+        # validator available') — no canonical mission with file-based
+        # criteria could ever complete. The validator is now supplied through
+        # the same construction pattern as E9-R / E10-RP engines. Default
+        # None keeps the old behavior for callers that do not opt in.
+        self.grant_validator = grant_validator
+
         # Core P1+P2 components
-        self.engine = create_execution_engine(artifacts_base_dir=artifacts_base_dir)
-        self.mc = MissionController(self.engine, state_dir=artifacts_base_dir)
+        self.engine = create_execution_engine(
+            artifacts_base_dir=artifacts_base_dir,
+            grant_validator=grant_validator,
+        )
+        # E10-RP1 §2.1: explicit review-gate policy for the canonical path.
+        self.mc = MissionController(
+            self.engine,
+            state_dir=artifacts_base_dir,
+            require_plan_review=require_plan_review,
+        )
         
         # Register mission agent pool (E33) - MUST be done before RoleCoordinator
         register_mission_agent(self.engine.agent_registry)
@@ -956,21 +996,80 @@ class CanonicalOrchestrator:
             # Record plan version
             self.mc.record_plan_v1(mc_run.run_id, mc_mission.mission_id)
             
+            # 3.5 E10-RP1 §2.2: the FIRST plan review happens BEFORE any
+            # execution when the gate is enabled. The review itself is the
+            # fail-closed structural/causal review implemented by
+            # MissionController (checks C1..C8 on live state only); the
+            # orchestrator only invokes it and honors its verdict. A
+            # rejected initial review blocks ALL execution (fail-closed).
+            if self.require_plan_review:
+                initial_review = self.mc.review_plan(
+                    mc_run.run_id,
+                    reviewer="canonical_orchestrator",
+                    note="initial plan (v1) review before first execution (E10-RP1 §2.2)",
+                )
+                if initial_review.verdict != "approved":
+                    return OrchestratorResult(
+                        mission_id=mission_id,
+                        goal=goal,
+                        success=False,
+                        final_state="PLAN_REVIEW_REJECTED",
+                        event_trace=self.mc.export_event_trace(mc_mission.mission_id),
+                        evidence_chain=self.mc.export_evidence_chain(mc_mission.mission_id),
+                        duration_ms=int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000),
+                        error="Initial plan review REJECTED (fail-closed, zero execution): "
+                              + "; ".join(initial_review.reasons),
+                    )
+            
             # 4. Execute through MissionController (delegates to ExecutionEngine P1)
             result = await self.mc.execute_run(mc_run.run_id, max_parallel=self.max_parallel)
             
-            # 5. Handle failures/replanning if needed
+            # 5. Handle failures/replanning if needed.
+            # E10-RP1 §2.3/§2.4/§2.5: this branch was previously a `pass` stub
+            # that claimed to delegate replanning while doing nothing. It is
+            # now wired to the real MissionController replanning path:
+            # REPLAN-classified FailureRecord (+ its evidence) -> decision
+            # from the disclosed replan_decision_provider -> replan_mission
+            # -> fail-closed review gate -> continuation ONLY after approval.
             if not result.get("success", False) and not result.get("paused", False):
                 # Scan failures
                 events = list(self.mc.engine.event_bus.history)
                 failures = self.mc.scan_failures(events, result.get("task_results", {}))
                 
-                # For each failure, attempt recovery/replan
-                for failure in failures:
-                    if failure.recovery_action.value == "replan":
-                        # Delegate to MissionController replan
-                        # This is a simplified path — real impl would use failure data
-                        pass
+                # Evidence-based replanning: only failures classified REPLAN
+                # (plan deviation) and still unresolved enter the replanning
+                # path. Without a valid decision the mission fails honestly.
+                replan_failures = [
+                    f for f in failures
+                    if f.recovery_action.value == "replan" and not f.resolved
+                ]
+                if replan_failures and self.replan_decision_provider is not None:
+                    replan_outcome = await self._run_replanning_cycle(
+                        mc_run.run_id, replan_failures[0]
+                    )
+                    if replan_outcome is not None and replan_outcome.get("approved"):
+                        # Continuation under the approved plan version. The
+                        # gate at the top of execute_run independently
+                        # re-enforces the approval (defense in depth).
+                        result = replan_outcome["result"]
+                    elif replan_outcome is not None and replan_outcome.get("blocked"):
+                        # Review rejected and no revision corrected the plan:
+                        # continuation is REFUSED — zero execution after the
+                        # rejection (provable from the durable event log).
+                        return OrchestratorResult(
+                            mission_id=mission_id,
+                            goal=goal,
+                            success=False,
+                            final_state="PLAN_REVIEW_REJECTED",
+                            event_trace=self.mc.export_event_trace(mc_mission.mission_id),
+                            evidence_chain=self.mc.export_evidence_chain(mc_mission.mission_id),
+                            duration_ms=int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000),
+                            error="Plan review REJECTED after replanning; continuation REFUSED (fail-closed): "
+                                  + "; ".join(replan_outcome["review"].reasons),
+                        )
+                    # replan_outcome is None => no valid decision: fall
+                    # through with the failed result; completion verification
+                    # below reports INCOMPLETE honestly (no fabricated success).
             
             # 6. Run Verifier on completed tasks (independent verification)
             task_results = result.get("task_results", {})
@@ -979,13 +1078,41 @@ class CanonicalOrchestrator:
                     verify_result = await self.role_coordinator.run_verifier(
                         mc_mission.mission_id, mc_run.run_id, task_id, tr["artifacts"]
                     )
-                    # Record verification result
+                    # Record verification result (E10-RP1 §2.5: this was a
+                    # `pass` stub whose comment claimed it "could trigger
+                    # replan here" while doing nothing. The failure is now
+                    # RECORDED durably as a not_evidenced verification and is
+                    # visible to verify_completion below. Wiring verifier
+                    # failures into the replanning decision path remains a
+                    # DISCLOSED GAP — it is NOT claimed here.)
                     if not verify_result.success:
-                        # Could trigger replan here
-                        pass
+                        from unified.contracts import new_verification_id, new_attempt_id
+                        self.mc.engine._emit(FactoryEvent.create(
+                            event_type=EventType.VERIFICATION_COMPLETE,
+                            mission_id=mc_mission.mission_id,
+                            run_id=mc_run.run_id,
+                            payload=VerificationCompleteEvent(
+                                verification_id=new_verification_id(),
+                                task_id=task_id,
+                                attempt_id=new_attempt_id(),
+                                verdict="not_evidenced",
+                                checks_performed=["artifact_verification"],
+                                missing_evidence=[],
+                                confidence=0.0,
+                            ),
+                            source="canonical_orchestrator",
+                            correlation_id=task_id,
+                        ))
             
             # 7. Verify completion and finalize
-            required_keys = list(key_to_task.keys())
+            # E10-RP1: required keys follow the LIVE graph — after a replan the
+            # invalidated tasks are gone and remediation tasks exist; checking
+            # the stale pre-replan key set would always report INCOMPLETE.
+            graph_now = self.mc.engine.task_graph.get(mc_run.run_id, {})
+            required_keys = [
+                k for k, tid in self.mc._key_to_task.items()
+                if tid in graph_now
+            ]
             complete, completion_report = self.mc.verify_completion(mc_run.run_id, required_keys)
             
             if complete:
@@ -1037,6 +1164,122 @@ class CanonicalOrchestrator:
                 self.event_streamer.unsubscribe(self._event_queue)
                 self._event_queue = None
     
+    # ============================================================
+    # E10-RP1 §2.3 — canonical replanning path
+    # ============================================================
+
+    def _valid_replan_decision(self, decision: Any) -> bool:
+        """E10-RP1 §2.3: 'when a VALID decision is available'.
+
+        Structural validation only — the decision CONTENT remains the
+        provider's responsibility (disclosed control input, not claimed as
+        independent planning). A malformed decision is treated as NO
+        decision (fail-closed: no replan, no fabricated success)."""
+        if not isinstance(decision, dict):
+            return False
+        required = ("reason", "next_version", "invalidate_task_ids",
+                    "corrected_criteria", "add_specs", "rewire")
+        if any(k not in decision for k in required):
+            return False
+        if not str(decision["reason"]).strip():
+            return False
+        version = str(decision["next_version"]).strip()
+        if not version or version == self.mc.plan_version:
+            return False
+        if not isinstance(decision["invalidate_task_ids"], list):
+            return False
+        if not isinstance(decision["corrected_criteria"], dict):
+            return False
+        if not isinstance(decision["add_specs"], list):
+            return False
+        if not isinstance(decision["rewire"], dict):
+            return False
+        return True
+
+    def _valid_revision(self, revision: Any) -> bool:
+        """A revision must recover at least one task; a malformed revision
+        ends the review loop with the plan still blocked (fail-closed)."""
+        if not isinstance(revision, dict):
+            return False
+        recover = revision.get("recover_task_ids")
+        if not isinstance(recover, list) or not recover:
+            return False
+        return all(isinstance(t, str) and t for t in recover)
+
+    async def _run_replanning_cycle(
+        self, run_id: str, deviation: Any
+    ) -> Optional[Dict[str, Any]]:
+        """E10-RP1 §2.3/§2.4 — the canonical replanning path.
+
+        Wire: REPLAN-classified FailureRecord (+ its evidence) -> decision
+        (from the disclosed replan_decision_provider) -> MissionController
+        .replan_mission -> review gate (fail-closed checks C1..C8) ->,
+        ONLY after APPROVAL, continuation via execute_run (whose own gate
+        re-enforces the approval — defense in depth). A rejected review
+        blocks continuation; the provider may supply a bounded revision
+        (recovery of corrected tasks), which is re-reviewed. Beyond
+        max_review_rounds the plan stays blocked.
+
+        Returns:
+          None                    — no valid decision (no replan at all)
+          {"approved": True, ...} — continuation executed under approval
+          {"approved": False, "blocked": True, "review": ...}
+                                  — review rejected; continuation REFUSED
+        """
+        provider = self.replan_decision_provider
+        decision = provider(
+            stage="replan", deviation=deviation,
+            controller=self.mc, orchestrator=self, run_id=run_id,
+        )
+        if not self._valid_replan_decision(decision):
+            return None
+
+        self.mc.replan_mission(
+            run_id=run_id,
+            deviation=deviation,
+            invalidate_task_ids=list(decision["invalidate_task_ids"]),
+            corrected_criteria=dict(decision["corrected_criteria"]),
+            add_specs=list(decision["add_specs"]),
+            rewire=dict(decision["rewire"]),
+            reason=str(decision["reason"]),
+            plan_version=str(decision["next_version"]),
+        )
+
+        review = self.mc.review_plan(
+            run_id,
+            reviewer="canonical_orchestrator",
+            note=f"post-replan review (plan {self.mc.plan_version}) before continuation",
+        )
+        rounds = 1
+        while review.verdict != "approved" and rounds < self.max_review_rounds:
+            revision = provider(
+                stage="revision", rejection=review,
+                controller=self.mc, orchestrator=self, run_id=run_id,
+            )
+            if not self._valid_revision(revision):
+                break
+            for task_id in revision["recover_task_ids"]:
+                self.mc.recover_failed_task(
+                    run_id, task_id,
+                    reason="plan review rejection: recover the corrected task after plan correction",
+                )
+            review = self.mc.review_plan(
+                run_id,
+                reviewer="canonical_orchestrator",
+                note=f"review round {rounds + 1} (plan {self.mc.plan_version})",
+            )
+            rounds += 1
+
+        if review.verdict != "approved":
+            return {"approved": False, "blocked": True, "review": review, "result": None}
+
+        # Continuation — ONLY under the approved plan version. The gate at
+        # the top of execute_run independently re-enforces this: an
+        # unapproved / never-reviewed / rejected plan refuses BEFORE any
+        # execution starts.
+        continuation = await self.mc.execute_run(run_id, max_parallel=self.max_parallel)
+        return {"approved": True, "blocked": False, "review": review, "result": continuation}
+
     async def stream_events(self) -> asyncio.Queue:
         """Get event stream queue for SSE."""
         return self.event_streamer.subscribe()
@@ -1050,14 +1293,27 @@ def create_canonical_orchestrator(
     llm_provider: Any,
     artifacts_base_dir: str = ".",
     auto_approve_plans: bool = True,
-    max_parallel: int = 1
+    max_parallel: int = 1,
+    require_plan_review: bool = True,
+    replan_decision_provider: Optional[Callable[..., Optional[Dict[str, Any]]]] = None,
+    max_review_rounds: int = 3,
+    grant_validator: Optional[Callable[[str, str], bool]] = None,
 ) -> CanonicalOrchestrator:
-    """Create canonical orchestrator with default configuration."""
+    """Create canonical orchestrator with default configuration.
+
+    E10-RP1: the canonical default enables the plan review gate
+    (require_plan_review=True) — the gated policy IS the operational path;
+    callers that deliberately want the legacy ungated behavior must opt out
+    explicitly."""
     return CanonicalOrchestrator(
         llm_provider=llm_provider,
         artifacts_base_dir=artifacts_base_dir,
         auto_approve_plans=auto_approve_plans,
-        max_parallel=max_parallel
+        max_parallel=max_parallel,
+        require_plan_review=require_plan_review,
+        replan_decision_provider=replan_decision_provider,
+        max_review_rounds=max_review_rounds,
+        grant_validator=grant_validator,
     )
 
 

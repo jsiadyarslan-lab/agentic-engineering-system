@@ -1,0 +1,23 @@
+{
+  "probe": "fresh_process_restore",
+  "state_dir": "/home/z/my-project/e10rp1_work/E10/evidence_rp1/canonical/full",
+  "mission_id": "mission-adce60f4870d",
+  "run_id": "run-29370d3a823f",
+  "durable_ledger_on_disk": {
+    "exists": true,
+    "plan_version": "v2",
+    "n_replans": 1,
+    "n_plan_reviews": 3
+  },
+  "fresh_controller_state": {
+    "plan_version": "v1",
+    "n_replans": 0,
+    "n_plan_reviews": 0,
+    "restored_from_ledger": false
+  },
+  "continuation": {
+    "refused": true,
+    "error": "PLAN_REVIEW_GATE: continuation REFUSED for run run-29370d3a823f: plan 'v1' has never been reviewed (fail-closed)",
+    "new_events": 0
+  }
+}
