@@ -230,11 +230,18 @@ async def main(workdir: str) -> None:
             return p.get("artifact_id")
         return getattr(p, "artifact_id", None)
 
-    # Normal engine pattern (verified against the E10 canonical run): exactly
-    # 2 ARTIFACT_CREATED events per task — one from _emit_artifact_created in
-    # execute_tool, one from the task-completion path — BOTH carrying the SAME
-    # artifact identity. For the crash-window task both must carry the
-    # ORIGINAL (pre-crash, journaled) artifact id, never a fresh one.
+    # E10-CW1-R1 §6 event contract: exactly ONE ARTIFACT_CREATED per artifact
+    # identity across all emitting sites (the agent-layer duplicate emission
+    # is suppressed by the shared guard); the cross-process reconciliation is
+    # reported by a DISTINCT ARTIFACT_RECONCILED event (mode=performed_record
+    # for the CW1 window). For the crash-window task the creation event must
+    # carry the ORIGINAL (pre-crash, journaled) artifact id, never a fresh one.
+    d_artifact_reconciled_events = [
+        e for e in engine.event_bus.history
+        if e.event_type == EventType.ARTIFACT_RECONCILED
+        and e.mission_id == mission_id
+        and e.correlation_id == task_d_id
+    ]
     d_created_ids = [event_artifact_id(e) for e in d_artifact_created_events]
 
     accounting = {
@@ -257,6 +264,11 @@ async def main(workdir: str) -> None:
         "events": {
             "artifact_created_for_crash_window_task": len(d_artifact_created_events),
             "artifact_created_ids": d_created_ids,
+            "artifact_reconciled_for_crash_window_task": len(d_artifact_reconciled_events),
+            "artifact_reconciled_modes": [
+                (e.payload.get("mode") if isinstance(e.payload, dict) else getattr(e.payload, "mode", None))
+                for e in d_artifact_reconciled_events
+            ],
             "task_completed_for_crash_window_task": len(d_task_completed_events),
         },
         "attempts": {
@@ -282,13 +294,21 @@ async def main(workdir: str) -> None:
             fatal.append("CRASH-WINDOW SIDE EFFECT WAS RE-PERFORMED (file rewritten)")
         if accounting["artifact_identity"]["count"] != 1 or not accounting["artifact_identity"]["is_original"]:
             fatal.append("crash-window task artifact identity not reconciled to the original")
-        if len(d_artifact_created_events) != 2 or not all(
+        if len(d_artifact_created_events) != 1 or not all(
             aid == original_artifact_id for aid in d_created_ids
         ):
             fatal.append(
-                f"expected exactly 2 ARTIFACT_CREATED events for the crash-window "
-                f"task (normal engine pattern), both carrying the ORIGINAL "
+                f"expected exactly 1 ARTIFACT_CREATED event for the crash-window "
+                f"task (E10-CW1-R1 exactly-once contract), carrying the ORIGINAL "
                 f"artifact id; got {len(d_artifact_created_events)} with ids {d_created_ids}"
+            )
+        if len(d_artifact_reconciled_events) != 1 or not all(
+            (e.payload.get("mode") if isinstance(e.payload, dict) else getattr(e.payload, "mode", None)) == "performed_record"
+            for e in d_artifact_reconciled_events
+        ):
+            fatal.append(
+                f"expected exactly 1 ARTIFACT_RECONCILED event (mode=performed_record) "
+                f"for the crash-window task; got {len(d_artifact_reconciled_events)}"
             )
         if len(d_task_completed_events) != 1:
             fatal.append(f"expected exactly 1 TASK_COMPLETED for the crash-window task, got {len(d_task_completed_events)}")

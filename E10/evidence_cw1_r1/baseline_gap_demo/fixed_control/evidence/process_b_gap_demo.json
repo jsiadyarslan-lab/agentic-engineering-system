@@ -1,0 +1,29 @@
+{
+  "process_b_pid": 12589,
+  "process_a_pid": 12588,
+  "pid_difference": true,
+  "tool_success": true,
+  "result_artifact_id": "artifact-ef3e1467ac5d",
+  "adapter_artifact_id_at_crash": "artifact-ef3e1467ac5d",
+  "file_mtime_ns_before_resume": 1791509073783235139,
+  "file_mtime_ns_after_resume": 1791509073783235139,
+  "file_inode_before_resume": 270723,
+  "file_inode_after_resume": 270723,
+  "PHYSICAL_WRITE_RE_PERFORMED": false,
+  "identity_preserved": true,
+  "journal_records_for_op_after_resume": [
+    {
+      "record_type": "intent",
+      "performed_via": null,
+      "artifact_id": "artifact-ef3e1467ac5d",
+      "process_pid": 12588
+    },
+    {
+      "record_type": "performed",
+      "performed_via": "adopted_after_crash",
+      "artifact_id": "artifact-ef3e1467ac5d",
+      "process_pid": 12589
+    }
+  ],
+  "verdict": "WINDOW_CLOSED__ADOPTED_WITHOUT_REWRITE"
+}

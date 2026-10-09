@@ -1,0 +1,52 @@
+{
+  "injection_point": "B_pre_journal",
+  "scenario": "D2a",
+  "task_key": "TASK_D",
+  "task_id": "task-9c0adea19a6d",
+  "planned_artifact_id": "artifact-088c90b49aed",
+  "adapter_artifact_id": "artifact-088c90b49aed",
+  "reached_at_utc": "2026-10-09T01:23:44.565843+00:00",
+  "process_pid": 12479,
+  "kill_signal": "SIGKILL",
+  "boundary_state": {
+    "journal_exists": true,
+    "journal_sha256": "f3226f2dcb9f1c0703b2699f03089a8a89b2b4d845e12ef981d1591917c92549",
+    "journal_line_status": [
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid"
+    ],
+    "d_intent_records": [
+      {
+        "artifact_id": "artifact-088c90b49aed",
+        "attempt_id": "attempt-7f211dc1",
+        "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+        "journal_record_id": "4ed8b1023d18",
+        "mission_id": "mission-b9686208b5f6",
+        "op": "artifact_write",
+        "path": "task_d_output.txt",
+        "process_pid": 12479,
+        "record_type": "intent",
+        "recorded_at_utc": "2026-10-09T01:23:44.564143+00:00",
+        "run_id": "run-f7f0d1b537e5",
+        "sandbox_id": "sandbox-task-9c0adea19a6d",
+        "size_bytes": 26,
+        "task_id": "task-9c0adea19a6d"
+      }
+    ],
+    "d_performed_records": [],
+    "d_file": {
+      "path": "/tmp/e10cw1r1_o01mf_kp/D2a/chain2/artifacts/sandbox-task-9c0adea19a6d/task_d_output.txt",
+      "exists": true,
+      "size_bytes": 26,
+      "mtime_ns": 1791509024564964691,
+      "inode": 278153,
+      "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+    }
+  },
+  "lifecycle_position": "the physical write COMPLETED (real adapter, fsynced); the engine has NOT yet written the performed record \u2014 the order \u00a72 gap boundary"
+}

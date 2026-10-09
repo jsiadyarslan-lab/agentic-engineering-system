@@ -1,0 +1,13 @@
+{
+  "baseline_at_d8b0620": {
+    "verdict": "GAP_DEMONSTRATED__SIDE_EFFECT_EXECUTED_TWICE",
+    "physical_write_re_performed": true,
+    "identity_preserved": false,
+    "note": "the order \u00a72 gap, demonstrated against the R1 baseline code (detached worktree at d8b0620) at the EXACT R1-B boundary; never a pass of any acceptance criterion"
+  },
+  "fixed_control": {
+    "verdict": "WINDOW_CLOSED__ADOPTED_WITHOUT_REWRITE",
+    "physical_write_re_performed": false,
+    "identity_preserved": true
+  }
+}

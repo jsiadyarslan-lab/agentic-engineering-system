@@ -277,6 +277,11 @@ def main(workdir: str) -> None:
         per_task_artifacts.setdefault(key, []).append(aid)
     d_artifact_created_events = event("artifact.created", correlation=task_d_id)
     d_created_ids = [(e.get("payload") or {}).get("artifact_id") for e in d_artifact_created_events]
+    # E10-CW1-R1 §6: reconciliation semantics are DISTINCT from creation.
+    # ARTIFACT_CREATED is exactly ONE per artifact identity across the whole
+    # durable log (the agent-layer duplicate emission is suppressed); the
+    # cross-process reconciliation is reported by ARTIFACT_RECONCILED.
+    d_artifact_reconciled_events = event("artifact.reconciled", correlation=task_d_id)
     d_task_completed_events = event("task.completed", correlation=task_d_id)
     sandbox_file_lists = {}
     for key in TASK_KEYS:
@@ -288,8 +293,10 @@ def main(workdir: str) -> None:
         "claim": "exactly one physical side effect per task — the crash-window "
                  "one was NOT re-performed (1 performed + 1 reconciled journal "
                  "records, no_physical_rewrite=true); no duplicate artifact "
-                 "records; the 2 ARTIFACT_CREATED events for the crash-window "
-                 "task (normal engine pattern) both carry the ORIGINAL id",
+                 "records; E10-CW1-R1 event contract: exactly ONE "
+                 "ARTIFACT_CREATED per artifact identity (agent-layer "
+                 "duplicate suppressed) plus ONE ARTIFACT_RECONCILED marking "
+                 "the cross-process reconciliation as DISTINCT semantics",
         "observed": {
             "journal_for_d": {
                 "performed": len(d_performed),
@@ -299,6 +306,10 @@ def main(workdir: str) -> None:
             "artifact_records_per_task": {k: len(v) for k, v in sorted(per_task_artifacts.items())},
             "artifact_created_events_for_d": len(d_artifact_created_events),
             "artifact_created_ids_for_d": d_created_ids,
+            "artifact_reconciled_events_for_d": len(d_artifact_reconciled_events),
+            "artifact_reconciled_modes_for_d": [
+                (e.get("payload") or {}).get("mode") for e in d_artifact_reconciled_events
+            ],
             "task_completed_events_for_d": len(d_task_completed_events),
             "total_task_completed_events": total_task_completed,
             "sandbox_files_per_task": sandbox_file_lists,
@@ -310,8 +321,10 @@ def main(workdir: str) -> None:
             and d_reconciled[0].get("no_physical_rewrite") is True
             and set(per_task_artifacts) == set(TASK_KEYS)
             and all(len(v) == 1 for v in per_task_artifacts.values())
-            and len(d_artifact_created_events) == 2
+            and len(d_artifact_created_events) == 1
             and all(aid == d_artifact_id for aid in d_created_ids)
+            and len(d_artifact_reconciled_events) == 1
+            and all(m == "performed_record" for m in [(e.get("payload") or {}).get("mode") for e in d_artifact_reconciled_events])
             and len(d_task_completed_events) == 1
             and total_task_completed == len(TASK_KEYS)
             and all(len(v) == 1 for v in sandbox_file_lists.values())

@@ -1,0 +1,72 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-14e884a4d15d",
+      "max_parallel": 1,
+      "pid": 12459,
+      "wall_seconds": 0.316,
+      "success": true,
+      "paused": false,
+      "task_results": {
+        "task-904c28e61960": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "TASK_D",
+            "started_at": "2026-10-09T01:23:30.937875+00:00",
+            "completed_at": "2026-10-09T01:23:31.089394+00:00",
+            "process_pid": 12459,
+            "artifact_id": "artifact-726dd5ef8051",
+            "artifact_path": "task_d_output.txt",
+            "content": "E10_TASK_D_COMPLETE: merge",
+            "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "action_id": "action-d34127bd"
+          },
+          "artifacts": [
+            "artifact-726dd5ef8051"
+          ]
+        },
+        "task-b041bd35bab4": {
+          "success": true,
+          "attempts": 1,
+          "output": {
+            "task_key": "TASK_E",
+            "started_at": "2026-10-09T01:23:31.094840+00:00",
+            "completed_at": "2026-10-09T01:23:31.247576+00:00",
+            "process_pid": 12459,
+            "artifact_id": "artifact-bc3df6f7920f",
+            "artifact_path": "task_e_output.txt",
+            "content": "E10_TASK_E_COMPLETE: final",
+            "sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+            "action_id": "action-2b1acb6a"
+          },
+          "artifacts": [
+            "artifact-bc3df6f7920f"
+          ]
+        },
+        "task-20b5d30f9d04": {
+          "success": true,
+          "resumed": true
+        },
+        "task-9fd48872b017": {
+          "success": true,
+          "resumed": true
+        },
+        "task-add0e50d7de5": {
+          "success": true,
+          "resumed": true
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "TASK_A": "task-20b5d30f9d04",
+    "TASK_B": "task-9fd48872b017",
+    "TASK_C": "task-add0e50d7de5",
+    "TASK_D": "task-904c28e61960",
+    "TASK_E": "task-b041bd35bab4"
+  }
+}

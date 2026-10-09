@@ -1,0 +1,12 @@
+{
+  "kind": "torn_trailing_line",
+  "appended_fragment": "{\"record_type\": \"perfor",
+  "position": "trailing",
+  "rationale": "a torn FINAL record never became durable truth \u2014 it must be ignored while the intent that precedes it still governs reconciliation (order \u00a74-D)",
+  "scenario": "D1",
+  "journal_path": "/tmp/e10cw1r1_o01mf_kp/D1/chain2/artifacts/side_effect_journal/mission-4f388feabf41/journal.jsonl",
+  "journal_sha256_before": "aed35935bce8a98acc19423c283258abb64531144b434e6bf10caf9e136c528d",
+  "journal_sha256_after": "3b54533d620df2504ec97f8a75c3d4d22df241793ba927b7929d78deba31f4db",
+  "applied_at_utc": "2026-10-09T01:23:40.493168+00:00",
+  "applied_by": "runner (outside any participant process)"
+}

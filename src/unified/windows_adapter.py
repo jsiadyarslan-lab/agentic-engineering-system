@@ -588,8 +588,17 @@ class WindowsExecutorAdapter:
         sandbox_id: str,
         path: str,
         content: bytes,
+        artifact_id: str = None,
     ) -> Artifact:
-        """Write artifact to sandbox /artifacts directory."""
+        """Write artifact to sandbox /artifacts directory.
+
+        E10-CW1-R1: when `artifact_id` is provided it is the PLANNED identity
+        fixed by the durable intent record BEFORE the write — used verbatim so
+        the identity survives a crash between the intent record and the
+        outcome record. The file content and its parent directory are fsynced
+        before returning: after this call the side effect is on disk, not just
+        in the page cache (aligns artifact durability with journal durability
+        — see E10_CW1_R1_DISCOVERY §4)."""
         artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
         os.makedirs(artifacts_dir, exist_ok=True)
         
@@ -598,9 +607,16 @@ class WindowsExecutorAdapter:
         
         with open(file_path, 'wb') as f:
             f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        fd = os.open(str(file_path.parent), os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
         
         sha256 = hashlib.sha256(content).hexdigest()
-        artifact_id = f"artifact-{uuid.uuid4().hex[:12]}"
+        artifact_id = artifact_id or f"artifact-{uuid.uuid4().hex[:12]}"
         
         return Artifact(
             artifact_id=artifact_id,

@@ -49,8 +49,12 @@ class ExecutionSandbox(Protocol):
         sandbox_id: str,
         path: str,
         content: bytes,
+        artifact_id: Optional[str] = None,
     ) -> Artifact:
-        """Write artifact to sandbox /artifacts directory."""
+        """Write artifact to sandbox /artifacts directory.
+
+        E10-CW1-R1: optional planned artifact identity (fixed pre-effect by
+        the durable intent record)."""
         ...
 
     async def read_artifact(
@@ -329,15 +333,30 @@ class SandboxManager:
         sandbox_id: str,
         path: str,
         content: bytes,
+        artifact_id: Optional[str] = None,
     ) -> Artifact:
-        """Write artifact to sandbox."""
+        """Write artifact to sandbox.
+
+        E10-CW1-R1: `artifact_id` carries the PLANNED identity fixed by the
+        durable intent record BEFORE the side effect — the same identity must
+        survive a crash between the intent and the outcome record."""
         # Allow writing to any sandbox_id - create directory if needed
         if sandbox_id not in self._active:
             # Create sandbox directory structure
             import os
             artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
             os.makedirs(artifacts_dir, exist_ok=True)
-        artifact = await self.sandbox.write_artifact(sandbox_id, path, content)
+        if artifact_id is not None:
+            try:
+                artifact = await self.sandbox.write_artifact(
+                    sandbox_id, path, content, artifact_id=artifact_id
+                )
+            except TypeError:
+                # adapter predates the planned-identity parameter
+                artifact = await self.sandbox.write_artifact(sandbox_id, path, content)
+                artifact.artifact_id = artifact_id
+        else:
+            artifact = await self.sandbox.write_artifact(sandbox_id, path, content)
         
         # Store in evidence store if available
         if self.evidence_store:
@@ -496,7 +515,13 @@ class BaseSandboxAdapter:
         pass
 
     @abc.abstractmethod
-    async def write_artifact(self, sandbox_id: str, path: str, content: bytes) -> Artifact:
+    async def write_artifact(
+        self, sandbox_id: str, path: str, content: bytes,
+        artifact_id: Optional[str] = None,
+    ) -> Artifact:
+        """E10-CW1-R1: optional planned artifact identity (fixed pre-effect
+        by the durable intent record). Legacy adapters may omit the
+        parameter — the manager falls back and rebinds the identity."""
         pass
 
     @abc.abstractmethod

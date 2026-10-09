@@ -54,6 +54,7 @@ class EventType(str, Enum):
     TOOL_FAILED = "tool.failed"
     # Artifacts & Evidence
     ARTIFACT_CREATED = "artifact.created"
+    ARTIFACT_RECONCILED = "artifact.reconciled"
     ARTIFACT_VERIFIED = "artifact.verified"
     EVIDENCE_RECORDED = "evidence.recorded"
     # Verification
@@ -309,6 +310,28 @@ class ArtifactCreatedEvent(BaseModel):
     mission_id: str
     run_id: str
     task_id: Optional[str] = None
+class ArtifactReconciledEvent(BaseModel):
+    """E10-CW1-R1: a prior side effect was reconciled/adopted across process
+    lives WITHOUT re-performing the physical write. Semantically DISTINCT from
+    ARTIFACT_CREATED: it never claims a new artifact came into existence — it
+    claims an EXISTING effect (identified durably pre-effect by its intent
+    record, or post-effect by its performed record) was validated and adopted
+    by the resuming process."""
+    artifact_id: str
+    name: str
+    path: str
+    sha256: str
+    size_bytes: int
+    created_by: str
+    mission_id: str
+    run_id: str
+    task_id: Optional[str] = None
+    mode: str  # "performed_record" (reconciled from a durable performed record) | "intent_adoption" (adopted after intent-only crash)
+    no_physical_rewrite: bool
+    observed_mtime_ns: int
+    observed_inode: int
+    original_artifact_id: str
+
 class EvidenceRecordedEvent(BaseModel):
     evidence_id: str
     evidence_hash: str
@@ -528,6 +551,7 @@ EVENT_PAYLOAD_MODELS: Dict[EventType, type] = {
     EventType.TOOL_COMPLETED: ToolCompletedEvent,
     EventType.TOOL_FAILED: ToolFailedEvent,
     EventType.ARTIFACT_CREATED: ArtifactCreatedEvent,
+    EventType.ARTIFACT_RECONCILED: ArtifactReconciledEvent,
     EventType.EVIDENCE_RECORDED: EvidenceRecordedEvent,
     EventType.VERIFICATION_STARTED: VerificationStartedEvent,
     EventType.VERIFICATION_COMPLETE: VerificationCompleteEvent,
@@ -656,6 +680,7 @@ EVENT_CONSUMERS: Dict[EventType, List[str]] = {
     EventType.TOOL_FAILED: ["Dashboard", "EventStore", "SandboxManager", "Orchestrator"],
     # Artifacts & Evidence
     EventType.ARTIFACT_CREATED: ["Dashboard", "EventStore", "ArtifactStore"],
+    EventType.ARTIFACT_RECONCILED: ["EventStore", "ArtifactStore"],
     EventType.EVIDENCE_RECORDED: ["EventStore", "Verifier", "Metrics"],
     # Verification
     EventType.VERIFICATION_COMPLETE: ["Dashboard", "EventStore", "Orchestrator", "Arbiter"],

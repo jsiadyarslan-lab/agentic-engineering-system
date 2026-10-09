@@ -1,0 +1,179 @@
+{
+  "status": "PROCESS_B_COMPLETE",
+  "scenario": "D2a",
+  "process_b_pid": 12477,
+  "process_a_pid": 12476,
+  "pid_difference": true,
+  "resumed_run_id": "run-c2db2a9aa22b",
+  "restoration": {
+    "restored_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "completed_preserved": true,
+    "crash_window_task_not_completed": true,
+    "run_lineage_preserved": true,
+    "pre_resume_journal": {
+      "d_intent": 0,
+      "d_effective": 0,
+      "line_status": [
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "torn_or_corrupt"
+      ]
+    },
+    "pre_resume_file": {
+      "path": "/tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt",
+      "exists": true,
+      "size_bytes": 26,
+      "mtime_ns": 1791509022456953129,
+      "inode": 278189,
+      "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+    },
+    "file_matches_pre_crash_snapshot": true
+  },
+  "side_effect_accounting": {
+    "continuation_success": false,
+    "final_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "FAILED",
+      "TASK_E": "BLOCKED"
+    },
+    "journal_d": {
+      "types": [],
+      "intent": [],
+      "performed": [],
+      "reconciled": []
+    },
+    "journal_e_types": [],
+    "file": {
+      "pre_resume": {
+        "path": "/tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791509022456953129,
+        "inode": 278189,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "after_resume": {
+        "path": "/tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791509022456953129,
+        "inode": 278189,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      }
+    },
+    "events": {
+      "artifact_created_for_d": 0,
+      "artifact_created_ids": [],
+      "artifact_reconciled_for_d": 0,
+      "artifact_reconciled_modes": [],
+      "tool_failed_errors": [
+        "SIDE_EFFECT_RECONCILIATION_FAILED: task task-69377ec97776 path 'task_d_output.txt': the governed target file /tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt exists but the side-effect journal holds no record for this logical operation (mission mission-b30ffd89a895) \u2014 a lost or corrupted journal record may be the only proof of a prior effect; refusing to overwrite; manual reconciliation required",
+        "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+        "SIDE_EFFECT_RECONCILIATION_FAILED: task task-69377ec97776 path 'task_d_output.txt': the governed target file /tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt exists but the side-effect journal holds no record for this logical operation (mission mission-b30ffd89a895) \u2014 a lost or corrupted journal record may be the only proof of a prior effect; refusing to overwrite; manual reconciliation required",
+        "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+        "SIDE_EFFECT_RECONCILIATION_FAILED: task task-69377ec97776 path 'task_d_output.txt': the governed target file /tmp/e10cw1r1_o01mf_kp/D2a/chain1/artifacts/sandbox-task-69377ec97776/task_d_output.txt exists but the side-effect journal holds no record for this logical operation (mission mission-b30ffd89a895) \u2014 a lost or corrupted journal record may be the only proof of a prior effect; refusing to overwrite; manual reconciliation required",
+        "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType"
+      ]
+    },
+    "attempts": {
+      "task-3ff1b25b5200": [
+        {
+          "attempt_id": "attempt-bf316cee",
+          "task_id": "task-3ff1b25b5200",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:41.830743",
+          "completed_at": "2026-10-09T01:23:41.985203+00:00"
+        }
+      ],
+      "task-f337770ef143": [
+        {
+          "attempt_id": "attempt-719d0953",
+          "task_id": "task-f337770ef143",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:41.991856",
+          "completed_at": "2026-10-09T01:23:42.144979+00:00"
+        }
+      ],
+      "task-51201adffcd1": [
+        {
+          "attempt_id": "attempt-eb65322a",
+          "task_id": "task-51201adffcd1",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:42.148827",
+          "completed_at": "2026-10-09T01:23:42.301769+00:00"
+        }
+      ],
+      "task-69377ec97776": [
+        {
+          "attempt_id": "attempt-94ed905d",
+          "task_id": "task-69377ec97776",
+          "agent_id": "e33-mission-agent-01",
+          "state": "FAILED",
+          "success": false,
+          "error": "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+          "started_at": "2026-10-09T01:23:42.774128",
+          "completed_at": "2026-10-09T01:23:42.925765+00:00"
+        },
+        {
+          "attempt_id": "attempt-506fb098",
+          "task_id": "task-69377ec97776",
+          "agent_id": "e33-mission-agent-02",
+          "state": "FAILED",
+          "success": false,
+          "error": "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+          "started_at": "2026-10-09T01:23:42.925893",
+          "completed_at": "2026-10-09T01:23:43.076973+00:00"
+        },
+        {
+          "attempt_id": "attempt-26405b61",
+          "task_id": "task-69377ec97776",
+          "agent_id": "e33-mission-agent-01",
+          "state": "FAILED",
+          "success": false,
+          "error": "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+          "started_at": "2026-10-09T01:23:43.077094",
+          "completed_at": "2026-10-09T01:23:43.228039+00:00"
+        }
+      ]
+    },
+    "journal_line_status_after": [
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "torn_or_corrupt"
+    ],
+    "journal_sha256_after": "816293f670f2c23f3395b4d963fda119551f764002678d656cf5274c401dc72a"
+  },
+  "verify_completion_report": [
+    false,
+    {
+      "skipped": "expected-failure scenario"
+    }
+  ],
+  "finalize_mission": null,
+  "final_checkpoint": null
+}

@@ -1,0 +1,46 @@
+{
+  "mission_id": "mission-d802daaa1bed",
+  "scenario": "D2b",
+  "task_key": "TASK_D",
+  "task_id": "task-fe3cbca4afed",
+  "side_effect_file": "/tmp/e10cw1r1_o01mf_kp/D2b/chain1/artifacts/sandbox-task-fe3cbca4afed/task_d_output.txt",
+  "snapshot_taken_at_utc": "2026-10-09T01:23:46.672453+00:00",
+  "pre_resume_side_effect_file": {
+    "path": "/tmp/e10cw1r1_o01mf_kp/D2b/chain1/artifacts/sandbox-task-fe3cbca4afed/task_d_output.txt",
+    "exists": true,
+    "size_bytes": 26,
+    "mtime_ns": 1791509026666976253,
+    "inode": 278116,
+    "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+  },
+  "pre_corruption_journal_sha256": "e87ec15badd393384a834c73f1c0ffa9fd94e64f9dde8d69418d4e065a46d2bc",
+  "pre_corruption_journal_line_status": [
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid"
+  ],
+  "crash_point_in_window": {
+    "injection_reached": true,
+    "injection_task_is_crash_window_task": true,
+    "injection_point_matches_scenario": true,
+    "last_checkpoint_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "completed_tasks_in_checkpoint": true,
+    "crash_window_task_not_completed_in_checkpoint": true,
+    "no_durable_task_completed_for_crash_window_task": true,
+    "journal_intent_present": true,
+    "journal_performed_present": true,
+    "file_present": true,
+    "performed_recorded_before_kill": true
+  }
+}

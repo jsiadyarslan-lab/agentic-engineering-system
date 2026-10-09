@@ -184,6 +184,7 @@ class EventType(str, Enum):
     TOOL_COMPLETED = "tool.completed"
     TOOL_FAILED = "tool.failed"
     ARTIFACT_CREATED = "artifact.created"
+    ARTIFACT_RECONCILED = "artifact.reconciled"
     VERIFICATION_COMPLETE = "verification.complete"
     ARBITER_DECIDED = "arbiter.decided"
     HUMAN_REQUIRED = "human.required"

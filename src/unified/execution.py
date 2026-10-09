@@ -70,7 +70,7 @@ from unified.contracts import (
     AgentStartedEvent, AgentCompletedEvent, TaskFailedEvent, TaskRetryEvent, TaskCompletedEvent,
     TaskAssignedEvent, AgentSelectedEvent,
     ToolStartedEvent, ToolCompletedEvent, ToolFailedEvent,
-    ArtifactCreatedEvent, EvidenceRecordedEvent,
+    ArtifactCreatedEvent, ArtifactReconciledEvent, EvidenceRecordedEvent,
     VerificationCompleteEvent, CheckpointCreatedEvent,
     MissionStateChangedEvent, MissionCompletedEvent,
     ActionRequestedEvent, ActionValidatedEvent,
@@ -272,57 +272,148 @@ class FileEvidenceStore(EvidenceStore):
 
 
 # ============================================================
-# SIDE-EFFECT JOURNAL (E10-CW1 — crash-window idempotency)
+# SIDE-EFFECT JOURNAL (E10-CW1 — crash-window idempotency;
+# E10-CW1-R1 — intent-first journaling + pre-journal crash proof)
 # ============================================================
+class SideEffectJournalCorruptionError(RuntimeError):
+    """E10-CW1-R1: the side-effect journal file is structurally or
+    semantically corrupted at a NON-TRAILING position. A prior record that
+    cannot be parsed/validated may be the only durable proof of a performed
+    effect — it must never be silently ignored. Fail closed."""
+
+
 class SideEffectJournal:
     """Append-only, fsynced journal of governed side effects (artifact writes).
 
-    Written at side-effect time — BEFORE the task/attempt completion is
-    durably recorded — so it survives a process death inside the crash
-    window between "the effect happened" and "the completion is persisted".
-    Reconciliation across process lives is keyed by the STABLE logical
-    operation identity (mission_id, task_id, path), never by attempt_id
-    (which changes on every resume).
+    E10-CW1-R1 intent-first contract. Record types:
+
+    * ``intent``   — durably appended (fsync file + dir) BEFORE the physical
+      side effect. Fixes the stable identity of the logical operation:
+      mission_id + task_id + path (NEVER attempt_id, which changes on every
+      resume) plus the PLANNED artifact id, the content fingerprint (sha256)
+      and size. This is the record that lets a later process life recognize
+      the SAME logical operation across a crash that happened between the
+      intent and the outcome record.
+    * ``performed`` — the effect happened and its actual outcome (content
+      sha256, size, artifact id, mtime_ns, inode) is now durably recorded.
+      ``performed_via`` distinguishes ``direct`` (the recording process also
+      performed the write) from ``adopted_after_crash`` (the write happened in
+      a prior process life that died between the effect and this record; the
+      recording process verified the file against the intent record and
+      adopted it WITHOUT rewriting).
+    * ``reconciled`` — a resume found an EFFECTIVE (performed/reconciled)
+      record and reconciled with it: no rewrite, original identity kept.
+
+    Torn/corrupt-line policy (fail-closed for prior records):
+    * a trailing line that fails JSON parsing or semantic validation never
+      became durable truth — it is ignored on load and truncated away before
+      the next append;
+    * a NON-trailing line that fails JSON parsing or semantic validation
+      raises SideEffectJournalCorruptionError: it may hide the only proof of
+      a proven effect. It is never skipped silently.
     """
 
+    RECORD_TYPES = ("intent", "performed", "reconciled")
     EFFECTIVE_RECORD_TYPES = ("performed", "reconciled")
+
+    _REQUIRED_FIELDS = {
+        "intent": ("mission_id", "task_id", "path", "content_sha256",
+                   "size_bytes", "artifact_id"),
+        "performed": ("mission_id", "task_id", "path", "content_sha256",
+                      "size_bytes", "artifact_id", "mtime_ns", "inode"),
+        "reconciled": ("mission_id", "task_id", "path", "content_sha256",
+                       "artifact_id", "mtime_ns", "inode"),
+    }
 
     def __init__(self, base_dir: str):
         self._base = Path(base_dir)
-        # mission_id -> {(task_id, path): latest effective record}
-        self._index: Dict[str, Dict[tuple, dict]] = {}
+        # mission_id -> {"effective": {(task_id, path): latest record},
+        #                "intent":    {(task_id, path): latest intent record}}
+        self._index: Dict[str, Dict[str, Dict[tuple, dict]]] = {}
 
     def journal_path(self, mission_id: str) -> Path:
         return self._base / "side_effect_journal" / mission_id / "journal.jsonl"
 
-    def _load(self, mission_id: str) -> Dict[tuple, dict]:
+    @classmethod
+    def _validate_record(cls, rec: dict) -> bool:
+        """Semantic validation of one parsed record against its contract."""
+        rt = rec.get("record_type")
+        if rt not in cls.RECORD_TYPES:
+            return False
+        return all(rec.get(f) not in (None, "") for f in cls._REQUIRED_FIELDS[rt])
+
+    def _load(self, mission_id: str) -> Dict[str, Dict[tuple, dict]]:
         if mission_id in self._index:
             return self._index[mission_id]
-        idx: Dict[tuple, dict] = {}
+        effective: Dict[tuple, dict] = {}
+        intent: Dict[tuple, dict] = {}
         p = self.journal_path(mission_id)
         if p.exists():
-            for line in p.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
+            lines = p.read_text(encoding="utf-8").splitlines()
+            last_idx = len(lines) - 1
+            for i, raw in enumerate(lines):
+                line = raw.strip()
                 if not line:
                     continue
+                trailing = i == last_idx or all(
+                    not l.strip() for l in lines[i + 1:]
+                )
                 try:
                     rec = json.loads(line)
-                except json.JSONDecodeError:
-                    # Torn trailing line from a crash mid-append: it never
-                    # became durable truth — ignore it.
-                    continue
-                if rec.get("record_type") in self.EFFECTIVE_RECORD_TYPES:
-                    idx[(rec.get("task_id", ""), rec.get("path", ""))] = rec
-        self._index[mission_id] = idx
-        return idx
+                    if not isinstance(rec, dict) or not self._validate_record(rec):
+                        raise ValueError("semantically invalid journal record")
+                except (json.JSONDecodeError, ValueError):
+                    if trailing:
+                        # Torn/corrupt TRAILING record: it never became
+                        # durable truth — ignore it (it is truncated away
+                        # before the next append).
+                        continue
+                    raise SideEffectJournalCorruptionError(
+                        f"SIDE_EFFECT_JOURNAL_CORRUPT: journal record "
+                        f"{i + 1} of {str(p)} is corrupt — a prior record "
+                        f"that cannot be validated may be the only durable "
+                        f"proof of a performed effect; refusing to proceed"
+                    )
+                key = (rec.get("task_id", ""), rec.get("path", ""))
+                if rec.get("record_type") == "intent":
+                    intent[key] = rec
+                elif rec.get("record_type") in self.EFFECTIVE_RECORD_TYPES:
+                    effective[key] = rec
+        self._index[mission_id] = {"effective": effective, "intent": intent}
+        return self._index[mission_id]
 
     def lookup(self, mission_id: str, task_id: str, path: str) -> Optional[dict]:
-        return self._load(mission_id).get((task_id, path))
+        """Latest EFFECTIVE record (performed/reconciled) for the operation."""
+        return self._load(mission_id)["effective"].get((task_id, path))
+
+    def lookup_intent(self, mission_id: str, task_id: str, path: str) -> Optional[dict]:
+        """Latest INTENT record for the operation (pre-effect identity)."""
+        return self._load(mission_id)["intent"].get((task_id, path))
+
+    def _truncate_torn_tail(self, p: Path) -> bool:
+        """Remove a torn/partial trailing line before appending. Returns True
+        if bytes were truncated. The torn tail never became durable truth;
+        removing it keeps every subsequent line non-trailing and reloadable."""
+        if not p.exists():
+            return False
+        data = p.read_bytes()
+        cut = data.rfind(b"\n")
+        if cut != len(data) - 1:  # bytes after the last newline = torn tail
+            with open(p, "r+b") as f:
+                f.truncate(cut + 1 if cut >= 0 else 0)
+                f.flush()
+                os.fsync(f.fileno())
+            return True
+        return False
 
     def append(self, mission_id: str, record: dict) -> None:
         """Append one record; flush + fsync the file, then fsync the dir."""
         p = self.journal_path(mission_id)
         p.parent.mkdir(parents=True, exist_ok=True)
+        if self._truncate_torn_tail(p):
+            # the repaired file may have changed what the in-memory index
+            # believes about torn tails — rebuild from the repaired file
+            self._index.pop(mission_id, None)
         with open(p, "a", encoding="utf-8") as f:
             f.write(json.dumps(record, sort_keys=True, default=str) + "\n")
             f.flush()
@@ -332,7 +423,12 @@ class SideEffectJournal:
             os.fsync(fd)
         finally:
             os.close(fd)
-        self._load(mission_id)[(record.get("task_id", ""), record.get("path", ""))] = record
+        idx = self._load(mission_id)
+        key = (record.get("task_id", ""), record.get("path", ""))
+        if record.get("record_type") == "intent":
+            idx["intent"][key] = record
+        elif record.get("record_type") in self.EFFECTIVE_RECORD_TYPES:
+            idx["effective"][key] = record
 
 
 # ============================================================
@@ -1632,10 +1728,14 @@ class ExecutionEngine:
                     ))
                     
                     # Emit artifact created events for artifacts produced by agent
+                    # E10-CW1-R1 §6: the agent-layer emission is a logical
+                    # duplicate of the tool-layer creation event — suppressed
+                    # when an ARTIFACT_CREATED for the same artifact identity
+                    # already exists (exactly-once per artifact id).
                     if task_artifacts:
                         for artifact_id in task_artifacts:
                             artifact = self.evidence_store.get_artifact_obj(artifact_id)
-                            if artifact:
+                            if artifact and not self._artifact_created_emitted(artifact.artifact_id):
                                 self._emit(FactoryEvent.create(
                                     event_type=EventType.ARTIFACT_CREATED,
                                     mission_id=context.mission_id,
@@ -2706,10 +2806,14 @@ class ExecutionEngine:
                 correlation_id=context.task_id,
             ))
         # Emit artifact created events for artifacts produced by agent
+        # E10-CW1-R1 §6: the agent-layer emission is a logical duplicate of
+        # the tool-layer creation event — suppressed when an
+        # ARTIFACT_CREATED for the same artifact identity already exists
+        # (exactly-once per artifact id).
         if result.success and result.artifacts:
             for artifact_id in result.artifacts:
                 artifact = self.evidence_store.get_artifact_obj(artifact_id)
-                if artifact:
+                if artifact and not self._artifact_created_emitted(artifact.artifact_id):
                     self._emit(FactoryEvent.create(
                         event_type=EventType.ARTIFACT_CREATED,
                         mission_id=context.mission_id,
@@ -2841,24 +2945,16 @@ class ExecutionEngine:
                 if isinstance(content, str):
                     content = content.encode()
                 path = tool_input.get("path", "output.txt")
-                # E10-CW1 (order section 5): side-effect idempotency across
-                # process death. If this exact logical operation (mission_id,
-                # task_id, path — stable identity, NEVER attempt_id which
-                # changes on resume) was already performed and durably
-                # journaled in a previous process life, reconcile with the
-                # recorded outcome instead of re-performing the physical write.
-                prior = self._reconcile_prior_side_effect(context, sandbox_id, path, content)
-                if prior is not None:
-                    artifact = self._artifact_from_journal(prior, path)
-                    self._journal_reconciliation(context, sandbox_id, prior)
-                else:
-                    artifact = await self.sandbox_manager.write_artifact(
-                        sandbox_id, path, content
-                    )
-                    # Durable journal record BEFORE this call returns: it
-                    # survives a process death inside the crash window between
-                    # "the effect happened" and "the completion is persisted".
-                    self._journal_performance(context, sandbox_id, path, artifact)
+                # E10-CW1-R1 (order §3): intent-first governed write. The
+                # stable logical operation identity is (mission_id, task_id,
+                # path) — NEVER attempt_id, which changes on every resume.
+                # A durable `intent` record fixes the artifact identity and
+                # content fingerprint BEFORE the physical side effect; the
+                # `performed` outcome record follows the effect. A crash in
+                # any window is reconciled fail-closed inside.
+                artifact = await self._governed_artifact_write(
+                    context, sandbox_id, path, content
+                )
                 artifact.mission_id = context.mission_id
                 self.artifacts[artifact.artifact_id] = artifact
                 # Track artifact count per run
@@ -2955,6 +3051,7 @@ class ExecutionEngine:
                 error_type=type(e).__name__,
             )
     # --- E10-CW1: side-effect journaling and crash-window reconciliation ---
+    # --- E10-CW1-R1: intent-first journaling (order §3) ---
     @staticmethod
     def _side_effect_file(artifacts_base_dir: str, sandbox_id: str, path: str) -> Path:
         """Physical file location of a sandbox artifact write (adapter rule)."""
@@ -2967,6 +3064,210 @@ class ExecutionEngine:
         if isinstance(p, dict):
             return p.get("artifact_id")
         return getattr(p, "artifact_id", None)
+
+    def _artifact_created_emitted(self, artifact_id: str) -> bool:
+        """E10-CW1-R1 §6: has an ARTIFACT_CREATED event for this exact
+        artifact identity already been emitted in this event history? The
+        creation of one artifact is ONE logical event — no matter whether the
+        emitting site is the tool layer or the agent layer."""
+        return any(
+            e.event_type == EventType.ARTIFACT_CREATED
+            and self._event_artifact_id(e) == artifact_id
+            for e in self.event_bus.history
+        )
+
+    async def _governed_artifact_write(
+        self,
+        context: ExecutionContext,
+        sandbox_id: str,
+        path: str,
+        content: bytes,
+    ) -> Artifact:
+        """Intent-first governed artifact write (E10-CW1-R1 order §3).
+
+        Order of durable operations (each fsynced before the next step):
+          1. `intent` journal record  (identity + content fingerprint)  — BEFORE the effect
+          2. the physical write       (sandbox adapter, fsynced)
+          3. `performed` journal record (actual outcome + file facts)   — AFTER the effect
+          4. events / evidence / completion records                    — production path
+
+        Reconciliation across a crash (fail-closed everywhere):
+          * effective record exists            -> reconcile, NEVER rewrite (CW1 contract)
+          * intent only + file absent          -> the effect provably never happened
+            (its only outcome would be this exact file): perform NOW with the
+            PLANNED identity from the intent — first execution, not a re-run.
+          * intent only + file present + fingerprint matches -> the effect
+            happened but its outcome record was lost with the crashed process:
+            ADOPT it (planned identity, no rewrite) and record
+            performed(adopted_after_crash) — this closes the pre-performed window.
+          * any divergence (different requested content, different file
+            content, unreconcilable ambiguity, journal corruption) -> explicit
+            fail-closed error; never silently skipped, never re-performed.
+        """
+        if not context.mission_id or not context.task_id:
+            # legacy caller without logical identity: unchanged behavior
+            return await self.sandbox_manager.write_artifact(sandbox_id, path, content)
+
+        content_sha = hashlib.sha256(content).hexdigest()
+
+        # (1) prior EFFECTIVE record (performed/reconciled): CW1 contract —
+        # reconcile with the recorded outcome, never rewrite.
+        prior = self._reconcile_prior_side_effect(context, sandbox_id, path, content)
+        if prior is not None:
+            artifact = self._artifact_from_journal(prior, path)
+            self._journal_reconciliation(context, sandbox_id, prior)
+            self._emit_artifact_reconciled(
+                context, artifact, mode="performed_record", prior=prior
+            )
+            return artifact
+
+        # (2) prior INTENT only: the previous process life died inside the
+        # (intent -> outcome) window. Prove what actually happened.
+        intent = self._lookup_prior_intent(context, path, content_sha)
+        if intent is not None:
+            f = self._side_effect_file(self.artifacts_base_dir, sandbox_id, path)
+            if f.exists():
+                data = f.read_bytes()
+                actual_sha = hashlib.sha256(data).hexdigest()
+                if actual_sha != content_sha:
+                    raise SideEffectReconciliationError(
+                        f"SIDE_EFFECT_RECONCILIATION_FAILED: task {context.task_id} "
+                        f"path {path!r}: an existing file at the governed target "
+                        f"diverges from the journaled intent fingerprint "
+                        f"(file={actual_sha[:16]}... intent={content_sha[:16]}...) — "
+                        f"unreconcilable; refusing to adopt or re-perform"
+                    )
+                st = f.stat()
+                if st.st_size != intent.get("size_bytes"):
+                    raise SideEffectReconciliationError(
+                        f"SIDE_EFFECT_RECONCILIATION_FAILED: task {context.task_id} "
+                        f"path {path!r}: existing file size {st.st_size} differs "
+                        f"from the journaled intent size "
+                        f"{intent.get('size_bytes')} — unreconcilable"
+                    )
+                # Effect happened; outcome record was lost with the crashed
+                # process. Adopt the ORIGINAL (planned) identity — no rewrite.
+                artifact = Artifact(
+                    artifact_id=intent["artifact_id"],
+                    name=Path(path).name,
+                    path=path,
+                    sha256=actual_sha,
+                    size_bytes=st.st_size,
+                    created_by=sandbox_id,
+                    created_at=datetime.fromtimestamp(
+                        st.st_mtime, tz=timezone.utc
+                    ),
+                    mission_id=context.mission_id,
+                    content_type="application/octet-stream",
+                )
+                self._journal_performance(
+                    context, sandbox_id, path, artifact,
+                    performed_via="adopted_after_crash", intent_record=intent,
+                )
+                self._emit_artifact_reconciled(
+                    context, artifact, mode="intent_adoption", prior=intent
+                )
+                return artifact
+            # The effect provably never happened: for artifact_write the only
+            # outcome of the intended operation is this exact file at this
+            # exact path — its absence proves the write never completed.
+            # Perform it NOW with the PLANNED identity (first execution).
+            artifact = await self.sandbox_manager.write_artifact(
+                sandbox_id, path, content, artifact_id=intent["artifact_id"]
+            )
+            self._journal_performance(
+                context, sandbox_id, path, artifact,
+                performed_via="direct", intent_record=intent,
+            )
+            return artifact
+
+        # (3) No journal record at all. Before fixing a fresh identity, prove
+        # the target is virgin: a file at the governed target with NO journal
+        # record for this logical operation is unreconcilable ambiguity (a
+        # lost or corrupted record may be the only proof of a proven effect)
+        # — fail closed rather than overwrite blindly.
+        target = self._side_effect_file(self.artifacts_base_dir, sandbox_id, path)
+        if target.exists():
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: task {context.task_id} path "
+                f"{path!r}: the governed target file {str(target)} exists but the "
+                f"side-effect journal holds no record for this logical operation "
+                f"(mission {context.mission_id}) — a lost or corrupted journal "
+                f"record may be the only proof of a prior effect; refusing to "
+                f"overwrite; manual reconciliation required"
+            )
+        planned_artifact_id = new_artifact_id()
+        # durable intent BEFORE the effect (fsync file + dir)
+        intent_record = self._journal_intent(
+            context, sandbox_id, path, content, planned_artifact_id
+        )
+        artifact = await self.sandbox_manager.write_artifact(
+            sandbox_id, path, content, artifact_id=planned_artifact_id
+        )
+        self._journal_performance(
+            context, sandbox_id, path, artifact,
+            performed_via="direct", intent_record=intent_record,
+        )
+        return artifact
+
+    def _lookup_prior_intent(
+        self,
+        context: ExecutionContext,
+        path: str,
+        content_sha: str,
+    ) -> Optional[dict]:
+        """Prior intent record for this logical operation, fail-closed on
+        divergence: a different requested content for the same logical op is
+        a different effect and is never silently re-intended."""
+        intent = self.side_effect_journal.lookup_intent(
+            context.mission_id, context.task_id, path
+        )
+        if intent is None:
+            return None
+        if intent.get("content_sha256") != content_sha:
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: task {context.task_id} path "
+                f"{path!r}: a durable intent exists for this logical operation "
+                f"with a different content fingerprint "
+                f"(intent={str(intent.get('content_sha256'))[:16]}... requested="
+                f"{content_sha[:16]}...) — a different effect for the same "
+                f"logical operation is not reconcilable; refusing to re-perform it"
+            )
+        return intent
+
+    def _journal_intent(
+        self,
+        context: ExecutionContext,
+        sandbox_id: str,
+        path: str,
+        content: bytes,
+        planned_artifact_id: str,
+    ) -> dict:
+        """Durably record the INTENT before the side effect (fsynced append).
+
+        Fixes the stable identity of the logical operation: planned artifact
+        id, content sha256, size — everything a later process life needs to
+        recognize the SAME operation across a crash between this record and
+        the outcome record. Returns the appended record so the outcome record
+        can link back to it."""
+        record = {
+            "record_type": "intent",
+            "op": "artifact_write",
+            "journal_record_id": uuid.uuid4().hex[:12],
+            "mission_id": context.mission_id,
+            "task_id": context.task_id,
+            "run_id": context.run_id,
+            "attempt_id": context.attempt_id,  # informational only — never identity
+            "path": path,
+            "sandbox_id": sandbox_id,
+            "content_sha256": hashlib.sha256(content).hexdigest(),
+            "size_bytes": len(content),
+            "artifact_id": planned_artifact_id,  # THE stable identity, fixed pre-effect
+            "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            "process_pid": os.getpid(),
+        }
+        self.side_effect_journal.append(context.mission_id, record)
+        return record
 
     def _reconcile_prior_side_effect(
         self,
@@ -3039,12 +3340,21 @@ class ExecutionEngine:
         sandbox_id: str,
         path: str,
         artifact: Artifact,
+        performed_via: str = "direct",
+        intent_record: Optional[dict] = None,
     ) -> None:
-        """Durably record a performed side effect (fsynced append)."""
+        """Durably record a performed side effect (fsynced append).
+
+        performed_via:
+          * "direct"             — this process performed the physical write;
+          * "adopted_after_crash" — the physical write happened in a PRIOR
+            process life that died between the effect and this record; this
+            process verified the file against the durable intent and adopted
+            it WITHOUT rewriting (E10-CW1-R1 pre-performed window closure)."""
         if not context.mission_id or not context.task_id:
             return
         f = self._side_effect_file(self.artifacts_base_dir, sandbox_id, path)
-        st = f.stat()  # the sandbox adapter just wrote this file
+        st = f.stat()  # the sandbox adapter just wrote / we just observed this file
         record = {
             "record_type": "performed",
             "op": "artifact_write",
@@ -3052,7 +3362,7 @@ class ExecutionEngine:
             "mission_id": context.mission_id,
             "task_id": context.task_id,
             "run_id": context.run_id,
-            "attempt_id": context.attempt_id,
+            "attempt_id": context.attempt_id,  # informational only — never identity
             "path": path,
             "sandbox_id": sandbox_id,
             "content_sha256": artifact.sha256,
@@ -3060,6 +3370,14 @@ class ExecutionEngine:
             "artifact_id": artifact.artifact_id,
             "mtime_ns": st.st_mtime_ns,
             "inode": st.st_ino,
+            "performed_via": performed_via,
+            "performed_by_pid": (
+                intent_record.get("process_pid") if performed_via == "adopted_after_crash" and intent_record
+                else os.getpid()
+            ),
+            "intent_journal_record_id": (
+                intent_record.get("journal_record_id") if intent_record else None
+            ),
             "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
             "process_pid": os.getpid(),
         }
@@ -3105,6 +3423,69 @@ class ExecutionEngine:
         }
         self.side_effect_journal.append(context.mission_id, record)
 
+    def _emit_artifact_reconciled(
+        self,
+        context: ExecutionContext,
+        artifact: Artifact,
+        mode: str,
+        prior: dict,
+    ) -> None:
+        """E10-CW1-R1 §6: emit ARTIFACT_RECONCILED — semantically DISTINCT
+        from ARTIFACT_CREATED. It never claims a new artifact came into
+        existence: it claims an EXISTING side effect (created in a prior
+        process life) was validated and adopted WITHOUT a physical rewrite.
+
+        mode: "performed_record" (reconciled against a durable performed/
+        reconciled record — CW1 window) | "intent_adoption" (adopted after
+        verifying the file against a durable intent record — the pre-performed
+        window closed by R1). Multiple ARTIFACT_RECONCILED events for the same
+        artifact are legitimate (each is a real distinct reconciliation by a
+        distinct process life); ARTIFACT_CREATED stays exactly once per
+        artifact identity."""
+        f = self._side_effect_file(self.artifacts_base_dir, artifact.created_by, artifact.path)
+        try:
+            st = f.stat()
+            if mode == "intent_adoption":
+                # The adoption branch is reached ONLY when this process has
+                # NOT written the file: it verified the existing bytes against
+                # the durable intent and adopted them. no_physical_rewrite is
+                # true BY CONSTRUCTION of this path; the cross-life stat
+                # continuity (crash marker vs now) is proven externally by the
+                # verifier's three-way mtime/inode comparison — an intent
+                # record (pre-effect) cannot carry file stats to compare.
+                no_rewrite = True
+            else:
+                no_rewrite = bool(
+                    st.st_mtime_ns == prior.get("mtime_ns", prior.get("observed_mtime_ns"))
+                    and st.st_ino == prior.get("inode", prior.get("observed_ino"))
+                )
+            mtime_ns, ino = st.st_mtime_ns, st.st_ino
+        except OSError:
+            no_rewrite, mtime_ns, ino = False, 0, 0
+        self._emit(FactoryEvent.create(
+            event_type=EventType.ARTIFACT_RECONCILED,
+            mission_id=context.mission_id,
+            run_id=context.run_id,
+            payload=ArtifactReconciledEvent(
+                artifact_id=artifact.artifact_id,
+                name=artifact.name,
+                path=artifact.path,
+                sha256=artifact.sha256,
+                size_bytes=artifact.size_bytes,
+                created_by=artifact.created_by,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                task_id=context.task_id,
+                mode=mode,
+                no_physical_rewrite=bool(no_rewrite),
+                observed_mtime_ns=int(mtime_ns),
+                observed_inode=int(ino),
+                original_artifact_id=prior.get("artifact_id") or artifact.artifact_id,
+            ),
+            source="execution_engine",
+            correlation_id=context.task_id,
+        ))
+
     def _emit_artifact_created(self, context: ExecutionContext, artifact: Artifact):
         """Emit artifact created event and create evidence.
 
@@ -3113,15 +3494,16 @@ class ExecutionEngine:
         in this process life or reconciled from the side-effect journal after
         a crash in the (side effect -> completion record) window. Re-execution
         of an interrupted task never duplicates them.
+
+        E10-CW1-R1 §6: ARTIFACT_CREATED is emitted EXACTLY ONCE per artifact
+        identity across ALL emitting sites (tool layer AND agent layer — the
+        agent-layer re-emission is a logical duplicate of the tool-layer
+        creation event and is suppressed by the shared guard).
         """
         # Emit artifact created — only if not already in event history
         # (variant CW1-B: the event was durably persisted before the crash
         # and restored on resume; re-emitting would duplicate the log).
-        if not any(
-            e.event_type == EventType.ARTIFACT_CREATED
-            and self._event_artifact_id(e) == artifact.artifact_id
-            for e in self.event_bus.history
-        ):
+        if not self._artifact_created_emitted(artifact.artifact_id):
             self._emit(FactoryEvent.create(
                 event_type=EventType.ARTIFACT_CREATED,
                 mission_id=context.mission_id,

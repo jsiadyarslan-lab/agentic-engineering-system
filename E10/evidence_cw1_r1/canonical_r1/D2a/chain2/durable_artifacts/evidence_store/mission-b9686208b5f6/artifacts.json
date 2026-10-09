@@ -1,0 +1,38 @@
+{
+  "artifact-1f33a63bd2d0": {
+    "artifact_id": "artifact-1f33a63bd2d0",
+    "name": "task_a_output.txt",
+    "path": "task_a_output.txt",
+    "sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "size_bytes": 31,
+    "created_by": "sandbox-task-b94c708aef1a",
+    "created_at": "2026-10-09T01:23:44.092110",
+    "mission_id": "mission-b9686208b5f6",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-2055c9280bc7": {
+    "artifact_id": "artifact-2055c9280bc7",
+    "name": "task_b_output.txt",
+    "path": "task_b_output.txt",
+    "sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "size_bytes": 32,
+    "created_by": "sandbox-task-1292a7ff5eae",
+    "created_at": "2026-10-09T01:23:44.251999",
+    "mission_id": "mission-b9686208b5f6",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  },
+  "artifact-0f4980c80947": {
+    "artifact_id": "artifact-0f4980c80947",
+    "name": "task_c_output.txt",
+    "path": "task_c_output.txt",
+    "sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "size_bytes": 33,
+    "created_by": "sandbox-task-8ef7dc5599af",
+    "created_at": "2026-10-09T01:23:44.408729",
+    "mission_id": "mission-b9686208b5f6",
+    "content_type": "application/octet-stream",
+    "is_evidence": false
+  }
+}

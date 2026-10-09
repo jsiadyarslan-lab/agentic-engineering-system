@@ -1,0 +1,222 @@
+{
+  "status": "PROCESS_B_COMPLETE",
+  "scenario": "D1",
+  "process_b_pid": 12474,
+  "process_a_pid": 12473,
+  "pid_difference": true,
+  "resumed_run_id": "run-011ea802d7b3",
+  "restoration": {
+    "restored_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "completed_preserved": true,
+    "crash_window_task_not_completed": true,
+    "run_lineage_preserved": true,
+    "pre_resume_journal": {
+      "d_intent": 1,
+      "d_effective": 0,
+      "line_status": [
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "valid",
+        "torn_or_corrupt"
+      ]
+    },
+    "pre_resume_file": {
+      "path": "/tmp/e10cw1r1_o01mf_kp/D1/chain2/artifacts/sandbox-task-9442985b1b91/task_d_output.txt",
+      "exists": true,
+      "size_bytes": 26,
+      "mtime_ns": 1791509020485942313,
+      "inode": 278231,
+      "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+    },
+    "file_matches_pre_crash_snapshot": true
+  },
+  "side_effect_accounting": {
+    "continuation_success": true,
+    "final_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "COMPLETED",
+      "TASK_E": "COMPLETED"
+    },
+    "journal_d": {
+      "types": [
+        "intent",
+        "performed"
+      ],
+      "intent": [
+        {
+          "artifact_id": "artifact-b1bbca918c77",
+          "attempt_id": "attempt-272709c7",
+          "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "journal_record_id": "04417a163674",
+          "mission_id": "mission-4f388feabf41",
+          "op": "artifact_write",
+          "path": "task_d_output.txt",
+          "process_pid": 12473,
+          "record_type": "intent",
+          "recorded_at_utc": "2026-10-09T01:23:40.485433+00:00",
+          "run_id": "run-0d2a25b3db7c",
+          "sandbox_id": "sandbox-task-9442985b1b91",
+          "size_bytes": 26,
+          "task_id": "task-9442985b1b91"
+        }
+      ],
+      "performed": [
+        {
+          "artifact_id": "artifact-b1bbca918c77",
+          "attempt_id": "attempt-274fde83",
+          "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+          "inode": 278231,
+          "intent_journal_record_id": "04417a163674",
+          "journal_record_id": "96db09a15211",
+          "mission_id": "mission-4f388feabf41",
+          "mtime_ns": 1791509020485942313,
+          "op": "artifact_write",
+          "path": "task_d_output.txt",
+          "performed_by_pid": 12473,
+          "performed_via": "adopted_after_crash",
+          "process_pid": 12474,
+          "record_type": "performed",
+          "recorded_at_utc": "2026-10-09T01:23:40.950512+00:00",
+          "run_id": "run-011ea802d7b3",
+          "sandbox_id": "sandbox-task-9442985b1b91",
+          "size_bytes": 26,
+          "task_id": "task-9442985b1b91"
+        }
+      ],
+      "reconciled": []
+    },
+    "journal_e_types": [
+      "intent",
+      "performed"
+    ],
+    "file": {
+      "pre_resume": {
+        "path": "/tmp/e10cw1r1_o01mf_kp/D1/chain2/artifacts/sandbox-task-9442985b1b91/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791509020485942313,
+        "inode": 278231,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "after_resume": {
+        "path": "/tmp/e10cw1r1_o01mf_kp/D1/chain2/artifacts/sandbox-task-9442985b1b91/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791509020485942313,
+        "inode": 278231,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      }
+    },
+    "events": {
+      "artifact_created_for_d": 1,
+      "artifact_created_ids": [
+        "artifact-b1bbca918c77"
+      ],
+      "artifact_reconciled_for_d": 1,
+      "artifact_reconciled_modes": [
+        "intent_adoption"
+      ],
+      "tool_failed_errors": []
+    },
+    "attempts": {
+      "task-b44122df36c0": [
+        {
+          "attempt_id": "attempt-9a39aacf",
+          "task_id": "task-b44122df36c0",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:39.859886",
+          "completed_at": "2026-10-09T01:23:40.014131+00:00"
+        }
+      ],
+      "task-440f9a90ea36": [
+        {
+          "attempt_id": "attempt-22fd63da",
+          "task_id": "task-440f9a90ea36",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:40.020800",
+          "completed_at": "2026-10-09T01:23:40.174057+00:00"
+        }
+      ],
+      "task-10955241f4ac": [
+        {
+          "attempt_id": "attempt-d1b866b4",
+          "task_id": "task-10955241f4ac",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:40.177779",
+          "completed_at": "2026-10-09T01:23:40.330808+00:00"
+        }
+      ],
+      "task-9442985b1b91": [
+        {
+          "attempt_id": "attempt-274fde83",
+          "task_id": "task-9442985b1b91",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:40.799068",
+          "completed_at": "2026-10-09T01:23:40.951613+00:00"
+        }
+      ],
+      "task-26a22295bd00": [
+        {
+          "attempt_id": "attempt-16f1c086",
+          "task_id": "task-26a22295bd00",
+          "agent_id": "e33-mission-agent-01",
+          "state": "COMPLETED",
+          "success": true,
+          "error": null,
+          "started_at": "2026-10-09T01:23:40.956677",
+          "completed_at": "2026-10-09T01:23:41.109971+00:00"
+        }
+      ]
+    },
+    "journal_line_status_after": [
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid",
+      "valid"
+    ],
+    "journal_sha256_after": "ee4a2190df3e9bcf3ebbd31ea61976c3825e5fd4285f88b45e7fe07e96eaba43"
+  },
+  "verify_completion_report": true,
+  "finalize_mission": {
+    "mission_id": "mission-4f388feabf41",
+    "state_path": [
+      "EXECUTING"
+    ],
+    "final_state": "EVIDENCED"
+  },
+  "final_checkpoint": {
+    "checkpoint_id": "checkpoint-d0f51b501d5b",
+    "path": "/tmp/e10cw1r1_o01mf_kp/D1/chain2/artifacts/checkpoints/mission-4f388feabf41/checkpoint-d0f51b501d5b.json",
+    "hash": "662cb6f5477e55998d99cad65d717b1a3c3dca2ac01acc551a232d482fa34726"
+  }
+}

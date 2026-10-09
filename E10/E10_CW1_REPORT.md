@@ -1,10 +1,30 @@
 # E10-CW1 FINAL REPORT — CRASH-WINDOW IDEMPOTENCY PROOF
 
 **EXECUTIVE ORDER:** E10-CW1 (crash-window addendum to E10 — durable execution & cross-process resume)
-**VERDICT:** `E10_CW1_PASS`
-**PARENT BASELINE:** `50f5371e306a7c44410dee928992892ba1b2d9f7` (E10 final-report commit, == origin/main)
+**VERDICT:** `E10_CW1_PASS` (superseded for the crash-window claim by the E10-CW1-R1 addendum below — see section I)
+**PARENT BASELINE:** `50f5371e306a7c44410dee928992892ba1b2d9f7` (E10 final-report commit, == origin/main at the time)
 **WORK BRANCH:** `e10-cw1-crash-window-idempotency` (from 50f5371)
 **EVIDENCE SESSIONS:** `E10/evidence_cw1/fixed/` (canonical proof) + `E10/evidence_cw1/baseline_gap/` (pre-fix gap demonstration, run against a detached worktree of `50f5371`)
+
+> **E10-CW1-R1 CORRECTIONS (order E10-CW1-R1 §8):** three claims in the original
+> CW1 sections below are superseded by the R1 addendum (section I):
+> 1. Section D's row “`ARTIFACT_CREATED` events for D | same original id twice
+>    in log (pre-crash durable + restored copy)” was **factually wrong**: both
+>    events in the final durable log were emitted by Process B in the SAME
+>    post-resume run — the duplication was the engine's normal TOOL-LAYER +
+>    AGENT-LAYER double emission (execution.py S9 + S11 sites), not a
+>    crash/restore artifact. The R1 event contract (section I.6) removes the
+>    duplicate at the source: exactly ONE ARTIFACT_CREATED per artifact
+>    identity, with ARTIFACT_RECONCILED as the DISTINCT reconciliation
+>    semantics.
+> 2. The phrase “The crash window … is now closed with a fail-closed,
+>    exactly-once reconciliation contract” (section H) overstated the scope:
+>    CW1 proved only the (performed → completion) window. The
+>    (effect → performed) window — a crash between the physical write and the
+>    journal record — remained OPEN at d8b0620 and is closed by R1 (section I).
+> 3. The CW1 harness injection point (the ARTIFACT_CREATED emission) sits
+>    AFTER `_journal_performance` — it could never prove the pre-performed
+>    window. R1 injects at the real boundaries (section I.2).
 
 ---
 
@@ -208,3 +228,135 @@ E10_CW1_PASS
 The crash window between "a governed side effect happened" and "its completion
 is durably recorded" is now closed with a fail-closed, exactly-once
 reconciliation contract on the real production path.
+
+---
+
+# I. E10-CW1-R1 ADDENDUM — INTENT-FIRST JOURNAL & PRE-JOURNAL CRASH PROOF
+
+**EXECUTIVE ORDER:** E10-CW1-R1 (mandatory remaining processing after `E10_CW1_CONDITIONAL`)
+**R1 BASELINE:** `d8b0620eb22527ff88d8a39abafba0ade426c7c8` (== origin/main at R1 start)
+**WORK BRANCH:** `e10-cw1-r1-prejournal-crash` (from d8b0620; NOT merged to main)
+**EVIDENCE:** `E10/evidence_cw1_r1/` (canonical session + empirical baseline gap demo)
+**DISCOVERY DOC:** `E10/E10_CW1_R1_DISCOVERY.md` (proven operation order + window table)
+
+## I.1 The windows that are ACTUALLY tested (no conflation)
+
+The R1 discovery (committed as `E10/E10_CW1_R1_DISCOVERY.md`) maps the real
+operation order of the governed `artifact_write` path and its independent
+crash windows. Each mandatory scenario kills at exactly ONE real boundary,
+in a REAL OS process, by a REAL SIGKILL witnessed by the external runner:
+
+| Window | Scenario | Between | Proven resume behavior |
+|---|---|---|---|
+| W(intent→effect) | **A** | durable `intent` record ↔ physical write | file absent PROVES the effect never happened → perform ONCE with the PLANNED identity (first execution, `performed(direct)`, no reconciliation semantics) |
+| W(effect→performed) — **the order §2 gap, previously OPEN** | **B** | physical write (fsynced by the adapter) ↔ `_journal_performance` | DETECT the existing effect, ADOPT it: original planned identity, mtime_ns/inode/sha256 UNCHANGED, `performed(adopted_after_crash, performed_by_pid=A)`, `ARTIFACT_RECONCILED(intent_adoption)` |
+| W(performed→completion) | **C** | durable `performed` ↔ completion records | CW1 behavior retained: reconcile from the performed record, no rewrite |
+| torn FINAL record | **D1** | W(effect→performed) + torn trailing journal line | torn tail ignored (never durable truth); intent still governs; B's own append truncates the tail (self-healing file) |
+| destroyed trailing intent | **D2a** | W(effect→performed) + intent line corrupted to invalid JSON | existing file + no journal record = unreconcilable ambiguity → explicit fail-closed `SideEffectReconciliationError`; the file is NEVER overwritten |
+| corrupt PRIOR record | **D2b** | W(performed→completion) + a MIDDLE prior performed record corrupted | a prior record that may be the only proof of a proven effect → `SideEffectJournalCorruptionError`; NOTHING appended, NOTHING re-performed, the corrupt line is PRESERVED as evidence |
+
+The **empirical baseline gap demonstration**
+(`E10/evidence_cw1_r1/baseline_gap_demo/`): the SAME R1-B boundary, the same
+harness, against a detached worktree of the baseline commit `d8b0620` —
+Process A dies by SIGKILL (exit −9) with the file written and ZERO journal
+records for the operation; Process B re-performs the physical write
+(`GAP_DEMONSTRATED__SIDE_EFFECT_EXECUTED_TWICE`: mtime_ns changed, a fresh
+artifact id, the effect executed twice). The fixed-tree control at the same
+boundary adopts without rewrite (`WINDOW_CLOSED__ADOPTED_WITHOUT_REWRITE`).
+This documents the pre-existing failure — it is never a pass of any
+acceptance criterion.
+
+## I.2 The fix (intent-first; minimal, production path only)
+
+| Component | Change | Where |
+|---|---|---|
+| Stable operation identity | `(mission_id, task_id, path)` — NEVER `attempt_id` (attempt ids are informational fields in records, never keys) | journal records |
+| `intent` record | durably appended (fsync file + dir) BEFORE the physical side effect; fixes the PLANNED artifact id, content sha256 and size pre-effect | `SideEffectJournal`, `_journal_intent` |
+| Planned identity carried through the write | `write_artifact(..., artifact_id=planned)` on SandboxManager → adapter (optional param; legacy adapters fall back and the manager rebinds); the artifact id is therefore identical whether or not a crash occurs | `sandbox.py`, `windows_adapter.py` |
+| `performed` record | after the effect, with `performed_via` = `direct` \| `adopted_after_crash`, `performed_by_pid` (the process that physically wrote) and `intent_journal_record_id` (the link back to the intent) | `_journal_performance` |
+| Intent-only reconciliation | intent + file ABSENT → effect provably never happened → perform with the planned identity; intent + file PRESENT + fingerprint match → ADOPT (no rewrite), performed(adopted_after_crash) | `_governed_artifact_write` |
+| First-sight guard | a governed write whose target file exists with NO journal record for the operation is unreconcilable ambiguity (a lost/corrupt record may be the only proof of a prior effect) → explicit fail-closed, never a blind overwrite | `_governed_artifact_write` |
+| Fail-closed journal loader | torn/corrupt TRAILING line → ignored (never durable truth) + truncated before the next append; corrupt/semantically-invalid NON-TRAILING line → `SideEffectJournalCorruptionError` (a prior record may hide a proven effect) | `SideEffectJournal._load`, `_truncate_torn_tail` |
+| Divergence refusals (CW1, retained) | journaled content ≠ requested; file missing; on-disk content diverged; file rewritten/touched (mtime/inode); existing file vs destroyed intent | `_reconcile_prior_side_effect`, `_lookup_prior_intent` |
+| Adapter durability | the artifact file and its parent dir are now fsynced by the adapter before returning (aligned with journal durability) | `windows_adapter.write_artifact` |
+
+## I.3 Reconciliation contract across repeated resumes
+
+`intent` + `performed` + `reconciled` form one consistent contract
+(unit-proven, R1-T17): a fresh write produces `[intent, performed]`; a later
+life reconciling from `performed` appends `reconciled`; a crash after that
+reconciles AGAIN the same way — one identity across all lives, the file
+written exactly once, and a reconciliation result never becomes a new
+execution attempt.
+
+## I.4 Event contract (order §6) — resolved, not redefined
+
+* The historical double `ARTIFACT_CREATED` (tool layer + agent layer, same
+  artifact id, EVERY write — including non-crashed tasks) was a logical
+  duplicate of creation. It is now PREVENTED at the source by a shared
+  per-identity guard (`_artifact_created_emitted`) at all three emission
+  sites. Counted BY ARTIFACT IDENTITY (not run_id): exactly ONE
+  `ARTIFACT_CREATED` per artifact id in every durable log (R1-T11 across all
+  12 canonical chains; R1-T18 unit).
+* Cross-process reconciliation now has DISTINCT semantics:
+  `ARTIFACT_RECONCILED` (`artifact.reconciled`, payload
+  `ArtifactReconciledEvent`) with `mode` = `performed_record` (CW1 window)
+  or `intent_adoption` (pre-performed window) and the observed
+  mtime/inode/no-rewrite facts. It NEVER claims a new artifact came into
+  existence.
+* CW1-T06/T07/T11 expectations were updated to the TIGHTER contract
+  (1 creation + 1 reconciliation instead of 2 creations). This is not a
+  weakened test — the previous `== 2` expectation codified the duplicate the
+  order told us to remove.
+
+## I.5 Durable-write guarantee limits (stated precisely)
+
+* The journal (intent/performed/reconciled), the artifact file and their
+  parent directories are fsynced at write time. After `write_artifact`
+  returns, the effect is on disk, not merely in the page cache.
+* Durability is proven under PROCESS DEATH (SIGKILL) by real tests. POWER
+  LOSS / storage-level torn writes are covered by policy, not by test
+  hardware: a torn trailing journal line is ignored as never-durable truth
+  and truncated at the next append; a torn/partial ARTIFACT FILE cannot
+  match the intent fingerprint and therefore fails closed
+  (`SideEffectReconciliationError`), never adopts garbage.
+* The exactly-once claim is scoped to the GOVERNED sandbox artifact path
+  (the engine-controlled `artifacts_base_dir` tree). It is NOT generalized
+  to external side effects that lack a stable identity or a verifiable
+  reconciliation handle (order §3 final paragraph).
+* Legacy callers without `(mission_id, task_id)` identity keep their
+  previous direct-write behavior (no journaling) — unchanged by R1.
+
+## I.6 Results at this tree
+
+* Canonical R1 session: **6 scenarios × 2 chains = 12/12 VERIFIED**
+  (`E10_CW1_R1_CHAINS_COMPLETE`); independent verifier (separate PID,
+  persistent-state-only) passes every scenario check set, including the
+  order §5 hard rule — the pre-performed window is proven by the intent
+  record's provenance (PID=A, recorded before the kill), the three-way file
+  stat continuity, and the performed record's OWN provenance
+  (written-by=B, performed-by=A) — never by the performed record's mere
+  existence.
+* R1 matrix: **31/31 PASS** (R1-T01..T20 incl. unit tests).
+* E10 + CW1 matrix at this tree: **32/32 PASS** (T01–T20 + CW1-T01..T12
+  under the tightened event contract).
+* E8 human gates: COMPLETE, 4/4 negative REJECTED. E9-R production
+  integration: PASS.
+* E6/E4/E33: the SAME 3 pre-existing failures classified at the clean
+  baseline 63ba3fc (never-committed E5 file; stale E4 guard cascade).
+  e41 kill-resume script: exit 1 — PROVEN identical at d8b0620 via git-stash
+  (E9-R1 grant contract vs pre-E9-R1 fixture). e42/e43: 2 failures — PROVEN
+  identical at d8b0620. VS003: 3 errors — pre-existing (uncommitted
+  substrate). execution/tools/roles/factory: 8 collection errors —
+  environmental (sqlalchemy not installed), identical at baseline.
+  **Zero new regressions.**
+
+## I.7 Deliverables and their status
+
+* Committed in this repo (branch `e10-cw1-r1-prejournal-crash`): the fix,
+  the R1 harness, the R1 matrix, the discovery document, this report, and
+  the canonical evidence under `E10/evidence_cw1_r1/`.
+* The user-facing PDF is a LOCAL deliverable (`/home/z/my-project/download/`),
+  produced from this report — it is NOT committed to the repository. No
+  path in this repo claims a committed PDF (verified: `find -name "*.pdf"`
+  over the tree returns nothing).

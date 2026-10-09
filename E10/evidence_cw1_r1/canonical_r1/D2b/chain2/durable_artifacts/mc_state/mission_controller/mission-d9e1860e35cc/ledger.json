@@ -1,0 +1,30 @@
+{
+  "plan_version": "v1",
+  "failures": [],
+  "replans": [],
+  "phases": [
+    {
+      "run_id": "run-95a2f6cc60dd",
+      "max_parallel": 1,
+      "pid": 12486,
+      "wall_seconds": 0.458,
+      "success": false,
+      "paused": false,
+      "task_results": {
+        "task-1f1cf16b6907": {
+          "success": false,
+          "error": "Output validation failed: unified.tool_contract.ArtifactWriteOutput() argument after ** must be a mapping, not NoneType",
+          "terminal": true,
+          "attempts": 3
+        }
+      }
+    }
+  ],
+  "key_map": {
+    "TASK_A": "task-bb354334034a",
+    "TASK_B": "task-3e91fa95bffe",
+    "TASK_C": "task-59676a8d5978",
+    "TASK_D": "task-1f1cf16b6907",
+    "TASK_E": "task-8c3ea0fd8fbe"
+  }
+}

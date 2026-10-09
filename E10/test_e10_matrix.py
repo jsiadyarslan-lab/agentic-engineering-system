@@ -407,7 +407,11 @@ def test_E10CW1_T06_original_artifact_identity_preserved(cw1_chain):
     assert ai["count"] == 1
     assert ai["is_original"] is True
     assert ai["after_resume"] == [ai["original_from_journal"]]
-    assert acc["events"]["artifact_created_ids"] == [ai["original_from_journal"]] * 2
+    # E10-CW1-R1 §6: exactly ONE ARTIFACT_CREATED per artifact identity +
+    # ONE ARTIFACT_RECONCILED (distinct reconciliation semantics)
+    assert acc["events"]["artifact_created_ids"] == [ai["original_from_journal"]]
+    assert acc["events"]["artifact_reconciled_for_crash_window_task"] == 1
+    assert acc["events"]["artifact_reconciled_modes"] == ["performed_record"]
     v = cw1_chain["chain"]["verifier"]["checks"]["side_effect_identity_linked_to_correct_task_and_operation"]
     assert v["passed"] is True
 
@@ -431,6 +435,8 @@ def test_E10CW1_T08_task_e_fresh_and_dependency_order(cw1_chain):
     ch = cw1_chain["chain"]
     acc = ch["process_b"]["side_effect_accounting"]
     # TASK_E was never started before the crash -> it executes fresh post-resume
+    # (journal_index filters to effective records: 1 performed; the intent
+    # record preceding it is asserted by the R1 harness)
     assert len(acc["journal_records_for_task_e"]) == 1
     assert acc["journal_records_for_task_e"][0]["record_type"] == "performed"
     v = ch["verifier"]["checks"]["attempts_and_events_consistent_with_crash_and_resume"]
@@ -539,9 +545,18 @@ def test_E10CW1_T11_layered_idempotency_records_persisted():
     # exactly one artifact record for the path
     arts = [a for a in engine2.evidence_store._artifacts.values() if a.path == "out.txt"]
     assert len(arts) == 1 and arts[0].artifact_id == r1.output["artifact_id"]
-    # journal: 1 performed + 1 reconciled
+    # journal: E10-CW1-R1 contract — 1 intent (pre-effect identity) +
+    # 1 performed (the original physical write) + 1 reconciled (the resume
+    # reconciliation). The R1 contract is TIGHTER than the CW1 one: the
+    # intent record must precede the effect; the physical write stays at
+    # exactly one.
     recs = read_journal(art, "m-cw1-unit")
-    assert [r["record_type"] for r in recs if r["task_id"] == "task-cw1-unit"] == ["performed", "reconciled"]
+    assert [r["record_type"] for r in recs if r["task_id"] == "task-cw1-unit"] == [
+        "intent", "performed", "reconciled"
+    ]
+    d_recs = [r for r in recs if r["task_id"] == "task-cw1-unit"]
+    assert d_recs[1]["intent_journal_record_id"] == d_recs[0]["journal_record_id"]
+    assert d_recs[0]["artifact_id"] == d_recs[1]["artifact_id"] == r1.output["artifact_id"]
 
 
 # ---------------------------------------------------------------- CW1-T12 (unit, negative)
@@ -623,8 +638,10 @@ def test_E10CW1_T12_fail_closed_reconciliation():
     assert_fail_closed(res, "rewritten or touched",
                        "file must stay untouched", lambda: f.read_bytes() == b"neg-payload")
 
-    # journal must contain exactly ONE performed record (never re-performed)
+    # journal must contain exactly ONE intent + ONE performed record for the
+    # logical operation (never re-performed; E10-CW1-R1: the intent record
+    # precedes the effect and pins the identity)
     from e10cw1_common import read_journal
     recs = [r for r in read_journal(art, "m-cw1-neg") if r["task_id"] == "task-cw1-neg"]
-    assert [r["record_type"] for r in recs] == ["performed"]
+    assert [r["record_type"] for r in recs] == ["intent", "performed"]
     assert all(r["artifact_id"] == recs[0]["artifact_id"] for r in recs)

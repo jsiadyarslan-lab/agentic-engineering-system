@@ -1,0 +1,16 @@
+{
+  "scenario": "B",
+  "mission_id": "mission-6d570676601b",
+  "run_id": "run-c135124ff19e",
+  "checkpoint_id": "checkpoint-7425d5b4f358",
+  "checkpoint_path": "/tmp/e10cw1r1_o01mf_kp/B/chain2/artifacts/checkpoints/mission-6d570676601b/checkpoint-7425d5b4f358.json",
+  "process_a_pid": 12461,
+  "task_ids": {
+    "TASK_A": "task-50603609c5d2",
+    "TASK_B": "task-d9782d93042d",
+    "TASK_C": "task-5c97a4c023cd",
+    "TASK_D": "task-416d3d7ecde8",
+    "TASK_E": "task-bbc8ba92819e"
+  },
+  "crash_window_task_key": "TASK_D"
+}

@@ -1,0 +1,80 @@
+{
+  "evidence-992812774f24": {
+    "evidence_id": "evidence-992812774f24",
+    "evidence_hash": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "content_type": "artifact",
+    "source_id": "artifact-7c77f945e862",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-3ff1b25b5200",
+    "created_at": "2026-10-09T01:23:41.984640",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-91652fad5d25": {
+    "evidence_id": "evidence-91652fad5d25",
+    "evidence_hash": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "content_type": "artifact",
+    "source_id": "artifact-7c77f945e862",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-3ff1b25b5200",
+    "created_at": "2026-10-09T01:23:41.984833",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-75d9452af481": {
+    "evidence_id": "evidence-75d9452af481",
+    "evidence_hash": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "content_type": "artifact",
+    "source_id": "artifact-7725a0bbb315",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-f337770ef143",
+    "created_at": "2026-10-09T01:23:42.144551",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-f06a14c9c51e": {
+    "evidence_id": "evidence-f06a14c9c51e",
+    "evidence_hash": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "content_type": "artifact",
+    "source_id": "artifact-7725a0bbb315",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-f337770ef143",
+    "created_at": "2026-10-09T01:23:42.144706",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-7b21dff5e2ee": {
+    "evidence_id": "evidence-7b21dff5e2ee",
+    "evidence_hash": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "content_type": "artifact",
+    "source_id": "artifact-84f8a0b62d08",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-51201adffcd1",
+    "created_at": "2026-10-09T01:23:42.301361",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  },
+  "evidence-7c4a554a3b5f": {
+    "evidence_id": "evidence-7c4a554a3b5f",
+    "evidence_hash": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "content_type": "artifact",
+    "source_id": "artifact-84f8a0b62d08",
+    "mission_id": "mission-b30ffd89a895",
+    "run_id": "run-d944ac144208",
+    "task_id": "task-51201adffcd1",
+    "created_at": "2026-10-09T01:23:42.301512",
+    "verified": false,
+    "verified_by": null,
+    "verified_at": null
+  }
+}

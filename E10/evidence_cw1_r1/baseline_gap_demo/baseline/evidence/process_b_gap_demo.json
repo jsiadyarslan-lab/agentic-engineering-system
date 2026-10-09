@@ -1,0 +1,23 @@
+{
+  "process_b_pid": 12586,
+  "process_a_pid": 12585,
+  "pid_difference": true,
+  "tool_success": true,
+  "result_artifact_id": "artifact-5450deb88381",
+  "adapter_artifact_id_at_crash": "artifact-3f3816355c16",
+  "file_mtime_ns_before_resume": 1791509073048231112,
+  "file_mtime_ns_after_resume": 1791509073390232988,
+  "file_inode_before_resume": 275147,
+  "file_inode_after_resume": 275147,
+  "PHYSICAL_WRITE_RE_PERFORMED": true,
+  "identity_preserved": false,
+  "journal_records_for_op_after_resume": [
+    {
+      "record_type": "performed",
+      "performed_via": null,
+      "artifact_id": "artifact-5450deb88381",
+      "process_pid": 12586
+    }
+  ],
+  "verdict": "GAP_DEMONSTRATED__SIDE_EFFECT_EXECUTED_TWICE"
+}

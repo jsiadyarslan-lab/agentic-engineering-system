@@ -1,0 +1,38 @@
+{
+  "mission_id": "mission-404a329aa072",
+  "scenario": "A",
+  "task_key": "TASK_D",
+  "task_id": "task-2cdc104dc6a0",
+  "side_effect_file": "/tmp/e10cw1r1_o01mf_kp/A/chain2/artifacts/sandbox-task-2cdc104dc6a0/task_d_output.txt",
+  "snapshot_taken_at_utc": "2026-10-09T01:23:28.673524+00:00",
+  "pre_resume_side_effect_file": null,
+  "pre_corruption_journal_sha256": "6b3a59c48a71f0b5622377b00413df26ba1f14ed39e4e490aa0a20ca0393a515",
+  "pre_corruption_journal_line_status": [
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid",
+    "valid"
+  ],
+  "crash_point_in_window": {
+    "injection_reached": true,
+    "injection_task_is_crash_window_task": true,
+    "injection_point_matches_scenario": true,
+    "last_checkpoint_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "completed_tasks_in_checkpoint": true,
+    "crash_window_task_not_completed_in_checkpoint": true,
+    "no_durable_task_completed_for_crash_window_task": true,
+    "journal_intent_present": true,
+    "journal_performed_absent": true,
+    "file_absent": true,
+    "marker_witnessed_same": true
+  }
+}
