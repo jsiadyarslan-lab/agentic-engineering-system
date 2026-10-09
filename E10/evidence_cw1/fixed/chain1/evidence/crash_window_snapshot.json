@@ -1,0 +1,62 @@
+{
+  "mission_id": "mission-f901cc67c7ef",
+  "task_key": "TASK_D",
+  "task_id": "task-e55ed5b1ce6f",
+  "side_effect_file": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+  "snapshot_taken_at_utc": "2026-10-09T00:24:58.349561+00:00",
+  "pre_resume_side_effect_file": {
+    "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+    "exists": true,
+    "size_bytes": 26,
+    "mtime_ns": 1791505498344630656,
+    "inode": 272072,
+    "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+  },
+  "journal_performed_record": {
+    "artifact_id": "artifact-9995d4161a72",
+    "attempt_id": "attempt-da87afad",
+    "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+    "inode": 272072,
+    "journal_record_id": "fbc5147ef11d",
+    "mission_id": "mission-f901cc67c7ef",
+    "mtime_ns": 1791505498344630656,
+    "op": "artifact_write",
+    "path": "task_d_output.txt",
+    "process_pid": 8179,
+    "record_type": "performed",
+    "recorded_at_utc": "2026-10-09T00:24:58.345655+00:00",
+    "run_id": "run-a3272bf0e0f0",
+    "sandbox_id": "sandbox-task-e55ed5b1ce6f",
+    "size_bytes": 26,
+    "task_id": "task-e55ed5b1ce6f"
+  },
+  "injection": {
+    "injection_point": "artifact_created_of_crash_window_task",
+    "task_key": "TASK_D",
+    "task_id": "task-e55ed5b1ce6f",
+    "artifact_id": "artifact-9995d4161a72",
+    "event_timestamp": "2026-10-09T00:24:58.345821",
+    "reached_at_utc": "2026-10-09T00:24:58.345832+00:00",
+    "process_pid": 8179,
+    "kill_signal": "SIGKILL",
+    "lifecycle_position": "after the governed artifact write (the physical side effect exists on disk), before any durable record of task/attempt completion"
+  },
+  "crash_point_in_window": {
+    "injection_reached": true,
+    "injection_task_is_crash_window_task": true,
+    "last_checkpoint_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "crash_window_task_not_completed_in_checkpoint": true,
+    "completed_tasks_in_checkpoint": true,
+    "no_durable_task_completed_for_crash_window_task": true,
+    "side_effect_file_exists": true,
+    "journal_performed_exists": true,
+    "journal_recorded_before_kill": true,
+    "checkpoint_covers_no_completion_for_crash_window_task": true
+  }
+}

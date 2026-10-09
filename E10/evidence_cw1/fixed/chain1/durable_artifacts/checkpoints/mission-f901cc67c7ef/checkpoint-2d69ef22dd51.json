@@ -1,0 +1,291 @@
+{
+  "checkpoint_id": "checkpoint-2d69ef22dd51",
+  "mission_id": "mission-f901cc67c7ef",
+  "run_id": "run-5a6a5a6482c6",
+  "step": 5,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-73290ae489f8": "COMPLETED",
+    "task-18e741da713e": "COMPLETED",
+    "task-5defcd553b14": "COMPLETED",
+    "task-e55ed5b1ce6f": "COMPLETED",
+    "task-ef352908d859": "READY"
+  },
+  "artifact_ids": [
+    "artifact-78f7476f77ce",
+    "artifact-32feac1c31d0",
+    "artifact-d807687c6e41",
+    "artifact-9995d4161a72"
+  ],
+  "evidence_hashes": [
+    "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+    "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+    "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+    "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+    "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+  ],
+  "created_at": "2026-10-09T00:24:58.760295",
+  "hash": "c824dc4138cc55b4ca2982763c0c6767e5c2072a37dd34e56cdda6fc29322e13",
+  "task_definitions": {
+    "task-73290ae489f8": {
+      "task_id": "task-73290ae489f8",
+      "run_id": "run-5a6a5a6482c6",
+      "mission_id": "mission-f901cc67c7ef",
+      "name": "TASK_A - foundation",
+      "description": "E10 scenario task TASK_A: foundation",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_exists:task_a_output.txt",
+        "file_contains:task_a_output.txt:E10_TASK_A_COMPLETE"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "TASK_A",
+        "content": "E10_TASK_A_COMPLETE: foundation",
+        "output_path": "task_a_output.txt",
+        "sleep_s": 0.15
+      },
+      "created_at": "2026-10-09T00:24:58.607826",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-18e741da713e": {
+      "task_id": "task-18e741da713e",
+      "run_id": "run-5a6a5a6482c6",
+      "mission_id": "mission-f901cc67c7ef",
+      "name": "TASK_B - left branch",
+      "description": "E10 scenario task TASK_B: left branch",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-73290ae489f8"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_b_output.txt",
+        "file_contains:task_b_output.txt:E10_TASK_B_COMPLETE"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "TASK_B",
+        "content": "E10_TASK_B_COMPLETE: left branch",
+        "output_path": "task_b_output.txt",
+        "sleep_s": 0.15
+      },
+      "created_at": "2026-10-09T00:24:58.607855",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-5defcd553b14": {
+      "task_id": "task-5defcd553b14",
+      "run_id": "run-5a6a5a6482c6",
+      "mission_id": "mission-f901cc67c7ef",
+      "name": "TASK_C - right branch",
+      "description": "E10 scenario task TASK_C: right branch",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-73290ae489f8"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_c_output.txt",
+        "file_contains:task_c_output.txt:E10_TASK_C_COMPLETE"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "TASK_C",
+        "content": "E10_TASK_C_COMPLETE: right branch",
+        "output_path": "task_c_output.txt",
+        "sleep_s": 0.15
+      },
+      "created_at": "2026-10-09T00:24:58.607871",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-e55ed5b1ce6f": {
+      "task_id": "task-e55ed5b1ce6f",
+      "run_id": "run-5a6a5a6482c6",
+      "mission_id": "mission-f901cc67c7ef",
+      "name": "TASK_D - merge",
+      "description": "E10 scenario task TASK_D: merge",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [
+        "task-5defcd553b14",
+        "task-18e741da713e"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_d_output.txt",
+        "file_contains:task_d_output.txt:E10_TASK_D_COMPLETE"
+      ],
+      "assigned_agent_id": "e33-mission-agent-01",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "TASK_D",
+        "content": "E10_TASK_D_COMPLETE: merge",
+        "output_path": "task_d_output.txt",
+        "sleep_s": 0.15
+      },
+      "created_at": "2026-10-09T00:24:58.607884",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    },
+    "task-ef352908d859": {
+      "task_id": "task-ef352908d859",
+      "run_id": "run-5a6a5a6482c6",
+      "mission_id": "mission-f901cc67c7ef",
+      "name": "TASK_E - final",
+      "description": "E10 scenario task TASK_E: final",
+      "agent_type": "implementer",
+      "state": "READY",
+      "depends_on": [
+        "task-e55ed5b1ce6f"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_e_output.txt",
+        "file_contains:task_e_output.txt:E10_TASK_E_COMPLETE"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "TASK_E",
+        "content": "E10_TASK_E_COMPLETE: final",
+        "output_path": "task_e_output.txt",
+        "sleep_s": 0.15
+      },
+      "created_at": "2026-10-09T00:24:58.607986",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 2,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-73290ae489f8": [],
+    "task-18e741da713e": [
+      "task-73290ae489f8"
+    ],
+    "task-5defcd553b14": [
+      "task-73290ae489f8"
+    ],
+    "task-e55ed5b1ce6f": [
+      "task-5defcd553b14",
+      "task-18e741da713e"
+    ],
+    "task-ef352908d859": [
+      "task-e55ed5b1ce6f"
+    ]
+  },
+  "task_dependents": {
+    "task-73290ae489f8": [
+      "task-5defcd553b14",
+      "task-18e741da713e"
+    ],
+    "task-18e741da713e": [
+      "task-e55ed5b1ce6f"
+    ],
+    "task-5defcd553b14": [
+      "task-e55ed5b1ce6f"
+    ],
+    "task-e55ed5b1ce6f": [
+      "task-ef352908d859"
+    ],
+    "task-ef352908d859": []
+  },
+  "attempt_history": {
+    "task-73290ae489f8": [
+      {
+        "attempt_id": "attempt-1091b194",
+        "task_id": "task-73290ae489f8",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T00:24:57.732356",
+        "completed_at": "2026-10-09T00:24:57.884571Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-18e741da713e": [
+      {
+        "attempt_id": "attempt-dc15e78f",
+        "task_id": "task-18e741da713e",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T00:24:57.886729",
+        "completed_at": "2026-10-09T00:24:58.038573Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-5defcd553b14": [
+      {
+        "attempt_id": "attempt-4ccf9842",
+        "task_id": "task-5defcd553b14",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T00:24:58.040525",
+        "completed_at": "2026-10-09T00:24:58.192352Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ],
+    "task-e55ed5b1ce6f": [
+      {
+        "attempt_id": "attempt-77c9aa09",
+        "task_id": "task-e55ed5b1ce6f",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T00:24:58.608227",
+        "completed_at": "2026-10-09T00:24:58.760159Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-e55ed5b1ce6f": "e33-mission-agent-01"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

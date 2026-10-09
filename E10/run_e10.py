@@ -50,6 +50,10 @@ def run_stage(name: str, script: str, workdir: Path, expect_rc: int):
 
 
 def main() -> int:
+    # E10-CW1 section 8 correction: this field is captured at the runner's
+    # ACTUAL start (it was previously filled at consolidation time and thus
+    # misnamed — see E10_CW1_REPORT.md).
+    started_at_utc = datetime.now(timezone.utc).isoformat()
     t0 = time.time()
     workdir = Path(tempfile.mkdtemp(prefix="e10_proof_"))
     evidence_dir = workdir / "evidence"
@@ -101,7 +105,8 @@ def main() -> int:
     runner_evidence = {
         "status": "E10_CHAIN_COMPLETE",
         "runner_pid": os.getpid(),
-        "started_at_utc": datetime.now(timezone.utc).isoformat(),
+        "started_at_utc": started_at_utc,
+        "consolidated_at_utc": datetime.now(timezone.utc).isoformat(),
         "workdir": str(workdir),
         "process_a": {
             "runner_observed_pid": pa_pid,

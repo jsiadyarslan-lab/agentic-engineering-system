@@ -115,6 +115,13 @@ class CheckpointIntegrityError(Exception):
 class ResumeFailedError(Exception):
     """E10 section 22: critical restoration failure (events/evidence/mission/graph/
     state) — resume fails closed with an explicit reason, never best-effort."""
+
+
+class SideEffectReconciliationError(RuntimeError):
+    """E10-CW1: a previously journaled side effect cannot be reconciled safely
+    on re-execution (different content for the same logical operation, missing
+    file, diverged content, or rewritten file metadata). Fail closed: the side
+    effect is neither re-performed nor silently skipped."""
 # ============================================================
 # EXECUTION CONTEXT
 # ============================================================
@@ -262,6 +269,72 @@ class FileEvidenceStore(EvidenceStore):
             for eid, ev_data in evidence_data.items():
                 ev = EvidenceRecord.model_validate(ev_data)
                 self._evidence[eid] = ev
+
+
+# ============================================================
+# SIDE-EFFECT JOURNAL (E10-CW1 — crash-window idempotency)
+# ============================================================
+class SideEffectJournal:
+    """Append-only, fsynced journal of governed side effects (artifact writes).
+
+    Written at side-effect time — BEFORE the task/attempt completion is
+    durably recorded — so it survives a process death inside the crash
+    window between "the effect happened" and "the completion is persisted".
+    Reconciliation across process lives is keyed by the STABLE logical
+    operation identity (mission_id, task_id, path), never by attempt_id
+    (which changes on every resume).
+    """
+
+    EFFECTIVE_RECORD_TYPES = ("performed", "reconciled")
+
+    def __init__(self, base_dir: str):
+        self._base = Path(base_dir)
+        # mission_id -> {(task_id, path): latest effective record}
+        self._index: Dict[str, Dict[tuple, dict]] = {}
+
+    def journal_path(self, mission_id: str) -> Path:
+        return self._base / "side_effect_journal" / mission_id / "journal.jsonl"
+
+    def _load(self, mission_id: str) -> Dict[tuple, dict]:
+        if mission_id in self._index:
+            return self._index[mission_id]
+        idx: Dict[tuple, dict] = {}
+        p = self.journal_path(mission_id)
+        if p.exists():
+            for line in p.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    # Torn trailing line from a crash mid-append: it never
+                    # became durable truth — ignore it.
+                    continue
+                if rec.get("record_type") in self.EFFECTIVE_RECORD_TYPES:
+                    idx[(rec.get("task_id", ""), rec.get("path", ""))] = rec
+        self._index[mission_id] = idx
+        return idx
+
+    def lookup(self, mission_id: str, task_id: str, path: str) -> Optional[dict]:
+        return self._load(mission_id).get((task_id, path))
+
+    def append(self, mission_id: str, record: dict) -> None:
+        """Append one record; flush + fsync the file, then fsync the dir."""
+        p = self.journal_path(mission_id)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, sort_keys=True, default=str) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        fd = os.open(str(p.parent), os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        self._load(mission_id)[(record.get("task_id", ""), record.get("path", ""))] = record
+
+
 # ============================================================
 # TOOL EXECUTOR (E9 - Execution Fabric)
 # ============================================================
@@ -942,6 +1015,8 @@ class ExecutionEngine:
         self._run_artifact_counts: Dict[str, int] = {}
         # Evidence store (must be created before sandbox manager)
         self.evidence_store = FileEvidenceStore(self.artifacts_base_dir)
+        # E10-CW1: side-effect journal (crash-window idempotency)
+        self.side_effect_journal = SideEffectJournal(self.artifacts_base_dir)
         # Create sandbox manager
         self.sandbox_manager = create_sandbox_manager(
             backend=sandbox_backend,
@@ -2765,9 +2840,25 @@ class ExecutionEngine:
                 content = tool_input.get("content", b"")
                 if isinstance(content, str):
                     content = content.encode()
-                artifact = await self.sandbox_manager.write_artifact(
-                    sandbox_id, tool_input.get("path", "output.txt"), content
-                )
+                path = tool_input.get("path", "output.txt")
+                # E10-CW1 (order section 5): side-effect idempotency across
+                # process death. If this exact logical operation (mission_id,
+                # task_id, path — stable identity, NEVER attempt_id which
+                # changes on resume) was already performed and durably
+                # journaled in a previous process life, reconcile with the
+                # recorded outcome instead of re-performing the physical write.
+                prior = self._reconcile_prior_side_effect(context, sandbox_id, path, content)
+                if prior is not None:
+                    artifact = self._artifact_from_journal(prior, path)
+                    self._journal_reconciliation(context, sandbox_id, prior)
+                else:
+                    artifact = await self.sandbox_manager.write_artifact(
+                        sandbox_id, path, content
+                    )
+                    # Durable journal record BEFORE this call returns: it
+                    # survives a process death inside the crash window between
+                    # "the effect happened" and "the completion is persisted".
+                    self._journal_performance(context, sandbox_id, path, artifact)
                 artifact.mission_id = context.mission_id
                 self.artifacts[artifact.artifact_id] = artifact
                 # Track artifact count per run
@@ -2863,66 +2954,237 @@ class ExecutionEngine:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-    def _emit_artifact_created(self, context: ExecutionContext, artifact: Artifact):
-        """Emit artifact created event and create evidence."""
-        # Emit artifact created
-        self._emit(FactoryEvent.create(
-            event_type=EventType.ARTIFACT_CREATED,
-            mission_id=context.mission_id,
-            run_id=context.run_id,
-            payload=ArtifactCreatedEvent(
-                artifact_id=artifact.artifact_id,
-                name=artifact.name,
-                path=artifact.path,
-                sha256=artifact.sha256,
-                size_bytes=artifact.size_bytes,
-                created_by=artifact.created_by,
-                mission_id=context.mission_id,
-                run_id=context.run_id,
-                task_id=context.task_id,
-            ),
-            source="execution_engine",
-            correlation_id=context.task_id,
-        ))
-        # Create evidence record
-        # Read artifact content for evidence
-        artifact_path = os.path.join(self.artifacts_base_dir, artifact.path) if not os.path.isabs(artifact.path) else artifact.path
-        # Try sandbox-specific path
-        if not os.path.exists(artifact_path):
-            artifact_path = os.path.join(self.artifacts_base_dir, context.sandbox_id, artifact.path)
-        if os.path.exists(artifact_path):
-            with open(artifact_path, 'rb') as f:
-                content = f.read()
-        else:
-            content = b""
-        evidence = create_evidence(
-            evidence_hash=artifact.sha256,
-            content_type="artifact",
-            source_id=artifact.artifact_id,
-            mission_id=context.mission_id,
-            run_id=context.run_id,
-            task_id=context.task_id,
+    # --- E10-CW1: side-effect journaling and crash-window reconciliation ---
+    @staticmethod
+    def _side_effect_file(artifacts_base_dir: str, sandbox_id: str, path: str) -> Path:
+        """Physical file location of a sandbox artifact write (adapter rule)."""
+        return Path(artifacts_base_dir) / sandbox_id / path
+
+    @staticmethod
+    def _event_artifact_id(e) -> Optional[str]:
+        """artifact_id from an event payload (model object or restored dict)."""
+        p = getattr(e, "payload", None)
+        if isinstance(p, dict):
+            return p.get("artifact_id")
+        return getattr(p, "artifact_id", None)
+
+    def _reconcile_prior_side_effect(
+        self,
+        context: ExecutionContext,
+        sandbox_id: str,
+        path: str,
+        content: bytes,
+    ) -> Optional[dict]:
+        """Return the prior journal record for this logical operation, or None.
+
+        E10-CW1 fail-closed contract: a prior record that cannot be
+        reconciled safely raises SideEffectReconciliationError — the side
+        effect is NEVER silently re-performed and never silently skipped.
+        """
+        if not context.mission_id or not context.task_id:
+            return None  # legacy caller without logical identity: unchanged behavior
+        rec = self.side_effect_journal.lookup(context.mission_id, context.task_id, path)
+        if rec is None:
+            return None
+        new_sha = hashlib.sha256(content).hexdigest()
+        if rec.get("content_sha256") != new_sha:
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: task {context.task_id} path "
+                f"{path!r}: journaled content_sha256={str(rec.get('content_sha256'))[:16]}... "
+                f"differs from the requested content hash {new_sha[:16]}... — a "
+                f"different effect for the same logical operation is not "
+                f"reconcilable; refusing to re-perform it"
+            )
+        f = self._side_effect_file(self.artifacts_base_dir, sandbox_id, path)
+        if not f.exists():
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: journaled side effect of task "
+                f"{context.task_id} at {str(f)} is missing from disk — refusing to "
+                f"re-perform the write; manual reconciliation required"
+            )
+        data = f.read_bytes()
+        if hashlib.sha256(data).hexdigest() != rec.get("content_sha256"):
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: content of {str(f)} diverged "
+                f"from the journaled sha256 — refusing to re-perform the write"
+            )
+        st = f.stat()
+        if st.st_mtime_ns != rec.get("mtime_ns", rec.get("observed_mtime_ns")) or st.st_ino != rec.get("inode", rec.get("observed_ino")):
+            raise SideEffectReconciliationError(
+                f"SIDE_EFFECT_RECONCILIATION_FAILED: {str(f)} was rewritten or "
+                f"touched after the journaled operation (mtime_ns/inode differ "
+                f"from the journal) — refusing to re-perform the write"
+            )
+        return rec
+
+    def _artifact_from_journal(self, rec: dict, path: str) -> Artifact:
+        """Reconstruct the ORIGINAL artifact identity — no new id, no rewrite."""
+        artifact_id = rec.get("artifact_id") or rec.get("original_artifact_id")
+        return Artifact(
+            artifact_id=artifact_id,
+            name=Path(path).name,
+            path=path,
+            sha256=rec["content_sha256"],
+            size_bytes=rec.get("size_bytes", 0),
+            created_by=rec.get("sandbox_id", ""),
+            created_at=datetime.fromisoformat(rec["recorded_at_utc"])
+            if rec.get("recorded_at_utc") else datetime.now(timezone.utc),
+            mission_id=rec.get("mission_id", ""),
+            content_type="application/octet-stream",
         )
-        self.evidence[evidence.evidence_id] = evidence
-        self.evidence_store.store_evidence(evidence)
-        self.evidence_store.store_artifact(artifact)
-        # Emit evidence recorded
-        self._emit(FactoryEvent.create(
-            event_type=EventType.EVIDENCE_RECORDED,
-            mission_id=context.mission_id,
-            run_id=context.run_id,
-            payload=EvidenceRecordedEvent(
-                evidence_id=evidence.evidence_id,
-                evidence_hash=evidence.evidence_hash,
-                content_type=evidence.content_type,
-                source_id=evidence.source_id,
+
+    def _journal_performance(
+        self,
+        context: ExecutionContext,
+        sandbox_id: str,
+        path: str,
+        artifact: Artifact,
+    ) -> None:
+        """Durably record a performed side effect (fsynced append)."""
+        if not context.mission_id or not context.task_id:
+            return
+        f = self._side_effect_file(self.artifacts_base_dir, sandbox_id, path)
+        st = f.stat()  # the sandbox adapter just wrote this file
+        record = {
+            "record_type": "performed",
+            "op": "artifact_write",
+            "journal_record_id": uuid.uuid4().hex[:12],
+            "mission_id": context.mission_id,
+            "task_id": context.task_id,
+            "run_id": context.run_id,
+            "attempt_id": context.attempt_id,
+            "path": path,
+            "sandbox_id": sandbox_id,
+            "content_sha256": artifact.sha256,
+            "size_bytes": artifact.size_bytes,
+            "artifact_id": artifact.artifact_id,
+            "mtime_ns": st.st_mtime_ns,
+            "inode": st.st_ino,
+            "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
+            "process_pid": os.getpid(),
+        }
+        self.side_effect_journal.append(context.mission_id, record)
+
+    def _journal_reconciliation(
+        self,
+        context: ExecutionContext,
+        sandbox_id: str,
+        prior: dict,
+    ) -> None:
+        """Durably record that a resume reconciled with the prior effect."""
+        f = self._side_effect_file(self.artifacts_base_dir, sandbox_id, prior["path"])
+        st = f.stat()
+        record = {
+            "record_type": "reconciled",
+            "op": "artifact_write",
+            "journal_record_id": uuid.uuid4().hex[:12],
+            "mission_id": context.mission_id,
+            "task_id": context.task_id,
+            "path": prior["path"],
+            "sandbox_id": sandbox_id,
+            # Uniform schema with "performed" records: the artifact id IS the
+            # original identity (aliases kept for readability/verifier).
+            "artifact_id": prior.get("artifact_id") or prior.get("original_artifact_id"),
+            "original_artifact_id": prior.get("artifact_id") or prior.get("original_artifact_id"),
+            "content_sha256": prior["content_sha256"],
+            "size_bytes": prior.get("size_bytes", 0),
+            # The observed stat is stored under the SAME field names the
+            # reconciliation guard checks (mtime_ns/inode) — a later process
+            # life (or a repeat crash) must be able to reconcile again against
+            # this record exactly as against a "performed" one.
+            "mtime_ns": st.st_mtime_ns,
+            "inode": st.st_ino,
+            "observed_mtime_ns": st.st_mtime_ns,
+            "observed_ino": st.st_ino,
+            "no_physical_rewrite": (
+                st.st_mtime_ns == prior.get("mtime_ns", prior.get("observed_mtime_ns"))
+                and st.st_ino == prior.get("inode", prior.get("observed_ino"))
+            ),
+            "reconciled_at_utc": datetime.now(timezone.utc).isoformat(),
+            "process_pid": os.getpid(),
+        }
+        self.side_effect_journal.append(context.mission_id, record)
+
+    def _emit_artifact_created(self, context: ExecutionContext, artifact: Artifact):
+        """Emit artifact created event and create evidence.
+
+        E10-CW1 layered idempotency: each record below is materialized
+        exactly once per logical artifact — whether the artifact was created
+        in this process life or reconciled from the side-effect journal after
+        a crash in the (side effect -> completion record) window. Re-execution
+        of an interrupted task never duplicates them.
+        """
+        # Emit artifact created — only if not already in event history
+        # (variant CW1-B: the event was durably persisted before the crash
+        # and restored on resume; re-emitting would duplicate the log).
+        if not any(
+            e.event_type == EventType.ARTIFACT_CREATED
+            and self._event_artifact_id(e) == artifact.artifact_id
+            for e in self.event_bus.history
+        ):
+            self._emit(FactoryEvent.create(
+                event_type=EventType.ARTIFACT_CREATED,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                payload=ArtifactCreatedEvent(
+                    artifact_id=artifact.artifact_id,
+                    name=artifact.name,
+                    path=artifact.path,
+                    sha256=artifact.sha256,
+                    size_bytes=artifact.size_bytes,
+                    created_by=artifact.created_by,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    task_id=context.task_id,
+                ),
+                source="execution_engine",
+                correlation_id=context.task_id,
+            ))
+        # Create evidence record — only if none exists yet for this source
+        # artifact (idempotent at the evidence layer).
+        if not any(
+            ev.source_id == artifact.artifact_id
+            for ev in self.evidence_store._evidence.values()
+        ):
+            # Read artifact content for evidence
+            artifact_path = os.path.join(self.artifacts_base_dir, artifact.path) if not os.path.isabs(artifact.path) else artifact.path
+            # Try sandbox-specific path
+            if not os.path.exists(artifact_path):
+                artifact_path = os.path.join(self.artifacts_base_dir, context.sandbox_id, artifact.path)
+            if os.path.exists(artifact_path):
+                with open(artifact_path, 'rb') as f:
+                    content = f.read()
+            else:
+                content = b""
+            evidence = create_evidence(
+                evidence_hash=artifact.sha256,
+                content_type="artifact",
+                source_id=artifact.artifact_id,
                 mission_id=context.mission_id,
                 run_id=context.run_id,
                 task_id=context.task_id,
-            ),
-            source="execution_engine",
-            correlation_id=context.task_id,
-        ))
+            )
+            self.evidence[evidence.evidence_id] = evidence
+            self.evidence_store.store_evidence(evidence)
+            # Emit evidence recorded
+            self._emit(FactoryEvent.create(
+                event_type=EventType.EVIDENCE_RECORDED,
+                mission_id=context.mission_id,
+                run_id=context.run_id,
+                payload=EvidenceRecordedEvent(
+                    evidence_id=evidence.evidence_id,
+                    evidence_hash=evidence.evidence_hash,
+                    content_type=evidence.content_type,
+                    source_id=evidence.source_id,
+                    mission_id=context.mission_id,
+                    run_id=context.run_id,
+                    task_id=context.task_id,
+                ),
+                source="execution_engine",
+                correlation_id=context.task_id,
+            ))
+        # Artifact registration is idempotent by artifact_id — always in sync
+        self.evidence_store.store_artifact(artifact)
     # --- Verification ---
     async def verify_task(
         self,

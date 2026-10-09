@@ -1,0 +1,124 @@
+{
+  "status": "E10_CW1_GAP_DEMONSTRATED",
+  "mode": "baseline",
+  "runner_pid": 8191,
+  "started_at_utc": "2026-10-09T00:25:01.593928+00:00",
+  "consolidated_at_utc": "2026-10-09T00:25:04.817903+00:00",
+  "session": "/tmp/e10cw1_baseline_s7etixdh",
+  "chains": [
+    {
+      "chain_index": 1,
+      "mode": "baseline",
+      "workdir": "/tmp/e10cw1_baseline_s7etixdh/chain1",
+      "process_a": {
+        "runner_observed_pid": 8192,
+        "exit_code": -9,
+        "termination_reason": "SIGKILL (external, runner-observed)",
+        "started_at_utc": "2026-10-09T00:25:01.594730+00:00",
+        "ended_at_utc": "2026-10-09T00:25:02.526730+00:00"
+      },
+      "process_b": {
+        "runner_observed_pid": 8193,
+        "exit_code": 0
+      },
+      "pid_difference": true,
+      "crash_point_in_window": {
+        "injection_reached": true,
+        "injection_task_is_crash_window_task": true,
+        "last_checkpoint_states": {
+          "TASK_A": "COMPLETED",
+          "TASK_B": "COMPLETED",
+          "TASK_C": "COMPLETED",
+          "TASK_D": "READY",
+          "TASK_E": "BLOCKED"
+        },
+        "crash_window_task_not_completed_in_checkpoint": true,
+        "completed_tasks_in_checkpoint": true,
+        "no_durable_task_completed_for_crash_window_task": true,
+        "side_effect_file_exists": true,
+        "journal_absent_as_expected": true
+      },
+      "side_effect_file": {
+        "pre_resume": {
+          "path": "/tmp/e10cw1_baseline_s7etixdh/chain1/artifacts/sandbox-task-16a1e57cb712/task_d_output.txt",
+          "exists": true,
+          "size_bytes": 26,
+          "mtime_ns": 1791505502523654099,
+          "inode": 278243,
+          "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+        },
+        "post_resume": {
+          "path": "/tmp/e10cw1_baseline_s7etixdh/chain1/artifacts/sandbox-task-16a1e57cb712/task_d_output.txt",
+          "exists": true,
+          "size_bytes": 26,
+          "mtime_ns": 1791505503000656815,
+          "inode": 278243,
+          "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+        },
+        "no_physical_rewrite": false
+      },
+      "verifier_exit_code": null,
+      "status": "GAP_DEMONSTRATED"
+    },
+    {
+      "chain_index": 2,
+      "mode": "baseline",
+      "workdir": "/tmp/e10cw1_baseline_s7etixdh/chain2",
+      "process_a": {
+        "runner_observed_pid": 8194,
+        "exit_code": -9,
+        "termination_reason": "SIGKILL (external, runner-observed)",
+        "started_at_utc": "2026-10-09T00:25:03.208693+00:00",
+        "ended_at_utc": "2026-10-09T00:25:04.138693+00:00"
+      },
+      "process_b": {
+        "runner_observed_pid": 8195,
+        "exit_code": 0
+      },
+      "pid_difference": true,
+      "crash_point_in_window": {
+        "injection_reached": true,
+        "injection_task_is_crash_window_task": true,
+        "last_checkpoint_states": {
+          "TASK_A": "COMPLETED",
+          "TASK_B": "COMPLETED",
+          "TASK_C": "COMPLETED",
+          "TASK_D": "READY",
+          "TASK_E": "BLOCKED"
+        },
+        "crash_window_task_not_completed_in_checkpoint": true,
+        "completed_tasks_in_checkpoint": true,
+        "no_durable_task_completed_for_crash_window_task": true,
+        "side_effect_file_exists": true,
+        "journal_absent_as_expected": true
+      },
+      "side_effect_file": {
+        "pre_resume": {
+          "path": "/tmp/e10cw1_baseline_s7etixdh/chain2/artifacts/sandbox-task-573b105a9270/task_d_output.txt",
+          "exists": true,
+          "size_bytes": 26,
+          "mtime_ns": 1791505504134663274,
+          "inode": 278280,
+          "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+        },
+        "post_resume": {
+          "path": "/tmp/e10cw1_baseline_s7etixdh/chain2/artifacts/sandbox-task-573b105a9270/task_d_output.txt",
+          "exists": true,
+          "size_bytes": 26,
+          "mtime_ns": 1791505504610665943,
+          "inode": 278280,
+          "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+        },
+        "no_physical_rewrite": false
+      },
+      "verifier_exit_code": null,
+      "status": "GAP_DEMONSTRATED"
+    }
+  ],
+  "all_chains_no_physical_rewrite": false,
+  "pid_differences": [
+    true,
+    true
+  ],
+  "total_wall_seconds": 3.224
+}

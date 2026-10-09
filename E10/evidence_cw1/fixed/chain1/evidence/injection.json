@@ -1,0 +1,11 @@
+{
+  "injection_point": "artifact_created_of_crash_window_task",
+  "task_key": "TASK_D",
+  "task_id": "task-e55ed5b1ce6f",
+  "artifact_id": "artifact-9995d4161a72",
+  "event_timestamp": "2026-10-09T00:24:58.345821",
+  "reached_at_utc": "2026-10-09T00:24:58.345832+00:00",
+  "process_pid": 8179,
+  "kill_signal": "SIGKILL",
+  "lifecycle_position": "after the governed artifact write (the physical side effect exists on disk), before any durable record of task/attempt completion"
+}

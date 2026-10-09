@@ -1,0 +1,313 @@
+{
+  "status": "INDEPENDENT_VERIFICATION_COMPLETE",
+  "verifier_pid": 8181,
+  "verdict": "VERIFIED",
+  "mission_id": "mission-f901cc67c7ef",
+  "run_1": "run-a3272bf0e0f0",
+  "run_2": "run-5a6a5a6482c6",
+  "original_checkpoint_id": "checkpoint-a0309a56ada5",
+  "final_checkpoint_id": "checkpoint-c4c8656e2e36",
+  "truth_sources": {
+    "checkpoints_dir": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/checkpoints/mission-f901cc67c7ef",
+    "event_log": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/events/mission-f901cc67c7ef/event_log.jsonl",
+    "artifacts_json": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/evidence_store/mission-f901cc67c7ef/artifacts.json",
+    "evidence_json": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/evidence_store/mission-f901cc67c7ef/evidence.json",
+    "side_effect_journal": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/side_effect_journal/mission-f901cc67c7ef/journal.jsonl"
+  },
+  "checks": {
+    "process_a_died_at_injection_point": {
+      "claim": "Process A was SIGKILLed after TASK_D's side effect and its durable journal record, before any durable completion record",
+      "observed": {
+        "injection_reached_at_utc": "2026-10-09T00:24:58.345832+00:00",
+        "injection_task": true,
+        "runner_witnessed_exit_code": -9,
+        "runner_witnessed_termination": "SIGKILL (external, runner-observed)",
+        "journal_performed_recorded_at_utc": "2026-10-09T00:24:58.345655+00:00",
+        "journal_record_precedes_kill": true,
+        "no_task_completed_for_d_before_kill": true,
+        "resume_checkpoint_states": {
+          "TASK_A": "COMPLETED",
+          "TASK_B": "COMPLETED",
+          "TASK_C": "COMPLETED",
+          "TASK_D": "READY",
+          "TASK_E": "BLOCKED"
+        }
+      },
+      "passed": true
+    },
+    "process_b_new_process_restored_from_durable_only": {
+      "claim": "Process B (different PID) restored from durable storage only; only resume identifiers crossed the boundary",
+      "observed": {
+        "resume_info_keys": [
+          "checkpoint_id",
+          "checkpoint_path",
+          "crash_window_task_key",
+          "mission_id",
+          "mode",
+          "process_a_pid",
+          "run_id",
+          "task_ids"
+        ],
+        "resume_info_ids_only": true,
+        "pid_a": 8179,
+        "pid_b_runner_witnessed": 8180,
+        "pid_b_self_reported": 8180,
+        "pid_difference": true,
+        "checkpoint_loaded_event_run_id": "run-5a6a5a6482c6",
+        "checkpoint_loaded_payload_checkpoint_id": "checkpoint-a0309a56ada5",
+        "d_restore_event_to_state": "READY",
+        "durable_state_at_restore": "READY"
+      },
+      "passed": true
+    },
+    "first_side_effect_readable_and_verifiable": {
+      "claim": "the pre-crash side-effect file is intact and independently verifiable",
+      "observed": {
+        "file": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+        "exists": true,
+        "sha256_now": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+        "sha256_in_journal": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+        "size_now": 26,
+        "size_in_journal": 26,
+        "contains_marker": true,
+        "marker": "E10_TASK_D_COMPLETE"
+      },
+      "passed": true
+    },
+    "side_effect_identity_linked_to_correct_task_and_operation": {
+      "claim": "journal record <-> artifact record <-> evidence record all link the file to (mission, TASK_D, path) with the original identity",
+      "observed": {
+        "journal": {
+          "mission_id": "mission-f901cc67c7ef",
+          "task_id": "task-e55ed5b1ce6f",
+          "path": "task_d_output.txt",
+          "sandbox_id": "sandbox-task-e55ed5b1ce6f",
+          "artifact_id": "artifact-9995d4161a72"
+        },
+        "artifact_record": {
+          "present": true,
+          "created_by": "sandbox-task-e55ed5b1ce6f",
+          "path": "task_d_output.txt",
+          "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+        },
+        "evidence_records_for_source": [
+          {
+            "evidence_hash": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "task_id": "task-e55ed5b1ce6f"
+          },
+          {
+            "evidence_hash": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "task_id": "task-e55ed5b1ce6f"
+          }
+        ],
+        "run_lineage": {
+          "original_checkpoint_run": "run-a3272bf0e0f0",
+          "final_checkpoint_run": "run-5a6a5a6482c6",
+          "parent_link_event_run_id": "run-5a6a5a6482c6"
+        }
+      },
+      "passed": true
+    },
+    "side_effect_count_matches_expected_no_unsafe_copy": {
+      "claim": "exactly one physical side effect per task \u2014 the crash-window one was NOT re-performed (1 performed + 1 reconciled journal records, no_physical_rewrite=true); no duplicate artifact records; the 2 ARTIFACT_CREATED events for the crash-window task (normal engine pattern) both carry the ORIGINAL id",
+      "observed": {
+        "journal_for_d": {
+          "performed": 1,
+          "reconciled": 1,
+          "no_physical_rewrite_flag": true
+        },
+        "artifact_records_per_task": {
+          "TASK_A": 1,
+          "TASK_B": 1,
+          "TASK_C": 1,
+          "TASK_D": 1,
+          "TASK_E": 1
+        },
+        "artifact_created_events_for_d": 2,
+        "artifact_created_ids_for_d": [
+          "artifact-9995d4161a72",
+          "artifact-9995d4161a72"
+        ],
+        "task_completed_events_for_d": 1,
+        "total_task_completed_events": 5,
+        "sandbox_files_per_task": {
+          "TASK_A": [
+            "task_a_output.txt"
+          ],
+          "TASK_B": [
+            "task_b_output.txt"
+          ],
+          "TASK_C": [
+            "task_c_output.txt"
+          ],
+          "TASK_D": [
+            "task_d_output.txt"
+          ],
+          "TASK_E": [
+            "task_e_output.txt"
+          ]
+        },
+        "duplicate_event_tuples": 0
+      },
+      "passed": true
+    },
+    "records_reflect_stored_truth_not_declared_values": {
+      "claim": "sha256/mtime agree across journal, artifact records, evidence records, event log, and the actual files \u2014 recomputed, not declared",
+      "observed": {
+        "per_task": {
+          "TASK_A": {
+            "file_sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+            "journal_sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+            "artifact_sha256": "aeda5fb7ec06f1192a2a6137a5eccd0a1ea4bf94c281998c1a6c3cbd1121f790",
+            "journal_mtime_ns": 1791505497882628094,
+            "file_mtime_ns_now": 1791505497882628094,
+            "mtime_unchanged_since_journal": true
+          },
+          "TASK_B": {
+            "file_sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+            "journal_sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+            "artifact_sha256": "28552da76513a7ec386368a19ffbdd0546cdf6ce242a8ed04b7b318d2e7787e0",
+            "journal_mtime_ns": 1791505498036628948,
+            "file_mtime_ns_now": 1791505498036628948,
+            "mtime_unchanged_since_journal": true
+          },
+          "TASK_C": {
+            "file_sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+            "journal_sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+            "artifact_sha256": "a4eaf91ce7086677ef1d89f193a2d148163ef217d1f7483c6dceb51a69bac811",
+            "journal_mtime_ns": 1791505498190629801,
+            "file_mtime_ns_now": 1791505498190629801,
+            "mtime_unchanged_since_journal": true
+          },
+          "TASK_D": {
+            "file_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "journal_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "artifact_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+            "journal_mtime_ns": 1791505498344630656,
+            "file_mtime_ns_now": 1791505498344630656,
+            "mtime_unchanged_since_journal": true
+          },
+          "TASK_E": {
+            "file_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+            "journal_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+            "artifact_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+            "journal_mtime_ns": 1791505498912633807,
+            "file_mtime_ns_now": 1791505498912633807,
+            "mtime_unchanged_since_journal": true
+          }
+        },
+        "d_three_way_mtime": {
+          "journal_performed": 1791505498344630656,
+          "reconciled_observed": 1791505498344630656,
+          "file_now": 1791505498344630656
+        }
+      },
+      "passed": true
+    },
+    "attempts_and_events_consistent_with_crash_and_resume": {
+      "claim": "A/B/C: 1 pre-resume attempt, 0 post; D/E: 0 pre (their pre-crash attempts were in-memory only), 1 post; D's completion events all post-resume; evidence per task matches the normal-run pattern (2)",
+      "observed": {
+        "resume_ts": "2026-10-09T00:24:58.608018",
+        "attempts": {
+          "TASK_A": {
+            "pre_resume": 1,
+            "post_resume": 0,
+            "attempt_ids": [
+              "attempt-1091b194"
+            ]
+          },
+          "TASK_B": {
+            "pre_resume": 1,
+            "post_resume": 0,
+            "attempt_ids": [
+              "attempt-dc15e78f"
+            ]
+          },
+          "TASK_C": {
+            "pre_resume": 1,
+            "post_resume": 0,
+            "attempt_ids": [
+              "attempt-4ccf9842"
+            ]
+          },
+          "TASK_D": {
+            "pre_resume": 0,
+            "post_resume": 1,
+            "attempt_ids": [
+              "attempt-77c9aa09"
+            ]
+          },
+          "TASK_E": {
+            "pre_resume": 0,
+            "post_resume": 1,
+            "attempt_ids": [
+              "attempt-3c93bab9"
+            ]
+          }
+        },
+        "d_artifact_created_ts": [
+          "2026-10-09T00:24:58.759603",
+          "2026-10-09T00:24:58.760209"
+        ],
+        "d_task_completed_ts": [
+          "2026-10-09T00:24:58.760188"
+        ],
+        "d_events_all_post_resume": true,
+        "evidence_per_task": {
+          "TASK_A": 2,
+          "TASK_B": 2,
+          "TASK_C": 2,
+          "TASK_D": 2,
+          "TASK_E": 2
+        }
+      },
+      "passed": true
+    },
+    "final_state_agrees_with_actual_evidence": {
+      "claim": "all tasks COMPLETED in the final durable checkpoint AND every file exists with its marker AND mission state EVIDENCED \u2014 the state is derived from evidence, not asserted",
+      "observed": {
+        "final_states": {
+          "TASK_A": "COMPLETED",
+          "TASK_B": "COMPLETED",
+          "TASK_C": "COMPLETED",
+          "TASK_D": "COMPLETED",
+          "TASK_E": "COMPLETED"
+        },
+        "mission_state": "EVIDENCED",
+        "files": {
+          "TASK_A": {
+            "exists": true,
+            "contains_marker": true
+          },
+          "TASK_B": {
+            "exists": true,
+            "contains_marker": true
+          },
+          "TASK_C": {
+            "exists": true,
+            "contains_marker": true
+          },
+          "TASK_D": {
+            "exists": true,
+            "contains_marker": true
+          },
+          "TASK_E": {
+            "exists": true,
+            "contains_marker": true
+          }
+        }
+      },
+      "passed": true
+    },
+    "repeat_runs_produce_same_result": {
+      "claim": "every completed chain so far shows the same idempotency result (no physical re-write across the crash window)",
+      "observed": {
+        "this_chain_index": 1,
+        "this_chain_no_physical_rewrite": true,
+        "prior_chains": []
+      },
+      "passed": true
+    }
+  },
+  "missing_checks": []
+}

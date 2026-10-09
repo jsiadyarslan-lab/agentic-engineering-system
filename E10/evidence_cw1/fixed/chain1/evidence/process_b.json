@@ -1,0 +1,271 @@
+{
+  "status": "PROCESS_B_COMPLETE",
+  "mode": "fixed",
+  "process_b_pid": 8180,
+  "process_a_pid": 8179,
+  "pid_difference": true,
+  "process_b_start_time": "2026-10-09T00:24:58.604998+00:00",
+  "process_b_end_time": "2026-10-09T00:24:58.923433+00:00",
+  "mission_id": "mission-f901cc67c7ef",
+  "run_1_interrupted": "run-a3272bf0e0f0",
+  "run_2_resumed": "run-5a6a5a6482c6",
+  "run_lineage": {
+    "parent_run_id_of_run_2": "run-a3272bf0e0f0"
+  },
+  "restoration_log": [
+    {
+      "step": "read_checkpoint_from_disk",
+      "integrity_verified": true,
+      "stored_hash": "dce7968c5b9e2a7daa5396fb42ba89dc9b4f6d81e744cc4161f3ec2243578cab"
+    },
+    {
+      "step": "side_effect_file_untouched_since_crash",
+      "pre_resume": {
+        "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791505498344630656,
+        "inode": 272072,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "observed_before_execution": {
+        "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791505498344630656,
+        "inode": 272072,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "untouched": true
+    },
+    {
+      "step": "resume_from_checkpoint",
+      "resumed_run_id": "run-5a6a5a6482c6",
+      "parent_run_id": "run-a3272bf0e0f0"
+    },
+    {
+      "step": "restoration_fidelity",
+      "result": {
+        "mission_identity_unchanged": true,
+        "restored_states": {
+          "TASK_A": "COMPLETED",
+          "TASK_B": "COMPLETED",
+          "TASK_C": "COMPLETED",
+          "TASK_D": "READY",
+          "TASK_E": "BLOCKED"
+        },
+        "completed_preserved": true,
+        "crash_window_task_not_completed": true,
+        "run_lineage_preserved": true,
+        "attempts_restored": {
+          "TASK_A": 1,
+          "TASK_B": 1,
+          "TASK_C": 1
+        },
+        "durable_attempt_for_crash_window_task": 0,
+        "durable_artifact_record_for_crash_window_task": 0,
+        "journal_performed_for_crash_window_task": 1,
+        "journal_reconciled_before_resume": 0
+      }
+    }
+  ],
+  "restoration_fidelity": {
+    "mission_identity_unchanged": true,
+    "restored_states": {
+      "TASK_A": "COMPLETED",
+      "TASK_B": "COMPLETED",
+      "TASK_C": "COMPLETED",
+      "TASK_D": "READY",
+      "TASK_E": "BLOCKED"
+    },
+    "completed_preserved": true,
+    "crash_window_task_not_completed": true,
+    "run_lineage_preserved": true,
+    "attempts_restored": {
+      "TASK_A": 1,
+      "TASK_B": 1,
+      "TASK_C": 1
+    },
+    "durable_attempt_for_crash_window_task": 0,
+    "durable_artifact_record_for_crash_window_task": 0,
+    "journal_performed_for_crash_window_task": 1,
+    "journal_reconciled_before_resume": 0
+  },
+  "final_task_states": {
+    "TASK_A": "COMPLETED",
+    "TASK_B": "COMPLETED",
+    "TASK_C": "COMPLETED",
+    "TASK_D": "COMPLETED",
+    "TASK_E": "COMPLETED"
+  },
+  "side_effect_accounting": {
+    "journal_records_for_crash_window_task": [
+      {
+        "artifact_id": "artifact-9995d4161a72",
+        "attempt_id": "attempt-da87afad",
+        "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+        "inode": 272072,
+        "journal_record_id": "fbc5147ef11d",
+        "mission_id": "mission-f901cc67c7ef",
+        "mtime_ns": 1791505498344630656,
+        "op": "artifact_write",
+        "path": "task_d_output.txt",
+        "process_pid": 8179,
+        "record_type": "performed",
+        "recorded_at_utc": "2026-10-09T00:24:58.345655+00:00",
+        "run_id": "run-a3272bf0e0f0",
+        "sandbox_id": "sandbox-task-e55ed5b1ce6f",
+        "size_bytes": 26,
+        "task_id": "task-e55ed5b1ce6f"
+      },
+      {
+        "artifact_id": "artifact-9995d4161a72",
+        "content_sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493",
+        "inode": 272072,
+        "journal_record_id": "196f9f5dabec",
+        "mission_id": "mission-f901cc67c7ef",
+        "mtime_ns": 1791505498344630656,
+        "no_physical_rewrite": true,
+        "observed_ino": 272072,
+        "observed_mtime_ns": 1791505498344630656,
+        "op": "artifact_write",
+        "original_artifact_id": "artifact-9995d4161a72",
+        "path": "task_d_output.txt",
+        "process_pid": 8180,
+        "reconciled_at_utc": "2026-10-09T00:24:58.759365+00:00",
+        "record_type": "reconciled",
+        "sandbox_id": "sandbox-task-e55ed5b1ce6f",
+        "size_bytes": 26,
+        "task_id": "task-e55ed5b1ce6f"
+      }
+    ],
+    "journal_records_for_task_e": [
+      {
+        "artifact_id": "artifact-455b3e73bc78",
+        "attempt_id": "attempt-3c93bab9",
+        "content_sha256": "dbce143b47ba048557f08827cac4c36a9e3945948a12510936cba0edf271fd87",
+        "inode": 272078,
+        "journal_record_id": "80f86d9d294a",
+        "mission_id": "mission-f901cc67c7ef",
+        "mtime_ns": 1791505498912633807,
+        "op": "artifact_write",
+        "path": "task_e_output.txt",
+        "process_pid": 8180,
+        "record_type": "performed",
+        "recorded_at_utc": "2026-10-09T00:24:58.913938+00:00",
+        "run_id": "run-5a6a5a6482c6",
+        "sandbox_id": "sandbox-task-ef352908d859",
+        "size_bytes": 26,
+        "task_id": "task-ef352908d859"
+      }
+    ],
+    "crash_window_file": {
+      "pre_resume": {
+        "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791505498344630656,
+        "inode": 272072,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "after_resume": {
+        "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/sandbox-task-e55ed5b1ce6f/task_d_output.txt",
+        "exists": true,
+        "size_bytes": 26,
+        "mtime_ns": 1791505498344630656,
+        "inode": 272072,
+        "sha256": "d8b3c531a59ab82de2ebb8959d97a0529e6ead8b48bc16f8aee54605e385a493"
+      },
+      "no_physical_rewrite": true
+    },
+    "artifact_identity": {
+      "original_from_journal": "artifact-9995d4161a72",
+      "after_resume": [
+        "artifact-9995d4161a72"
+      ],
+      "is_original": true,
+      "count": 1
+    },
+    "events": {
+      "artifact_created_for_crash_window_task": 2,
+      "artifact_created_ids": [
+        "artifact-9995d4161a72",
+        "artifact-9995d4161a72"
+      ],
+      "task_completed_for_crash_window_task": 1
+    },
+    "attempts": {
+      "crash_window_task": 1,
+      "task_e": 1,
+      "per_task": {
+        "TASK_A": 1,
+        "TASK_B": 1,
+        "TASK_C": 1,
+        "TASK_D": 1,
+        "TASK_E": 1
+      }
+    },
+    "artifacts_per_task": {
+      "TASK_A": 1,
+      "TASK_B": 1,
+      "TASK_C": 1,
+      "TASK_D": 1,
+      "TASK_E": 1
+    },
+    "evidence_per_task": {
+      "TASK_A": 2,
+      "TASK_E": 2,
+      "TASK_C": 2,
+      "TASK_D": 2,
+      "TASK_B": 2
+    }
+  },
+  "verify_completion_report": {
+    "run_id": "run-5a6a5a6482c6",
+    "required_task_keys": [
+      "TASK_A",
+      "TASK_B",
+      "TASK_C",
+      "TASK_D",
+      "TASK_E"
+    ],
+    "checks": {
+      "all_required_tasks_present": {
+        "passed": true,
+        "missing": []
+      },
+      "all_required_tasks_completed": {
+        "passed": true,
+        "not_completed": []
+      },
+      "all_dependencies_satisfied": {
+        "passed": true,
+        "violations": []
+      },
+      "no_unresolved_work": {
+        "passed": true,
+        "unresolved": []
+      },
+      "verification_history": {
+        "passed": true,
+        "evidenced_verifications": 5,
+        "not_evidenced_verifications": 0,
+        "note": "not_evidenced entries belong to failed attempts corrected by replan"
+      }
+    },
+    "verdict": "COMPLETE"
+  },
+  "finalize_mission": {
+    "mission_id": "mission-f901cc67c7ef",
+    "state_path": [
+      "EXECUTING"
+    ],
+    "final_state": "EVIDENCED"
+  },
+  "final_checkpoint": {
+    "checkpoint_id": "checkpoint-c4c8656e2e36",
+    "path": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/checkpoints/mission-f901cc67c7ef/checkpoint-c4c8656e2e36.json",
+    "hash": "d876ff92cda98b5c201ac1dbf052e0101d9e1cd53fba7814067e2949073c5cab"
+  },
+  "journal_file": "/tmp/e10cw1_fixed_o4wlgxpg/chain1/artifacts/side_effect_journal/mission-f901cc67c7ef/journal.jsonl"
+}
