@@ -49,6 +49,34 @@ from secrets_store import get_key
 # TEST FIXTURES
 # ============================================================
 
+
+def _granted(artifacts_dir):
+    """E10-RP2.2-R1 — REAL EOE authorization stack for governed
+    artifact_write through ToolExecutor (order §2.1: path-bearing tools
+    reject non-path-aware validators, so the legacy permissive 2-arg
+    fixture is replaced by the production bridge on AccessAdmission with
+    an owner-approved READ_WRITE PATH_GRANT over THIS test's own
+    artifacts tree only — no scope expansion, no permissive substitute,
+    order §2.6). Returns kwargs for ExecutionEngine."""
+    import os as _os
+    import time as _time
+    from eoe.access_gateway import (AccessAdmission, AccessLedger,
+                                    GrantorService)
+    from eoe.engine_bridge import build_engine_grant_validator
+    from eoe.order_parser import AccessRequest, GrantKind
+    ledger = AccessLedger()
+    grantor = GrantorService(_os.urandom(32))
+    admission = AccessAdmission(ledger, grantor, now=_time.time)
+    grant = grantor.approve(grantor.propose(AccessRequest(
+        kind=GrantKind.PATH_GRANT, scope="read_write",
+        target=str(artifacts_dir))))
+    ledger.register(grant)
+    return {
+        "grant_validator": build_engine_grant_validator(
+            admission, str(artifacts_dir)),
+        "grant_ids": [grant.grant_id],
+    }
+
 @pytest.fixture(autouse=True)
 def reset_agent_registry():
     """Reset global agent registry between tests to prevent state pollution."""
@@ -257,7 +285,7 @@ class TestE4MissionOrchestration:
         # Use fresh engine and MC to avoid E3 agent interference
         engine = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
@@ -465,7 +493,7 @@ class TestE4FailureIsolation:
         # to avoid e3-thinker being selected for mission tasks
         engine = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
@@ -587,7 +615,7 @@ class TestE4Replanning:
         # Create fresh engine and MissionController WITHOUT E3 agent registrations
         engine = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc = MissionController(engine, state_dir=temp_dir)
         register_mission_agent(engine.agent_registry)
@@ -729,7 +757,7 @@ class TestE4CheckpointResume:
         # ============================================================
         engine1 = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry)
@@ -815,7 +843,7 @@ class TestE4CheckpointResume:
         # ============================================================
         engine2 = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry)
@@ -953,7 +981,7 @@ class TestE4EventReconciliation:
         # Runtime 1: Execute mission to completion
         engine1 = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc1 = MissionController(engine1, state_dir=temp_dir)
         register_mission_agent(engine1.agent_registry)
@@ -978,7 +1006,7 @@ class TestE4EventReconciliation:
         # ============================================================
         engine2 = ExecutionEngine(
         artifacts_base_dir=temp_dir,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
         mc2 = MissionController(engine2, state_dir=temp_dir)
         register_mission_agent(engine2.agent_registry)
@@ -1095,7 +1123,7 @@ class TestE4IndependentVerification:
         # Create fresh engine and MC
         engine = ExecutionEngine(
             artifacts_base_dir=temp_dir,
-            grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment)
+            **_granted(temp_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
         )
         
         # Register mission agent pool (IMPLEMENTER via MissionTaskAgent)

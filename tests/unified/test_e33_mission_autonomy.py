@@ -75,6 +75,33 @@ STATE_DIR = TEMP_ARTIFACT_ROOT / "e33" / "state"
 RUNNER_SCRIPT = Path(__file__).resolve().parent / "e33_mission_runner.py"
 
 
+def _granted(artifacts_dir):
+    """E10-RP2.2-R1 — REAL EOE authorization stack for governed
+    artifact_write through ToolExecutor (order §2.1: path-bearing tools
+    reject non-path-aware validators, so the legacy permissive 2-arg
+    fixture is replaced by the production bridge on AccessAdmission with
+    an owner-approved READ_WRITE PATH_GRANT over THIS test's own
+    artifacts tree only). Returns kwargs for ExecutionEngine."""
+    import os as _os
+    import time as _time
+    from eoe.access_gateway import (AccessAdmission, AccessLedger,
+                                    GrantorService)
+    from eoe.engine_bridge import build_engine_grant_validator
+    from eoe.order_parser import AccessRequest, GrantKind
+    ledger = AccessLedger()
+    grantor = GrantorService(_os.urandom(32))
+    admission = AccessAdmission(ledger, grantor, now=_time.time)
+    grant = grantor.approve(grantor.propose(AccessRequest(
+        kind=GrantKind.PATH_GRANT, scope="read_write",
+        target=str(artifacts_dir))))
+    ledger.register(grant)
+    return {
+        "grant_validator": build_engine_grant_validator(
+            admission, str(artifacts_dir)),
+        "grant_ids": [grant.grant_id],
+    }
+
+
 def _sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -219,7 +246,7 @@ class TestE33MissionAutonomy:
             # ================================================================
             engine1 = ExecutionEngine(
         artifacts_base_dir=str(STATE_DIR), max_retries=0,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(STATE_DIR),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
             controller1 = MissionController(engine1, state_dir=str(STATE_DIR))
 
@@ -373,7 +400,7 @@ class TestE33MissionAutonomy:
             # ================================================================
             engine3 = ExecutionEngine(
         artifacts_base_dir=str(STATE_DIR), max_retries=0,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(STATE_DIR),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
             controller3 = MissionController(engine3, state_dir=str(STATE_DIR))
             run3 = engine3.resume_from_checkpoint(cp2_id, mission_id=mission_id)

@@ -41,8 +41,11 @@ def main() -> int:
     from unified.execution import ExecutionEngine
     from unified.mission_controller import MissionController
 
+    from e10_common import build_grant_stack
+    validator, grant_id = build_grant_stack(str(state_dir))
     engine = ExecutionEngine(artifacts_base_dir=str(state_dir),
-                             grant_validator=lambda g, p: True)
+                             grant_validator=validator,
+                             grant_ids=[grant_id])
     mc = MissionController(engine, state_dir=str(state_dir), require_plan_review=True)
 
     probe = {

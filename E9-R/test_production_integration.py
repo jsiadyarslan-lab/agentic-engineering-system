@@ -53,8 +53,24 @@ async def run_production_integration_test():
             # For testing: allow all permissions
             return True
         
+        # E10-RP2.2-R1: path-bearing tools (artifact_write) now REQUIRE a
+        # path-aware validator (order §2.1 fail-closed) — wire the REAL EOE
+        # bridge with an owner-approved grant over this test's own artifacts
+        # tree (no permissive substitute, order §2.6).
+        from eoe.access_gateway import AccessAdmission, AccessLedger, GrantorService
+        from eoe.engine_bridge import build_engine_grant_validator
+        from eoe.order_parser import AccessRequest, GrantKind
+        import time as _time
+        _ledger = AccessLedger()
+        _grantor = GrantorService(os.urandom(32))
+        _admission = AccessAdmission(_ledger, _grantor, now=_time.time)
+        _grant = _grantor.approve(_grantor.propose(AccessRequest(
+            kind=GrantKind.PATH_GRANT, scope="read_write", target=artifacts_dir)))
+        _ledger.register(_grant)
+        real_validator = build_engine_grant_validator(_admission, artifacts_dir)
+
         # Create engine with grant validator
-        engine = ExecutionEngine(artifacts_base_dir=artifacts_dir, grant_validator=simple_grant_validator)
+        engine = ExecutionEngine(artifacts_base_dir=artifacts_dir, grant_validator=real_validator, grant_ids=[_grant.grant_id])
         
         # Register mission agents
         agent_registry = engine.agent_registry
@@ -278,10 +294,20 @@ async def run_negative_tests():
         # Test 2: Valid grant should work
         print("\n--- Test 2: Authorized Tool (with valid grant) ---")
         
-        def permissive_grant_validator(grant_id: str, permission: str) -> bool:
-            return True
+        # E10-RP2.2-R1: the permissive 2-arg fixture is replaced by the REAL
+        # EOE bridge + an owner-approved grant covering this engine's own
+        # artifacts tree (order §2.1 fail-closed for path tools).
+        import time as _time
+        from eoe.access_gateway import AccessAdmission as _AG, AccessLedger as _AL, GrantorService as _GS
+        from eoe.engine_bridge import build_engine_grant_validator as _begv
+        from eoe.order_parser import AccessRequest as _AR, GrantKind as _GK
+        _led2 = _AL(); _gr2 = _GS(os.urandom(32))
+        _adm2 = _AG(_led2, _gr2, now=_time.time)
+        _g2 = _gr2.approve(_gr2.propose(_AR(
+            kind=_GK.PATH_GRANT, scope="read_write", target=artifacts_dir + "2")))
+        _led2.register(_g2)
         
-        engine2 = ExecutionEngine(artifacts_base_dir=artifacts_dir + "2", grant_validator=permissive_grant_validator)
+        engine2 = ExecutionEngine(artifacts_base_dir=artifacts_dir + "2", grant_validator=_begv(_adm2, artifacts_dir + "2"), grant_ids=[_g2.grant_id])
         agent_registry2 = engine2.agent_registry
         register_mission_agent(agent_registry2, pool_size=5)
         mc2 = MissionController(engine2)

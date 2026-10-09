@@ -657,13 +657,16 @@ class ToolExecutor:
         (order §2.4). Paths that fail are neither disclosed nor read
         (fail-closed per path, no partial leakage).
 
-        Legacy 2-arg validators carry no per-path policy (test fixtures
-        only — the operational path wires the path-aware EOE bridge built
-        by ``eoe.engine_bridge.build_engine_grant_validator``).
+        E10-RP2.2-R1 §2.4 — FAIL-CLOSED: when no path-aware validator is
+        wired, NO path is disclosed and NO content is read. The previous
+        behavior (return True on a non-path-aware validator — disclosure
+        allowed by default) is deleted by order: exploration/path
+        disclosure without a path-aware policy is refused, without reading
+        contents or leaking names/paths outside the policy.
         """
         validator = context.grant_validator
         if validator is None or not getattr(validator, "__path_aware__", False):
-            return True
+            return False
         for grant_id in context.grant_ids:
             try:
                 if validator(grant_id, "read", str(abs_path)):
@@ -685,9 +688,7 @@ class ToolExecutor:
         the ACTUAL contained target path. Path-aware validators (built by
         ``eoe.engine_bridge.build_engine_grant_validator``; marked with
         ``__path_aware__``) receive it and enforce the grant's path scope
-        and depth limit on the real target. Legacy 2-arg validators keep
-        the permission-name check (test fixtures only — never the
-        operational path, which wires only the bridge).
+        and depth limit on the real target.
 
         E10-RP2.2 §2: the WORKSPACE tool family (write_file / edit_file /
         read_file / list_dir / grep / find_files / file_browser) joins
@@ -697,6 +698,17 @@ class ToolExecutor:
         NEVER an implicit general grant (order §2.3): the presented grant
         must cover the ACTUAL path and depth, or the tool is rejected
         fail-closed before any event, journal record, or side effect.
+
+        E10-RP2.2-R1 §2.1/§2.2 (fail-closed enforcement): for EVERY
+        path-bearing tool the final decision may rest ONLY on a
+        path-aware validator and ONLY on a derived concrete target.
+        Legacy 2-arg validators are REJECTED for path-bearing tools even
+        when their 2-arg form returns True (the RP2.1/RP2.2 "fixtures
+        only" acceptance is overruled by this order), and an underivable
+        ``actual_target`` is rejected with NO fallback to the coarse
+        kind/scope gateway. The coarse 2-arg form remains a final
+        decision only for tools WITHOUT a concrete path (git family, web,
+        grants — declared post-R1 boundary).
         """
         required = contract.required_permissions
         if not required:
@@ -708,7 +720,8 @@ class ToolExecutor:
         # RP2.1 §2.6 + RP2.2 §2.6: a rejection must leave no new file,
         # folder, and no `performed` journal record).
         actual_target: Optional[str] = None
-        if tool_input is not None and contract.name in self._PATH_BEARING_TOOLS:
+        path_bearing = contract.name in self._PATH_BEARING_TOOLS
+        if tool_input is not None and path_bearing:
             if contract.name in self._WORKSPACE_PATH_TOOLS:
                 # E10-RP2.2 §2.2/§2.3 — workspace tools ground the ACTUAL
                 # contained workspace target into the grant decision;
@@ -733,6 +746,35 @@ class ToolExecutor:
             raise PermissionError(f"Tool {contract.name} requires grants but no validator available")
 
         path_aware = bool(getattr(context.grant_validator, "__path_aware__", False))
+
+        # E10-RP2.2-R1 §2.1 — FAIL-CLOSED: for a path-bearing tool the
+        # FINAL authorization decision may NEVER rest on a validator that
+        # is not path-aware. A legacy 2-arg validator (even one returning
+        # True) cannot decide path scope or depth, so it must be rejected
+        # here — before any event, journal record, or side effect.
+        if path_bearing and not path_aware:
+            raise PermissionError(
+                f"Tool {contract.name} requires a path-aware grant "
+                "validator (__path_aware__) for its concrete target; the "
+                "configured validator is not path-aware — refused "
+                "fail-closed (E10-RP2.2-R1 §2.1)"
+            )
+
+        # E10-RP2.2-R1 §2.2 — FAIL-CLOSED: a path-bearing operation whose
+        # concrete contained target cannot be derived is refused. There is
+        # NO fallback to the coarse kind/scope gateway (the 2-arg
+        # ``grant_validator(grant_id, perm)`` form) — even when the
+        # validator IS path-aware but cannot verify this operation's
+        # target, the operation is rejected before any side effect.
+        if path_bearing and actual_target is None:
+            raise PermissionError(
+                f"Tool {contract.name} requires a concrete contained "
+                "target for a path-scoped authorization decision; no "
+                "valid actual_target could be derived for this operation "
+                "— refused fail-closed with no fallback to the coarse "
+                "kind gate (E10-RP2.2-R1 §2.2)"
+            )
+
         for perm in required:
             # Check if any grant covers this permission
             has_perm = False
@@ -745,6 +787,11 @@ class ToolExecutor:
                         has_perm = True
                         break
                 elif context.grant_validator(grant_id, perm):
+                    # E10-RP2.2-R1 §2.3 — the coarse 2-arg form is a final
+                    # decision ONLY for tools WITHOUT a concrete path
+                    # (git family, web, grants — the declared post-R1
+                    # boundary). Path-bearing tools can never reach this
+                    # branch: §2.1/§2.2 above already rejected them.
                     has_perm = True
                     break
             if not has_perm:

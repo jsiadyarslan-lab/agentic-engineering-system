@@ -250,14 +250,20 @@ PRE_REGISTERED_EXPECTATIONS: Dict[str, Any] = {
 
 def build_engine(artifacts_dir: str, max_retries: int = 0):
     """Production-contract engine (E9-R1: governed tool execution requires a
-    grant validator — same pattern as E9-R/test_production_integration.py)."""
+    grant validator). E10-RP2.2-R1: the validator is the REAL EOE bridge
+    with an owner-approved grant over this engine's artifacts tree
+    (e10_common.build_grant_stack) — the legacy permissive 2-arg fixture is
+    no longer admissible for path-bearing tools (order §2.1 fail-closed)."""
     from unified.execution import ExecutionEngine
     from unified.mission_controller import register_mission_agent
 
+    from e10_common import build_grant_stack
+    validator, grant_id = build_grant_stack(artifacts_dir)
     engine = ExecutionEngine(
         artifacts_base_dir=str(artifacts_dir),
         max_retries=max_retries,
-        grant_validator=lambda grant_id, permission: True,
+        grant_validator=validator,
+        grant_ids=[grant_id],
     )
     register_mission_agent(engine.agent_registry, pool_size=4)
     return engine

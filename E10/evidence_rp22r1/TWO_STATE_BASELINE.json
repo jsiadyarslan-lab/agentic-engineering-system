@@ -1,0 +1,104 @@
+{
+  "vs-row": {
+    "cmd": "python3 -m pytest tests/unified/test_vs001_simple.py tests/unified/test_vs001_integration.py tests/unified/test_vs002.py tests/unified/test_vs002_e8.py tests/unified/test_vs002_r1.py tests/unified/test_vs003.py tests/unified/test_vs004_graph.py tests/unified/test_e32e_durable_execution.py -p no:cacheprovider -q",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_agent_failure_preserved",
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_evidence_from_real_execution",
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_vs003_full_lifecycle"
+    ],
+    "branch_failures": [
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_agent_failure_preserved",
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_evidence_from_real_execution",
+      "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_vs003_full_lifecycle"
+    ],
+    "failure_sets_identical": true
+  },
+  "e3e4": {
+    "cmd": "python3 -m pytest tests/orchestrator/test_e3_canonical_orchestrator.py tests/orchestrator/test_e4_multi_task_mission.py -p no:cacheprovider -q",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+    ],
+    "branch_failures": [
+      "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+      "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+    ],
+    "failure_sets_identical": true
+  },
+  "e6": {
+    "cmd": "python3 -m pytest tests/orchestrator/test_e6_durable_mission_orchestration.py -p no:cacheprovider -q",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+    ],
+    "branch_failures": [
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+      "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+    ],
+    "failure_sets_identical": true
+  },
+  "e33e32f": {
+    "cmd": "python3 -m pytest tests/unified/test_e33_mission_autonomy.py tests/unified/test_e32f_autonomous_replanning.py -p no:cacheprovider -q",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+    ],
+    "branch_failures": [
+      "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+    ],
+    "failure_sets_identical": true
+  },
+  "e35": {
+    "cmd": "python3 tests/e35/test_long_mission.py",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "<non-pytest-tail>",
+      "  File \"<WT>/src/unified/domain_model.py\", line 17, in <module>",
+      "    from pydantic import BaseModel, Field, field_validator",
+      "ModuleNotFoundError: No module named 'pydantic'"
+    ],
+    "branch_failures": [
+      "<non-pytest-tail>",
+      "  File \"<WT>/src/unified/domain_model.py\", line 17, in <module>",
+      "    from pydantic import BaseModel, Field, field_validator",
+      "ModuleNotFoundError: No module named 'pydantic'"
+    ],
+    "failure_sets_identical": true
+  },
+  "e37": {
+    "cmd": "python3 tests/e37/test_multi_task_mission.py",
+    "baseline_exit": 1,
+    "branch_exit": 1,
+    "baseline_failures": [
+      "<non-pytest-tail>",
+      "  File \"<WT>/src/unified/domain_model.py\", line 17, in <module>",
+      "    from pydantic import BaseModel, Field, field_validator",
+      "ModuleNotFoundError: No module named 'pydantic'"
+    ],
+    "branch_failures": [
+      "<non-pytest-tail>",
+      "  File \"<WT>/src/unified/domain_model.py\", line 17, in <module>",
+      "    from pydantic import BaseModel, Field, field_validator",
+      "ModuleNotFoundError: No module named 'pydantic'"
+    ],
+    "failure_sets_identical": true
+  }
+}

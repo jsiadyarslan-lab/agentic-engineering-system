@@ -666,10 +666,15 @@ def test_RP22_T17_revoked_and_expired_grants_never_authorize():
 # ============================ legacy fixtures: structural containment holds
 
 def test_RP22_T18_legacy_validator_still_structurally_contained():
-    """§2.5: structural containment is VALIDATOR-INDEPENDENT — even with a
-    legacy 2-arg fixture validator (permission-name check only, test
-    fixtures — never the operational path), a traversal/absolute/symlink
-    workspace target is refused by the structural layer."""
+    """§2.5 + E10-RP2.2-R1 §2.1/§3.1: structural containment is
+    VALIDATOR-INDEPENDENT — and a legacy 2-arg fixture validator
+    (permission-name check only) is now REJECTED fail-closed for
+    path-bearing tools even when its 2-arg form returns True (the
+    RP2.1/RP2.2 'fixtures only' acceptance is overruled by order
+    E10-RP2.2-R1 §2.1). In-scope writes are refused by the permission
+    gate BEFORE any side effect; traversal/absolute workspace targets
+    are still refused by the structural layer (containment proof fires
+    first for escapes)."""
     from unified.execution import ExecutionContext, create_execution_engine
     base = Path(tempfile.mkdtemp(prefix="rp22_leg_"))
     ws = base / "workspace"; ws.mkdir()
@@ -682,9 +687,14 @@ def test_RP22_T18_legacy_validator_still_structurally_contained():
         agent_id="ag", agent_type="implementer", workspace_root=str(ws),
         sandbox_id="sandbox-t", grant_validator=lambda g, p: True,
         grant_ids=["g-any"])
-    # coarse permission passes (fixture), but STRUCTURE still holds
+    # E10-RP2.2-R1 §2.1 — the legacy validator's 2-arg True is NEVER a
+    # final decision for a path-bearing tool: the in-scope write is
+    # refused fail-closed at the permission gate, before any effect.
     ok = _run(engine, ctx, "write_file", path="fine.txt", content="F")
-    assert ok["success"] is True, ok
+    assert not ok["success"], ok
+    assert "path-aware" in ok["error"], ok
+    assert not (ws / "fine.txt").exists()
+    # structural containment still fires FIRST for escapes
     for evil in ("../../esc.txt", "/tmp/rp22-legacy-esc.txt"):
         r = _run(engine, ctx, "write_file", path=evil, content="X")
         assert not r["success"] and \

@@ -1,0 +1,8 @@
+PROBE/F1_legacy_validator_write_file_succeeds/FAIL_OPEN
+PROBE/F2_underivable_target_not_rejected/FAIL_OPEN
+PROBE/F3_bridge_two_arg_form_coarse_only/FAIL_OPEN
+PROBE/F4_list_dir_discloses_all_with_legacy_validator/FAIL_OPEN
+PROBE/F4b_disclosure_permitted_true_without_path_aware/FAIL_OPEN
+PROBE/BASELINE_DIR//tmp/rp22r1_probe_7tcghpdl
+exit=0
+6719fe371da3d7854cb612cfa64ef937c7d3d7b2

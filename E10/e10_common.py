@@ -92,15 +92,48 @@ def e10_specs() -> List[TaskSpec]:
     ]
 
 
+def build_grant_stack(artifacts_dir: str):
+    """E10-RP2.2-R1 — REAL EOE authorization stack for governed artifact
+    writes (replaces the legacy permissive 2-arg fixture validator, which
+    order §2.1 now REJECTS for every path-bearing tool).
+
+    The owner side runs with a caller-supplied runtime key (engineering
+    never signs): propose -> approve -> ledger.register, one READ_WRITE
+    PATH_GRANT covering THIS engine's own artifacts tree only (default
+    max_depth — no scope expansion beyond the operations under test).
+    Returns (validator, grant_id): the validator is the production bridge
+    built on AccessAdmission (fail-closed, path-aware)."""
+    import time as _time
+
+    from eoe.access_gateway import AccessAdmission, AccessLedger, GrantorService
+    from eoe.engine_bridge import build_engine_grant_validator
+    from eoe.order_parser import AccessRequest, GrantKind
+
+    ledger = AccessLedger()
+    grantor = GrantorService(os.urandom(32))
+    admission = AccessAdmission(ledger, grantor, now=_time.time)
+    grant = grantor.approve(grantor.propose(AccessRequest(
+        kind=GrantKind.PATH_GRANT, scope="read_write",
+        target=str(artifacts_dir))))
+    ledger.register(grant)
+    validator = build_engine_grant_validator(admission, str(artifacts_dir))
+    return validator, grant.grant_id
+
+
 def build_engine(artifacts_dir: str):
     """Build a production-contract engine (E9-R1: governed tool execution
-    requires a grant validator — same pattern as E9-R/test_production_integration.py)."""
+    requires a grant validator). E10-RP2.2-R1: the validator is the REAL
+    EOE bridge with an owner-approved grant over this engine's artifacts
+    tree — the legacy permissive 2-arg fixture is no longer admissible for
+    path-bearing tools (order §2.1 fail-closed)."""
     from unified.execution import ExecutionEngine
     from unified.mission_controller import register_mission_agent
 
+    validator, grant_id = build_grant_stack(artifacts_dir)
     engine = ExecutionEngine(
         artifacts_base_dir=str(artifacts_dir),
-        grant_validator=lambda grant_id, permission: True,
+        grant_validator=validator,
+        grant_ids=[grant_id],
     )
     register_mission_agent(engine.agent_registry, pool_size=4)
     return engine

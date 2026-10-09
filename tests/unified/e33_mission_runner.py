@@ -22,6 +22,33 @@ import time
 from pathlib import Path
 
 
+def _granted(artifacts_dir):
+    """E10-RP2.2-R1 — REAL EOE authorization stack for governed
+    artifact_write through ToolExecutor (order §2.1: path-bearing tools
+    reject non-path-aware validators, so the legacy permissive 2-arg
+    fixture is replaced by the production bridge on AccessAdmission with
+    an owner-approved READ_WRITE PATH_GRANT over THIS test's own
+    artifacts tree only). Returns kwargs for ExecutionEngine."""
+    import os as _os
+    import time as _time
+    from eoe.access_gateway import (AccessAdmission, AccessLedger,
+                                    GrantorService)
+    from eoe.engine_bridge import build_engine_grant_validator
+    from eoe.order_parser import AccessRequest, GrantKind
+    ledger = AccessLedger()
+    grantor = GrantorService(_os.urandom(32))
+    admission = AccessAdmission(ledger, grantor, now=_time.time)
+    grant = grantor.approve(grantor.propose(AccessRequest(
+        kind=GrantKind.PATH_GRANT, scope="read_write",
+        target=str(artifacts_dir))))
+    ledger.register(grant)
+    return {
+        "grant_validator": build_engine_grant_validator(
+            admission, str(artifacts_dir)),
+        "grant_ids": [grant.grant_id],
+    }
+
+
 async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--state-dir", required=True)
@@ -43,7 +70,7 @@ async def main() -> int:
 
     engine = ExecutionEngine(
         artifacts_base_dir=state_dir, max_retries=0,
-        grant_validator=lambda grant_id, permission: True,  # E9-R1 contract: governed artifact_write requires a grant validator (fixture alignment, same as E9-R/test_production_integration.py),
+        **_granted(state_dir),  # E10-RP2.2-R1: real EOE bridge + owner-approved grant (order §2.1 fail-closed)
     )
     engine.event_bus.subscribe(lambda e: None)
     controller = MissionController(engine, state_dir=state_dir)

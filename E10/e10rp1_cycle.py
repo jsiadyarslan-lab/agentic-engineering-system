@@ -309,6 +309,8 @@ def main() -> int:
     from unified.mission_controller import MissionController  # noqa: F401
     from unified.execution import ExecutionEngine  # noqa: F401
 
+    from e10_common import build_grant_stack
+    validator, grant_id = build_grant_stack(str(out))
     decomposer = ScriptedDecomposerProvider()
     provider = FullCycleDecisionProvider() if args.mode == "full" else BlockedDecisionProvider()
     orch = create_canonical_orchestrator(
@@ -319,12 +321,13 @@ def main() -> int:
         require_plan_review=True,       # canonical policy — explicit, default ON
         replan_decision_provider=provider,
         max_review_rounds=3,
-        # E9-R construction pattern (same as E9-R/test_production_integration.py
-        # and E10-RP build_engine): governed tool execution requires a grant
-        # validator. This is the DISCLOSED test validator for the proof; real
-        # deployments wire the EOE grant system (recorded as a remaining gap —
-        # NOT claimed here).
-        grant_validator=lambda grant_id, permission: True,
+        # E10-RP2.2-R1: the REAL EOE grant system is wired here (bridge on
+        # AccessAdmission + owner-approved grant over this run's artifacts
+        # tree). The former permissive 2-arg fixture is no longer admissible
+        # for path-bearing tools (order §2.1 fail-closed) — the RP1
+        # "disclosed test validator" gap is closed for this proof.
+        grant_validator=validator,
+        grant_ids=[grant_id],
     )
 
     # Diagnostics (RP1_DEBUG=1): observe the planning boundary decision.

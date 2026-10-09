@@ -264,9 +264,11 @@ def test_RP1_T13_fresh_controller_not_restored_fail_closed(rp1_session):
     from unified.execution import ExecutionEngine
     from unified.mission_controller import MissionController
 
+    from e10_common import build_grant_stack
     state_dir = s["session"] / "full"
+    _v, _gid = build_grant_stack(str(state_dir))
     engine = ExecutionEngine(artifacts_base_dir=str(state_dir),
-                             grant_validator=lambda g, p: True)
+                             grant_validator=_v, grant_ids=[_gid])
     mc = MissionController(engine, state_dir=str(state_dir), require_plan_review=True)
 
     # NOT PROVEN: durable ledger has v2 on disk, fresh controller has nothing
@@ -304,12 +306,14 @@ def test_RP1_T15_gate_probe_refuses_then_allows(rp1_session, tmp_path):
     from orchestrator.canonical import create_canonical_orchestrator
     from unified.mission_controller import TaskSpec
 
+    from e10_common import build_grant_stack
+    _v, _gid = build_grant_stack(str(tmp_path))
     orch = create_canonical_orchestrator(
         llm_provider=None, artifacts_base_dir=str(tmp_path),
         auto_approve_plans=True, require_plan_review=True,
-        # E9-R construction pattern: governed writes need a grant validator
-        # (disclosed test validator; the canonical baseline had none at all).
-        grant_validator=lambda g, p: True)
+        # E10-RP2.2-R1: real EOE bridge + owner-approved grant (the former
+        # permissive 2-arg fixture is rejected for path tools, order §2.1).
+        grant_validator=_v, grant_ids=[_gid])
     specs = [
         TaskSpec(key="P1", name="Probe 1", description="", depends_on=[],
                  acceptance_criteria=["file_contains:task_p1.txt:RP1_P1"],
