@@ -1,0 +1,668 @@
+{
+  "pid": 3547,
+  "mission_id": "mission-d7e0191e36e6",
+  "run_id": "run-af92ccf5db22",
+  "review_v1": {
+    "verdict": "approved"
+  },
+  "phase1": {
+    "states": {
+      "A": "COMPLETED",
+      "B": "COMPLETED",
+      "C": "COMPLETED",
+      "D": "COMPLETED",
+      "E": "FAILED"
+    },
+    "task_results": {
+      "A": {
+        "success": true,
+        "attempts": 1
+      },
+      "B": {
+        "success": true,
+        "attempts": 2
+      },
+      "C": {
+        "success": true,
+        "attempts": 1
+      },
+      "D": {
+        "success": true,
+        "attempts": 1
+      },
+      "E": {
+        "success": false,
+        "error": "Verification failed: not_evidenced",
+        "attempts": 2
+      }
+    },
+    "e_error": "Verification failed: not_evidenced",
+    "artifact_stats": {
+      "A": {
+        "mtime_ns": 1791554929919036893,
+        "inode": 539089,
+        "sha256": "d283b456b61b9e3c2dc1bb4c17aa99203c42e68b41813d373c9dcaa4b6ece252",
+        "size": 29
+      },
+      "B": {
+        "mtime_ns": 1791554929974037229,
+        "inode": 539297,
+        "sha256": "e800321306da2fbc83f4db143abb19f14ca300f717ec8378ad164b95b54a0d21",
+        "size": 58
+      },
+      "C": {
+        "mtime_ns": 1791554930028037559,
+        "inode": 539361,
+        "sha256": "64dea12f0816d1d0ca7a778c1520020fc6c38fdd69733e7906f535f1a93d1d7f",
+        "size": 24
+      },
+      "D": {
+        "mtime_ns": 1791554930082037888,
+        "inode": 539409,
+        "sha256": "3be64077c121add59c8335eab02c369b6c7f75d2724ed33e6e17125dabed3ff5",
+        "size": 25
+      },
+      "E": {
+        "mtime_ns": 1791554930136038220,
+        "inode": 539457,
+        "sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+        "size": 82
+      }
+    },
+    "attempts": {
+      "A": 1,
+      "B": 2,
+      "C": 1,
+      "D": 1,
+      "E": 2
+    }
+  },
+  "classification": {
+    "E": {
+      "kind": "plan_deviation",
+      "recovery": "replan",
+      "resolved": false,
+      "evidence": [
+        "TASK_FAILED event at 2026-10-09T14:08:50.188727",
+        "terminal=True retry_count=1 max_retries=1"
+      ],
+      "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect."
+    },
+    "B": {
+      "kind": "tool_runtime_failure",
+      "recovery": "retry",
+      "resolved": true,
+      "resolved_by": "engine_retry_then_completed",
+      "evidence": [
+        "TASK_FAILED event at 2026-10-09T14:08:49.923039",
+        "terminal=False retry_count=0 max_retries=1"
+      ],
+      "classification_reason": "Error originates from the sandbox/tool layer (filesystem), not from agent logic."
+    }
+  },
+  "replan_v1_to_v2": {
+    "from_version": "v1",
+    "to_version": "v2",
+    "invalidated": [],
+    "preserved": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "added": [],
+    "rewired": [],
+    "modified": [
+      {
+        "task_key": "E",
+        "new_acceptance_criteria": [
+          "file_exists:task_s2_e.txt",
+          "file_contains:task_s2_e.txt:E10RP_S2_E_REALITY_ACTUAL"
+        ]
+      }
+    ],
+    "reason": "Deviation fail-f0a7423ad6ff at terminal task E: verification against plan v1 assumption ('E10RP_S2_E_PLAN_V1_EXPECTED') failed not_evidenced; E's observed artifact defines the real contract ('E10RP_S2_E_REALITY_ACTUAL'). E is terminal with no dependents: the minimal correct change is E's own criteria \u2014 nothing else in the plan is affected.",
+    "evidence": [
+      "TASK_FAILED event at 2026-10-09T14:08:50.188727",
+      "terminal=True retry_count=1 max_retries=1"
+    ]
+  },
+  "review_v2_first": {
+    "verdict": "rejected",
+    "reasons": [
+      "C6_plan_executable_no_failed_tasks: failed_tasks=['E'] (a FAILED task makes the plan not executable)"
+    ]
+  },
+  "gate_refusals": [
+    {
+      "when": "unapproved v2",
+      "error": "PLAN_REVIEW_GATE: continuation REFUSED for run run-af92ccf5db22: plan 'v2' has no review (latest review covers 'v1'); fail-closed"
+    },
+    {
+      "when": "rejected review",
+      "error": "PLAN_REVIEW_GATE: continuation REFUSED for run run-af92ccf5db22: plan 'v2' review review-94c97f6a3df0 is REJECTED \u2014 C6_plan_executable_no_failed_tasks: failed_tasks=['E'] (a FAILED task makes the plan not executable); fail-closed"
+    }
+  ],
+  "review_v2_second": {
+    "verdict": "approved"
+  },
+  "phase2": {
+    "states": {
+      "A": "COMPLETED",
+      "B": "COMPLETED",
+      "C": "COMPLETED",
+      "D": "COMPLETED",
+      "E": "COMPLETED"
+    }
+  },
+  "preservation": {
+    "attempts_after": {
+      "A": 1,
+      "B": 2,
+      "C": 1,
+      "D": 1,
+      "E": 3
+    },
+    "attempts_phase1": {
+      "A": 1,
+      "B": 2,
+      "C": 1,
+      "D": 1,
+      "E": 2
+    }
+  },
+  "journal_task_e": [
+    {
+      "artifact_id": "artifact-d6ecb94affe3",
+      "attempt_id": "attempt-789a11c8",
+      "content_sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+      "journal_record_id": "ae0c0e708fb8",
+      "mission_id": "mission-d7e0191e36e6",
+      "op": "artifact_write",
+      "path": "task_s2_e.txt",
+      "process_pid": 3547,
+      "record_type": "intent",
+      "recorded_at_utc": "2026-10-09T14:08:50.136329+00:00",
+      "run_id": "run-af92ccf5db22",
+      "sandbox_id": "sandbox-task-c985bdb7c449",
+      "size_bytes": 82,
+      "task_id": "task-c985bdb7c449"
+    },
+    {
+      "artifact_id": "artifact-d6ecb94affe3",
+      "attempt_id": "attempt-789a11c8",
+      "content_sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+      "inode": 539457,
+      "intent_journal_record_id": "ae0c0e708fb8",
+      "journal_record_id": "fa9181137e3a",
+      "mission_id": "mission-d7e0191e36e6",
+      "mtime_ns": 1791554930136038220,
+      "op": "artifact_write",
+      "path": "task_s2_e.txt",
+      "performed_by_pid": 3547,
+      "performed_via": "direct",
+      "process_pid": 3547,
+      "record_type": "performed",
+      "recorded_at_utc": "2026-10-09T14:08:50.136869+00:00",
+      "run_id": "run-af92ccf5db22",
+      "sandbox_id": "sandbox-task-c985bdb7c449",
+      "size_bytes": 82,
+      "task_id": "task-c985bdb7c449"
+    },
+    {
+      "artifact_id": "artifact-d6ecb94affe3",
+      "content_sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+      "inode": 539457,
+      "journal_record_id": "4feba2f13bda",
+      "mission_id": "mission-d7e0191e36e6",
+      "mtime_ns": 1791554930136038220,
+      "no_physical_rewrite": true,
+      "observed_ino": 539457,
+      "observed_mtime_ns": 1791554930136038220,
+      "op": "artifact_write",
+      "original_artifact_id": "artifact-d6ecb94affe3",
+      "path": "task_s2_e.txt",
+      "process_pid": 3547,
+      "reconciled_at_utc": "2026-10-09T14:08:50.188146+00:00",
+      "record_type": "reconciled",
+      "sandbox_id": "sandbox-task-c985bdb7c449",
+      "size_bytes": 82,
+      "task_id": "task-c985bdb7c449"
+    },
+    {
+      "artifact_id": "artifact-d6ecb94affe3",
+      "content_sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+      "inode": 539457,
+      "journal_record_id": "a4807191b5be",
+      "mission_id": "mission-d7e0191e36e6",
+      "mtime_ns": 1791554930136038220,
+      "no_physical_rewrite": true,
+      "observed_ino": 539457,
+      "observed_mtime_ns": 1791554930136038220,
+      "op": "artifact_write",
+      "original_artifact_id": "artifact-d6ecb94affe3",
+      "path": "task_s2_e.txt",
+      "process_pid": 3547,
+      "reconciled_at_utc": "2026-10-09T14:08:50.242955+00:00",
+      "record_type": "reconciled",
+      "sandbox_id": "sandbox-task-c985bdb7c449",
+      "size_bytes": 82,
+      "task_id": "task-c985bdb7c449"
+    }
+  ],
+  "artifact_stats_final": {
+    "A": {
+      "mtime_ns": 1791554929919036893,
+      "inode": 539089,
+      "sha256": "d283b456b61b9e3c2dc1bb4c17aa99203c42e68b41813d373c9dcaa4b6ece252",
+      "size": 29
+    },
+    "B": {
+      "mtime_ns": 1791554929974037229,
+      "inode": 539297,
+      "sha256": "e800321306da2fbc83f4db143abb19f14ca300f717ec8378ad164b95b54a0d21",
+      "size": 58
+    },
+    "C": {
+      "mtime_ns": 1791554930028037559,
+      "inode": 539361,
+      "sha256": "64dea12f0816d1d0ca7a778c1520020fc6c38fdd69733e7906f535f1a93d1d7f",
+      "size": 24
+    },
+    "D": {
+      "mtime_ns": 1791554930082037888,
+      "inode": 539409,
+      "sha256": "3be64077c121add59c8335eab02c369b6c7f75d2724ed33e6e17125dabed3ff5",
+      "size": 25
+    },
+    "E": {
+      "mtime_ns": 1791554930136038220,
+      "inode": 539457,
+      "sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+      "size": 82
+    }
+  },
+  "finalize": {
+    "mission_id": "mission-d7e0191e36e6",
+    "state_path": [
+      "EXECUTING"
+    ],
+    "final_state": "EVIDENCED"
+  },
+  "final_checkpoint": {
+    "checkpoint_id": "checkpoint-0e03a7c734ac",
+    "hash": "058c9addd44ca162e82959a9143313efbf164421b3c81971c6180dd76c5382c7"
+  },
+  "ledger_final": {
+    "plan_version": "v2",
+    "failures": [
+      {
+        "failure_id": "fail-f2bcc9db78af",
+        "kind": "tool_runtime_failure",
+        "task_id": "task-11b7461ac4e6",
+        "task_key": "B",
+        "description": "Tool/runtime failure from sandbox layer: FileExistsError: [Errno 17] File exists: '/tmp/e10rp_m4go78oo/s2_artifacts/sandbox-task-11b7461ac4e6/e33_tool_failure_guard.txt'",
+        "evidence": [
+          "TASK_FAILED event at 2026-10-09T14:08:49.923039",
+          "terminal=False retry_count=0 max_retries=1"
+        ],
+        "detected_at": "2026-10-09T14:08:50.190180+00:00",
+        "classification_reason": "Error originates from the sandbox/tool layer (filesystem), not from agent logic.",
+        "recovery_action": "retry",
+        "resolved": true,
+        "resolved_by": "engine_retry_then_completed"
+      },
+      {
+        "failure_id": "fail-f0a7423ad6ff",
+        "kind": "plan_deviation",
+        "task_id": "task-c985bdb7c449",
+        "task_key": "E",
+        "description": "Verification failed: not_evidenced",
+        "evidence": [
+          "TASK_FAILED event at 2026-10-09T14:08:50.188727",
+          "terminal=True retry_count=1 max_retries=1"
+        ],
+        "detected_at": "2026-10-09T14:08:50.190211+00:00",
+        "classification_reason": "Acceptance verification failed: the plan's expectation does not match observed reality; downstream tasks built on that expectation are suspect.",
+        "recovery_action": "replan",
+        "resolved": true,
+        "resolved_by": "replan->v2"
+      }
+    ],
+    "replans": [
+      {
+        "from_version": "v1",
+        "to_version": "v2",
+        "reason": "Deviation fail-f0a7423ad6ff at terminal task E: verification against plan v1 assumption ('E10RP_S2_E_PLAN_V1_EXPECTED') failed not_evidenced; E's observed artifact defines the real contract ('E10RP_S2_E_REALITY_ACTUAL'). E is terminal with no dependents: the minimal correct change is E's own criteria \u2014 nothing else in the plan is affected.",
+        "evidence": [
+          "TASK_FAILED event at 2026-10-09T14:08:50.188727",
+          "terminal=True retry_count=1 max_retries=1"
+        ],
+        "added_tasks": [],
+        "removed_tasks": [],
+        "invalidated_tasks": [],
+        "preserved_tasks": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "rewired_dependencies": [],
+        "modified_tasks": [
+          {
+            "task_key": "E",
+            "new_acceptance_criteria": [
+              "file_exists:task_s2_e.txt",
+              "file_contains:task_s2_e.txt:E10RP_S2_E_REALITY_ACTUAL"
+            ]
+          }
+        ],
+        "timestamp": "2026-10-09T14:08:50.190387+00:00"
+      }
+    ],
+    "plan_reviews": [
+      {
+        "review_id": "review-cddf96765126",
+        "run_id": "run-af92ccf5db22",
+        "mission_id": "mission-d7e0191e36e6",
+        "plan_version": "v1",
+        "verdict": "approved",
+        "reviewer": "e10rp-reviewer",
+        "note": "S2 initial plan v1 review",
+        "checks": [
+          {
+            "check": "C1_version_chain",
+            "passed": true,
+            "detail": "no replan on record; current plan_version='v1'"
+          },
+          {
+            "check": "C2_no_completed_destroyed",
+            "passed": true,
+            "detail": "no replan on record"
+          },
+          {
+            "check": "C3_preserved_matches_reality",
+            "passed": true,
+            "detail": "no replan on record"
+          },
+          {
+            "check": "C4_added_tasks_present",
+            "passed": true,
+            "detail": "no replan on record"
+          },
+          {
+            "check": "C5_rewire_blocked_correctness",
+            "passed": true,
+            "detail": "no replan on record"
+          },
+          {
+            "check": "C6_plan_executable_no_failed_tasks",
+            "passed": true,
+            "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+          },
+          {
+            "check": "C7_causality_deviation_to_replan",
+            "passed": true,
+            "detail": "no replan on record"
+          },
+          {
+            "check": "C8_corrected_criteria_applied",
+            "passed": true,
+            "detail": "no replan on record"
+          }
+        ],
+        "reasons": [],
+        "reviewed_at": "2026-10-09T14:08:49.865850+00:00"
+      },
+      {
+        "review_id": "review-94c97f6a3df0",
+        "run_id": "run-af92ccf5db22",
+        "mission_id": "mission-d7e0191e36e6",
+        "plan_version": "v2",
+        "verdict": "rejected",
+        "reviewer": "e10rp-reviewer",
+        "note": "review v2 while E is still FAILED",
+        "checks": [
+          {
+            "check": "C1_version_chain",
+            "passed": true,
+            "detail": "replan chain v1->v2; current plan_version='v2'"
+          },
+          {
+            "check": "C2_no_completed_destroyed",
+            "passed": true,
+            "detail": "invalidated=[]; completed-among-them=none"
+          },
+          {
+            "check": "C3_preserved_matches_reality",
+            "passed": true,
+            "detail": "completed_in_graph=['A', 'B', 'C', 'D']; replan_preserved=['A', 'B', 'C', 'D']"
+          },
+          {
+            "check": "C4_added_tasks_present",
+            "passed": true,
+            "detail": "added=[]; problems=none"
+          },
+          {
+            "check": "C5_rewire_blocked_correctness",
+            "passed": true,
+            "detail": "replan rewired nothing"
+          },
+          {
+            "check": "C6_plan_executable_no_failed_tasks",
+            "passed": false,
+            "detail": "failed_tasks=['E'] (a FAILED task makes the plan not executable)"
+          },
+          {
+            "check": "C7_causality_deviation_to_replan",
+            "passed": true,
+            "detail": "failures resolved by 'replan->v2': ['fail-f0a7423ad6ff']; replan_evidence == deviation_evidence: True"
+          },
+          {
+            "check": "C8_corrected_criteria_applied",
+            "passed": true,
+            "detail": "modified=['E']; unapplied=none"
+          }
+        ],
+        "reasons": [
+          "C6_plan_executable_no_failed_tasks: failed_tasks=['E'] (a FAILED task makes the plan not executable)"
+        ],
+        "reviewed_at": "2026-10-09T14:08:50.190875+00:00"
+      },
+      {
+        "review_id": "review-18760b93bacb",
+        "run_id": "run-af92ccf5db22",
+        "mission_id": "mission-d7e0191e36e6",
+        "plan_version": "v2",
+        "verdict": "approved",
+        "reviewer": "e10rp-reviewer",
+        "note": "review v2 after E recovered",
+        "checks": [
+          {
+            "check": "C1_version_chain",
+            "passed": true,
+            "detail": "replan chain v1->v2; current plan_version='v2'"
+          },
+          {
+            "check": "C2_no_completed_destroyed",
+            "passed": true,
+            "detail": "invalidated=[]; completed-among-them=none"
+          },
+          {
+            "check": "C3_preserved_matches_reality",
+            "passed": true,
+            "detail": "completed_in_graph=['A', 'B', 'C', 'D']; replan_preserved=['A', 'B', 'C', 'D']"
+          },
+          {
+            "check": "C4_added_tasks_present",
+            "passed": true,
+            "detail": "added=[]; problems=none"
+          },
+          {
+            "check": "C5_rewire_blocked_correctness",
+            "passed": true,
+            "detail": "replan rewired nothing"
+          },
+          {
+            "check": "C6_plan_executable_no_failed_tasks",
+            "passed": true,
+            "detail": "failed_tasks=none (a FAILED task makes the plan not executable)"
+          },
+          {
+            "check": "C7_causality_deviation_to_replan",
+            "passed": true,
+            "detail": "failures resolved by 'replan->v2': ['fail-f0a7423ad6ff']; replan_evidence == deviation_evidence: True"
+          },
+          {
+            "check": "C8_corrected_criteria_applied",
+            "passed": true,
+            "detail": "modified=['E']; unapplied=none"
+          }
+        ],
+        "reasons": [],
+        "reviewed_at": "2026-10-09T14:08:50.191698+00:00"
+      }
+    ],
+    "phases": [
+      {
+        "run_id": "run-af92ccf5db22",
+        "max_parallel": 1,
+        "pid": 3547,
+        "wall_seconds": 0.323,
+        "success": false,
+        "paused": false,
+        "task_results": {
+          "task-bbbbd664f0f2": {
+            "success": true,
+            "attempts": 1,
+            "output": {
+              "task_key": "A",
+              "started_at": "2026-10-09T14:08:49.867870+00:00",
+              "completed_at": "2026-10-09T14:08:49.919537+00:00",
+              "process_pid": 3547,
+              "artifact_id": "artifact-d11b39b30ff1",
+              "artifact_path": "task_s2_a.txt",
+              "content": "E10RP_S2_A_OUTPUT: foundation",
+              "sha256": "d283b456b61b9e3c2dc1bb4c17aa99203c42e68b41813d373c9dcaa4b6ece252",
+              "action_id": "action-0c81169b"
+            },
+            "artifacts": [
+              "artifact-d11b39b30ff1"
+            ]
+          },
+          "task-11b7461ac4e6": {
+            "success": true,
+            "attempts": 2,
+            "output": {
+              "task_key": "B",
+              "started_at": "2026-10-09T14:08:49.923220+00:00",
+              "completed_at": "2026-10-09T14:08:49.974466+00:00",
+              "process_pid": 3547,
+              "artifact_id": "artifact-2f89b91a83db",
+              "artifact_path": "task_s2_b.txt",
+              "content": "E10RP_S2_B_OUTPUT: second \u2014 real tool failure then retry",
+              "sha256": "e800321306da2fbc83f4db143abb19f14ca300f717ec8378ad164b95b54a0d21",
+              "action_id": "action-70c09e59"
+            },
+            "artifacts": [
+              "artifact-2f89b91a83db"
+            ]
+          },
+          "task-e5f664bc57db": {
+            "success": true,
+            "attempts": 1,
+            "output": {
+              "task_key": "C",
+              "started_at": "2026-10-09T14:08:49.977289+00:00",
+              "completed_at": "2026-10-09T14:08:50.028567+00:00",
+              "process_pid": 3547,
+              "artifact_id": "artifact-bc4130d40fcd",
+              "artifact_path": "task_s2_c.txt",
+              "content": "E10RP_S2_C_OUTPUT: third",
+              "sha256": "64dea12f0816d1d0ca7a778c1520020fc6c38fdd69733e7906f535f1a93d1d7f",
+              "action_id": "action-a10ec216"
+            },
+            "artifacts": [
+              "artifact-bc4130d40fcd"
+            ]
+          },
+          "task-2e1e023ad30e": {
+            "success": true,
+            "attempts": 1,
+            "output": {
+              "task_key": "D",
+              "started_at": "2026-10-09T14:08:50.031433+00:00",
+              "completed_at": "2026-10-09T14:08:50.082703+00:00",
+              "process_pid": 3547,
+              "artifact_id": "artifact-bb58811047a7",
+              "artifact_path": "task_s2_d.txt",
+              "content": "E10RP_S2_D_OUTPUT: fourth",
+              "sha256": "3be64077c121add59c8335eab02c369b6c7f75d2724ed33e6e17125dabed3ff5",
+              "action_id": "action-38625617"
+            },
+            "artifacts": [
+              "artifact-bb58811047a7"
+            ]
+          },
+          "task-c985bdb7c449": {
+            "success": false,
+            "error": "Verification failed: not_evidenced",
+            "terminal": true,
+            "attempts": 2
+          }
+        }
+      },
+      {
+        "run_id": "run-af92ccf5db22",
+        "max_parallel": 1,
+        "pid": 3547,
+        "wall_seconds": 0.055,
+        "success": true,
+        "paused": false,
+        "task_results": {
+          "task-c985bdb7c449": {
+            "success": true,
+            "attempts": 1,
+            "output": {
+              "task_key": "E",
+              "started_at": "2026-10-09T14:08:50.192518+00:00",
+              "completed_at": "2026-10-09T14:08:50.243309+00:00",
+              "process_pid": 3547,
+              "artifact_id": "artifact-d6ecb94affe3",
+              "artifact_path": "task_s2_e.txt",
+              "content": "E10RP_S2_E_REALITY_ACTUAL: terminal \u2014 CONTROLLED DEVIATION INPUT (minimal scope)",
+              "sha256": "f7b60e3ec37c4196de64a9c9743df97e07b722cceba5bd2bd62f716100c021b0",
+              "action_id": "action-b6aa4c7a"
+            },
+            "artifacts": [
+              "artifact-d6ecb94affe3"
+            ]
+          },
+          "task-bbbbd664f0f2": {
+            "success": true,
+            "resumed": true
+          },
+          "task-11b7461ac4e6": {
+            "success": true,
+            "resumed": true
+          },
+          "task-e5f664bc57db": {
+            "success": true,
+            "resumed": true
+          },
+          "task-2e1e023ad30e": {
+            "success": true,
+            "resumed": true
+          }
+        }
+      }
+    ],
+    "key_map": {
+      "A": "task-bbbbd664f0f2",
+      "B": "task-11b7461ac4e6",
+      "C": "task-e5f664bc57db",
+      "D": "task-2e1e023ad30e",
+      "E": "task-c985bdb7c449"
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "registered_at": "2026-10-09T14:08:48.932970+00:00",
+  "note": "fixed BEFORE any stage ran; never changed after observing outcomes",
+  "main": {
+    "phase1_plan_v1": {
+      "A": "COMPLETED",
+      "B": "COMPLETED",
+      "C": "FAILED_VERIFICATION_NOT_EVIDENCED",
+      "D": "BLOCKED_NEVER_STARTED",
+      "E": "BLOCKED_NEVER_STARTED",
+      "agent_claim_overturned_by_verifier": true
+    },
+    "classification": {
+      "C_kind": "plan_deviation",
+      "C_recovery": "replan"
+    },
+    "replan_v1_to_v2": {
+      "invalidated": [
+        "D"
+      ],
+      "preserved": [
+        "A",
+        "B"
+      ],
+      "added": [
+        {
+          "key": "X",
+          "depends_on": [
+            "C"
+          ]
+        }
+      ],
+      "rewired": [
+        {
+          "key": "E",
+          "depends_on": [
+            "X"
+          ]
+        }
+      ],
+      "modified": {
+        "C": "criteria_derived_from_observed_artifact"
+      }
+    },
+    "gate": {
+      "unapproved_v2_refused_before_execution": true,
+      "rejected_review_refused_before_execution": true,
+      "refusals_leave_zero_execution": true
+    },
+    "review_v2": {
+      "first_verdict": "REJECTED",
+      "first_failing_check": "C6_plan_executable_no_failed_tasks",
+      "after_recovery_verdict": "APPROVED"
+    },
+    "phase2_continuation": {
+      "C": "COMPLETED_UNDER_CORRECTED_CRITERIA",
+      "X": "COMPLETED",
+      "E": "COMPLETED",
+      "A_B_not_reexecuted": true,
+      "C_artifact_adopted_without_rewrite": true
+    },
+    "final_outcome": "VERIFY_COMPLETION_PASS__FINALIZE_EVIDENCED__FULL_CHECKPOINT",
+    "duplicate_continuation": "ZERO_NEW_SIDE_EFFECTS"
+  },
+  "s1_insufficient_evidence": {
+    "claim_without_failure_record_is_classified": false,
+    "claim_without_failure_record_triggers_replan": false,
+    "agent_claim_success_overturned_by_verification": true
+  },
+  "s2_minimal_scope": {
+    "phase1": {
+      "A": "COMPLETED",
+      "B": "COMPLETED_after_real_tool_retry",
+      "C": "COMPLETED",
+      "D": "COMPLETED",
+      "E": "FAILED_VERIFICATION_NOT_EVIDENCED"
+    },
+    "classification": {
+      "E_kind": "plan_deviation",
+      "E_recovery": "replan",
+      "B_first_attempt_kind": "tool_runtime_failure",
+      "B_first_attempt_recovery": "retry",
+      "B_failure_resolved_by": "engine_retry_then_completed",
+      "B_failure_never_replans": true
+    },
+    "replan_v1_to_v2": {
+      "invalidated": [],
+      "preserved": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "added": [],
+      "rewired": [],
+      "modified": {
+        "E": "criteria_derived_from_observed_artifact"
+      },
+      "scope_exactly_affected_task_only": true
+    },
+    "phase2": {
+      "E": "COMPLETED_UNDER_CORRECTED_CRITERIA",
+      "A_B_C_D_not_reexecuted": true
+    }
+  }
+}

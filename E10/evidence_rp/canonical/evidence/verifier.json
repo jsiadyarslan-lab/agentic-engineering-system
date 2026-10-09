@@ -1,0 +1,277 @@
+{
+  "session": "/tmp/e10rp_m4go78oo",
+  "verdict": "E10RP_VERIFIED",
+  "checks": [
+    {
+      "check": "V1_plan_v1_definition",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "plan_v1_tasks": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "c_criteria_v1": [
+          "file_exists:task_c.txt",
+          "file_contains:task_c.txt:E10RP_C_PLAN_V1_EXPECTED"
+        ]
+      }
+    },
+    {
+      "check": "V2_review_chain",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "review_events": [
+          [
+            "v1",
+            "APPROVED",
+            "review-a2787513f7bd"
+          ],
+          [
+            "v2",
+            "REJECTED",
+            "review-57345d59c3de"
+          ],
+          [
+            "v2",
+            "APPROVED",
+            "review-af1b256b0f02"
+          ]
+        ],
+        "ledger_reviews": [
+          [
+            "v1",
+            "approved"
+          ],
+          [
+            "v2",
+            "rejected"
+          ],
+          [
+            "v2",
+            "approved"
+          ]
+        ]
+      }
+    },
+    {
+      "check": "V3_phase1_deviation_evidence",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "started": [
+          "A",
+          "B",
+          "C"
+        ],
+        "completed": [
+          "A",
+          "B"
+        ],
+        "c_error": "Verification failed: not_evidenced"
+      }
+    },
+    {
+      "check": "V4_causality_windows",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "task_started_between_replan_and_approval": 0,
+        "post_replan_started": [
+          "C",
+          "E",
+          "X"
+        ]
+      }
+    },
+    {
+      "check": "V5_ledger_decision_chain",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "replan": {
+          "from_version": "v1",
+          "to_version": "v2",
+          "invalidated_tasks": [
+            "D"
+          ],
+          "preserved_tasks": [
+            "A",
+            "B"
+          ],
+          "added_tasks": [
+            {
+              "task_key": "X",
+              "depends_on": [
+                "task-551646254343"
+              ],
+              "name": "X - remediation after deviation at C"
+            }
+          ],
+          "rewired_dependencies": [
+            {
+              "task_key": "E",
+              "new_depends_on": [
+                "X"
+              ]
+            }
+          ],
+          "modified_tasks": [
+            {
+              "task_key": "C",
+              "new_acceptance_criteria": [
+                "file_exists:task_c.txt",
+                "file_contains:task_c.txt:E10RP_C_REALITY_ACTUAL"
+              ]
+            }
+          ]
+        },
+        "deviation": {
+          "task_key": "C",
+          "kind": "plan_deviation",
+          "recovery_action": "replan",
+          "resolved_by": "replan->v2",
+          "evidence": [
+            "TASK_FAILED event at 2026-10-09T14:08:49.311137",
+            "terminal=True retry_count=0 max_retries=0"
+          ]
+        }
+      }
+    },
+    {
+      "check": "V6_journal_side_effects",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "journal_types_by_path": {
+          "task_a.txt": [
+            "intent",
+            "performed"
+          ],
+          "task_c.txt": [
+            "intent",
+            "performed",
+            "reconciled"
+          ],
+          "task_b.txt": [
+            "intent",
+            "performed"
+          ],
+          "task_x.txt": [
+            "intent",
+            "performed"
+          ],
+          "task_e.txt": [
+            "intent",
+            "performed"
+          ]
+        }
+      }
+    },
+    {
+      "check": "V7_artifacts_on_disk",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {}
+    },
+    {
+      "check": "V8_final_outcome",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "final_task_states": {
+          "A": "COMPLETED",
+          "B": "COMPLETED",
+          "C": "COMPLETED",
+          "E": "COMPLETED",
+          "X": "COMPLETED"
+        },
+        "attempt_counts": {
+          "A": 1,
+          "C": 2,
+          "B": 1,
+          "X": 1,
+          "E": 1
+        }
+      }
+    },
+    {
+      "check": "V9_expectation_fidelity",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {}
+    },
+    {
+      "check": "S2A_classification",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "ledger_reviews": [
+          [
+            "v1",
+            "approved"
+          ],
+          [
+            "v2",
+            "rejected"
+          ],
+          [
+            "v2",
+            "approved"
+          ]
+        ]
+      }
+    },
+    {
+      "check": "S2B_minimal_scope",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "replan": {
+          "invalidated_tasks": [],
+          "preserved_tasks": [
+            "A",
+            "B",
+            "C",
+            "D"
+          ],
+          "added_tasks": [],
+          "rewired_dependencies": [],
+          "modified_tasks": [
+            {
+              "task_key": "E",
+              "new_acceptance_criteria": [
+                "file_exists:task_s2_e.txt",
+                "file_contains:task_s2_e.txt:E10RP_S2_E_REALITY_ACTUAL"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "check": "S2C_preservation",
+      "verdict": "VERIFIED",
+      "problems": [],
+      "facts": {
+        "journal_task_e": [
+          "intent",
+          "performed",
+          "reconciled",
+          "reconciled"
+        ],
+        "attempt_counts": {
+          "A": 1,
+          "B": 2,
+          "C": 1,
+          "D": 1,
+          "E": 3
+        }
+      }
+    }
+  ]
+}

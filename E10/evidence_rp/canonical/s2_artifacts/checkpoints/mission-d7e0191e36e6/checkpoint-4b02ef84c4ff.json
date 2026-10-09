@@ -1,0 +1,232 @@
+{
+  "checkpoint_id": "checkpoint-4b02ef84c4ff",
+  "mission_id": "mission-d7e0191e36e6",
+  "run_id": "run-af92ccf5db22",
+  "step": 5,
+  "state": "EXECUTING",
+  "task_states": {
+    "task-bbbbd664f0f2": "COMPLETED",
+    "task-11b7461ac4e6": "READY",
+    "task-e5f664bc57db": "BLOCKED",
+    "task-2e1e023ad30e": "BLOCKED",
+    "task-c985bdb7c449": "BLOCKED"
+  },
+  "artifact_ids": [
+    "artifact-d11b39b30ff1"
+  ],
+  "evidence_hashes": [
+    "d283b456b61b9e3c2dc1bb4c17aa99203c42e68b41813d373c9dcaa4b6ece252",
+    "d283b456b61b9e3c2dc1bb4c17aa99203c42e68b41813d373c9dcaa4b6ece252"
+  ],
+  "created_at": "2026-10-09T14:08:49.919934",
+  "hash": "c9db026276b8c3350fc6e1783633f0f707d533147a3c20afe2835b862e161901",
+  "task_definitions": {
+    "task-bbbbd664f0f2": {
+      "task_id": "task-bbbbd664f0f2",
+      "run_id": "run-af92ccf5db22",
+      "mission_id": "mission-d7e0191e36e6",
+      "name": "S2-A - foundation",
+      "description": "E10-RP S2 scenario task A: foundation",
+      "agent_type": "implementer",
+      "state": "COMPLETED",
+      "depends_on": [],
+      "acceptance_criteria": [
+        "file_exists:task_s2_a.txt",
+        "file_contains:task_s2_a.txt:E10RP_S2_A_OUTPUT"
+      ],
+      "assigned_agent_id": "e33-mission-agent-01",
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "A",
+        "content": "E10RP_S2_A_OUTPUT: foundation",
+        "output_path": "task_s2_a.txt",
+        "sleep_s": 0.05
+      },
+      "created_at": "2026-10-09T14:08:49.865027",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 0,
+      "retry_count": 0
+    },
+    "task-11b7461ac4e6": {
+      "task_id": "task-11b7461ac4e6",
+      "run_id": "run-af92ccf5db22",
+      "mission_id": "mission-d7e0191e36e6",
+      "name": "S2-B - second \u2014 real tool failure then retry",
+      "description": "E10-RP S2 scenario task B: second \u2014 real tool failure then retry",
+      "agent_type": "implementer",
+      "state": "READY",
+      "depends_on": [
+        "task-bbbbd664f0f2"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_s2_b.txt",
+        "file_contains:task_s2_b.txt:E10RP_S2_B_OUTPUT"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "B",
+        "content": "E10RP_S2_B_OUTPUT: second \u2014 real tool failure then retry",
+        "output_path": "task_s2_b.txt",
+        "sleep_s": 0.05,
+        "fail_attempt_1": "tool_runtime"
+      },
+      "created_at": "2026-10-09T14:08:49.865095",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 1,
+      "retry_count": 0
+    },
+    "task-e5f664bc57db": {
+      "task_id": "task-e5f664bc57db",
+      "run_id": "run-af92ccf5db22",
+      "mission_id": "mission-d7e0191e36e6",
+      "name": "S2-C - third",
+      "description": "E10-RP S2 scenario task C: third",
+      "agent_type": "implementer",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-11b7461ac4e6"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_s2_c.txt",
+        "file_contains:task_s2_c.txt:E10RP_S2_C_OUTPUT"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "C",
+        "content": "E10RP_S2_C_OUTPUT: third",
+        "output_path": "task_s2_c.txt",
+        "sleep_s": 0.05
+      },
+      "created_at": "2026-10-09T14:08:49.865128",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 0,
+      "retry_count": 0
+    },
+    "task-2e1e023ad30e": {
+      "task_id": "task-2e1e023ad30e",
+      "run_id": "run-af92ccf5db22",
+      "mission_id": "mission-d7e0191e36e6",
+      "name": "S2-D - fourth",
+      "description": "E10-RP S2 scenario task D: fourth",
+      "agent_type": "implementer",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-e5f664bc57db"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_s2_d.txt",
+        "file_contains:task_s2_d.txt:E10RP_S2_D_OUTPUT"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "D",
+        "content": "E10RP_S2_D_OUTPUT: fourth",
+        "output_path": "task_s2_d.txt",
+        "sleep_s": 0.05
+      },
+      "created_at": "2026-10-09T14:08:49.865151",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 0,
+      "retry_count": 0
+    },
+    "task-c985bdb7c449": {
+      "task_id": "task-c985bdb7c449",
+      "run_id": "run-af92ccf5db22",
+      "mission_id": "mission-d7e0191e36e6",
+      "name": "S2-E - terminal \u2014 CONTROLLED DEVIATION INPUT (minimal scope)",
+      "description": "E10-RP S2 scenario task E: terminal \u2014 CONTROLLED DEVIATION INPUT (minimal scope)",
+      "agent_type": "implementer",
+      "state": "BLOCKED",
+      "depends_on": [
+        "task-2e1e023ad30e"
+      ],
+      "acceptance_criteria": [
+        "file_exists:task_s2_e.txt",
+        "file_contains:task_s2_e.txt:E10RP_S2_E_PLAN_V1_EXPECTED"
+      ],
+      "assigned_agent_id": null,
+      "attempt_ids": [],
+      "evidence_hashes": [],
+      "artifact_ids": [],
+      "context": {
+        "task_key": "E",
+        "content": "E10RP_S2_E_REALITY_ACTUAL: terminal \u2014 CONTROLLED DEVIATION INPUT (minimal scope)",
+        "output_path": "task_s2_e.txt",
+        "sleep_s": 0.05
+      },
+      "created_at": "2026-10-09T14:08:49.865175",
+      "started_at": null,
+      "completed_at": null,
+      "max_retries": 1,
+      "retry_count": 0
+    }
+  },
+  "task_dependencies": {
+    "task-bbbbd664f0f2": [],
+    "task-11b7461ac4e6": [
+      "task-bbbbd664f0f2"
+    ],
+    "task-e5f664bc57db": [
+      "task-11b7461ac4e6"
+    ],
+    "task-2e1e023ad30e": [
+      "task-e5f664bc57db"
+    ],
+    "task-c985bdb7c449": [
+      "task-2e1e023ad30e"
+    ]
+  },
+  "task_dependents": {
+    "task-bbbbd664f0f2": [
+      "task-11b7461ac4e6"
+    ],
+    "task-11b7461ac4e6": [
+      "task-e5f664bc57db"
+    ],
+    "task-e5f664bc57db": [
+      "task-2e1e023ad30e"
+    ],
+    "task-2e1e023ad30e": [
+      "task-c985bdb7c449"
+    ],
+    "task-c985bdb7c449": []
+  },
+  "attempt_history": {
+    "task-bbbbd664f0f2": [
+      {
+        "attempt_id": "attempt-6928c07b",
+        "task_id": "task-bbbbd664f0f2",
+        "agent_id": "e33-mission-agent-01",
+        "state": "COMPLETED",
+        "started_at": "2026-10-09T14:08:49.866284",
+        "completed_at": "2026-10-09T14:08:49.919813Z",
+        "action_ids": [],
+        "success": true,
+        "error": null,
+        "evidence_hash": null,
+        "verification_id": null,
+        "verifier_verdict": null
+      }
+    ]
+  },
+  "agent_assignments": {
+    "task-bbbbd664f0f2": "e33-mission-agent-01"
+  },
+  "human_gate": null,
+  "human_decision": null
+}

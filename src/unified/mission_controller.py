@@ -145,6 +145,23 @@ class ReplanRecord:
     timestamp: str
 
 
+@dataclass
+class PlanReviewRecord:
+    """E10-RP §3.B — durable record of one plan review (the gate before
+    continuation). Latest verdict per plan version wins; a rejected or absent
+    review blocks continuation until the plan is corrected and re-reviewed."""
+    review_id: str
+    run_id: str
+    mission_id: str
+    plan_version: str
+    verdict: str              # "approved" | "rejected"
+    reviewer: str
+    note: str
+    checks: List[Dict[str, Any]]
+    reasons: List[str]
+    reviewed_at: str
+
+
 class MissionTaskAgent(BaseAgent):
     """
     Generic context-driven mission agent.
@@ -391,11 +408,14 @@ class MissionController:
     """Mission-level autonomy: definition, execution, failure recovery,
     replanning, checkpointing, resume verification and completion."""
 
-    def __init__(self, engine: ExecutionEngine, state_dir: Optional[str] = None):
+    def __init__(self, engine: ExecutionEngine, state_dir: Optional[str] = None,
+                 require_plan_review: bool = False):
         self.engine = engine
         self.state_dir = Path(state_dir) if state_dir else Path(engine.artifacts_base_dir)
         self.failures: List[FailureRecord] = []
         self.replans: List[ReplanRecord] = []
+        self.plan_reviews: List[PlanReviewRecord] = []
+        self.require_plan_review = require_plan_review
         self.phase_log: List[Dict[str, Any]] = []
         self.plan_version = "v1"
         self._key_to_task: Dict[str, str] = {}       # key -> task_id
@@ -495,6 +515,8 @@ class MissionController:
 
     async def execute_run(self, run_id: str, max_parallel: int = 1, task_timeout: Optional[float] = None) -> Dict[str, Any]:
         """Execute the graph for a run through the engine's real production path."""
+        if getattr(self, "require_plan_review", False):
+            self._enforce_plan_review_gate(run_id)
         t0 = time.time()
         result = await self.engine.execute_task_graph(
             run_id=run_id,
@@ -836,6 +858,235 @@ class MissionController:
                 f.resolved_by = f"replan->{plan_version}"
         self._persist_ledger(mission_id)
         return record
+
+    # ---------- Plan review (E10-RP §3.B: review gate before continuation) ----------
+
+    def _plan_review_checks(self, run_id: str) -> List[Dict[str, Any]]:
+        """Fail-closed structural + causal review checks of the CURRENT plan
+        version against the live graph and the controller's own durable
+        decision records. Nothing is trusted from the caller: every check
+        reads REAL state (graph, tasks, replans, failures)."""
+        checks: List[Dict[str, Any]] = []
+        graph = self.engine.task_graph.get(run_id, {})
+
+        def add(name: str, passed: bool, detail: str) -> None:
+            checks.append({"check": name, "passed": bool(passed), "detail": detail})
+
+        latest = self.replans[-1] if self.replans else None
+
+        # C1 — replan chain continuity up to the current plan version
+        if latest is None:
+            add("C1_version_chain", self.plan_version == "v1",
+                f"no replan on record; current plan_version={self.plan_version!r}")
+        else:
+            prev_to = "v1"
+            chain_ok = True
+            for r in self.replans:
+                if r.from_version != prev_to:
+                    chain_ok = False
+                    break
+                prev_to = r.to_version
+            chain_ok = chain_ok and self.plan_version == latest.to_version
+            add("C1_version_chain", chain_ok,
+                "replan chain " + " -> ".join(
+                    [f"{r.from_version}->{r.to_version}" for r in self.replans]
+                ) + f"; current plan_version={self.plan_version!r}")
+
+        # C2 — no completed work destroyed by the latest replan
+        if latest is None:
+            add("C2_no_completed_destroyed", True, "no replan on record")
+        else:
+            destroyed = []
+            for key in latest.invalidated_tasks:
+                tid = self._key_to_task.get(key, key)
+                node = graph.get(tid)
+                if node is not None and node.get("state") == TaskState.COMPLETED:
+                    destroyed.append(key)
+            add("C2_no_completed_destroyed", not destroyed,
+                f"invalidated={latest.invalidated_tasks}; completed-among-them={destroyed or 'none'}")
+
+        # C3 — replan preserved set == tasks actually COMPLETED in the graph
+        if latest is None:
+            add("C3_preserved_matches_reality", True, "no replan on record")
+        else:
+            completed_now = {
+                self._task_to_key.get(tid, tid)
+                for tid, node in graph.items()
+                if node.get("state") == TaskState.COMPLETED
+            }
+            preserved = set(latest.preserved_tasks)
+            add("C3_preserved_matches_reality", completed_now == preserved,
+                f"completed_in_graph={sorted(completed_now)}; "
+                f"replan_preserved={sorted(preserved)}")
+
+        # C4 — every task added by the latest replan exists with valid deps
+        if latest is None:
+            add("C4_added_tasks_present", True, "no replan on record")
+        else:
+            problems = []
+            for spec in latest.added_tasks:
+                key = spec.get("task_key", "")
+                tid = self._key_to_task.get(key, "")
+                node = graph.get(tid)
+                if node is None:
+                    problems.append(f"{key}:absent")
+                    continue
+                for d in node.get("depends_on", set()):
+                    if graph.get(d) is None:
+                        problems.append(f"{key}:dep-absent")
+            add("C4_added_tasks_present", not problems,
+                f"added={[s.get('task_key') for s in latest.added_tasks]}; problems={problems or 'none'}")
+
+        # C5 — rewired tasks: deps exist; incomplete deps => BLOCKED (not READY)
+        if latest is None:
+            add("C5_rewire_blocked_correctness", True, "no replan on record")
+        elif not latest.rewired_dependencies:
+            add("C5_rewire_blocked_correctness", True, "replan rewired nothing")
+        else:
+            problems = []
+            for rw in latest.rewired_dependencies:
+                key = rw.get("task_key", "")
+                tid = self._key_to_task.get(key, key)
+                node = graph.get(tid)
+                if node is None:
+                    problems.append(f"{key}:absent")
+                    continue
+                deps = node.get("depends_on", set())
+                for d in deps:
+                    if graph.get(d) is None:
+                        problems.append(f"{key}:dep-absent")
+                incomplete = any(
+                    graph.get(d, {}).get("state") != TaskState.COMPLETED for d in deps
+                )
+                if incomplete and node.get("state") == TaskState.READY:
+                    problems.append(f"{key}:spuriously-READY-with-incomplete-deps")
+            add("C5_rewire_blocked_correctness", not problems, f"problems={problems or 'none'}")
+
+        # C6 — plan executable: no task may remain FAILED
+        failed_tasks = [
+            self._task_to_key.get(tid, tid)
+            for tid, node in graph.items()
+            if node.get("state") == TaskState.FAILED
+        ]
+        add("C6_plan_executable_no_failed_tasks", not failed_tasks,
+            f"failed_tasks={failed_tasks or 'none'} (a FAILED task makes the plan not executable)")
+
+        # C7 — causal link: the deviation record is resolved by THIS replan
+        #      and the replan carries exactly the deviation's evidence.
+        if latest is None:
+            add("C7_causality_deviation_to_replan", True, "no replan on record")
+        else:
+            linked = [
+                f for f in self.failures
+                if f.resolved_by == f"replan->{latest.to_version}"
+            ]
+            ev_match = bool(latest.evidence) and any(
+                list(f.evidence) == list(latest.evidence) for f in linked
+            )
+            add("C7_causality_deviation_to_replan", bool(linked) and ev_match,
+                f"failures resolved by 'replan->{latest.to_version}': "
+                f"{[f.failure_id for f in linked] or 'MISSING'}; "
+                f"replan_evidence == deviation_evidence: {ev_match}")
+
+        # C8 — corrected criteria are actually applied to the real task objects
+        if latest is None:
+            add("C8_corrected_criteria_applied", True, "no replan on record")
+        elif not latest.modified_tasks:
+            add("C8_corrected_criteria_applied", True, "replan modified no criteria")
+        else:
+            unapplied = []
+            for m in latest.modified_tasks:
+                key = m.get("task_key", "")
+                tid = self._key_to_task.get(key, key)
+                task = self.engine.tasks.get(tid)
+                want = list(m.get("new_acceptance_criteria", []))
+                have = list(getattr(task, "acceptance_criteria", []) or [])
+                if have != want:
+                    unapplied.append(key)
+            add("C8_corrected_criteria_applied", not unapplied,
+                f"modified={[m.get('task_key') for m in latest.modified_tasks]}; "
+                f"unapplied={unapplied or 'none'}")
+
+        return checks
+
+    def review_plan(self, run_id: str, reviewer: str, note: str = "") -> PlanReviewRecord:
+        """REVIEW gate for the CURRENT plan version (E10-RP §3.B).
+
+        Fail-closed structural + causal review of the live plan against the
+        controller's durable decision records. Emits a durable
+        STATE_TRANSITION event (entity_type=plan_review) and appends the
+        review to the durable ledger. Continuation is refused by
+        execute_run's gate until the CURRENT plan version's LATEST review
+        is APPROVED; a rejected review blocks until the plan is corrected
+        and re-reviewed."""
+        mission_id = self._mission_id_for_run(run_id)
+        checks = self._plan_review_checks(run_id)
+        verdict = "approved" if all(c["passed"] for c in checks) else "rejected"
+        reasons = [f"{c['check']}: {c['detail']}" for c in checks if not c["passed"]]
+        review_id = (
+            "review-" + hashlib.sha256(
+                ("|".join([run_id, self.plan_version, reviewer,
+                           datetime.now(timezone.utc).isoformat()])).encode()
+            ).hexdigest()[:12]
+        )
+        record = PlanReviewRecord(
+            review_id=review_id,
+            run_id=run_id,
+            mission_id=mission_id,
+            plan_version=self.plan_version,
+            verdict=verdict,
+            reviewer=reviewer,
+            note=note,
+            checks=checks,
+            reasons=reasons,
+            reviewed_at=datetime.now(timezone.utc).isoformat(),
+        )
+        self.plan_reviews.append(record)
+        self._persist_ledger(mission_id)
+        self.engine._emit(FactoryEvent.create(
+            event_type=EventType.STATE_TRANSITION,
+            mission_id=mission_id,
+            run_id=run_id,
+            payload={
+                "entity_type": "plan_review",
+                "entity_id": self.plan_version,
+                "from_state": "REVIEWING",
+                "to_state": "APPROVED" if verdict == "approved" else "REJECTED",
+                "trigger": reviewer,
+                "review_id": review_id,
+                "failed_checks": [c["check"] for c in checks if not c["passed"]],
+                "note": note,
+            },
+            source="mission_controller",
+            correlation_id=run_id,
+        ))
+        return record
+
+    def _enforce_plan_review_gate(self, run_id: str) -> None:
+        """E10-RP fail-closed continuation gate: execution may only proceed
+        under the CURRENT plan version when that version's LATEST review is
+        APPROVED. Anything else refuses (RuntimeError) BEFORE any execution
+        starts — unapproved plan, never-reviewed plan, rejected review alike."""
+        if not self.plan_reviews:
+            raise RuntimeError(
+                f"PLAN_REVIEW_GATE: continuation REFUSED for run {run_id}: "
+                f"plan {self.plan_version!r} has never been reviewed (fail-closed)"
+            )
+        for_version = [r for r in self.plan_reviews if r.plan_version == self.plan_version]
+        if not for_version:
+            raise RuntimeError(
+                f"PLAN_REVIEW_GATE: continuation REFUSED for run {run_id}: "
+                f"plan {self.plan_version!r} has no review "
+                f"(latest review covers {self.plan_reviews[-1].plan_version!r}); fail-closed"
+            )
+        latest = for_version[-1]
+        if latest.verdict != "approved":
+            raise RuntimeError(
+                f"PLAN_REVIEW_GATE: continuation REFUSED for run {run_id}: "
+                f"plan {self.plan_version!r} review {latest.review_id} is "
+                f"{latest.verdict.upper()} — "
+                f"{'; '.join(latest.reasons) or 'no reasons'}; fail-closed"
+            )
 
     # ---------- Checkpointing ----------
 
@@ -1419,6 +1670,7 @@ class MissionController:
             "plan_version": self.plan_version,
             "failures": [asdict(f) for f in self.failures],
             "replans": [asdict(r) for r in self.replans],
+            "plan_reviews": [asdict(rv) for rv in self.plan_reviews],
             "phases": self.phase_log,
             "key_map": dict(self._key_to_task),
         }

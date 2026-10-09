@@ -1,0 +1,68 @@
+{
+  "started_at_utc": "2026-10-09T14:08:48.932121+00:00",
+  "finished_at_utc": "2026-10-09T14:08:50.351643+00:00",
+  "session": "/tmp/e10rp_m4go78oo",
+  "stages": [
+    {
+      "stage": "MAIN",
+      "script": "e10rp_main.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/e10rp_work/E10/e10rp_main.py",
+        "--artifacts-dir",
+        "/tmp/e10rp_m4go78oo/main_artifacts",
+        "--mc-state-dir",
+        "/tmp/e10rp_m4go78oo/main_mc_state",
+        "--evidence-dir",
+        "/tmp/e10rp_m4go78oo/evidence"
+      ],
+      "runner_observed_pid": 3546,
+      "exit_code": 0,
+      "wall_seconds": 0.661,
+      "stdout_tail": "class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-9d12d57da638: 4 artifacts in evidence_store\n    Artifact: artifact-afa76067722f, path=task_a.txt\n    Artifact: artifact-3d7eb6a5749d, path=task_c.txt\n    Artifact: artifact-51b61587c762, path=task_b.txt\n    Artifact: artifact-3fca75de19a5, path=task_x.txt\n  [VERIFY] Criterion 0: file_exists:task_x.txt\n  [VERIFY] Criterion 1: file_contains:task_x.txt:E10RP_X_OUTPUT\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_x.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_x.txt\n  [AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-01, task_id=task-7654b58218c1, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e33-mission-agent-01, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-7654b58218c1: 5 artifacts in evidence_store\n    Artifact: artifact-afa76067722f, path=task_a.txt\n    Artifact: artifact-3d7eb6a5749d, path=task_c.txt\n    Artifact: artifact-51b61587c762, path=task_b.txt\n    Artifact: artifact-3fca75de19a5, path=task_x.txt\n    Artifact: artifact-b1159626ab28, path=task_e.txt\n  [VERIFY] Criterion 0: file_exists:task_e.txt\n  [VERIFY] Criterion 1: file_contains:task_e.txt:E10RP_E_FINAL\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_e.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_e.txt\nE10RP_MAIN_SCENARIO_COMPLETE\n{\n  \"mission_id\": \"mission-386c94cd8e6f\",\n  \"run_id\": \"run-010ae22457c5\",\n  \"plan_version\": \"v2\",\n  \"reviews\": [\n    [\n      \"v1\",\n      \"approved\"\n    ],\n    [\n      \"v2\",\n      \"rejected\"\n    ],\n    [\n      \"v2\",\n      \"approved\"\n    ]\n  ],\n  \"replans\": [\n    [\n      \"v1\",\n      \"v2\"\n    ]\n  ]\n}\n",
+      "expected_rc": 0,
+      "rc_as_expected": true
+    },
+    {
+      "stage": "S2",
+      "script": "e10rp_safety.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/e10rp_work/E10/e10rp_safety.py",
+        "--artifacts-dir",
+        "/tmp/e10rp_m4go78oo/s2_artifacts",
+        "--mc-state-dir",
+        "/tmp/e10rp_m4go78oo/s2_mc_state",
+        "--evidence-dir",
+        "/tmp/e10rp_m4go78oo/evidence"
+      ],
+      "runner_observed_pid": 3547,
+      "exit_code": 0,
+      "wall_seconds": 0.714,
+      "stdout_tail": "lass 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-c985bdb7c449: 6 artifacts in evidence_store\n    Artifact: artifact-d11b39b30ff1, path=task_s2_a.txt\n    Artifact: artifact-7328e46afd1c, path=e33_tool_failure_guard.txt\n    Artifact: artifact-2f89b91a83db, path=task_s2_b.txt\n    Artifact: artifact-bc4130d40fcd, path=task_s2_c.txt\n    Artifact: artifact-bb58811047a7, path=task_s2_d.txt\n    Artifact: artifact-d6ecb94affe3, path=task_s2_e.txt\n  [VERIFY] Criterion 0: file_exists:task_s2_e.txt\n  [VERIFY] Criterion 1: file_contains:task_s2_e.txt:E10RP_S2_E_PLAN_V1_EXPECTED\n  [VERIFY] Report verdict: not_evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_s2_e.txt\n    Check crit_1: file_contains - passed=False, details=Pattern not found in task_s2_e.txt\n  [AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-01, task_id=task-c985bdb7c449, task.agent_type=AgentType.IMPLEMENTER\n  [AgentFactory] Found agent definition: e33-mission-agent-01, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True\n  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01\n  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)\n  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True\n  [VERIFY] Task task-c985bdb7c449: 6 artifacts in evidence_store\n    Artifact: artifact-d11b39b30ff1, path=task_s2_a.txt\n    Artifact: artifact-7328e46afd1c, path=e33_tool_failure_guard.txt\n    Artifact: artifact-2f89b91a83db, path=task_s2_b.txt\n    Artifact: artifact-bc4130d40fcd, path=task_s2_c.txt\n    Artifact: artifact-bb58811047a7, path=task_s2_d.txt\n    Artifact: artifact-d6ecb94affe3, path=task_s2_e.txt\n  [VERIFY] Criterion 0: file_exists:task_s2_e.txt\n  [VERIFY] Criterion 1: file_contains:task_s2_e.txt:E10RP_S2_E_REALITY_ACTUAL\n  [VERIFY] Report verdict: evidenced\n    Check crit_0: file_exists - passed=True, details=File found: task_s2_e.txt\n    Check crit_1: file_contains - passed=True, details=Pattern found in task_s2_e.txt\nE10RP_S2_SCENARIO_COMPLETE\n{\n  \"mission_id\": \"mission-d7e0191e36e6\",\n  \"plan_version\": \"v2\",\n  \"reviews\": [\n    [\n      \"v1\",\n      \"approved\"\n    ],\n    [\n      \"v2\",\n      \"rejected\"\n    ],\n    [\n      \"v2\",\n      \"approved\"\n    ]\n  ]\n}\n",
+      "expected_rc": 0,
+      "rc_as_expected": true
+    },
+    {
+      "stage": "VERIFIER",
+      "script": "e10rp_verifier.py",
+      "command": [
+        "/home/z/.venv/bin/python3",
+        "/home/z/my-project/e10rp_work/E10/e10rp_verifier.py",
+        "/tmp/e10rp_m4go78oo"
+      ],
+      "runner_observed_pid": 3548,
+      "exit_code": 0,
+      "wall_seconds": 0.043,
+      "stdout_tail": "{\n  \"verdict\": \"E10RP_VERIFIED\",\n  \"checks\": [\n    [\n      \"V1_plan_v1_definition\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V2_review_chain\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V3_phase1_deviation_evidence\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V4_causality_windows\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V5_ledger_decision_chain\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V6_journal_side_effects\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V7_artifacts_on_disk\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V8_final_outcome\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"V9_expectation_fidelity\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"S2A_classification\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"S2B_minimal_scope\",\n      \"VERIFIED\",\n      []\n    ],\n    [\n      \"S2C_preservation\",\n      \"VERIFIED\",\n      []\n    ]\n  ]\n}\n",
+      "expected_rc": 0,
+      "rc_as_expected": true
+    }
+  ],
+  "distinct_pids": [
+    3546,
+    3547,
+    3548
+  ],
+  "verdict": "E10RP_CHAIN_PROVEN"
+}
