@@ -34,7 +34,15 @@
   للعملية الملموسة: المسار الفعلي المحلول + العمق الحقيقي تحت هدف
   المنحة (``depth=None`` = حساب أمين داخل ``AccessAdmission``).
   المسار التشغيلي (``ToolExecutor._check_permissions``) يستدعي هذه
-  الصيغة لكل كتابة/قراءة محكومة.
+  الصيغة لكل كتابة/قراءة محكومة — ومنذ E10-RP2.2 §2 يشمل ذلك أدوات
+  workspace (write_file/edit_file/read_file/list_dir/grep/find_files/
+  file_browser): لا تنتهي أي أداة ذات مسار ملموس إلى البوابة الخشنة
+  كقرار تفويض نهائي.
+
+**كون الاحتواء (E10-RP2.2 §2.2/§2.5):** المسار الملموس يجب أن يقع
+داخل كون الكتابة المرتبط بالمحرك — جذر الأدلة (شجرة عهدة الـsandbox)
+أو جذر الـworkspace عند توصيله — ويُحسم الاحتواء على مسارات محلولة
+عبر ``pathlib`` لا على سابقة نصية.
 
 السمة ``__path_aware__`` على الدالة المعادة تخبر المحرك أن المتحقق
 يقبل الصيغة الموسعة — لا يوجد أي متحقق يسمح بكل المنح في المسار
@@ -60,14 +68,33 @@ Validator = Callable[..., bool]
 def build_engine_grant_validator(
     admission: AccessAdmission,
     artifacts_root: str,
+    workspace_root: Optional[str] = None,
 ) -> Validator:
     """بناء ``grant_validator`` إنتاجي من عقد قبول EOE الحقيقي.
 
     الدالة المعادة تحقق منحةً بعينها (بهويتها — لا أي منحة أخرى) لكل
     استدعاء أداة محكوم. أي فشل (توقيع، سارية، إبطال، نطاق، تغطية مسار،
     عمق) أو أي إذن غير قابل للتأسيس → False (رفض).
+
+    E10-RP2.2 §2.2: ``workspace_root`` الاختياري يضيف جذر الـworkspace
+    إلى كون الاحتواء (أدوات workspace المحكومة تحل أهدافها داخل
+    ``context.workspace_root`` — مُثبت احتواؤها بنيويًا في ToolExecutor
+    قبل الوصول إلى هنا). بدونه يبقى الكون جذر الأدلة فقط — سلوك
+    RP2.1 نفسه — وأي مسار خارجه يُرفض fail-closed.
     """
-    root = str(Path(artifacts_root).resolve())
+    root = Path(artifacts_root).resolve()
+    workspace = Path(workspace_root).resolve() if workspace_root else None
+
+    def _inside_universe(resolved: Path) -> bool:
+        """E10-RP2.2 §2.5 — احتواء بنيوي على مسار محلول (pathlib)،
+        لا سابقة نصية: يصح لفاصل المنصة ويغلق fail-closed."""
+        if resolved == root or resolved.is_relative_to(root):
+            return True
+        if workspace is not None and (
+            resolved == workspace or resolved.is_relative_to(workspace)
+        ):
+            return True
+        return False
 
     def validator(
         grant_id: str,
@@ -97,13 +124,16 @@ def build_engine_grant_validator(
         # هدف المنحة (depth=None → حساب أمين داخل AccessAdmission؛
         # لا قيمة ثابتة يمكنها تجاوز حد العمق المقصود).
         # المستوى الأول: المسار داخل كون الكتابة المرتبط بالمحرك
-        # (artifacts_root) — حتى لو قبلت المنحة مسارًا أوسع.
+        # (جذر الأدلة، وجذر الـworkspace عند توصيله) — حتى لو قبلت
+        # المنحة مسارًا أوسع (E10-RP2.2 §2.2/§2.5: احتواء pathlib
+        # لا سابقة نصية).
         try:
-            resolved = str(Path(path).resolve())
+            resolved_path = Path(path).resolve()
         except Exception:
             return False
-        if resolved != root and not resolved.startswith(root + "/"):
+        if not _inside_universe(resolved_path):
             return False
+        resolved = str(resolved_path)
         try:
             admission.admit_grant_id(grant_id, write=write, path=resolved, depth=depth)
         except AccessDenied:

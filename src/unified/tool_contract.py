@@ -253,6 +253,11 @@ class GrepInput(ToolInputSchema):
     file_pattern: Optional[str] = None
     case_sensitive: bool = True
     max_results: int = 100
+    # E10-RP2.2 §2 (discovery D4 fix): `recursive` was read by the executor
+    # but never declared on the contract — pydantic (extra=ignore) dropped
+    # it, so every governed grep call crashed with AttributeError before
+    # this fix. Declared now, default True (search the subtree).
+    recursive: bool = True
 
 
 class GrepOutput(ToolOutputSchema):

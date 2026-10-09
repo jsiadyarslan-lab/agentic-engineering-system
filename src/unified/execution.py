@@ -568,8 +568,25 @@ class ToolExecutor:
     
     # E10-RP2.1 §2 — the write/read tool families whose inputs carry a
     # concrete sandbox target. Only these can be path-grounded.
+    # E10-RP2.2 §2 — the WORKSPACE tool family joins the governed set:
+    # every tool whose input names a concrete path under
+    # ``context.workspace_root`` (write_file/edit_file/read_file/list_dir/
+    # grep/find_files/file_browser) now grounds the ACTUAL resolved target
+    # into the authorization decision (path + honest depth). NO
+    # path-bearing tool may end at the coarse kind-only gate as its final
+    # authorization decision (order E10-RP2.2 §2.1-§2.3).
     _PATH_BEARING_TOOLS = frozenset({
         "artifact_write", "write_artifact", "artifact_read", "read_artifact",
+        "read_file", "write_file", "edit_file",
+        "list_dir", "grep", "find_files", "file_browser",
+    })
+
+    # E10-RP2.2 §2 — workspace tools resolve their concrete target against
+    # ``context.workspace_root`` (the artifact families resolve against
+    # ``<artifacts_base_dir>/<sandbox_id>``).
+    _WORKSPACE_PATH_TOOLS = frozenset({
+        "read_file", "write_file", "edit_file",
+        "list_dir", "grep", "find_files", "file_browser",
     })
 
     @staticmethod
@@ -600,6 +617,61 @@ class ToolExecutor:
             )
         return target
 
+    @staticmethod
+    def _contained_workspace_target(workspace_root: str, path: str) -> Path:
+        """E10-RP2.2 §2.5 — resolve the ACTUAL absolute workspace target and
+        PROVE it stays inside the workspace root.
+
+        Fail-closed (PermissionError) on any escape: relative traversal
+        (``..``), an ABSOLUTE ``path`` pointing outside the workspace
+        (pathlib join would REPLACE the base entirely), and symlinked
+        components resolving outside the workspace root. Containment is
+        decided on RESOLVED paths via ``Path.is_relative_to`` — normalized
+        per-OS, never a raw string prefix (order E10-RP2.2 §2.5). The
+        caller MUST reject the operation before any event, journal record,
+        or side effect when this raises; the rejection then provably
+        leaves no new file, folder, or journal record.
+        """
+        base = Path(workspace_root).resolve()
+        target = (base / path).resolve()
+        if target != base and not target.is_relative_to(base):
+            raise PermissionError(
+                "WORKSPACE_CONTAINMENT_VIOLATION: the requested target "
+                f"{str(target)!r} resolves outside the workspace root "
+                f"{str(base)!r} (workspace_root={workspace_root!r}, "
+                f"path={path!r}) — the operation is refused before any "
+                "side effect (E10-RP2.2 §2.5)"
+            )
+        return target
+
+    def _path_disclosure_permitted(
+        self, context: ExecutionContext, abs_path: Path
+    ) -> bool:
+        """E10-RP2.2 §2.4 — per-path grant check for iterating/exploration
+        tools (list_dir / grep / find_files / file_browser).
+
+        EVERY path that can be disclosed (listed, matched, browsed) or
+        whose CONTENT can be read (grep) is checked against the grant
+        rules on its OWN merits — checking the folder root alone and then
+        allowing unlimited reading inside it is explicitly insufficient
+        (order §2.4). Paths that fail are neither disclosed nor read
+        (fail-closed per path, no partial leakage).
+
+        Legacy 2-arg validators carry no per-path policy (test fixtures
+        only — the operational path wires the path-aware EOE bridge built
+        by ``eoe.engine_bridge.build_engine_grant_validator``).
+        """
+        validator = context.grant_validator
+        if validator is None or not getattr(validator, "__path_aware__", False):
+            return True
+        for grant_id in context.grant_ids:
+            try:
+                if validator(grant_id, "read", str(abs_path)):
+                    return True
+            except Exception:
+                continue
+        return False
+
     async def _check_permissions(
         self,
         context: ExecutionContext,
@@ -616,24 +688,44 @@ class ToolExecutor:
         and depth limit on the real target. Legacy 2-arg validators keep
         the permission-name check (test fixtures only — never the
         operational path, which wires only the bridge).
+
+        E10-RP2.2 §2: the WORKSPACE tool family (write_file / edit_file /
+        read_file / list_dir / grep / find_files / file_browser) joins
+        the path-grounded set — its concrete target (resolved and
+        structurally contained inside ``context.workspace_root``) reaches
+        the grant decision with the honest depth. ``workspace_root`` is
+        NEVER an implicit general grant (order §2.3): the presented grant
+        must cover the ACTUAL path and depth, or the tool is rejected
+        fail-closed before any event, journal record, or side effect.
         """
         required = contract.required_permissions
         if not required:
             return
 
-        # E10-RP2.1 §2 — resolve the concrete target ONCE for path-bearing
-        # tools. An uncontainable target is rejected here, fail-closed,
-        # before ANY event/journal/side effect (order §2.6: a rejection
-        # must leave no new file and no `performed` journal record).
+        # E10-RP2.1 §2 / E10-RP2.2 §2 — resolve the concrete target ONCE
+        # for path-bearing tools. An uncontainable target is rejected
+        # here, fail-closed, before ANY event/journal/side effect (order
+        # RP2.1 §2.6 + RP2.2 §2.6: a rejection must leave no new file,
+        # folder, and no `performed` journal record).
         actual_target: Optional[str] = None
         if tool_input is not None and contract.name in self._PATH_BEARING_TOOLS:
-            sandbox_id = tool_input.get("sandbox_id") or context.sandbox_id
-            rel_path = tool_input.get("path", "output.txt")
-            if sandbox_id and rel_path:
-                target = self._contained_write_target(
-                    self.engine.artifacts_base_dir, sandbox_id, rel_path
+            if contract.name in self._WORKSPACE_PATH_TOOLS:
+                # E10-RP2.2 §2.2/§2.3 — workspace tools ground the ACTUAL
+                # contained workspace target into the grant decision;
+                # workspace_root itself is never an implicit grant.
+                rel_path = tool_input.get("path", ".")
+                target = self._contained_workspace_target(
+                    context.workspace_root, rel_path
                 )
                 actual_target = str(target)
+            else:
+                sandbox_id = tool_input.get("sandbox_id") or context.sandbox_id
+                rel_path = tool_input.get("path", "output.txt")
+                if sandbox_id and rel_path:
+                    target = self._contained_write_target(
+                        self.engine.artifacts_base_dir, sandbox_id, rel_path
+                    )
+                    actual_target = str(target)
 
         # Check if agent has grants covering required permissions
         if not context.grant_validator:
@@ -781,38 +873,61 @@ class ToolExecutor:
         validated_input: BaseModel,
         action_id: str,
     ) -> ToolResult:
-        """Execute filesystem tools within sandbox/workspace."""
+        """Execute filesystem tools within sandbox/workspace.
+
+        E10-RP2.2 §2 — every workspace tool target is structurally
+        contained: resolved and PROVEN inside ``context.workspace_root``
+        (traversal, absolute-escape and symlink-escape refused before any
+        side effect — defense in depth under the permission gate, which
+        already grounded this exact target into the grant decision).
+        Iterating/exploration tools (list_dir / grep / find_files /
+        file_browser) authorize EVERY disclosed or content-read path
+        per-path against the grant rules — never an unbounded walk under a
+        root-only check (order E10-RP2.2 §2.4). ``workspace_root`` is
+        never an implicit grant.
+        """
+        import fnmatch as _fnmatch
+
         # Resolve workspace path
         workspace = Path(context.workspace_root).resolve()
-        
+
+        # E10-RP2.2 §2.5 — structural containment re-proof at the
+        # execution layer (the permission gate already proved the same
+        # target before any event/journal). Raises PermissionError BEFORE
+        # any side effect.
+        target = self._contained_workspace_target(
+            context.workspace_root, validated_input.path
+        )
+
+        def disclosed(p: Path) -> bool:
+            """§2.4 per-path grant rule for disclosure / content reads."""
+            return self._path_disclosure_permitted(context, p)
+
         if tool_name == "read_file":
-            path = workspace / validated_input.path
-            if not path.exists():
-                return ToolResult(action_id=action_id, tool_name=tool_name, success=False, 
-                                 error=f"File not found: {path}", error_type="FileNotFoundError")
-            content = path.read_text(encoding=validated_input.encoding)
+            if not target.exists():
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"File not found: {target}", error_type="FileNotFoundError")
+            content = target.read_text(encoding=validated_input.encoding)
             sha256 = hashlib.sha256(content.encode()).hexdigest()
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "content": content, "size_bytes": len(content.encode()), "sha256": sha256})
-        
+
         elif tool_name == "write_file":
-            path = workspace / validated_input.path
-            if path.exists() and not validated_input.overwrite:
+            if target.exists() and not validated_input.overwrite:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"File exists and overwrite=False: {path}", error_type="FileExistsError")
-            path.parent.mkdir(parents=True, exist_ok=True)
+                                 error=f"File exists and overwrite=False: {target}", error_type="FileExistsError")
+            target.parent.mkdir(parents=True, exist_ok=True)
             content = validated_input.content
-            path.write_text(content, encoding=validated_input.encoding)
+            target.write_text(content, encoding=validated_input.encoding)
             sha256 = hashlib.sha256(content.encode()).hexdigest()
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"success": True, "path": str(path), "size_bytes": len(content.encode()), "sha256": sha256})
-        
+                             output={"success": True, "path": str(target), "size_bytes": len(content.encode()), "sha256": sha256})
+
         elif tool_name == "edit_file":
-            path = workspace / validated_input.path
-            if not path.exists():
+            if not target.exists():
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"File not found: {path}", error_type="FileNotFoundError")
-            content = path.read_text(encoding="utf-8")
+                                 error=f"File not found: {target}", error_type="FileNotFoundError")
+            content = target.read_text(encoding="utf-8")
             old_text = validated_input.old_text
             new_text = validated_input.new_text
             if validated_input.replace_all:
@@ -824,21 +939,23 @@ class ToolExecutor:
             if replacements == 0:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
                                  error=f"Text not found in file", error_type="TextNotFoundError")
-            path.write_text(new_content, encoding="utf-8")
+            target.write_text(new_content, encoding="utf-8")
             sha256 = hashlib.sha256(new_content.encode()).hexdigest()
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"success": True, "path": str(path), "replacements": replacements, "sha256": sha256})
-        
+                             output={"success": True, "path": str(target), "replacements": replacements, "sha256": sha256})
+
         elif tool_name == "list_dir":
-            path = workspace / validated_input.path
-            if not path.exists():
+            if not target.exists():
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+                                 error=f"Path not found: {target}", error_type="PathNotFoundError")
             entries = []
-            for entry in path.rglob("*") if validated_input.recursive else path.iterdir():
+            for entry in target.rglob("*") if validated_input.recursive else target.iterdir():
+                # E10-RP2.2 §2.4 — every DISCLOSED path is authorized
+                # per-path; paths outside the grant rules are not disclosed.
+                if not disclosed(entry):
+                    continue
                 if validated_input.pattern:
-                    import fnmatch
-                    if not fnmatch.fnmatch(entry.name, validated_input.pattern):
+                    if not _fnmatch.fnmatch(entry.name, validated_input.pattern):
                         continue
                 entries.append({
                     "name": entry.name,
@@ -848,18 +965,25 @@ class ToolExecutor:
                 })
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "entries": entries, "total": len(entries)})
-        
+
         elif tool_name == "grep":
-            path = workspace / validated_input.path
-            if not path.exists():
+            if not target.exists():
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+                                 error=f"Path not found: {target}", error_type="PathNotFoundError")
             matches = []
             import re
             flags = 0 if validated_input.case_sensitive else re.IGNORECASE
             pattern = re.compile(validated_input.pattern, flags)
-            for file_path in path.rglob("*") if validated_input.recursive else path.iterdir():
-                if file_path.is_file() and (not validated_input.file_pattern or fnmatch.fnmatch(file_path.name, validated_input.file_pattern)):
+            # E10-RP2.2 D4 fix — `recursive` is part of the grep contract
+            # (default True) and `fnmatch` no longer depends on the
+            # list_dir branch having imported it first.
+            recursive = getattr(validated_input, "recursive", True)
+            for file_path in target.rglob("*") if recursive else target.iterdir():
+                # E10-RP2.2 §2.4 — CONTENT reads are authorized per-path:
+                # a file outside the grant rules is never opened at all.
+                if not disclosed(file_path):
+                    continue
+                if file_path.is_file() and (not validated_input.file_pattern or _fnmatch.fnmatch(file_path.name, validated_input.file_pattern)):
                     try:
                         content = file_path.read_text(encoding="utf-8", errors="ignore")
                         for i, line in enumerate(content.splitlines(), 1):
@@ -875,28 +999,28 @@ class ToolExecutor:
                         pass
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "matches": matches, "total": len(matches)})
-        
+
         elif tool_name == "find_files":
-            path = workspace / validated_input.path
-            if not path.exists():
+            if not target.exists():
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
+                                 error=f"Path not found: {target}", error_type="PathNotFoundError")
             files = []
-            import fnmatch
-            for file_path in path.rglob("*"):
-                if file_path.is_file() and fnmatch.fnmatch(file_path.name, validated_input.pattern):
+            for file_path in target.rglob("*"):
+                # E10-RP2.2 §2.4 — per-path authorization before disclosure
+                if not disclosed(file_path):
+                    continue
+                if file_path.is_file() and _fnmatch.fnmatch(file_path.name, validated_input.pattern):
                     files.append(str(file_path.relative_to(workspace)))
                     if len(files) >= (validated_input.max_results or 100):
                         break
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "files": files, "total": len(files)})
-        
+
         elif tool_name == "file_browser":
-            path = workspace / validated_input.path
-            if not path.exists():
+            if not target.exists():
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=f"Path not found: {path}", error_type="PathNotFoundError")
-            tree = {"name": path.name, "path": str(path.relative_to(workspace)), "type": "directory", "children": []}
+                                 error=f"Path not found: {target}", error_type="PathNotFoundError")
+            tree = {"name": target.name, "path": str(target.relative_to(workspace)), "type": "directory", "children": []}
             total_files = 0
             total_dirs = 0
             def build_tree(node, p):
@@ -904,6 +1028,11 @@ class ToolExecutor:
                 try:
                     for entry in sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name)):
                         if not validated_input.show_hidden and entry.name.startswith("."):
+                            continue
+                        # E10-RP2.2 §2.4 — every browsed node is authorized
+                        # per-path; unauthorized nodes/subtrees are not
+                        # disclosed.
+                        if not disclosed(entry):
                             continue
                         if entry.is_dir():
                             total_dirs += 1
@@ -915,10 +1044,10 @@ class ToolExecutor:
                             node["children"].append({"name": entry.name, "path": str(entry.relative_to(workspace)), "type": "file", "size": entry.stat().st_size})
                 except Exception:
                     pass
-            build_tree(tree, path)
+            build_tree(tree, target)
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "tree": tree, "total_files": total_files, "total_dirs": total_dirs})
-        
+
         raise ValueError(f"Unknown filesystem tool: {tool_name}")
     
     async def _execute_git_tool(

@@ -25,9 +25,28 @@ import time
 import uuid
 from dataclasses import dataclass, asdict
 from enum import Enum
+from pathlib import PurePath
 from typing import Callable
 
 from eoe.order_parser import AccessRequest, GrantKind
+
+
+def _path_covers(path: str, target: str) -> bool:
+    """E10-RP2.2 §2.5 — تغطية مسار بنيوية OS-aware.
+
+    ``target`` يغطي ``path`` فقط إذا تساويا أو وقع ``path`` تحته
+    تمامًا — محسوبة على مكوّنات مسار مطبّعة (``PurePath``) لا على
+    سابقة نصية خام: صحيح لفاصل المنصة، غير حساس لحالة الأحرف على
+    Windows، غير متأثر بشرائح مكررة أو ذيلية. أي مدخل غير مطلق أو
+    فارغ لا يغطي أبدًا (fail-closed)."""
+    try:
+        p = PurePath(path)
+        t = PurePath(target.rstrip("/\\"))
+    except Exception:
+        return False
+    if not p.is_absolute() or not t.is_absolute():
+        return False
+    return p == t or t in p.parents
 
 
 class GrantScope(str, Enum):
@@ -364,15 +383,20 @@ class AccessAdmission:
         """
         if grant.kind is not GrantKind.PATH_GRANT or not path:
             return 0
-        target = grant.target.rstrip("/")
-        if path == target:
-            return 0
-        if not path.startswith(target + "/"):
+        target = grant.target
+        if not _path_covers(path, target):
             # خارج نطاق المنحة — فحص التغطية يرفض؛ عمق كبير كي لا
             # يوحي فحص العمق بأي سماح.
             return 1 << 30
-        rel = path[len(target) + 1:]
-        return len([p for p in rel.split("/") if p not in ("", ".")])
+        p = PurePath(path)
+        t = PurePath(target.rstrip("/\\"))
+        if p == t:
+            return 0
+        try:
+            rel = p.relative_to(t)
+        except ValueError:
+            return 1 << 30
+        return len([x for x in rel.parts if x not in ("", ".")])
 
     def admit_access(
         self,
@@ -452,7 +476,10 @@ class AccessAdmission:
         if kind_only:
             return None
         if grant.kind is GrantKind.PATH_GRANT:
-            if not path.startswith(grant.target.rstrip("/") + "/") and path != grant.target:
+            # E10-RP2.2 §2.5 — تغطية OS-aware على مكوّنات مطبّعة،
+            # لا سابقة نصية خام (تصح لفاصل المنصة وتغلق على الشكل
+            # المعطوب fail-closed).
+            if not _path_covers(path, grant.target):
                 return AccessRejection.PATH_NOT_COVERED.value
             if depth > grant.max_depth:
                 return AccessRejection.DEPTH_EXCEEDED.value

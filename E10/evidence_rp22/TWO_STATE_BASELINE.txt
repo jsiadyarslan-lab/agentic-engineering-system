@@ -1,0 +1,58 @@
+# E10-RP2.2 §5 two-state comparison (baseline 23ba936 vs RP2.2 branch)
+# criterion: identical failure-name sets + identical exit codes per row
+
+=== ROW: vs
+baseline exit : 1
+branch   exit : 1
+baseline tail : 40 passed, 11 skipped, 1033 warnings, 3 errors
+branch   tail : 40 passed, 11 skipped, 1033 warnings, 3 errors
+baseline failure set sha: dcd07684066fa608
+branch   failure set sha: dcd07684066fa608
+VERDICT: IDENTICAL
+
+=== ROW: e3e4
+baseline exit : 1
+branch   exit : 1
+baseline tail : 5 failed, 4 passed, 15 skipped, 150 warnings
+branch   tail : 5 failed, 4 passed, 15 skipped, 150 warnings
+baseline failure set sha: 00e29ec1f7052013
+branch   failure set sha: 00e29ec1f7052013
+VERDICT: IDENTICAL
+
+=== ROW: e6
+baseline exit : 1
+branch   exit : 1
+baseline tail : 4 failed, 14 passed, 1592 warnings
+branch   tail : 4 failed, 14 passed, 1592 warnings
+baseline failure set sha: b0203d8a3ec4726b
+branch   failure set sha: b0203d8a3ec4726b
+VERDICT: IDENTICAL
+
+=== ROW: e33e32f
+baseline exit : 1
+branch   exit : 1
+baseline tail : 1 failed, 1 passed, 2 skipped, 215 warnings
+branch   tail : 1 failed, 1 passed, 2 skipped, 215 warnings
+baseline failure set sha: 3c785b82a9103326
+branch   failure set sha: 3c785b82a9103326
+VERDICT: IDENTICAL
+
+=== ROW: e35
+baseline exit : 1
+branch   exit : 1
+baseline tail : RuntimeError: T2 failure not detected
+branch   tail : RuntimeError: T2 failure not detected
+baseline failure set sha: 455bc8ee2bb8b383
+branch   failure set sha: 455bc8ee2bb8b383
+VERDICT: IDENTICAL
+
+=== ROW: e37
+baseline exit : 1
+branch   exit : 1
+baseline tail : ######################################################################
+branch   tail : ######################################################################
+baseline failure set sha: e632bf12e400dc4e
+branch   failure set sha: e632bf12e400dc4e
+VERDICT: IDENTICAL
+
+OVERALL_TWO_STATE=0

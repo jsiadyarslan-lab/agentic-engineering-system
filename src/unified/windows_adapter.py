@@ -25,7 +25,12 @@ from unified.domain_model import (
     SandboxExecutionRecord,
     Artifact,
 )
-from unified.sandbox import ExecutionSandbox, SandboxError, SandboxUnavailableError
+from unified.sandbox import (
+    ExecutionSandbox,
+    SandboxError,
+    SandboxUnavailableError,
+    validate_sandbox_id,
+)
 
 
 class WindowsExecutorAdapter:
@@ -604,11 +609,20 @@ class WindowsExecutorAdapter:
         resolved target must stay inside ``<artifacts_base_dir>/<sandbox_id>``:
         relative traversal (``..``), an ABSOLUTE ``path`` (which would
         REPLACE the base in pathlib join semantics), and symlink escapes are
-        rejected fail-closed BEFORE any filesystem effect."""
-        artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
-        os.makedirs(artifacts_dir, exist_ok=True)
+        rejected fail-closed BEFORE any filesystem effect.
 
-        # E10-RP2.1 §2.3 — containment proof for the concrete target.
+        E10-RP2.2 §3 — ZERO-TRACE REJECTION: the sandbox_id validation and
+        the containment proof BOTH run BEFORE the sandbox directory
+        creation (``os.makedirs`` below) — a direct call with an escaping
+        target or a malformed sandbox_id is refused leaving NO new folder,
+        NO file, NO record (order §3.1-§3.4)."""
+        # E10-RP2.2 §3.1 — single-component structural validation first.
+        validate_sandbox_id(sandbox_id)
+        artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
+
+        # E10-RP2.1 §2.3 + RP2.2 §3 — containment proof BEFORE the sandbox
+        # directory creation: a rejected direct call must not create even
+        # a folder (order §3.2).
         base_resolved = Path(artifacts_dir).resolve()
         file_path = (base_resolved / path).resolve()
         if file_path != base_resolved and not file_path.is_relative_to(base_resolved):
@@ -617,8 +631,9 @@ class WindowsExecutorAdapter:
                 f"{str(file_path)!r} resolves outside the sandbox root "
                 f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
                 f"path={path!r}) — refused with zero side effects "
-                "(E10-RP2.1 §2.3)"
+                "(E10-RP2.1 §2.3, E10-RP2.2 §3)"
             )
+        os.makedirs(artifacts_dir, exist_ok=True)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(file_path, 'wb') as f:
@@ -645,9 +660,24 @@ class WindowsExecutorAdapter:
         )
     
     async def read_artifact(self, sandbox_id: str, path: str) -> bytes:
-        """Read artifact from sandbox /artifacts directory."""
+        """Read artifact from sandbox /artifacts directory.
+
+        E10-RP2.2 §2.4/§3 — contained read: the sandbox_id is validated and
+        the resolved read target is proven inside the sandbox custody root
+        BEFORE any open() — no read outside the sandbox, direct legacy
+        callers included."""
+        validate_sandbox_id(sandbox_id)
         artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
-        file_path = Path(artifacts_dir) / path
+        base_resolved = Path(artifacts_dir).resolve()
+        file_path = (base_resolved / path).resolve()
+        if file_path != base_resolved and not file_path.is_relative_to(base_resolved):
+            raise SandboxError(
+                "SANDBOX_CONTAINMENT_VIOLATION: artifact read target "
+                f"{str(file_path)!r} resolves outside the sandbox root "
+                f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
+                f"path={path!r}) — refused before any read "
+                "(E10-RP2.2 §2.4)"
+            )
         
         if not file_path.exists():
             raise FileNotFoundError(f"Artifact not found: {path}")
@@ -656,7 +686,10 @@ class WindowsExecutorAdapter:
             return f.read()
     
     async def list_artifacts(self, sandbox_id: str) -> List[Artifact]:
-        """List artifacts in sandbox /artifacts."""
+        """List artifacts in sandbox /artifacts.
+
+        E10-RP2.2 §3.1 — sandbox_id validated before the directory walk."""
+        validate_sandbox_id(sandbox_id)
         artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
         artifacts = []
         

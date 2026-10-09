@@ -345,14 +345,20 @@ class SandboxManager:
         stay inside ``<artifacts_base_dir>/<sandbox_id>``. Traversal
         (``..``), absolute paths, and symlink escapes are rejected
         fail-closed BEFORE any filesystem effect, for EVERY writer (governed
-        engine path, legacy callers, direct tests)."""
-        # Allow writing to any sandbox_id - create directory if needed
-        if sandbox_id not in self._active:
-            # Create sandbox directory structure
-            import os
-            artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
-            os.makedirs(artifacts_dir, exist_ok=True)
-        # E10-RP2.1 §2.3 — containment proof for the concrete target.
+        engine path, legacy callers, direct tests).
+
+        E10-RP2.2 §3 — ZERO-TRACE REJECTION: the sandbox_id validation and
+        the containment proof BOTH run BEFORE any filesystem effect —
+        including the sandbox directory creation — and before any journal
+        or evidence record. A direct legacy call with an escaping target
+        or a malformed sandbox_id is refused leaving NO new folder, NO
+        file, NO record (order §3.1-§3.4)."""
+        # E10-RP2.2 §3.1 — sandbox_id validated as a single structural
+        # component BEFORE anything touches the disk: an unvalidated join
+        # could escape the artifacts base while looking "contained".
+        validate_sandbox_id(sandbox_id)
+        # E10-RP2.1 §2.3 + RP2.2 §3 — containment proof BEFORE the sandbox
+        # directory creation below (zero side effects on rejection).
         base = Path(self.sandbox.artifacts_base_dir) / sandbox_id
         base_resolved = base.resolve()
         target = (base / path).resolve()
@@ -362,8 +368,16 @@ class SandboxManager:
                 f"{str(target)!r} resolves outside the sandbox root "
                 f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
                 f"path={path!r}) — refused with zero side effects "
-                "(E10-RP2.1 §2.3)"
+                "(E10-RP2.1 §2.3, E10-RP2.2 §3)"
             )
+        # Allow writing to any sandbox_id - create directory if needed
+        # (AFTER both proofs passed — E10-RP2.2 §3.2: a rejected direct
+        # call must not create even a folder).
+        if sandbox_id not in self._active:
+            # Create sandbox directory structure
+            import os
+            artifacts_dir = os.path.join(self.sandbox.artifacts_base_dir, sandbox_id)
+            os.makedirs(artifacts_dir, exist_ok=True)
         if artifact_id is not None:
             try:
                 artifact = await self.sandbox.write_artifact(
@@ -383,7 +397,26 @@ class SandboxManager:
         return artifact
 
     async def read_artifact(self, sandbox_id: str, path: str) -> bytes:
-        """Read artifact from sandbox."""
+        """Read artifact from sandbox.
+
+        E10-RP2.2 §2.4/§3 — reads are contained too: the sandbox_id is
+        validated and the resolved read target is proven inside
+        ``<artifacts_base_dir>/<sandbox_id>`` BEFORE any open() — no read
+        outside the sandbox custody tree, direct legacy callers included
+        (order acceptance 2: no write OR read outside the authorized
+        path)."""
+        validate_sandbox_id(sandbox_id)
+        base = Path(self.sandbox.artifacts_base_dir) / sandbox_id
+        base_resolved = base.resolve()
+        read_target = (base / path).resolve()
+        if read_target != base_resolved and not read_target.is_relative_to(base_resolved):
+            raise SandboxError(
+                "SANDBOX_CONTAINMENT_VIOLATION: artifact read target "
+                f"{str(read_target)!r} resolves outside the sandbox root "
+                f"{str(base_resolved)!r} (sandbox_id={sandbox_id!r}, "
+                f"path={path!r}) — refused before any read "
+                "(E10-RP2.2 §2.4)"
+            )
         # Allow reading from any sandbox directory that exists
         if sandbox_id not in self._active and sandbox_id not in self._completed:
             # Check if directory exists
@@ -394,7 +427,11 @@ class SandboxManager:
         return await self.sandbox.read_artifact(sandbox_id, path)
 
     async def list_artifacts(self, sandbox_id: str) -> List[Artifact]:
-        """List artifacts in sandbox."""
+        """List artifacts in sandbox.
+
+        E10-RP2.2 §3.1 — sandbox_id validated before any directory walk
+        (an unvalidated join could list outside the artifacts base)."""
+        validate_sandbox_id(sandbox_id)
         if sandbox_id not in self._active and sandbox_id not in self._completed:
             raise SandboxError(f"Sandbox {sandbox_id} not found")
         return await self.sandbox.list_artifacts(sandbox_id)
@@ -431,6 +468,46 @@ class SandboxError(Exception):
 class SandboxUnavailableError(SandboxError):
     """Sandbox backend not available."""
     pass
+
+
+def validate_sandbox_id(sandbox_id: str) -> str:
+    """E10-RP2.2 §3.1 — structural validation of a sandbox identity
+    BEFORE any filesystem effect.
+
+    A sandbox_id joins the artifacts base as a SINGLE path component:
+    separators (``/`` or ``\\``), traversal (``.`` / ``..``), absolute
+    forms, drive-relative forms, whitespace and control bytes are
+    rejected fail-closed. Without this, ``<base>/<sandbox_id>`` itself
+    escapes the artifacts base while still looking "contained" relative
+    to the ESCAPED root (order E10-RP2.2 §3: the containment check AND
+    the sandbox_id verification both run before creating any sandbox
+    folder or leaving any disk trace). Returns the validated id.
+    """
+    if not isinstance(sandbox_id, str) or not sandbox_id or not sandbox_id.strip():
+        raise SandboxError(
+            f"SANDBOX_ID_INVALID: empty or non-string sandbox_id {sandbox_id!r} "
+            "— refused before any filesystem effect (E10-RP2.2 §3.1)"
+        )
+    if sandbox_id.strip() != sandbox_id:
+        raise SandboxError(
+            f"SANDBOX_ID_INVALID: sandbox_id {sandbox_id!r} has leading/trailing "
+            "whitespace — refused before any filesystem effect (E10-RP2.2 §3.1)"
+        )
+    if sandbox_id in (".", "..") or "/" in sandbox_id or "\\" in sandbox_id \
+            or "\x00" in sandbox_id:
+        raise SandboxError(
+            f"SANDBOX_ID_INVALID: sandbox_id {sandbox_id!r} must be a single "
+            "path component (no separators, traversal, or absolute forms) — "
+            "refused before any filesystem effect (E10-RP2.2 §3.1)"
+        )
+    from pathlib import PurePath
+    if PurePath(sandbox_id).is_absolute() or PurePath(sandbox_id).name != sandbox_id:
+        raise SandboxError(
+            f"SANDBOX_ID_INVALID: sandbox_id {sandbox_id!r} does not normalize "
+            "to a single component — refused before any filesystem effect "
+            "(E10-RP2.2 §3.1)"
+        )
+    return sandbox_id
 
 
 class ImageNotAllowedError(SandboxError):
