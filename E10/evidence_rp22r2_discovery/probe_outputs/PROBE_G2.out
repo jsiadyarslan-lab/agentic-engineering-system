@@ -1,0 +1,10 @@
+=== PROBE G2: LEGACY permissive 2-arg validator — kind-only decision, uncontained repo_path ===
+[G2] git_branch (uncontained repo): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G2] git_commit (uncontained repo): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G2] git_status (uncontained repo): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G2] git_diff (uncontained repo): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G2] run_command (registered mission): PermissionError human gate: Human gate created for run_command. Execution paused awaiting approval.
+[G2] sandbox_execute (registered mission): PermissionError human gate: Human gate created for sandbox_execute. Execution paused awaiting approval.
+[G2] repo branches now: '* main'
+[G2] repo log now: '044c1b0 seed'
+[G2 RESULT] TWO-LAYER — (1) GAP-CONFIRMED at the authorization layer: with a legacy 2-arg validator the git family's FINAL decision is kind-only and the call PROCEEDS past every authorization layer with an uncontained repo_path (target never grounded); (2) DEFECT DF1: every git implementation call then crashes with NameError (subprocess never imported in src/unified/execution.py) — no git effect ever executes at baseline (fail-closed BY CRASH, not by design). run_command/sandbox_execute reach the human gate (registered mission)

@@ -1,0 +1,13 @@
+=== PROBE G1: ABSENT grant_validator — 5 git tools + run_command + sandbox_execute (real ToolExecutor chain) ===
+[G1] git_branch: PermissionError (fail-closed): Tool git_branch requires grants but no validator available
+[G1] git_commit: PermissionError (fail-closed): Tool git_commit requires grants but no validator available
+[G1] git_diff: PermissionError (fail-closed): Tool git_diff requires grants but no validator available
+[G1] git_status: PermissionError (fail-closed): Tool git_status requires grants but no validator available
+[G1] git_push: PermissionError (fail-closed): Tool git_push requires grants but no validator available
+[G1] run_command: PermissionError (fail-closed): Tool run_command requires grants but no validator available
+[G1] sandbox_execute: PermissionError (fail-closed): Tool sandbox_execute requires grants but no validator available
+[G1] events 0 -> 0 (delta 0)
+[G1] engine.actions 0 -> 0 (delta 0)
+[G1] repo branches: '* main'
+[G1] tree delta: []
+[G1 RESULT] SECURE — absent validator: every in-scope tool rejected before any event, action record, file, or git effect

@@ -1,0 +1,8 @@
+=== PROBE G3: REAL EOE bridge — live PATH_GRANT scoped to treeA; operations target repoB (outside treeA) ===
+[G3] git_branch (grant covers treeA only): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G3] git_status (grant covers treeA only): [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G3] git_push (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: admin for tool git_push
+[G3] run_command (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: execute for tool run_command
+[G3] sandbox_execute (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: execute for tool sandbox_execute
+[G3] repoB branches: '* main'
+[G3 RESULT] TWO-LAYER — under the REAL bridge: (1) GAP-CONFIRMED at the authorization layer: git_branch/git_status PROCEED past every authorization layer on repoB (grant scoped to treeA) — the coarse kind gate (write/read) is their final decision and the target is never grounded (they then crash with NameError = DF1, so no git effect executes); (2) SECURE: git_push (admin) and run_command/sandbox_execute (execute) are REJECTED at the permission layer — these kinds are unattainable in EOE grant policy (fail-closed; tools functionally dead under the real policy)

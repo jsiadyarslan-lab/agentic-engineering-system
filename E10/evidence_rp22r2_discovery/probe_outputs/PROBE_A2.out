@@ -1,0 +1,5 @@
+=== PROBE A2: agent_role.BaseAgent._run_in_sandbox — direct sandbox execution with ZERO permission checks (dead code: no callers) ===
+[A2] no validator + EMPTY grant_ids: executed=True exit=0
+[A2] REAL bridge + EMPTY grant_ids: executed=True exit=0
+[A2] REAL bridge + live grant id: SandboxError: Invalid grants: grant-0ef9aa22d067
+[A2 RESULT] GAP-CONFIRMED (latent) — _run_in_sandbox performs NO permission check, NO human gate, NO path grounding: with an empty grant_ids list the command executes with zero authorization even under the real bridge (empty list bypasses the manager's grant check). Static fact: NO callers today — a dormant bypass primitive, not an active path

@@ -1,0 +1,5 @@
+=== PROBE S1: SandboxManager.execute grant semantics — 2-arg SUBJECT call ('agent'), empty-list bypass ===
+[S1] live grant in required_grant_ids: SandboxError: Invalid grants: grant-071f9e24cfa6
+[S1] EMPTY required_grant_ids: executed=True exit_code=0 termination=SandboxTermination.COMPLETED
+[S1] revoked grant in required_grant_ids: SandboxError: Invalid grants: grant-76c3e3ef06f8
+[S1 RESULT] MIXED — non-empty grant lists are fail-closed under the real bridge (the manager calls validator(grant_id,'agent') — a SUBJECT string, not a permission; the bridge rejects anything but write/read), BUT an EMPTY required_grant_ids list skips the grant decision entirely and the command EXECUTES (GAP-CONFIRMED: empty list = no authorization at all)

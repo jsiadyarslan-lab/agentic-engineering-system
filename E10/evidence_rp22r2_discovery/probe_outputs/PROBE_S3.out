@@ -1,0 +1,8 @@
+=== PROBE S3: sandbox lifecycle — single-use per sandbox_id + zero-trace grant rejection ===
+[S3] first execute(s3-x): executed=True exit=0
+[S3] second execute(s3-x): SandboxError: Sandbox s3-x already used
+[S3] grant-rejected execute(s3-y): SandboxError: Invalid grants: nonexistent
+[S3] artifacts base entries before rejected call: ['s3-x']
+[S3] artifacts base entries after  rejected call: ['s3-x'] (delta [])
+[S3] active sandbox count after all: 0
+[S3 RESULT] SECURE — single-execute-per-sandbox_id is enforced; a grant-rejected execute leaves no sandbox directory, no active entry, no event

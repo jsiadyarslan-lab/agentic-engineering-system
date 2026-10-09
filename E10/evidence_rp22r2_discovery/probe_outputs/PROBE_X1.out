@@ -1,0 +1,6 @@
+=== PROBE X1: human-gate bypass — HIGH/CRITICAL tools with a mission_id NOT registered in engine.missions ===
+[X1] run_command REGISTERED mission: PermissionError (gate ACTIVE): Human gate created for run_command. Execution paused awaiting approval.
+[X1] run_command UNREGISTERED mission: [TOOL_RESULT] completed: success=True error=None
+[X1] git_push CRITICAL, UNREGISTERED mission, FAKE nonce: [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[X1] bare remote main before: 'fatal: Needed a single revision' / after: 'fatal: Needed a single revision'
+[X1 RESULT] GAP-CONFIRMED — _check_human_gate looks the mission up in engine.missions and RETURNS (no gate) when it is absent: an unregistered mission_id skips the HIGH gate for run_command (which then EXECUTES — proven) and skips the CRITICAL gate for git_push (the call proceeds past every pre-execution layer with a fake nonce; the push itself is stopped only by the DF1 NameError crash, not by a security control)

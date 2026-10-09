@@ -1,0 +1,6 @@
+=== PROBE G6: git_push — nonce presence-only check, arbitrary remote, uncontained repo, mission-wide approval ===
+[G6] negative control (empty nonce): [TOOL_RESULT] completed: success=False error='Output validation failed: unified.tool_contract.GitPushOutput() argument after ** must be a mapping, not NoneType'
+[G6] FAKE nonce push: [IMPL_CRASH] NameError: name 'subprocess' is not defined
+[G6] bare remote main before: 'fatal: Needed a single revision'
+[G6] bare remote main after : 'fatal: Needed a single revision'
+[G6 RESULT] TWO-LAYER — (1) GAP-CONFIRMED at the authorization layer: with a pre-approved mission-wide gate + a FAKE nonce the call PASSES every pre-execution layer (permission, human gate, nonce PRESENCE check — the nonce is never validated against any owner approval) with an uncontained repo_path and an arbitrary remote; (2) the actual push never executes at baseline because of DF1 (NameError in run_git) — fail-closed BY CRASH, not by any security control. force=True in the input is ignored by the implementation (never appended to the push command)

@@ -1,0 +1,7 @@
+=== PROBE S4: run_command FULL ToolExecutor chain (legacy validator + pre-approved gate) — what actually executes ===
+[S4] run_command ToolResult: success=True
+[S4] ToolResult.output: {'success': True, 'exit_code': 0, 'stdout': '', 'stderr': '', 'stdout_sha256': '', 'stderr_sha256': '', 'duration_ms': 17, 'termination': 'COMPLETED'}
+[S4] marker file written by the command inside working_dir: True
+[S4] sandbox dirs created under artifacts base: ['sandbox-1e07c6aebfbc']
+[S4] stdout artifact on disk: 'S4-EXECUTED-ON-HOST'
+[S4 RESULT] GAP-CONFIRMED — with a permissive kind gate + approved gate, run_command executes a HOST subprocess (default backend = WindowsExecutorAdapter subprocess fallback on Linux: no filesystem/network isolation, full os.environ inherited) with an arbitrary working_dir; the kind-only 'execute' decision never sees the command. OBSERVED: ToolResult.stdout is empty — the adapter's artifact ids are never registered in the evidence store, so stdout/stderr never reach the ToolResult (evidence-chain wiring gap for run_command)

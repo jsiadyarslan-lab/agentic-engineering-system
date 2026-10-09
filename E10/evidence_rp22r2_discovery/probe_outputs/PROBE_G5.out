@@ -1,0 +1,7 @@
+=== PROBE G5: rejection BEFORE any side effect — after a prior ALLOWED operation in the same engine/mission ===
+[G5] prior allowed op (run_command, gate pre-approved): success=True
+[G5] rejected op (git_branch, absent validator): [PERMISSION_REJECTED] PermissionError: Tool git_branch requires grants but no validator available
+[G5] refs before: '* main'
+[G5] refs after : '* main'
+[G5] event delta 0; action delta 0; tree delta []
+[G5 RESULT] SECURE — a rejected git op right after an allowed operation in the same mission leaves refs, events, action records, and files untouched. OBSERVED (DF1 footprint): a git call that PASSES authorization (legacy validator) crashes in the implementation but leaves audit traces — ActionRequested + ActionValidated(false) + TOOL_FAILED events and a failed Action record — which is audit-trail growth, not an operational side effect
