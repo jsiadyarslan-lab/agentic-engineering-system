@@ -26,6 +26,8 @@ import subprocess  # E10-RP2.2-R2 §3.1 (DF1): the git family implementation
                    # (fail-closed by crash, not by design). This import ships
                    # IN THE SAME CHANGE as the git authorization grounding
                    # (order E10-RP2.2-R2 §3: the fix may NOT land alone).
+import secrets  # E10-RP2.2-R2A1 §2: one-shot resume ticket ids (engine-internal)
+import time  # E10-RP2.2-R2A1 §2: resume ticket TTL clock
 import uuid
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -440,6 +442,68 @@ class SideEffectJournal:
 # ============================================================
 # TOOL EXECUTOR (E9 - Execution Fabric)
 # ============================================================
+
+# E10-RP2.2-R2A1 §2.2 — default validity window of a one-shot resume
+# ticket (minted when the owner APPROVES an action gate, consumed only by
+# the engine-designated continuation attempt). Configurable per engine via
+# ``engine.resume_ticket_ttl_seconds`` (tests use short windows; the
+# fail-closed direction is always expiry ⇒ refusal).
+RESUME_TICKET_TTL_DEFAULT = 3600.0
+
+
+@dataclass
+class ResumeTicket:
+    """E10-RP2.2-R2A1 §2.2 — ENGINE-ISSUED one-shot resume ticket.
+
+    Minted by the trusted engine at the moment the owner APPROVES an
+    action gate (``decide_human_gate``), bound to THAT gate and to the
+    exact operation identity the gate paused (mission/run/task/tool +
+    canonical input digest) plus the CREATING attempt/agent lineage.
+
+    Lifecycle (strict, monotonic):
+
+        armed ──(engine designates the continuation attempt)──▶ designated
+        designated ──(atomic consume by the designated attempt)──▶ consumed
+        armed|designated ──(TTL expiry)──▶ expired
+
+    * ``armed``: the approval exists but the engine has not yet launched a
+      designated continuation. NO call can consume the approval in this
+      state — not even one presenting the exact operation identity
+      (§2.3 case 3: an independent matching call cannot consume).
+    * ``designated``: the engine's resume path
+      (``MissionController.resume_approved_task``) has pre-minted the
+      continuation attempt id and recorded it here. ONLY a call whose
+      ``ExecutionContext.attempt_id`` equals ``continuation_attempt_id``
+      (and whose agent matches the creating agent) may consume.
+    * ``consumed`` / ``expired``: terminal — a new approval is required.
+
+    The ticket id is generated with ``secrets`` and is NEVER exposed to
+      the agent: ``_check_human_gate`` looks the ticket up by the CURRENT
+      operation key in the ENGINE-INTERNAL registry
+      (``engine._resume_tickets``); an agent-supplied id or field is never
+      consulted as proof (§2.2.5 — no agent-reachable minting surface
+      exists; the schema has no ticket field at all).
+    """
+
+    ticket_id: str
+    gate_id: str
+    op_key: str
+    mission_id: str
+    run_id: str
+    task_id: str
+    tool_name: str
+    input_digest: str
+    creating_attempt_id: str
+    creating_agent_id: str
+    issued_at: float
+    expires_at: float
+    state: str = "armed"
+    continuation_attempt_id: str = ""
+    designated_at: Optional[float] = None
+    consumed_at: Optional[float] = None
+    consumed_by_action: str = ""
+
+
 class ToolExecutor:
     """
     Executes tools with full contract validation, Action recording, and audit events.
@@ -1054,17 +1118,20 @@ class ToolExecutor:
                 # Rejected for this operation identity — fail-closed.
                 raise PermissionError(f"Human gate rejected for {tool_name}: {decision.get('feedback', 'Not approved')}")
             else:
-                # APPROVED + UNCONSUMED: this is the one-shot resume of the
-                # pending operation. Consume NOW, bound to the consuming
-                # attempt/agent/action lineage (the creating lineage stays
-                # in the operation record). Exactly one continuation may
-                # pass; every later call needs a new approval.
-                mission.metadata[f"{op_key}_consumed"] = {
-                    "consumed_at": datetime.now(timezone.utc).isoformat(),
-                    "consumed_by_attempt": context.attempt_id,
-                    "consumed_by_agent": context.agent_id,
-                    "consumed_by_action": action_id,
-                }
+                # APPROVED + UNCONSUMED — E10-RP2.2-R2A1 §2.2 (arbitration
+                # F1): the approval can be consumed ONLY by the
+                # ENGINE-DESIGNATED continuation of the paused operation,
+                # proven by a one-shot RESUME TICKET in the engine-internal
+                # registry. Presenting the exact operation identity
+                # (mission/run/task/tool/digest) alone authorizes NOTHING —
+                # an independent matching call (a scheduler retry, a
+                # hand-crafted context, any call that is not the designated
+                # continuation attempt) is REFUSED fail-closed here, with
+                # zero consumption and zero side effects, and the approval
+                # stays intact for the designated continuation (§2.3 case 3).
+                self._consume_resume_ticket_or_raise(
+                    mission, op_key, record, context, tool_name, action_id,
+                )
                 return
 
         # No valid v2 record (first call, legacy, archived-consumed, or
@@ -1133,6 +1200,121 @@ class ToolExecutor:
         # Wait for human decision (this will pause execution)
         # The engine will resume when human decides
         raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+
+    def _consume_resume_ticket_or_raise(
+        self,
+        mission,
+        op_key: str,
+        record: Dict[str, Any],
+        context: ExecutionContext,
+        tool_name: str,
+        action_id: str,
+    ) -> None:
+        """E10-RP2.2-R2A1 §2.2 — verify + ATOMICALLY CONSUME the one-shot
+        resume ticket for an APPROVED+UNCONSUMED gate, or refuse fail-closed.
+
+        Every failure below raises PermissionError BEFORE any Action record
+        exists (the gate runs pre-Action) and WITHOUT consuming the ticket
+        or altering the approval — the refusal is a pause, not a burn:
+
+        * no engine-internal ticket registry / no ticket for this operation
+          (forged, foreign, or absent proof — an agent-supplied id is never
+          consulted; lookup is by operation key only, §2.2.5);
+        * ticket/gate/identity mismatch (bound to a different gate,
+          mission, run, task, tool, or input digest — a ticket TRANSFERRED
+          from another operation authorizes nothing);
+        * ticket not yet DESIGNATED (armed): the engine has not launched
+          the continuation — an independent matching call cannot consume
+          (§2.3 case 3);
+        * current call is not the designated continuation attempt
+          (§2.2.3: a fresh attempt is a continuation only when the ENGINE
+          designated it — identity match alone never proves continuation);
+        * agent changed (§2.2.4: no reassignment mechanism is authorized;
+          a different agent requires a NEW approval);
+        * ticket expired (§2.2.7) — terminal, a new approval is required.
+
+        Success flips the ticket to ``consumed`` synchronously (no await
+        between verification and the flip — atomic in the event loop) and
+        records the consuming lineage next to the creating lineage.
+        """
+        tickets = getattr(self.engine, "_resume_tickets", None)
+        ticket = tickets.get(op_key) if isinstance(tickets, dict) else None
+        if ticket is None:
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but no engine-issued "
+                "resume ticket exists for this operation — the approval "
+                "cannot be consumed without the engine-designated "
+                "continuation (E10-RP2.2-R2A1 §2.2.5/§2.2.8; agent-supplied "
+                "proof is never accepted)"
+            )
+        # Defense in depth: the ticket must bind THIS gate and the FULL
+        # current operation identity — a ticket minted for any other gate
+        # or operation (transfer/forgery/corruption) authorizes nothing.
+        if (
+            ticket.gate_id != record.get("gate_id")
+            or ticket.op_key != op_key
+            or ticket.mission_id != context.mission_id
+            or ticket.run_id != context.run_id
+            or ticket.task_id != context.task_id
+            or ticket.tool_name != tool_name
+            or ticket.input_digest != record.get("input_digest")
+        ):
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but the resume ticket "
+                "does not bind this exact operation identity "
+                "(gate/mission/run/task/tool/digest mismatch) — refused "
+                "fail-closed (E10-RP2.2-R2A1 §2.2.2)"
+            )
+        now = time.time()
+        if now >= ticket.expires_at or ticket.state == "expired":
+            ticket.state = "expired"
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but the resume ticket "
+                "has EXPIRED — a new approval is required "
+                "(E10-RP2.2-R2A1 §2.2.7)"
+            )
+        if ticket.state == "consumed":
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but the resume ticket "
+                "was already used — a new approval is required "
+                "(E10-RP2.2-R2A1 §2.2.6)"
+            )
+        if ticket.state != "designated":
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but the engine has "
+                "not yet designated the continuation (ticket "
+                f"{ticket.state}) — an approval is consumed only by the "
+                "ENGINE-DESIGNATED resume of the paused operation, never by "
+                "an independent matching call (E10-RP2.2-R2A1 §2.2.3/§2.3.3)"
+            )
+        if ticket.continuation_attempt_id != context.attempt_id:
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but this call "
+                f"(attempt {context.attempt_id!r}) is NOT the "
+                "engine-designated continuation attempt "
+                f"({ticket.continuation_attempt_id!r}) — the approval stays "
+                "reserved for the designated resume; identity match alone "
+                "is not continuation proof (E10-RP2.2-R2A1 §2.2.3/§2.2.8)"
+            )
+        if ticket.creating_agent_id != context.agent_id:
+            raise PermissionError(
+                f"Human gate approved for {tool_name} but the agent changed "
+                f"({context.agent_id!r} != approved {ticket.creating_agent_id!r}) "
+                "— no reassignment mechanism is authorized; a new approval "
+                "is required (E10-RP2.2-R2A1 §2.2.4)"
+            )
+        # Atomic consumption — synchronous flip, no await between the
+        # verifications above and this transition.
+        ticket.state = "consumed"
+        ticket.consumed_at = now
+        ticket.consumed_by_action = action_id
+        mission.metadata[f"{op_key}_consumed"] = {
+            "consumed_at": datetime.now(timezone.utc).isoformat(),
+            "consumed_by_attempt": context.attempt_id,
+            "consumed_by_agent": context.agent_id,
+            "consumed_by_action": action_id,
+            "resume_ticket_id": ticket.ticket_id,
+        }
 
     @staticmethod
     def _gate_operation_key(
@@ -1639,25 +1821,69 @@ class ToolExecutor:
                                  error=f"git_push owner-approval verification failed: {reason} (E10-RP2.2-R2 §3.4)",
                                  error_type="PermissionError")
 
-            # E10-RP2.2-R2 §3.5 + R2A §3.2 — force semantics: '--force'
-            # is appended ONLY when the explicit input flag is set AND the
-            # consumed approval was signed for force=True. The branch
-            # value itself can never contribute a flag (structurally
+            # E10-RP2.2-R2 §3.5 + R2A §3.2 + R2A1 §3.2 — force semantics:
+            # '--force' is appended ONLY when the explicit input flag is set
+            # AND the consumed approval was signed for force=True. The
+            # branch value itself can never contribute a flag (structurally
             # rejected above) — branch='--force' with force=False is
-            # refused long before this point. The refspec is constructed
-            # by the handler (refs/heads/<branch>:refs/heads/<branch>),
-            # never taken raw from the input, and '--' terminates option
-            # parsing: no input value can act as an option.
-            refspec = f"refs/heads/{branch}:refs/heads/{branch}"
-            push_args = ["push"] + (["--force"] if force else []) + ["--", remote, refspec]
-            result = await run_git(push_args)
-            if result.returncode != 0:
+            # refused long before this point.
+            #
+            # E10-RP2.2-R2A1 §3.2 (arbitration F2) — PINNED DESTINATION:
+            # the push command itself uses THE SIGNED CANONICAL URL (never
+            # the remote NAME — probe P3 proved an explicit URL pushed
+            # from the SOURCE repo is still subject to insteadOf
+            # rewriting, so the source repo's config could re-route the
+            # destination between verification and execution). The push
+            # runs from an engine-owned throwaway bare STAGING repo whose
+            # only link to the source is read-only object access via
+            # objects/info/alternates, with GIT_CONFIG_NOSYSTEM=1 and
+            # GIT_CONFIG_GLOBAL=/dev/null: no config the source repo (or
+            # the host) can change between ``resolve_push_destination``
+            # and the push itself can re-route or re-resolve the
+            # destination. The refspec is ``<approved_sha>:refs/heads/
+            # <branch>`` — constructed by the handler from the structurally
+            # validated branch and the approved commit (the commit the
+            # owner signed is the commit that lands), never taken raw from
+            # the input, and '--' terminates option parsing.
+            from eoe.push_engine import staged_push as _staged_push
+            try:
+                push_result = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: _staged_push(
+                        str(repo_root),
+                        canonical_push_url,
+                        head_sha,
+                        branch,
+                        force=force,
+                        timeout=validated_input.timeout_seconds
+                        if hasattr(validated_input, "timeout_seconds") else 60,
+                    ),
+                )
+            except _PushRejected as pr:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error=result.stderr, error_type="GitPushError")
+                                 error=(f"git_push refused: the pinned destination push "
+                                        f"could not be proven — {pr.reason}: {pr.detail} "
+                                        "(E10-RP2.2-R2A1 §3.2)"),
+                                 error_type="PermissionError")
+            except Exception as e:  # noqa: BLE001
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: pinned-destination push failed "
+                                        f"before any effect: {type(e).__name__}: {e} "
+                                        "(E10-RP2.2-R2A1 §3.2)"),
+                                 error_type="PermissionError")
+            if push_result["returncode"] != 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=push_result["stderr"], error_type="GitPushError")
+            # The result record reports the SIGNED destination — which is
+            # structurally the destination the push command itself used
+            # (R2A1 §3.3: a record may never announce a signed address the
+            # actual push did not go to).
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "pushed": True, "commit_hash": head_sha,
                                      "remote_ref": f"{remote}/{branch}",
-                                     "push_url": canonical_push_url, "certificates": []})
+                                     "push_url": canonical_push_url,
+                                     "push_argv": push_result["argv"],
+                                     "certificates": []})
         
         raise ValueError(f"Unknown git tool: {tool_name}")
     
@@ -1892,6 +2118,72 @@ class ExecutionEngine:
         self.task_runnable_cache: Dict[str, Set[str]] = {}  # run_id -> set of runnable task_ids
         # Agent reassignment tracking for retries
         self._previous_agent_ids: Dict[str, str] = {}  # task_id -> agent_id
+        # E10-RP2.2-R2A1 §2.2 — ENGINE-INTERNAL one-shot resume ticket
+        # registry (trusted by the engine; keyed by the v2 operation key,
+        # never by an agent-supplied id). ``_check_human_gate`` consumes
+        # approvals ONLY through tickets minted here at approval time and
+        # designated by the engine's resume path. ``_designated_continuations``
+        # carries the pre-minted continuation attempt id from the resume
+        # path to the task launcher (one-shot: popped at launch).
+        self._resume_tickets: Dict[str, ResumeTicket] = {}
+        self._designated_continuations: Dict[tuple, str] = {}
+        self.resume_ticket_ttl_seconds: float = RESUME_TICKET_TTL_DEFAULT
+
+    def _mint_resume_ticket(
+        self, op_key: str, operation: Dict[str, Any], gate_id: str, actor: str
+    ) -> ResumeTicket:
+        """E10-RP2.2-R2A1 §2.2.1/§2.2.2 — mint the one-shot resume ticket at
+        APPROVAL time, bound to the gate the engine created and to the exact
+        operation identity that paused (creating attempt/agent lineage
+        included). Called ONLY from ``decide_human_gate``'s approve branch —
+        there is no agent-reachable minting surface. The ticket starts
+        ARMED: consumable only after the engine designates the continuation
+        (``_designate_resume_continuation`` via the resume path)."""
+        now = time.time()
+        ticket = ResumeTicket(
+            ticket_id=f"rtk-{secrets.token_urlsafe(18)}",
+            gate_id=str(operation.get("gate_id") or gate_id),
+            op_key=op_key,
+            mission_id=str(operation.get("mission_id", "")),
+            run_id=str(operation.get("run_id", "")),
+            task_id=str(operation.get("task_id", "")),
+            tool_name=str(operation.get("tool_name", "")),
+            input_digest=str(operation.get("input_digest", "")),
+            creating_attempt_id=str(operation.get("attempt_id", "")),
+            creating_agent_id=str(operation.get("agent_id", "")),
+            issued_at=now,
+            expires_at=now + float(self.resume_ticket_ttl_seconds),
+            state="armed",
+        )
+        self._resume_tickets[op_key] = ticket
+        return ticket
+
+    def _designate_resume_continuation(
+        self, op_key: str, continuation_attempt_id: str, *, actor: str
+    ) -> ResumeTicket:
+        """E10-RP2.2-R2A1 §2.2.3 — the ENGINE's trust decision: designate
+        which continuation attempt may consume the approval. Only the
+        engine's resume path (``MissionController.resume_approved_task``)
+        calls this; the pre-minted attempt id is injected into the task
+        launcher so the designated attempt itself carries the proof. An
+        armed ticket whose approval was already consumed/expired cannot be
+        re-designated (fail-closed)."""
+        ticket = self._resume_tickets.get(op_key)
+        if ticket is None:
+            raise ValueError(f"no resume ticket for {op_key!r}")
+        if ticket.state != "armed":
+            raise ValueError(
+                f"resume ticket for {op_key!r} is {ticket.state!r} — only an "
+                "armed (unconsumed, unexpired, undesignated) ticket can be "
+                "designated"
+            )
+        if time.time() >= ticket.expires_at:
+            ticket.state = "expired"
+            raise ValueError(f"resume ticket for {op_key!r} has expired")
+        ticket.state = "designated"
+        ticket.continuation_attempt_id = continuation_attempt_id
+        ticket.designated_at = time.time()
+        return ticket
     
     def _populate_tool_registry(self) -> None:
         """Populate tool registry with all standard contracts."""
@@ -2177,9 +2469,17 @@ class ExecutionEngine:
         checkpoint_every: int,
         completed_since_checkpoint: int,
         task_timeout: Optional[float] = None,
+        continuation_attempt_id: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], bool, int]:
         """
         Execute a single task with retry logic.
+
+        E10-RP2.2-R2A1 §2.2.3 — ``continuation_attempt_id``: when the
+        engine's resume path designated a continuation for this task, the
+        FIRST attempt of this launch runs under that pre-minted id (the
+        only attempt that can consume the approval's resume ticket);
+        subsequent retry iterations mint fresh ids as always (they are NOT
+        the designated continuation and can never consume it).
         Returns:
             Tuple of (results dict, paused flag, completed_since_checkpoint)
         """
@@ -2203,7 +2503,15 @@ class ExecutionEngine:
                 self._update_task_graph_state(run_id, task.task_id, TaskState.READY)
                 self._update_task_graph_state(run_id, task.task_id, TaskState.ASSIGNED)
             # Create a new attempt for each retry
-            attempt_id = new_attempt_id()
+            if continuation_attempt_id is not None:
+                # R2A1 §2.2.3 — the engine-designated continuation attempt:
+                # the id was pre-minted by the resume path and recorded on
+                # the resume ticket; only THIS attempt can consume the
+                # approval. One-shot: later iterations mint fresh ids.
+                attempt_id = continuation_attempt_id
+                continuation_attempt_id = None
+            else:
+                attempt_id = new_attempt_id()
             attempt = Attempt(
                 attempt_id=attempt_id,
                 task_id=task.task_id,
@@ -2889,6 +3197,13 @@ class ExecutionEngine:
                 if graph_state != TaskState.READY:
                     continue
                 # Start task execution
+                # E10-RP2.2-R2A1 §2.2.3 — if the engine's resume path
+                # designated a continuation attempt for this task, the
+                # launch carries it (one-shot pop: only this launch's
+                # first attempt runs under the designated id).
+                designated = self._designated_continuations.pop(
+                    (run_id, task.task_id), None
+                )
                 running_task = asyncio.create_task(
                     self._execute_single_task(
                         run_id=run_id,
@@ -2899,6 +3214,7 @@ class ExecutionEngine:
                         checkpoint_every=checkpoint_every,
                         completed_since_checkpoint=completed_since_checkpoint,
                         task_timeout=task_timeout,
+                        continuation_attempt_id=designated,
                     )
                 )
                 running_tasks[task.task_id] = running_task
@@ -5532,6 +5848,19 @@ class ExecutionEngine:
                                 "feedback": feedback,
                                 "decided_at": datetime.now(timezone.utc).isoformat(),
                             }
+                            # E10-RP2.2-R2A1 §2.2.1/§2.2.2 (arbitration F1) —
+                            # the APPROVAL mints the one-shot ENGINE-ISSUED
+                            # resume ticket for this exact operation, bound
+                            # to this gate and to the creating attempt/agent
+                            # lineage. The approval is consumable ONLY by
+                            # the continuation the engine later designates
+                            # (§2.3 case 1: approval creates a valid ticket
+                            # for the pending operation). Legacy records
+                            # without a v2 operation identity mint nothing
+                            # and therefore still authorize nothing.
+                            op_record = mission.metadata.get(f"{key}_operation")
+                            if isinstance(op_record, dict) and op_record.get("format") == "v2":
+                                self._mint_resume_ticket(key, op_record, gate_id, actor)
                 # Emit decision recorded
                 self._emit(FactoryEvent.create(
                     EventType.HUMAN_DECISION_RECORDED,

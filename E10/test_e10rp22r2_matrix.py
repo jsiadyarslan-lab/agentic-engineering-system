@@ -159,6 +159,16 @@ def _call(engine, ctx, name, inp):
     return _outcome(engine.tool_executor.execute_tool(ctx, name, inp))
 
 
+def _live_gate_keys(mission) -> list[str]:
+    """Live (non-archived) action-gate operation keys in mission metadata."""
+    return sorted(
+        k for k in mission.metadata
+        if k.startswith("action_gate_v2:") and not k.endswith(
+            ("_decision", "_consumed", "_operation", "_cycles"))
+        and "#cycle" not in k
+    )
+
+
 # ================================================================ T01
 def test_R2_T01_git_target_grounding(tmp_path):
     """R2-T01 (order §3.2, GAP-1): the git family's authorization decision
@@ -469,11 +479,26 @@ def test_R2_T04_human_gate_fail_closed_and_action_scoped(tmp_path):
     ev1, act1 = _counts(engine)
     assert (ev1, act1) == (ev0, act0)  # zero trace for both rejections
 
-    # (3) action-scoped approval (§2.2): approve the REAL gate for input X
+    # (3) action-scoped approval (§2.2): approve the REAL gate for input X.
+    #     E10-RP2.2-R2A1 §2.2 AMENDMENT (disclosed; supersedes the R2
+    #     "same-input retry consumes" reading — arbitration F1): the
+    #     approval is consumable ONLY by the ENGINE-DESIGNATED
+    #     continuation. An independent same-identity call — even the
+    #     creating attempt itself — is REFUSED while the ticket is ARMED,
+    #     with zero consumption and zero side effects.
     gate_id = mission.metadata["human_gate"]["gate_id"]
     assert engine.decide_human_gate(mission.mission_id, gate_id, "approve",
                                     "owner", "r2t4") is True
     st, payload = _call(engine, ctx, "run_command", inp_x)  # SAME input X
+    assert st == "PERMISSION" and "not yet designated" in payload, (st, payload)
+    key_x = _live_gate_keys(mission)[0]
+    assert mission.metadata.get(f"{key_x}_consumed") is None  # not consumed
+    assert engine._resume_tickets[key_x].state == "armed"
+    # the ENGINE designates the continuation attempt (layer seam mirroring
+    # MissionController.resume_approved_task — the production resume path;
+    # the agent has no designation surface)
+    engine._designate_resume_continuation(key_x, ctx.attempt_id, actor="test-engine")
+    st, payload = _call(engine, ctx, "run_command", inp_x)  # same input X
     # The gate PASSED (no Human gate error): execution is then refused at
     # the sandbox layer (§4.1/§4.3) — exactly the post-fix layering. The
     # refusal surfaces either as a raised SandboxError or as a FAILED
@@ -562,10 +587,16 @@ def test_R2_T05_run_command_isolation_refusal(tmp_path):
                validator=permissive, grant_ids=["g-r2t5"])
     inp = {"command": [PY, "-c", f"open({str(marker)!r}, 'a').write('y')"],
            "working_dir": str(wd)}
-    st, payload = _call(engine, ctx, "run_command", inp)
+    st, payload = _call(engine, ctx, "run_command", inp)  # gate first
     assert st == "PERMISSION" and "Human gate created" in payload  # gate first
     gate_id = mission.metadata["human_gate"]["gate_id"]
     engine.decide_human_gate(mission.mission_id, gate_id, "approve", "owner", "r2t5")
+    # E10-RP2.2-R2A1 §2.2 AMENDMENT (disclosed): approval consumption now
+    # requires the ENGINE-DESIGNATED continuation — refused while armed...
+    st, payload = _call(engine, ctx, "run_command", inp)  # same input, armed
+    assert st == "PERMISSION" and "not yet designated" in payload, (st, payload)
+    key_t5 = _live_gate_keys(mission)[0]
+    engine._designate_resume_continuation(key_t5, ctx.attempt_id, actor="test-engine")
     st, payload = _call(engine, ctx, "run_command", inp)  # same input, gate passed
     # refused at the execution layer: the unisolated host-subprocess
     # backend is disabled by default (§4.3)

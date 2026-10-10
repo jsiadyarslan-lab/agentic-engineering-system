@@ -1,0 +1,7 @@
+=== PROBE G2: LEGACY permissive 2-arg validator — kind-only decision, uncontained repo_path ===
+[G2] git_branch (uncontained repo): [PERMISSION_REJECTED] PermissionError: Tool git_branch requires a path-aware grant validator (__path_aware__) for its concrete target; the configured validator
+[G2] git_commit (uncontained repo): [PERMISSION_REJECTED] PermissionError: Tool git_commit requires a path-aware grant validator (__path_aware__) for its concrete target; the configured validator
+[G2] git_status (uncontained repo): [PERMISSION_REJECTED] PermissionError: Tool git_status requires a path-aware grant validator (__path_aware__) for its concrete target; the configured validator
+[G2] git_diff (uncontained repo): [PERMISSION_REJECTED] PermissionError: Tool git_diff requires a path-aware grant validator (__path_aware__) for its concrete target; the configured validator i
+[G2] run_command (registered mission): PermissionError human gate: Human gate created for run_command. Execution paused awaiting approval.
+[G2] PROBE CRASHED:

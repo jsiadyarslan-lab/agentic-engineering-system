@@ -160,6 +160,15 @@ def _gate_v2_keys(mission) -> list[str]:
     )
 
 
+def _designate(engine, key: str, attempt_id: str):
+    """LAYER-TEST SEAM (E10-RP2.2-R2A1 §2.3): simulate the ENGINE's
+    resume-path designation EXACTLY as ``MissionController.resume_approved_task``
+    does — an engine-side trust decision (the agent has no designation
+    surface). The end-to-end production resume path is proven separately
+    in the R2A1 matrix through the real MissionController."""
+    return engine._designate_resume_continuation(key, attempt_id, actor="test-engine")
+
+
 def _bare_head(bare: str, ref: str = "main") -> str:
     r = git_out(bare, "rev-parse", "--verify", f"refs/heads/{ref}")
     return r if not r.startswith("fatal:") else ""
@@ -258,10 +267,30 @@ def test_R2A_A3_approve_then_one_shot_resume(tmp_path):
     assert engine.decide_human_gate(mission.mission_id, gate_id, "approve",
                                     "owner", "r2a-a3") is True
     assert mission.state == MissionState.EXECUTING
+    # R2A1 §2.3 case 1 — the APPROVAL mints a valid one-shot resume ticket
+    # for the pending operation (armed, bound to this gate + identity)
+    ticket = engine._resume_tickets[key]
+    assert ticket.state == "armed" and ticket.gate_id == gate_id
+    assert ticket.mission_id == mission.mission_id
+    assert ticket.input_digest == mission.metadata[f"{key}_operation"]["input_digest"]
 
-    # the sanctioned resume: a CONTINUATION attempt of the same task (the
-    # engine mints a fresh attempt_id per continuation) presents the same
-    # operation identity → the gate is consumed and the call proceeds
+    # R2A1 §2.3 case 3 — an INDEPENDENT matching call (fresh attempt, same
+    # identity) BEFORE the engine designates the continuation: REFUSED,
+    # the ticket is NOT consumed, the approval stays intact.
+    indep_ctx = _ctx(engine, stack, mission_id=mission.mission_id,
+                     run_id="run-a3", task_id="task-a3",
+                     attempt_id="attempt-a3-independent", agent_id="agent-a3",
+                     validator=_permissive)
+    st, payload = _call(engine, indep_ctx, "run_command", inp)
+    assert st == "PERMISSION" and "not yet designated" in payload, (st, payload)
+    assert mission.metadata.get(f"{key}_consumed") is None
+    assert engine._resume_tickets[key].state == "armed"
+
+    # the ENGINE designates the continuation (layer seam; the production
+    # path — MissionController.resume_approved_task — is proven in the
+    # R2A1 matrix): the sanctioned resume is a CONTINUATION attempt of the
+    # same task (the engine mints a fresh attempt_id per continuation)
+    _designate(engine, key, "attempt-a3-resume")
     resume_ctx = _ctx(engine, stack, mission_id=mission.mission_id,
                       run_id="run-a3", task_id="task-a3",
                       attempt_id="attempt-a3-resume", agent_id="agent-a3",
@@ -279,6 +308,9 @@ def test_R2A_A3_approve_then_one_shot_resume(tmp_path):
     assert cons["consumed_by_agent"] == "agent-a3"
     # creating lineage preserved in the operation record
     assert mission.metadata[f"{key}_operation"]["attempt_id"] == "attempt-a3-create"
+    # the ticket itself is spent (one-shot)
+    assert engine._resume_tickets[key].state == "consumed"
+    assert engine._resume_tickets[key].consumed_by_action == cons["consumed_by_action"]
 
 
 def test_R2A_A4_reuse_after_completion_rejected(tmp_path):
@@ -300,6 +332,9 @@ def test_R2A_A4_reuse_after_completion_rejected(tmp_path):
     gate_id = mission.metadata[key]
     engine.decide_human_gate(mission.mission_id, gate_id, "approve", "owner", "a4")
     mission.state = MissionState.EXECUTING
+    # R2A1: the engine designates THIS attempt as the continuation, then
+    # the one-shot resume consumes the approval
+    _designate(engine, key, "attempt-a4")
     _call(engine, ctx, "run_command", inp)  # the one-shot resume (consumes)
 
     # second call — SAME identity, SAME attempt even: the approval is SPENT
@@ -435,6 +470,9 @@ def test_R2A_A6_positive_resume_real_push_side_effect(tmp_path):
     gate2 = mission.metadata[key2]
     engine.decide_human_gate(mission.mission_id, gate2, "approve", "owner", "a6")
     mission.state = MissionState.EXECUTING
+    # R2A1: engine designates the continuation attempt, then the resume
+    # executes the push for real
+    _designate(engine, key2, "attempt-a6")
     st, payload = _call(engine, ctx, "git_push", inp_resume)
     assert st == "TOOL_RESULT" and payload.success, (st, payload)
     assert _bare_head(bare) == head  # THE push happened, to the approved dest
@@ -467,6 +505,8 @@ def test_R2A_B_changed_scope_rejected(tmp_path):
                              "approve", "owner", "b")
     mission.state = MissionState.EXECUTING
     # resume once (consume) so the approval is LIVE-USED, not just approved
+    # (R2A1: through the engine-designated continuation)
+    _designate(engine, key, "attempt-b")
     _call(engine, ctx, "run_command", inp_x)
     assert mission.metadata.get(f"{key}_consumed") is not None
 
@@ -666,44 +706,42 @@ def test_R2A_E_e9r_production_gate_flow_and_resume(tmp_path):
     assert engine.decide_human_gate(mission.mission_id, gate_id, "approve",
                                     "owner", "r2a-e") is True
     assert mission.state == MissionState.EXECUTING
+    # R2A1 §2.3 case 1 — the approval minted the one-shot resume ticket
+    assert engine._resume_tickets[key].state == "armed"
 
-    # RE-EXECUTE the same run: the continuation attempt presents the same
-    # operation identity → the gate is CONSUMED once (never re-gated).
-    # (The pause surfaces to the controller as a failed task after the
-    # retry budget burns on 'pending' — the engine's own retry mechanism
-    # re-arms the task in the SAME run via the same state transition the
-    # engine uses internally; run_e8 documents the same-run re-execution
-    # quirk and uses a checkpoint child-run instead. Both semantics are
-    # proven here: same-run continuation consumes; a CHILD-RUN resume is a
-    # different operation identity → own gate.)
-    task_obj = engine.tasks[task_id]
-    task_obj.retry_count = 0
-    engine._update_task_graph_state(run.run_id, task_id, __import__("unified.contracts", fromlist=["TaskState"]).TaskState.READY)
+    # R2A1 §2.3 — the resume goes through the REAL MissionController
+    # production path (resume_approved_task): the ENGINE designates the
+    # continuation (pre-minted attempt id + ticket designation), re-arms
+    # the task through the engine's own validated FAILED->READY
+    # transition, and relaunches the run through the normal execution
+    # machinery. NO test-side task-state or retry-counter surgery (order
+    # §2.3 forbids it; the R2A-era manual re-arm is superseded).
+    resumed = asyncio.run(mc.resume_approved_task(run.run_id, task_id, actor="owner"))
+    assert resumed["resumed"] is True
+    continuation_attempt = resumed["continuation_attempt_id"]
+    assert continuation_attempt.startswith("attempt-")
+    assert continuation_attempt != creating_attempt  # a fresh engine-minted id
 
-    async def _resume_run():
-        return await mc.execute_run(run.run_id, max_parallel=1)
-
-    asyncio.run(_resume_run())
-    # the FIRST resumed attempt CONSUMED the approval (now archived as
-    # cycle 1 — the subsequent same-run retries of the same operation hit
-    # the spent approval and opened a fresh cycle 2 requiring a NEW
-    # approval, exactly the one-shot contract)
+    # the DESIGNATED continuation attempt CONSUMED the approval exactly
+    # once (then the run_command execution is refused at the sandbox layer
+    # — the documented Linux default — and the same-run retries that
+    # follow hit the SPENT approval, opening a fresh cycle 2 that requires
+    # a NEW approval: the one-shot contract)
     cons1 = mission.metadata.get(f"{key}#cycle1_consumed")
     assert cons1 is not None, "the resumed run must consume the approval (archived cycle 1)"
-    assert cons1["consumed_by_attempt"] != creating_attempt  # fresh attempt
-    assert cons1["consumed_by_attempt"].startswith("attempt-")
+    assert cons1["consumed_by_attempt"] == continuation_attempt
+    assert cons1["consumed_by_agent"] == mission.metadata[f"{key}_operation"]["agent_id"]
     assert mission.metadata.get(f"{key}_cycles") == 2  # later retries re-gated
+    assert engine._resume_tickets[key].state == "consumed"
 
-    # a THIRD execution of the same run: cycle 2 is PENDING (no free
-    # passage — a new approval is required; nothing is consumed)
-    mission.state = MissionState.EXECUTING
-    task_obj.retry_count = 0
-    engine._update_task_graph_state(run.run_id, task_id, __import__("unified.contracts", fromlist=["TaskState"]).TaskState.READY)
-
-    async def _third_run():
-        return await mc.execute_run(run.run_id, max_parallel=1)
-
-    asyncio.run(_third_run())
+    # a THIRD resume attempt: no approved+unconsumed gate exists anymore
+    # (cycle 2 is PENDING) — the controller REFUSES fail-closed, and the
+    # pending gate keeps the run paused with nothing consumed (a new
+    # approval is required).
+    with pytest.raises(ValueError):
+        asyncio.run(mc.resume_approved_task(run.run_id, task_id, actor="owner"))
+    third = asyncio.run(mc.execute_run(run.run_id, max_parallel=1))
+    assert third.get("paused") or third.get("human_gate") or not third.get("success")
     assert mission.metadata.get(f"{key}_cycles") == 2  # no new consumption
     assert mission.metadata.get(f"{key}#cycle2_consumed") is None
 

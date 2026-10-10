@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/z/my-project/e10rp22r2a1_work/E10/e10rp22r2_probes.py", line 667, in run_one
+    await probe()
+  File "/home/z/my-project/e10rp22r2a1_work/E10/e10rp22r2_probes.py", line 572, in probe_a2
+    rec = await agent._run_in_sandbox([PY, "-c", "print('A2-NOVALIDATOR-EXECUTED')"],
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2a1_work/src/unified/agent_role.py", line 550, in _run_in_sandbox
+    raise RuntimeError(
+RuntimeError: _run_in_sandbox is disabled fail-closed (E10-RP2.2-R2 §4.5): this primitive executed sandbox commands DIRECTLY, bypassing the governed authorization chain (permission gate, human gate, target grounding). Route command execution through ToolExecutor.execute_tool with a real grant decision instead.

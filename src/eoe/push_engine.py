@@ -31,7 +31,9 @@ import hmac
 import json
 import os
 import re
+import shutil  # E10-RP2.2-R2A1 §3.2 — staging repo cleanup
 import subprocess
+import tempfile  # E10-RP2.2-R2A1 §3.2 — 0700 staging dir (engine-owned)
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -197,6 +199,125 @@ def resolve_push_destination(repo_root: str | Path, remote: str) -> str:
             p = repo / p
         canonical = os.path.normpath(str(p))
     return canonical
+
+
+def staged_push(
+    repo_root: str | Path,
+    signed_url: str,
+    commit_sha: str,
+    branch: str,
+    *,
+    force: bool = False,
+    timeout: int = 60,
+) -> dict:
+    """E10-RP2.2-R2A1 §3.2 (arbitration F2) — PINNED-DESTINATION push.
+
+    The push command itself uses THE SIGNED CANONICAL URL — never the
+    remote NAME — so no re-resolution of the remote can happen at
+    execution. URL-rewrite control for this one command is STRUCTURAL:
+
+    * the push runs from a throwaway ENGINE-OWNED bare STAGING repo whose
+      only link to the source repository is ``objects/info/alternates``
+      (read-only object access — the source repo's config is NEVER read
+      by the push: no ``remote.<name>`` re-resolution, no
+      ``url.<base>.insteadOf`` / ``pushInsteadOf`` rewriting from the
+      source, local, system or global config can re-route the signed
+      destination between verification and execution);
+    * ``GIT_CONFIG_NOSYSTEM=1`` + ``GIT_CONFIG_GLOBAL=/dev/null`` disable
+      system+global rewrite sources for the subprocess;
+    * the staging repo's own config contains ONLY what ``git init --bare``
+      wrote (no url.* rewrites) and lives in a 0700 ``mkdtemp`` directory;
+    * the refspec is ``<approved_sha>:refs/heads/<branch>`` — the commit
+      that lands is EXACTLY the commit the owner signed (even if the
+      source branch moved after approval), and the branch name is
+      structurally validated by the caller (leading '-', whitespace,
+      control and forbidden ref characters rejected before this point);
+    * ``--`` terminates option parsing: neither the URL nor the refspec
+      can be interpreted as an option.
+
+    Probe-proven (E10/evidence_rp22r2a1/F2_DESIGN_PROBES.txt, git 2.47.3):
+    an explicit URL passed to a push FROM THE SOURCE REPO *is* rewritten
+    by a local ``url.*.insteadOf`` rule (P3 — the R2A residual hole); the
+    staging push is not (P4/P7), global rewrites are suppressed (P5), and
+    ``--force`` semantics with the sha refspec are enforced by the remote
+    exactly as with a named refspec (P6).
+
+    Returns ``{"returncode", "stdout", "stderr", "argv"}`` — the argv the
+    push ran with (evidence). Raises :class:`PushRejected` (fail-closed,
+    zero remote effect) if the staging repo cannot be proven sound.
+    """
+    if not isinstance(signed_url, str) or not signed_url.strip():
+        raise PushRejected("وجهة موقّعة فارغة", "staged_push: لا push_url")
+    if signed_url.startswith("-"):
+        raise PushRejected(
+            "وجهة موقّعة غير صالحة", "تبدأ بشرطة — لا يمكن تمريرها كوسيط"
+        )
+    if not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", commit_sha or ""):
+        raise PushRejected(
+            "التزام غير صالح", f"commit_sha ليس sha-1/sha-256 سداسيًا: {commit_sha!r}"
+        )
+    if branch.startswith("-") or any(c.isspace() for c in branch):
+        raise PushRejected(
+            "فرع غير صالح", f"staged_push يرفض القيمة: {branch!r}"
+        )
+
+    repo = Path(repo_root)
+    git_dir_r = _git(repo, "rev-parse", "--absolute-git-dir", timeout=timeout)
+    if git_dir_r.returncode != 0 or not git_dir_r.stdout.strip():
+        raise PushRejected(
+            "تعذر تحديد git dir للمصدر",
+            (git_dir_r.stderr.strip() or "مخرج فارغ")[:200],
+        )
+    source_objects = Path(git_dir_r.stdout.strip()) / "objects"
+
+    staging = Path(tempfile.mkdtemp(prefix="r2a1-staged-push-"))
+    try:
+        init_r = _git(staging, "init", "--bare", "--quiet", ".", timeout=timeout)
+        if init_r.returncode != 0:
+            raise PushRejected(
+                "تعذر إنشاء مستودع الترحيل المعزول",
+                init_r.stderr.strip()[:200],
+            )
+        # the ONLY link to the source: read-only object access
+        info_dir = staging / "objects" / "info"
+        info_dir.mkdir(parents=True, exist_ok=True)
+        (info_dir / "alternates").write_text(str(source_objects) + "\n")
+
+        # the pushed commit must exist in the source object store (it is
+        # the commit the owner signed) — proven HERE, before any network
+        # effect, with the staging repo's own view (alternates only).
+        probe_r = _git(
+            staging, "cat-file", "-e", f"{commit_sha}^{{commit}}", timeout=timeout
+        )
+        if probe_r.returncode != 0:
+            raise PushRejected(
+                "الالتزام المعتمد غير موجود في المستودع المصدر",
+                f"{commit_sha!r} — لا يمكن إثبات الالتزام الذي وقّع عليه المالك",
+            )
+
+        argv = [
+            "push",
+            *(["--force"] if force else []),
+            "--",
+            signed_url,
+            f"{commit_sha}:refs/heads/{branch}",
+        ]
+        env = dict(os.environ)
+        env["GIT_CONFIG_NOSYSTEM"] = "1"
+        env["GIT_CONFIG_GLOBAL"] = os.devnull
+        full = ["git", f"--git-dir={staging}", *argv]
+        result = subprocess.run(
+            full, capture_output=True, text=True, timeout=timeout, env=env
+        )
+        return {
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "argv": full,
+            "staging_dir": str(staging),
+        }
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 class NonceLedger:

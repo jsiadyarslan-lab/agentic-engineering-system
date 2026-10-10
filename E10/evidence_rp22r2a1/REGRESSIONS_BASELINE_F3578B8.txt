@@ -1,0 +1,520 @@
+=== BATTERY: R2A matrix
+CMD: python3 -m pytest E10/test_e10rp22r2a_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+.........................                                                [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp22r2a_matrix.py: 457 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+25 passed, 457 warnings in 1.35s
+
+=== END: R2A matrix
+
+=== BATTERY: R2 matrix
+CMD: python3 -m pytest E10/test_e10rp22r2_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+...................                                                      [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp22r2_matrix.py: 102 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+19 passed, 102 warnings in 1.00s
+
+=== END: R2 matrix
+
+=== BATTERY: R1 matrix
+CMD: python3 -m pytest E10/test_e10rp22r1_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+......                                                                   [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp22r1_matrix.py: 57 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 57 warnings in 0.39s
+
+=== END: R1 matrix
+
+=== BATTERY: RP2.2 matrix
+CMD: python3 -m pytest E10/test_e10rp22_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+......................                                                   [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp22_matrix.py: 81 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+22 passed, 81 warnings in 0.46s
+
+=== END: RP2.2 matrix
+
+=== BATTERY: RP2.1 matrix
+CMD: python3 -m pytest E10/test_e10rp21_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+........................                                                 [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp21_matrix.py: 103 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+24 passed, 103 warnings in 4.16s
+
+=== END: RP2.1 matrix
+
+=== BATTERY: RP2 matrix
+CMD: python3 -m pytest E10/test_e10rp2_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+......................                                                   [100%]
+22 passed in 9.59s
+
+=== END: RP2 matrix
+
+=== BATTERY: RP2 session (fresh-dir equivalent)
+CMD: python3 E10/e10rp2_cycle.py / e10rp2_auth.py into fresh temp dirs (session-equivalent)
+  [0] cycle/resolution: [CYCLE mode=resolution] verdict=CYCLE_PROVEN checks=18/18
+  [0] cycle/mixed-blocked: [CYCLE mode=mixed-blocked] verdict=CYCLE_PROVEN checks=8/8
+  [0] auth/allow: [AUTH case=allow] verdict=CASE_PROVEN checks=3/3
+  [0] auth/deny-revoked: [AUTH case=deny-revoked] verdict=CASE_PROVEN checks=4/4
+  [0] auth/deny-read-only: [AUTH case=deny-read-only] verdict=CASE_PROVEN checks=4/4
+  [0] auth/deny-path: [AUTH case=deny-path] verdict=CASE_PROVEN checks=4/4
+  [0] auth/missing-validator: [AUTH case=missing-validator] verdict=CASE_PROVEN checks=4/4
+  [0] auth/missing-grants: [AUTH case=missing-grants] verdict=CASE_PROVEN checks=4/4
+  [0] auth/tool-fail: [AUTH case=tool-fail] verdict=CASE_PROVEN checks=4/4
+EXIT: 0
+=== END: RP2 session (fresh-dir equivalent)
+
+=== BATTERY: RP1 matrix
+CMD: python3 -m pytest E10/test_e10rp1_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+................                                                         [100%]
+=============================== warnings summary ===============================
+E10/test_e10rp1_matrix.py: 77 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+16 passed, 77 warnings in 3.43s
+
+=== END: RP1 matrix
+
+=== BATTERY: E10-RP matrix
+CMD: python3 -m pytest E10/test_e10rp_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+.......................                                                  [100%]
+23 passed in 2.05s
+
+=== END: E10-RP matrix
+
+=== BATTERY: E10/CW1 matrix
+CMD: python3 -m pytest E10/test_e10_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+................................                                         [100%]
+=============================== warnings summary ===============================
+E10/test_e10_matrix.py: 30 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+32 passed, 30 warnings in 8.67s
+
+=== END: E10/CW1 matrix
+
+=== BATTERY: E10-CW1-R1 matrix
+CMD: python3 -m pytest E10/test_e10r1_matrix.py -p no:cacheprovider -q
+EXIT: 0
+--- output tail ---
+...............................                                          [100%]
+=============================== warnings summary ===============================
+E10/test_e10r1_matrix.py: 31 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+31 passed, 31 warnings in 23.53s
+
+=== END: E10-CW1-R1 matrix
+
+=== BATTERY: E9-R
+CMD: python3 E9-R/test_production_integration.py
+EXIT: 0
+--- output tail ---
+lue": "reject",
+          "label": "Reject Execution",
+          "description": "Block run_command execution"
+        }
+      ],
+      "impact": "Executing run_command with high risk level",
+      "required_action": "Human must explicitly approve or reject the high-risk action",
+      "evidence_refs": [],
+      "requested_by": "execution_engine",
+      "current_state": "HUMAN_REQUIRED",
+      "created_at": "2026-10-10T13:00:28.118586+00:00"
+    }
+  },
+  "task_results": {},
+  "final_status": {
+    "task-85512471c1ab": {
+      "state": "FAILED",
+      "depends_on": [],
+      "dependents": [],
+      "name": "human_gate_test",
+      "agent_type": "implementer"
+    }
+  }
+}
+PASS: Human gate triggered - execution paused
+   Gate info: {'human_gate': True, 'gate_info': {'gate_id': 'decision-b863c4d0', 'task_id': 'task-85512471c1ab', 'reason': 'High-risk tool execution requires human approval: run_command (high)', 'context': {'tool_name': 'run_command', 'tool_input': {'command': ['echo', 'hello from run_command'], 'working_dir': '.', 'env': None, 'timeout_seconds': 300, 'capture_output': True, 'max_output_bytes': 1048576}, 'risk_level': 'high', 'isolation': 'sandbox', 'agent_id': 'human-gate-test-agent', 'operation': {'format': 'v2', 'mission_id': 'mission-f6de1e239831', 'run_id': 'run-0f76b720ccd6', 'task_id': 'task-85512471c1ab', 'attempt_id': 'attempt-cb8ff4f2', 'agent_id': 'human-gate-test-agent', 'tool_name': 'run_command', 'input_digest': '277cf7b758aa20e4eaf96857ee03216891534b2115d82c3e91ace5827eb6f4fe'}}, 'options': [{'value': 'approve', 'label': 'Approve Execution', 'description': 'Allow run_command to execute'}, {'value': 'reject', 'label': 'Reject Execution', 'description': 'Block run_command execution'}], 'impact': 'Executing run_command with high risk level', 'required_action': 'Human must explicitly approve or reject the high-risk action', 'evidence_refs': [], 'requested_by': 'execution_engine', 'current_state': 'HUMAN_REQUIRED', 'created_at': '2026-10-10T13:00:28.118586+00:00'}}
+Simulating human approval for gate: decision-b863c4d0
+Approval result: True
+PASS: Mission state returned to EXECUTING after approval
+PASS: Human gate mechanism verified (gate created -> approval -> state restored)
+
+================================================================================
+E9-R TEST SUMMARY
+================================================================================
+Production Integration Test: PASS
+Negative Tests:              PASS
+Human Gate Test:             PASS
+
+OVERALL: PASS
+
+PASS: E9-R VERIFIED - ToolExecutor integrated into production path!
+
+=== END: E9-R
+
+=== BATTERY: E8 negative gates
+CMD: env PYTHONPATH=src python3 run_e8_human_gates.py
+EXIT: 0
+--- output tail ---
+AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-02, task_id=task-290566ff28df, task.agent_type=AgentType.IMPLEMENTER
+  [AgentFactory] Found agent definition: e33-mission-agent-02, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True
+  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-02
+  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)
+  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True
+  [AgentFactory] execute_agent_by_id called: agent_id=e33-mission-agent-01, task_id=task-290566ff28df, task.agent_type=AgentType.IMPLEMENTER
+  [AgentFactory] Found agent definition: e33-mission-agent-01, type=AgentType.IMPLEMENTER, state=AgentLifecycleState.ASSIGNED, enabled=True
+  [AgentFactory] Creating instance for agent_type=AgentType.IMPLEMENTER, agent_id=e33-mission-agent-01
+  [AgentFactory] Implementation class: <class 'unified.mission_controller.MissionTaskAgent'>, module: unified.mission_controller, bases: (<class 'unified.agent_role.BaseAgent'>,)
+  [AgentFactory] Created agent instance: <class 'unified.mission_controller.MissionTaskAgent'>, has validate_input: True
+
+=== E8 EXECUTION COMPLETE ===
+{
+  "mission_id": "mission-d00f21eb7337",
+  "run_id": "run-5f255931a9d7",
+  "final_run_id": "run-1bec9d111d1e",
+  "checkpoint_id": "checkpoint-8734aed7d621",
+  "gate_id": "decision-cda54c5b",
+  "decision": {
+    "decision_id": "decision-7ed23bed709a",
+    "gate_id": "decision-cda54c5b",
+    "mission_id": "mission-d00f21eb7337",
+    "actor": "human_operator",
+    "decision": "APPROVE",
+    "feedback": "Deployment approved after risk review",
+    "timestamp": "2026-10-10T13:00:28.496002+00:00",
+    "impact": {
+      "resumes_execution": true,
+      "triggers_replan": false
+    },
+    "resume_condition": "APPROVED"
+  },
+  "verification_results": {},
+  "negative_tests": {
+    "unknown_gate": {
+      "test": "unknown_gate",
+      "result": "REJECTED"
+    },
+    "wrong_mission": {
+      "test": "wrong_mission",
+      "result": "REJECTED"
+    },
+    "no_gate": {
+      "test": "no_gate",
+      "result": "REJECTED"
+    },
+    "duplicate_decision": {
+      "test": "duplicate_decision",
+      "result": "FIRST_ACCEPTED_SECOND_REJECTED"
+    }
+  },
+  "ledger_count": 6,
+  "evidence_dir": "C:/Users/jaber/Documents/GitHub/agentic-engineering-system/E8/evidence",
+  "artifacts_dir": "/tmp/e8_9851xqb3"
+}
+
+=== END: E8 negative gates
+
+=== BATTERY: vs001+vs002+vs003+vs004+e32e (sandbox/execution layers)
+CMD: python3 -m pytest tests/unified/test_vs001_simple.py tests/unified/test_vs001_integration.py tests/unified/test_vs002.py tests/unified/test_vs002_e8.py tests/unified/test_vs002_r1.py tests/unified/test_vs003.py tests/unified/test_vs004_graph.py tests/unified/test_e32e_durable_execution.py -p no:cacheprovider -q
+EXIT: 1
+--- output tail ---
+    warnings.warn(
+
+tests/unified/test_vs001_integration.py::test_task_transitions
+  /home/z/.venv/lib/python3.12/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/unified/test_vs001_integration.py::test_task_transitions returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/unified/test_vs002.py: 56 warnings
+tests/unified/test_vs002_e8.py: 526 warnings
+tests/unified/test_vs004_graph.py: 443 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/unified/test_vs002_r1.py:936: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_vs002_r1.py:1219: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_vs002_r1.py:1325: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:516: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:550: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:702: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:841: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:966: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:1089: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:1222: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32e_durable_execution.py:1328: NVIDIA API key not available in secrets store
+ERROR tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_vs003_full_lifecycle
+ERROR tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_agent_failure_preserved
+ERROR tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_evidence_from_real_execution
+40 passed, 11 skipped, 1033 warnings, 3 errors in 1.40s
+
+=== END: vs001+vs002+vs003+vs004+e32e (sandbox/execution layers)
+
+=== BATTERY: e3+e4
+CMD: python3 -m pytest tests/orchestrator/test_e3_canonical_orchestrator.py tests/orchestrator/test_e4_multi_task_mission.py -p no:cacheprovider -q
+EXIT: 1
+--- output tail ---
+UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:142: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:219: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:264: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:342: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:384: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:438: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e3_canonical_orchestrator.py:461: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:265: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:408: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:480: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:605: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:738: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:970: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:1397: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/orchestrator/test_e4_multi_task_mission.py:1424: NVIDIA API key not available in secrets store
+FAILED tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification
+FAILED tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification
+FAILED tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression
+FAILED tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression
+FAILED tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification
+5 failed, 4 passed, 15 skipped, 150 warnings in 16.36s
+
+=== END: e3+e4
+
+=== BATTERY: e6
+CMD: python3 -m pytest tests/orchestrator/test_e6_durable_mission_orchestration.py -p no:cacheprovider -q
+EXIT: 1
+--- output tail ---
+or: E3 regression failed: 
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['python', '-m', 'pytest', 'tests/orchestrator/test_e3_canonical_orchestrator.py', '-v', '--tb=s..._baseline_verification\n========================= 1 failed, 7 skipped in 1.47s =========================\n', stderr='').returncode
+
+tests/orchestrator/test_e6_durable_mission_orchestration.py:1502: AssertionError
+________________ TestE6RegressionMatrix.test_e6_e33_regression _________________
+
+self = <test_e6_durable_mission_orchestration.TestE6RegressionMatrix object at 0x7f2f81a0c230>
+
+    @pytest.mark.asyncio
+    async def test_e6_e33_regression(self):
+        """E33 tests should still pass."""
+        import subprocess
+        proc = subprocess.run(
+            ["python", "-m", "pytest", "tests/unified/test_e33_mission_autonomy.py", "-v", "--tb=short"],
+            capture_output=True, text=True, timeout=300
+        )
+>       assert proc.returncode == 0, f"E33 regression failed: {proc.stderr}"
+E       AssertionError: E33 regression failed: 
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['python', '-m', 'pytest', 'tests/unified/test_e33_mission_autonomy.py', '-v', '--tb=short'], re..._baseline_verification\n================== 1 failed, 1 passed, 215 warnings in 2.67s ===================\n', stderr='').returncode
+
+tests/orchestrator/test_e6_durable_mission_orchestration.py:1532: AssertionError
+=============================== warnings summary ===============================
+tests/orchestrator/test_e6_durable_mission_orchestration.py: 1592 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression
+FAILED tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression
+FAILED tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression
+FAILED tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression
+4 failed, 14 passed, 1592 warnings in 44.05s
+
+=== END: e6
+
+=== BATTERY: e33+e32f
+CMD: python3 -m pytest tests/unified/test_e33_mission_autonomy.py tests/unified/test_e32f_autonomous_replanning.py -p no:cacheprovider -q
+EXIT: 1
+--- output tail ---
+F.ss                                                                     [100%]
+=================================== FAILURES ===================================
+____________ TestE33MissionAutonomy.test_e33_baseline_verification _____________
+
+self = <test_e33_mission_autonomy.TestE33MissionAutonomy object at 0x7f42384b2270>
+evidence_env = PosixPath('/tmp/unified-test-hg24ut00/evidence/e33')
+
+    @pytest.mark.asyncio
+    async def test_e33_baseline_verification(self, evidence_env):
+        """AC-00: hard baseline — LOCAL == REMOTE on main."""
+        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=REPO_ROOT).stdout.strip()
+        remote = subprocess.run(
+            ["git", "ls-remote", "origin", "refs/heads/main"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        ).stdout.strip().split("\t")[0]
+>       assert head == remote, f"LOCAL != REMOTE: {head} vs {remote}"
+E       AssertionError: LOCAL != REMOTE: f3578b8a705c226ced276dcd3ea712de3210c171 vs 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+E       assert 'f3578b8a705c...712de3210c171' == '0a26fc70ce13...10fcbf0f99d3f'
+E         
+E         - 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+E         + f3578b8a705c226ced276dcd3ea712de3210c171
+
+tests/unified/test_e33_mission_autonomy.py:229: AssertionError
+=============================== warnings summary ===============================
+tests/unified/test_e33_mission_autonomy.py: 215 warnings
+  /home/z/.venv/lib/python3.12/site-packages/pydantic/main.py:250: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/unified/test_e32f_autonomous_replanning.py:595: NVIDIA API key not available in secrets store
+SKIPPED [1] tests/unified/test_e32f_autonomous_replanning.py:614: NVIDIA API key not available in secrets store
+FAILED tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification
+1 failed, 1 passed, 2 skipped, 215 warnings in 3.20s
+
+=== END: e33+e32f
+
+=== BATTERY: e35
+CMD: env PYTHONPATH=src python3 tests/e35/test_long_mission.py
+EXIT: 1
+--- output tail ---
+id': 'mission-b72207660a6c', 'run_id': 'run-391134fc8e29', 'agent_type': 'implementer', 'attempt_id': 'attempt-4fb53dba'}
+  Event: EventType.STATE_TRANSITION - task=task-deb31e04de9c - payload={'task_id': 'task-deb31e04de9c', 'from_state': 'ASSIGNED', 'to_state': 'RUNNING', 'reason': 'Task state updated to RUNNING'}
+  Event: EventType.STATE_TRANSITION - task=task-deb31e04de9c - payload={'task_id': 'task-deb31e04de9c', 'from_state': 'RUNNING', 'to_state': 'FAILED', 'reason': 'Task state updated to FAILED'}
+  Event: EventType.TASK_FAILED - task=task-deb31e04de9c - payload={'task_id': 'task-deb31e04de9c', 'mission_id': 'mission-b72207660a6c', 'run_id': 'run-391134fc8e29', 'error': 'PermissionError: Tool artifact_write requires grants but no validator available', 'retry_count': 2, 'max_retries': 2}
+  Event: EventType.TASK_FAILED - task=task-deb31e04de9c - payload={'task_id': 'task-deb31e04de9c', 'mission_id': 'mission-b72207660a6c', 'run_id': 'run-391134fc8e29', 'error': 'PermissionError: Tool artifact_write requires grants but no validator available', 'retry_count': 3, 'max_retries': 2}
+Failures detected: 1
+  t1_setup (task-deb31e04de9c): task_execution_failure - retry
+
+======================================================================
+REPLANNING: T2 failed, must replan using MissionController.replan_mission
+======================================================================
+Traceback (most recent call last):
+  File "/home/z/my-project/e10rp22r2a1_twostate/tests/e35/test_long_mission.py", line 954, in <module>
+    success = asyncio.run(main())
+              ^^^^^^^^^^^^^^^^^^^
+  File "/home/z/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/z/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2a1_twostate/tests/e35/test_long_mission.py", line 815, in main
+    harness, artifacts_dir = await run_e35_test()
+                             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2a1_twostate/tests/e35/test_long_mission.py", line 545, in run_e35_test
+    raise RuntimeError("T2 failure not detected")
+RuntimeError: T2 failure not detected
+
+=== END: e35
+
+=== BATTERY: e37
+CMD: env PYTHONPATH=src python3 tests/e37/test_multi_task_mission.py
+EXIT: 1
+--- output tail ---
+========
+PHASE 6: FINAL CONVERGENCE
+======================================================================
+
+--- Final Execution ---
+Result: success=False, state=MissionState.EXECUTING
+  Task States:
+    t1_setup (task-1fe315db7801): FAILED
+    t2_process_a (task-0585110ddde6): BLOCKED
+    t3_process_b (task-a15038e411de): BLOCKED
+    t4_aggregate_a (task-fed40badfb6f): BLOCKED
+    t5_aggregate_b (task-f83cba554be6): BLOCKED
+    t6_final (task-9d0aa88b334a): BLOCKED
+  t1_setup: FAILED
+    -> NOT VERIFIED/COMPLETED (active task)
+  t2_process_a: BLOCKED
+    -> NOT VERIFIED/COMPLETED (active task)
+  t3_process_b: BLOCKED
+    -> NOT VERIFIED/COMPLETED (active task)
+  t4_aggregate_a: BLOCKED
+    -> NOT VERIFIED/COMPLETED (active task)
+  t5_aggregate_b: BLOCKED
+    -> NOT VERIFIED/COMPLETED (active task)
+  t6_final: BLOCKED
+    -> NOT VERIFIED/COMPLETED (active task)
+  All active tasks verified: False
+
+Evidence saved to: /tmp/e37_fboye7ng/E37_EVIDENCE.json
+Event trace saved to: /tmp/e37_fboye7ng/E37_EVENT_TRACE.json
+Acceptance matrix saved to: /tmp/e37_fboye7ng/E37_ACCEPTANCE_MATRIX.json
+Task graph saved to: /tmp/e37_fboye7ng/E37_TASK_GRAPH.json
+Failure trace saved to: /tmp/e37_fboye7ng/E37_FAILURE_TRACE.json
+Replan trace saved to: /tmp/e37_fboye7ng/E37_REPLAN_TRACE.json
+State trace saved to: /tmp/e37_fboye7ng/E37_STATE_TRACE.json
+Final report saved to: /tmp/e37_fboye7ng/E37_FINAL_REPORT.md
+
+======================================================================
+E37 FINAL VERDICT
+======================================================================
+   1. AC-01: Multi-task Mission (6+ tasks): VERIFIED
+   2. AC-02: Dependency enforcement (A->B, A->C): VERIFIED
+   3. AC-03: Parallel branch execution (B||C after A): FAILED
+   4. AC-04: Real task execution: FAILED
+   5. AC-05: Convergence dependencies (F depends on D+E): VERIFIED
+   6. AC-06: Partial progress preservation: FAILED
+   7. AC-07: Failure isolation (B continues despite C failure): FAILED
+   8. AC-08: Recovery decision (replan triggered): FAILED
+   9. AC-09: Actual replanning (graph changed): FAILED
+  10. AC-10: State reconstruction from events: FAILED
+  11. AC-11: Kill and resume from checkpoint: FAILED
+  12. AC-12: Attempt history preserved: FAILED
+  13. AC-13: No duplicate verified work: VERIFIED
+  14. AC-14: Final convergence (all tasks VERIFIED/COMPLETED): FAILED
+  15. AC-15: Mission-level verification: FAILED
+
+  Verified: 4/15
+
+######################################################################
+# E37 PARTIALLY VERIFIED (4/15)
+######################################################################
+
+=== END: e37
+

@@ -1,0 +1,103 @@
+# workdir: /tmp/r2a1-f2-probe-4fs5uk18
+# git version: git version 2.47.3
+
+=== P1: staging repo (alternates-only objects) push <sha>:refs/heads/<b>
+$ git init -q -b main /tmp/r2a1-f2-probe-4fs5uk18/source
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source add -A
+  exit=0
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/signed.git
+  exit=0
+# source git-dir: /tmp/r2a1-f2-probe-4fs5uk18/source/.git; sha: 618458f6f31fc4093fd022306d30ad3249b73bd3
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/staging.git
+  exit=0
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push /tmp/r2a1-f2-probe-4fs5uk18/signed.git 618458f6f31fc4093fd022306d30ad3249b73bd3:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed.git
+           * [new branch]      618458f6f31fc4093fd022306d30ad3249b73bd3 -> main
+[P1] PASS: staging push exit=0; signed.git main = 618458f6f31fc4093fd022306d30ad3249b73bd3; expected 618458f6f31fc4093fd022306d30ad3249b73bd3
+
+=== P2: git push -- <url> <refspec> (option separator)
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/signed2.git
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source add -A
+  exit=0
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/signed2.git 0764ebff45bdfd305bbef82c1759460a20c8b787:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed2.git
+           * [new branch]      0764ebff45bdfd305bbef82c1759460a20c8b787 -> main
+[P2] PASS: '--' accepted; signed2.git main = 0764ebff45bdfd305bbef82c1759460a20c8b787
+
+=== P3: ATTACK DEMO — local insteadOf rewrites an EXPLICIT push URL
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/evil.git
+  exit=0
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/target.git
+  exit=0
+$ git init -q -b main /tmp/r2a1-f2-probe-4fs5uk18/victim
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/victim add -A
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/victim config url./tmp/r2a1-f2-probe-4fs5uk18/evil.git.insteadOf /tmp/r2a1-f2-probe-4fs5uk18/target.git
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/victim push -- /tmp/r2a1-f2-probe-4fs5uk18/target.git 10fb7c0f2333d8d564197aa766e16c137f7faaba:refs/heads/main
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/evil.git
+           * [new branch]      10fb7c0f2333d8d564197aa766e16c137f7faaba -> main
+[P3] CONFIRMED: explicit url push landed at evil=10fb7c0f2333d8d564197aa766e16c137f7faaba target=(none) — an explicit URL is NOT proof of destination in a normal repo
+
+=== P4: STAGING ISOLATION — same rewrite present in SOURCE config
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source config url./tmp/r2a1-f2-probe-4fs5uk18/evil.git.insteadOf /tmp/r2a1-f2-probe-4fs5uk18/signed2.git
+  exit=0
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/signed3.git
+  exit=0
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/signed3.git 0764ebff45bdfd305bbef82c1759460a20c8b787:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed3.git
+           * [new branch]      0764ebff45bdfd305bbef82c1759460a20c8b787 -> main
+[P4] PASS: staging push landed at signed3=0764ebff45bdfd305bbef82c1759460a20c8b787; evil head=10fb7c0f2333d8d564197aa766e16c137f7faaba; evil has this sha=False (must be False; source-config rewrite never read)
+
+=== P5: GLOBAL insteadOf neutralized by sanitized env
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/global-target.git
+  exit=0
+$ git init -q --bare /tmp/r2a1-f2-probe-4fs5uk18/global-evil.git
+  exit=0
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/global-target.git 0764ebff45bdfd305bbef82c1759460a20c8b787:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'HOME', 'XDG_CONFIG_HOME']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/global-target.git
+           * [new branch]      0764ebff45bdfd305bbef82c1759460a20c8b787 -> main
+[P5] PASS: landed at global-target=0764ebff45bdfd305bbef82c1759460a20c8b787; global-evil=(none) (global rewrite suppressed)
+
+=== P6: --force + sha refspec (non-ff REWIND)
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/signed.git 0764ebff45bdfd305bbef82c1759460a20c8b787:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed.git
+             618458f..0764ebf  0764ebff45bdfd305bbef82c1759460a20c8b787 -> main
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/signed.git 618458f6f31fc4093fd022306d30ad3249b73bd3:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=1
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed.git
+           ! [rejected]        618458f6f31fc4093fd022306d30ad3249b73bd3 -> main (non-fast-forward)
+          error: failed to push some refs to '/tmp/r2a1-f2-probe-4fs5uk18/signed.git'
+          hint: Updates were rejected because a pushed branch tip is behind its remote
+          hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+          hint: before pushing again.
+          hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push --force -- /tmp/r2a1-f2-probe-4fs5uk18/signed.git 618458f6f31fc4093fd022306d30ad3249b73bd3:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed.git
+           + 0764ebf...618458f 618458f6f31fc4093fd022306d30ad3249b73bd3 -> main (forced update)
+[P6] PASS: ff exit=0; without-force exit=1 (must be non-zero = rejected); with-force exit=0; final=618458f6f31fc4093fd022306d30ad3249b73bd3 (== 618458f6f31fc4093fd022306d30ad3249b73bd3)
+
+=== P7: source remote.<n>.pushurl added AFTER resolution
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source remote add x /tmp/r2a1-f2-probe-4fs5uk18/signed3.git
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source config remote.x.pushurl /tmp/r2a1-f2-probe-4fs5uk18/evil.git
+  exit=0
+$ git -C /tmp/r2a1-f2-probe-4fs5uk18/source add -A
+  exit=0
+$ git --git-dir /tmp/r2a1-f2-probe-4fs5uk18/staging.git push -- /tmp/r2a1-f2-probe-4fs5uk18/signed3.git 93bc5e45c6c3d28de78bfb218b8d093d4cf29feb:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM']
+  exit=0
+  stderr: To /tmp/r2a1-f2-probe-4fs5uk18/signed3.git
+             0764ebf..93bc5e4  93bc5e45c6c3d28de78bfb218b8d093d4cf29feb -> main
+[P7] PASS: landed at signed3=93bc5e45c6c3d28de78bfb218b8d093d4cf29feb; evil has this sha=False (must be False) — source remote config is irrelevant to the staging push destination
+
+=== PROBE SUMMARY (see [P*] lines above)

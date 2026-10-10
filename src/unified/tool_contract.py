@@ -717,6 +717,12 @@ class GitPushOutput(ToolOutputSchema):
     commit_hash: str = ""
     remote_ref: str = ""
     push_url: str = ""  # E10-RP2.2-R2A §3.1 — the verified canonical destination
+    # E10-RP2.2-R2A1 §3.2 — the exact argv of the PINNED-DESTINATION push
+    # (the staging push ran with the signed URL + approved-sha refspec):
+    # durable evidence that the result record's push_url is the destination
+    # the push command itself used, not merely a verified-then-abandoned
+    # value (arbitration §3.3).
+    push_argv: List[str] = Field(default_factory=list)
     certificates: List[str] = Field(default_factory=list)
 
 

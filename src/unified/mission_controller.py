@@ -79,6 +79,7 @@ from unified.execution import (
     ExecutionEngine,
     CheckpointIntegrityError,
 )
+from unified.contracts import new_attempt_id
 
 
 # ============================================================
@@ -734,6 +735,133 @@ class MissionController:
             source="mission_controller",
             correlation_id=task_id,
         ))
+
+
+    async def resume_approved_task(
+        self,
+        run_id: str,
+        task_id: str,
+        *,
+        actor: str = "owner",
+        reason: str = "resume approved human gate",
+        max_parallel: int = 1,
+        task_timeout: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """E10-RP2.2-R2A1 §2.2/§2.3 — the ENGINE-DESIGNATED resume of a task
+        paused at an APPROVED human gate.
+
+        This is the ONLY sanctioned way an approved one-shot approval is
+        consumable: the controller (trusted layer, owner/operator driven —
+        never the agent) must be able to prove that the continuation it
+        launches is the continuation of the operation that paused for the
+        approval. Steps, all fail-closed:
+
+        1. locate the task's live v2 gate record with an approve decision
+           and NO consumption (a pending/rejected/consumed gate cannot be
+           resumed — a new approval is required);
+        2. verify the engine-issued one-shot RESUME TICKET for that
+           operation exists, is ARMED and unexpired;
+        3. PRE-MINT the continuation attempt id and DESIGNATE the ticket
+           with it (engine trust decision; the agent has no minting or
+           designation surface);
+        4. re-arm the task through the engine's own validated FAILED->READY
+           transition (retry budget reset) — no test-side state surgery;
+        5. relaunch the run through the normal production execution path
+           (execute_run -> execute_task_graph -> _execute_single_task), with
+           the designated continuation attempt id injected into the launch.
+
+        The designated attempt — and ONLY that attempt — can then consume
+        the ticket in ``ToolExecutor._check_human_gate`` (single, atomic
+        consumption before execution). If the designated attempt dies
+        before the gate, or any other call presents the same identity, the
+        approval is NOT consumed and the gate refuses fail-closed.
+        """
+        engine = self.engine
+        mission_id = self._mission_id_for_run(run_id)
+        mission = engine.missions.get(mission_id) if mission_id else None
+        if mission is None:
+            raise ValueError(f"resume_approved_task: no mission for run {run_id}")
+        if mission.state != MissionState.EXECUTING:
+            raise ValueError(
+                f"resume_approved_task: mission state is {mission.state}, not "
+                "EXECUTING — an approved gate must have returned the mission "
+                "to EXECUTING before a resume can be designated"
+            )
+
+        # (1) locate the live approved+unconsumed v2 gate for this task
+        op_key = None
+        operation = None
+        for key in list(mission.metadata.keys()):
+            if not key.startswith("action_gate_v2:") or key.endswith(
+                ("_decision", "_consumed", "_operation", "_cycles")
+            ) or "#cycle" in key:
+                continue
+            op = mission.metadata.get(f"{key}_operation")
+            if not isinstance(op, dict):
+                continue
+            if op.get("format") != "v2" or op.get("run_id") != run_id:
+                continue
+            if op.get("task_id") != task_id:
+                continue
+            decision = mission.metadata.get(f"{key}_decision")
+            if not isinstance(decision, dict) or decision.get("decision") != "approve":
+                continue
+            if mission.metadata.get(f"{key}_consumed") is not None:
+                continue
+            op_key = key
+            operation = op
+            break
+        if op_key is None:
+            raise ValueError(
+                f"resume_approved_task: no approved+unconsumed human gate for "
+                f"task {task_id} in run {run_id} — a new approval is required"
+            )
+
+        # (2) the engine-issued one-shot resume ticket must exist, armed
+        ticket = engine._resume_tickets.get(op_key)
+        if ticket is None:
+            raise ValueError(
+                "resume_approved_task: no engine-issued resume ticket for the "
+                "approved operation — the approval cannot be consumed "
+                "(E10-RP2.2-R2A1 §2.2.5)"
+            )
+        if ticket.state != "armed":
+            raise ValueError(
+                f"resume_approved_task: resume ticket is {ticket.state!r} — "
+                "only an armed ticket can be designated for a continuation"
+            )
+
+        # (3) pre-mint the continuation attempt + DESIGNATE the ticket
+        continuation_attempt_id = new_attempt_id()
+        engine._designate_resume_continuation(
+            op_key, continuation_attempt_id, actor=actor
+        )
+        engine._designated_continuations[(run_id, task_id)] = continuation_attempt_id
+
+        # (4) re-arm the task through the engine's own validated transition
+        graph = engine.task_graph.get(run_id, {})
+        node = graph.get(task_id)
+        if node is None:
+            raise ValueError(f"resume_approved_task: task {task_id} not in run {run_id}")
+        state = node["state"]
+        if state == TaskState.FAILED:
+            self.recover_failed_task(run_id, task_id, reason or "resume_approved_task")
+        elif state != TaskState.READY:
+            raise ValueError(
+                f"resume_approved_task: task {task_id} state is {state}, "
+                "neither FAILED nor READY — refusing to resume"
+            )
+
+        # (5) relaunch through the normal production path
+        result = await self.execute_run(
+            run_id, max_parallel=max_parallel, task_timeout=task_timeout
+        )
+        return {
+            "resumed": True,
+            "op_key": op_key,
+            "continuation_attempt_id": continuation_attempt_id,
+            "result": result,
+        }
 
     # ---------- Mission-level replanning ----------
 

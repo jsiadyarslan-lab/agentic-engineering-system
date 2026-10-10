@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/z/my-project/e10rp22r2a1_work/E10/e10rp22r2_probes.py", line 667, in run_one
+    await probe()
+  File "/home/z/my-project/e10rp22r2a1_work/E10/e10rp22r2_probes.py", line 339, in probe_s1
+    rec = await mgr.execute(sbx_request("s1-empty", [PY, "-c", "print('S1-EMPTY-EXECUTED')"], wd,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2a1_work/src/unified/sandbox.py", line 278, in execute
+    raise SandboxError(
+unified.sandbox.SandboxError: EMPTY_GRANT_IDS: sandbox execute for 's1-empty' carried an empty required_grant_ids list — an execution with no grant decision is refused fail-closed (E10-RP2.2-R2 §4.1)

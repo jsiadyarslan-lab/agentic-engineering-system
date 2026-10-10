@@ -1,0 +1,17 @@
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E1_engine_designated_resume_e2e PASSED [  6%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E2_positive_real_push_side_effect_e2e PASSED [ 13%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E3_expired_ticket_resume_refused_e2e PASSED [ 20%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E4_cross_run_child_gets_own_gate_e2e PASSED [ 26%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E5_continuation_with_different_input_new_gate_e2e PASSED [ 33%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_E6_real_bridge_git_push_stays_rejected_e2e PASSED [ 40%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_L1_agent_supplied_proof_authorizes_nothing PASSED [ 46%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_L2_transferred_ticket_rejected PASSED [ 53%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_L3_wrong_attempt_and_agent_rejected PASSED [ 60%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_L4_no_trace_on_pre_execution_refusals PASSED [ 66%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_F1_between_window_url_change_cannot_reroute PASSED [ 73%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_F2_prewrite_rule_cannot_reroute PASSED [ 80%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_F3_multi_destination_rejected_before_push PASSED [ 86%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_F4_force_only_with_force_scoped_approval PASSED [ 93%]
+E10/test_e10rp22r2a1_matrix.py::test_R2A1_F5_result_record_never_lies PASSED [100%]
+exit=0
+15 passed, 749 warnings in 1.17s
