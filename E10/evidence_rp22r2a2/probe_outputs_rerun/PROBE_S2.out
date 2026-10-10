@@ -1,0 +1,6 @@
+=== PROBE S2: sandbox_id structural validation gap at execute() (vs write_artifact) ===
+[S2] execute raised SandboxError: SANDBOX_ID_INVALID: sandbox_id '../r2s2_escape_dir' must be a single path component (no separators, traversal, or absolu
+[S2] directory OUTSIDE artifacts base created (/tmp/r2s2-kgygbtbs/r2s2_escape_dir): False
+[S2] artifacts base entries: []
+[S2] write_artifact with same escaping sandbox_id: SandboxError (RP2.2 §3.1 defense-in-depth PRESENT at write): SANDBOX_ID_INVALID: sandbox_id '../r2s2_escape_dir' must be a single path component (no separators, 
+[S2 RESULT] SECURE — execute() joins the artifacts base with an UNVALIDATED sandbox_id and makedirs BEFORE any check: a traversal sandbox_id creates directories outside the artifacts base; write_artifact/read_artifact/list_artifacts DO validate (RP2.2 §3.1) — the execute path was left outside that fix

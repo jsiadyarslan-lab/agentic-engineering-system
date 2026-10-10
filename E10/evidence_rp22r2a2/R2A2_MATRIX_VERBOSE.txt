@@ -1,0 +1,41 @@
+# E10-RP2.2-R2A2 — R2A2 MATRIX VERBOSE (branch run)
+CMD: python3 -m pytest E10/test_e10rp22r2a2_matrix.py -p no:cacheprovider -v
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.0.2, pluggy-1.6.0 -- /home/z/.venv/bin/python3
+metadata: {'Python': '3.12.14', 'Platform': 'Linux-5.10.134-013.15.kangaroo.al8.x86_64-x86_64-with-glibc2.41', 'Packages': {'pytest': '9.0.2', 'pluggy': '1.6.0'}, 'Plugins': {'Faker': '40.1.2', 'metadata': '3.1.1', 'asyncio': '1.3.0', 'ddtrace': '4.2.2', 'cov': '7.0.0', 'json-report': '1.5.0', 'anyio': '4.13.0'}}
+rootdir: /home/z/my-project/e10rp22r2a2_work
+configfile: pyproject.toml
+plugins: Faker-40.1.2, metadata-3.1.1, asyncio-1.3.0, ddtrace-4.2.2, cov-7.0.0, json-report-1.5.0, anyio-4.13.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 25 items
+
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N1_arbiter_poc_env_injection_neutralized PASSED [  4%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N2_git_config_parameters_neutralized PASSED [  8%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_DIR-hostile_repo] PASSED [ 12%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_WORK_TREE-hostile_path] PASSED [ 16%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_COMMON_DIR-hostile_repo] PASSED [ 20%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_OBJECT_DIRECTORY-hostile_objects] PASSED [ 24%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_ALTERNATE_OBJECT_DIRECTORIES-attacker_objects] PASSED [ 28%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_CONFIG-rewrite_config] PASSED [ 32%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_CONFIG_SYSTEM-rewrite_config] PASSED [ 36%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_CONFIG_GLOBAL-rewrite_config] PASSED [ 40%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_CONFIG_NOSYSTEM-zero] PASSED [ 44%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_NAMESPACE-evil_namespace] PASSED [ 48%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_SSH_COMMAND-transport_probe] PASSED [ 52%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_PROXY_COMMAND-transport_probe] PASSED [ 56%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_ASKPASS-bin_false] PASSED [ 60%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[GIT_TERMINAL_PROMPT-one] PASSED [ 64%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[HOME-evil_home_rewrite] PASSED [ 68%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[XDG_CONFIG_HOME-evil_xdg_rewrite] PASSED [ 72%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[http_proxy-evil_proxy] PASSED [ 76%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[HTTPS_PROXY-evil_proxy] PASSED [ 80%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N3_inherited_variable_sweep[SSH_AUTH_SOCK-evil_socket] PASSED [ 84%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N4_transport_policy_fail_closed PASSED [ 88%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N5_sanitized_env_policy_unit PASSED [ 92%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N6_child_process_env_dump PASSED [ 96%]
+E10/test_e10rp22r2a2_matrix.py::test_R2A2_N7_full_chain_fail_closed_not_redirected PASSED [100%]
+
+E10/test_e10rp22r2a2_matrix.py: 29 warnings
+
+======================= 25 passed, 29 warnings in 1.97s ========================

@@ -1,0 +1,8 @@
+=== PROBE G3: REAL EOE bridge — live PATH_GRANT scoped to treeA; operations target repoB (outside treeA) ===
+[G3] git_branch (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: write for tool git_branch (target '/tmp/r2g3-uozu4vnu/repoB' not covered 
+[G3] git_status (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: read for tool git_status (target '/tmp/r2g3-uozu4vnu/repoB' not covered b
+[G3] git_push (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: write for tool git_push (target '/tmp/r2g3-uozu4vnu/repoB' not covered by
+[G3] run_command (grant covers treeA only): [PERMISSION_REJECTED] PermissionError: Agent agent-r2probe lacks required permission: execute for tool run_command
+[G3] sandbox_execute (grant covers treeA only): [IMPL_CRASH] ValueError: Tool not registered: sandbox_execute
+[G3] repoB branches: '* main'
+[G3 RESULT] TWO-LAYER — under the REAL bridge: (1) GAP-CONFIRMED at the authorization layer: git_branch/git_status PROCEED past every authorization layer on repoB (grant scoped to treeA) — the coarse kind gate (write/read) is their final decision and the target is never grounded (they then crash with NameError = DF1, so no git effect executes); (2) SECURE: git_push (admin) and run_command/sandbox_execute (execute) are REJECTED at the permission layer — these kinds are unattainable in EOE grant policy (fail-closed; tools functionally dead under the real policy)

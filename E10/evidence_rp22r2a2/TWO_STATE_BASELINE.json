@@ -1,0 +1,256 @@
+{
+  "baseline": "74c8ec12122df759bec5688f2980e181ea8976bb",
+  "branch_rows": 21,
+  "baseline_rows": 20,
+  "shared_rows": 20,
+  "rows": [
+    {
+      "row": "R2A1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "R2A matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "R2 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "R1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "RP2.2 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "RP2.1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "RP2 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "RP2 session (fresh-dir equivalent)",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "RP1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "E10-RP matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "E10/CW1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "E10-CW1-R1 matrix",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "E9-R",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "E8 negative gates",
+      "baseline_exit": 0,
+      "branch_exit": 0,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "vs001+vs002+vs003+vs004+e32e (sandbox/execution layers)",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "e3+e4",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [
+        "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+      ],
+      "branch_failures": [
+        "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+      ],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "e6",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+      ],
+      "branch_failures": [
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+      ],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "e33+e32f",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [
+        "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+      ],
+      "branch_failures": [
+        "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+      ],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "e35",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    },
+    {
+      "row": "e37",
+      "baseline_exit": 1,
+      "branch_exit": 1,
+      "baseline_failures": [],
+      "branch_failures": [],
+      "exit_match": true,
+      "failure_sets_match": true,
+      "content_amended_on_branch": false,
+      "row_status": "IDENTICAL"
+    }
+  ],
+  "overall_two_state": 0,
+  "verdict": "NO NEW REGRESSION (all shared rows identical exit codes and failure-name sets; zero content-amended rows this round)"
+}

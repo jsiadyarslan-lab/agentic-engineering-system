@@ -126,6 +126,130 @@ def _looks_like_url(value: str) -> bool:
     return False
 
 
+# ----------------------------------------------------------------------
+# E10-RP2.2-R2A2 §2 — sanitized child environment + transport policy
+# (arbitration on R2A1 @ 74c8ec1: inherited GIT_CONFIG_* variables reroute
+# the pinned push; the child env must be allowlist-built, not inherited)
+
+#: Allowlist for the staged_push child environment. The child env is built
+#: from SCRATCH — only these names are copied from the process
+#: environment; nothing else is inherited (order §2.2.1: replace
+#: ``dict(os.environ)`` + two modifications with an explicit, considered
+#: allowlist).
+#:
+#: * ``PATH`` — required to resolve the ``git`` executable for the child.
+#:   NOTE (declared boundary): executable-level substitution through a
+#:   hostile ``PATH`` is the engine-wide status quo — every git family
+#:   call resolves ``git`` via PATH — and is NOT a config/destination/
+#:   repo/object-database vector; it is the same declared class as R2A1's
+#:   TOCTOU boundary, not a claim of defense.
+#: * Windows process startup names (``os.name == "nt"`` only) — required by
+#:   the CRT/process startup; none can influence git config, the push
+#:   destination, the repo, or the object database.
+_SANITIZED_ENV_ALLOWLIST = ("PATH",) + (
+    ("SYSTEMROOT", "SYSTEMDRIVE", "COMSPEC", "PATHEXT")
+    if os.name == "nt" else ()
+)
+
+#: The ONLY ``GIT_*`` names allowed in the child env. They are set with
+#: FIXED safe values AFTER the hard strip (order §2.3: clean
+#: GIT_CONFIG_GLOBAL / GIT_CONFIG_SYSTEM *before* setting the safe value) —
+#: never inherited. ``GIT_CONFIG_SYSTEM`` is pinned EXPLICITLY here
+#: (R2A2): pre-fix it was neutralized only as a side effect of
+#: GIT_CONFIG_NOSYSTEM=1 precedence — an accident, not a rule.
+_GIT_CHILD_SAFE_OVERRIDES = {
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_SYSTEM": os.devnull,
+}
+
+
+def _sanitized_git_env() -> dict:
+    """E10-RP2.2-R2A2 §2.2 — بيئة طفل مبنية من allowlist لا من وراثة.
+
+    البناء: نسخ الأسماء المسموحة فقط من ``os.environ`` ← ثم التنظيف
+    الصريح (§2.3): حذف كل اسم يبدأ بـ``GIT_*`` — عائلة حقن الإعدادات
+    (``GIT_CONFIG_COUNT``/``GIT_CONFIG_KEY_*``/``GIT_CONFIG_VALUE_*``/
+    ``GIT_CONFIG_PARAMETERS``/``GIT_CONFIG``)، اختيار المستودع ومسار العمل
+    وقاعدة الكائنات (``GIT_DIR``/``GIT_WORK_TREE``/``GIT_COMMON_DIR``/
+    ``GIT_OBJECT_DIRECTORY``/``GIT_ALTERNATE_OBJECT_DIRECTORIES``)، ومتغيرات
+    النقل (``GIT_SSH_COMMAND``/``GIT_PROXY_COMMAND``/``GIT_ASKPASS``…) —
+    لا كإعداد منفرد بل كقاعدة واحدة تغلق كل قناة ``GIT_*`` دفعة واحدة
+    (فيها كل متغير يكشفه فحص البيئة مستقبلًا) ← ثم ضبط القيم الآمنة
+    الثابتة. لا ``HOME`` ولا ``XDG_CONFIG_HOME`` ولا ``SSH_AUTH_SOCK`` ولا
+    ``http_proxy`` — كلها غير موروثة أصلًا.
+
+    لا يعتمد الإثبات على ``GIT_CONFIG_GLOBAL=/dev/null`` وحده (§2.6):
+    التنقية بنيوية — أي قيمة موروثة لا تصل إلى الطفل إطلاقًا، ثم تُضبط
+    القيم الآمنة فوق بيئة نظيفة بالفعل.
+    """
+    env: dict = {}
+    for name in _SANITIZED_ENV_ALLOWLIST:
+        value = os.environ.get(name)
+        if value is not None:
+            env[name] = value
+    # §2.3 — التنظيف الصريح (belt-and-braces فوق الـallowlist): أي اسم
+    # GIT_* يُحذف أيا كانت قيمته. يغطي المستقبَل أيضًا: أي متغير GIT_*
+    # جديد يكشفه فحص البيئة لاحقًا محذول بنيويًا بهذه القاعدة الواحدة.
+    for name in list(env):
+        if name.startswith("GIT_"):
+            env.pop(name, None)
+    env.update(_GIT_CHILD_SAFE_OVERRIDES)
+    return env
+
+
+#: مسار Windows بمحرك أقراص — نقبله كمسار محلي مطلق (قبل فحص scp-like
+#: الذي كان سيرفض ``C:\...`` لاحتوائه ``:`` بلا ``/`` في الرأس).
+_WINDOWS_DRIVE_RE = re.compile(r"^[A-Za-z]:[\\/]")
+
+
+def _validate_transport(url: str) -> None:
+    """E10-RP2.2-R2A2 §2.5 — سياسة النقل fail-closed.
+
+    النقل المعتمد الوحيد للدفع المثبّت: نظام الملفات المحلي —
+    * مسار مطلق على القرص، أو
+    * URL بصيغة ``file:///`` بسلطة فارغة (أي ``file://<host>/…`` بغيرها
+      يُرفض).
+    كل ما عداه — مخططات http/https/ssh/git/ftp/ftps/rsync وصيغة scp-like
+    ``[user@]host:path`` — يُرفض fail-closed: لا allowlist مصادقة يمكن
+    إثبات سلامتها لهذه النقلات في هذا النشر، والأمر يمنع ادعاء دعم نقل
+    لا يمكن إثبات بيئته (§2.5). تبقى الدفعات الشبكية مستحيلة عبر المحرك
+    حتى اعتماد نقلٍ خاص به مع اختباراته المستقلة.
+
+    المسار النسبي يُرفض كذلك: لكان الطفل س يحله ضد CWD الخاصة به، أي وجهة
+    تعتمد على مجلد التشغيل — عكس التثبيت المطلوب.
+    """
+    if _WINDOWS_DRIVE_RE.match(url):
+        return  # مسار Windows مطلق — نظام ملفات محلي
+    m = re.match(r"^([A-Za-z][A-Za-z0-9+.-]*)://", url)
+    if m:
+        scheme = m.group(1).lower()
+        if scheme == "file":
+            authority = url[m.end():].partition("/")[0]
+            if authority == "":
+                return
+            raise PushRejected(
+                "نوع نقل غير معتمد",
+                f"file://{authority}… — يُقبل فقط file:/// بسلطة فارغة",
+            )
+        raise PushRejected(
+            "نوع نقل غير معتمد",
+            f"{scheme}:// — النقل الشبكي غير معتمد في هذا النشر "
+            "(fail-closed؛ لا allowlist مصادقة مثبتة له)",
+        )
+    head, sep, _ = url.partition(":")
+    if sep and head and "/" not in head and "\\" not in head:
+        raise PushRejected(
+            "نوع نقل غير معتمد",
+            f"{head!r}:… — صيغة scp-like (ssh) مرفوضة fail-closed",
+        )
+    if not Path(url).is_absolute():
+        raise PushRejected(
+            "وجهة غير مطلقة",
+            "مسار نسبي — لا يجوز أن يعتمد الدفع على CWD الطفل",
+        )
+
+
 def resolve_push_destination(repo_root: str | Path, remote: str) -> str:
     """E10-RP2.2-R2A §3.1 — حل الوجهة الفعلية التي سيدفع إليها git.
 
@@ -210,7 +334,8 @@ def staged_push(
     force: bool = False,
     timeout: int = 60,
 ) -> dict:
-    """E10-RP2.2-R2A1 §3.2 (arbitration F2) — PINNED-DESTINATION push.
+    """E10-RP2.2-R2A1 §3.2 + R2A2 §2 — PINNED-DESTINATION push in a
+    SANITIZED CHILD ENVIRONMENT.
 
     The push command itself uses THE SIGNED CANONICAL URL — never the
     remote NAME — so no re-resolution of the remote can happen at
@@ -219,14 +344,29 @@ def staged_push(
     * the push runs from a throwaway ENGINE-OWNED bare STAGING repo whose
       only link to the source repository is ``objects/info/alternates``
       (read-only object access — the source repo's config is NEVER read
-      by the push: no ``remote.<name>`` re-resolution, no
-      ``url.<base>.insteadOf`` / ``pushInsteadOf`` rewriting from the
-      source, local, system or global config can re-route the signed
-      destination between verification and execution);
-    * ``GIT_CONFIG_NOSYSTEM=1`` + ``GIT_CONFIG_GLOBAL=/dev/null`` disable
-      system+global rewrite sources for the subprocess;
+      by the push);
+    * R2A2 §2 (arbitration on 74c8ec1): EVERY child process spawned here
+      (``rev-parse --absolute-git-dir``, ``init --bare``, the
+      ``cat-file`` presence probe, and the push itself) runs with
+      ``_sanitized_git_env()`` — an allowlist-built environment, NOT
+      ``dict(os.environ)``. Proven pre-fix VULNERABLE (probe EP3):
+      inherited ``GIT_CONFIG_COUNT``/``GIT_CONFIG_KEY_n``/
+      ``GIT_CONFIG_VALUE_n`` and ``GIT_CONFIG_PARAMETERS`` (sq-quoted
+      grammar, git v2.47.3 config.c:669-719) could reroute the push to an
+      attacker repo even under ``GIT_CONFIG_NOSYSTEM=1`` +
+      ``GIT_CONFIG_GLOBAL=/dev/null``. Now: no ``GIT_*`` name is
+      inherited at all (hard strip over the allowlist), the three safe
+      values are set explicitly (``GIT_CONFIG_SYSTEM`` pinned — no
+      longer the NOSYSTEM accident), and no ``HOME``/
+      ``XDG_CONFIG_HOME``/transport/auth names exist in the child env;
+    * R2A2 §2.5 transport policy (fail-closed): only the LOCAL
+      FILESYSTEM is an accredited transport — an absolute path or
+      ``file:///`` with empty authority. http/https/ssh/git/ftp/rsync
+      and scp-like forms are REFUSED (no provable auth allowlist —
+      network pushes stay impossible through the engine);
     * the staging repo's own config contains ONLY what ``git init --bare``
-      wrote (no url.* rewrites) and lives in a 0700 ``mkdtemp`` directory;
+      wrote (no ``url.*`` rewrites) and lives in a 0700 ``mkdtemp``
+      directory;
     * the refspec is ``<approved_sha>:refs/heads/<branch>`` — the commit
       that lands is EXACTLY the commit the owner signed (even if the
       source branch moved after approval), and the branch name is
@@ -235,16 +375,18 @@ def staged_push(
     * ``--`` terminates option parsing: neither the URL nor the refspec
       can be interpreted as an option.
 
-    Probe-proven (E10/evidence_rp22r2a1/F2_DESIGN_PROBES.txt, git 2.47.3):
-    an explicit URL passed to a push FROM THE SOURCE REPO *is* rewritten
-    by a local ``url.*.insteadOf`` rule (P3 — the R2A residual hole); the
-    staging push is not (P4/P7), global rewrites are suppressed (P5), and
-    ``--force`` semantics with the sha refspec are enforced by the remote
-    exactly as with a named refspec (P6).
+    Probe-proven (E10/evidence_rp22r2a1/F2_DESIGN_PROBES.txt +
+    E10/evidence_rp22r2a2/F2_ENV_PROBES.txt, git 2.47.3): an explicit
+    URL pushed from the source repo *is* insteadOf-rewritable (R2A1 P3);
+    with env-config injection even the R2A1 staging push under
+    NOSYSTEM+GLOBAL=/dev/null was reroutable (R2A2 EP1/EP2/EP3 — fixed
+    by this env); ``--force`` semantics with the sha refspec are enforced
+    by the remote exactly as with a named refspec (R2A1 P6).
 
-    Returns ``{"returncode", "stdout", "stderr", "argv"}`` — the argv the
-    push ran with (evidence). Raises :class:`PushRejected` (fail-closed,
-    zero remote effect) if the staging repo cannot be proven sound.
+    Returns ``{"returncode", "stdout", "stderr", "argv", "staging_dir"}`` —
+    the argv the push ran with (evidence). Raises :class:`PushRejected`
+    (fail-closed, zero remote effect) if the staging repo cannot be proven
+    sound or the transport is not accredited.
     """
     if not isinstance(signed_url, str) or not signed_url.strip():
         raise PushRejected("وجهة موقّعة فارغة", "staged_push: لا push_url")
@@ -252,6 +394,8 @@ def staged_push(
         raise PushRejected(
             "وجهة موقّعة غير صالحة", "تبدأ بشرطة — لا يمكن تمريرها كوسيط"
         )
+    # R2A2 §2.5 — transport accreditation, BEFORE any subprocess
+    _validate_transport(signed_url)
     if not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", commit_sha or ""):
         raise PushRejected(
             "التزام غير صالح", f"commit_sha ليس sha-1/sha-256 سداسيًا: {commit_sha!r}"
@@ -261,8 +405,12 @@ def staged_push(
             "فرع غير صالح", f"staged_push يرفض القيمة: {branch!r}"
         )
 
+    # R2A2 §2.2 — ONE sanitized environment for EVERY child spawned here
+    child_env = _sanitized_git_env()
+
     repo = Path(repo_root)
-    git_dir_r = _git(repo, "rev-parse", "--absolute-git-dir", timeout=timeout)
+    git_dir_r = _git(repo, "rev-parse", "--absolute-git-dir",
+                     timeout=timeout, env=child_env)
     if git_dir_r.returncode != 0 or not git_dir_r.stdout.strip():
         raise PushRejected(
             "تعذر تحديد git dir للمصدر",
@@ -272,7 +420,8 @@ def staged_push(
 
     staging = Path(tempfile.mkdtemp(prefix="r2a1-staged-push-"))
     try:
-        init_r = _git(staging, "init", "--bare", "--quiet", ".", timeout=timeout)
+        init_r = _git(staging, "init", "--bare", "--quiet", ".",
+                      timeout=timeout, env=child_env)
         if init_r.returncode != 0:
             raise PushRejected(
                 "تعذر إنشاء مستودع الترحيل المعزول",
@@ -287,7 +436,8 @@ def staged_push(
         # the commit the owner signed) — proven HERE, before any network
         # effect, with the staging repo's own view (alternates only).
         probe_r = _git(
-            staging, "cat-file", "-e", f"{commit_sha}^{{commit}}", timeout=timeout
+            staging, "cat-file", "-e", f"{commit_sha}^{{commit}}",
+            timeout=timeout, env=child_env,
         )
         if probe_r.returncode != 0:
             raise PushRejected(
@@ -302,12 +452,12 @@ def staged_push(
             signed_url,
             f"{commit_sha}:refs/heads/{branch}",
         ]
-        env = dict(os.environ)
-        env["GIT_CONFIG_NOSYSTEM"] = "1"
-        env["GIT_CONFIG_GLOBAL"] = os.devnull
+        # R2A2 §2: the push child gets the sanitized env — never
+        # dict(os.environ). Inherited config-injection / repo-selection /
+        # transport variables are structurally absent (probe EP3 fixed).
         full = ["git", f"--git-dir={staging}", *argv]
         result = subprocess.run(
-            full, capture_output=True, text=True, timeout=timeout, env=env
+            full, capture_output=True, text=True, timeout=timeout, env=child_env
         )
         return {
             "returncode": result.returncode,
@@ -545,11 +695,18 @@ class PushRecord:
     failure: str = ""
 
 
-def _git(repo: Path, *args: str, timeout: int = 30) -> subprocess.CompletedProcess:
-    """أمر git مضيفي ثابت الوسائط — بلا shell، بلا مدخلات مستدعٍ."""
+def _git(repo: Path, *args: str, timeout: int = 30,
+         env: dict | None = None) -> subprocess.CompletedProcess:
+    """أمر git مضيفي ثابت الوسائط — بلا shell، بلا مدخلات مستدعٍ.
+
+    R2A2: ``env`` اختياري — ``None`` يعني الوراثة (سلوك تاريخي لكل
+    المستدعين الآخرين)، وتمرير ``_sanitized_git_env()`` يمنح الطفل
+    بيئة النقاء (staged_push فقط يمررها).
+    """
     return subprocess.run(
         ["git", "-C", str(repo), *args],
         capture_output=True, text=True, timeout=timeout, check=False,
+        env=env,
     )
 
 

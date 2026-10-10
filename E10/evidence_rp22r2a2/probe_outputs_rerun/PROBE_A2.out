@@ -1,0 +1,2 @@
+=== PROBE A2: agent_role.BaseAgent._run_in_sandbox — direct sandbox execution with ZERO permission checks (dead code: no callers) ===
+[A2] PROBE CRASHED:
