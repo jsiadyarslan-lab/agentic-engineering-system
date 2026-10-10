@@ -716,6 +716,7 @@ class GitPushOutput(ToolOutputSchema):
     pushed: bool = False
     commit_hash: str = ""
     remote_ref: str = ""
+    push_url: str = ""  # E10-RP2.2-R2A §3.1 — the verified canonical destination
     certificates: List[str] = Field(default_factory=list)
 
 

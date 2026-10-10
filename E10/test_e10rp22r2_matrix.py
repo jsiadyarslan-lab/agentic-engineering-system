@@ -309,51 +309,71 @@ def test_R2_T03_git_push_nonce_and_owner_approval(tmp_path):
     assert (ev1, act1) == (ev0, act0)  # zero trace
 
     # ---- (b) the REAL approval mechanism (registry level — the chain the
-    # tool delegates to; no validator involved at this layer)
+    # tool delegates to; no validator involved at this layer).
+    # E10-RP2.2-R2A §3.1 — the approval now also binds the CANONICAL PUSH
+    # URL (resolved via the owner-side helper over the same repo), so a
+    # remote-name match alone can never authorize: the signed destination
+    # must equal the execution-time destination.
+    from eoe.push_engine import resolve_push_destination as _rpd
     reg, svc = stack["registry"], stack["svc"]
     repo_root = str(Path(stack["repoA"]).resolve())
+    push_url = _rpd(repo_root, "r2remote")
     appr = svc.sign(repository=repo_root, branch="main", commit_sha=stack["head"],
-                    files_digest="r2t3", remote="r2remote", force=False)
+                    files_digest="r2t3", remote="r2remote", force=False,
+                    push_url=push_url)
     reg.register(appr)
 
     ok, why = reg.verify_and_consume("R2T3-UNKNOWN-NONCE", repository=repo_root,
-                                     branch="main", commit_sha=stack["head"], remote="r2remote")
+                                     branch="main", commit_sha=stack["head"], remote="r2remote",
+                                     push_url=push_url)
     assert not ok and "غير مسجل" in why, (ok, why)  # fake nonce rejected
 
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
                                      branch="main", commit_sha=stack["head"],
-                                     remote="OTHER-REMOTE")
+                                     remote="OTHER-REMOTE", push_url=push_url)
     assert not ok and "remote" in why, (ok, why)  # unapproved remote rejected
 
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
                                      branch="other-branch", commit_sha=stack["head"],
-                                     remote="r2remote")
+                                     remote="r2remote", push_url=push_url)
     assert not ok, (ok, why)  # wrong branch rejected
 
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
-                                     branch="main", commit_sha="0" * 40, remote="r2remote")
+                                     branch="main", commit_sha="0" * 40, remote="r2remote",
+                                     push_url=push_url)
     assert not ok and "التزام آخر" in why, (ok, why)  # wrong commit rejected
 
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
                                      branch="main", commit_sha=stack["head"],
-                                     remote="r2remote", force=True)
+                                     remote="r2remote", push_url=push_url, force=True)
     assert not ok and "force" in why, (ok, why)  # force not in approval scope
+
+    # R2A §3.1 — approval whose signed destination differs from the
+    # execution-time destination is rejected (remote NAME matches).
+    ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
+                                     branch="main", commit_sha=stack["head"],
+                                     remote="r2remote", push_url=str(stack["bare"]) + "-other")
+    assert not ok and "لا تطابق" in why, (ok, why)  # wrong destination rejected
 
     # expired approval rejected (signed in the past, TTL elapsed)
     expired = svc.sign(repository=repo_root, branch="main", commit_sha=stack["head"],
                        files_digest="r2t3", remote="r2remote", force=False,
+                       push_url=push_url,
                        now=__import__("time").time() - 10_000)
     reg.register(expired)
     ok, why = reg.verify_and_consume(expired.nonce, repository=repo_root,
-                                     branch="main", commit_sha=stack["head"], remote="r2remote")
+                                     branch="main", commit_sha=stack["head"], remote="r2remote",
+                                     push_url=push_url)
     assert not ok and "منتهية" in why, (ok, why)
 
     # valid + correctly scoped → approved exactly once; replay rejected
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
-                                     branch="main", commit_sha=stack["head"], remote="r2remote")
+                                     branch="main", commit_sha=stack["head"], remote="r2remote",
+                                     push_url=push_url)
     assert ok, why
     ok, why = reg.verify_and_consume(appr.nonce, repository=repo_root,
-                                     branch="main", commit_sha=stack["head"], remote="r2remote")
+                                     branch="main", commit_sha=stack["head"], remote="r2remote",
+                                     push_url=push_url)
     assert not ok, (ok, why)  # reused nonce rejected
 
     # ---- (c) handler level (the layer ABOVE the permission gate; the
@@ -368,18 +388,20 @@ def test_R2_T03_git_push_nonce_and_owner_approval(tmp_path):
     r = asyncio.run(engine2.tool_executor._execute_git_tool(ctx2, "git_push", inp, "a-r2t3"))
     assert not r.success and "no owner-approval registry" in (r.error or ""), r.error  # §3.6
 
-    # wire the REAL registry; a fresh, correctly scoped approval pushes.
+    # wire the REAL registry; a fresh, correctly scoped approval (R2A:
+    # including the canonical push URL) pushes.
     engine3 = _engine(stack, push_approval_registry=stack["registry"])
     ctx3 = _ctx(engine3, stack, mission_id="m-handler3")
     engine3.missions["m-handler3"] = engine3.create_mission("handler3")
     appr2 = stack["svc"].sign(repository=repo_root, branch="main",
                               commit_sha=stack["head"], files_digest="r2t3",
-                              remote="r2remote", force=False)
+                              remote="r2remote", force=False, push_url=push_url)
     stack["registry"].register(appr2)
     inp2 = GitPushInput(repo_path=stack["repoA"], remote="r2remote", branch="main",
                         owner_approval_nonce=appr2.nonce)
     r = asyncio.run(engine3.tool_executor._execute_git_tool(ctx3, "git_push", inp2, "a-r2t3b"))
     assert r.success, (r.error, r.error_type)
+    assert r.output.get("push_url") == push_url  # destination proven
     assert git_out(stack["bare"], "rev-parse", "HEAD") == stack["head"]  # remote advanced
 
     # force semantics (§3.5): diverge the repo, then a NON-force push is
@@ -388,14 +410,16 @@ def test_R2_T03_git_push_nonce_and_owner_approval(tmp_path):
     new_head = git_out(stack["repoA"], "rev-parse", "HEAD")
     assert new_head != stack["head"]
     appr_nf = stack["svc"].sign(repository=repo_root, branch="main", commit_sha=new_head,
-                                files_digest="r2t3", remote="r2remote", force=False)
+                                files_digest="r2t3", remote="r2remote", force=False,
+                                push_url=push_url)
     stack["registry"].register(appr_nf)
     inp_nf = GitPushInput(repo_path=stack["repoA"], remote="r2remote", branch="main",
                           owner_approval_nonce=appr_nf.nonce)
     r = asyncio.run(engine3.tool_executor._execute_git_tool(ctx3, "git_push", inp_nf, "a-r2t3c"))
     assert not r.success, "non-force push of a diverged history must fail"
     appr_f = stack["svc"].sign(repository=repo_root, branch="main", commit_sha=new_head,
-                               files_digest="r2t3", remote="r2remote", force=True)
+                               files_digest="r2t3", remote="r2remote", force=True,
+                               push_url=push_url)
     stack["registry"].register(appr_f)
     inp_f = GitPushInput(repo_path=stack["repoA"], remote="r2remote", branch="main",
                          force=True, owner_approval_nonce=appr_f.nonce)

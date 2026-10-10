@@ -963,13 +963,42 @@ class ToolExecutor:
 
         E10-RP2.2-R2 §2.2 — ACTION-SCOPED approval binding: a recorded
         approval authorizes ONLY the same tool AND the same operation
-        inputs (canonical input digest captured at gate creation). The
-        mission-wide "approved once for this tool name" carry-over is
-        CLOSED: a different action, a different input payload, or a legacy
-        approval record with no input digest all require a NEW gate
-        decision. (For git_push this binds the approval to the push
-        operation itself — order §3.5: repo/remote/branch/force/nonce are
-        all inside the digested input.)
+        inputs. The mission-wide "approved once for this tool name"
+        carry-over is CLOSED.
+
+        E10-RP2.2-R2A §2 — ONE-SHOT RESUME-BOUND APPROVAL (arbitration F1):
+        an approval is bound to ONE resumable operation, never to a
+        tool+inputs pair floating at mission level. The gate record lives
+        under a v2 operation key
+        ``action_gate_v2:{mission}:{run}:{task}:{tool}:{input_digest}``
+        and carries the FULL operation identity — mission_id, run_id,
+        task_id, attempt_id (creating lineage), agent_id, tool name, and
+        the canonical input digest of the validated payload. Semantics:
+
+        * PENDING (gate exists, no decision): the call is paused awaiting
+          the decision — no duplicate gate is created for the same
+          operation identity.
+        * REJECTED: permanently refused for this identity (fail-closed);
+          a different operation (inputs/task/run/mission) needs its own
+          gate.
+        * APPROVED + UNCONSUMED: the FIRST subsequent call presenting the
+          EXACT operation identity (the engine-scheduled continuation of
+          the same task — structurally the resume, since the engine runs
+          at most one attempt per task at a time and the production
+          resume path mints a fresh attempt_id per continuation) CONSUMES
+          the approval exactly once, and the consumption lineage (attempt,
+          agent, action) is recorded. This is the one-shot resume.
+        * CONSUMED: the approval is spent. Any further call — same
+          identity or not — requires a NEW approval: the consumed cycle is
+          archived and a fresh gate cycle is opened (pause). Approval
+          reuse across operations is structurally impossible.
+
+        LEGACY records (any ``action_gate_*`` entry without a v2
+        ``_operation`` record — including R2's digest-only records)
+        authorize NOTHING: the lookup only ever consults the v2 key, and
+        a record whose stored identity does not match the current call
+        is treated as absent (fail-closed → new gate). Input-fingerprint
+        equality alone never authorizes anything.
         """
         if contract.risk_level not in (ToolRiskLevel.HIGH, ToolRiskLevel.CRITICAL):
             return
@@ -987,46 +1016,59 @@ class ToolExecutor:
                 "(E10-RP2.2-R2 §2.1)"
             )
 
-        # E10-RP2.2-R2 §2.2 — canonical digest of THIS operation's inputs;
-        # approvals bind to (tool, input digest), never mission-wide.
+        # E10-RP2.2-R2A §2.1 — canonical digest of THIS operation's inputs
+        # (over the VALIDATED payload) + the full operation identity key.
         input_digest = self._gate_input_digest(validated_input)
+        op_key = self._gate_operation_key(context, tool_name, input_digest)
 
-        # Check if there's already an APPROVED gate for this tool covering
-        # EXACTLY THESE INPUTS (E10-RP2.2-R2 §2.2). A legacy record with no
-        # input digest cannot authorize a new operation.
-        for key, value in mission.metadata.items():
-            if key.startswith(f"action_gate_{tool_name}_") and isinstance(value, str):
-                decision_key = f"{key}_decision"
-                decision = mission.metadata.get(decision_key)
-                if decision and decision.get("decision") == "approve":
-                    approved_digest = mission.metadata.get(f"{key}_input_digest")
-                    if approved_digest == input_digest:
-                        # Approved for THIS tool AND THESE inputs — allow.
-                        return
-        
-        # Check if there's already a human gate for this action
-        gate_key = f"action_gate_{tool_name}_{action_id}"
-        existing_gate = mission.metadata.get(gate_key)
-        if existing_gate:
-            # Gate already exists, check if decided
-            decision = mission.metadata.get(f"{gate_key}_decision")
-            if decision:
-                if decision.get("decision") != "approve":
-                    raise PermissionError(f"Human gate rejected for {tool_name}: {decision.get('feedback', 'Not approved')}")
-                if mission.metadata.get(f"{gate_key}_input_digest") != input_digest:
-                    # Same action id re-entered with DIFFERENT inputs — the
-                    # recorded approval does not cover this payload.
-                    raise PermissionError(
-                        f"Human gate approval for {tool_name} does not "
-                        "cover the current operation inputs — a new "
-                        "approval is required (E10-RP2.2-R2 §2.2)"
-                    )
-                return  # Approved for exactly this operation, continue
-            else:
-                # Gate exists but no decision yet - wait
+        record = mission.metadata.get(f"{op_key}_operation")
+        if isinstance(record, dict):
+            # Defense in depth: the record must carry the v2 format and
+            # match THIS call's identity exactly — a corrupt, tampered or
+            # foreign record authorizes nothing (fail-closed → new gate).
+            if not (
+                record.get("format") == "v2"
+                and record.get("mission_id") == context.mission_id
+                and record.get("run_id") == context.run_id
+                and record.get("task_id") == context.task_id
+                and record.get("tool_name") == tool_name
+                and record.get("input_digest") == input_digest
+            ):
+                record = None
+
+        if record is not None:
+            consumed = mission.metadata.get(f"{op_key}_consumed")
+            decision = mission.metadata.get(f"{op_key}_decision")
+            if consumed is not None:
+                # R2A §2.2 — the approval was already used by the resumed
+                # operation: it is SPENT. This call is a new, independent
+                # invocation of the same identity → archive the consumed
+                # cycle and open a NEW gate cycle below (a new approval is
+                # required). The old approval can never authorize again.
+                self._archive_gate_cycle(mission, op_key)
+            elif decision is None:
+                # Same pending operation re-presented while awaiting the
+                # human decision — pause; never a duplicate gate.
                 raise PermissionError(f"Human gate pending for {tool_name}. Awaiting decision.")
-        
-        # Create human gate for this high-risk action
+            elif decision.get("decision") != "approve":
+                # Rejected for this operation identity — fail-closed.
+                raise PermissionError(f"Human gate rejected for {tool_name}: {decision.get('feedback', 'Not approved')}")
+            else:
+                # APPROVED + UNCONSUMED: this is the one-shot resume of the
+                # pending operation. Consume NOW, bound to the consuming
+                # attempt/agent/action lineage (the creating lineage stays
+                # in the operation record). Exactly one continuation may
+                # pass; every later call needs a new approval.
+                mission.metadata[f"{op_key}_consumed"] = {
+                    "consumed_at": datetime.now(timezone.utc).isoformat(),
+                    "consumed_by_attempt": context.attempt_id,
+                    "consumed_by_agent": context.agent_id,
+                    "consumed_by_action": action_id,
+                }
+                return
+
+        # No valid v2 record (first call, legacy, archived-consumed, or
+        # corrupt) → open a NEW gate cycle for THIS operation identity.
         gate_id = self.engine.create_human_gate(
             mission_id=context.mission_id,
             run_id=context.run_id,
@@ -1038,6 +1080,17 @@ class ToolExecutor:
                 "risk_level": contract.risk_level.value,
                 "isolation": contract.isolation.value,
                 "agent_id": context.agent_id,
+                # R2A §2.1 — the operation identity this approval binds to.
+                "operation": {
+                    "format": "v2",
+                    "mission_id": context.mission_id,
+                    "run_id": context.run_id,
+                    "task_id": context.task_id,
+                    "attempt_id": context.attempt_id,
+                    "agent_id": context.agent_id,
+                    "tool_name": tool_name,
+                    "input_digest": input_digest,
+                },
             },
             options=[
                 {"value": "approve", "label": "Approve Execution", "description": f"Allow {tool_name} to execute"},
@@ -1048,15 +1101,78 @@ class ToolExecutor:
             evidence_refs=[],
             requested_by="execution_engine",
         )
-        
-        # Store gate reference + the operation input digest the approval
-        # will be bound to (E10-RP2.2-R2 §2.2).
-        mission.metadata[gate_key] = gate_id
-        mission.metadata[f"{gate_key}_input_digest"] = input_digest
-        
+        if gate_id is None:
+            # The mission is not in a gate-creatable state (e.g. RECEIVED,
+            # or HUMAN_REQUIRED for another gate). The operation is PAUSED
+            # fail-closed — identical surfaced behavior to the R2 gate
+            # pause (probe-observable contract preserved byte-for-byte).
+            raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+
+        # Store the gate reference + the FULL operation identity the
+        # approval will be bound to (R2A §2.1/§2.2). The cycle counter
+        # lives in its own slot and survives archiving (a consumed cycle
+        # keeps its audit trail under ``{op_key}#cycle{n}``; the next
+        # cycle continues the monotonic count).
+        cycle = mission.metadata.get(f"{op_key}_cycles")
+        cycle = cycle if isinstance(cycle, int) and cycle >= 1 else 1
+        mission.metadata[op_key] = gate_id
+        mission.metadata[f"{op_key}_operation"] = {
+            "format": "v2",
+            "mission_id": context.mission_id,
+            "run_id": context.run_id,
+            "task_id": context.task_id,
+            "attempt_id": context.attempt_id,
+            "agent_id": context.agent_id,
+            "tool_name": tool_name,
+            "input_digest": input_digest,
+            "gate_id": gate_id,
+            "cycle": cycle,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+
         # Wait for human decision (this will pause execution)
         # The engine will resume when human decides
         raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+
+    @staticmethod
+    def _gate_operation_key(
+        context: ExecutionContext, tool_name: str, input_digest: str
+    ) -> str:
+        """R2A §2.1 — the v2 operation key: the gate (and therefore the
+        approval) is scoped to ONE operation identity — mission + run +
+        task + tool + canonical input digest. ``attempt_id``/``agent_id``
+        are part of the RECORDED identity (creating + consuming lineage in
+        the ``_operation``/``_consumed`` records), not of the key: the
+        production resume path structurally continues a paused task under
+        a fresh attempt_id (``_execute_single_task`` mints one per
+        retry), so binding the key to the literal creating attempt would
+        make every approval unusable (deadlock). Engine ids are
+        colon-free (``mission-<hex>``/``run-<hex>``/``task-<hex>``), so
+        the key is unambiguous; identity is re-verified field-by-field
+        against the stored record, never trusted from the key alone."""
+        return (
+            f"action_gate_v2:{context.mission_id}:{context.run_id}:"
+            f"{context.task_id}:{tool_name}:{input_digest}"
+        )
+
+    @staticmethod
+    def _archive_gate_cycle(mission, op_key: str) -> None:
+        """R2A §2.2 — archive a CONSUMED gate cycle under
+        ``{op_key}#cycle{n}`` (audit trail preserved: the archived gate id
+        stays discoverable by ``decide_human_gate`` and its decision
+        stays duplicate-protected), clear the live slots, and advance the
+        monotonic ``{op_key}_cycles`` counter so the next call for this
+        identity opens a fresh cycle requiring a NEW approval."""
+        record = mission.metadata.get(f"{op_key}_operation")
+        n = 1
+        if isinstance(record, dict) and isinstance(record.get("cycle"), int):
+            n = record["cycle"]
+        archived = f"{op_key}#cycle{n}"
+        for suffix in ("", "_decision", "_consumed", "_operation"):
+            src = f"{op_key}{suffix}"
+            if src in mission.metadata:
+                mission.metadata[f"{archived}{suffix}"] = mission.metadata.pop(src)
+        mission.metadata[f"{op_key}_cycles"] = n + 1
 
     @staticmethod
     def _gate_input_digest(validated_input: BaseModel) -> str:
@@ -1410,6 +1526,15 @@ class ToolExecutor:
             # repository, remote, branch, commit, and operation (force
             # flag). A nonce PRESENCE check alone authorizes nothing
             # (discovery GAP-2, probe [G6]).
+            #
+            # E10-RP2.2-R2A §3.1/§3.2 (arbitration F2) — the approval is
+            # additionally bound to the CANONICAL PUSH URL git will
+            # actually use at execution time (pushurl / insteadOf /
+            # pushInsteadOf rewriting resolved and multi-destination
+            # configurations refused), and remote/branch are structurally
+            # validated so no input value can ever be interpreted as a
+            # git CLI option; the push runs with an explicit refspec the
+            # handler itself constructs plus the '--' option separator.
             nonce = getattr(validated_input, "owner_approval_nonce", None)
             if not nonce:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
@@ -1435,8 +1560,64 @@ class ToolExecutor:
             head_sha = head_result.stdout.strip()
 
             remote = validated_input.remote or "origin"
-            branch = validated_input.branch or "HEAD"
+            branch = validated_input.branch
             force = bool(getattr(validated_input, "force", False))
+
+            # R2A §3.2 — STRUCTURAL validation before any git subprocess:
+            # remote/branch input values can never be interpreted as CLI
+            # options (leading '-', whitespace, forbidden ref characters
+            # are rejected here, in-process).
+            from eoe.push_engine import (
+                PushRejected as _PushRejected,
+                validate_branch_name as _validate_branch,
+                validate_remote_name as _validate_remote,
+            )
+            ok_r, why_r = _validate_remote(remote)
+            if not ok_r:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: remote name {remote!r} is structurally "
+                                        f"invalid ({why_r}) — no input value can act as a git CLI option "
+                                        "(E10-RP2.2-R2A §3.2)"),
+                                 error_type="PermissionError")
+            ok_b, why_b = _validate_branch(branch)
+            if not ok_b:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: branch name {branch!r} is structurally "
+                                        f"invalid ({why_b}) — a value like '--force' can never be "
+                                        "interpreted as a push option or refspec (E10-RP2.2-R2A §3.2)"),
+                                 error_type="PermissionError")
+            # Canonical ref-format authority (git itself); the name is
+            # passed as a separate argv element AFTER the structural
+            # leading-dash rejection above, so check-ref-format can never
+            # receive an option either.
+            fmt = await run_git(["check-ref-format", "--branch", branch])
+            if fmt.returncode != 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: branch {branch!r} is not a valid git "
+                                        f"branch name: {fmt.stderr.strip()[:160]} "
+                                        "(E10-RP2.2-R2A §3.2)"),
+                                 error_type="PermissionError")
+
+            # R2A §3.1 — resolve the ACTUAL destination git will push to
+            # (pushurl/insteadOf/pushInsteadOf rewriting applied; multiple
+            # configured destinations refused — git would push to ALL of
+            # them and the owner approved exactly ONE canonical URL). Any
+            # resolution failure = rejection, never a fallback.
+            from eoe.push_engine import resolve_push_destination as _resolve_dest
+            try:
+                canonical_push_url = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: _resolve_dest(str(repo_root), remote)
+                )
+            except _PushRejected as pr:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: the push destination cannot be proven — "
+                                        f"{pr.reason}: {pr.detail} (E10-RP2.2-R2A §3.1)"),
+                                 error_type="PermissionError")
+            except Exception as e:  # noqa: BLE001
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=(f"git_push refused: push destination resolution failed: "
+                                        f"{type(e).__name__}: {e} (E10-RP2.2-R2A §3.1)"),
+                                 error_type="PermissionError")
 
             try:
                 ok, reason = registry.verify_and_consume(
@@ -1445,6 +1626,7 @@ class ToolExecutor:
                     branch=branch,
                     commit_sha=head_sha,
                     remote=remote,
+                    push_url=canonical_push_url,
                     force=force,
                 )
             except Exception as e:
@@ -1457,20 +1639,25 @@ class ToolExecutor:
                                  error=f"git_push owner-approval verification failed: {reason} (E10-RP2.2-R2 §3.4)",
                                  error_type="PermissionError")
 
-            # E10-RP2.2-R2 §3.5 — force semantics FIXED: the input's force
-            # flag is now actually passed to git AND is part of the
-            # approval scope (a non-force approval cannot authorize a
-            # force push and vice versa).
-            push_args = ["push", remote, branch]
-            if force:
-                push_args.insert(1, "--force")
+            # E10-RP2.2-R2 §3.5 + R2A §3.2 — force semantics: '--force'
+            # is appended ONLY when the explicit input flag is set AND the
+            # consumed approval was signed for force=True. The branch
+            # value itself can never contribute a flag (structurally
+            # rejected above) — branch='--force' with force=False is
+            # refused long before this point. The refspec is constructed
+            # by the handler (refs/heads/<branch>:refs/heads/<branch>),
+            # never taken raw from the input, and '--' terminates option
+            # parsing: no input value can act as an option.
+            refspec = f"refs/heads/{branch}:refs/heads/{branch}"
+            push_args = ["push"] + (["--force"] if force else []) + ["--", remote, refspec]
             result = await run_git(push_args)
             if result.returncode != 0:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
                                  error=result.stderr, error_type="GitPushError")
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
                              output={"success": True, "pushed": True, "commit_hash": head_sha,
-                                     "remote_ref": f"{remote}/{branch}", "certificates": []})
+                                     "remote_ref": f"{remote}/{branch}",
+                                     "push_url": canonical_push_url, "certificates": []})
         
         raise ValueError(f"Unknown git tool: {tool_name}")
     
@@ -5377,6 +5564,21 @@ class ExecutionEngine:
                 self._update_checkpoint_human_decision(mission_id, gate_id, decision_record)
                 return True
             elif decision == "reject":
+                # E10-RP2.2-R2A §2.2 — record the REJECTION on the
+                # action-gate records for this gate_id too (parallel to the
+                # approve branch): the gate check must see a terminal
+                # 'reject' decision for the operation identity, so a
+                # rejected operation can never silently fall back to
+                # 'pending' and be re-requested as if undecided.
+                for key in list(mission.metadata.keys()):
+                    if key.startswith("action_gate_") and isinstance(mission.metadata[key], str):
+                        if mission.metadata[key] == gate_id:
+                            mission.metadata[f"{key}_decision"] = {
+                                "decision": "reject",
+                                "actor": actor,
+                                "feedback": feedback,
+                                "decided_at": datetime.now(timezone.utc).isoformat(),
+                            }
                 # Transition to CANCELLED
                 return self.cancel_mission(mission_id, actor, f"Human decision: {feedback}")
             elif decision == "request_changes":

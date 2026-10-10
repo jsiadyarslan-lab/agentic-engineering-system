@@ -1,0 +1,7 @@
+=== PROBE G4: MISSING and REVOKED grant (real bridge) — git_status, zero side effects on rejection ===
+[G4] missing grant: [PERMISSION_REJECTED] PermissionError: git operation refused fail-closed: repo_path '/tmp/r2g4-sypl03yf/repoB' resolves outside the workspace universe '/home/z
+[G4] live grant: [PERMISSION_REJECTED] PermissionError: git operation refused fail-closed: repo_path '/tmp/r2g4-sypl03yf/repoB' resolves outside the workspace universe '/home/z
+[G4] revoked grant: [PERMISSION_REJECTED] PermissionError: git operation refused fail-closed: repo_path '/tmp/r2g4-sypl03yf/repoB' resolves outside the workspace universe '/home/z
+[G4] rejected-call event delta: 0; action delta: 0
+[G4] repoB unchanged: branches='* main' log='5e29a71 seed'
+[G4 RESULT] SECURE — missing and revoked grants are fail-closed for the git family through the real bridge (rejected at the permission layer); the rejection emits no event, no action record, no git effect. OBSERVED: with a LIVE grant the call proceeds past authorization and crashes with NameError (DF1) instead of executing

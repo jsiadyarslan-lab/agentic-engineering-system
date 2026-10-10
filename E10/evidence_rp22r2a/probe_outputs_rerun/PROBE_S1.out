@@ -1,0 +1,3 @@
+=== PROBE S1: SandboxManager.execute grant semantics — 2-arg SUBJECT call ('agent'), empty-list bypass ===
+[S1] live grant in required_grant_ids: SandboxError: Invalid grants: grant-ee69b191a736
+[S1] PROBE CRASHED:

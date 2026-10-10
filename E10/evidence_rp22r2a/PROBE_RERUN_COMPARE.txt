@@ -1,0 +1,18 @@
+[OK] G1: exit 0->0 out=same err-sig=same
+[OK] G2: exit 1->1 out=same err-sig=same
+[OK] G3: exit 0->0 out=same err-sig=same
+[OK] G4: exit 0->0 out=same err-sig=same
+[OK] G5: exit 1->1 out=same err-sig=same
+[OK] G6: exit 0->0 out=same err-sig=same
+[OK] S1: exit 1->1 out=same err-sig=same
+[OK] S2: exit 0->0 out=same err-sig=same
+[OK] S3: exit 1->1 out=same err-sig=same
+[OK] S4: exit 1->1 out=same err-sig=same
+[OK] X1: exit 0->0 out=same err-sig=same
+[OK] X2: exit 0->0 out=same err-sig=same
+[OK] A1: exit 0->0 out=same err-sig=same
+[OK] A2: exit 1->1 out=same err-sig=same
+[OK] O1: exit 0->0 out=same err-sig=same
+
+exit identical: 15/15; normalized .out identical: 15/15; err signature identical: 15/15
+exit=0

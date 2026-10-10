@@ -29,6 +29,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
+import re
 import subprocess
 import time
 import uuid
@@ -57,6 +59,146 @@ class PushRejected(Exception):
         self.detail = detail
 
 
+# ----------------------------------------------------------------------
+# E10-RP2.2-R2A §3.1/§3.2 — ربط الدفع بالوجهة الفعلية + سلامة refspec/argv
+
+#: اسم remote هو اسم قسم إعدادات (remote.<name>.*), لا وسيلة git حرة:
+#: يجب أن يبدأ بحرف/رقم ثم حروف/أرقام/نقاط/شرطات سفلية وشرطات وشروط
+#: مائلة فقط. الشرطة البادئة (حقن خيارات) والمسافات ومحارف التحكم
+#: والنقطتان مستحيلة بنيويًا قبل تشغيل أي git — لا قيمة مدخلة تُفسَّر
+#: كخيار CLI (R2A §3.2).
+_REMOTE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$")
+
+#: حدود بنيوية لاسم الفرع قبل أي git — قواعد git-check-ref-format التي
+#: يمكن فحصها محليًا (المرجع النهائي يبقى ``git check-ref-format
+#: --branch`` الذي تشغله الأداة بعد هذا الفحص، والقيمة تُمرَّر كوسيط
+#: argv منفصل بعد استبعاد الشرطة البادئة بنيويًا).
+_BRANCH_FORBIDDEN_CHARS = set(" ~^:?*[")
+_BRANCH_FORBIDDEN_SUBSTRINGS = ("..", "@{", "//")
+
+
+def validate_remote_name(remote: str) -> tuple[bool, str]:
+    """فحص بنيوي لاسم remote — يمنع تفسيره كخيار CLI أو كقيمة غريبة."""
+    if not isinstance(remote, str) or not remote:
+        return False, "اسم فارغ أو ليس نصًا"
+    if remote.startswith("-"):
+        return False, "يبدأ بشرطة — لا يمكن تفسيره كخيار CLI"
+    if not _REMOTE_NAME_RE.match(remote):
+        return False, "محارف خارج مجموعة الأسماء المسموحة"
+    return True, ""
+
+
+def validate_branch_name(branch: str) -> tuple[bool, str]:
+    """فحص بنيوي لاسم فرع — الشرطة البادئة مرفوضة قبل أي git."""
+    if not isinstance(branch, str) or not branch:
+        return False, "اسم فارغ أو ليس نصًا"
+    if branch.startswith("-"):
+        return False, "يبدأ بشرطة — لا يمكن تفسيره كخيار CLI/refspec"
+    if len(branch) > 255:
+        return False, "أطول من 255 محرفًا"
+    if any(ord(c) < 32 or ord(c) == 127 for c in branch):
+        return False, "يحتوي محارف تحكم"
+    if any(c.isspace() for c in branch):
+        return False, "يحتوي مسافات"
+    if any(c in _BRANCH_FORBIDDEN_CHARS for c in branch):
+        return False, "يحتوي محرفًا ممنوعًا في أسماء المراجع"
+    if any(s in branch for s in _BRANCH_FORBIDDEN_SUBSTRINGS):
+        return False, "يحتوي تتابعًا ممنوعًا في أسماء المراجع"
+    if branch.endswith(".lock"):
+        return False, "ينتهي بـ .lock"
+    if branch.endswith("/") or branch.endswith("."):
+        return False, "ينتهي بشرطة مائلة أو نقطة"
+    if branch.startswith("/") or branch.startswith("."):
+        return False, "يبدأ بشرطة مائلة أو نقطة"
+    return True, ""
+
+
+def _looks_like_url(value: str) -> bool:
+    """هل القيمة URL (scheme:// أو scp-like host:path) لا مسارًا محليًا؟"""
+    if "://" in value:
+        return True
+    head, sep, _ = value.partition(":")
+    if sep and "/" not in head and "\\" not in head:
+        # host:path أو user@host:path — صيغة scp التي يفسّرها git كـURL
+        return True
+    return False
+
+
+def resolve_push_destination(repo_root: str | Path, remote: str) -> str:
+    """E10-RP2.2-R2A §3.1 — حل الوجهة الفعلية التي سيدفع إليها git.
+
+    تُعيد الوجهة القانونية الوحيدة (canonical) التي سيستخدمها ``git push
+    <remote>`` وقت التنفيذ، محسوبة بالطريقة نفسها التي يحسبها بها git:
+
+    - ``remote.<name>.pushurl`` إن ضُبط (يسود فوق url)، وإلا
+      ``remote.<name>.url``؛
+    - إعادة كتابة insteadOf/pushInsteadOf مطبَّقة (عبر
+      ``git remote get-url --push`` الذي يوسّعها)؛
+    - المسارات المحلية تُقيَّد إلى مسارات مطلقة مرتبطة بجذر المستودع
+      (كما تُحل فعليًا وقت الدفع الذي يجري بـcwd=جذر المستودع).
+
+    ترفض (PushRejected — fail-closed): اسم remote غير الصالح، remote غير
+    موجود/بلا وجهة، **وجهات متعددة** (pushurl متعددة أو url متعددة —
+    سيدفع git إليها جميعًا والموافقة مقيدة بوجهة واحدة موقعة)، وأي فشل
+    في الحل. لا يعتبر اسم ال remote (origin/r2remote...) دليلًا على هوية
+    الوجهة — الحجة هي الوجهة المحلولة نفسها.
+    """
+    ok, why = validate_remote_name(remote)
+    if not ok:
+        raise PushRejected("اسم remote غير صالح", f"{remote!r}: {why}")
+    repo = Path(repo_root)
+
+    def _lines(result: subprocess.CompletedProcess) -> list[str]:
+        if result.returncode != 0:
+            return []
+        return [ln.strip() for ln in result.stdout.splitlines() if ln.strip()]
+
+    pushurls = _lines(_git(repo, "config", "--get-all", f"remote.{remote}.pushurl"))
+    urls = _lines(_git(repo, "config", "--get-all", f"remote.{remote}.url"))
+
+    if pushurls:
+        # pushurl يسود كليًا فوق url عند الدفع؛ تعدده = دفع لكل الوجهات
+        if len(pushurls) > 1:
+            raise PushRejected(
+                "وجهات دفع متعددة",
+                f"{len(pushurls)} pushurl لـ{remote!r} — سيدفع git إليها "
+                "جميعًا والموافقة مقيدة بوجهة واحدة موقعة",
+            )
+    elif urls:
+        if len(urls) > 1:
+            raise PushRejected(
+                "وجهات دفع متعددة",
+                f"{len(urls)} url لـ{remote!r} بلا pushurl — سيدفع git "
+                "إليها جميعًا والموافقة مقيدة بوجهة واحدة موقعة",
+            )
+    else:
+        raise PushRejected(
+            "remote غير موجود",
+            f"لا remote.{remote}.url ولا remote.{remote}.pushurl — لا وجهة "
+            "يمكن إثباتها، والدفع مرفوض fail-closed",
+        )
+
+    resolved = _git(repo, "remote", "get-url", "--push", remote)
+    if resolved.returncode != 0 or not resolved.stdout.strip():
+        raise PushRejected(
+            "تعذر حل وجهة الدفع",
+            (resolved.stderr.strip() or "get-url --push أرجع قيمة فارغة")[:200],
+        )
+    canonical = resolved.stdout.splitlines()[0].strip()
+    if not canonical:
+        raise PushRejected("تعذر حل وجهة الدفع", "وجهة فارغة بعد الحل")
+
+    if not _looks_like_url(canonical):
+        # مسار محلي: قيّده إلى مطلق مرتبط بجذر المستودع — نفس أساس الحل
+        # الذي يستخدمه الدفع نفسه (cwd = جذر المستودع)، فتبقى القيمة
+        # القانونية مستقرة بين توقيع الموافقة والتنفيذ.
+        p = Path(canonical)
+        if not p.is_absolute():
+            p = repo / p
+        canonical = os.path.normpath(str(p))
+    return canonical
+
+
 class NonceLedger:
     """دفتر nonces — أحادية الاستخدام المفروضة بنيويًا."""
 
@@ -75,11 +217,20 @@ class NonceLedger:
 class PushApproval:
     """موافقة مالك موقعة على دفع واحد بعينه.
 
-    E10-RP2.2-R2 §3.4/§3.5 — الحقلان الجديدان ``remote`` و``force`` يُدخلان
-    في نطاق الموافقة وفي الحمولة الموقعة: الموافقة مقيدة الآن بالمستودع
+    E10-RP2.2-R2 §3.4/§3.5 — الحقلان ``remote`` و``force`` يُدخلان في نطاق
+    الموافقة وفي الحمولة الموقعة: الموافقة مقيدة الآن بالمستودع
     والـremote والفرع والالتزام وعملية الدفع نفسها (أحادية الاستخدام عبر
     الـnonce). ``remote=""`` عند التوقيع = لا remote معتمدًا — التحقق
     يرفض أي remote مطلوب (fail-closed).
+
+    E10-RP2.2-R2A §3.1 — الحقل الجديد ``push_url``: الوجهة القانونية
+    الفعلية للدفع (المحلولة بـ``resolve_push_destination`` — بعد تطبيق
+    pushurl/insteadOf/pushInsteadOf). الموافقة مرتبطة الآن بعنوان الوجهة
+    الذي وقّع عليه المالك لا باسم remote وحده؛ تغيّر الوجهة المرتبطة
+    بالاسم بعد الموافقة = رفض. ``push_url=""`` = موافقة لا تربط وجهة —
+    لا يجوز لها تفويض أي دفع (fail-closed)، وسجلات الموافقات القديمة
+    الموقعة قبل هذا الحقل يفشل توقيعها أصلًا تحت الحمولة الجديدة فلا
+    يجوز لها تفويض شيء (legacy dead-on-arrival).
     """
 
     push_id: str
@@ -93,6 +244,7 @@ class PushApproval:
     approver: str
     remote: str = ""
     force: bool = False
+    push_url: str = ""
     signature: str = ""
 
     def canonical_payload(self) -> bytes:
@@ -108,6 +260,7 @@ class PushApproval:
             "approver": self.approver,
             "remote": self.remote,
             "force": self.force,
+            "push_url": self.push_url,
         }
         return json.dumps(
             payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -133,6 +286,7 @@ class OwnerApprovalService:
         approver: str = "owner",
         remote: str = "",
         force: bool = False,
+        push_url: str = "",
         now: float | None = None,
     ) -> PushApproval:
         issued = time.time() if now is None else now
@@ -148,6 +302,7 @@ class OwnerApprovalService:
             approver=approver,
             remote=remote,
             force=force,
+            push_url=push_url,
         )
         signature = hmac.new(
             self._key, approval.canonical_payload(), hashlib.sha256
@@ -208,6 +363,7 @@ class PushApprovalRegistry:
         branch: str,
         commit_sha: str,
         remote: str,
+        push_url: str = "",
         force: bool = False,
         now: float | None = None,
     ) -> tuple[bool, str]:
@@ -233,6 +389,16 @@ class PushApprovalRegistry:
             return False, "الموافقة مقيدة بالتزام آخر — تغير HEAD بعد الموافقة"
         if not record.remote or record.remote != remote:
             return False, f"الـremote المطلوب ({remote!r}) غير معتمد في الموافقة"
+        # E10-RP2.2-R2A §3.1 — الوجهة الفعلية المحلولة وقت التنفيذ يجب أن
+        # تطابق الوجهة الموقعة حرفيًا؛ سجل بلا push_url (قديم/ناقص) لا
+        # يجوز له تفويض أي دفع (fail-closed).
+        if not record.push_url:
+            return False, "الموافقة لا تربط وجهة دفع (push_url فارغ) — لا يجوز لها تفويض أي دفع"
+        if record.push_url != push_url:
+            return False, (
+                f"وجهة الدفع الفعلية ({push_url!r}) لا تطابق الوجهة الموقعة "
+                f"({record.push_url!r}) — تغيرت الوجهة المرتبطة بالـremote أو أن الموافقة صدرت لوجهة أخرى"
+            )
         if bool(record.force) != bool(force):
             return False, f"علم force المطلوب ({force}) لا يطابق نطاق الموافقة ({record.force})"
         if not self._nonces.consume(nonce):
