@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/z/my-project/e10rp22r2x_work/E10/e10rp22r2_probes.py", line 667, in run_one
+    await probe()
+  File "/home/z/my-project/e10rp22r2x_work/E10/e10rp22r2_probes.py", line 142, in probe_g2
+    r = await engine.tool_executor.execute_tool(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2x_work/src/unified/execution.py", line 489, in execute_tool
+    raise ValueError(f"Tool not registered: {tool_name}")
+ValueError: Tool not registered: sandbox_execute

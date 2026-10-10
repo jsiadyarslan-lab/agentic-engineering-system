@@ -1,0 +1,186 @@
+{
+  "branch_file": "E10/evidence_rp22r2/REGRESSIONS_BRANCH.txt",
+  "baseline_file": "E10/evidence_rp22r2/REGRESSIONS_BASELINE_0945960.txt (copy of the throwaway-worktree run output)",
+  "baseline_commit": "0945960427e833522789903e87a64b73c207bccd",
+  "rows_compared": 17,
+  "rows": {
+    "R1 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "RP2.2 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "RP2.1 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "RP2 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "RP2 session (fresh-dir equivalent)": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "RP1 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "E10-RP matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "E10/CW1 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "E10-CW1-R1 matrix": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "E9-R": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "E8 negative gates": {
+      "exit_branch": 0,
+      "exit_baseline": 0,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "vs001+vs002+vs003+vs004+e32e (sandbox/execution layers)": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_agent_failure_preserved",
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_evidence_from_real_execution",
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_vs003_full_lifecycle"
+      ],
+      "failed_baseline": [
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_agent_failure_preserved",
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_evidence_from_real_execution",
+        "tests/unified/test_vs003.py::TestVS003AgentLifecycle::test_vs003_full_lifecycle"
+      ],
+      "failure_set_identical": true
+    },
+    "e3+e4": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [
+        "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+      ],
+      "failed_baseline": [
+        "tests/orchestrator/test_e3_canonical_orchestrator.py::TestE3CanonicalOrchestrator::test_e3_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4MissionOrchestration::test_e4_baseline_verification",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e33_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4RegressionMatrix::test_e4_e3_regression",
+        "tests/orchestrator/test_e4_multi_task_mission.py::TestE4ScopeGuards::test_e4_no_p1_p2_modification"
+      ],
+      "failure_set_identical": true
+    },
+    "e6": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+      ],
+      "failed_baseline": [
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e33_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e3_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e4_regression",
+        "tests/orchestrator/test_e6_durable_mission_orchestration.py::TestE6RegressionMatrix::test_e6_e5_regression"
+      ],
+      "failure_set_identical": true
+    },
+    "e33+e32f": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [
+        "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+      ],
+      "failed_baseline": [
+        "tests/unified/test_e33_mission_autonomy.py::TestE33MissionAutonomy::test_e33_baseline_verification"
+      ],
+      "failure_set_identical": true
+    },
+    "e35": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    },
+    "e37": {
+      "exit_branch": 1,
+      "exit_baseline": 1,
+      "exit_identical": true,
+      "failed_branch": [],
+      "failed_baseline": [],
+      "failure_set_identical": true
+    }
+  },
+  "exit_codes_identical": true,
+  "failure_sets_identical": true,
+  "overall_two_state": 0,
+  "rows_only_on_branch": [
+    "R2 matrix (new)"
+  ],
+  "note": "Non-zero rows stay DECLARED NOT GREEN (order §6.4): identical exit codes and identical failure-name sets prove NO NEW REGRESSION, not battery greenness. Rows only on the branch (the new R2 matrix) cannot exist at the baseline and are excluded from the comparison; they are green on the branch (see REGRESSIONS_BRANCH.txt).",
+  "baseline_note": "Run in throwaway worktree /home/z/my-project/r2_twostate at 0945960 (created and REMOVED after the run; R2_INCLUDE_NEW_MATRIX=0)."
+}

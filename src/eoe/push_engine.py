@@ -73,7 +73,14 @@ class NonceLedger:
 
 @dataclass(frozen=True)
 class PushApproval:
-    """موافقة مالك موقعة على دفع واحد بعينه."""
+    """موافقة مالك موقعة على دفع واحد بعينه.
+
+    E10-RP2.2-R2 §3.4/§3.5 — الحقلان الجديدان ``remote`` و``force`` يُدخلان
+    في نطاق الموافقة وفي الحمولة الموقعة: الموافقة مقيدة الآن بالمستودع
+    والـremote والفرع والالتزام وعملية الدفع نفسها (أحادية الاستخدام عبر
+    الـnonce). ``remote=""`` عند التوقيع = لا remote معتمدًا — التحقق
+    يرفض أي remote مطلوب (fail-closed).
+    """
 
     push_id: str
     repository: str
@@ -84,6 +91,8 @@ class PushApproval:
     issued_at: float
     expires_at: float
     approver: str
+    remote: str = ""
+    force: bool = False
     signature: str = ""
 
     def canonical_payload(self) -> bytes:
@@ -97,6 +106,8 @@ class PushApproval:
             "issued_at": self.issued_at,
             "expires_at": self.expires_at,
             "approver": self.approver,
+            "remote": self.remote,
+            "force": self.force,
         }
         return json.dumps(
             payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -120,6 +131,8 @@ class OwnerApprovalService:
         commit_sha: str,
         files_digest: str,
         approver: str = "owner",
+        remote: str = "",
+        force: bool = False,
         now: float | None = None,
     ) -> PushApproval:
         issued = time.time() if now is None else now
@@ -133,6 +146,8 @@ class OwnerApprovalService:
             issued_at=issued,
             expires_at=issued + self._ttl,
             approver=approver,
+            remote=remote,
+            force=force,
         )
         signature = hmac.new(
             self._key, approval.canonical_payload(), hashlib.sha256
@@ -149,6 +164,83 @@ class OwnerApprovalService:
             return False
         moment = time.time() if now is None else now
         return approval.issued_at <= moment < approval.expires_at
+
+
+class PushApprovalRegistry:
+    """E10-RP2.2-R2 §3.4/§3.5 — سجل موافقات الدفع الصادرة عن المالك.
+
+    الجسر بين أداة ``git_push`` في المحرك الموحد وآلية موافقة المالك
+    الحقيقية: المالك يوقّع موافقة (``OwnerApprovalService.sign``) ويسجلها
+    هنا؛ الأداة تقدّم ``owner_approval_nonce`` فقط، والسجل يتحقق من أن
+    الـnonce مرتبط بسجل موافقة حقيقي:
+
+    - موجود وموقّع بتوقيع صالح وغير منتهي (``OwnerApprovalService.verify``)؛
+    - مقيد بالمستودع والفرع والالتزام والـremote وعلم force المطلوبين
+         بعينهم — أي اختلاف = رفض؛
+    - غير مستخدم من قبل (``NonceLedger`` أحادي الاستخدام؛ المحاولة
+           نفسها تستهلك الموافقة — إعادة التشغيل ممنوعة).
+
+    البصمة الإضافية ``files_digest`` يتحقق منها مسار ``PushEngine`` الخاص
+    بالـEOE (نسخته المرحّلة)؛ أداة ``git_push`` الموحدة تربط الالتزام
+    نفسه (``commit_sha``) — الحقل يبقى في السجل لكنه خارج نطاق تحقق
+    الأداة (حد معلن في تقرير R2).
+    """
+
+    def __init__(self, approval_service: OwnerApprovalService, nonce_ledger: NonceLedger) -> None:
+        self._approvals = approval_service
+        self._nonces = nonce_ledger
+        self._by_nonce: dict[str, PushApproval] = {}
+
+    def register(self, approval: PushApproval) -> PushApproval:
+        """تسجيل موافقة صادرة (قناة المالك) — بالـnonce مفتاحًا."""
+        if not approval.nonce:
+            raise ValueError("لا تسجيل موافقة بلا nonce")
+        if approval.nonce in self._by_nonce:
+            raise ValueError("nonce مكرر في سجل الموافقات")
+        self._by_nonce[approval.nonce] = approval
+        return approval
+
+    def verify_and_consume(
+        self,
+        nonce: str,
+        *,
+        repository: str,
+        branch: str,
+        commit_sha: str,
+        remote: str,
+        force: bool = False,
+        now: float | None = None,
+    ) -> tuple[bool, str]:
+        """التحقق من nonce مقابل سجل موافقة حقيقي ثم استهلاكه.
+
+        تعيد ``(True, "approved")`` أو ``(False, السبب)`` — أي فشل رفض
+        صريح، والاستهلاك يحدث فقط بعد نجاح كل الفحوص (المحاولة الناجحة
+        تحرق الموافقة؛ المحاولة الفاشلة قبل الاستهلاك لا تحرقها إلا إذا
+        كان الـnonce مستهلكًا أصلًا).
+        """
+        if not nonce:
+            return False, "لا يوجد nonce"
+        record = self._by_nonce.get(nonce)
+        if record is None:
+            return False, f"nonce {nonce[:8]}… غير مسجل — لا سجل موافقة مالك حقيقي يرتبط به"
+        if not self._approvals.verify(record, now=now):
+            return False, "توقيع الموافقة غير صالح أو منتهية الصلاحية"
+        if record.repository != repository:
+            return False, f"الموافقة مقيدة بمستودع آخر ({record.repository!r} != {repository!r})"
+        if record.branch != branch:
+            return False, f"الموافقة مقيدة بفرع آخر ({record.branch!r} != {branch!r})"
+        if record.commit_sha != commit_sha:
+            return False, "الموافقة مقيدة بالتزام آخر — تغير HEAD بعد الموافقة"
+        if not record.remote or record.remote != remote:
+            return False, f"الـremote المطلوب ({remote!r}) غير معتمد في الموافقة"
+        if bool(record.force) != bool(force):
+            return False, f"علم force المطلوب ({force}) لا يطابق نطاق الموافقة ({record.force})"
+        if not self._nonces.consume(nonce):
+            return False, f"nonce {nonce[:8]}… استُهلك — الموافقة أحادية الاستخدام"
+        # الدفع المرخص بهذا الـnonce تمت مزاولته: السجل يُحرق أيضًا
+        # (دفاع بالعمق — أي محاولة لاحقة بنفس الـnonce = nonce غير مسجل).
+        self._by_nonce.pop(nonce, None)
+        return True, "approved"
 
 
 @dataclass

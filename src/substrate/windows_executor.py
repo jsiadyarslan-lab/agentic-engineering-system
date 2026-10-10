@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -658,7 +659,7 @@ class WindowsExecutor:
         }
         evidence_json = json.dumps(evidence_data, sort_keys=True)
         return hashlib.sha256(evidence_json.encode()).hexdigest()
-    
+
     def _get_termination_status(self, exit_code: int) -> str:
         """Map exit code to termination status."""
         if exit_code == 0:
@@ -669,39 +670,17 @@ class WindowsExecutor:
             return "FAILED"
 
 
-# Import required modules
-import os
-import tempfile
-import uuid
-import subprocess
-import win32pipe
-import win32file
-import win32event
-import win32con
-import win32api
-import hashlib
-import json
-import time
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from pathlib import Path
-import logging
-
-logger = logging.getLogger(__name__)
-
-# Check for pywin32
-try:
-    import win32api
-    import win32con
-    import win32job
-    import win32process
-    import win32security
-    import win32event
-    import win32file
-    import win32pipe
-    import pywintypes
-    import win32api
-    HAS_PYWIN32 = True
-except ImportError:
-    HAS_PYWIN32 = False
+# E10-RP2.2-R2 §3.4 (DF4 fix) — the duplicated UNGUARDED import block that
+# used to sit here (``import win32pipe`` / ``import win32file`` / ... at
+# module level, AFTER the guarded pywin32 try/except at the top) crashed
+# the ENTIRE module import on any non-Windows host (ModuleNotFoundError:
+# win32pipe), which made ``substrate`` — and with it the REAL EOE
+# owner-approval mechanism ``eoe.push_engine`` — UNIMPORTABLE on this
+# platform. The order §3.4 requires the real owner-approval records to be
+# wireable, so the debris block is REMOVED: everything it provided is
+# either already imported at the top of this module (os/subprocess/
+# tempfile/uuid/hashlib/json/time/dataclasses/datetime/pathlib/typing/
+# logging + logger) or is a win32 name covered by the guarded block above
+# (HAS_PYWIN32). No behavioral change on Windows; on Linux the module now
+# imports cleanly with HAS_PYWIN32=False (subprocess fallback path,
+# gated separately by E10-RP2.2-R2 §4.3 at the adapter layer).

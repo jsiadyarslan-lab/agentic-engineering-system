@@ -535,57 +535,26 @@ class BaseAgent:
         artifacts_dir: str = "/artifacts",
         **kwargs,
     ) -> SandboxExecutionRecord:
-        """Run command in sandbox via sandbox manager."""
-        if not self._context or not self._context.sandbox_manager:
-            raise RuntimeError("Sandbox manager not available")
-        from unified.domain_model import new_sandbox_id, SandboxRequest
-        from unified.sandbox import SandboxManager
-        sandbox_id = new_sandbox_id()
-        request = SandboxRequest(
-            sandbox_id=sandbox_id,
-            image=image,
-            command=command,
-            working_dir=working_dir,
-            artifacts_dir=artifacts_dir,
-            required_grant_ids=self._context.grant_ids if self._context else [],
-            **kwargs,
+        """Run command in sandbox via sandbox manager.
+
+        E10-RP2.2-R2 §4.5 — DISABLED FAIL-CLOSED. This primitive executed
+        commands through ``sandbox_manager.execute`` DIRECTLY, bypassing
+        the governed chain entirely: no ToolExecutor, no permission gate,
+        no human gate, no path/repo grounding — and with an empty
+        ``grant_ids`` list it executed with ZERO authorization even under
+        the real bridge (discovery GAP-8 sibling, probe [A2]). It had no
+        callers at the R2 baseline (dead code), so nothing legitimate
+        depends on it. Re-enable only by routing through the governed
+        chain (ToolExecutor.execute_tool) with a real grant decision.
+        """
+        raise RuntimeError(
+            "_run_in_sandbox is disabled fail-closed (E10-RP2.2-R2 §4.5): "
+            "this primitive executed sandbox commands DIRECTLY, bypassing "
+            "the governed authorization chain (permission gate, human "
+            "gate, target grounding). Route command execution through "
+            "ToolExecutor.execute_tool with a real grant decision instead."
         )
-        # Emit tool started
-        action_id = f"action-{__import__('uuid').uuid4().hex[:8]}"
-        self._emit_tool_event(
-            EventType.TOOL_STARTED,
-            tool_name="run_command",
-            action_id=action_id,
-            payload={"command": command, "sandbox_id": sandbox_id},
-        )
-        # Execute
-        record = await self._context.sandbox_manager.execute(request)
-        # Emit tool completed/failed
-        if record.exit_code == 0:
-            self._emit_tool_event(
-                EventType.TOOL_COMPLETED,
-                tool_name="run_command",
-                action_id=action_id,
-                payload={
-                    "success": True,
-                    "exit_code": record.exit_code,
-                    "duration_ms": record.duration_ms,
-                    "artifacts": record.artifacts,
-                },
-            )
-        else:
-            self._emit_tool_event(
-                EventType.TOOL_FAILED,
-                tool_name="run_command",
-                action_id=action_id,
-                payload={
-                    "success": False,
-                    "exit_code": record.exit_code,
-                    "error": f"Exit code {record.exit_code}",
-                    "duration_ms": record.duration_ms,
-                },
-            )
-        return record
+
     async def _write_artifact(self, path: str, content: bytes) -> Artifact:
         """Write artifact to sandbox."""
         if not self._context or not self._context.sandbox_manager:

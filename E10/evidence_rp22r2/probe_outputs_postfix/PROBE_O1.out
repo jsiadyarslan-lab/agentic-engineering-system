@@ -1,0 +1,4 @@
+=== PROBE O1: unified.operational parallel path — OperationalImplementerAgent run_command with ZERO grants ===
+[O1] OperationalImplementerAgent.execute(run_command): success=False
+[O1] result output: None
+[O1 RESULT] GAP-CONFIRMED (parallel legacy path) — src/unified/operational.py agents (7 classes with run_command operations) call context.sandbox_manager.execute DIRECTLY: no ToolExecutor, no contract, no grant decision (SandboxRequest built WITHOUT required_grant_ids), no human gate. Active in legacy e2x/e4x harnesses (e26/e29/run_e44/run_e48), not imported by unified production code

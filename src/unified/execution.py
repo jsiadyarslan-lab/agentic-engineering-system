@@ -20,6 +20,12 @@ import os
 import json
 import hashlib
 import shutil
+import subprocess  # E10-RP2.2-R2 §3.1 (DF1): the git family implementation
+                   # needs subprocess — previously NEVER imported, so every
+                   # git call crashed NameError AFTER passing authorization
+                   # (fail-closed by crash, not by design). This import ships
+                   # IN THE SAME CHANGE as the git authorization grounding
+                   # (order E10-RP2.2-R2 §3: the fix may NOT land alone).
 import uuid
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -517,13 +523,38 @@ class ToolExecutor:
             
             
             # 8. Validate output against contract
-            try:
-                validated_output = contract.output_schema(**tool_result.output)
-            except Exception as e:
-                # Output validation failed - treat as tool failure
-                tool_result.success = False
-                tool_result.error = f"Output validation failed: {e}"
-                tool_result.error_type = "OutputValidationError"
+            # E10-RP2.2-R2 §2.3 (DF2 fix) — a FAILED ToolResult carries NO
+            # output to validate (output=None): the output-validation step
+            # is SKIPPED for it so the ORIGINAL error is preserved and
+            # surfaced. Previously ``contract.output_schema(**None)`` raised
+            # TypeError and REPLACED the true failure reason with a masking
+            # "Output validation failed: ... NoneType" error (discovery
+            # DF2, probes [G6]/[X2]). Only a SUCCESSFUL result with a
+            # concrete output dict is validated against the contract; a
+            # failed result with a partial output dict may validate it for
+            # the audit record but NEVER overwrites the original error.
+            validated_output = None
+            if tool_result.output is None:
+                # Failure (or contract-free) result with no output payload:
+                # nothing to validate — keep the original error verbatim.
+                validated_output = None
+            elif tool_result.success:
+                try:
+                    validated_output = contract.output_schema(**tool_result.output)
+                except Exception as e:
+                    # Output validation failed on a SUCCESSFUL result - a
+                    # real contract violation: treat as tool failure.
+                    tool_result.success = False
+                    tool_result.error = f"Output validation failed: {e}"
+                    tool_result.error_type = "OutputValidationError"
+            else:
+                # Failed result carrying a partial output payload: validate
+                # it only for the audit record; any violation is recorded
+                # but the ORIGINAL error message is never masked.
+                try:
+                    validated_output = contract.output_schema(**tool_result.output)
+                except Exception:
+                    validated_output = None
             
             # 9. Emit ActionValidatedEvent
             self._emit_action_validated(context, action_id, tool_name, tool_result.success, 
@@ -532,7 +563,7 @@ class ToolExecutor:
             # 10. Update Action record
             action.completed_at = datetime.now(timezone.utc)
             action.success = tool_result.success
-            action.output = validated_output.model_dump() if tool_result.success else None
+            action.output = validated_output.model_dump() if (tool_result.success and validated_output is not None) else None
             action.error = tool_result.error
             action.evidence_id = tool_result.evidence_id
             action.sandbox_id = tool_result.artifacts[0] if tool_result.artifacts else context.sandbox_id
@@ -588,6 +619,90 @@ class ToolExecutor:
         "read_file", "write_file", "edit_file",
         "list_dir", "grep", "find_files", "file_browser",
     })
+
+    # E10-RP2.2-R2 §3.2/§3.3 — the GIT family joins the governed set with a
+    # REPO-level target: the protected object of a git operation is the
+    # repository itself (its refs, index, and object database), so the
+    # authorization decision is grounded to the RESOLVED REPO ROOT, not to
+    # individual files. Permission mapping (order §3.3): git_status /
+    # git_diff present a READ decision; git_branch / git_commit present a
+    # WRITE decision; git_push additionally requires ADMIN (unattainable
+    # under the EOE grant policy — fail-closed by design) AND the
+    # owner-approval nonce binding of §3.4-§3.6.
+    _REPO_GROUNDED_TOOLS = frozenset({
+        "git_branch", "git_commit", "git_diff", "git_status", "git_push",
+    })
+
+    #: Bounded walk-up guard for the structural repo-root resolution.
+    _MAX_REPO_WALK = 64
+
+    @staticmethod
+    def _ground_repo_root(workspace_root: Optional[str], repo_path: Optional[str]) -> Path:
+        """E10-RP2.2-R2 §3.2 — resolve ``repo_path`` to its REPO ROOT and
+        PROVE structural containment inside the workspace universe.
+
+        Structural resolution only (pathlib walk-up to a ``.git`` marker) —
+        NO git subprocess runs before the authorization decision. Fail-closed
+        (PermissionError) when: the workspace universe is unset, the target
+        is underivable, the target escapes the workspace universe, or no
+        repository root is found on the walk-up. The returned repo root is
+        the target presented to the path-aware grant validator (a repo-
+        scoped grant must cover the REPO ROOT — the operation is repo-wide,
+        so a deeper subdirectory grant does not authorize it).
+        """
+        if not workspace_root:
+            raise PermissionError(
+                "git operation refused fail-closed: no workspace_root is "
+                "wired, so no authorized repo universe exists to ground the "
+                "target (E10-RP2.2-R2 §3.2)"
+            )
+        try:
+            ws = Path(workspace_root).resolve()
+        except Exception:
+            raise PermissionError(
+                "git operation refused fail-closed: workspace_root cannot be "
+                "resolved (E10-RP2.2-R2 §3.2)"
+            )
+        raw = repo_path if repo_path else str(ws)
+        try:
+            candidate = Path(raw)
+            if not candidate.is_absolute():
+                candidate = ws / candidate
+            candidate = candidate.resolve()
+        except Exception:
+            raise PermissionError(
+                f"git operation refused fail-closed: repo_path {raw!r} "
+                "cannot be resolved to a concrete target (E10-RP2.2-R2 §3.2)"
+            )
+        # The candidate itself must sit inside the workspace universe — an
+        # absolute repo_path pointing elsewhere (e.g. /etc, /tmp) is an
+        # escape attempt, rejected BEFORE any git effect.
+        if not (candidate == ws or candidate.is_relative_to(ws)):
+            raise PermissionError(
+                f"git operation refused fail-closed: repo_path {raw!r} "
+                f"resolves outside the workspace universe {str(ws)!r} "
+                "(E10-RP2.2-R2 §3.2)"
+            )
+        # Structural walk-up to the repository root (.git file or dir —
+        # worktrees use a .git pointer file; both count).
+        probe = candidate
+        for _ in range(ToolExecutor._MAX_REPO_WALK):
+            if (probe / ".git").exists():
+                if not (probe == ws or probe.is_relative_to(ws)):
+                    raise PermissionError(
+                        f"git operation refused fail-closed: repository root "
+                        f"{str(probe)!r} containing {raw!r} escapes the "
+                        f"workspace universe {str(ws)!r} (E10-RP2.2-R2 §3.2)"
+                    )
+                return probe
+            if probe.parent == probe:
+                break
+            probe = probe.parent
+        raise PermissionError(
+            f"git operation refused fail-closed: repo_path {raw!r} is not "
+            "inside a git repository — no derivable repo target "
+            "(E10-RP2.2-R2 §3.2)"
+        )
 
     @staticmethod
     def _contained_write_target(
@@ -706,9 +821,17 @@ class ToolExecutor:
         when their 2-arg form returns True (the RP2.1/RP2.2 "fixtures
         only" acceptance is overruled by this order), and an underivable
         ``actual_target`` is rejected with NO fallback to the coarse
-        kind/scope gateway. The coarse 2-arg form remains a final
-        decision only for tools WITHOUT a concrete path (git family, web,
-        grants — declared post-R1 boundary).
+        kind/scope gateway.
+
+        E10-RP2.2-R2 §3.2/§3.3 (git family grounding): the git family
+        joins the governed set at REPO granularity — ``repo_path`` is
+        resolved to its structural repo root, proven contained inside the
+        workspace universe, and the REPO ROOT is presented to the
+        path-aware validator as the operation's concrete target
+        (read-ops ↔ read, write-ops ↔ write per the order §3.3). The
+        post-R1 coarse boundary for the git family is CLOSED: a git
+        operation can never again end at the 2-arg kind gate as its
+        final authorization decision.
         """
         required = contract.required_permissions
         if not required:
@@ -721,6 +844,7 @@ class ToolExecutor:
         # folder, and no `performed` journal record).
         actual_target: Optional[str] = None
         path_bearing = contract.name in self._PATH_BEARING_TOOLS
+        repo_grounded = contract.name in self._REPO_GROUNDED_TOOLS
         if tool_input is not None and path_bearing:
             if contract.name in self._WORKSPACE_PATH_TOOLS:
                 # E10-RP2.2 §2.2/§2.3 — workspace tools ground the ACTUAL
@@ -739,6 +863,15 @@ class ToolExecutor:
                         self.engine.artifacts_base_dir, sandbox_id, rel_path
                     )
                     actual_target = str(target)
+        elif tool_input is not None and repo_grounded:
+            # E10-RP2.2-R2 §3.2 — git operations ground their REPO ROOT
+            # (structural walk-up, no git subprocess) into the grant
+            # decision; uncontained/underivable repo targets are refused
+            # fail-closed by the grounding helper itself.
+            repo_root = self._ground_repo_root(
+                context.workspace_root, tool_input.get("repo_path")
+            )
+            actual_target = str(repo_root)
 
         # Check if agent has grants covering required permissions
         if not context.grant_validator:
@@ -747,32 +880,34 @@ class ToolExecutor:
 
         path_aware = bool(getattr(context.grant_validator, "__path_aware__", False))
 
-        # E10-RP2.2-R1 §2.1 — FAIL-CLOSED: for a path-bearing tool the
-        # FINAL authorization decision may NEVER rest on a validator that
-        # is not path-aware. A legacy 2-arg validator (even one returning
-        # True) cannot decide path scope or depth, so it must be rejected
-        # here — before any event, journal record, or side effect.
-        if path_bearing and not path_aware:
+        # E10-RP2.2-R1 §2.1 / E10-RP2.2-R2 §3.2 — FAIL-CLOSED: for a
+        # path-bearing OR repo-grounded tool the FINAL authorization
+        # decision may NEVER rest on a validator that is not path-aware.
+        # A legacy 2-arg validator (even one returning True) cannot decide
+        # path/repo scope or depth, so it must be rejected here — before
+        # any event, journal record, or side effect.
+        if (path_bearing or repo_grounded) and not path_aware:
             raise PermissionError(
                 f"Tool {contract.name} requires a path-aware grant "
                 "validator (__path_aware__) for its concrete target; the "
                 "configured validator is not path-aware — refused "
-                "fail-closed (E10-RP2.2-R1 §2.1)"
+                "fail-closed (E10-RP2.2-R1 §2.1 / E10-RP2.2-R2 §3.2)"
             )
 
-        # E10-RP2.2-R1 §2.2 — FAIL-CLOSED: a path-bearing operation whose
-        # concrete contained target cannot be derived is refused. There is
-        # NO fallback to the coarse kind/scope gateway (the 2-arg
+        # E10-RP2.2-R1 §2.2 / E10-RP2.2-R2 §3.2 — FAIL-CLOSED: a
+        # path-bearing or repo-grounded operation whose concrete contained
+        # target cannot be derived is refused. There is NO fallback to the
+        # coarse kind/scope gateway (the 2-arg
         # ``grant_validator(grant_id, perm)`` form) — even when the
         # validator IS path-aware but cannot verify this operation's
         # target, the operation is rejected before any side effect.
-        if path_bearing and actual_target is None:
+        if (path_bearing or repo_grounded) and actual_target is None:
             raise PermissionError(
                 f"Tool {contract.name} requires a concrete contained "
                 "target for a path-scoped authorization decision; no "
                 "valid actual_target could be derived for this operation "
                 "— refused fail-closed with no fallback to the coarse "
-                "kind gate (E10-RP2.2-R1 §2.2)"
+                "kind gate (E10-RP2.2-R1 §2.2 / E10-RP2.2-R2 §3.2)"
             )
 
         for perm in required:
@@ -787,11 +922,12 @@ class ToolExecutor:
                         has_perm = True
                         break
                 elif context.grant_validator(grant_id, perm):
-                    # E10-RP2.2-R1 §2.3 — the coarse 2-arg form is a final
-                    # decision ONLY for tools WITHOUT a concrete path
-                    # (git family, web, grants — the declared post-R1
-                    # boundary). Path-bearing tools can never reach this
-                    # branch: §2.1/§2.2 above already rejected them.
+                    # E10-RP2.2-R1 §2.3 / E10-RP2.2-R2 §3.2 — the coarse
+                    # 2-arg form is a final decision ONLY for tools
+                    # WITHOUT a concrete target (web, grants — the
+                    # declared post-R2 boundary). Path-bearing AND
+                    # repo-grounded tools can never reach this branch:
+                    # the fail-closed rules above already rejected them.
                     has_perm = True
                     break
             if not has_perm:
@@ -817,22 +953,56 @@ class ToolExecutor:
         Check if human gate required for this action (E9-12).
         
         High-risk (HIGH/CRITICAL) tools require human approval before execution.
+
+        E10-RP2.2-R2 §2.1 — FAIL-CLOSED on mission lookup: a HIGH/CRITICAL
+        tool invoked with a mission_id that is NOT registered in
+        ``engine.missions`` is REJECTED (PermissionError) — previously the
+        gate was silently SKIPPED and the operation executed (discovery
+        GAP-5, probe [X1]). A missing mission can never waive a required
+        human approval.
+
+        E10-RP2.2-R2 §2.2 — ACTION-SCOPED approval binding: a recorded
+        approval authorizes ONLY the same tool AND the same operation
+        inputs (canonical input digest captured at gate creation). The
+        mission-wide "approved once for this tool name" carry-over is
+        CLOSED: a different action, a different input payload, or a legacy
+        approval record with no input digest all require a NEW gate
+        decision. (For git_push this binds the approval to the push
+        operation itself — order §3.5: repo/remote/branch/force/nonce are
+        all inside the digested input.)
         """
         if contract.risk_level not in (ToolRiskLevel.HIGH, ToolRiskLevel.CRITICAL):
             return
         
         mission = self.engine.missions.get(context.mission_id)
         if not mission:
-            return
-        
-        # Check if there's already an APPROVED gate for this tool (from any action)
+            # E10-RP2.2-R2 §2.1 — the mission-lookup miss is a REJECTION,
+            # not a silent gate skip. An unregistered mission_id can never
+            # waive a HIGH/CRITICAL human approval.
+            raise PermissionError(
+                f"Human gate required for {tool_name} "
+                f"({contract.risk_level.value}) but mission "
+                f"{context.mission_id!r} is not registered in the engine — "
+                "refused fail-closed instead of silently skipping the gate "
+                "(E10-RP2.2-R2 §2.1)"
+            )
+
+        # E10-RP2.2-R2 §2.2 — canonical digest of THIS operation's inputs;
+        # approvals bind to (tool, input digest), never mission-wide.
+        input_digest = self._gate_input_digest(validated_input)
+
+        # Check if there's already an APPROVED gate for this tool covering
+        # EXACTLY THESE INPUTS (E10-RP2.2-R2 §2.2). A legacy record with no
+        # input digest cannot authorize a new operation.
         for key, value in mission.metadata.items():
             if key.startswith(f"action_gate_{tool_name}_") and isinstance(value, str):
                 decision_key = f"{key}_decision"
                 decision = mission.metadata.get(decision_key)
                 if decision and decision.get("decision") == "approve":
-                    # Already approved for this tool - allow execution
-                    return
+                    approved_digest = mission.metadata.get(f"{key}_input_digest")
+                    if approved_digest == input_digest:
+                        # Approved for THIS tool AND THESE inputs — allow.
+                        return
         
         # Check if there's already a human gate for this action
         gate_key = f"action_gate_{tool_name}_{action_id}"
@@ -843,7 +1013,15 @@ class ToolExecutor:
             if decision:
                 if decision.get("decision") != "approve":
                     raise PermissionError(f"Human gate rejected for {tool_name}: {decision.get('feedback', 'Not approved')}")
-                return  # Approved, continue
+                if mission.metadata.get(f"{gate_key}_input_digest") != input_digest:
+                    # Same action id re-entered with DIFFERENT inputs — the
+                    # recorded approval does not cover this payload.
+                    raise PermissionError(
+                        f"Human gate approval for {tool_name} does not "
+                        "cover the current operation inputs — a new "
+                        "approval is required (E10-RP2.2-R2 §2.2)"
+                    )
+                return  # Approved for exactly this operation, continue
             else:
                 # Gate exists but no decision yet - wait
                 raise PermissionError(f"Human gate pending for {tool_name}. Awaiting decision.")
@@ -871,12 +1049,29 @@ class ToolExecutor:
             requested_by="execution_engine",
         )
         
-        # Store gate reference
+        # Store gate reference + the operation input digest the approval
+        # will be bound to (E10-RP2.2-R2 §2.2).
         mission.metadata[gate_key] = gate_id
+        mission.metadata[f"{gate_key}_input_digest"] = input_digest
         
         # Wait for human decision (this will pause execution)
         # The engine will resume when human decides
         raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+
+    @staticmethod
+    def _gate_input_digest(validated_input: BaseModel) -> str:
+        """E10-RP2.2-R2 §2.2 — canonical digest binding a human-gate
+        approval to the exact operation inputs it approved. Deterministic
+        across retries of the SAME operation (sorted-key JSON of the
+        validated input model)."""
+        try:
+            payload = validated_input.model_dump()
+        except Exception:
+            payload = {"repr": repr(validated_input)}
+        canonical = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), default=str
+        )
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     
     async def _execute_implementation(
         self,
@@ -1104,8 +1299,22 @@ class ToolExecutor:
         validated_input: BaseModel,
         action_id: str,
     ) -> ToolResult:
-        """Execute git tools."""
-        repo_path = Path(validated_input.repo_path or context.workspace_root).resolve()
+        """Execute git tools.
+
+        E10-RP2.2-R2 §3.2 — the working repository is the REPO ROOT derived
+        by the SAME structural grounding used by the authorization gate
+        (``_ground_repo_root``): authorization and implementation can never
+        disagree about the target. E10-RP2.2-R2 §3.4-§3.6 — git_push is
+        fail-closed DISABLED unless the owner_approval_nonce is verified
+        against a REAL owner-issued approval record (signature + TTL +
+        single-use + repo/remote/branch/commit/force scope) through the
+        engine's ``push_approval_registry``; with no registry wired the
+        push is refused outright.
+        """
+        repo_root = self._ground_repo_root(
+            context.workspace_root, getattr(validated_input, "repo_path", None)
+        )
+        repo_path = repo_root
         
         async def run_git(args: List[str]) -> subprocess.CompletedProcess:
             return await asyncio.get_event_loop().run_in_executor(
@@ -1125,16 +1334,19 @@ class ToolExecutor:
                 branches = [b.strip().lstrip("* ").strip() for b in result.stdout.splitlines() if b.strip()]
                 current = await run_git(["branch", "--show-current"])
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                                 output={"branches": branches, "current": current.stdout.strip(), "created": None})
+                                 output={"success": True, "branches": branches,
+                                         "current": current.stdout.strip(), "created": None})
             elif action == "create":
                 result = await run_git(["branch", validated_input.branch_name, validated_input.start_point or "HEAD"])
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=result.returncode==0,
-                                 output={"branches": [validated_input.branch_name], "created": result.returncode==0},
+                                 output={"success": result.returncode==0,
+                                         "branches": [validated_input.branch_name],
+                                         "created": result.returncode==0},
                                  error=result.stderr if result.returncode != 0 else None)
             elif action == "delete":
                 result = await run_git(["branch", "-d", validated_input.branch_name])
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=result.returncode==0,
-                                 output={"branches": [], "created": False},
+                                 output={"success": result.returncode==0, "branches": [], "created": False},
                                  error=result.stderr if result.returncode != 0 else None)
             else:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
@@ -1166,7 +1378,8 @@ class ToolExecutor:
             # Get stats
             stat_result = await run_git(["show", "--stat", "--oneline", commit_hash])
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"commit_hash": commit_hash, "files_changed": 0, "insertions": 0, "deletions": 0})
+                             output={"success": True, "commit_hash": commit_hash,
+                                     "files_changed": 0, "insertions": 0, "deletions": 0})
         
         elif tool_name == "git_diff":
             args = ["diff"]
@@ -1176,7 +1389,7 @@ class ToolExecutor:
                 args.append(validated_input.file_path)
             result = await run_git(args)
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"diff": result.stdout, "files_changed": 0})
+                             output={"success": True, "diff": result.stdout, "files_changed": 0})
         
         elif tool_name == "git_status":
             result = await run_git(["status", "--porcelain"])
@@ -1186,21 +1399,78 @@ class ToolExecutor:
             unstaged = [l[3:] for l in lines if l.startswith(" ")]
             untracked = [l[3:] for l in lines if l.startswith("??")]
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"clean": clean, "staged": staged, "unstaged": unstaged, "untracked": untracked})
+                             output={"success": True, "clean": clean, "staged": staged,
+                                     "unstaged": unstaged, "untracked": untracked})
         
         elif tool_name == "git_push":
-            # CRITICAL - requires owner_approval_nonce
-            if not hasattr(validated_input, 'owner_approval_nonce') or not validated_input.owner_approval_nonce:
+            # E10-RP2.2-R2 §3.4-§3.6 — CRITICAL: push is DISABLED
+            # fail-closed unless owner_approval_nonce is bound to a REAL
+            # owner-issued approval record: valid (HMAC signature + TTL),
+            # UNUSED (single-use nonce ledger), and scoped to exactly THIS
+            # repository, remote, branch, commit, and operation (force
+            # flag). A nonce PRESENCE check alone authorizes nothing
+            # (discovery GAP-2, probe [G6]).
+            nonce = getattr(validated_input, "owner_approval_nonce", None)
+            if not nonce:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
-                                 error="git_push requires owner_approval_nonce", error_type="PermissionError")
-            
-            result = await run_git(["push", validated_input.remote or "origin", 
-                                   validated_input.branch or "HEAD"])
+                                 error="git_push requires owner_approval_nonce bound to a real owner-issued approval record (E10-RP2.2-R2 §3.4)",
+                                 error_type="PermissionError")
+
+            registry = getattr(self.engine, "push_approval_registry", None)
+            if registry is None:
+                # E10-RP2.2-R2 §3.6 — no verifiable owner-approval
+                # mechanism is wired: the push does not happen.
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error="git_push disabled fail-closed: no owner-approval registry is wired, so no owner approval can be verified (E10-RP2.2-R2 §3.4/§3.6)",
+                                 error_type="PermissionError")
+
+            # Bind the approval to THIS push: the repository's current
+            # HEAD commit is part of the approval scope (the owner
+            # approved pushing THIS commit, not "whatever is at HEAD").
+            head_result = await run_git(["rev-parse", "HEAD"])
+            if head_result.returncode != 0:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"git_push cannot read HEAD: {head_result.stderr.strip()[:200]}",
+                                 error_type="GitPushError")
+            head_sha = head_result.stdout.strip()
+
+            remote = validated_input.remote or "origin"
+            branch = validated_input.branch or "HEAD"
+            force = bool(getattr(validated_input, "force", False))
+
+            try:
+                ok, reason = registry.verify_and_consume(
+                    nonce,
+                    repository=str(repo_root),
+                    branch=branch,
+                    commit_sha=head_sha,
+                    remote=remote,
+                    force=force,
+                )
+            except Exception as e:
+                # Any registry failure = rejection, never a bypass.
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"git_push owner-approval verification failed: {type(e).__name__}: {e} (E10-RP2.2-R2 §3.4)",
+                                 error_type="PermissionError")
+            if not ok:
+                return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
+                                 error=f"git_push owner-approval verification failed: {reason} (E10-RP2.2-R2 §3.4)",
+                                 error_type="PermissionError")
+
+            # E10-RP2.2-R2 §3.5 — force semantics FIXED: the input's force
+            # flag is now actually passed to git AND is part of the
+            # approval scope (a non-force approval cannot authorize a
+            # force push and vice versa).
+            push_args = ["push", remote, branch]
+            if force:
+                push_args.insert(1, "--force")
+            result = await run_git(push_args)
             if result.returncode != 0:
                 return ToolResult(action_id=action_id, tool_name=tool_name, success=False,
                                  error=result.stderr, error_type="GitPushError")
             return ToolResult(action_id=action_id, tool_name=tool_name, success=True,
-                             output={"pushed": True, "commit_hash": "", "remote_ref": "", "certificates": []})
+                             output={"success": True, "pushed": True, "commit_hash": head_sha,
+                                     "remote_ref": f"{remote}/{branch}", "certificates": []})
         
         raise ValueError(f"Unknown git tool: {tool_name}")
     
@@ -1353,6 +1623,12 @@ class ExecutionEngine:
         max_retries: int = 3,
         max_artifacts_per_run: int = 100,
         grant_ids: Optional[List[str]] = None,
+        # E10-RP2.2-R2 §3.4 — owner-approval registry for git_push: the
+        # REAL owner-issued approval records (eoe.push_engine).
+        # None (default) = git_push stays DISABLED fail-closed: with no
+        # registry wired no owner approval can be VERIFIED, so no push is
+        # allowed at all (order §3.6).
+        push_approval_registry: Optional[Any] = None,
     ):
         self.sandbox_backend = sandbox_backend
         self.artifacts_base_dir = artifacts_base_dir or os.path.join(
@@ -1368,6 +1644,11 @@ class ExecutionEngine:
         # stays fail-closed with real validators. Real deployments inject
         # the owner-approved EOE grant ids here.
         self.grant_ids = grant_ids
+        # E10-RP2.2-R2 §3.4/§3.6 — owner-approval registry for git_push
+        # (eoe.push_engine.PushApprovalRegistry). None keeps git_push
+        # fail-closed DISABLED: no registry ⇒ no verifiable owner
+        # approval ⇒ no push.
+        self.push_approval_registry = push_approval_registry
         # Resource quotas
         self.max_concurrent_missions = max_concurrent_missions
         self.max_concurrent_tasks = max_concurrent_tasks
@@ -1428,10 +1709,14 @@ class ExecutionEngine:
     def _populate_tool_registry(self) -> None:
         """Populate tool registry with all standard contracts."""
         # ToolRegistry is already pre-populated with ALL_TOOL_CONTRACTS in its __init__
-        # Just verify all contracts are present
+        # Just verify all contracts are present.
+        # E10-RP2.2-R2 §4.4 — "sandbox_execute" is deliberately ABSENT from
+        # this expected list: the contract was unregistered (registered-but-
+        # unimplemented, discovery GAP-6). Its absence is now VERIFIED here
+        # so an accidental re-registration cannot slip through silently.
         expected = [
             "read_file", "write_file", "edit_file", "list_dir", "grep", "find_files", "file_browser",
-            "run_command", "sandbox_execute",
+            "run_command",
             "artifact_write", "artifact_read",
             "verification_check",
             "git_branch", "git_commit", "git_diff", "git_status", "git_push",
@@ -1441,6 +1726,11 @@ class ExecutionEngine:
         for name in expected:
             if not self.tool_registry.get(name):
                 raise ValueError(f"Missing tool contract: {name}")
+        if self.tool_registry.get("sandbox_execute"):
+            raise ValueError(
+                "sandbox_execute must NOT be registered (E10-RP2.2-R2 §4.4: "
+                "registered-but-unimplemented contract removed from the registry)"
+            )
     
     # --- Mission Lifecycle ---
     def create_mission(self, user_request: str) -> Mission:

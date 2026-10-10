@@ -255,7 +255,32 @@ class SandboxManager:
         """
         Execute request in sandbox.
         Enforces: single execute per sandbox_id, image allowlist, limits, grants.
+
+        E10-RP2.2-R2 §4.1/§4.2 — BEFORE anything else: the sandbox_id is
+        structurally validated (a traversal sandbox_id must leave ZERO
+        directories anywhere) and an EMPTY ``required_grant_ids`` list is a
+        REJECTION. Previously an empty list SKIPPED the grant decision
+        entirely and the command executed with zero authorization
+        (discovery GAP-3, probes [S1]/[A2]); the execute path was also
+        left outside the RP2.2 §3.1 sandbox_id validation (GAP-7, [S2]).
+        No documented tool-contract exception to the grant requirement
+        exists, so the refusal is uniform.
         """
+        # E10-RP2.2-R2 §4.2 — structural sandbox_id validation BEFORE any
+        # join/makedirs can happen anywhere downstream (the adapter
+        # re-validates defense-in-depth). Fail-closed, zero disk trace.
+        validate_sandbox_id(request.sandbox_id)
+
+        # E10-RP2.2-R2 §4.1 — an EMPTY required_grant_ids list is no longer
+        # a bypass of the grant decision: an ungranted execution is
+        # refused fail-closed (no authorized exception class exists).
+        if not request.required_grant_ids:
+            raise SandboxError(
+                f"EMPTY_GRANT_IDS: sandbox execute for {request.sandbox_id!r} "
+                "carried an empty required_grant_ids list — an execution with "
+                "no grant decision is refused fail-closed (E10-RP2.2-R2 §4.1)"
+            )
+
         # Check single execute per sandbox_id
         if request.sandbox_id in self._active or request.sandbox_id in self._completed:
             raise SandboxError(f"Sandbox {request.sandbox_id} already used")

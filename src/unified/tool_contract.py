@@ -764,7 +764,18 @@ ALL_TOOL_CONTRACTS: Dict[str, ToolContract] = {
     "web_fetch": WEB_FETCH_CONTRACT,
 
     # Sandbox (EAS v2)
-    "sandbox_execute": SANDBOX_EXECUTE_CONTRACT,
+    # E10-RP2.2-R2 §4.4 — "sandbox_execute" is UNREGISTERED (removed from
+    # the registry) until a real handler exists that fulfils its contract:
+    # grant consumption (required_grant_ids), structural sandbox_id
+    # validation, single-use lifecycle, and a backend that proves the
+    # contract's isolation. It was registered-but-unimplemented: the engine
+    # had NO handler for it, and its real failure ("Unknown tool") was
+    # MASKED by the DF2 output-validation crash (discovery GAP-6, probe
+    # [X2]). The contract definition (SANDBOX_EXECUTE_CONTRACT) is kept
+    # below as a dormant definition for a future order that implements the
+    # handler — but it is NOT reachable through the registry or
+    # execute_tool. Any call now fails closed at contract lookup:
+    # "Tool not registered: sandbox_execute".
     "artifact_write": ARTIFACT_WRITE_CONTRACT,
     "artifact_read": ARTIFACT_READ_CONTRACT,
     "verification_check": VERIFICATION_CHECK_CONTRACT,

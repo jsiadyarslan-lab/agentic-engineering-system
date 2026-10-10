@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/z/my-project/e10rp22r2x_work/E10/e10rp22r2_probes.py", line 667, in run_one
+    await probe()
+  File "/home/z/my-project/e10rp22r2x_work/E10/e10rp22r2_probes.py", line 244, in probe_g5
+    r = await engine.tool_executor.execute_tool(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/z/my-project/e10rp22r2x_work/src/unified/execution.py", line 505, in execute_tool
+    await self._check_human_gate(context, contract, tool_name, validated_input, action_id)
+  File "/home/z/my-project/e10rp22r2x_work/src/unified/execution.py", line 1059, in _check_human_gate
+    raise PermissionError(f"Human gate created for {tool_name}. Execution paused awaiting approval.")
+PermissionError: Human gate created for run_command. Execution paused awaiting approval.

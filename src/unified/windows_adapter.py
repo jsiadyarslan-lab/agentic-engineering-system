@@ -57,6 +57,16 @@ class WindowsExecutorAdapter:
         default_max_processes: int = 100,
         default_wall_time_seconds: int = 300,
         artifacts_base_dir: Optional[str] = None,
+        # E10-RP2.2-R2 §4.3 — the unisolated host-subprocess fallback is
+        # an EXPLICITLY-DECLARED DEGRADED MODE, refused by default. When
+        # pywin32 (Job Objects) is unavailable AND this flag is False
+        # (the default), execute() REFUSES the command fail-closed: no
+        # backend that proves the required isolation is available. The
+        # previous behavior executed the command as a plain host
+        # subprocess (full os.environ, arbitrary working_dir, no
+        # filesystem/network isolation) while the contract advertised a
+        # sandbox (discovery GAP-4, probe [S4]).
+        allow_host_subprocess_fallback: bool = False,
     ):
         self.default_memory_bytes = default_memory_bytes
         self.default_cpu_percent = default_cpu_percent
@@ -64,6 +74,7 @@ class WindowsExecutorAdapter:
         self.default_max_processes = default_max_processes
         self.default_wall_time_seconds = default_wall_time_seconds
         self.artifacts_base_dir = artifacts_base_dir or os.path.join(tempfile.gettempdir(), "unified_artifacts")
+        self.allow_host_subprocess_fallback = allow_host_subprocess_fallback
         
         # Ensure artifacts directory exists
         os.makedirs(self.artifacts_base_dir, exist_ok=True)
@@ -91,8 +102,34 @@ class WindowsExecutorAdapter:
         return True  # Always available (falls back to subprocess)
     
     async def execute(self, request: SandboxRequest) -> SandboxExecutionRecord:
-        """Execute command in sandbox with resource limits."""
+        """Execute command in sandbox with resource limits.
+
+        E10-RP2.2-R2 §4.2 — the sandbox_id is structurally validated BEFORE
+        the artifacts join/makedirs: a traversal sandbox_id previously
+        created directories OUTSIDE the artifacts base right here
+        (discovery GAP-7, probe [S2]). A rejected request now leaves zero
+        directories anywhere.
+
+        E10-RP2.2-R2 §4.3 — when no isolation-proving backend is available
+        (pywin32 absent) the command is REFUSED fail-closed unless the
+        host-subprocess fallback was EXPLICITLY enabled as a declared
+        degraded mode at construction.
+        """
+        # E10-RP2.2-R2 §4.2 — BEFORE any join or makedirs.
+        validate_sandbox_id(request.sandbox_id)
         sandbox_id = request.sandbox_id
+
+        # E10-RP2.2-R2 §4.3 — refuse the unisolated host fallback by default.
+        if not self._has_pywin32 and not self.allow_host_subprocess_fallback:
+            raise SandboxUnavailableError(
+                "HOST_SUBPROCESS_FALLBACK_DISABLED: no backend proving the "
+                "required isolation is available (pywin32 Job Objects absent) "
+                "and the unisolated host-subprocess fallback is disabled by "
+                "default — execution refused fail-closed; wire an isolation-"
+                "proving backend or explicitly declare the degraded mode "
+                "(E10-RP2.2-R2 §4.3)"
+            )
+
         artifacts_dir = os.path.join(self.artifacts_base_dir, sandbox_id)
         os.makedirs(artifacts_dir, exist_ok=True)
         
