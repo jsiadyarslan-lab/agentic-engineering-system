@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/z/my-project/order0139_run/src/substrate/__init__.py", line 4, in <module>
+    from .windows_executor import WindowsExecutor, ExecutionLimits, ExecutionResult
+  File "/home/z/my-project/order0139_run/src/substrate/windows_executor.py", line 677, in <module>
+    import win32pipe
+ModuleNotFoundError: No module named 'win32pipe'

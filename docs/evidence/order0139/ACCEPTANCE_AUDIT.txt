@@ -1,0 +1,19 @@
+# تدقيق القبول البرمجي §5 — commit 73d8e4701b67dc723350e89e67171e70e209f232 (2026-10-11T19:45:49Z)
+# الخادم أُقيل بالطريقة الحرفية من README (uvicorn api.routes:app --port 8010) على worktree نظيف عند الكوميت
+
+PASS A1 verify.status == READY
+PASS A2 all 9 named checks ok (boot/execute/write/read/delete/cwd/arch/isolation/capture)
+PASS A3 network blocked inside sandbox (netns بلا واجهات)
+PASS B1 test-run عبر مسار المنتج: ok/exit0/COMPLETED
+PASS B2 cwd داخل العزل (/tmp بعد pivot_root)
+PASS B3 كتابة/قراءة/حذف ملف داخل العزل
+PASS B4 worker_id=local-sandbox:1 وboundary=POSIX_PROCESS
+PASS B5 تكرار حتمي (ok/exit0)
+PASS C1 STRICT_ISOLATED يرفض قبل التحقق (لا بيئة READY — بلا سقوط لوضع متوافق)
+PASS C2 فجوة مفردات HEALTHY/READY موثقة (عيب قائم مكتشف — غير مُصلح خارج النطاق)
+PASS D1 مسار الفشل عبر API: HTTP 200 لا 500
+PASS D2 تفصيل تشخيصي صادق (سبب الاتصال ظاهر)
+PASS E1 تنظيف: بيئة العامل الميت حُذفت، local-linux وحدها
+PASS F1 host-truth: isolation=SANDBOXED وlocal_execution=AVAILABLE (كانت UNAVAILABLE/متوافقة في 013.8)
+
+VERDICT: ALL 14 CHECKS PASS

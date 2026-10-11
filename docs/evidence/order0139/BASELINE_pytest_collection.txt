@@ -1,0 +1,15 @@
+ImportError while loading conftest '/home/z/my-project/order0139_run/tests/substrate/conftest.py'.
+tests/substrate/conftest.py:13: in <module>
+    from substrate.local_substrate import (
+src/substrate/__init__.py:4: in <module>
+    from .windows_executor import WindowsExecutor, ExecutionLimits, ExecutionResult
+src/substrate/windows_executor.py:677: in <module>
+    import win32pipe
+E   ModuleNotFoundError: No module named 'win32pipe'
+pytest collect exit: 4
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/execution/test_backends.py::test_local_backend_describes_platform_truthfully
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 3 warnings in 0.46s

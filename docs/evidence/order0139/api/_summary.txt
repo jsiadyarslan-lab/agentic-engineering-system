@@ -1,0 +1,20 @@
+=== A) الحالة قبل أي تحقق: STRICT_ISOLATED يجب أن يرفض (لا بيئة READY) ===
+GET /health -> HTTP 200 (8ms)
+GET /api/execution/environments -> HTTP 200 (22ms)
+GET /api/execution/runtime-state?policy=STRICT_ISOLATED -> HTTP 200 (16ms)
+GET /api/execution/host-truth -> HTTP 200 (9ms)
+=== B) التحقق الحقيقي للبيئة المحلية (السلم الكامل داخل namespaces+seccomp) ===
+environment id = 1
+POST /api/execution/environments/1/verify -> HTTP 200 (104ms)
+GET /api/execution/runtime-state?policy=STRICT_ISOLATED -> HTTP 200 (12ms)
+=== C) التنفيذ الحقيقي عبر مسار المنتج (test-run داخل العزل) ===
+POST /api/execution/environments/1/test-run -> HTTP 200 (92ms)
+POST /api/execution/environments/1/test-run -> HTTP 200 (98ms)
+=== D) مسار الفشل عبر API: عامل بعيد ميت — يجب عرض صادق لا HTTP 500 ===
+POST /api/execution/environments -> HTTP 200 (35ms)
+dead worker env id = 2
+POST /api/execution/environments/2/test-run -> HTTP 200 (18ms)
+POST /api/execution/environments/2/verify -> HTTP 200 (18ms)
+=== E) التنظيف وإيقاف الخادم ===
+DELETE /api/execution/environments/2 -> HTTP 200 (9ms)
+GET /api/execution/environments -> HTTP 200 (9ms)

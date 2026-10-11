@@ -1,0 +1,10 @@
+# مجموعة انحدار سياسة العزل الصارم (013.1) — عند كوميت 73d8e47 (2026-10-11T19:50:35Z)
+tests/execution/test_policy_no_fallback_0131.py::test_resolve_executor_strict_never_falls_back PASSED [ 12%]
+tests/execution/test_policy_no_fallback_0131.py::test_resolve_executor_strict_uses_sandboxed PASSED [ 25%]
+tests/execution/test_policy_no_fallback_0131.py::test_resolve_executor_without_policy_keeps_history PASSED [ 37%]
+tests/execution/test_policy_no_fallback_0131.py::test_run_code_unified_strict_blocks_with_requirement PASSED [ 50%]
+tests/execution/test_policy_no_fallback_0131.py::test_run_code_unified_compatible_accepts_unisolated PASSED [ 62%]
+tests/execution/test_policy_no_fallback_0131.py::test_tool_substrate_honors_policy_context PASSED [ 75%]
+tests/execution/test_policy_no_fallback_0131.py::test_sandbox_probe_strict_honest_when_missing PASSED [ 87%]
+tests/execution/test_policy_no_fallback_0131.py::test_local_environment_identity_follows_host PASSED [100%]
+========================= 8 passed, 1 warning in 0.58s =========================

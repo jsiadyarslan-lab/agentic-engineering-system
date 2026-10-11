@@ -1,0 +1,314 @@
+# AFTER-FIX (commit 73d8e47): tests/substrate + tests/execution (2026-10-11T19:45:56Z)
+# خط الأساس المقارن: نفس الدليلين عند 0a26fc70 = خطأ تجميع لـ tests/substrate (ModuleNotFoundError: win32pipe) + 10 فشل في test_service/test_workspace_0133
+
+$ .venv/bin/python -m pytest tests/substrate tests/execution -q
+sssssssssssss........................................................F.F [ 76%]
+..F.F.F.......F..sF...                                                   [100%]
+=================================== FAILURES ===================================
+____________ test_local_registered_automatically_with_honest_status ____________
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-z/pytest-52/test_local_registered_automati0/exec-test.db), autoflush=True, expire_on_commit=False)
+    def test_local_registered_automatically_with_honest_status(sessions):
+        environments = service.list_environments(sessions)
+        assert any(e["name"] == "local-linux" and e["backend"] == "LOCAL"
+                   for e in environments)
+        # الحالة الأولى UNKNOWN — لا READY بلا تحقق (§20 لا افتراض جاهزية)
+        local = [e for e in environments if e["name"] == "local-linux"][0]
+>       assert local["status"] in ("UNKNOWN", "READY", "NOT_READY", "UNAVAILABLE")
+E       AssertionError: assert 'DETECTED' in ('UNKNOWN', 'READY', 'NOT_READY', 'UNAVAILABLE')
+tests/execution/test_service.py:74: AssertionError
+__________________ test_verify_environment_writes_real_result __________________
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-z/pytest-52/test_verify_environment_writes0/exec-test.db), autoflush=True, expire_on_commit=False)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1223723f20>
+    def test_verify_environment_writes_real_result(sessions, monkeypatch):
+        service.add_environment(
+            sessions, name="worker-b", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9998",
+        )
+        env_id = _env_id_by_name(sessions, "worker-b")
+        stub = StubBackend(verify_ok=True)
+        monkeypatch.setattr(
+            service, "build_backend", lambda env: stub,
+        )
+        out = service.verify_environment(sessions, env_id)
+>       assert out["status"] == "READY"
+E       AssertionError: assert 'HEALTHY' == 'READY'
+E         
+E         - READY
+E         + HEALTHY
+tests/execution/test_service.py:108: AssertionError
+_______________ test_run_code_unified_marks_environment_mismatch _______________
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-z/pytest-52/test_run_code_unified_marks_en0/exec-test.db), autoflush=True, expire_on_commit=False)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f12235df440>
+    def test_run_code_unified_marks_environment_mismatch(sessions, monkeypatch):
+        """فشل بدء بعد READY = ENVIRONMENT_MISMATCH + وسم STALE (§42)."""
+        service.ensure_local_registered(sessions)
+        stub = StubBackend(verify_ok=True, run_ok=False)
+        monkeypatch.setattr(service, "build_backend", lambda env: stub)
+        # اجعل الافتراضية READY عبر التحقق
+        local_id = _env_id_by_name(sessions, "local-linux")
+        service.verify_environment(sessions, local_id)
+        import tempfile
+    
+        with tempfile.TemporaryDirectory() as tmp:
+            outcome = service.run_code_unified(
+                sessions, "print('x')", workspace=Path(tmp),
+                artifacts=Path(tmp) / "a",
+            )
+        assert outcome.termination == "FAILED_TO_START"
+>       assert "ENVIRONMENT_MISMATCH" in outcome.detail
+E       AssertionError: assert 'ENVIRONMENT_MISMATCH' in 'stub start failure'
+E        +  where 'stub start failure' = ExecutionOutcome(environment_id='stub', backend='STUB', exit_code=-1, stdout='stub-out', stderr='', termination='FAILED_TO_START', detail='stub start failure', artifacts={}, duration_ms=0, failure={}).detail
+tests/execution/test_service.py:194: AssertionError
+_________________ test_a_valid_cwd_runs_and_reports_preflight __________________
+tmp_path = PosixPath('/tmp/pytest-of-z/pytest-52/test_a_valid_cwd_runs_and_repo0')
+    def test_a_valid_cwd_runs_and_reports_preflight(tmp_path):
+        """(A) مساحة عمل صالحة: إنشاء ← تحقق ← إطلاع ← نجاح حقيقي."""
+        backend = LocalProcessBackend(environment_id="ws-a")
+        workspace = tmp_path / "jobs" / "123" / "ws"
+        workspace.mkdir(parents=True)
+        outcome = backend.run_code(
+            "import os; print('cwd-ok', os.getcwd())",
+            workspace=workspace, artifacts=tmp_path / "art", timeout_s=30,
+        )
+        assert outcome.ok, outcome.detail
+        assert "cwd-ok" in outcome.stdout
+>       assert outcome.failure == {}  # لا فشل مساحة عمل
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'pid': 14788...': True, ...}} == {}
+E         
+E         Left contains 4 more items:
+E         {'parent_pid': 14681,
+E          'pid': 14788,
+E          'repair_result': {'absolute': True,
+E                            'cwd_exists': True,
+E                            'cwd_is_directory': True,...
+E         
+E         ...Full output truncated (5 lines hidden), use '-vv' to show
+tests/execution/test_workspace_0133.py:81: AssertionError
+__________________ test_b_windows_nonexistent_cwd_classified ___________________
+tmp_path = PosixPath('/tmp/pytest-of-z/pytest-52/test_b_windows_nonexistent_cwd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1223787d40>
+    def test_b_windows_nonexistent_cwd_classified(tmp_path, monkeypatch):
+        """(B) إطلاق بـ cwd غير موجود: WinError 267 يُصنّف مسمّى لا عامًا،
+        مع كل الحقول (host/cwd/environment_id/execution_mode)."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        # مسار بنمط Windows (يفسَّر نسبيًا على مضيف Linux الاختباري — يُنشأ
+        # تحت tmp_path فلا يلوث شيئًا، والسلوك المرجو هو نفسه على Windows)
+        monkeypatch.chdir(tmp_path)
+        workspace = Path("C:/agent-runtime/jobs/1/ws")
+    
+        calls = {"n": 0}
+    
+        def fake_run(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", fake_run)
+        backend = LocalProcessBackend(environment_id="ws-b")
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert outcome.termination == "FAILED_TO_START"
+E       AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E         
+E         - FAILED_TO_START
+E         + COMPLETED
+/home/z/my-project/order0139_run/tests/execution/test_workspace_0133.py:150: AssertionError
+_______________ test_f_strict_windows_wsl_ready_registers_worker _______________
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-z/pytest-52/test_f_strict_windows_wsl_read0/ws-0133.db), autoflush=True, expire_on_commit=False)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f1223613fe0>
+    def test_f_strict_windows_wsl_ready_registers_worker(sessions, monkeypatch):
+        """(F+§3) WSL2 متاح فعليًا: التجهيز يعبر الحد الصريح ويسجل بيئة
+        العامل ثم يتحقق منها — READY فقط عبر فحوص حقيقية."""
+        import execution.backends as backends_mod
+        import execution.service as service_mod
+        from execution import wsl as wsl_mod
+    
+        monkeypatch.setattr(backends_mod, "runtime_truth", _windows_truth)
+        monkeypatch.setattr(service_mod, "_substrate_available",
+                            lambda: False)
+        monkeypatch.setattr(
+            wsl_mod, "wsl_available",
+            lambda **_kw: {
+                "available": True, "reason": "", "detail": "Linux/x86_64",
+                "os": "Linux", "architecture": "x86_64", "python": "3.10",
+                "steps": {"wsl_exe": True, "uname": "Linux x86_64",
+                          "python3": "Python 3.10.12"},
+            },
+        )
+    
+        # العامل «داخل WSL» حقيقي هنا كعملية Linux داخل حاوية الاختبار —
+        # نفس بروتوكول HTTP الذي سيستمع داخل WSL على جهاز المالك
+        with RealWorker(token="wsl-sim-0133") as worker:
+            def fake_launch(**_kwargs):
+                return {
+                    "ok": True, "stage": "WORKER_LAUNCHED",
+                    "endpoint": worker.url,
+                    "boundary": "Windows ← wsl.exe ← Linux ← worker",
+                }
+    
+            monkeypatch.setattr(wsl_mod, "launch_wsl_worker", fake_launch)
+    
+            # add_environment قد استُدعي قبل الربط الحقيقي — نعيد توجيهه
+            # إلى endpoint العامل الحقيقي عبر تسجيل مباشر بعد التسجيل الأول
+            from execution import provisioner
+            from execution import service as execution_service
+    
+            result = provisioner.provision(
+                sessions, policy="STRICT_ISOLATED",
+            )
+            # بيئة العامل مسجلة فعلاً باسم wsl2-linux
+            envs = execution_service.list_environments(sessions)
+            wsl_env = next(
+                (e for e in envs if e["name"] == wsl_mod.WSL_ENVIRONMENT_NAME),
+                None,
+            )
+            assert wsl_env is not None, [e["name"] for e in envs]
+    
+            # أعِد الربط إلى العامل الحقيقي ثم تحقق — سلم الجاهزية كاملًا
+            from execution.models import ExecutionEnvironment
+            from sqlalchemy import select as sa_select
+    
+            with sessions() as s:
+                row = s.scalars(sa_select(ExecutionEnvironment).where(
+                    ExecutionEnvironment.name == wsl_mod.WSL_ENVIRONMENT_NAME
+                )).first()
+                row.endpoint = worker.url
+                row.token_ref = ""
+                from secrets_store import store as secrets_store
+    
+                secrets_store.set_key("execution::wsl2-linux",
+                                      "wsl-sim-0133")
+                row.token_ref = "execution::wsl2-linux"
+                s.commit()
+    
+            verified = execution_service.verify_environment(
+                sessions, wsl_env["id"],
+            )
+            # هذا المضيف Linux والركيزة متاحة للعامل → sandboxed من العامل
+            if (verified.get("verify") or {}).get("ok"):
+>               assert verified["status"] == "READY"
+E               AssertionError: assert 'HEALTHY' == 'READY'
+E                 
+E                 - READY
+E                 + HEALTHY
+tests/execution/test_workspace_0133.py:542: AssertionError
+__________________ test_i_no_infinite_retry_same_invalid_cwd ___________________
+tmp_path = PosixPath('/tmp/pytest-of-z/pytest-52/test_i_no_infinite_retry_same_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f122344a030>
+    def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
+        """(I §10) إطلاعان حصرًا: المحاولة الأولى + إعادة واحدة بعد
+        REPAIR — الفشل بعدها نهائي مهما تكرر الخطأ."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        calls = {"n": 0}
+    
+        def always_267(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", always_267)
+        backend = LocalProcessBackend(environment_id="ws-i")
+        workspace = tmp_path / "ws-i"
+        workspace.mkdir()
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert calls["n"] == 2, (
+            f"الإطلاقات = {calls['n']} — يجب أن تكون 2 بالضبط "
+            "(أولى + إعادة واحدة بعد الإصلاح، لا حلقة)"
+        )
+E       AssertionError: الإطلاقات = 0 — يجب أن تكون 2 بالضبط (أولى + إعادة واحدة بعد الإصلاح، لا حلقة)
+E       assert 0 == 2
+tests/execution/test_workspace_0133.py:650: AssertionError
+.venv/lib/python3.12/site-packages/_pytest/config/__init__.py:1464
+  
+tests/substrate/test_bridge.py:41
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:49
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:62
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:76
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:90
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:113
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:127
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:145
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:155
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:168
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:206
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:219
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:248
+    @pytest.mark.asyncio
+tests/substrate/test_bridge.py:263
+    @pytest.mark.asyncio
+tests/execution/test_backends.py:131
+tests/execution/test_backends.py:178
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  /home/z/my-project/order0139_run/src/api/routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  /home/z/my-project/order0139_run/.venv/lib/python3.12/site-packages/fastapi/applications.py:4745: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  /home/z/my-project/order0139_run/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+=========================== short test summary info ============================
+SKIPPED [1] tests/substrate/test_bridge.py:41: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:49: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:62: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:113: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:90: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:127: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:145: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:155: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:168: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:206: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:219: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:248: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:263: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/execution/test_workspace_0133.py:616: المنصة تسمح بالكتابة رغم 0o500
+FAILED tests/execution/test_service.py::test_local_registered_automatically_with_honest_status
+FAILED tests/execution/test_service.py::test_verify_environment_writes_real_result
+FAILED tests/execution/test_service.py::test_run_code_unified_marks_environment_mismatch
+FAILED tests/execution/test_workspace_0133.py::test_a_valid_cwd_runs_and_reports_preflight
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_f_strict_windows_wsl_ready_registers_worker
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+7 failed, 73 passed, 14 skipped, 20 warnings in 45.14s
+
+=== تفصيل الفشول السبعة (كلها قائمة عند خط الأساس بالمعرفات نفسها) ===
+FAILED tests/execution/test_service.py::test_local_registered_automatically_with_honest_status
+FAILED tests/execution/test_service.py::test_verify_environment_writes_real_result
+FAILED tests/execution/test_service.py::test_run_code_unified_marks_environment_mismatch
+FAILED tests/execution/test_workspace_0133.py::test_a_valid_cwd_runs_and_reports_preflight
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_f_strict_windows_wsl_ready_registers_worker
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+
+=== عند خط الأساس (0a26fc70، worktree order0138_run) كان العشرة هؤلاء يفشلون + 3 إضافيون أصلحهم هذا الكوميت ===
+  FIXED-BY-D1/D2: test_h_workspace_provisioned_before_launch / test_j_repair_workspace_resumes_same_job / test_test_run_api_uses_same_launcher_and_creates_workspace (كان الفشل الحرفي: KeyError: 'code' في backends.py:936)

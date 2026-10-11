@@ -1,0 +1,1 @@
+{"status":"ok","app":"Agentic Engineering System","version":"3.6.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"isolation":"linux-namespaces+seccomp","note":"معزولة على Linux/x86_64 (WSL2 على Windows) — وإلا وضع متوافق معلن بلا ادعاء عزل"}}
