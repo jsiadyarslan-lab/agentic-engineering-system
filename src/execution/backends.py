@@ -38,6 +38,27 @@ from execution.workspace import (  # noqa: F401 — re-export للعقد
 WORKER_HTTP_TIMEOUT = 240.0
 
 
+#: (013.9 D2) رمز بديل معلن حين يغيب ``code`` أو يفسد من تقرير
+#: الفشل — صياغة التشخيص لا يجوز أن تُسقط الاستجابة في استثناء ثانوي
+#: (KeyError) يحجب السبب الأصلي ويحوّله إلى HTTP 500.
+FAILURE_CODE_FALLBACK = "FAILURE_UNCODED"
+
+
+def _failure_code(failure: dict | None) -> str:
+    """(013.9 D2) قراءة رمز الفشل بأمان — لا KeyError أبدًا.
+
+    غياب ``code`` أو قيمته غير النصية/الفارغة يُعرض بالرمز البديل
+    المعلن أعلاه؛ التفاصيل الأصلية (reason/cwd/host/…) تبقى في
+    التقرير نفسه كما هي — لا استبدال ولا حجب للسبب الأصلي.
+    """
+    if not failure:
+        return FAILURE_CODE_FALLBACK
+    code = failure.get("code")
+    if isinstance(code, str) and code.strip():
+        return code
+    return FAILURE_CODE_FALLBACK
+
+
 class BackendNotSupported(Exception):
     """عملية غير مدعومة في هذه الخلفية (011 §6) — NOT_SUPPORTED صريح.
 
@@ -452,7 +473,7 @@ class LocalSandboxBackend:
                 "ok": "exec-ok: True" in outcome.stdout,
                 "detail": outcome.stdout[:120],
             })
-        except substrate_local_substrate.SubstrateUnavailable as error:
+        except local_substrate.SubstrateUnavailable as error:
             return VerifyResult(
                 ok=False, status="UNAVAILABLE", checks=checks,
                 profile=profile, reason=str(error),
@@ -754,12 +775,16 @@ class LocalProcessBackend:
             )
             detail = f"FAILED_TO_START: {error}"
             if failure:
-                # (§9) التشخيص المسماة يرافق السبب الخام — لا «فشل عام»
+                # (§9) التشخيص المسماة يرافق السبب الخام — لا «فشل عام».
+                # (013.9 D2) كل المفاتيح تُقرأ بأمان: غياب أي مفتاح من
+                # التقرير لا يحوّل صياغة الفشل نفسها إلى استثناء ثانوي
+                # يحجب السبب الأصلي (KeyError ← HTTP 500 ممنوع).
                 detail = (
-                    f"FAILED_TO_START: {error} — {failure['code']}/"
-                    f"{failure['reason']}: cwd={cwd} host="
-                    f"{failure['host']} execution_mode="
-                    f"{failure['execution_mode']} environment_id="
+                    f"FAILED_TO_START: {error} — "
+                    f"{_failure_code(failure)}/"
+                    f"{failure.get('reason', '')}: cwd={cwd} host="
+                    f"{failure.get('host', '')} execution_mode="
+                    f"{failure.get('execution_mode', '')} environment_id="
                     f"{self.environment_id}"
                 )
             return -1, "", detail, "startup", failure
@@ -931,9 +956,11 @@ class LocalProcessBackend:
         if repaired:
             final_detail += f" [REPAIR_WORKSPACE: {repaired}]"
         if failure:
-            # (013.3 §9) الرمز المسمّى ظاهر في التفصيل نفسه — لا بحث
+            # (013.3 §9) الرمز المسمى ظاهر في التفصيل نفسه — لا بحث.
+            # (013.9 D2) غياب/فساد code يُعرض بالرمز البديل المعلن
+            # بدل KeyError يُسقط الاستجابة كلها في HTTP 500 ثانوي.
             final_detail += (
-                f" [{failure['code']}/{failure.get('reason', '')}"
+                f" [{_failure_code(failure)}/{failure.get('reason', '')}"
                 f" cwd={failure.get('cwd', '')}]"
             )
         return ExecutionOutcome(

@@ -12,25 +12,24 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 import logging
 
-# Try to import Windows-specific modules
+# (013.9 D1) كان «tempfile» يُستورد فقط في كتلة ملحقة أسفل الملف
+# (سطر 677 وما بعده) خارج أي حراسة — الكتلة أُزيلت لأنها كانت تكسر
+# استيراد الوحدة على Linux (import win32pipe غير محروس)، و«tempfile»
+# المستخدم فعليًا في الواجهة (gettempdir) انتقل هنا إلى الأعلى.
+
+# (013.9 D1) استيرادات Windows محروسة حصرًا — عدم توفر pywin32
+# (على Linux/macOS مثلًا) لا يكسر تحميل الوحدة؛ العلم يقرره الصدق
+# لاحقًا (HAS_PYWIN32) والمنفّذ يعلن وضع بدونه لا يدّعي عزله.
 try:
-    import win32api
-    import win32con
-    import win32job
-    import win32process
-    import win32security
-    import win32event
-    import win32file
-    import win32pipe
-    import pywintypes
     import win32api
     import win32con
     import win32job
@@ -43,13 +42,6 @@ try:
     HAS_PYWIN32 = True
 except ImportError:
     HAS_PYWIN32 = False
-
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, List, Union
-from pathlib import Path
-import hashlib
-import json
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -669,39 +661,9 @@ class WindowsExecutor:
             return "FAILED"
 
 
-# Import required modules
-import os
-import tempfile
-import uuid
-import subprocess
-import win32pipe
-import win32file
-import win32event
-import win32con
-import win32api
-import hashlib
-import json
-import time
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from pathlib import Path
-import logging
-
-logger = logging.getLogger(__name__)
-
-# Check for pywin32
-try:
-    import win32api
-    import win32con
-    import win32job
-    import win32process
-    import win32security
-    import win32event
-    import win32file
-    import win32pipe
-    import pywintypes
-    import win32api
-    HAS_PYWIN32 = True
-except ImportError:
-    HAS_PYWIN32 = False
+# (013.9 D1) أُزيلت هنا كتلة ملحقة ميتة (الأسطر 672–707 في الأصل)
+# كانت تعيد استيراد الوحدات القياسية ثم تستورد وحدات Windows
+# (win32pipe/win32file/win32event/win32con/win32api) بلا أي حراسة
+# على مستوى الوحدة، فتعطّل استيراد هذه الوحدة — ومعها حزمة الركيزة
+# كلها — على أي مضيف غير Windows. الاستيرادات الفعلية كلها في الأعلى
+# (المحروسة بعلم HAS_PYWIN32)، ولا شيء تحت هذا السطر.
