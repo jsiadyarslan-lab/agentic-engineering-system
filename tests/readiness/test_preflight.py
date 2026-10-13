@@ -34,6 +34,18 @@ def _sandbox_ready(sessions):
             ExecutionEnvironment.backend == "LOCAL")).first()
         row.status = "READY"
         row.sandboxed = 1
+        # (013.10 §3) بذر READY بأدلة التحقق الدائمة — الجاهزية بمجرد
+        # الاسم لا تكفي حسب العقد القانوني الموحد.
+        import json as _json
+
+        row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+        row.last_probe_detail = _json.dumps(
+            {"verify": {"ok": True, "status": "READY", "checks": [
+                {"name": "boot", "ok": True, "detail": "s"},
+                {"name": "filesystem", "ok": True, "detail": "s"},
+            ]}},
+            ensure_ascii=False,
+        )
         s.commit()
 
 

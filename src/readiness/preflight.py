@@ -177,11 +177,13 @@ def task_preflight(
             # (لا ركيزة معزولة على Windows) لكن توجد بيئة غير معزولة جاهزة
             # (local-windows)، فالسياسة تسمح بالتجاوز — لا حجب مسبق.
             if not ok and policy == "COMPATIBLE_LOCAL":
-                # البحث عن بيئة غير معزولة جاهزة (sandboxed=0)
+                # البحث عن بيئة غير معزولة جاهزة وفق التعريف القانوني
+                # الموحد (013.10 §3) — نفس بوابة السياسة لا شرط خام.
                 environments = execution_service.list_environments(sessions)
                 compatible_env = next(
-                    (env for env in environments 
-                     if env.get("status") == "READY" and not env.get("sandboxed")),
+                    (env for env in environments
+                     if execution_policy.environment_satisfies(env, policy)
+                     and not env.get("sandboxed")),
                     None
                 )
                 if compatible_env:

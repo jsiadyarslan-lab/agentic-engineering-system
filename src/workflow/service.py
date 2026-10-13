@@ -538,12 +538,20 @@ def update_step(sessions, step_id: int, **fields) -> None:
 
 def create_execution(sessions, step_id: int, *, attempt: int,
                      provider: str, model: str, workspace: str,
-                     agent_role: str = "implementer") -> int:
+                     agent_role: str = "implementer",
+                     command: str = "", cwd: str = "",
+                     pid: int | None = None, parent_pid: int | None = None,
+                     command_type: str = "") -> int:
+    """إنشاء تنفيذ خطوة — (013.7 §P14 + 013.10 §4) يقبَل حقول الأمر
+    (command/cwd/pid/parent_pid/command_type) ويُخزَّن كلٌّ منها في
+    الصف الدائم: المحرك يمررها عند تنفيذ الأوامر، ولقطة runtime
+    تقرأها حرفيًا. القيم اختيارية حفاظًا على المتصلين القدامى."""
     with sessions() as session:
         execution = Execution(
             step_id=int(step_id), attempt=attempt, status="RUNNING",
             agent_role=agent_role, provider=provider, model=model,
-            workspace=workspace,
+            workspace=workspace, command=command, cwd=cwd, pid=pid,
+            parent_pid=parent_pid, command_type=command_type,
         )
         session.add(execution)
         session.commit()

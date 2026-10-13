@@ -67,11 +67,19 @@ class StubBackend:
 
 def test_local_registered_automatically_with_honest_status(sessions):
     environments = service.list_environments(sessions)
-    assert any(e["name"] == "local-linux" and e["backend"] == "LOCAL"
-               for e in environments)
-    # الحالة الأولى UNKNOWN — لا READY بلا تحقق (§20 لا افتراض جاهزية)
-    local = [e for e in environments if e["name"] == "local-linux"][0]
-    assert local["status"] in ("UNKNOWN", "READY", "NOT_READY", "UNAVAILABLE")
+    # (013.1 §10) اسم البيئة المحلية من المضيف الفعلي — local-linux
+    # على مضيف Linux وlocal-windows على Windows، والاختبار يقيس
+    # التسجيل التلقائي والحالة الصادقة على أي مضيف.
+    expected = service.local_environment_name()
+    assert any(e["name"] == expected and e["backend"] == "LOCAL"
+               for e in environments), (
+        f"البيئة المحلية {expected} لم تُسجل تلقائيًا"
+    )
+    # الحالة الأولى DETECTED (013.7 §P1: مسجلة ولم تُتحقق) — لا READY
+    # بلا تحقق (§20 لا افتراض جاهزية)
+    local = [e for e in environments if e["name"] == expected][0]
+    assert local["status"] in ("UNKNOWN", "DETECTED", "READY",
+                               "NOT_READY", "UNAVAILABLE")
 
 
 def test_add_environment_validates_backend_and_endpoint(sessions):
@@ -105,10 +113,18 @@ def test_verify_environment_writes_real_result(sessions, monkeypatch):
         service, "build_backend", lambda env: stub,
     )
     out = service.verify_environment(sessions, env_id)
-    assert out["status"] == "READY"
+    # (013.7 §P1 + 013.10 §3) التحقق الناجح يكتب HEALTHY (صحة بأدلة)،
+    # والجاهزية تُحسب بالتعريف القانوني الواحد: تحقق ناجح + عزل
+    # (StubBackend يعيد sandboxed=True) → موافقة تحت STRICT_ISOLATED.
+    assert out["status"] == "HEALTHY"
     assert out["sandboxed"] is True
     assert out["last_verified_at"]
     assert out["verify"]["checks"][0]["name"] == "boot"
+    from execution import policy as execution_policy
+
+    assert execution_policy.environment_satisfies(
+        out, "STRICT_ISOLATED"
+    ), "بيئة متحققة معزولة بلا اختيار — شق 013.9 PD-1"
     # لا مرجع توكن في الرد أبدًا
     assert "token_ref" not in out
 
@@ -176,12 +192,13 @@ def test_resolve_executor_is_single_source_for_probe_and_run(
 
 
 def test_run_code_unified_marks_environment_mismatch(sessions, monkeypatch):
-    """فشل بدء بعد READY = ENVIRONMENT_MISMATCH + وسم STALE (§42)."""
+    """فشل بدء بعد جاهزية (HEALTHY/READY) = ENVIRONMENT_MISMATCH + وسم
+    STALE (§42) — الوسم يتبع الحالة المخزنة فعلاً (013.10 §3)."""
     service.ensure_local_registered(sessions)
     stub = StubBackend(verify_ok=True, run_ok=False)
     monkeypatch.setattr(service, "build_backend", lambda env: stub)
-    # اجعل الافتراضية READY عبر التحقق
-    local_id = _env_id_by_name(sessions, "local-linux")
+    # اجعل الافتراضية متحققة عبر التحقق الحقيقي (يكتب HEALTHY)
+    local_id = _env_id_by_name(sessions, service.local_environment_name())
     service.verify_environment(sessions, local_id)
     import tempfile
 

@@ -46,19 +46,40 @@ def env_db(tmp_path, monkeypatch):
 
 
 def _set_local_env(sessions, *, status, sandboxed):
-    """ضبط صف البيئة المحلية — الحتمية عبر المنصات."""
+    """ضبط صف البيئة المحلية — الحتمية عبر المنصات.
+
+    (013.10 §3) سجل بحالة صحة (READY/HEALTHY) يُبذر بأدلة التحقق
+    الدائمة (last_verified_at + فحوص مسماة ناجحة) — فالاختبار يقيس
+    بوابة السياسة لا عقد الأدلة؛ وسجل بلا أدلة لا جاهزية له بمجرد
+    اسمه حسب العقد الجديد.
+    """
+    import datetime as _dt
+    import json as _json
+
     import sqlalchemy as sa
 
     from execution import service as execution_service
     from execution.models import ExecutionEnvironment
 
     execution_service.ensure_local_registered(sessions)
+    health = status in ("READY", "HEALTHY")
     with sessions() as s:
         row = s.scalars(sa.select(ExecutionEnvironment).where(
             ExecutionEnvironment.name.in_(("local-linux",
                                            "local-windows")))).first()
         row.status = status
         row.sandboxed = sandboxed
+        row.last_verified_at = (
+            _dt.datetime.now(_dt.timezone.utc) if health else None
+        )
+        row.last_probe_detail = _json.dumps(
+            {"verify": {"ok": True, "status": "READY",
+                        "checks": [{"name": "boot", "ok": True,
+                                    "detail": "seeded"},
+                                   {"name": "filesystem", "ok": True,
+                                    "detail": "seeded"}]}},
+            ensure_ascii=False,
+        ) if health else "{}"
         s.commit()
         return row.id
 

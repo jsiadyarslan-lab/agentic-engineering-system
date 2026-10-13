@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -58,10 +60,15 @@ def probe_seam(monkeypatch):
     from execution import service as execution_service
 
     def fake_sandbox_probe(sessions_, **_kwargs):
+        from execution import policy as execution_policy
+
         environments = execution_service.list_environments(sessions_)
+        # (013.7 §P1 + 013.10 §3) البوابة الموحدة: صحة + أدلة تحقق
+        # كاملة — لا مفردات قديمة (READY كوسم حالة) ولا اختراع.
         ready = [
             e for e in environments
-            if e["status"] == "READY" and e.get("sandboxed")
+            if execution_policy.health_ok(e)
+            and execution_policy.verification_evidence(e)["complete"]
         ]
         return {
             "status": "READY" if ready else "NOT_READY",
@@ -126,11 +133,18 @@ def test_recheck_after_provisioning_opens_without_reapproval(
     blocked = client.post(f"/api/projects/{pid}/preflight").json()
     assert blocked["preflight"]["verdict"] == "BLOCKED"
     # المالك وفر العامل (البيئة المحلية تصبح جاهزة معزولة)
+    # (013.7 §P1 + 013.10 §3) الجاهزية القانونية: HEALTHY + أدلة تحقق
+    # كاملة (last_verified_at + فحوص مسماة) — لا مجرد وسم حالة.
     with sessions() as s:
         row = s.scalars(sa_select(ExecutionEnvironment).where(
             ExecutionEnvironment.name.in_(("local-linux",
                                            "local-windows")))).first()
-        row.status = "READY"
+        row.status = "HEALTHY"
+        row.sandboxed = 1
+        row.last_verified_at = datetime.now(timezone.utc)
+        row.last_probe_detail = json.dumps({
+            "checks": [{"name": "sandbox", "ok": True, "detail": "seam"}],
+        }, ensure_ascii=False)
         s.commit()
     rechecked = client.post(f"/api/projects/{pid}/preflight")
     assert rechecked.status_code == 200

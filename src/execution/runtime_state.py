@@ -371,12 +371,14 @@ def _state_from_environments(
     policy: str, actual: dict,
 ) -> tuple[str, str, dict]:
     """قراءة الحالة من البيئات المسجلة عند غياب وظيفة نشطة."""
+    from execution import policy as execution_policy
+
     if selected is not None:
-        detail = selected.get("last_probe_detail") or {}
-        verify = detail.get("verify") or detail
-        checks = verify.get("checks") or []
-        all_ok = bool(checks) and all(c.get("ok") for c in checks if c)
-        if selected.get("status") == "READY" and all_ok:
+        # (013.10 §3) جاهزية الحالة القانونية من التعريف القانوني
+        # الواحد — HEALTHY بأدلة كاملة وأهلية سياسة = READY (يغلق
+        # شق 013.9: بيئة متحققة تبقى DISCOVERING/DEGRADED لأن البوابة
+        # كانت تشترط status=="READY" الخام).
+        if execution_policy.environment_satisfies(selected, policy):
             return (
                 "READY",
                 f"البيئة «{selected['name']}» اجتازت فحوص الصحة الحقيقية "

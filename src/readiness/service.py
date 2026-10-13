@@ -240,11 +240,18 @@ def capability_view(sessions, capability_id: str) -> dict | None:
         return _web_search_capability(sessions, stored)
     if capability_id == "sandbox":
         # الحقيقة من سجل البيئات نفسها (المسبار والمنفذ من مصدر واحد)
+        from execution import policy as execution_policy
         from execution import service as execution_service
 
         environments = execution_service.list_environments(sessions)
         selected = execution_service.select_environment(sessions)
-        ready = [e for e in environments if e["status"] == "READY"]
+        # (013.10 §3) جاهزة = صحة ناجحة بأدلة تحقق دائمة — لا status
+        # خام وحده؛ سجل HEALTHY/READY بلا أدلة لا يُعرض جاهزًا.
+        ready = [
+            e for e in environments
+            if execution_policy.health_ok(e)
+            and execution_policy.verification_evidence(e)["complete"]
+        ]
         out = dict(stored)
         out["derived_from"] = "execution_environments"
         if selected is not None:

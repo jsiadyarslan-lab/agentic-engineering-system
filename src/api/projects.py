@@ -278,11 +278,16 @@ def _environment_eligibility(environment: dict, policy: str) -> dict:
     health_state = env_state.get("health_state", status)
 
     # وسم عرض صريح — يُمنع على الواجهة أن تقول «جاهزة» حين state != READY
+    # (013.10 §3-5) HEALTHY تفرّق بين «غير مؤهلة للسياسة» و«قيد
+    # التأهيل» — لا وسم ELIGIBLE لبيئة eligible=false أبدًا.
     if status == "READY":
         label = "صالحة لهذه المهمة"
     elif status == "ELIGIBLE":
         label = "سليمة — غير صالحة لهذه المهمة"
-    elif status in ("HEALTHY", "ONLINE"):
+    elif status == "HEALTHY":
+        label = ("سليمة — لا توافق سياسة المهمة" if not eligible
+                 else "سليمة — قيد التأهيل")
+    elif status == "ONLINE":
         label = "مكتشفة وسليمة — قيد التأهيل"
     elif status == "NOT_CONFIGURED":
         label = "غير مهيأة — تسجيل عامل بعيد مطلوب"

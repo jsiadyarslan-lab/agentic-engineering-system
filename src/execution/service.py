@@ -313,7 +313,11 @@ def delete_environment(sessions, environment_id: int) -> bool:
         row = session.get(ExecutionEnvironment, int(environment_id))
         if row is None:
             return False
-        if row.name == _LEGACY_LOCAL_NAME:
+        # (013.10) حقيقة المضيف لا تُحذف: البيئة المحلية الحالية
+        # (local_environment_name) واسمها القديم local-linux كلاهما
+        # محميان — القائمة تعيد تسجيل المحلية تلقائيًا فورًا، فالحذف
+        # على Windows كان يمر بحكم الاسم الثابت وحده.
+        if row.name in (_LEGACY_LOCAL_NAME, local_environment_name()):
             raise ValueError("البيئة المحلية الافتراضية لا تُحذف")
         if row.token_ref:
             from secrets_store import store
@@ -341,54 +345,48 @@ def set_default(sessions, environment_id: int) -> dict:
 
 
 def compute_environment_state(environment: dict, policy: str = "STRICT_ISOLATED") -> dict:
-    """(013.7 §P1) حساب الحالة الصريحة للبيئة — بلا بوليان «جاهز/متاح».
+    """(013.7 §P1 + 013.10 §3) حساب الحالة الصريحة للبيئة — بلا بوليان «جاهز/متاح».
 
     الحالات المتسلسلة:
       NOT_CONFIGURED → DETECTED/REGISTERED → ONLINE → HEALTHY → ELIGIBLE → READY
       أو يتوقف عند: NOT_READY / UNAVAILABLE / NOT_CONFIGURED
 
-    POLICY:
-      STRICT_ISOLATED → ELIGIBLE فقط إذا sandboxed=True
-      COMPATIBLE_LOCAL → ELIGIBLE إذا HEALTHY
+    (013.10 §3-5) الحالة المعروضة تتفق مع الأهلية وسبب الحجب دائمًا:
+    HEALTHY غير مؤهلة تبقى HEALTHY بسبب حرفي — لا اسم ELIGIBLE
+    وeligible=false (التناقض الذي وضعه المالك)، وREADY تُعرض فقط
+    عندما يصدق حكم التعريف القانوني الواحد (policy.readiness).
     """
     status = environment.get("status", "NOT_CONFIGURED")
 
     # إذا كانت الحالة نهائية سلبية — لا نرتقي
     if status in ("NOT_READY", "UNAVAILABLE", "NOT_CONFIGURED"):
-        return {"state": status, "eligible": False, "reason": environment.get("failure_reason", "")}
+        return {
+            "state": status,
+            "health_state": status,
+            "eligible": False,
+            "ineligible_reason": environment.get("failure_reason", ""),
+            "ready": False,
+            "evidence": execution_policy.verification_evidence(environment),
+        }
 
-    # تحقق من الصحة (HEALTHY)
-    if status == "READY":
-        # READY من النظام القديم = HEALTHY في النموذج الجديد
-        health_state = "HEALTHY"
-    else:
-        health_state = status
+    # الحكم من التعريف القانوني الواحد (صحة + أدلة + أهلية سياسة)
+    verdict = execution_policy.readiness(environment, policy)
+    health_state = (
+        "HEALTHY" if status in execution_policy.HEALTH_STATUSES else status
+    )
 
-    # أهلية السياسة
-    eligible = False
-    reason = ""
-    if policy == "STRICT_ISOLATED":
-        eligible = bool(environment.get("sandboxed"))
-        if not eligible:
-            reason = "سليمة لكن غير معزولة — السياسة تطلب عزلًا صارمًا"
-    else:  # COMPATIBLE_LOCAL
-        eligible = True
-
-    # تحديد الحالة النهائية
-    if health_state == "HEALTHY" and eligible:
-        final_state = "READY"
-    elif health_state == "HEALTHY" and not eligible:
-        final_state = "ELIGIBLE"
-    elif health_state in ("HEALTHY", "ONLINE"):
-        final_state = health_state
-    else:
-        final_state = health_state
+    # (013.10 §3-5) اسم الحالة يطابق قيمة الأهلية:
+    #   جاهزة ⇔ الصحة ∧ الأدلة ∧ الأهلية — وإلا تبقى على درجتها
+    #   الحقيقية (HEALTHY سليمة غير مؤهلة، DETECTED لم تُتحقق…)
+    final_state = "READY" if verdict["ready"] else health_state
 
     return {
         "state": final_state,
         "health_state": health_state,
-        "eligible": eligible,
-        "ineligible_reason": reason,
+        "eligible": verdict["eligible"],
+        "ineligible_reason": "؛ ".join(verdict["blockers"]),
+        "ready": verdict["ready"],
+        "evidence": verdict["evidence"],
     }
 
 
@@ -556,9 +554,11 @@ def run_code_unified(
     outcome = backend.run_code(
         code, workspace=workspace, artifacts=artifacts, timeout_s=timeout_s,
     )
-    if outcome.termination == "FAILED_TO_START" and environment["status"] == "READY":
+    if outcome.termination == "FAILED_TO_START" and environment["status"] in (
+            "READY", "HEALTHY"):
         outcome.detail = (
-            f"ENVIRONMENT_MISMATCH: المسبار قال READY للبيئة "
+            f"ENVIRONMENT_MISMATCH: المسبار قال جاهزة "
+            f"({environment['status']}) للبيئة "
             f"#{environment['id']} ({environment['name']}/{environment['backend']}) "
             f"عند {environment['last_verified_at']} لكن التنفيذ فشل في البدء — "
             f"{outcome.detail} — أعِد التحقق من البيئة (تُوسم STALE)"
@@ -568,10 +568,10 @@ def run_code_unified(
 
 
 def _mark_stale(sessions, environment_id: int) -> None:
-    """فشل تنفيذ بعد READY = البيئة موضع شك — تُعاد للفحص الإجباري."""
+    """فشل تنفيذ بعد جاهزية (HEALTHY/READY) = بيئة موضع شك — تُعاد للفحص الإجباري."""
     with sessions() as session:
         row = session.get(ExecutionEnvironment, int(environment_id))
-        if row is not None and row.status == "READY":
+        if row is not None and row.status in ("READY", "HEALTHY"):
             row.status = "UNKNOWN"
             row.failure_reason = (
                 "ENVIRONMENT_MISMATCH — فشل تنفيذ بعد تحقق ناجح؛ "
@@ -616,10 +616,13 @@ def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
     started = time.monotonic()
     result = backend.verify()
     # انعكاس النتيجة على سجل البيئة نفسها (مصدر واحد للحقيقة)
+    # (013.10 §3) توحيد الكاتبَين: نجاح المسبار يكتب HEALTHY (صحة
+    # ناجحة بأدلة) — مثل verify_environment حرفيًا؛ الجاهزية تُحسب
+    # بالتعريف القانوني الواحد لا بالحالة المخزنة.
     with sessions() as session:
         row = session.get(ExecutionEnvironment, int(environment["id"]))
         if row is not None:
-            row.status = result.status
+            row.status = "HEALTHY" if result.ok else result.status
             row.profile_json = json.dumps(
                 result.profile, ensure_ascii=False, default=str
             )

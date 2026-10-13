@@ -29,11 +29,15 @@ def client(api_env):
 # ------------------------------------------------------------------ #
 
 def test_environments_list_registers_local_automatically(client):
+    from execution.service import local_environment_name
+
     out = client.get("/api/execution/environments")
     assert out.status_code == 200
     data = out.json()
-    names = [e["name"] for e in data["environments"]]
-    assert "local-linux" in names
+    # (013.1 §10) اسم البيئة المحلية من المضيف الفعلي — لا اسم مثبت.
+    assert local_environment_name() in [
+        e["name"] for e in data["environments"]
+    ]
     backends = {b["backend"] for b in data["supported_backends"]}
     assert backends == {"LOCAL", "REMOTE_WORKER"}  # لا خلفية وهمية
     # لا مراجع أسرار في أي رد
@@ -87,7 +91,10 @@ def test_verify_environment_via_api_with_seamed_backend(client, monkeypatch):
     out = client.post(f"/api/execution/environments/{env_id}/verify")
     assert out.status_code == 200
     data = out.json()
-    assert data["status"] == "READY"
+    # (013.7 §P1 + 013.10 §3) التحقق الناجح يكتب HEALTHY (صحة بأدلة)
+    # — الجاهزية تُحسب بالبوابة الموحدة لا بالحالة المخزنة.
+    assert data["status"] == "HEALTHY"
+    assert data["last_verified_at"]
     assert data["verify"]["checks"][0]["ok"] is True
     # تنظيف
     assert client.delete(
@@ -96,9 +103,11 @@ def test_verify_environment_via_api_with_seamed_backend(client, monkeypatch):
 
 
 def test_local_environment_cannot_be_deleted(client):
+    from execution.service import local_environment_name
+
     environments = client.get("/api/execution/environments").json()
     local = [e for e in environments["environments"]
-             if e["name"] == "local-linux"][0]
+             if e["name"] == local_environment_name()][0]
     out = client.delete(f"/api/execution/environments/{local['id']}")
     assert out.status_code == 422
 

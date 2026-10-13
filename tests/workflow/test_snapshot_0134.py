@@ -91,8 +91,37 @@ def test_snapshot_waiting_for_model_during_planning(wf_env):
 
 
 def test_snapshot_progress_is_real_not_invented(wf_env):
-    """(§50) التقدم من الخطوات الفعلية — لا نسب مخترعة."""
+    """(§50) التقدم من الخطوات الفعلية — لا نسب مخترعة.
+
+    (013.10 §3) الحاجز القانوني (011 §27) يفتح التنفيذ فقط عند وجود
+    بيئة معزولة متحققة — نزرعها هنا بأدلة كاملة (لا خفض للسياسة ولا
+    تراجع صامت): نفس عقد البوابة الموحدة، ثم الحلقة تعمل بأكملها.
+    """
     env = wf_env
+    import datetime as _dt
+    import json as _json
+
+    from execution import service as execution_service
+    from execution.models import ExecutionEnvironment
+
+    execution_service.ensure_local_registered(env["sessions"])
+    with env["sessions"]() as s:
+        row = ExecutionEnvironment(
+            name="worker-snapshot", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9888", status="HEALTHY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(
+                {"verify": {"ok": True, "status": "READY", "checks": [
+                    {"name": "boot", "ok": True, "detail": "seeded"},
+                    {"name": "capture", "ok": True, "detail": "seeded"},
+                ]}},
+                ensure_ascii=False,
+            ),
+        )
+        s.add(row)
+        s.commit()
+
     engine, project = _approved(env)
     result = engine.run(project["id"])
     assert result["action"] in ("none", "wait_owner")
