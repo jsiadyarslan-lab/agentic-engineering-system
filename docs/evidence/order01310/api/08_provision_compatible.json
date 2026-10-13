@@ -1,0 +1,132 @@
+﻿{
+    "state":  "READY",
+    "steps":  [
+                  {
+                      "state":  "DISCOVERING",
+                      "ok":  true,
+                      "detail":  "Windows/AMD64 â Python 3.13.2 â ÙØ§ Ø­Ø§ÙÙØ§Øª â Ø±ÙÙØ²Ø© Ø§ÙØ¹Ø²Ù ØºÙØ± Ù\u0085ØªØ§Ø­Ø© (ØªÙÙÙØ° Ù\u0085ØªÙØ§ÙÙ Ù\u0085Ø­ÙÙ)",
+                      "at":  "2026-10-12T23:28:37.852507+00:00",
+                      "duration_ms":  1550,
+                      "host":  {
+                                   "os":  "Windows",
+                                   "arch":  "AMD64",
+                                   "python":  "3.13.2",
+                                   "container":  "",
+                                   "cores":  4,
+                                   "memory_gb":  "",
+                                   "disk":  "",
+                                   "container_runtimes":  [
+
+                                                          ],
+                                   "vm_capability":  "",
+                                   "chromium":  ""
+                               },
+                      "substrate_available":  false
+                  },
+                  {
+                      "state":  "PROVISIONING",
+                      "ok":  true,
+                      "detail":  "Ø§ÙØ¨ÙØ¦Ø© Â«local-windowsÂ» Ù\u0085Ø³Ø¬ÙØ© (LOCAL/NONE)",
+                      "at":  "2026-10-12T23:28:37.860898+00:00",
+                      "duration_ms":  1,
+                      "environment_id":  1
+                  },
+                  {
+                      "state":  "BOOTING",
+                      "ok":  true,
+                      "detail":  "Ø¥ÙÙØ§Ø¹ ÙØ­ØµÙ Ø¹Ø¨Ø± Ø§ÙÙ\u0085ÙÙØ° Ø§ÙÙ\u0085ÙØ­Ø¯ ÙØ¬Ø­",
+                      "at":  "2026-10-12T23:28:38.390232+00:00",
+                      "duration_ms":  521
+                  },
+                  {
+                      "state":  "HEALTH_CHECK",
+                      "ok":  true,
+                      "detail":  "Ø¥ÙÙØ§Ø¹/ÙØªØ§Ø¨Ø©/ØªÙÙÙØ°/Ø§ÙØªÙØ§Ø· â ÙÙÙØ§ Ø­ÙÙÙÙØ© ÙÙØ§Ø¬Ø­Ø©",
+                      "at":  "2026-10-12T23:28:38.390320+00:00",
+                      "duration_ms":  521,
+                      "checks":  [
+                                     {
+                                         "name":  "preflight",
+                                         "ok":  true,
+                                         "detail":  "preflight exit=0 cwd=C:\\Users\\jaber\\AppData\\Local\\Temp\\env-compat-9rjvvj_x\\ws write_read_delete=True"
+                                     },
+                                     {
+                                         "name":  "boot",
+                                         "ok":  true,
+                                         "detail":  "200ms"
+                                     },
+                                     {
+                                         "name":  "execute",
+                                         "ok":  true,
+                                         "detail":  "exit=0 "
+                                     },
+                                     {
+                                         "name":  "write_file",
+                                         "ok":  true,
+                                         "detail":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø§ÙÙØ­Øµ"
+                                     },
+                                     {
+                                         "name":  "read_file",
+                                         "ok":  true,
+                                         "detail":  "ÙØ±Ø§Ø¡Ø© Ù\u0085Ø§ ÙÙØªØ¨ ÙØ§ÙØªØ­ÙÙ Ù\u0085Ù Ø§ÙÙ\u0085Ø­ØªÙÙ"
+                                     },
+                                     {
+                                         "name":  "delete_file",
+                                         "ok":  true,
+                                         "detail":  "Ø­Ø°Ù Ø§ÙÙ\u0085ÙÙ ÙØ§ÙØªØ­ÙÙ Ù\u0085Ù Ø²ÙØ§ÙÙ"
+                                     },
+                                     {
+                                         "name":  "working_directory",
+                                         "ok":  true,
+                                         "detail":  "cwd=C:\\Users\\jaber\\AppData\\Local\\Temp\\env-compat-9rjvvj_x\\ws"
+                                     },
+                                     {
+                                         "name":  "architecture",
+                                         "ok":  true,
+                                         "detail":  "arch=AMD64"
+                                     },
+                                     {
+                                         "name":  "isolation",
+                                         "ok":  true,
+                                         "detail":  "Ù\u0085Ø¹ÙÙ: Ø¨ÙØ§ Ø¹Ø²Ù â ÙØ¶Ø¹ Ù\u0085ØªÙØ§ÙÙØ Ø§ÙØ´Ø¨ÙØ© ØªØ¹Ù\u0085Ù"
+                                     },
+                                     {
+                                         "name":  "capture",
+                                         "ok":  true,
+                                         "detail":  "PROBE-JSON:{\"write_file\": true, \"read_file\": true, \"delete_file\": true, \"working_directory\": \"C:\\\\Users\\\\jaber\\\\AppData\\"
+                                     }
+                                 ]
+                  },
+                  {
+                      "state":  "VERIFYING_ISOLATION",
+                      "ok":  true,
+                      "detail":  "Ø§ÙØ¹Ø²Ù Ù\u0085Ø·Ø§Ø¨Ù: NONE",
+                      "at":  "2026-10-12T23:28:38.511673+00:00",
+                      "duration_ms":  0
+                  },
+                  {
+                      "state":  "READY",
+                      "ok":  true,
+                      "detail":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ° Â«local-windowsÂ» Ø¬Ø§ÙØ²Ø© â Ø§ÙÙ\u0085Ø³Ø¨Ø§Ø± ÙØ§ÙÙ\u0085ÙÙØ° Ù\u0085Ù Ù\u0085ØµØ¯Ø± ÙØ§Ø­Ø¯",
+                      "at":  "2026-10-12T23:28:38.511798+00:00",
+                      "duration_ms":  0
+                  }
+              ],
+    "policy":  "COMPATIBLE_LOCAL",
+    "environment":  {
+                        "id":  1,
+                        "name":  "local-windows",
+                        "backend":  "LOCAL",
+                        "status":  "HEALTHY",
+                        "isolation":  "NONE",
+                        "sandboxed":  false
+                    },
+    "reason":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ° Ø¬Ø§ÙØ²Ø© Ø¨ØªØ¬ÙÙØ² ÙØ¹ÙÙ Ù\u0085ÙØªØ­ÙÙ",
+    "duration_ms":  2382,
+    "heartbeat":  {
+                      "at":  "2026-10-12T23:28:38.676061+00:00",
+                      "ok":  true,
+                      "environment_id":  1,
+                      "environment_name":  "local-windows"
+                  }
+}

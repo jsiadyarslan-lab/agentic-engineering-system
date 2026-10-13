@@ -1,0 +1,1203 @@
+﻿....F...................s.........F...................................F. [ 32%]
+F..F..F.F..sF.......F...FFFFFFF.FFF.FFFFFFF............................. [ 65%]
+.....................F.F.F..............FF.FF....FF.F................... [ 98%]
+.F..                                                                     [100%]
+================================== FAILURES ===================================
+_________________ test_remote_worker_protocol_real_over_http __________________
+
+self = <tests.execution.test_backends.RealWorker object at 0x000002857D73E510>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable, str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+>               with socket.create_connection(("127.0.0.1", self.port), 0.4):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\execution\test_backends.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:864: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 49362), timeout = 0.4, source_address = None
+all_errors = False
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               TimeoutError: timed out
+
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:849: TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+    @pytest.mark.timeout(90)
+    def test_remote_worker_protocol_real_over_http():
+        """\u0627\u0644\u0628\u0631\u0648\u062a\u0648\u0643\u0648\u0644 \u0643\u0627\u0645\u0644\u064b\u0627 \u0636\u062f \u0639\u0627\u0645\u0644 \u062d\u0642\u064a\u0642\u064a: \u062a\u0648\u0643\u0646 + \u0642\u062f\u0631\u0627\u062a + \u0641\u062d\u0635 + \u062a\u0646\u0641\u064a\u0630 (\xa721)."""
+>       with RealWorker() as worker:
+             ^^^^^^^^^^^^
+
+tests\execution\test_backends.py:134: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.execution.test_backends.RealWorker object at 0x000002857D73E510>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable, str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", self.port), 0.4):
+                    return self
+            except OSError:
+                if self.process.poll() is not None:
+>                   raise RuntimeError("\u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639")
+E                   RuntimeError: \u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639
+
+tests\execution\test_backends.py:117: RuntimeError
+_______________________ test_provision_full_cycle_real ________________________
+
+env_db = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_provision_full_cycle_real0\prov013.db), autoflush=True, expire_on_commit=False)
+
+    def test_provision_full_cycle_real(env_db):
+        """(\xa744) \u062a\u062c\u0647\u064a\u0632 \u2190 \u0635\u062d\u0629 \u2190 \u062a\u0646\u0641\u064a\u0630 \u0645\u0639\u0632\u0648\u0644 \u2190 \u0627\u0644\u062a\u0642\u0627\u0637 \u2014 \u062f\u0648\u0631\u0629 \u062d\u0642\u064a\u0642\u064a\u0629.
+    
+        \u0641\u064a \u0628\u064a\u0626\u0629 \u0641\u064a\u0647\u0627 \u0631\u0643\u064a\u0632\u0629 \u062d\u0642\u064a\u0642\u064a\u0629 (Linux/container) \u062a\u0643\u062a\u0645\u0644 \u0627\u0644\u062f\u0648\u0631\u0629 \u0625\u0644\u0649
+        READY \u0628\u0641\u062d\u0648\u0635 \u0641\u0639\u0644\u064a\u0629\u061b \u0641\u064a \u0628\u064a\u0626\u0629 \u0628\u0644\u0627 \u0631\u0643\u064a\u0632\u0629 \u062a\u0643\u0648\u0646 \u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0635\u0627\u062f\u0642\u0629
+        (FAILED/PROVISIONING_UNAVAILABLE \u0628\u0633\u0628\u0628 \u062d\u0631\u0641\u064a) \u2014 \u0643\u0644\u0627\u0647\u0645\u0627 \u0645\u0642\u0628\u0648\u0644\u060c
+        \u0627\u0644\u0645\u0631\u0641\u0648\u0636 \u0647\u0648 READY \u0628\u0644\u0627 \u0641\u062d\u0635.
+        """
+        result = provisioner.provision(env_db)
+        states = [s["state"] for s in result["steps"]]
+    
+>       assert "DISCOVERING" in states and "PROVISIONING" in states
+E       AssertionError: assert ('DISCOVERING' in ['DISCOVERING', 'DISCOVERING'] and 'PROVISIONING' in ['DISCOVERING', 'DISCOVERING'])
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_provisioner_013.py:52: AssertionError
+_________________ test_a_valid_cwd_runs_and_reports_preflight _________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-127/test_a_valid_cwd_runs_and_repo0')
+
+    def test_a_valid_cwd_runs_and_reports_preflight(tmp_path):
+        """(A) \u0645\u0633\u0627\u062d\u0629 \u0639\u0645\u0644 \u0635\u0627\u0644\u062d\u0629: \u0625\u0646\u0634\u0627\u0621 \u2190 \u062a\u062d\u0642\u0642 \u2190 \u0625\u0637\u0644\u0627\u0639 \u2190 \u0646\u062c\u0627\u062d \u062d\u0642\u064a\u0642\u064a."""
+        backend = LocalProcessBackend(environment_id="ws-a")
+        workspace = tmp_path / "jobs" / "123" / "ws"
+        workspace.mkdir(parents=True)
+        outcome = backend.run_code(
+            "import os; print('cwd-ok', os.getcwd())",
+            workspace=workspace, artifacts=tmp_path / "art", timeout_s=30,
+        )
+        assert outcome.ok, outcome.detail
+        assert "cwd-ok" in outcome.stdout
+>       assert outcome.failure == {}  # \u0644\u0627 \u0641\u0634\u0644 \u0645\u0633\u0627\u062d\u0629 \u0639\u0645\u0644
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'pid': 6488,...': True, ...}} == {}
+E         
+E         Left contains 4 more items:
+E         {'parent_pid': 7268,
+E          'pid': 6488,
+E          'repair_result': {'absolute': True,
+E                            'cwd_exists': True,
+E                            'cwd_is_directory': True,...
+E         
+E         ...Full output truncated (5 lines hidden), use '-vv' to show
+
+tests\execution\test_workspace_0133.py:81: AssertionError
+__________________ test_b_windows_nonexistent_cwd_classified __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-127/test_b_windows_nonexistent_cwd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002857A9D0D70>
+
+    def test_b_windows_nonexistent_cwd_classified(tmp_path, monkeypatch):
+        """(B) \u0625\u0637\u0644\u0627\u0642 \u0628\u0640 cwd \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f: WinError 267 \u064a\u064f\u0635\u0646\u0651\u0641 \u0645\u0633\u0645\u0651\u0649 \u0644\u0627 \u0639\u0627\u0645\u064b\u0627\u060c
+        \u0645\u0639 \u0643\u0644 \u0627\u0644\u062d\u0642\u0648\u0644 (host/cwd/environment_id/execution_mode)."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        # \u0645\u0633\u0627\u0631 \u0628\u0646\u0645\u0637 Windows (\u064a\u0641\u0633\u064e\u0651\u0631 \u0646\u0633\u0628\u064a\u064b\u0627 \u0639\u0644\u0649 \u0645\u0636\u064a\u0641 Linux \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631\u064a \u2014 \u064a\u064f\u0646\u0634\u0623
+        # \u062a\u062d\u062a tmp_path \u0641\u0644\u0627 \u064a\u0644\u0648\u062b \u0634\u064a\u0626\u064b\u0627\u060c \u0648\u0627\u0644\u0633\u0644\u0648\u0643 \u0627\u0644\u0645\u0631\u062c\u0648 \u0647\u0648 \u0646\u0641\u0633\u0647 \u0639\u0644\u0649 Windows)
+        monkeypatch.chdir(tmp_path)
+        workspace = Path("C:/agent-runtime/jobs/1/ws")
+    
+        calls = {"n": 0}
+    
+        def fake_run(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", fake_run)
+        backend = LocalProcessBackend(environment_id="ws-b")
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert outcome.termination == "FAILED_TO_START"
+E       AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E         
+E         - FAILED_TO_START
+E         + COMPLETED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_workspace_0133.py:150: AssertionError
+_________ test_c_linux_path_on_windows_rejected_before_createprocess __________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-127/test_c_linux_path_on_windows_r0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002857B90F380>
+
+    def test_c_linux_path_on_windows_rejected_before_createprocess(
+        tmp_path, monkeypatch,
+    ):
+        """(C) \u200e/workspace \u0623\u0648 \u200e/work \u0643\u0640 cwd \u0639\u0644\u0649 Windows: \u0645\u0631\u0641\u0648\u0636 \u0642\u0628\u0644 \u0623\u064a
+        subprocess.run \u2014 \u0647\u0630\u0627 \u0628\u0627\u0644\u0636\u0628\u0637 \u0645\u0627 \u0643\u0627\u0646 \u064a\u0635\u0644 \u0625\u0644\u0649 CreateProcess."""
+        import execution.backends as backends
+        import execution.workspace as ws_mod
+    
+        monkeypatch.setattr(ws_mod, "host_os_detected", lambda: "Windows")
+        monkeypatch.setattr(backends, "host_os_detected", lambda: "Windows")
+    
+        def must_not_launch(*_args, **_kwargs):
+            raise AssertionError(
+                "CreateProcess \u0627\u0633\u062a\u064f\u062f\u0639\u064a \u0628\u0645\u0633\u0627\u0631 Linux \u0639\u0644\u0649 Windows \u2014 \u0645\u0645\u0646\u0648\u0639 (\xa72)"
+            )
+    
+        monkeypatch.setattr(backends.subprocess, "run", must_not_launch)
+    
+        backend = LocalProcessBackend(environment_id="ws-c")
+        for linux_path in ("/workspace/job-1", "/work", "/tmp/run"):
+            outcome = backend.run_code(
+                "print('x')", workspace=Path(linux_path),
+                artifacts=Path("/tmp/art"), timeout_s=10,
+            )
+>           assert outcome.termination == "FAILED_TO_START"
+E           AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E             
+E             - FAILED_TO_START
+E             + COMPLETED
+
+tests\execution\test_workspace_0133.py:219: AssertionError
+__________________ test_e_remote_linux_worker_real_execution __________________
+
+self = <tests.execution.test_workspace_0133.RealWorker object at 0x000002857D9A34D0>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable,
+             str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+>               with socket.create_connection(
+                    ("127.0.0.1", self.port), 0.4,
+                ):
+
+tests\execution\test_workspace_0133.py:351: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:864: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 49470), timeout = 0.4, source_address = None
+all_errors = False
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               TimeoutError: timed out
+
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:849: TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-127/test_e_remote_linux_worker_rea0')
+
+    def test_e_remote_linux_worker_real_execution(tmp_path):
+        """(E) \u0639\u0627\u0645\u0644 \u0628\u0639\u064a\u062f \u062d\u0642\u064a\u0642\u064a: \u062a\u0646\u0641\u064a\u0630 \u0641\u0639\u0644\u064a \u0628\u0645\u0644\u0641\u0627\u062a \u0641\u0639\u0644\u064a\u0629 \u062a\u0639\u0648\u062f \u0643\u0623\u062f\u0644\u0629\u060c
+        \u0648cwd \u064a\u064f\u062f\u0627\u0631 \u0644\u062f\u0649 \u0627\u0644\u0639\u0627\u0645\u0644 (host_path \u0641\u0627\u0631\u063a \u0639\u0644\u0649 \u0645\u0636\u064a\u0641 \u0627\u0644\u062a\u062d\u0643\u0645 \xa74)."""
+>       with RealWorker() as worker:
+             ^^^^^^^^^^^^
+
+tests\execution\test_workspace_0133.py:374: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.execution.test_workspace_0133.RealWorker object at 0x000002857D9A34D0>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable,
+             str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(
+                    ("127.0.0.1", self.port), 0.4,
+                ):
+                    return self
+            except OSError:
+                if self.process.poll() is not None:
+>                   raise RuntimeError("\u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639")
+E                   RuntimeError: \u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639
+
+tests\execution\test_workspace_0133.py:357: RuntimeError
+______________ test_f_strict_windows_wsl_ready_registers_worker _______________
+
+self = <tests.execution.test_workspace_0133.RealWorker object at 0x000002857E0B79D0>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable,
+             str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+>               with socket.create_connection(
+                    ("127.0.0.1", self.port), 0.4,
+                ):
+
+tests\execution\test_workspace_0133.py:351: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:864: in create_connection
+    raise exceptions[0]
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+address = ('127.0.0.1', 49483), timeout = 0.4, source_address = None
+all_errors = False
+
+    def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
+                          source_address=None, *, all_errors=False):
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        A host of '' or port 0 tells the OS to use the default. When a connection
+        cannot be created, raises the last error if *all_errors* is False,
+        and an ExceptionGroup of all errors if *all_errors* is True.
+        """
+    
+        host, port = address
+        exceptions = []
+        for res in getaddrinfo(host, port, 0, SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket(af, socktype, proto)
+                if timeout is not _GLOBAL_DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+>               sock.connect(sa)
+E               TimeoutError: timed out
+
+..\..\..\AppData\Local\Programs\Python\Python313\Lib\socket.py:849: TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_f_strict_windows_wsl_read0\ws-0133.db), autoflush=True, expire_on_commit=False)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002857AA05E80>
+
+    def test_f_strict_windows_wsl_ready_registers_worker(sessions, monkeypatch):
+        """(F+\xa73) WSL2 \u0645\u062a\u0627\u062d \u0641\u0639\u0644\u064a\u064b\u0627: \u0627\u0644\u062a\u062c\u0647\u064a\u0632 \u064a\u0639\u0628\u0631 \u0627\u0644\u062d\u062f \u0627\u0644\u0635\u0631\u064a\u062d \u0648\u064a\u0633\u062c\u0644 \u0628\u064a\u0626\u0629
+        \u0627\u0644\u0639\u0627\u0645\u0644 \u062b\u0645 \u064a\u062a\u062d\u0642\u0642 \u0645\u0646\u0647\u0627 \u2014 READY \u0641\u0642\u0637 \u0639\u0628\u0631 \u0641\u062d\u0648\u0635 \u062d\u0642\u064a\u0642\u064a\u0629."""
+        import execution.backends as backends_mod
+        import execution.service as service_mod
+        from execution import wsl as wsl_mod
+    
+        monkeypatch.setattr(backends_mod, "runtime_truth", _windows_truth)
+        monkeypatch.setattr(service_mod, "_substrate_available",
+                            lambda: False)
+        monkeypatch.setattr(
+            wsl_mod, "wsl_available",
+            lambda **_kw: {
+                "available": True, "reason": "", "detail": "Linux/x86_64",
+                "os": "Linux", "architecture": "x86_64", "python": "3.10",
+                "steps": {"wsl_exe": True, "uname": "Linux x86_64",
+                          "python3": "Python 3.10.12"},
+            },
+        )
+    
+        # \u0627\u0644\u0639\u0627\u0645\u0644 \xab\u062f\u0627\u062e\u0644 WSL\xbb \u062d\u0642\u064a\u0642\u064a \u0647\u0646\u0627 \u0643\u0639\u0645\u0644\u064a\u0629 Linux \u062f\u0627\u062e\u0644 \u062d\u0627\u0648\u064a\u0629 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631 \u2014
+        # \u0646\u0641\u0633 \u0628\u0631\u0648\u062a\u0648\u0643\u0648\u0644 HTTP \u0627\u0644\u0630\u064a \u0633\u064a\u0633\u062a\u0645\u0639 \u062f\u0627\u062e\u0644 WSL \u0639\u0644\u0649 \u062c\u0647\u0627\u0632 \u0627\u0644\u0645\u0627\u0644\u0643
+>       with RealWorker(token="wsl-sim-0133") as worker:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\execution\test_workspace_0133.py:494: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.execution.test_workspace_0133.RealWorker object at 0x000002857E0B79D0>
+
+    def __enter__(self):
+        self.process = subprocess.Popen(
+            [sys.executable,
+             str(REPO / "scripts" / "execution_worker.py"),
+             "--port", str(self.port), "--host", "127.0.0.1",
+             "--token", self.token],
+            cwd=str(REPO), stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(
+                    ("127.0.0.1", self.port), 0.4,
+                ):
+                    return self
+            except OSError:
+                if self.process.poll() is not None:
+>                   raise RuntimeError("\u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639")
+E                   RuntimeError: \u0627\u0644\u0639\u0627\u0645\u0644 \u0645\u0627\u062a \u0642\u0628\u0644 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639
+
+tests\execution\test_workspace_0133.py:357: RuntimeError
+__________________ test_i_no_infinite_retry_same_invalid_cwd __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-127/test_i_no_infinite_retry_same_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002857F445D30>
+
+    def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
+        """(I \xa710) \u0625\u0637\u0644\u0627\u0639\u0627\u0646 \u062d\u0635\u0631\u064b\u0627: \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 + \u0625\u0639\u0627\u062f\u0629 \u0648\u0627\u062d\u062f\u0629 \u0628\u0639\u062f
+        REPAIR \u2014 \u0627\u0644\u0641\u0634\u0644 \u0628\u0639\u062f\u0647\u0627 \u0646\u0647\u0627\u0626\u064a \u0645\u0647\u0645\u0627 \u062a\u0643\u0631\u0631 \u0627\u0644\u062e\u0637\u0623."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        calls = {"n": 0}
+    
+        def always_267(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", always_267)
+        backend = LocalProcessBackend(environment_id="ws-i")
+        workspace = tmp_path / "ws-i"
+        workspace.mkdir()
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert calls["n"] == 2, (
+            f"\u0627\u0644\u0625\u0637\u0644\u0627\u0642\u0627\u062a = {calls['n']} \u2014 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 2 \u0628\u0627\u0644\u0636\u0628\u0637 "
+            "(\u0623\u0648\u0644\u0649 + \u0625\u0639\u0627\u062f\u0629 \u0648\u0627\u062d\u062f\u0629 \u0628\u0639\u062f \u0627\u0644\u0625\u0635\u0644\u0627\u062d\u060c \u0644\u0627 \u062d\u0644\u0642\u0629)"
+        )
+E       AssertionError: \u0627\u0644\u0625\u0637\u0644\u0627\u0642\u0627\u062a = 0 \u2014 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 2 \u0628\u0627\u0644\u0636\u0628\u0637 (\u0623\u0648\u0644\u0649 + \u0625\u0639\u0627\u062f\u0629 \u0648\u0627\u062d\u062f\u0629 \u0628\u0639\u062f \u0627\u0644\u0625\u0635\u0644\u0627\u062d\u060c \u0644\u0627 \u062d\u0644\u0642\u0629)
+E       assert 0 == 2
+
+tests\execution\test_workspace_0133.py:650: AssertionError
+___________________ test_criteria_view_status_from_evidence ___________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857D9A0980>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F38B060>, ...}
+
+    def test_criteria_view_status_from_evidence(wf_env):
+        """(\xa725) \u0627\u0644\u062d\u0627\u0644\u0629 \u0645\u0646 \u0627\u0644\u0623\u062f\u0644\u0629 \u0627\u0644\u0645\u064a\u0643\u0627\u0646\u064a\u0643\u064a\u0629 \u0644\u0627 \u0645\u0646 \u0646\u0635 \u0627\u0644\u0645\u0646\u0641\u0630.
+    
+        \u0645\u0634\u0631\u0648\u0639 \u0628\u062e\u0637\u0629 \u0648\u062e\u0637\u0648\u0629 \u0645\u0646\u062c\u0632\u0629 \u0628\u062f\u0644\u064a\u0644 EVIDENCED \u2190 \u0645\u0639\u064a\u0627\u0631\u0647 EVIDENCED\u061b
+        \u0645\u0634\u0631\u0648\u0639 \u0628\u0644\u0627 \u0623\u062f\u0644\u0629 \u2190 \u0645\u0639\u0627\u064a\u064a\u0631\u0647 PENDING \u2014 \u0627\u0644\u0635\u062f\u0642 \u0642\u0628\u0644 \u0627\u0644\u0631\u0627\u062d\u0629.
+        """
+        sessions = wf_env["sessions"]
+        engine = wf_env["build_engine"]()
+        project = engine.create_project("\u0645\u0639\u0627\u064a\u064a\u0631", "\u0647\u062f\u0641 \u0628\u0645\u0639\u0627\u064a\u064a\u0631 \u0642\u0628\u0648\u0644")
+        engine.generate_plan(project["id"])
+        engine.approve_plan(project["id"], approved=True)
+        engine.run(project["id"])
+    
+        view = acceptance.criteria_view(sessions, project["id"])
+        assert view, "\u0644\u0627 \u0645\u0639\u0627\u064a\u064a\u0631 \u0641\u064a \u0627\u0644\u0642\u0631\u0627\u0621\u0629"
+        assert view[0]["criterion_id"] == "AC-01"
+        # \u0627\u0644\u062e\u0637\u0648\u0629 \u0646\u0641\u0630\u062a \u0628\u0623\u062f\u0644\u0629 \u0645\u064a\u0643\u0627\u0646\u064a\u0643\u064a\u0629 (EVIDENCED) \u2014 \u0627\u0644\u0645\u0639\u064a\u0627\u0631 \u062b\u0628\u062a
+        statuses = {c["status"] for c in view}
+        assert statuses <= {"EVIDENCED", "PENDING"}
+>       assert any(c["status"] == "EVIDENCED" for c in view), \
+            "\u062f\u0644\u064a\u0644 \u0645\u064a\u0643\u0627\u0646\u064a\u0643\u064a \u0645\u0648\u062c\u0648\u062f \u0648\u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 \u0643\u0644\u0647\u0627 PENDING \u2014 \u0627\u0644\u0631\u0628\u0637 \u0645\u0643\u0633\u0648\u0631"
+E       AssertionError: \u062f\u0644\u064a\u0644 \u0645\u064a\u0643\u0627\u0646\u064a\u0643\u064a \u0645\u0648\u062c\u0648\u062f \u0648\u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 \u0643\u0644\u0647\u0627 PENDING \u2014 \u0627\u0644\u0631\u0628\u0637 \u0645\u0643\u0633\u0648\u0631
+E       assert False
+E        +  where False = any(<generator object test_criteria_view_status_from_evidence.<locals>.<genexpr> at 0x000002857F4E6670>)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_acceptance_013.py:102: AssertionError
+_______________________ test_phase_step_state_persists ________________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857DECAB10>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F63F880>, ...}
+
+    def test_phase_step_state_persists(wf_env):
+        """4. \u062d\u0627\u0644\u0629 \u0627\u0644\u0645\u0631\u0627\u062d\u0644/\u0627\u0644\u062e\u0637\u0648\u0627\u062a \u062a\u062f\u0648\u0645 \u2014 \u0628\u0639\u062f \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u062a\u0628\u0642\u0649 \u0641\u064a \u0627\u0644\u0642\u0627\u0639\u062f\u0629."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+        phases = service.list_phases(wf_env["sessions"], pid)
+>       assert phases[0]["status"] == "COMPLETED"
+E       AssertionError: assert 'PLANNED' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + PLANNED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:82: AssertionError
+____________________ test_execution_creates_durable_record ____________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F3F0050>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F5751C0>, ...}
+
+    def test_execution_creates_durable_record(wf_env):
+        """5. \u0643\u0644 \u062a\u0646\u0641\u064a\u0630 \u0633\u062c\u0644 \u062f\u0627\u0626\u0645 \u0628\u0645\u0632\u0648\u062f\u0647 \u0648\u0646\u0645\u0648\u0630\u062c\u0647 \u0648\u0645\u0633\u0627\u062d\u0629 \u0639\u0645\u0644\u0647."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+        executions = service.list_executions(wf_env["sessions"], pid)
+>       assert len(executions) == 2  # \u062e\u0637\u0648\u062a\u0627\u0646
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 0 == 2
+E        +  where 0 = len([])
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:93: AssertionError
+___________________ test_evidence_links_execution_and_step ____________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F4CC380>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F734C20>, ...}
+
+    def test_evidence_links_execution_and_step(wf_env):
+        """6. \u0627\u0644\u062f\u0644\u064a\u0644 \u0645\u0631\u062a\u0628\u0637 \u0628\u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0648\u0627\u0644\u062e\u0637\u0648\u0629 \u2014 \u0642\u0627\u0628\u0644 \u0644\u0644\u0631\u062c\u0648\u0639 \u0628\u0627\u0644\u0645\u0639\u0631\u0641\u0627\u062a."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+        evidences = service.list_evidence(wf_env["sessions"], pid)
+>       assert len(evidences) == 2
+E       assert 0 == 2
+E        +  where 0 = len([])
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:106: AssertionError
+_______________________ test_failure_creates_diagnosis ________________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F4CD480>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F804D60>, ...}
+
+    def test_failure_creates_diagnosis(wf_env):
+        """7. \u0627\u0644\u0641\u0634\u0644 \u064a\u062e\u0644\u0642 \u062a\u0634\u062e\u064a\u0635\u064b\u0627 \u0645\u0648\u062b\u0642\u064b\u0627 \u2014 RetryRecord \u0628\u0633\u0628\u0628 \u0648\u0642\u0631\u0627\u0631."""
+        executor = wf_env["executor"]
+        executor.fail_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u0623\u0648\u0644",)
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+        steps = _steps_of(wf_env, pid)
+        first = [s for s in steps if s["ordinal"] == 1][0]
+        second = [s for s in steps if s["ordinal"] == 2][0]
+        # \u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0641\u0634\u0644\u062a \u0645\u0631\u062a\u064a\u0646 (\u0627\u0633\u062a\u0646\u0641\u0627\u062f \u0627\u0644\u0645\u064a\u0632\u0627\u0646\u064a\u0629) \u0648\u0627\u0644\u062b\u0627\u0646\u064a\u0629 \u0644\u0645 \u062a\u0628\u062f\u0623
+>       assert first["attempts"] == 2
+E       assert 0 == 2
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:135: AssertionError
+______________________ test_retry_creates_new_execution _______________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F5D7550>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F574CC0>, ...}
+
+    def test_retry_creates_new_execution(wf_env):
+        """8. \u0627\u0644\u0625\u0639\u0627\u062f\u0629 \u062a\u0646\u0634\u0626 \u062a\u0646\u0641\u064a\u0630\u064b\u0627 \u062c\u062f\u064a\u062f\u064b\u0627 \u2014 \u0644\u0627 \u0625\u0639\u0627\u062f\u0629 \u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0633\u062c\u0644 \u0633\u0627\u0628\u0642."""
+        executor = wf_env["executor"]
+    
+        # \u0623\u0648\u0644 \u062a\u0646\u0641\u064a\u0630 \u0644\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u064a\u0641\u0634\u0644 (\u0641\u0634\u0644 \u062a\u062f\u0642\u064a\u0642: \u0645\u0644\u0641 \u062e\u0627\u0637\u0626) \u062b\u0645 \u064a\u0646\u062c\u062d
+        executor.audit_fail_execs = {1}
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+        steps = _steps_of(wf_env, pid)
+        first = [s for s in steps if s["ordinal"] == 1][0]
+>       assert first["attempts"] == 2, "\u0627\u0644\u0625\u0639\u0627\u062f\u0629 \u0644\u0645 \u062a\u064f\u0646\u0634\u0626 \u0645\u062d\u0627\u0648\u0644\u0629 \u062b\u0627\u0646\u064a\u0629"
+E       AssertionError: \u0627\u0644\u0625\u0639\u0627\u062f\u0629 \u0644\u0645 \u062a\u064f\u0646\u0634\u0626 \u0645\u062d\u0627\u0648\u0644\u0629 \u062b\u0627\u0646\u064a\u0629
+E       assert 0 == 2
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:174: AssertionError
+______________ test_plan_revision_creates_v2_without_deleting_v1 ______________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F5D7C50>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F90D260>, ...}
+
+    def test_plan_revision_creates_v2_without_deleting_v1(wf_env):
+        """9. \u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u062e\u0637\u0629: v2 \u062a\u064f\u0646\u0634\u0623 \u0648v1 \u062a\u0628\u0642\u0649 SUPERSEDED \u0628\u0633\u0628\u0628\u0647\u0627 \u0648\u0623\u062f\u0644\u062a\u0647\u0627."""
+        executor = wf_env["executor"]
+        executor.fail_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u0623\u0648\u0644", "\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u062b\u0627\u0646\u064a")
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)  # \u0643\u0644 \u0627\u0644\u062e\u0637\u0648\u0627\u062a \u062a\u0641\u0634\u0644 \u0645\u0631\u062a\u064a\u0646 \u2190 \u0628\u0648\u0627\u0628\u0629 \u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u062e\u0637\u0629
+        project = service.get_project(wf_env["sessions"], pid)
+        assert project["status"] == "BLOCKED"
+        gates = service.open_gates(wf_env["sessions"], pid)
+>       assert gates and gates[0]["kind"] == "PLAN_REVISION_APPROVAL"
+E       AssertionError: assert ([{'id': 2, 'project_id': 1, 'kind': 'PREFLIGHT_BLOCKED', 'reason': 'sandbox (BLOCKED)', ...}] and 'PREFLIGHT_BLOCKED' == 'PLAN_REVISION_APPROVAL'
+E         
+E         - PLAN_REVISION_APPROVAL
+E         + PREFLIGHT_BLOCKED)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:195: AssertionError
+_________________ test_checkpoint_survives_process_recreation _________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857DE50F50>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F8A87C0>, ...}
+
+    def test_checkpoint_survives_process_recreation(wf_env):
+        """10. \u0627\u0644\u0640checkpoint \u064a\u0628\u0642\u0649 \u0628\u0639\u062f \u0625\u0639\u0627\u062f\u0629 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 (\u0645\u062d\u0631\u0643 \u062c\u062f\u064a\u062f)."""
+        from workflow.engine import ProjectEngine
+    
+        pid = _approved_project(wf_env, plan=TWO_PHASE_PLAN)
+        engine = wf_env["build_engine"](plan=TWO_PHASE_PLAN)
+        # \u0646\u0641\u0651\u0630 \u0645\u0631\u062d\u0644\u0629 \u0648\u0627\u062d\u062f\u0629 \u0641\u0642\u0637 \u0628\u062d\u062f \u0627\u0644\u0646\u0628\u0636\u0627\u062a = 3 (\u0628\u062f\u0621+\u062a\u0646\u0641\u064a\u0630+\u0645\u0631\u0627\u062c\u0639\u0629 \u0645\u0631\u062d\u0644\u0629)
+        engine.run(pid, max_ticks=3)
+        checkpoint = service.latest_checkpoint(wf_env["sessions"], pid)
+>       assert checkpoint is not None, "\u0644\u0627 checkpoint \u0628\u0639\u062f \u0627\u0644\u0639\u0645\u0644"
+E       AssertionError: \u0644\u0627 checkpoint \u0628\u0639\u062f \u0627\u0644\u0639\u0645\u0644
+E       assert None is not None
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:232: AssertionError
+____________________ test_resume_continues_from_checkpoint ____________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FA7B930>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FA77F60>, ...}
+
+    def test_resume_continues_from_checkpoint(wf_env):
+        """12. \u0627\u0644\u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u064a\u0643\u0645\u0644 \u0645\u0646 \u0646\u0642\u0637\u0629 \u0627\u0644\u062a\u0648\u0642\u0641 \u2014 \u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0645\u062a\u0628\u0642\u064a\u0629 \u062a\u0646\u0641\u0630."""
+        executor = wf_env["executor"]
+        executor.stop_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u062b\u0627\u0646\u064a",)
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+>       assert outcome["action"] == "paused"
+E       AssertionError: assert 'blocked' == 'paused'
+E         
+E         - paused
+E         + blocked
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:270: AssertionError
+_________________ test_completed_phase_advances_to_next_phase _________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FB37110>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FA75B20>, ...}
+
+    def test_completed_phase_advances_to_next_phase(wf_env):
+        """13. \u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0627\u0644\u0645\u0643\u062a\u0645\u0644\u0629 \u062a\u0646\u0642\u0644 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627 \u0625\u0644\u0649 \u0627\u0644\u062a\u0627\u0644\u064a\u0629."""
+        pid = _approved_project(wf_env, plan=TWO_PHASE_PLAN)
+        engine = wf_env["build_engine"](plan=TWO_PHASE_PLAN)
+        engine.run(pid)
+        phases = service.list_phases(wf_env["sessions"], pid)
+        active = [p for p in phases if p["plan_id"] == service.latest_plan(
+            wf_env["sessions"], pid)["id"]]
+>       assert [p["status"] for p in active] == ["COMPLETED", "COMPLETED"]
+E       AssertionError: assert ['PLANNED', 'PLANNED'] == ['COMPLETED', 'COMPLETED']
+E         
+E         At index 0 diff: 'PLANNED' != 'COMPLETED'
+E         Use -v to get more diff
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:299: AssertionError
+_________________ test_failed_phase_does_not_silently_advance _________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F995650>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FBD2660>, ...}
+
+    def test_failed_phase_does_not_silently_advance(wf_env):
+        """14. \u0627\u0644\u0645\u0631\u062d\u0644\u0629 \u0627\u0644\u0641\u0627\u0634\u0644\u0629 \u0644\u0627 \u062a\u062a\u0642\u062f\u0645 \u0635\u0627\u0645\u062a\u0629 \u2014 \u0628\u0648\u0627\u0628\u0629 \u0645\u0627\u0644\u0643 \u0623\u0648 \u062a\u0635\u0639\u064a\u062f."""
+        executor = wf_env["executor"]
+        executor.fail_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c",)  # \u0643\u0644 \u0627\u0644\u062e\u0637\u0648\u0627\u062a \u062a\u0641\u0634\u0644 \u062f\u0627\u0626\u0645\u064b\u0627
+        pid = _approved_project(wf_env, plan=TWO_PHASE_PLAN)
+        engine = wf_env["build_engine"](plan=TWO_PHASE_PLAN)
+        outcome = engine.run(pid)
+        assert outcome["action"] == "blocked"
+        phases = [
+            p for p in service.list_phases(wf_env["sessions"], pid)
+            if p["status"] != "PLANNED"
+        ]
+        # \u0645\u0631\u062d\u0644\u0629 \u0648\u0627\u062d\u062f\u0629 \u0641\u0642\u0637 \u0628\u062f\u0623\u062a \u2014 \u0627\u0644\u062b\u0627\u0646\u064a\u0629 \u0644\u0645 \u062a\u064f\u0641\u062a\u062d \u0623\u0628\u062f\u064b\u0627
+>       assert len(phases) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:317: AssertionError
+______________________ test_final_verified_only_by_owner ______________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F8334D0>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FCF2CA0>, ...}
+
+    def test_final_verified_only_by_owner(wf_env):
+        """16. VERIFIED \u0644\u0627 \u064a\u0635\u0646\u0639\u0647 \u0625\u0644\u0627 \u0627\u0644\u0645\u0627\u0644\u0643 \u2014 \u0627\u0644\u0645\u062d\u0631\u0643 \u0644\u0627 \u064a\u0645\u0644\u0643 \u0627\u0644\u0645\u0633\u0627\u0631."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+        project = service.get_project(wf_env["sessions"], pid)
+>       assert project["status"] == "COMPLETED"  # \u0645\u0631\u0634\u062d \u2014 \u0644\u064a\u0633 VERIFIED
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert 'BLOCKED' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + BLOCKED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:341: AssertionError
+_______________________ test_event_log_survives_restart _______________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FC60A50>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857F8963E0>, ...}
+
+    def test_event_log_survives_restart(wf_env):
+        """17. \u0633\u062c\u0644 \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u064a\u0628\u0642\u0649 \u0628\u0639\u062f \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u2014 \u0643\u0644 \u0627\u0644\u0627\u0646\u062a\u0642\u0627\u0644\u0627\u062a \u0627\u0644\u0645\u0647\u0645\u0629."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+>       engine.verify(pid)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:360: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <workflow.engine.ProjectEngine object at 0x000002857FC9D0D0>
+project_id = 1
+
+    def verify(self, project_id: int) -> dict:
+        """\u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u0646\u0647\u0627\u0626\u064a (\xa716) \u2014 VERIFIED \u0642\u0631\u0627\u0631 \u0627\u0644\u0645\u0627\u0644\u0643 \u0648\u062d\u062f\u0647\u060c \u0628\u0644\u0627 \u0627\u0633\u062a\u062b\u0646\u0627\u0621.
+    
+        \u0627\u0644\u0642\u0646\u0627\u0629 \u0627\u0644\u0648\u062d\u064a\u062f\u0629: \u0627\u0644\u0645\u0634\u0631\u0648\u0639 COMPLETED \u0648completion_state=CANDIDATE.
+        \u0644\u0627 \u064a\u0648\u062c\u062f \u0623\u064a \u0645\u0633\u0627\u0631 \u0622\u062e\u0631 \u0641\u064a \u0627\u0644\u0646\u0638\u0627\u0645 \u0643\u0644\u0647 \u064a\u0643\u062a\u0628 VERIFIED.
+        """
+        project = self._project(project_id)
+        if project["status"] != "COMPLETED":
+>           raise EngineError(
+                f"\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0641\u064a \u062d\u0627\u0644\u0629 {project['status']} \u2014 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u0646\u0647\u0627\u0626\u064a "
+                "\u064a\u062a\u0637\u0644\u0628 \u0627\u0643\u062a\u0645\u0627\u0644\u064b\u0627 \u0645\u0631\u0634\u062d\u064b\u0627 (COMPLETED + CANDIDATE)"
+            )
+E           workflow.engine.EngineError: \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0641\u064a \u062d\u0627\u0644\u0629 BLOCKED \u2014 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u064a\u062a\u0637\u0644\u0628 \u0627\u0643\u062a\u0645\u0627\u0644\u064b\u0627 \u0645\u0631\u0634\u062d\u064b\u0627 (COMPLETED + CANDIDATE)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\workflow\engine.py:288: EngineError
+__________________ test_commit_evidence_audit_remain_linked ___________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FD17C40>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FDAF600>, ...}
+
+    def test_commit_evidence_audit_remain_linked(wf_env):
+        """18. \u0627\u0644\u0631\u0648\u0627\u0628\u0637 \u062a\u0628\u0642\u0649: Step\u2192Execution\u2192Evidence\u2192Audit \u0628\u0645\u0639\u0631\u0641\u0627\u062a \u0635\u062d\u064a\u062d\u0629."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid)
+        audits = service.list_audits(wf_env["sessions"], pid)
+>       assert audits
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:382: AssertionError
+___________________ test_no_completion_without_final_audit ____________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FDE7150>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FEFED40>, ...}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002857FDE6A50>
+
+    def test_no_completion_without_final_audit(wf_env, monkeypatch):
+        """19. \u0644\u0627 \u0627\u0643\u062a\u0645\u0627\u0644 \u0628\u0644\u0627 \u062a\u062f\u0642\u064a\u0642 \u0646\u0647\u0627\u0626\u064a \u0646\u0627\u062c\u062d \u2014 \u0641\u0634\u0644\u0647 \u064a\u0641\u062a\u062d \u0628\u0648\u0627\u0628\u0629 \u0644\u0627 \u064a\u0643\u0645\u0644."""
+        from workflow import auditor as auditor_mod
+    
+        def failing_final(project, phases, steps, evidences, audits):
+            return {"verdict": "FAIL", "unresolved_issues": ["x"],
+                    "phases_total": len(phases), "phases_completed": 0,
+                    "phases_pending": [p["id"] for p in phases],
+                    "steps_pending": [], "failed_audits": [],
+                    "evidence_integrity": {}, "broken_evidence": []}
+    
+        monkeypatch.setattr(auditor_mod, "audit_final", failing_final)
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+        project = service.get_project(wf_env["sessions"], pid)
+        assert project["status"] == "BLOCKED", "\u0627\u0643\u062a\u0645\u0644 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0628\u0644\u0627 \u062a\u062f\u0642\u064a\u0642 \u0646\u0647\u0627\u0626\u064a!"
+        assert project["completion_state"] != "CANDIDATE"
+        gates = service.open_gates(wf_env["sessions"], pid)
+>       assert any(g["kind"] == "PLAN_REVISION_APPROVAL" for g in gates)
+E       assert False
+E        +  where False = any(<generator object test_no_completion_without_final_audit.<locals>.<genexpr> at 0x000002857FE4B920>)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:419: AssertionError
+____________________ test_execution_not_silently_verified _____________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F70CB30>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002857FDAE980>, ...}
+
+    def test_execution_not_silently_verified(wf_env):
+        """20. \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u0645\u0643\u062a\u0645\u0644 \u0644\u0627 \u064a\u0639\u0627\u0645\u0644 \u0643\u0623\u0646\u0647 VERIFIED \u2014 \u0627\u0644\u0641\u0631\u0642 \u0645\u0635\u0627\u0646."""
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"]()
+        engine.run(pid, max_ticks=1)  # \u062a\u0646\u0641\u064a\u0630 \u0648\u0627\u062d\u062f \u0641\u0642\u0637
+        executions = service.list_executions(wf_env["sessions"], pid)
+        completed = [e for e in executions if e["status"] == "COMPLETED"]
+>       assert completed, "\u0627\u0644\u0646\u0628\u0636\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0646\u062c\u0632 \u062a\u0646\u0641\u064a\u0630\u064b\u0627"
+E       AssertionError: \u0627\u0644\u0646\u0628\u0636\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u064a\u062c\u0628 \u0623\u0646 \u062a\u0646\u062c\u0632 \u062a\u0646\u0641\u064a\u0630\u064b\u0627
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:429: AssertionError
+__________________ test_full_lifecycle_with_process_restart ___________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x00000285002918B0>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002850020DC60>, ...}
+
+    def test_full_lifecycle_with_process_restart(wf_env):
+        """\u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u0643\u0627\u0645\u0644: \u0625\u0646\u0634\u0627\u0621 \u2190 \u0627\u0639\u062a\u0645\u0627\u062f \u2190 \u062a\u0646\u0641\u064a\u0630 \u2190 \u062f\u0644\u064a\u0644 \u2190 restart \u0641\u0639\u0644\u064a
+        (\u0645\u062d\u0631\u0643 \u062c\u062f\u064a\u062f \u0639\u0644\u0649 \u0646\u0641\u0633 \u0627\u0644\u0642\u0627\u0639\u062f\u0629) \u2190 \u0627\u0633\u062a\u0631\u062f\u0627\u062f \u2190 \u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u2190 \u0627\u0643\u062a\u0645\u0627\u0644 \u0645\u0631\u062d\u0644\u0629 \u2190
+        \u062a\u062f\u0642\u064a\u0642 \u0646\u0647\u0627\u0626\u064a \u2190 \u062a\u062d\u0642\u0642 \u0627\u0644\u0645\u0627\u0644\u0643 \u2014 \u0643\u0644 \u062d\u0627\u0644\u0629 \u0645\u0646 \u0627\u0644\u0642\u0627\u0639\u062f\u0629 \u0648\u062d\u062f\u0647\u0627."""
+        from workflow.engine import ProjectEngine
+    
+        # \u0627\u0644\u0645\u0631\u062d\u0644\u0629 1: \u0625\u0646\u0634\u0627\u0621 + \u062e\u0637\u0629 + \u0627\u0639\u062a\u0645\u0627\u062f + \u062a\u0646\u0641\u064a\u0630 \u0623\u0648\u0644 \u062e\u0637\u0648\u0629
+        engine = wf_env["build_engine"]()
+        project = engine.create_project("\u062f\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629", "\u0647\u062f\u0641 \u0627\u0644\u062f\u0648\u0631\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629")
+        pid = project["id"]
+        engine.generate_plan(pid)
+        engine.approve_plan(pid, approved=True)
+        # \u0646\u0628\u0636\u0629 \u0648\u0627\u062d\u062f\u0629: \u0628\u062f\u0621 \u0627\u0644\u0645\u0631\u062d\u0644\u0629 + \u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062e\u0637\u0648\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u062d\u0635\u0631\u064b\u0627
+        engine.run(pid, max_ticks=1)
+        steps = _steps_of(wf_env, pid)
+>       assert steps[0]["status"] == "COMPLETED"
+E       AssertionError: assert 'PENDING' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + PENDING
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:457: AssertionError
+______________ test_provider_not_ready_blocks_step_then_resumes _______________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F983CB0>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x00000285002A6020>, ...}
+
+    def test_provider_not_ready_blocks_step_then_resumes(wf_env):
+        """\u0645\u0632\u0648\u062f \u063a\u064a\u0631 \u062c\u0627\u0647\u0632 \u2190 \u062e\u0637\u0648\u0629 \u0645\u062d\u062c\u0648\u0628\u0629 \u2190 \u062f\u0644\u064a\u0644 \u2190 \u0641\u0639\u0644 \u0645\u0627\u0644\u0643 \u2190 \u062c\u0627\u0647\u0632 \u2190 \u062a\u0633\u062a\u0623\u0646\u0641."""
+        # \u0627\u0644\u0645\u0632\u0648\u062f \u063a\u064a\u0631 \u0645\u062a\u0627\u062d \u0641\u064a \u0627\u0644\u0645\u0648\u062c\u0651\u0647 \u2014 \u0643\u0644 \u0627\u0644\u0623\u062f\u0648\u0627\u0631 \u0628\u0644\u0627 \u0646\u0642\u0644
+        pid = _approved_project(wf_env)
+        engine = wf_env["build_engine"](providers=())  # \u0644\u0627 \u0645\u0632\u0648\u062f \u062d\u064a
+        outcome = engine.run(pid)
+        assert outcome["action"] == "blocked"
+        project = service.get_project(wf_env["sessions"], pid)
+        assert project["status"] == "BLOCKED"
+    
+        # \u062f\u0644\u064a\u0644 \u0627\u0644\u0645\u0646\u0639 \u0645\u0648\u062c\u0648\u062f (007.1 \xa717) \u2014 \u064a\u0633\u0645\u064a \u0627\u0644\u0645\u0632\u0648\u062f \u0648\u0627\u0644\u062d\u0627\u0644\u0629
+        evidences = service.list_evidence(wf_env["sessions"], pid)
+        blocked_evidence = [e for e in evidences
+                            if e["verdict"] == "EXECUTION_BLOCKED"]
+>       assert blocked_evidence, "\u0644\u0627 \u062f\u0644\u064a\u0644 \u0644\u0644\u0645\u0646\u0639 \u2014 \u0627\u0646\u062a\u0647\u0627\u0643 \xa717"
+E       AssertionError: \u0644\u0627 \u062f\u0644\u064a\u0644 \u0644\u0644\u0645\u0646\u0639 \u2014 \u0627\u0646\u062a\u0647\u0627\u0643 \xa717
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_engine_lifecycle.py:515: AssertionError
+_______ test_blocked_then_provisioned_recheck_resume_without_reapproval _______
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857E2A52B0>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x0000028500601F80>, ...}
+probe_seam = <function probe_seam.<locals>.fake_sandbox_probe at 0x00000285006D2700>
+
+    def test_blocked_then_provisioned_recheck_resume_without_reapproval(
+            wf_env, probe_seam):
+        """(\xa719 \u062d\u0631\u0641\u064a\u064b\u0627) \u0627\u0644\u062e\u0637\u0629 \u0644\u0645 \u062a\u062a\u063a\u064a\u0631 \u2192 \u0644\u0627 \u0625\u0639\u0627\u062f\u0629 \u0627\u0639\u062a\u0645\u0627\u062f \u0623\u0628\u062f\u064b\u0627."""
+        pid = _approved_project(wf_env)
+        sessions = wf_env["sessions"]
+    
+        # 1) \u0644\u0627 \u0628\u064a\u0626\u0629 \u062c\u0627\u0647\u0632\u0629 \u2192 \u0627\u0644\u0641\u062d\u0635 \u064a\u062d\u062c\u0628 \u0642\u0628\u0644 \u0623\u0648\u0644 \u062e\u0637\u0648\u0629
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+        assert outcome["action"] == "blocked"
+        assert outcome.get("blocked_kind") == "preflight"
+        project = service.get_project(sessions, pid)
+        assert project["status"] == "BLOCKED"
+    
+        # \u0628\u0648\u0627\u0628\u0629 \u062a\u0648\u0641\u064a\u0631 (BLOCKED) \u0644\u0627 \u0642\u0631\u0627\u0631 \u2014 \u0648\u0627\u0644\u0633\u0628\u0628 \u064a\u0633\u0645\u064a \u0627\u0644\u0645\u0637\u0644\u0648\u0628
+        gates_rows = service.open_gates(sessions, pid)
+        assert len(gates_rows) == 1
+        gate = gates_rows[0]
+        assert gate["kind"] == "PREFLIGHT_BLOCKED"
+        assert gate["status"] == "BLOCKED"
+        assert gate["details"]["recheck_hint"]
+    
+        # \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u062f\u0627\u0626\u0645\u0629: PREFLIGHT_BLOCKED \u0628\u0627\u0644\u0642\u0635\u0629 \u0643\u0627\u0645\u0644\u0629
+        kinds = [e["kind"] for e in service.list_events(sessions, pid, 100)]
+        assert "PREFLIGHT_BLOCKED" in kinds
+    
+        # 2) \u0627\u0644\u0645\u0627\u0644\u0643 \u064a\u0648\u0641\u0631 \u0627\u0644\u0628\u064a\u0626\u0629 (\u0627\u0644\u062a\u0633\u062c\u064a\u0644 \u0641\u064a \u0627\u0644\u0645\u0635\u062f\u0631: \u0633\u062c\u0644 \u0627\u0644\u0628\u064a\u0626\u0627\u062a)
+        _set_local_env(sessions, status="READY", sandboxed=1)
+    
+        # 3) \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0641\u062d\u0635 \u2192 PASS \u2192 \u062d\u0644 \u0622\u0644\u064a \u0644\u0644\u0628\u0648\u0627\u0628\u0629 \u2192 READY
+        recheck = engine.recheck_preflight(pid)
+>       assert recheck["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_provisioning_011.py:131: AssertionError
+________________ test_run_rechecks_provisioning_automatically _________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857FEC6ED0>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x00000285007FDBC0>, ...}
+probe_seam = <function probe_seam.<locals>.fake_sandbox_probe at 0x00000285007FDB20>
+
+    def test_run_rechecks_provisioning_automatically(wf_env, probe_seam):
+        """\u0632\u0631 \xab\u062a\u0634\u063a\u064a\u0644\xbb \u0648\u062d\u062f\u0647 \u064a\u0643\u0641\u064a \u0628\u0639\u062f \u0627\u0644\u062a\u0648\u0641\u064a\u0631: tick \u064a\u0631\u0649 \u0628\u0648\u0627\u0628\u0627\u062a \u062a\u0648\u0641\u064a\u0631 \u0641\u0642\u0637
+        \u0641\u064a\u0639\u064a\u062f \u0627\u0644\u0641\u062d\u0635 \u062a\u0644\u0642\u0627\u0626\u064a\u064b\u0627 (BLOCKED \u2190 RECHECK \u2190 READY \u2190 OPEN)."""
+        pid = _approved_project(wf_env)
+        sessions = wf_env["sessions"]
+        engine = wf_env["build_engine"]()
+        engine.run(pid)   # \u062d\u062c\u0628
+        assert service.get_project(sessions, pid)["status"] == "BLOCKED"
+        # \u0627\u0644\u0645\u0627\u0644\u0643 \u0648\u0641\u0631 \u0627\u0644\u0628\u064a\u0626\u0629 \u062b\u0645 \u0636\u063a\u0637 \xab\u062a\u0634\u063a\u064a\u0644\xbb \u0645\u0628\u0627\u0634\u0631\u0629 (\u0628\u0644\u0627 \u0632\u0631 \u0625\u0639\u0627\u062f\u0629 \u0641\u062d\u0635)
+        _set_local_env(sessions, status="READY", sandboxed=1)
+        outcome = wf_env["build_engine"]().run(pid)
+>       assert outcome.get("blocked_kind") != "preflight"
+E       AssertionError: assert 'preflight' != 'preflight'
+E        +  where 'preflight' = <built-in method get of dict object at 0x00000285008BD900>('blocked_kind')
+E        +    where <built-in method get of dict object at 0x00000285008BD900> = {'action': 'blocked', 'blocked_kind': 'preflight', 'reason': '\u0627\u0644\u062d\u0648\u0627\u062c\u0632: sandbox (BLOCKED) \u2014 \u0627\u0644\u0625\u062c\u0631\u0627\u0621 \u0642\u0628\u0644 \u0627\u0644\u0628\u062f\u0621\u060c \u0644\u0627 \u0628\u0639\u062f\u0647', 'gates': ['PREFLIGHT_BLOCKED'], ...}.get
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_provisioning_011.py:183: AssertionError
+_______________ test_compatible_policy_runs_on_unsandboxed_env ________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x000002857F449850>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x000002850077CE00>, ...}
+probe_seam = <function probe_seam.<locals>.fake_sandbox_probe at 0x00000285008EE340>
+
+    def test_compatible_policy_runs_on_unsandboxed_env(wf_env, probe_seam):
+        """\u0627\u0644\u0633\u064a\u0627\u0633\u0629 \u0627\u0644\u0645\u062a\u0648\u0627\u0641\u0642\u0629 (\u0642\u0631\u0627\u0631 \u0645\u0627\u0644\u0643 \u0635\u0631\u064a\u062d) \u062a\u0642\u0628\u0644 \u0627\u0644\u0628\u064a\u0626\u0629 \u063a\u064a\u0631 \u0627\u0644\u0645\u0639\u0632\u0648\u0644\u0629 \u2014
+        \u0648\u0627\u0644\u0646\u062a\u064a\u062c\u0629 \u0645\u0639\u0644\u0646\u0629\u060c \u0644\u0627 \u0627\u062f\u0639\u0627\u0621 \u0639\u0632\u0644."""
+        sessions = wf_env["sessions"]
+        _compat_env_only(sessions)
+        engine = wf_env["build_engine"]()
+        project = engine.create_project(
+            "\u0645\u062a\u0648\u0627\u0641\u0642", "\u0647\u062f\u0641 \u0628\u0644\u0627 \u062d\u0633\u0627\u0633\u064a\u0629 \u0639\u0632\u0644", execution_policy="COMPATIBLE_LOCAL")
+        assert project["execution_policy"] == "COMPATIBLE_LOCAL"
+        engine.generate_plan(project["id"])
+        engine.approve_plan(project["id"], approved=True)
+        engine.run(project["id"])
+>       assert service.get_project(sessions, project["id"])["status"] == "COMPLETED"
+E       AssertionError: assert 'BLOCKED' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + BLOCKED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_provisioning_011.py:222: AssertionError
+____________________________ test_all_ready_passes ____________________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_all_ready_passes0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_all_ready_passes(sessions):
+        _sandbox_ready(sessions)
+        _ddg(sessions, "READY")
+        result = preflight.task_preflight(
+            sessions, "\u0627\u0628\u062d\u062b \u0639\u0646 \u0645\u0634\u0631\u0648\u0639 \u0645\u0641\u062a\u0648\u062d \u0627\u0644\u0645\u0635\u062f\u0631 \u0648\u0627\u0643\u062a\u0628 \u0645\u0644\u062e\u0635\u064b\u0627",
+            run_probe_fn=_fast_probe({}),
+        )
+>       assert result["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:114: AssertionError
+____________ test_required_missing_blocks_with_reason_and_recovery ____________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_required_missing_blocks_w0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_required_missing_blocks_with_reason_and_recovery(sessions):
+        _sandbox_ready(sessions)
+        # (011 \xa712) \u0627\u0644\u0628\u062d\u062b \u064a\u064f\u0634\u062a\u0642 \u0645\u0646 \u0645\u0632\u0648\u062f\u064a\u0647 \u2014 DDG \u0641\u0627\u0634\u0644 \u0628\u0645\u0633\u0628\u0627\u0631 \u062d\u0642\u064a\u0642\u064a \u0645\u0633\u062c\u0644
+        _ddg(sessions, "NOT_READY", "\u0644\u0645 \u062a\u064f\u0631\u062c\u0639 \u0627\u0644\u0623\u062f\u0627\u0629 \u0645\u0627\u062f\u0629 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u062a\u062d\u0644\u064a\u0644")
+        result = preflight.task_preflight(
+            sessions, "\u0645\u0647\u0645\u0629 \u0628\u062d\u062b",
+            run_probe_fn=_fast_probe({}),
+        )
+        assert result["verdict"] == "BLOCKED"
+        blocked = result["blocked"]
+>       assert [b["capability_id"] for b in blocked] == ["web_search"]
+E       AssertionError: assert ['sandbox', 'web_search'] == ['web_search']
+E         
+E         At index 0 diff: 'sandbox' != 'web_search'
+E         Left contains one more item: 'web_search'
+E         Use -v to get more diff
+
+tests\readiness\test_preflight.py:129: AssertionError
+_______________ test_optional_capability_missing_does_not_block _______________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_optional_capability_missi0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_optional_capability_missing_does_not_block(sessions):
+        """\u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631\u064a \u0627\u0644\u063a\u0627\u0626\u0628 \u0644\u0627 \u064a\u062d\u062c\u0628 (\xa728) \u2014 \u0627\u0644\u0642\u062f\u0631\u0627\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629 \u0641\u0642\u0637 \u062a\u062d\u0643\u0645."""
+        _sandbox_ready(sessions)
+        result = preflight.task_preflight(
+            sessions, "\u0645\u0647\u0645\u0629",
+            run_probe_fn=_fast_probe({"git": _not_ready("git \u063a\u0627\u0626\u0628",
+                                                        "DEPENDENCY_FAILURE")}),
+        )
+        # git \u0644\u064a\u0633 \u0641\u064a required_capabilities \u2014 \u063a\u064a\u0627\u0628\u0647 \u0644\u0627 \u064a\u0638\u0647\u0631 \u0623\u0635\u0644\u064b\u0627 \u0641\u064a \u0627\u0644\u0645\u0637\u0644\u0648\u0628
+>       assert result["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:157: AssertionError
+_____________________ test_ttl_fresh_ready_skips_reprobe ______________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_ttl_fresh_ready_skips_rep0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_ttl_fresh_ready_skips_reprobe(sessions):
+        """\u062c\u0627\u0647\u0632\u064a\u0629 \u0635\u0627\u0644\u062d\u0629 (\u062f\u0627\u062e\u0644 TTL) \u0644\u0627 \u062a\u064f\u0639\u0627\u062f \u0641\u062d\u0635\u0647\u0627 (\xa724) \u2014 \u0642\u0631\u0627\u0621\u0629 \u0645\u0646 \u0627\u0644\u0642\u0627\u0639\u062f\u0629."""
+        probe_calls = {"n": 0}
+    
+        def counting_probe(sessions_, capability_id, **kwargs):
+            probe_calls["n"] += 1
+            return registry.record_probe(sessions_, capability_id, _ready())
+    
+        _sandbox_ready(sessions)
+        first = preflight.task_preflight(
+            sessions, "\u0645\u0647\u0645\u0629", run_probe_fn=counting_probe)
+>       assert first["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:171: AssertionError
+________________ test_environment_selection_appears_in_result _________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_environment_selection_app0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_environment_selection_appears_in_result(sessions):
+        """\xa718: \u0627\u0644\u0628\u064a\u0626\u0629 \u0627\u0644\u0645\u062e\u062a\u0627\u0631\u0629 \u062a\u064f\u0633\u0645\u0651\u0649 \u2014 \u0644\u0627 \u062a\u0646\u0641\u064a\u0630 \u0639\u0628\u0631 \u0628\u064a\u0626\u0629 \u063a\u064a\u0631 \u0645\u0639\u0644\u0646\u0629."""
+        from execution import service as execution_service
+    
+        result = preflight.task_preflight(
+            sessions, "\u0645\u0647\u0645\u0629", llm_ready=True, force=True,
+        )
+        # \u0641\u064a \u0628\u064a\u0626\u0629 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631: local-linux \u0645\u0633\u062c\u0644\u0629 UNKNOWN \u2192 \u0644\u064a\u0633\u062a \u062c\u0627\u0647\u0632\u0629 \u2192 None
+        assert "environment" in result
+        env = result["environment"]
+        if env is not None:
+            assert env["name"] and env["backend"]
+            assert "sandboxed" in env
+        # \u0628\u0639\u062f \u062c\u0639\u0644\u0647\u0627 READY \u0639\u0628\u0631 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u062d\u0642\u064a\u0642\u064a (\u0645\u062d\u0627\u0643\u0627\u0629) \u062a\u0638\u0647\u0631 \u0628\u0627\u0644\u0627\u0633\u0645
+        execution_service.ensure_local_registered(sessions)
+        from execution.models import ExecutionEnvironment
+        from sqlalchemy import select as sa_select
+    
+        with sessions() as s:
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\readiness\test_preflight_matrix.py:142: AttributeError
+________ test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds _________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_search_blocked_goal_block0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds(sessions):
+        """\xa739.8 \u0627\u0644\u062c\u0648\u0647\u0631: \u0627\u0644\u0628\u062d\u062b \u0645\u0639\u0637\u0644 \u2260 \u0627\u0644\u0625\u0646\u062a\u0631\u0646\u062a \u0645\u0642\u0637\u0648\u0639 \u2014 \u0645\u0647\u0645\u0629 \u0627\u0644\u062c\u0644\u0628 \u062a\u0633\u062a\u0645\u0631."""
+        # \u0634\u0628\u0643\u0629 \u0648\u062c\u0644\u0628 \u0648\u0645\u0644\u0641\u0627\u062a \u062c\u0627\u0647\u0632\u0629\u061b \u0627\u0644\u0628\u062d\u062b \u0645\u0639\u0637\u0644 (\u0627\u0644\u0645\u0632\u0648\u062f \u0641\u064a \u0645\u0635\u062f\u0631\u0647 \u2014 011 \xa712)
+        _env_ready(sessions)
+        for cap in ("filesystem", "network_dns", "network_https",
+                    "shell", "persistence"):
+            _set_status(sessions, cap, "READY")
+        _ddg(sessions, "NOT_READY", "\u0643\u0644 \u0645\u0632\u0648\u062f\u064a \u0627\u0644\u0628\u062d\u062b \u063a\u064a\u0631 \u062c\u0627\u0647\u0632\u064a\u0646")
+        _set_status(sessions, "web_fetch", "READY")
+    
+        # \u0647\u062f\u0641 OSINT (\u064a\u0637\u0644\u0628 \u0627\u0644\u0628\u062d\u062b \u062c\u0648\u0647\u0631\u064a\u064b\u0627) \u2192 BLOCKED \u0628\u0642\u0631\u0627\u0631 \u0648\u0627\u0639\u064d
+        osint = preflight.task_preflight(
+            sessions, "\u0627\u0628\u0646\u0650 \u0645\u0646\u0635\u0629 OSINT \u0645\u062a\u0642\u062f\u0645\u0629 \u0628\u0628\u062d\u062b \u0648\u0645\u0635\u0627\u062f\u0631", llm_ready=True,
+            run_probe_fn=_use_seamed(web_search="NOT_READY"),
+        )
+        assert osint["verdict"] == "BLOCKED"
+        blocked_ids = {b["capability_id"] for b in osint["blocked"]}
+        assert "web_search" in blocked_ids
+        assert "web_fetch" not in blocked_ids  # \u0627\u0644\u062c\u0644\u0628 \u062c\u0627\u0647\u0632 \u0641\u0644\u0627 \u064a\u064f\u062d\u062c\u0628
+        row = [r for r in osint["matrix"] if r["capability_id"] == "web_search"][0]
+        assert row["decision"] == "BLOCK"
+    
+        # \u0647\u062f\u0641 \u0628\u0644\u0627 \u0628\u062d\u062b (\u062c\u0644\u0628 \u0645\u0628\u0627\u0634\u0631) \u2192 \u064a\u0645\u0631 \u2014 \u0627\u0644\u0642\u062f\u0631\u0627\u062a \u0645\u0646\u0641\u0635\u0644\u0629 (\xa723)
+        fetch_only = preflight.task_preflight(
+            sessions, "\u0627\u062c\u0644\u0628 \u0635\u0641\u062d\u0629 \u0627\u0644\u0648\u062b\u0627\u0626\u0642 \u0645\u0646 \u0631\u0627\u0628\u0637 \u0645\u0639\u0637\u0649 \u0648\u062d\u0644\u0644\u0647\u0627 \u0648\u0627\u0643\u062a\u0628 \u062a\u0642\u0631\u064a\u0631\u064b\u0627", llm_ready=True,
+            run_probe_fn=_use_seamed(web_search="NOT_READY"),
+        )
+>       assert fetch_only["verdict"] == "PASS", fetch_only["summary"]
+E       AssertionError: \u0627\u0644\u062d\u0648\u0627\u062c\u0632: sandbox (BLOCKED) \u2014 \u0627\u0644\u0625\u062c\u0631\u0627\u0621 \u0642\u0628\u0644 \u0627\u0644\u0628\u062f\u0621\u060c \u0644\u0627 \u0628\u0639\u062f\u0647
+E       assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight_matrix.py:176: AssertionError
+_____________ test_preflight_events_carry_matrix_and_environment ______________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_preflight_events_carry_ma0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_preflight_events_carry_matrix_and_environment(sessions):
+        """\xa729: \u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u062d\u064a\u0629 \u062a\u062d\u0645\u0644 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0629 \u2014 \u0627\u0644\u0648\u0627\u062c\u0647\u0629 \u062a\u0639\u0631\u0636\u0647\u0627 \u0628\u0644\u0627 \u0637\u0644\u0628 \u0625\u0636\u0627\u0641\u064a."""
+        _env_ready(sessions)
+        for cap in ("filesystem", "network_dns", "network_https",
+                    "shell", "persistence"):
+            _set_status(sessions, cap, "READY")
+        result = preflight.task_preflight(
+            sessions, "\u0645\u0647\u0645\u0629 \u0639\u0627\u062f\u064a\u0629", llm_ready=True,
+            run_probe_fn=_use_seamed(),
+        )
+        events = preflight.preflight_events(result)
+        kinds = [e["kind"] for e in events]
+        assert kinds[0] == "preflight.started"
+>       assert "preflight.passed" in kinds
+E       AssertionError: assert 'preflight.passed' in ['preflight.started', 'preflight.blocked']
+
+tests\readiness\test_preflight_matrix.py:209: AssertionError
+_______________ test_capability_view_sandbox_from_environments ________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-127\test_capability_view_sandbox_f0\readiness-011.db), autoflush=True, expire_on_commit=False)
+
+    def test_capability_view_sandbox_from_environments(sessions):
+        """sandbox \u0645\u0646 \u0633\u062c\u0644 \u0627\u0644\u0628\u064a\u0626\u0627\u062a \u2014 \u0646\u0641\u0633 \u0645\u0635\u062f\u0631 \u0627\u0644\u0645\u0633\u0628\u0627\u0631 \u0648\u0627\u0644\u0645\u0646\u0641\u0630 (010 \xa719)."""
+        from execution import service as execution_service
+    
+        view = readiness_service.capability_view(sessions, "sandbox")
+        assert view["derived_from"] == "execution_environments"
+        assert view["readiness_status"] in ("NOT_READY", "UNAVAILABLE")
+    
+        execution_service.ensure_local_registered(sessions)
+        with sessions() as s:
+            from execution.models import ExecutionEnvironment
+    
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\readiness\test_service_011.py:166: AttributeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests\execution\test_backends.py:131
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_backends.py:131: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(90)
+
+tests\execution\test_backends.py:178
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_backends.py:178: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(60)
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+src\api\routes.py:2150
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\api\routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\\execution\\test_failure_reporting_0139.py:195: \u064a\u062a\u0637\u0644\u0628 \u0631\u0643\u064a\u0632\u0629 Linux \u0645\u062a\u0627\u062d\u0629 (available() \u062a\u062a\u062d\u0642\u0642 \u0623\u0648\u0644\u064b\u0627)
+SKIPPED [1] tests\\execution\\test_workspace_0133.py:616: \u0627\u0644\u0645\u0646\u0635\u0629 \u062a\u0633\u0645\u062d \u0628\u0627\u0644\u0643\u062a\u0627\u0628\u0629 \u0631\u063a\u0645 0o500
+FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http
+FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real
+FAILED tests/execution/test_workspace_0133.py::test_a_valid_cwd_runs_and_reports_preflight
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess
+FAILED tests/execution/test_workspace_0133.py::test_e_remote_linux_worker_real_execution
+FAILED tests/execution/test_workspace_0133.py::test_f_strict_windows_wsl_ready_registers_worker
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+FAILED tests/workflow/test_acceptance_013.py::test_criteria_view_status_from_evidence
+FAILED tests/workflow/test_engine_lifecycle.py::test_phase_step_state_persists
+FAILED tests/workflow/test_engine_lifecycle.py::test_execution_creates_durable_record
+FAILED tests/workflow/test_engine_lifecycle.py::test_evidence_links_execution_and_step
+FAILED tests/workflow/test_engine_lifecycle.py::test_failure_creates_diagnosis
+FAILED tests/workflow/test_engine_lifecycle.py::test_retry_creates_new_execution
+FAILED tests/workflow/test_engine_lifecycle.py::test_plan_revision_creates_v2_without_deleting_v1
+FAILED tests/workflow/test_engine_lifecycle.py::test_checkpoint_survives_process_recreation
+FAILED tests/workflow/test_engine_lifecycle.py::test_resume_continues_from_checkpoint
+FAILED tests/workflow/test_engine_lifecycle.py::test_completed_phase_advances_to_next_phase
+FAILED tests/workflow/test_engine_lifecycle.py::test_failed_phase_does_not_silently_advance
+FAILED tests/workflow/test_engine_lifecycle.py::test_final_verified_only_by_owner
+FAILED tests/workflow/test_engine_lifecycle.py::test_event_log_survives_restart
+FAILED tests/workflow/test_engine_lifecycle.py::test_commit_evidence_audit_remain_linked
+FAILED tests/workflow/test_engine_lifecycle.py::test_no_completion_without_final_audit
+FAILED tests/workflow/test_engine_lifecycle.py::test_execution_not_silently_verified
+FAILED tests/workflow/test_engine_lifecycle.py::test_full_lifecycle_with_process_restart
+FAILED tests/workflow/test_engine_lifecycle.py::test_provider_not_ready_blocks_step_then_resumes
+FAILED tests/workflow/test_provisioning_011.py::test_blocked_then_provisioned_recheck_resume_without_reapproval
+FAILED tests/workflow/test_provisioning_011.py::test_run_rechecks_provisioning_automatically
+FAILED tests/workflow/test_provisioning_011.py::test_compatible_policy_runs_on_unsandboxed_env
+FAILED tests/readiness/test_preflight.py::test_all_ready_passes - AssertionEr...
+FAILED tests/readiness/test_preflight.py::test_required_missing_blocks_with_reason_and_recovery
+FAILED tests/readiness/test_preflight.py::test_optional_capability_missing_does_not_block
+FAILED tests/readiness/test_preflight.py::test_ttl_fresh_ready_skips_reprobe
+FAILED tests/readiness/test_preflight_matrix.py::test_environment_selection_appears_in_result
+FAILED tests/readiness/test_preflight_matrix.py::test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds
+FAILED tests/readiness/test_preflight_matrix.py::test_preflight_events_carry_matrix_and_environment
+FAILED tests/readiness/test_service_011.py::test_capability_view_sandbox_from_environments
+37 failed, 181 passed, 2 skipped, 7 warnings in 256.00s (0:04:16)

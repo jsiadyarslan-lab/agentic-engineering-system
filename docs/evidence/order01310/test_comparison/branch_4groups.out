@@ -1,0 +1,826 @@
+﻿.....F....F........................FFFFF...FFFFF..FF............F....... [ 44%]
+........ssssssssss.F..F...................F............................. [ 88%]
+...................                                                      [100%]
+================================== FAILURES ===================================
+____________ test_regression_search_down_fetch_up_capability_aware ____________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-128\test_regression_search_down_fe0\regression-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_regression_search_down_fetch_up_capability_aware(sessions):
+        from research import service as research_service
+        from execution.models import ResearchProvider
+    
+        _sandbox_env_ready(sessions)
+        # (011 \xa712) \u0627\u0644\u0628\u062d\u062b \u0645\u0646 \u0645\u0632\u0648\u062f\u064a\u0647: DDG \u0641\u0627\u0634\u0644 \u0628\u0645\u0633\u0628\u0627\u0631 \u062d\u0642\u064a\u0642\u064a \u0645\u0633\u062c\u0644
+        research_service.ensure_seeded(sessions)
+        with sessions() as s:
+            from sqlalchemy import select as sa_select
+    
+            row = s.scalars(sa_select(ResearchProvider).where(
+                ResearchProvider.kind == "search_ddg")).first()
+            row.last_probe_status = "NOT_READY"
+            row.failure_reason = "\u0645\u0647\u0644\u0629 \u0645\u0646 \u0647\u0630\u0647 \u0627\u0644\u0634\u0628\u0643\u0629"
+            row.last_probe_at = _dt.datetime.now(_dt.timezone.utc)
+            s.commit()
+        result = preflight.task_preflight(
+            sessions, "\u0645\u0646\u0635\u0629 OSINT \u0628\u0645\u0635\u0627\u062f\u0631 \u0645\u0641\u062a\u0648\u062d\u0629", llm_ready=True,
+            run_probe_fn=_seamed(web_search="NOT_READY"),
+        )
+        assert result["verdict"] == "BLOCKED"
+        ids = {b["capability_id"] for b in result["blocked"]}
+>       assert ids == {"web_search"}, (
+            f"\u0627\u0644\u062d\u062c\u0628 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0644\u0644\u0628\u062d\u062b \u0648\u062d\u062f\u0647 (\u0627\u0644\u062c\u0644\u0628 \u062c\u0627\u0647\u0632): {ids}"
+        )
+E       AssertionError: \u0627\u0644\u062d\u062c\u0628 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0644\u0644\u0628\u062d\u062b \u0648\u062d\u062f\u0647 (\u0627\u0644\u062c\u0644\u0628 \u062c\u0627\u0647\u0632): {'sandbox', 'web_search'}
+E       assert {'sandbox', 'web_search'} == {'web_search'}
+E         
+E         Extra items in the left set:
+E         'sandbox'
+E         Use -v to get more diff
+
+tests\regression\test_order010_regressions.py:239: AssertionError
+_______________ test_impossible_env_ready_executor_unavailable ________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-128\test_impossible_env_ready_exec0\order011.db), autoflush=True, expire_on_commit=False)
+
+    def test_impossible_env_ready_executor_unavailable(sessions):
+        """resolve_executor \u0647\u0648 \u0637\u0631\u064a\u0642 \u0627\u0644\u0645\u0633\u0628\u0627\u0631 \u0648\u0627\u0644\u0645\u0646\u0641\u0630 \u0645\u0639\u064b\u0627: \u0646\u0641\u0633 \u0627\u0644\u0647\u0648\u064a\u0629 \u062a\u064f\u0641\u062d\u0635
+        \u0648\u062a\u064f\u0646\u0641\u064e\u0651\u0630 \u2014 \u0648\u0627\u0644\u0641\u0634\u0644 \u0628\u0639\u062f READY \u064a\u0648\u0633\u0645 ENVIRONMENT_MISMATCH \u0644\u0627 \u0635\u0645\u062a."""
+        from execution import service as execution_service
+    
+        execution_service.ensure_local_registered(sessions)
+        with sessions() as s:
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\regression\test_order011_regressions.py:170: AttributeError
+_______________________ test_project_detail_carries_job _______________________
+
+client = <starlette.testclient.TestClient object at 0x00000214CDB39590>
+
+    def test_project_detail_carries_job(client):
+        pid = _approved(client)
+        detail = client.get(f"/api/projects/{pid}").json()
+        # (013 \xa73) \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f \u0623\u0645\u0631 \u064a\u0637\u0644\u0642 \u0627\u0644\u062d\u0644\u0642\u0629 \u2014 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 \u0648\u064f\u0644\u062f\u062a \u0641\u0639\u0644\u064b\u0627
+        # (JOB_CREATED) \u0648\u062d\u0627\u0644\u062a\u0647\u0627 \u0645\u0646 \u0627\u0644\u062f\u0648\u0631\u0629 \u0627\u0644\u062d\u0642\u064a\u0642\u064a\u0629 \u0644\u0627 \u0648\u0638\u064a\u0641\u0629 \u0648\u0647\u0645\u064a\u0629.
+        assert detail["job"] is not None
+        assert detail["job"]["status"] in ("QUEUED", "RUNNING",
+                                               "WAITING_GATE", "COMPLETED")
+        _run(client, pid)
+        detail = client.get(f"/api/projects/{pid}").json()
+        job = detail["job"]
+>       assert job and job["status"] == "WAITING_GATE"
+E       AssertionError: assert ({'id': 1, 'project_id': 1, 'status': 'WAITING_CAPABILITY', 'waiting_kind': 'CAPABILITY', ...} and 'WAITING_CAPABILITY' == 'WAITING_GATE'
+E         
+E         - WAITING_GATE
+E         + WAITING_CAPABILITY)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_harness_api.py:115: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_____________________________ test_job_endpoints ______________________________
+
+client = <starlette.testclient.TestClient object at 0x00000214CC487BB0>
+
+    def test_job_endpoints(client):
+        pid = _approved(client)
+        # (013) \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f \u0623\u0637\u0644\u0642 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 \u0641\u0639\u0644\u064b\u0627 \u2014 404 \u0641\u0642\u0637 \u0644\u0648\u0638\u064a\u0641\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629
+        assert client.get("/api/jobs/9999").status_code == 404
+    
+        _run(client, pid)
+        job = client.get(f"/api/projects/{pid}/job").json()
+>       assert job["status"] == "WAITING_GATE"
+E       AssertionError: assert 'WAITING_CAPABILITY' == 'WAITING_GATE'
+E         
+E         - WAITING_GATE
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_harness_api.py:128: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________________ test_job_events_reach_stream_and_events ___________________
+
+client = <starlette.testclient.TestClient object at 0x00000214CDC84640>
+
+    def test_job_events_reach_stream_and_events(client):
+        pid = _approved(client)
+        _run(client, pid)
+        events = client.get(f"/api/projects/{pid}/events").json()["events"]
+        kinds = {e["kind"] for e in events}
+>       assert {"JOB_QUEUED", "JOB_STARTED", "JOB_WAITING"} <= kinds
+E       AssertionError: assert {'JOB_QUEUED'...'JOB_WAITING'} <= {'PREFLIGHT_RECHECKED'}
+E         
+E         Extra items in the left set:
+E         'JOB_WAITING'
+E         'JOB_QUEUED'
+E         'JOB_STARTED'
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_harness_api.py:149: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________________________ test_timeline_endpoint ____________________________
+
+client = <starlette.testclient.TestClient object at 0x00000214C9156330>
+
+    def test_timeline_endpoint(client):
+        pid = _approved(client)
+        _run(client, pid)
+        timeline = client.get(f"/api/projects/{pid}/timeline").json()
+        assert timeline["stages"][0] == "OBJECTIVE"
+        canons = [i["canonical"] for i in timeline["items"]]
+>       assert "project/created" in canons
+E       AssertionError: assert 'project/created' in ['preflight/rechecked', 'job/waiting', 'preflight/rechecked', 'preflight/rechecked', 'preflight/rechecked', 'preflight/rechecked', ...]
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_harness_api.py:160: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+________________________ test_chain_endpoint_full_view ________________________
+
+client = <starlette.testclient.TestClient object at 0x00000214CE11AE00>
+
+    def test_chain_endpoint_full_view(client):
+        pid = _approved(client)
+        _run(client, pid)
+        chain = client.get(f"/api/projects/{pid}/chain").json()
+        by_stage = {s["stage"]: s["status"] for s in chain["stages"]}
+        assert by_stage["OBJECTIVE"] == "DONE"
+        assert by_stage["APPROVAL"] == "DONE"
+>       assert by_stage["VERIFICATION"] == "WAITING"
+E       AssertionError: assert 'PENDING' == 'WAITING'
+E         
+E         - WAITING
+E         + PENDING
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_harness_api.py:175: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+__________________ test_full_chain_job_lifecycle_to_verified __________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CC725010>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CE796340>, ...}
+
+    def test_full_chain_job_lifecycle_to_verified(harness_env):
+        """\u0627\u0644\u0633\u0644\u0633\u0644\u0629 \u0643\u0627\u0645\u0644\u0629: \u062e\u0637\u0629 \u2190 \u0627\u0639\u062a\u0645\u0627\u062f \u2190 \u0641\u062d\u0635 \u2190 \u0648\u0638\u064a\u0641\u0629 \u2190 \u0623\u062f\u0644\u0629 \u2190 \u062a\u062f\u0642\u064a\u0642 \u2190
+        checkpoint \u2190 \u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u062a\u062d\u0642\u0642 \u2190 VERIFIED \u2190 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 COMPLETED."""
+        env = harness_env
+        sessions = env["sessions"]
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+    
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        assert job["status"] == "QUEUED"
+        assert "JOB_QUEUED" in _kinds(sessions, pid)
+    
+        outcome = manager.run_loop(job["id"])
+        assert outcome["job_id"] == job["id"]
+    
+        job = manager.get_job(job["id"])
+        # \u0627\u0643\u062a\u0645\u0627\u0644 \u0627\u0644\u0645\u0631\u0634\u062d \u2190 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u0646\u0647\u0627\u0626\u064a \u0642\u0631\u0627\u0631 \u0627\u0644\u0645\u0627\u0644\u0643 \u2190 \u0627\u0646\u062a\u0638\u0627\u0631 \u0628\u0648\u0627\u0628\u0629
+>       assert job["status"] == "WAITING_GATE", job
+E       AssertionError: {'id': 1, 'project_id': 1, 'status': 'WAITING_CAPABILITY', 'waiting_kind': 'CAPABILITY', ...}
+E       assert 'WAITING_CAPABILITY' == 'WAITING_GATE'
+E         
+E         - WAITING_GATE
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:65: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_____________ test_waiting_worker_then_provision_resume_same_row ______________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CE613250>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CE52B060>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE794360>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE654180>}
+
+    def test_waiting_worker_then_provision_resume_same_row(
+            harness_env, sandbox_seam):
+        """(012-H) \u0641\u062d\u0635 \u064a\u062d\u062c\u0628 \u0639\u0644\u0649 \u0627\u0644\u0628\u064a\u0626\u0629 \u2190 WAITING_WORKER \u0628\u0627\u0644\u0633\u0644\u0645 \u0648\u0627\u0644\u0645\u0633\u0627\u0631 \u2190
+        \u0627\u0644\u0645\u0627\u0644\u0643 \u064a\u0648\u0641\u0631 \u2190 \u0625\u0639\u0627\u062f\u0629 \u0641\u062d\u0635 \u2190 \u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u0641\u064a \u0627\u0644\u0635\u0641 \u0646\u0641\u0633\u0647 \u0628\u0644\u0627 \u0625\u0639\u0627\u062f\u0629 \u0627\u0639\u062a\u0645\u0627\u062f."""
+        env = harness_env
+        sessions = env["sessions"]
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+    
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+    
+        job = manager.get_job(job["id"])
+>       assert job["status"] == "WAITING_WORKER", job
+E       AssertionError: {'id': 1, 'project_id': 1, 'status': 'WAITING_CAPABILITY', 'waiting_kind': 'CAPABILITY', ...}
+E       assert 'WAITING_CAPABILITY' == 'WAITING_WORKER'
+E         
+E         - WAITING_WORKER
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:111: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_________________ test_waiting_capability_on_unready_provider _________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CE974CD0>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CE5791C0>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE90B880>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE90B600>}
+
+    def test_waiting_capability_on_unready_provider(harness_env,
+                                                    sandbox_seam):
+        """\u0645\u0632\u0648\u062f \u0627\u0644\u0623\u062f\u0648\u0627\u0631 \u063a\u064a\u0631 \u062c\u0627\u0647\u0632 \u2190 PROVIDER_ACTION_REQUIRED \u2190 \u0627\u0644\u0648\u0638\u064a\u0641\u0629
+        \u062a\u0646\u062a\u0638\u0631 \u0642\u062f\u0631\u0629 (\u0644\u0627 \u0639\u0627\u0645\u0644\u064b\u0627 \u0648\u0644\u0627 \u0628\u0648\u0627\u0628\u0629 \u0642\u0631\u0627\u0631)."""
+        env = harness_env
+        sessions = env["sessions"]
+        sandbox_seam["provision"]()   # \u0627\u0644\u0628\u064a\u0626\u0629 \u062c\u0627\u0647\u0632\u0629 \u2014 \u0627\u0644\u062d\u062c\u0628 \u062d\u0635\u0631\u064b\u0627 \u0639\u0644\u0649 \u0627\u0644\u0645\u0632\u0648\u062f
+        # \u0645\u0648\u062c\u0651\u0647 \u0628\u0644\u0627 \u0623\u064a \u0646\u0642\u0644 \u062d\u064a \u2014 \u0627\u0644\u0623\u062f\u0648\u0627\u0631 \u0643\u0644\u0647\u0627 \u0628\u0644\u0627 \u0645\u0632\u0648\u062f \u0642\u0627\u0628\u0644 \u0644\u0644\u0627\u0633\u062a\u062f\u0639\u0627\u0621
+        engine = env["build_engine"](providers=())
+        pid = _approved_project(env, providers=())
+    
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+    
+        job = manager.get_job(job["id"])
+        assert job["status"] == "WAITING_CAPABILITY", job
+        assert job["waiting_kind"] == "CAPABILITY"
+        detail = job["waiting_detail"]
+>       assert "implementer" in detail["unready_roles"]
+                                ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'unready_roles'
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:160: KeyError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________________ test_retrying_then_success_in_same_run ____________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CDC875C0>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CE5DF600>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE889F80>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE88A020>}
+
+    def test_retrying_then_success_in_same_run(harness_env, sandbox_seam):
+        """\u0641\u0634\u0644 \u0639\u0627\u0628\u0631 \u2190 RETRY_REQUESTED \u2190 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 \u062a\u0639\u0644\u0646 RETRYING \u062b\u0645 \u062a\u0643\u0645\u0644."""
+        env = harness_env
+        sessions = env["sessions"]
+        sandbox_seam["provision"]()
+        env["executor"].fail_first = 1   # \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u062a\u0641\u0634\u0644 \u062b\u0645 \u062a\u0646\u062c\u062d
+    
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+    
+        final = manager.get_job(job["id"])
+>       assert final["status"] == "WAITING_GATE"
+E       AssertionError: assert 'WAITING_CAPABILITY' == 'WAITING_GATE'
+E         
+E         - WAITING_GATE
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:179: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_________________ test_exhausted_failures_wait_revision_gate __________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CDC87BB0>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CFA41C60>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CC5B5F80>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CF9C6840>}
+
+    def test_exhausted_failures_wait_revision_gate(harness_env, sandbox_seam):
+        """\u0641\u0634\u0644 \u0645\u0633\u062a\u0646\u0641\u062f \u2190 \u0628\u0648\u0627\u0628\u0629 \u0645\u0631\u0627\u062c\u0639\u0629 \u062e\u0637\u0629 \u2190 WAITING_GATE \u2190 \u0645\u0648\u0627\u0641\u0642\u0629 \u2190 \u062e\u0637\u0629
+        v2 \u062a\u0646\u062c\u062d \u2190 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 \u062a\u0643\u0645\u0644 \u0641\u064a \u0635\u0641\u0647\u0627 \u0646\u0641\u0633\u0647."""
+        env = harness_env
+        sessions = env["sessions"]
+        sandbox_seam["provision"]()
+        env["executor"].fail_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u0623\u0648\u0644",)
+    
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+    
+        job = manager.get_job(job["id"])
+>       assert job["status"] == "WAITING_GATE"
+E       AssertionError: assert 'WAITING_CAPABILITY' == 'WAITING_GATE'
+E         
+E         - WAITING_GATE
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:202: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________ test_waiting_jobs_survive_recovery_without_interruption ___________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CE11BCE0>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CE890F40>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CFC1E700>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE98ADE0>}
+
+    def test_waiting_jobs_survive_recovery_without_interruption(
+            harness_env, sandbox_seam):
+        """\u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631\u0627\u062a \u0644\u0627 \u062a\u064f\u0648\u0633\u0645 \u0645\u0642\u0627\u0637\u0639\u0629 \u2014 \u0644\u0627 \u0634\u064a\u0621 \u0636\u0627\u0639 \u0623\u0635\u0644\u064b\u0627 (\u0644\u0627 \u062d\u064a\u0627\u0629 \u0643\u0627\u0630\u0628\u0629
+        \u0648\u0644\u0627 \u0645\u0648\u062a \u0643\u0627\u0630\u0628)."""
+        env = harness_env
+        # \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a \u0641\u064a \u0627\u0644\u0648\u0635\u0641\u0629: \u0644\u0627 \u0628\u064a\u0626\u0629 \u062c\u0627\u0647\u0632\u0629 \u2014 \u064a\u0628\u0642\u0649 \u0641\u064a \u0627\u0646\u062a\u0638\u0627\u0631 \u0639\u0627\u0645\u0644
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+>       assert manager.get_job(job["id"])["status"] == "WAITING_WORKER"
+E       AssertionError: assert 'WAITING_CAPABILITY' == 'WAITING_WORKER'
+E         
+E         - WAITING_WORKER
+E         + WAITING_CAPABILITY
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:310: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+________________________ test_rejected_gate_stops_job _________________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CE967950>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CFB64720>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CE52AF20>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CFC1FE20>}
+
+    def test_rejected_gate_stops_job(harness_env, sandbox_seam):
+        """\u0631\u0641\u0636 \u0627\u0644\u0645\u0627\u0644\u0643 \u0644\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629 \u064a\u063a\u0644\u0642 \u0627\u0644\u0648\u0638\u064a\u0641\u0629 \u0635\u0627\u062f\u0642\u0629 (STOPPED) \u0644\u0627
+        \u062a\u0628\u0642\u0649 \u0645\u0646\u062a\u0638\u0631\u0629 \u0644\u0628\u0648\u0627\u0628\u0629 \u0645\u0627\u062a\u062a."""
+        env = harness_env
+        sessions = env["sessions"]
+        sandbox_seam["provision"]()
+        env["executor"].fail_prefixes = ("\u0643\u062a\u0627\u0628\u0629 \u0627\u0644\u0645\u062e\u0631\u062c \u0627\u0644\u0623\u0648\u0644",)
+        engine = env["build_engine"]()
+        pid = _approved_project(env)
+        manager = env["build_manager"](engine=engine)
+        job = manager.start_job(pid)
+        manager.run_loop(job["id"])
+    
+        gates = [g for g in service.list_gates(sessions, pid)
+                 if g["status"] == "PENDING"]
+>       engine.resolve_gate(pid, gates[0]["id"], approved=False)
+                                 ^^^^^^^^
+E       IndexError: list index out of range
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_jobs_lifecycle.py:336: IndexError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________________ test_resolve_sandbox_from_environments ____________________
+
+harness_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...object at 0x00000214CFEA2270>, 'build_engine': <function harness_env.<locals>.build_engine at 0x00000214CFDE2340>, ...}
+sandbox_seam = {'provision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CFEBB1A0>, 'deprovision': <function sandbox_seam.<locals>.<lambda> at 0x00000214CFEBAF20>}
+
+    def test_resolve_sandbox_from_environments(harness_env, sandbox_seam):
+        seams = HarnessSeams(harness_env["sessions"])
+        out = resolve_capability(seams, "sandbox")
+        assert out["blocked_kind"] == "WORKER"
+        assert out["resolution"] == "SINGLE"
+        assert out["status"] == "NOT_READY"
+        assert out["detail"]["readiness_ladder"].startswith("connectivity")
+        assert any(p["name"].startswith("local") for p in out["providers"])
+    
+        sandbox_seam["provision"]()
+        out = resolve_capability(seams, "sandbox")
+        assert out["status"] == "READY"
+>       assert out["selected"]["sandboxed"] is True
+E       assert False is True
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\harness\test_roles_capabilities.py:218: AssertionError
+_____________________ test_cycle_stop_finished_cycle_409 ______________________
+
+client = <starlette.testclient.TestClient object at 0x00000214D002A030>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0x00000214CC725BE0>}
+
+    def test_cycle_stop_finished_cycle_409(client, live_task_env):
+        """\u0627\u0644\u0623\u0645\u0631 006: \u0627\u0644\u062f\u0648\u0631\u0629 \u0627\u0644\u0645\u0646\u062c\u0632\u0629 \u0639\u0628\u0631 \u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u062d\u064a \u2014 \u0637\u0644\u0628 \u0627\u0644\u0625\u064a\u0642\u0627\u0641 \u064a\u064f\u0631\u0641\u0636 409."""
+>       _events, cycle_id = _run_task_to_completion(client)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <starlette.testclient.TestClient object at 0x00000214D002A030>
+goal = '\u062f\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629 \u0644\u0639\u0642\u062f \u0627\u0644\u0625\u064a\u0642\u0627\u0641'
+
+    def _run_task_to_completion(client, goal="\u062f\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629 \u0644\u0639\u0642\u062f \u0627\u0644\u0625\u064a\u0642\u0627\u0641"):
+        """\u062a\u0634\u063a\u064a\u0644 \u0645\u0647\u0645\u0629 \u062d\u064a\u0629 \u0639\u0628\u0631 \u0627\u0644\u0640API \u0648\u0627\u0646\u062a\u0638\u0627\u0631 \u062e\u062a\u0627\u0645\u0647\u0627 \u2014 \u064a\u0639\u064a\u062f (\u0627\u0644\u0623\u062d\u062f\u0627\u062b\u060c cycle_id)."""
+        resp = client.post("/api/cycle/stream", json={"goal": goal})
+        assert resp.status_code == 200, resp.text[:400]
+        events = [
+            json.loads(line[5:])
+            for line in resp.text.split("\n\n")
+            if line.startswith("data: ")
+        ]
+        done = [e for e in events if e.get("kind") == "task_done"]
+>       assert done, f"\u0644\u0627 task_done \u0641\u064a \u0627\u0644\u0628\u062b: {[e.get('kind') for e in events]}"
+E       AssertionError: \u0644\u0627 task_done \u0641\u064a \u0627\u0644\u0628\u062b: ['task.conversation', 'preflight.started', 'preflight.blocked', 'CONFIGURATION_REQUIRED', 'stream.done']
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:172: AssertionError
+______________________ test_cycle_status_finished_shape _______________________
+
+client = <starlette.testclient.TestClient object at 0x00000214D006EC10>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0x00000214CFBACB90>}
+
+    def test_cycle_status_finished_shape(client, live_task_env):
+        """\u062d\u0627\u0644\u0629 \u0645\u0647\u0645\u0629 \u0645\u0646\u062c\u0632\u0629 \u0639\u0628\u0631 \u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u062d\u064a \u2014 \u0627\u0644\u0634\u0643\u0644 \u0627\u0644\u0643\u0627\u0645\u0644 \u0628\u0639\u062f \u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621."""
+>       _events, cycle_id = _run_task_to_completion(client)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:204: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <starlette.testclient.TestClient object at 0x00000214D006EC10>
+goal = '\u062f\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629 \u0644\u0639\u0642\u062f \u0627\u0644\u0625\u064a\u0642\u0627\u0641'
+
+    def _run_task_to_completion(client, goal="\u062f\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629 \u0644\u0639\u0642\u062f \u0627\u0644\u0625\u064a\u0642\u0627\u0641"):
+        """\u062a\u0634\u063a\u064a\u0644 \u0645\u0647\u0645\u0629 \u062d\u064a\u0629 \u0639\u0628\u0631 \u0627\u0644\u0640API \u0648\u0627\u0646\u062a\u0638\u0627\u0631 \u062e\u062a\u0627\u0645\u0647\u0627 \u2014 \u064a\u0639\u064a\u062f (\u0627\u0644\u0623\u062d\u062f\u0627\u062b\u060c cycle_id)."""
+        resp = client.post("/api/cycle/stream", json={"goal": goal})
+        assert resp.status_code == 200, resp.text[:400]
+        events = [
+            json.loads(line[5:])
+            for line in resp.text.split("\n\n")
+            if line.startswith("data: ")
+        ]
+        done = [e for e in events if e.get("kind") == "task_done"]
+>       assert done, f"\u0644\u0627 task_done \u0641\u064a \u0627\u0644\u0628\u062b: {[e.get('kind') for e in events]}"
+E       AssertionError: \u0644\u0627 task_done \u0641\u064a \u0627\u0644\u0628\u062b: ['task.conversation', 'preflight.started', 'preflight.blocked', 'CONFIGURATION_REQUIRED', 'stream.done']
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:172: AssertionError
+___________________ test_mission_stop_then_resume_completes ___________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-128/test_mission_stop_then_resume_0')
+fake_fetchers = None
+
+    def test_mission_stop_then_resume_completes(tmp_path, fake_fetchers):
+        """\u0625\u064a\u0642\u0627\u0641 \u062d\u064a \u0623\u062b\u0646\u0627\u0621 \u0623\u062f\u0648\u0627\u062a \u0627\u0644\u0645\u0646\u0641\u0630 \u062b\u0645 \u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u0645\u0646 \u0627\u0644\u0644\u0642\u0637\u0629 \u062d\u062a\u0649 PASS.
+    
+        \u0627\u0644\u0633\u064a\u0646\u0627\u0631\u064a\u0648 \u0627\u0644\u0643\u0627\u0645\u0644 \u0644\u0644\u0623\u0645\u0631 004 \u0639\u0646\u062f \u0645\u0633\u062a\u0648\u0649 \u0627\u0644\u0645\u0647\u0645\u0629:
+        (\u0623) \u0627\u0644\u0625\u064a\u0642\u0627\u0641 \u0623\u062b\u0646\u0627\u0621 \u062d\u0644\u0642\u0629 \u0623\u062f\u0648\u0627\u062a \u0627\u0644\u0645\u0646\u0641\u0630 \u0627\u0644\u062d\u064a \u2192 \u062a\u0643\u0631\u064a\u0645 \u0639\u0646\u062f \u0646\u0642\u0637\u0629 \u0622\u0645\u0646\u0629.
+        (\u0628) \u062d\u0643\u0645 STOPPED \u0645\u0633\u062a\u0642\u0644 (\u0644\u0627 HARD STOP \u0648\u0644\u0627 PASS) + \u0623\u062f\u0644\u0629 \u062c\u0632\u0626\u064a\u0629 + \u0644\u0642\u0637\u0629.
+        (\u062c) \u0627\u0644\u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u062f\u0648\u0631\u0629 \u062c\u062f\u064a\u062f\u0629 \u0645\u062d\u0642\u0648\u0646\u0629 \u0628\u0627\u0644\u062e\u0637\u0629 \u0627\u0644\u0645\u0648\u0642\u0651\u0639\u0629 \u062a\u0643\u0645\u0644 \u062d\u062a\u0649 PASS.
+        """
+        # ---- (\u0623) \u0627\u0644\u0625\u064a\u0642\u0627\u0641 ----
+        router = StopMissionRouter()
+        stop = StopController()
+        events: list[dict] = []
+        box: dict = {}
+    
+        def run():
+            box["res"] = run_mission(
+                GOAL,
+                router=router,
+                mission_dir=tmp_path,
+                on_event=events.append,
+                cycle_id="mission-stop-1",
+                stop_controller=stop,
+            )
+    
+        thread = threading.Thread(target=run)
+        thread.start()
+        # \u0627\u0644\u0623\u062f\u0627\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 (fred_csv \u0633\u0631\u064a\u0639\u0629) \u062a\u064f\u0648\u062b\u0642 \u062d\u062f\u062b\u064b\u0627\u060c \u062b\u0645 \u0627\u0644\u0639\u0627\u0644\u0645\u064a\u0629 \u062a\u0646\u0627\u0645 2.5\u062b
+        assert _wait_for(
+            lambda: any(e.get("kind") == "tool.call" for e in events)
+        ), "\u0644\u0645 \u062a\u0635\u0644 \u0623\u062f\u0627\u0629 \u0623\u0648\u0644\u0649 \u2014 \u0627\u0644\u0645\u0647\u0645\u0629 \u0644\u0645 \u062a\u0628\u0644\u063a \u0627\u0644\u062a\u0646\u0641\u064a\u0630"
+        receipt = stop.request_stop(
+            "mission-stop-1", by="owner", reason="\u0625\u064a\u0642\u0627\u0641 \u0627\u062e\u062a\u0628\u0627\u0631\u064a"
+        )
+        assert receipt.requested_by == "owner"
+        thread.join(timeout=60)
+        assert not thread.is_alive(), "\u0627\u0644\u0645\u0647\u0645\u0629 \u0644\u0645 \u062a\u062a\u0648\u0642\u0641 \u0639\u0646\u062f \u0627\u0644\u0646\u0642\u0637\u0629 \u0627\u0644\u0622\u0645\u0646\u0629"
+    
+        result = box["res"]
+        # ---- (\u0628) \u0627\u0644\u062d\u0643\u0645 \u0627\u0644\u0635\u0627\u062f\u0642 \u0648\u0627\u0644\u0644\u0642\u0637\u0629 ----
+        assert result.verdict == "STOPPED", result.reason
+        assert result.final_state == "STOPPED"
+        snapshot_path = tmp_path / "stop_snapshot.json"
+        assert snapshot_path.is_file()
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        assert snapshot["plan_signed"] is True
+        assert snapshot["stopped_by"] == "owner"
+        assert snapshot["stop_reason"] == "\u0625\u064a\u0642\u0627\u0641 \u0627\u062e\u062a\u0628\u0627\u0631\u064a"
+    
+        evidence = json.loads(
+            Path(result.evidence_path).read_text(encoding="utf-8")
+        )
+        assert evidence["verdict"] == "STOPPED"
+        assert evidence["stop"]["stopped_by"] == "owner"
+        assert evidence["stop"]["state_at_stop"] == "EXECUTING"
+        assert evidence["stop"]["phase"].startswith("implementer.")
+        # \u0623\u062f\u0644\u0629 \u062c\u0632\u0626\u064a\u0629 \u0641\u0639\u0644\u064a\u0629: \u0644\u0642\u0637\u0629 + \u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0623\u062f\u0648\u0627\u062a \u0627\u0644\u0645\u0648\u062b\u0642\u0629 \u0642\u0628\u0644 \u0627\u0644\u0625\u064a\u0642\u0627\u0641
+        assert evidence["files"], "\u0644\u0627 \u0623\u062f\u0644\u0629 \u062c\u0632\u0626\u064a\u0629 \u0645\u062d\u0641\u0648\u0638\u0629"
+        tool_calls_before_stop = [
+            c for c in evidence.get("tool_calls", []) if c.get("kind") != "x"
+        ]
+        assert tool_calls_before_stop, "\u0644\u0627 \u0627\u0633\u062a\u062f\u0639\u0627\u0621\u0627\u062a \u0623\u062f\u0648\u0627\u062a \u0645\u0648\u062b\u0642\u0629 \u0642\u0628\u0644 \u0627\u0644\u0625\u064a\u0642\u0627\u0641"
+    
+        done = [e for e in events if e.get("kind") == "mission_done"][-1]
+        assert done["verdict"] == "STOPPED"
+        assert done["details"]["stop"]["stopped_by"] == "owner"
+        # \u062a\u0633\u0644\u0633\u0644 \u0627\u0644\u062d\u0627\u0644\u0627\u062a \u0627\u0644\u0635\u0627\u062f\u0642 \u064a\u0646\u062a\u0647\u064a \u0628\u0632\u0648\u062c \u0627\u0644\u0625\u064a\u0642\u0627\u0641
+        assert evidence["state_history"][-2:] == ["STOPPING", "STOPPED"]
+    
+        # ---- (\u062c) \u0627\u0644\u0627\u0633\u062a\u0626\u0646\u0627\u0641 \u0645\u0646 \u0627\u0644\u0644\u0642\u0637\u0629 \u2014 \u062f\u0648\u0631\u0629 \u062c\u062f\u064a\u062f\u0629 \u062a\u0643\u0645\u0644 ----
+        router2 = StopMissionRouter()
+        events2: list[dict] = []
+        resumed = run_mission(
+            router=router2,
+            mission_dir=tmp_path,
+            on_event=events2.append,
+            cycle_id="mission-resume-1",
+            stop_controller=StopController(),
+            resume_from=snapshot,
+        )
+>       assert resumed.verdict == "PASS", resumed.reason
+E       AssertionError: \u0627\u0644\u062d\u0627\u0644\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064a\u0629 FAILED \u2014 \u0627\u0644\u062f\u0648\u0631\u0629 \u0644\u0645 \u062a\u0643\u062a\u0645\u0644 \u0623\u062f\u0644\u0629\u064b\u061b PDF \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f \u0641\u064a \u0645\u062c\u0644\u062f \u0627\u0644\u0645\u0647\u0645\u0629\u061b \u0639\u062f\u062f \u0627\u0644\u0645\u0635\u0627\u062f\u0631 0 \u062e\u0627\u0631\u062c \u0627\u0644\u0646\u0637\u0627\u0642 5-8
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+tests\core\test_stop_mission.py:245: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+src\api\routes.py:2150
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\api\routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\\core\\test_cycle_stop.py:91: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:143: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:194: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:233: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:249: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:263: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:323: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:366: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:394: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+SKIPPED [1] tests\\core\\test_cycle_stop.py:404: \u0627\u0644\u0631\u0643\u064a\u0632\u0629 \u062a\u062a\u0637\u0644\u0628 Linux/x86_64 \u2014 \u0627\u0644\u062a\u0646\u0641\u064a\u0630 \u0627\u0644\u062d\u0642\u064a\u0642\u064a \u062f\u0627\u062e\u0644\u0647\u0627
+FAILED tests/regression/test_order010_regressions.py::test_regression_search_down_fetch_up_capability_aware
+FAILED tests/regression/test_order011_regressions.py::test_impossible_env_ready_executor_unavailable
+FAILED tests/harness/test_harness_api.py::test_project_detail_carries_job - A...
+FAILED tests/harness/test_harness_api.py::test_job_endpoints - AssertionError...
+FAILED tests/harness/test_harness_api.py::test_job_events_reach_stream_and_events
+FAILED tests/harness/test_harness_api.py::test_timeline_endpoint - AssertionE...
+FAILED tests/harness/test_harness_api.py::test_chain_endpoint_full_view - Ass...
+FAILED tests/harness/test_jobs_lifecycle.py::test_full_chain_job_lifecycle_to_verified
+FAILED tests/harness/test_jobs_lifecycle.py::test_waiting_worker_then_provision_resume_same_row
+FAILED tests/harness/test_jobs_lifecycle.py::test_waiting_capability_on_unready_provider
+FAILED tests/harness/test_jobs_lifecycle.py::test_retrying_then_success_in_same_run
+FAILED tests/harness/test_jobs_lifecycle.py::test_exhausted_failures_wait_revision_gate
+FAILED tests/harness/test_jobs_lifecycle.py::test_waiting_jobs_survive_recovery_without_interruption
+FAILED tests/harness/test_jobs_lifecycle.py::test_rejected_gate_stops_job - I...
+FAILED tests/harness/test_roles_capabilities.py::test_resolve_sandbox_from_environments
+FAILED tests/core/test_stop_api.py::test_cycle_stop_finished_cycle_409 - Asse...
+FAILED tests/core/test_stop_api.py::test_cycle_status_finished_shape - Assert...
+FAILED tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes
+18 failed, 135 passed, 10 skipped, 5 warnings in 3186.79s (0:53:06)

@@ -1,0 +1,307 @@
+﻿{
+    "id":  1,
+    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10",
+    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+    "status":  "AWAITING_OWNER_APPROVAL",
+    "created_at":  "2026-10-12T23:28:47.546299",
+    "updated_at":  "2026-10-12T23:29:01.123946",
+    "current_plan_id":  1,
+    "current_phase_id":  null,
+    "current_step_id":  null,
+    "stop_requested":  false,
+    "completion_state":  "",
+    "last_error":  "",
+    "execution_policy":  "COMPATIBLE_LOCAL",
+    "archived_at":  null,
+    "original_id":  null,
+    "plan":  {
+                 "id":  1,
+                 "project_id":  1,
+                 "version":  1,
+                 "objective":  "Ø¥ÙØ´Ø§Ø¡ Ù\u0085ÙÙ ÙØµÙ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+                 "assumptions":  [
+                                     "Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ§Ø¨ÙØ© ÙÙÙØªØ§Ø¨Ø©",
+                                     "Ø£Ø¯ÙØ§Øª Ø§ÙÙØªØ§Ø¨Ø© Ù\u0085ØªØ§Ø­Ø© Ø¹Ø¨Ø± Ø¯ÙØ±Ø© Ø§ÙØ£Ø¯ÙØ§Ø±"
+                                 ],
+                 "acceptance_criteria":  [
+                                             "ÙÙØ¬Ø¯ Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt ÙÙ Ø¬Ø°Ø± Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù",
+                                             "Ù\u0085Ø­ØªÙÙ Ø§ÙÙ\u0085ÙÙ ÙØ·Ø§Ø¨Ù ØªÙ\u0085Ø§Ù\u0085ÙØ§ ÙÙÙ\u0085Ø© \"Ø§ÙØ³ÙØ§Ù\u0085\" Ø¨Ø¯ÙÙ Ù\u0085Ø³Ø§ÙØ§Øª Ø£Ù Ø£Ø³Ø·Ø± Ø¥Ø¶Ø§ÙÙØ©"
+                                         ],
+                 "phases":  [
+                                {
+                                    "title":  "Ø¥ÙØ´Ø§Ø¡ Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt",
+                                    "objective":  "ÙØªØ§Ø¨Ø© Ø§ÙÙ\u0085ÙÙ Ø§ÙÙ\u0085Ø·ÙÙØ¨ ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù",
+                                    "acceptance_criteria":  [
+                                                                "ØªÙ\u0085 Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ Ø¨ÙØ¬Ø§Ø­",
+                                                                "Ø§ÙÙ\u0085Ø­ØªÙÙ ØµØ­ÙØ­"
+                                                            ],
+                                    "steps":  [
+                                                  {
+                                                      "objective":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt Ø¨Ù\u0085Ø­ØªÙÙ \"Ø§ÙØ³ÙØ§Ù\u0085\"",
+                                                      "input":  "ÙØ§ ÙÙØ¬Ø¯ Ù\u0085Ø¯Ø®ÙØ§Øª Ø®Ø§Ø±Ø¬ÙØ©",
+                                                      "expected_output":  "Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt ÙÙ Ø¬Ø°Ø± Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+                                                      "acceptance_criteria":  [
+                                                                                  "Ø£Ø¯Ø§Ø© Ø§ÙÙØªØ§Ø¨Ø© ØªØ¤ÙØ¯ Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ",
+                                                                                  "ÙØ±Ø§Ø¡Ø© Ø§ÙÙ\u0085ÙÙ ØªÙØ±Ø¬Ø¹ Ø¨Ø§ÙØ¶Ø¨Ø· \"Ø§ÙØ³ÙØ§Ù\u0085\""
+                                                                              ],
+                                                      "dependencies":  [
+
+                                                                       ]
+                                                  }
+                                              ]
+                                }
+                            ],
+                 "risks":  [
+
+                           ],
+                 "dependencies":  [
+
+                                  ],
+                 "required_owner_decisions":  [
+
+                                              ],
+                 "status":  "AWAITING_OWNER_APPROVAL",
+                 "created_at":  "2026-10-12T23:29:01.088827",
+                 "supersedes_plan_id":  null,
+                 "revision_reason":  "",
+                 "revision_evidence":  {
+
+                                       },
+                 "approved_by_owner":  false,
+                 "approved_at":  null
+             },
+    "phases":  [
+
+               ],
+    "gates":  [
+                  {
+                      "id":  1,
+                      "project_id":  1,
+                      "kind":  "PLAN_APPROVAL",
+                      "reason":  "Ø§Ø¹ØªÙ\u0085Ø§Ø¯ Ø§ÙØ®Ø·Ø© v1 â 1 Ù\u0085Ø±Ø­ÙØ©",
+                      "details":  {
+                                      "plan_id":  1,
+                                      "version":  1
+                                  },
+                      "status":  "PENDING",
+                      "created_at":  "2026-10-12T23:29:01.132035",
+                      "resolved_at":  null
+                  }
+              ],
+    "events":  [
+                   {
+                       "id":  1,
+                       "project_id":  1,
+                       "kind":  "PROJECT_CREATED",
+                       "payload":  {
+                                       "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10",
+                                       "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·"
+                                   },
+                       "created_at":  "2026-10-12T23:28:47.563382"
+                   },
+                   {
+                       "id":  2,
+                       "project_id":  1,
+                       "kind":  "PLANNING_STARTED",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "attempt":  1,
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                       "hard_deadline_at":  "2026-10-12T23:43:50.459237+00:00",
+                                       "hard_timeout_s":  900.0,
+                                       "previous_failure":  {
+
+                                                            },
+                                       "reason":  "Ø£Ù\u0085Ø± ØµØ±ÙØ­ Ù\u0085Ù Ø§ÙÙØ§Ø¬ÙØ©"
+                                   },
+                       "created_at":  "2026-10-12T23:28:50.482953"
+                   },
+                   {
+                       "id":  3,
+                       "project_id":  1,
+                       "kind":  "PLAN_GENERATING",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                       "request_id":  "req-875f4142a1b2"
+                                   },
+                       "created_at":  "2026-10-12T23:28:50.556324"
+                   },
+                   {
+                       "id":  4,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_STARTED",
+                       "payload":  {
+                                       "request_id":  "req-875f4142a1b2",
+                                       "purpose":  "planning",
+                                       "provider":  "",
+                                       "model":  "",
+                                       "started_at":  "2026-10-12T23:28:50.552184+00:00",
+                                       "heartbeat_at":  "2026-10-12T23:28:50.552208+00:00",
+                                       "completed_at":  "",
+                                       "duration_ms":  0,
+                                       "retry_count":  0,
+                                       "error_class":  "",
+                                       "error_detail":  "",
+                                       "session_id":  1
+                                   },
+                       "created_at":  "2026-10-12T23:28:50.566912"
+                   },
+                   {
+                       "id":  5,
+                       "project_id":  1,
+                       "kind":  "MODEL_REASONING",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "activity":  "reasoning_delta",
+                                       "chars":  3,
+                                       "request_id":  "req-875f4142a1b2",
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b"
+                                   },
+                       "created_at":  "2026-10-12T23:28:51.474660"
+                   },
+                   {
+                       "id":  6,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_PROGRESS",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "activity":  "content_delta",
+                                       "chars":  13,
+                                       "request_id":  "req-875f4142a1b2",
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b"
+                                   },
+                       "created_at":  "2026-10-12T23:28:53.479531"
+                   },
+                   {
+                       "id":  7,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_PROGRESS",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "activity":  "content_delta",
+                                       "chars":  16,
+                                       "request_id":  "req-875f4142a1b2",
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b"
+                                   },
+                       "created_at":  "2026-10-12T23:28:55.814896"
+                   },
+                   {
+                       "id":  8,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_PROGRESS",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "activity":  "content_delta",
+                                       "chars":  13,
+                                       "request_id":  "req-875f4142a1b2",
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b"
+                                   },
+                       "created_at":  "2026-10-12T23:28:57.951164"
+                   },
+                   {
+                       "id":  9,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_PROGRESS",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "activity":  "content_delta",
+                                       "chars":  13,
+                                       "request_id":  "req-875f4142a1b2",
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b"
+                                   },
+                       "created_at":  "2026-10-12T23:29:00.053291"
+                   },
+                   {
+                       "id":  10,
+                       "project_id":  1,
+                       "kind":  "MODEL_CALL_COMPLETED",
+                       "payload":  {
+                                       "request_id":  "req-875f4142a1b2",
+                                       "purpose":  "planning",
+                                       "provider":  "",
+                                       "model":  "",
+                                       "started_at":  "2026-10-12T23:28:50.552184+00:00",
+                                       "heartbeat_at":  "2026-10-12T23:29:00.638810+00:00",
+                                       "completed_at":  "2026-10-12T23:29:01.053240+00:00",
+                                       "duration_ms":  10461,
+                                       "retry_count":  0,
+                                       "error_class":  "",
+                                       "error_detail":  "",
+                                       "streamed":  false,
+                                       "session_id":  1
+                                   },
+                       "created_at":  "2026-10-12T23:29:01.054012"
+                   },
+                   {
+                       "id":  11,
+                       "project_id":  1,
+                       "kind":  "PLAN_CREATED",
+                       "payload":  {
+                                       "plan_id":  1,
+                                       "version":  1,
+                                       "supersedes":  null,
+                                       "reason":  ""
+                                   },
+                       "created_at":  "2026-10-12T23:29:01.112781"
+                   },
+                   {
+                       "id":  12,
+                       "project_id":  1,
+                       "kind":  "PLAN_APPROVAL_REQUIRED",
+                       "payload":  {
+                                       "plan_id":  1,
+                                       "gate_id":  1,
+                                       "generated_by":  {
+                                                            "request_id":  "req-875f4142a1b2",
+                                                            "purpose":  "planning",
+                                                            "provider":  "nvidia",
+                                                            "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                                            "started_at":  "2026-10-12T23:28:50.552184+00:00",
+                                                            "heartbeat_at":  "2026-10-12T23:29:00.638810+00:00",
+                                                            "completed_at":  "2026-10-12T23:29:01.053240+00:00",
+                                                            "duration_ms":  10455,
+                                                            "retry_count":  0,
+                                                            "error_class":  "",
+                                                            "error_detail":  ""
+                                                        }
+                                   },
+                       "created_at":  "2026-10-12T23:29:01.139737"
+                   },
+                   {
+                       "id":  13,
+                       "project_id":  1,
+                       "kind":  "PLAN_CREATED",
+                       "payload":  {
+                                       "session_id":  1,
+                                       "plan_id":  1,
+                                       "version":  1,
+                                       "phases":  1,
+                                       "provider":  "nvidia",
+                                       "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                       "duration_ms":  10455
+                                   },
+                       "created_at":  "2026-10-12T23:29:01.154367"
+                   }
+               ],
+    "executions":  [
+
+                   ],
+    "execution_gate":  {
+                           "state":  "AWAITING_APPROVAL",
+                           "open_for_execution":  false,
+                           "label":  "Ø§ÙØ®Ø·Ø© ØªÙØªØ¸Ø± Ø§Ø¹ØªÙ\u0085Ø§Ø¯Ù",
+                           "reason":  "Ø§ÙØ®Ø·Ø© Ø¨Ø§ÙØªØ¸Ø§Ø± Ø§Ø¹ØªÙ\u0085Ø§Ø¯ Ø§ÙÙ\u0085Ø§ÙÙ",
+                           "required":  "",
+                           "owner_action":  "Ø§Ø¹ØªÙ\u0085Ø¯ Ø§ÙØ®Ø·Ø© Ø£Ù Ø§Ø±ÙØ¶ÙØ§ Ù\u0085Ù Ø¨Ø·Ø§ÙØ© Ø§ÙÙØ±Ø§Ø±"
+                       },
+    "active_run":  false,
+    "job":  null
+}

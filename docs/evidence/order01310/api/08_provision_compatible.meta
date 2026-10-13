@@ -1,0 +1,1 @@
+﻿POST /api/environment/provision {policy:COMPATIBLE_LOCAL}

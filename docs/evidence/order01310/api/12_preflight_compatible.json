@@ -1,0 +1,268 @@
+﻿{
+    "project":  {
+                    "id":  1,
+                    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10",
+                    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+                    "status":  "READY",
+                    "created_at":  "2026-10-12T23:28:47.546299",
+                    "updated_at":  "2026-10-12T23:29:15.558089",
+                    "current_plan_id":  1,
+                    "current_phase_id":  1,
+                    "current_step_id":  null,
+                    "stop_requested":  false,
+                    "completion_state":  "",
+                    "last_error":  "",
+                    "execution_policy":  "COMPATIBLE_LOCAL",
+                    "archived_at":  null,
+                    "original_id":  null
+                },
+    "preflight":  {
+                      "verdict":  "PASS",
+                      "summary":  "ÙÙ Ø§ÙÙØ¯Ø±Ø§Øª Ø§ÙÙ\u0085Ø·ÙÙØ¨Ø© Ø¬Ø§ÙØ²Ø© Ø¨Ù\u0085Ø³Ø¨Ø§Ø±Ø§Øª Ø­ÙÙÙÙØ© â Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­ Ø¹Ø¨Ø± Ø¨ÙØ¦Ø©: local-windows (Ù\u0085ØªÙØ§ÙÙØ© Ø¨ÙØ§ Ø¹Ø²Ù â Ù\u0085Ø¹ÙÙ)",
+                      "matrix":  [
+                                     {
+                                         "capability":  "Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "execution_policy",
+                                         "required":  "Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø©",
+                                         "available":  "ØªÙØ§ÙÙ Ù\u0085Ø­ÙÙ â Ø¨ÙØ§ Ø¹Ø²ÙØ Ù\u0085Ø¹ÙÙ",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "environment",
+                                         "required":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø£Ù Ø¨ÙØ¦Ø© ØªÙÙÙØ° ØªØ¹Ù\u0085Ù ÙØ¹ÙÙÙØ§ (Ø­ØªÙ Ø§ÙÙ\u0085ØªÙØ§ÙÙØ© ØºÙØ± Ø§ÙÙ\u0085Ø¹Ø²ÙÙØ©) â ÙÙ\u0085 ØªÙØªØ­ÙÙ Ø¨Ø¹Ø¯",
+                                         "available":  "local-windows (NONE)",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "ÙÙ\u0085Ø§Ø°Ø¬ LLM (Ø§ÙØ£Ø¯ÙØ§Ø±)",
+                                         "capability_id":  "llm",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "sandbox",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "ÙØ¸Ø§Ù\u0085 Ø§ÙÙ\u0085ÙÙØ§Øª ÙØ§ÙØ£Ø¯ÙØ©",
+                                         "capability_id":  "filesystem",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "ØªØ­ÙÙÙ DNS",
+                                         "capability_id":  "network_dns",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ØªØµØ§Ù HTTPS",
+                                         "capability_id":  "network_https",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ÙÙØ´Ø¯Ø© ÙPython",
+                                         "capability_id":  "shell",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ÙÙØ§Ø¹Ø¯Ø© Ø§ÙØ¯Ø§Ø¦Ù\u0085Ø©",
+                                         "capability_id":  "persistence",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     }
+                                 ],
+                      "blocked":  [
+
+                                  ],
+                      "environment":  {
+                                          "id":  1,
+                                          "name":  "local-windows",
+                                          "backend":  "LOCAL",
+                                          "status":  "HEALTHY",
+                                          "profile":  {
+                                                          "environment_id":  "1",
+                                                          "backend":  "LOCAL",
+                                                          "isolation":  "NONE",
+                                                          "execution_mode":  "WINDOWS_PROCESS",
+                                                          "worker_id":  "local-process:1",
+                                                          "host_platform":  "Windows/AMD64",
+                                                          "os":  "Windows",
+                                                          "architecture":  "AMD64",
+                                                          "kernel":  "10",
+                                                          "runtime":  "python 3.13.2",
+                                                          "workspace_root":  "temp dir ÙÙÙ ØªÙÙÙØ°",
+                                                          "network_policy":  "host (Ø¨ÙØ§ Ø¹Ø²Ù â Ù\u0085Ø¹ÙÙ)",
+                                                          "resource_limits":  "Ù\u0085ÙÙØ© Ø²Ù\u0085ÙÙØ© ÙÙØ· â Ø¨ÙØ§ rlimits (Ù\u0085Ø¹ÙÙ)",
+                                                          "sandboxed":  false,
+                                                          "compatibility_mode":  true,
+                                                          "compatibility_note":  "ÙØ¶Ø¹ Ù\u0085ØªÙØ§ÙÙ Ø¨ÙØ§ Ø¹Ø²Ù: Ù\u0085ÙØ§Ø³Ø¨ ÙÙÙ\u0085ÙØ§Ù\u0085 ØºÙØ± Ø§ÙØ­Ø³Ø§Ø³Ø© Ø­ÙÙ ØªØ³Ù\u0085Ø­ Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ° (COMPATIBLE_LOCAL). ÙØ§ Ø§Ø¯Ø¹Ø§Ø¡ Ø¹Ø²Ù ÙÙØ§.",
+                                                          "capabilities":  [
+                                                                               "code_execution",
+                                                                               "filesystem_write",
+                                                                               "artifact_capture",
+                                                                               "python_runtime"
+                                                                           ],
+                                                          "available":  true,
+                                                          "unavailable_reason":  "",
+                                                          "runtime_truth":  {
+                                                                                "os":  "Windows",
+                                                                                "os_release":  "10",
+                                                                                "architecture":  "AMD64",
+                                                                                "kernel":  "10",
+                                                                                "python":  "3.13.2",
+                                                                                "python_executable":  "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+                                                                                "git":  "git version 2.55.0.windows.3",
+                                                                                "node":  "v24.20.0",
+                                                                                "shell":  "C:\\Windows\\system32\\cmd.exe",
+                                                                                "container_runtime":  "",
+                                                                                "wsl":  false,
+                                                                                "docker":  "",
+                                                                                "cpu_cores":  4,
+                                                                                "memory":  "",
+                                                                                "disk_free_gb":  5.5,
+                                                                                "network":  "unknown"
+                                                                            }
+                                                      },
+                                          "sandboxed":  false,
+                                          "isolation":  "NONE",
+                                          "host_platform":  "Windows/AMD64",
+                                          "compatibility_mode":  true,
+                                          "is_default":  true,
+                                          "endpoint":  "",
+                                          "failure_reason":  "",
+                                          "last_verified_at":  "2026-10-12T23:29:31.292408",
+                                          "last_probe_detail":  {
+                                                                    "ok":  true,
+                                                                    "status":  "READY",
+                                                                    "checks":  [
+                                                                                   {
+                                                                                       "name":  "preflight",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "preflight exit=0 cwd=C:\\Users\\jaber\\AppData\\Local\\Temp\\env-compat-hd5bnrgv\\ws write_read_delete=True"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "boot",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "261ms"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "execute",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "exit=0 "
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "write_file",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø§ÙÙØ­Øµ"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "read_file",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "ÙØ±Ø§Ø¡Ø© Ù\u0085Ø§ ÙÙØªØ¨ ÙØ§ÙØªØ­ÙÙ Ù\u0085Ù Ø§ÙÙ\u0085Ø­ØªÙÙ"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "delete_file",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "Ø­Ø°Ù Ø§ÙÙ\u0085ÙÙ ÙØ§ÙØªØ­ÙÙ Ù\u0085Ù Ø²ÙØ§ÙÙ"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "working_directory",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "cwd=C:\\Users\\jaber\\AppData\\Local\\Temp\\env-compat-hd5bnrgv\\ws"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "architecture",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "arch=AMD64"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "isolation",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "Ù\u0085Ø¹ÙÙ: Ø¨ÙØ§ Ø¹Ø²Ù â ÙØ¶Ø¹ Ù\u0085ØªÙØ§ÙÙØ Ø§ÙØ´Ø¨ÙØ© ØªØ¹Ù\u0085Ù"
+                                                                                   },
+                                                                                   {
+                                                                                       "name":  "capture",
+                                                                                       "ok":  true,
+                                                                                       "detail":  "PROBE-JSON:{\"write_file\": true, \"read_file\": true, \"delete_file\": true, \"working_directory\": \"C:\\\\Users\\\\jaber\\\\AppData\\"
+                                                                                   }
+                                                                               ],
+                                                                    "profile":  {
+                                                                                    "environment_id":  "1",
+                                                                                    "backend":  "LOCAL",
+                                                                                    "isolation":  "NONE",
+                                                                                    "execution_mode":  "WINDOWS_PROCESS",
+                                                                                    "worker_id":  "local-process:1",
+                                                                                    "host_platform":  "Windows/AMD64",
+                                                                                    "os":  "Windows",
+                                                                                    "architecture":  "AMD64",
+                                                                                    "kernel":  "10",
+                                                                                    "runtime":  "python 3.13.2",
+                                                                                    "workspace_root":  "temp dir ÙÙÙ ØªÙÙÙØ°",
+                                                                                    "network_policy":  "host (Ø¨ÙØ§ Ø¹Ø²Ù â Ù\u0085Ø¹ÙÙ)",
+                                                                                    "resource_limits":  "Ù\u0085ÙÙØ© Ø²Ù\u0085ÙÙØ© ÙÙØ· â Ø¨ÙØ§ rlimits (Ù\u0085Ø¹ÙÙ)",
+                                                                                    "sandboxed":  false,
+                                                                                    "compatibility_mode":  true,
+                                                                                    "compatibility_note":  "ÙØ¶Ø¹ Ù\u0085ØªÙØ§ÙÙ Ø¨ÙØ§ Ø¹Ø²Ù: Ù\u0085ÙØ§Ø³Ø¨ ÙÙÙ\u0085ÙØ§Ù\u0085 ØºÙØ± Ø§ÙØ­Ø³Ø§Ø³Ø© Ø­ÙÙ ØªØ³Ù\u0085Ø­ Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ° (COMPATIBLE_LOCAL). ÙØ§ Ø§Ø¯Ø¹Ø§Ø¡ Ø¹Ø²Ù ÙÙØ§.",
+                                                                                    "capabilities":  [
+                                                                                                         "code_execution",
+                                                                                                         "filesystem_write",
+                                                                                                         "artifact_capture",
+                                                                                                         "python_runtime"
+                                                                                                     ],
+                                                                                    "available":  true,
+                                                                                    "unavailable_reason":  "",
+                                                                                    "runtime_truth":  {
+                                                                                                          "os":  "Windows",
+                                                                                                          "os_release":  "10",
+                                                                                                          "architecture":  "AMD64",
+                                                                                                          "kernel":  "10",
+                                                                                                          "python":  "3.13.2",
+                                                                                                          "python_executable":  "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+                                                                                                          "git":  "git version 2.55.0.windows.3",
+                                                                                                          "node":  "v24.20.0",
+                                                                                                          "shell":  "C:\\Windows\\system32\\cmd.exe",
+                                                                                                          "container_runtime":  "",
+                                                                                                          "wsl":  false,
+                                                                                                          "docker":  "",
+                                                                                                          "cpu_cores":  4,
+                                                                                                          "memory":  "",
+                                                                                                          "disk_free_gb":  5.5,
+                                                                                                          "network":  "unknown"
+                                                                                                      }
+                                                                                },
+                                                                    "reason":  ""
+                                                                },
+                                          "created_at":  "2026-10-12T23:27:59.356024",
+                                          "updated_at":  "2026-10-12T23:29:31.292476"
+                                      },
+                      "policy":  "COMPATIBLE_LOCAL"
+                  },
+    "execution_gate":  {
+                           "state":  "OPEN",
+                           "open_for_execution":  true,
+                           "label":  "Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­",
+                           "reason":  "Ø§ÙØ®Ø·Ø© Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø© ÙØ§ÙÙØ¯Ø±Ø§Øª Ø§ÙÙ\u0085Ø·ÙÙØ¨Ø© Ø¬Ø§ÙØ²Ø© â Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­",
+                           "required":  "",
+                           "owner_action":  ""
+                       },
+    "launch":  {
+                   "launched":  true,
+                   "reason":  "launched",
+                   "project_id":  1,
+                   "job_id":  null,
+                   "correlation_id":  "d85de8ff15ef"
+               }
+}

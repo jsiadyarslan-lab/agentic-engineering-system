@@ -1,0 +1,117 @@
+﻿{
+    "project":  {
+                    "id":  2,
+                    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10 â Ø¨Ø§Ø¨ Ø§ÙØ¹Ø²Ù Ø§ÙØµØ§Ø±Ù\u0085",
+                    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+                    "status":  "BLOCKED",
+                    "created_at":  "2026-10-13T00:00:36.775188",
+                    "updated_at":  "2026-10-13T00:01:02.476172",
+                    "current_plan_id":  4,
+                    "current_phase_id":  null,
+                    "current_step_id":  null,
+                    "stop_requested":  false,
+                    "completion_state":  "",
+                    "last_error":  "Ø§ÙØ­ÙØ§Ø¬Ø²: sandbox (BLOCKED) â Ø§ÙØ¥Ø¬Ø±Ø§Ø¡ ÙØ¨Ù Ø§ÙØ¨Ø¯Ø¡Ø ÙØ§ Ø¨Ø¹Ø¯Ù",
+                    "execution_policy":  "STRICT_ISOLATED",
+                    "archived_at":  null,
+                    "original_id":  null
+                },
+    "preflight":  {
+                      "verdict":  "BLOCKED",
+                      "summary":  "Ø§ÙØ­ÙØ§Ø¬Ø²: sandbox (BLOCKED) â Ø§ÙØ¥Ø¬Ø±Ø§Ø¡ ÙØ¨Ù Ø§ÙØ¨Ø¯Ø¡Ø ÙØ§ Ø¨Ø¹Ø¯Ù",
+                      "matrix":  [
+                                     {
+                                         "capability":  "Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "execution_policy",
+                                         "required":  "Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø©",
+                                         "available":  "Ø¹Ø²Ù ØµØ§Ø±Ù\u0085 â Ø¨ÙØ¦Ø© Ù\u0085Ø¹Ø²ÙÙØ© Ø¥ÙØ²Ø§Ù\u0085ÙØ©",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "environment",
+                                         "required":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø¨ÙØ¦Ø© ØªÙÙÙØ° Linux/x86_64 Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§ â Ø§ÙØ±ÙÙØ²Ø© Ø§ÙÙ\u0085Ø­ÙÙØ© Ø¹ÙÙ Ù\u0085Ø¶ÙÙ LinuxØ Ø£Ù Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø¹ÙÙ Ø£Ù Linux/WSL2 (python scripts/execution_worker.py). ÙÙ\u0085 ØªÙÙÙÙÙØ± Ø¨Ø¹Ø¯ Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ",
+                                         "available":  "ÙØ§ Ø¨ÙØ¦Ø© Ù\u0085ÙØ§ÙÙØ©",
+                                         "decision":  "BLOCK"
+                                     },
+                                     {
+                                         "capability":  "ÙÙ\u0085Ø§Ø°Ø¬ LLM (Ø§ÙØ£Ø¯ÙØ§Ø±)",
+                                         "capability_id":  "llm",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                         "capability_id":  "sandbox",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "BLOCKED",
+                                         "decision":  "BLOCK"
+                                     },
+                                     {
+                                         "capability":  "ÙØ¸Ø§Ù\u0085 Ø§ÙÙ\u0085ÙÙØ§Øª ÙØ§ÙØ£Ø¯ÙØ©",
+                                         "capability_id":  "filesystem",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "ØªØ­ÙÙÙ DNS",
+                                         "capability_id":  "network_dns",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ØªØµØ§Ù HTTPS",
+                                         "capability_id":  "network_https",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ÙÙØ´Ø¯Ø© ÙPython",
+                                         "capability_id":  "shell",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     },
+                                     {
+                                         "capability":  "Ø§ÙÙØ§Ø¹Ø¯Ø© Ø§ÙØ¯Ø§Ø¦Ù\u0085Ø©",
+                                         "capability_id":  "persistence",
+                                         "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                         "available":  "READY",
+                                         "decision":  "PROCEED"
+                                     }
+                                 ],
+                      "blocked":  [
+                                      {
+                                          "capability_id":  "sandbox",
+                                          "name":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                          "status":  "BLOCKED",
+                                          "ok":  false,
+                                          "reason":  "Ø¨ÙØ¦Ø© Ø¬Ø§ÙØ²Ø© Ù\u0085ØªØ§Ø­Ø©",
+                                          "last_probe":  "2026-10-13T00:01:22.581919",
+                                          "latency_ms":  0,
+                                          "recovery":  "Ø£Ø¶Ù Ø¨ÙØ¦Ø© ØªÙÙÙØ° Ù\u0085Ù â Ø§ÙØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª â Ø¨ÙØ¦Ø§Øª Ø§ÙØªÙÙÙØ° (Ø¹Ø§Ù\u0085Ù Linux/WSL2) â ØªØ­ÙÙ â Ø£Ø¹Ø¯ Ø§ÙÙØ­Øµ",
+                                          "owner_action":  "OWNER ACTION REQUIRED â ÙØ§ Ø¨ÙØ¦Ø© ØªÙÙÙØ° Ø¬Ø§ÙØ²Ø© ØªÙØ§ÙÙ Ø§ÙØ³ÙØ§Ø³Ø©. Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø¨ÙØ¦Ø© ØªÙÙÙØ° Linux/x86_64 Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§ â Ø§ÙØ±ÙÙØ²Ø© Ø§ÙÙ\u0085Ø­ÙÙØ© Ø¹ÙÙ Ù\u0085Ø¶ÙÙ LinuxØ Ø£Ù Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø¹ÙÙ Ø£Ù Linux/WSL2 (python scripts/execution_worker.py). ÙÙ\u0085 ØªÙÙÙÙÙØ± Ø¨Ø¹Ø¯ Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ. Ø§ÙØ­Ø§ÙØ© Ø§ÙØ­Ø§ÙÙØ©: local-windows (LOCAL/Ø¨ÙØ§ Ø¹Ø²Ù): HEALTHY. Ø§ÙØ¥Ø¬Ø±Ø§Ø¡: Ø¨ÙØ¦Ø§Øª Ø§ÙØªÙÙÙØ° â Ø¥Ø¶Ø§ÙØ© Ø¨ÙØ¦Ø© (REMOTE_WORKER Ø¨Ø±Ø§Ø¨Ø· Ø¹Ø§Ù\u0085Ù Ø¹ÙÙ Linux/WSL2: python scripts/execution_worker.py) â ØªØ­ÙÙ Ø­ÙÙÙÙ â Ø¥Ø¹Ø§Ø¯Ø© Ø§ÙÙØ­Øµ â Ø§Ø³ØªØ¦ÙØ§Ù Ø§ÙÙ\u0085ÙÙ\u0085Ø© Ø¨ÙØ§ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø¹ØªÙ\u0085Ø§Ø¯",
+                                          "required_environment":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø¨ÙØ¦Ø© ØªÙÙÙØ° Linux/x86_64 Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§ â Ø§ÙØ±ÙÙØ²Ø© Ø§ÙÙ\u0085Ø­ÙÙØ© Ø¹ÙÙ Ù\u0085Ø¶ÙÙ LinuxØ Ø£Ù Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø¹ÙÙ Ø£Ù Linux/WSL2 (python scripts/execution_worker.py). ÙÙ\u0085 ØªÙÙÙÙÙØ± Ø¨Ø¹Ø¯ Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ",
+                                          "policy":  "STRICT_ISOLATED"
+                                      }
+                                  ],
+                      "environment":  null,
+                      "policy":  "STRICT_ISOLATED"
+                  },
+    "execution_gate":  {
+                           "state":  "APPROVED_BUT_BLOCKED",
+                           "open_for_execution":  false,
+                           "label":  "Ø§ÙØªÙÙÙØ° Ù\u0085Ø­Ø¬ÙØ¨ Ù\u0085Ø¤ÙØªÙØ§",
+                           "reason":  "sandbox: Ø¨ÙØ¦Ø© Ø¬Ø§ÙØ²Ø© Ù\u0085ØªØ§Ø­Ø©",
+                           "required":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø¨ÙØ¦Ø© ØªÙÙÙØ° Linux/x86_64 Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§ â Ø§ÙØ±ÙÙØ²Ø© Ø§ÙÙ\u0085Ø­ÙÙØ© Ø¹ÙÙ Ù\u0085Ø¶ÙÙ LinuxØ Ø£Ù Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø¹ÙÙ Ø£Ù Linux/WSL2 (python scripts/execution_worker.py). ÙÙ\u0085 ØªÙÙÙÙÙØ± Ø¨Ø¹Ø¯ Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ",
+                           "owner_action":  "OWNER ACTION REQUIRED â ÙØ§ Ø¨ÙØ¦Ø© ØªÙÙÙØ° Ø¬Ø§ÙØ²Ø© ØªÙØ§ÙÙ Ø§ÙØ³ÙØ§Ø³Ø©. Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø¨ÙØ¦Ø© ØªÙÙÙØ° Linux/x86_64 Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§ â Ø§ÙØ±ÙÙØ²Ø© Ø§ÙÙ\u0085Ø­ÙÙØ© Ø¹ÙÙ Ù\u0085Ø¶ÙÙ LinuxØ Ø£Ù Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø¹ÙÙ Ø£Ù Linux/WSL2 (python scripts/execution_worker.py). ÙÙ\u0085 ØªÙÙÙÙÙØ± Ø¨Ø¹Ø¯ Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ. Ø§ÙØ­Ø§ÙØ© Ø§ÙØ­Ø§ÙÙØ©: local-windows (LOCAL/Ø¨ÙØ§ Ø¹Ø²Ù): HEALTHY. Ø§ÙØ¥Ø¬Ø±Ø§Ø¡: Ø¨ÙØ¦Ø§Øª Ø§ÙØªÙÙÙØ° â Ø¥Ø¶Ø§ÙØ© Ø¨ÙØ¦Ø© (REMOTE_WORKER Ø¨Ø±Ø§Ø¨Ø· Ø¹Ø§Ù\u0085Ù Ø¹ÙÙ Linux/WSL2: python scripts/execution_worker.py) â ØªØ­ÙÙ Ø­ÙÙÙÙ â Ø¥Ø¹Ø§Ø¯Ø© Ø§ÙÙØ­Øµ â Ø§Ø³ØªØ¦ÙØ§Ù Ø§ÙÙ\u0085ÙÙ\u0085Ø© Ø¨ÙØ§ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø¹ØªÙ\u0085Ø§Ø¯"
+                       },
+    "launch":  {
+                   "launched":  false,
+                   "reason":  "not_requested"
+               }
+}

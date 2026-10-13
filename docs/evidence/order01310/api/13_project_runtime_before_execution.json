@@ -1,0 +1,128 @@
+﻿{
+    "project_id":  2,
+    "conversation_id":  null,
+    "run_id":  null,
+    "planning_session_id":  null,
+    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10 â Ø¨Ø§Ø¨ Ø§ÙØ¹Ø²Ù Ø§ÙØµØ§Ø±Ù\u0085",
+    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+    "archived_at":  null,
+    "status":  "DRAFT",
+    "phase":  null,
+    "stage":  "GOAL",
+    "stage_labels":  {
+                         "GOAL":  "Ø§ÙÙØ¯Ù",
+                         "PLAN":  "Ø§ÙØ®Ø·Ø©",
+                         "APPROVAL":  "Ø§ÙØ§Ø¹ØªÙ\u0085Ø§Ø¯",
+                         "PREPARE":  "Ø§ÙØªÙÙØ¦Ø©",
+                         "EXECUTE":  "Ø§ÙØªÙÙÙØ°",
+                         "TEST":  "Ø§ÙØ§Ø®ØªØ¨Ø§Ø±",
+                         "REVIEW":  "Ø§ÙÙ\u0085Ø±Ø§Ø¬Ø¹Ø©",
+                         "AUDIT":  "Ø§ÙØªØ¯ÙÙÙ",
+                         "DONE":  "Ø§ÙØ§ÙØªÙ\u0085Ø§Ù"
+                     },
+    "step":  null,
+    "current_phase_id":  null,
+    "current_step_id":  null,
+    "plan":  null,
+    "progress":  {
+                     "steps_total":  0,
+                     "steps_completed":  0,
+                     "steps_failed":  0,
+                     "percent":  0.0,
+                     "current_step":  null
+                 },
+    "started_at":  "2026-10-13T00:00:36.775188",
+    "updated_at":  "2026-10-13T00:00:36.775193",
+    "elapsed_seconds":  0.1,
+    "elapsed_s":  0.1,
+    "heartbeat_at":  null,
+    "last_meaningful_activity_at":  null,
+    "planning_silence_s":  null,
+    "timeout_at":  null,
+    "finished_at":  null,
+    "provider":  "",
+    "model":  "",
+    "actual_provider":  "",
+    "actual_model":  "",
+    "request_id":  "",
+    "attempt":  null,
+    "retry_count":  0,
+    "waiting_for":  {
+                        "kind":  "none",
+                        "label":  ""
+                    },
+    "blocking_reason":  "",
+    "planning":  {
+                     "active":  false,
+                     "state":  "NONE",
+                     "wait_phase":  "NONE",
+                     "waiting_for":  null,
+                     "detail":  {
+
+                                }
+                 },
+    "wait_phase":  "NONE",
+    "last_error":  "",
+    "job":  null,
+    "activity":  {
+                     "role":  "",
+                     "tool":  "",
+                     "provider":  ""
+                 },
+    "environment":  {
+                        "state":  "UNAVAILABLE",
+                        "coherent":  {
+                                         "kind":  "UNAVAILABLE",
+                                         "label":  "â ï¸ Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ° ØºÙØ± Ù\u0085ØªØ§Ø­Ø©",
+                                         "detail":  "ÙØ§ Ù\u0085Ø³Ø§Ø± ØªÙÙÙØ± ÙÙØ§ÙÙ Ø§ÙØ³ÙØ§Ø³Ø© Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ â Ø§ÙÙØ¬ÙØ§Øª Ù\u0085Ø¹ÙÙØ©",
+                                         "missing":  [
+                                                         {
+                                                             "need":  "Ø¨ÙØ¦Ø© ØªÙÙÙØ° Ù\u0085Ø¹Ø²ÙÙØ© ÙØ¹ÙÙÙØ§",
+                                                             "detected":  "Ø§ÙÙ\u0085Ø¶ÙÙ Windows/AMD64 â Ø±ÙÙØ²Ø© Ø§ÙØ¹Ø²Ù ØºÙØ± Ù\u0085ØªØ§Ø­Ø©Ø ÙØ§ Ø­Ø§ÙÙØ§Øª DockerØ ÙØ§ Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ù\u0085Ø³Ø¬Ù",
+                                                             "action":  "Ø£Ø­Ø¯ Ø«ÙØ§Ø«Ø©: (1) ÙØ¹ÙÙ WSL2/Docker Ø¹ÙÙ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ ÙØ£Ø¹Ø¯ Ø§ÙØªØ¬ÙÙØ²Ø Ø£Ù (2) Ø´ØºÙÙ Ø¹Ø§Ù\u0085ÙÙØ§ Ø¨Ø¹ÙØ¯ÙØ§ Ø¹ÙÙ Ø£Ù Linux/WSL2: python scripts/execution_worker.py Ø«Ù\u0085 Ø³Ø¬ÙÙÙ Ù\u0085Ù Ø§ÙØ¥Ø¹Ø¯Ø§Ø¯Ø§Øª â Ø¨ÙØ¦Ø§Øª Ø§ÙØªÙÙÙØ°Ø Ø£Ù (3) Ø®ÙÙØ¶ Ø§ÙØ³ÙØ§Ø³Ø© Ø¥ÙÙ ØªÙØ§ÙÙ Ù\u0085Ø­ÙÙ Ù\u0085Ø¹ÙÙ Ù\u0085Ù Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§ÙÙ\u0085Ø´Ø±ÙØ¹"
+                                                         }
+                                                     ]
+                                     },
+                        "environment_id":  null,
+                        "worker_id":  "",
+                        "backend":  {
+
+                                    }
+                    },
+    "backend":  {
+
+                },
+    "worker":  null,
+    "execution":  null,
+    "last_event":  {
+                       "id":  182,
+                       "project_id":  2,
+                       "kind":  "PROJECT_CREATED",
+                       "payload":  {
+                                       "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10 â Ø¨Ø§Ø¨ Ø§ÙØ¹Ø²Ù Ø§ÙØµØ§Ø±Ù\u0085",
+                                       "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·"
+                                   },
+                       "created_at":  "2026-10-13T00:00:36.793473"
+                   },
+    "last_successful_transition":  null,
+    "recent_events":  [
+                          {
+                              "id":  182,
+                              "project_id":  2,
+                              "kind":  "PROJECT_CREATED",
+                              "payload":  {
+                                              "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10 â Ø¨Ø§Ø¨ Ø§ÙØ¹Ø²Ù Ø§ÙØµØ§Ø±Ù\u0085",
+                                              "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·"
+                                          },
+                              "created_at":  "2026-10-13T00:00:36.793473"
+                          }
+                      ],
+    "available_actions":  [
+                              "run",
+                              "retry",
+                              "duplicate",
+                              "rename",
+                              "history",
+                              "archive"
+                          ]
+}

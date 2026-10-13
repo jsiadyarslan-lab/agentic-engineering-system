@@ -1,0 +1,407 @@
+﻿{
+    "project_id":  1,
+    "conversation_id":  null,
+    "run_id":  4,
+    "planning_session_id":  1,
+    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10",
+    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+    "archived_at":  null,
+    "status":  "BLOCKED",
+    "phase":  {
+                  "id":  1,
+                  "project_id":  1,
+                  "plan_id":  1,
+                  "ordinal":  1,
+                  "title":  "Ø¥ÙØ´Ø§Ø¡ Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt",
+                  "status":  "RUNNING",
+                  "acceptance_criteria":  [
+                                              "ØªÙ\u0085 Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ Ø¨ÙØ¬Ø§Ø­",
+                                              "Ø§ÙÙ\u0085Ø­ØªÙÙ ØµØ­ÙØ­"
+                                          ]
+              },
+    "stage":  "PREPARE",
+    "stage_labels":  {
+                         "GOAL":  "Ø§ÙÙØ¯Ù",
+                         "PLAN":  "Ø§ÙØ®Ø·Ø©",
+                         "APPROVAL":  "Ø§ÙØ§Ø¹ØªÙ\u0085Ø§Ø¯",
+                         "PREPARE":  "Ø§ÙØªÙÙØ¦Ø©",
+                         "EXECUTE":  "Ø§ÙØªÙÙÙØ°",
+                         "TEST":  "Ø§ÙØ§Ø®ØªØ¨Ø§Ø±",
+                         "REVIEW":  "Ø§ÙÙ\u0085Ø±Ø§Ø¬Ø¹Ø©",
+                         "AUDIT":  "Ø§ÙØªØ¯ÙÙÙ",
+                         "DONE":  "Ø§ÙØ§ÙØªÙ\u0085Ø§Ù"
+                     },
+    "step":  {
+                 "id":  1,
+                 "phase_id":  1,
+                 "ordinal":  1,
+                 "objective":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt Ø¨Ù\u0085Ø­ØªÙÙ \"Ø§ÙØ³ÙØ§Ù\u0085\"",
+                 "input":  "ÙØ§ ÙÙØ¬Ø¯ Ù\u0085Ø¯Ø®ÙØ§Øª Ø®Ø§Ø±Ø¬ÙØ©",
+                 "expected_output":  "Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt ÙÙ Ø¬Ø°Ø± Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+                 "acceptance_criteria":  [
+                                             "Ø£Ø¯Ø§Ø© Ø§ÙÙØªØ§Ø¨Ø© ØªØ¤ÙØ¯ Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ",
+                                             "ÙØ±Ø§Ø¡Ø© Ø§ÙÙ\u0085ÙÙ ØªÙØ±Ø¬Ø¹ Ø¨Ø§ÙØ¶Ø¨Ø· \"Ø§ÙØ³ÙØ§Ù\u0085\""
+                                         ],
+                 "dependencies":  [
+
+                                  ],
+                 "status":  "FAILED",
+                 "attempts":  2,
+                 "current_execution_id":  2,
+                 "evidence_id":  null,
+                 "last_error":  "Ø§ÙØ­Ø§ÙØ© Ø§ÙÙÙØ§Ø¦ÙØ© FAILED â Ø§ÙØ¯ÙØ±Ø© ÙÙ\u0085 ØªÙØªÙ\u0085Ù Ø£Ø¯ÙØ©Ù",
+                 "created_at":  "2026-10-12T23:29:14.883365",
+                 "updated_at":  "2026-10-12T23:42:23.282167",
+                 "completed_at":  null
+             },
+    "current_phase_id":  1,
+    "current_step_id":  1,
+    "plan":  {
+                 "id":  1,
+                 "version":  1,
+                 "approved":  true,
+                 "phases":  1
+             },
+    "progress":  {
+                     "steps_total":  1,
+                     "steps_completed":  0,
+                     "steps_failed":  1,
+                     "percent":  0.0,
+                     "current_step":  {
+                                          "id":  1,
+                                          "objective":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt Ø¨Ù\u0085Ø­ØªÙÙ \"Ø§ÙØ³ÙØ§Ù\u0085\"",
+                                          "status":  "FAILED"
+                                      }
+                 },
+    "started_at":  "2026-10-12T23:37:04.461258",
+    "updated_at":  "2026-10-12T23:42:23.420747",
+    "elapsed_seconds":  379.2,
+    "elapsed_s":  379.2,
+    "heartbeat_at":  "2026-10-12T23:42:23.602256",
+    "last_meaningful_activity_at":  "2026-10-12T23:29:01.061587+00:00",
+    "planning_silence_s":  null,
+    "timeout_at":  "2026-10-12T23:43:50.459237+00:00",
+    "finished_at":  "2026-10-12T23:29:01.073007",
+    "provider":  "nvidia",
+    "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+    "actual_provider":  "nvidia",
+    "actual_model":  "nvidia/nemotron-3-ultra-550b-a55b",
+    "request_id":  "plan-39511747c59c",
+    "attempt":  1,
+    "retry_count":  1,
+    "waiting_for":  {
+                        "kind":  "owner_gate",
+                        "label":  "Ø¨ÙØ§Ø¨Ø© Ù\u0085Ø§ÙÙ",
+                        "gates":  [
+                                      "PLAN_REVISION_APPROVAL"
+                                  ]
+                    },
+    "blocking_reason":  "Ø§ÙØ­Ø§ÙØ© Ø§ÙÙÙØ§Ø¦ÙØ© FAILED â Ø§ÙØ¯ÙØ±Ø© ÙÙ\u0085 ØªÙØªÙ\u0085Ù Ø£Ø¯ÙØ©Ù",
+    "planning":  {
+                     "active":  false,
+                     "state":  "COMPLETED",
+                     "wait_phase":  "DONE",
+                     "waiting_for":  null,
+                     "retry_available":  false,
+                     "detail":  {
+                                    "id":  1,
+                                    "project_id":  1,
+                                    "attempt":  1,
+                                    "state":  "COMPLETED",
+                                    "provider":  "nvidia",
+                                    "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                    "request_id":  "plan-39511747c59c",
+                                    "started_at":  "2026-10-12T23:28:50.459237",
+                                    "heartbeat_at":  "2026-10-12T23:29:01.061587+00:00",
+                                    "last_meaningful_activity_at":  "2026-10-12T23:29:01.061587+00:00",
+                                    "silence_s":  null,
+                                    "hard_deadline_at":  "2026-10-12T23:43:50.459237+00:00",
+                                    "hard_deadline_derived_at":  null,
+                                    "hard_timeout_s":  900.0,
+                                    "last_activity_at":  "2026-10-12T23:29:01.061587",
+                                    "lease_expires_at":  "2026-10-12T23:31:01.061587",
+                                    "finished_at":  "2026-10-12T23:29:01.073007",
+                                    "elapsed_s":  10.6,
+                                    "plan_id":  1,
+                                    "error_class":  "",
+                                    "error_detail":  "",
+                                    "retry_of":  null,
+                                    "actual_provider":  "nvidia",
+                                    "actual_model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                    "reasoning_chars":  439,
+                                    "owner_pid":  9300
+                                }
+                 },
+    "wait_phase":  "DONE",
+    "last_error":  "Ø§ÙØ­Ø§ÙØ© Ø§ÙÙÙØ§Ø¦ÙØ© FAILED â Ø§ÙØ¯ÙØ±Ø© ÙÙ\u0085 ØªÙØªÙ\u0085Ù Ø£Ø¯ÙØ©Ù",
+    "job":  {
+                "id":  4,
+                "status":  "WAITING_GATE",
+                "waiting_kind":  "GATE",
+                "heartbeat_at":  "2026-10-12T23:42:23.602256",
+                "tick_count":  2,
+                "attempt":  1
+            },
+    "activity":  {
+                     "role":  "reviewer",
+                     "tool":  "http_get_text",
+                     "provider":  ""
+                 },
+    "environment":  {
+                        "state":  "READY",
+                        "coherent":  {
+                                         "kind":  "READY",
+                                         "label":  "â Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ° Ø¬Ø§ÙØ²Ø©",
+                                         "detail":  "Ø§ÙØ¨ÙØ¦Ø© Â«local-windowsÂ» Ø§Ø¬ØªØ§Ø²Øª ÙØ­ÙØµ Ø§ÙØµØ­Ø© Ø§ÙØ­ÙÙÙÙØ© ÙØªÙØ§ÙÙ Ø§ÙØ³ÙØ§Ø³Ø©"
+                                     },
+                        "environment_id":  1,
+                        "worker_id":  "local",
+                        "backend":  {
+                                        "id":  1,
+                                        "name":  "local-windows",
+                                        "backend":  "LOCAL",
+                                        "status":  "HEALTHY",
+                                        "isolation":  "NONE",
+                                        "sandboxed":  false,
+                                        "is_default":  true,
+                                        "last_verified_at":  "2026-10-12T23:29:31.292408"
+                                    }
+                    },
+    "backend":  {
+                    "id":  1,
+                    "name":  "local-windows",
+                    "backend":  "LOCAL",
+                    "status":  "HEALTHY",
+                    "isolation":  "NONE",
+                    "sandboxed":  false,
+                    "is_default":  true,
+                    "last_verified_at":  "2026-10-12T23:29:31.292408"
+                },
+    "worker":  {
+                   "id":  "local"
+               },
+    "execution":  {
+                      "id":  2,
+                      "step_id":  1,
+                      "attempt":  2,
+                      "status":  "FAILED",
+                      "command":  "ÙØªØ§Ø¨Ø© Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt Ø¨Ù\u0085Ø­ØªÙÙ \"Ø§ÙØ³ÙØ§Ù\u0085\"\n\nØ§ÙÙ\u0085Ø¯Ø®ÙØ§Øª: ÙØ§ ÙÙØ¬Ø¯ Ù\u0085Ø¯Ø®ÙØ§Øª Ø®Ø§Ø±Ø¬ÙØ©\nØ§ÙÙ\u0085Ø®Ø±Ø¬ Ø§ÙÙ\u0085ØªÙÙØ¹: Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt ÙÙ Ø¬Ø°Ø± Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·\nÙ\u0085Ø¹Ø§ÙÙØ± Ø§ÙÙØ¨ÙÙ (ØªØ­ÙÙ Ø­Ø±ÙÙÙØ§):\n- Ø£Ø¯Ø§Ø© Ø§ÙÙØªØ§Ø¨Ø© ØªØ¤ÙØ¯ Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ\n- ÙØ±Ø§Ø¡Ø© Ø§ÙÙ\u0085ÙÙ ØªÙØ±Ø¬Ø¹ Ø¨Ø§ÙØ¶Ø¨Ø· \"Ø§ÙØ³ÙØ§Ù\u0085\"",
+                      "command_type":  "step_execution",
+                      "cwd":  "runtime\\projects\\1\\steps\\1",
+                      "pid":  null,
+                      "parent_pid":  null,
+                      "started_at":  "2026-10-12T23:40:22.562298",
+                      "finished_at":  "2026-10-12T23:42:23.258718",
+                      "agent_role":  "implementer"
+                  },
+    "last_event":  {
+                       "id":  82,
+                       "project_id":  1,
+                       "kind":  "JOB_WAITING",
+                       "payload":  {
+                                       "job_id":  4,
+                                       "status":  "WAITING_GATE",
+                                       "waiting_kind":  "GATE",
+                                       "detail":  {
+                                                      "summary":  "Ø§Ø³ØªÙÙØ¯Øª Ø§ÙÙ\u0085Ø­Ø§ÙÙØ§Øª â Ø¨ÙØ§Ø¨Ø© Ù\u0085Ø§ÙÙ",
+                                                      "gate_kinds":  [
+                                                                         "PLAN_REVISION_APPROVAL"
+                                                                     ]
+                                                  },
+                                       "unblock_path":  "Ø¹Ø§ÙØ¬ Ø§ÙØ¨ÙØ§Ø¨Ø© Ø§ÙÙ\u0085Ø¹ÙÙØ© Ù\u0085Ù ØµÙØ­Ø© Ø§ÙÙ\u0085Ø´Ø±ÙØ¹ â Ø§ÙÙØ±Ø§Ø± ÙÙ"
+                                   },
+                       "created_at":  "2026-10-12T23:42:23.656518"
+                   },
+    "last_successful_transition":  {
+                                       "kind":  "JOB_WAITING",
+                                       "id":  82,
+                                       "at":  "2026-10-12T23:42:23.656518",
+                                       "payload":  {
+                                                       "job_id":  4,
+                                                       "status":  "WAITING_GATE",
+                                                       "waiting_kind":  "GATE",
+                                                       "detail":  {
+                                                                      "summary":  "Ø§Ø³ØªÙÙØ¯Øª Ø§ÙÙ\u0085Ø­Ø§ÙÙØ§Øª â Ø¨ÙØ§Ø¨Ø© Ù\u0085Ø§ÙÙ",
+                                                                      "gate_kinds":  [
+                                                                                         "PLAN_REVISION_APPROVAL"
+                                                                                     ]
+                                                                  },
+                                                       "unblock_path":  "Ø¹Ø§ÙØ¬ Ø§ÙØ¨ÙØ§Ø¨Ø© Ø§ÙÙ\u0085Ø¹ÙÙØ© Ù\u0085Ù ØµÙØ­Ø© Ø§ÙÙ\u0085Ø´Ø±ÙØ¹ â Ø§ÙÙØ±Ø§Ø± ÙÙ"
+                                                   }
+                                   },
+    "recent_events":  [
+                          {
+                              "id":  73,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "web_search",
+                                              "phase":  "started",
+                                              "role":  "implementer",
+                                              "duration_ms":  0,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "Ù\u0085Ø¹ÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙ Ø§ÙÙØºØ© Ø§ÙØ¹Ø±Ø¨ÙØ© ÙØ§ÙØ«ÙØ§ÙØ© Ø§ÙØ¥Ø³ÙØ§Ù\u0085ÙØ©",
+                                              "error":  ""
+                                          },
+                              "created_at":  "2026-10-12T23:41:42.642767"
+                          },
+                          {
+                              "id":  74,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "web_search",
+                                              "phase":  "failed",
+                                              "role":  "implementer",
+                                              "duration_ms":  1592,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "Ù\u0085Ø¹ÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙ Ø§ÙÙØºØ© Ø§ÙØ¹Ø±Ø¨ÙØ© ÙØ§ÙØ«ÙØ§ÙØ© Ø§ÙØ¥Ø³ÙØ§Ù\u0085ÙØ©",
+                                              "error":  "ÙØ§ Ù\u0085Ø²ÙØ¯ Ø¨Ø­Ø« Ø¬Ø§ÙØ²: DuckDuckGo: ProviderNotReady: ddg: ÙÙ Ø§ÙØ§Ø³ØªØ±Ø§ØªÙØ¬ÙØ§Øª ÙØ´ÙØª â lite-get: ØµÙØ­Ø© ØªØ­Ø¯Ù (anomaly) â DDG Ø­Ø¬Ø¨ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ Ù\u0085Ø¤ÙØªÙØ§Ø lite-post: ØµÙØ­Ø© ØªØ­Ø¯Ù (anomaly) â DDG Ø­Ø¬Ø¨ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ Ù\u0085Ø¤ÙØªÙØ§Ø html"
+                                          },
+                              "created_at":  "2026-10-12T23:41:44.235035"
+                          },
+                          {
+                              "id":  75,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "web_search",
+                                              "phase":  "started",
+                                              "role":  "implementer",
+                                              "duration_ms":  0,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "Ù\u0085ÙÙ ÙØµÙ UTF-8 ØªØ±Ù\u0085ÙØ² Ø§ÙØ¹Ø±Ø¨ÙØ© Ø£ÙØ¶Ù Ø§ÙÙ\u0085Ù\u0085Ø§Ø±Ø³Ø§Øª",
+                                              "error":  ""
+                                          },
+                              "created_at":  "2026-10-12T23:41:44.242467"
+                          },
+                          {
+                              "id":  76,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "web_search",
+                                              "phase":  "failed",
+                                              "role":  "implementer",
+                                              "duration_ms":  1315,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "Ù\u0085ÙÙ ÙØµÙ UTF-8 ØªØ±Ù\u0085ÙØ² Ø§ÙØ¹Ø±Ø¨ÙØ© Ø£ÙØ¶Ù Ø§ÙÙ\u0085Ù\u0085Ø§Ø±Ø³Ø§Øª",
+                                              "error":  "ÙØ§ Ù\u0085Ø²ÙØ¯ Ø¨Ø­Ø« Ø¬Ø§ÙØ²: DuckDuckGo: ProviderNotReady: ddg: ÙÙ Ø§ÙØ§Ø³ØªØ±Ø§ØªÙØ¬ÙØ§Øª ÙØ´ÙØª â lite-get: ØµÙØ­Ø© ØªØ­Ø¯Ù (anomaly) â DDG Ø­Ø¬Ø¨ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ Ù\u0085Ø¤ÙØªÙØ§Ø lite-post: ØµÙØ­Ø© ØªØ­Ø¯Ù (anomaly) â DDG Ø­Ø¬Ø¨ ÙØ°Ø§ Ø§ÙÙ\u0085Ø¶ÙÙ Ù\u0085Ø¤ÙØªÙØ§Ø html"
+                                          },
+                              "created_at":  "2026-10-12T23:41:45.558060"
+                          },
+                          {
+                              "id":  77,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "fetch_page",
+                                              "phase":  "started",
+                                              "role":  "implementer",
+                                              "duration_ms":  0,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "https://ar.wikipedia.org/wiki/Ø³ÙØ§Ù\u0085",
+                                              "error":  ""
+                                          },
+                              "created_at":  "2026-10-12T23:41:45.566737"
+                          },
+                          {
+                              "id":  78,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "fetch_page",
+                                              "phase":  "failed",
+                                              "role":  "implementer",
+                                              "duration_ms":  9,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "https://ar.wikipedia.org/wiki/Ø³ÙØ§Ù\u0085",
+                                              "error":  "\u0027ascii\u0027 codec can\u0027t encode characters in position 10-13: ordinal not in range(128)"
+                                          },
+                              "created_at":  "2026-10-12T23:41:45.576465"
+                          },
+                          {
+                              "id":  79,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "http_get_text",
+                                              "phase":  "started",
+                                              "role":  "implementer",
+                                              "duration_ms":  0,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "",
+                                              "error":  ""
+                                          },
+                              "created_at":  "2026-10-12T23:41:45.585421"
+                          },
+                          {
+                              "id":  80,
+                              "project_id":  1,
+                              "kind":  "TOOL_EXECUTION",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "tool":  "http_get_text",
+                                              "phase":  "failed",
+                                              "role":  "implementer",
+                                              "duration_ms":  31,
+                                              "execution_site":  "in_process_declared",
+                                              "summary":  "http_get_text: UNKNOWN (Ø§ÙÙ\u0085Ø±Ø­ÙØ©: ØªÙÙÙØ° Ø§ÙØ£Ø¯Ø§Ø©)",
+                                              "error":  "Ø±Ø§Ø¨Ø· ØºÙØ± Ù\u0085Ø¯Ø¹ÙÙ\u0085: "
+                                          },
+                              "created_at":  "2026-10-12T23:41:45.616978"
+                          },
+                          {
+                              "id":  81,
+                              "project_id":  1,
+                              "kind":  "EXECUTION_FAILED",
+                              "payload":  {
+                                              "step_id":  1,
+                                              "execution_id":  2,
+                                              "reason":  "Ø§ÙØ­Ø§ÙØ© Ø§ÙÙÙØ§Ø¦ÙØ© FAILED â Ø§ÙØ¯ÙØ±Ø© ÙÙ\u0085 ØªÙØªÙ\u0085Ù Ø£Ø¯ÙØ©Ù",
+                                              "exhausted":  true
+                                          },
+                              "created_at":  "2026-10-12T23:42:23.501803"
+                          },
+                          {
+                              "id":  82,
+                              "project_id":  1,
+                              "kind":  "JOB_WAITING",
+                              "payload":  {
+                                              "job_id":  4,
+                                              "status":  "WAITING_GATE",
+                                              "waiting_kind":  "GATE",
+                                              "detail":  {
+                                                             "summary":  "Ø§Ø³ØªÙÙØ¯Øª Ø§ÙÙ\u0085Ø­Ø§ÙÙØ§Øª â Ø¨ÙØ§Ø¨Ø© Ù\u0085Ø§ÙÙ",
+                                                             "gate_kinds":  [
+                                                                                "PLAN_REVISION_APPROVAL"
+                                                                            ]
+                                                         },
+                                              "unblock_path":  "Ø¹Ø§ÙØ¬ Ø§ÙØ¨ÙØ§Ø¨Ø© Ø§ÙÙ\u0085Ø¹ÙÙØ© Ù\u0085Ù ØµÙØ­Ø© Ø§ÙÙ\u0085Ø´Ø±ÙØ¹ â Ø§ÙÙØ±Ø§Ø± ÙÙ"
+                                          },
+                              "created_at":  "2026-10-12T23:42:23.656518"
+                          }
+                      ],
+    "available_actions":  [
+                              "retry",
+                              "duplicate",
+                              "rename",
+                              "history",
+                              "archive"
+                          ]
+}

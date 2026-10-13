@@ -1,0 +1,42 @@
+﻿{
+    "environment":  "local-windows",
+    "status":  "HEALTHY",
+    "ok":  true,
+    "termination":  "COMPLETED",
+    "exit_code":  0,
+    "stdout":  "os: Windows\narch: AMD64\npython: (3, 13, 2)\ncwd: C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-0dfzorli\\ws\nfile_write_read_delete: True\nfile_gone: True\n",
+    "stderr":  "",
+    "detail":  "[COMPATIBLE MODE â Ø¨ÙØ§ Ø¹Ø²ÙØ Ù\u0085Ø¹ÙÙ] 214ms [REPAIR_WORKSPACE: {\u0027repaired\u0027: True, \u0027cwd_exists\u0027: True, \u0027cwd_is_directory\u0027: True, \u0027absolute\u0027: True, \u0027verified_at_launch\u0027: True, \u0027note\u0027: \u0027CREATE WORKSPACE â VERIFY â START (013.3 Â§6)\u0027}] [FAILURE_UNCODED/ cwd=]",
+    "duration_ms":  497,
+    "evidence":  {
+                     "environment_id":  1,
+                     "runtime_type":  "LOCAL",
+                     "execution_boundary":  "WINDOWS_PROCESS",
+                     "host_os":  "Windows",
+                     "architecture":  "AMD64",
+                     "worker_id":  "local-process:1",
+                     "host_cwd":  "C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-0dfzorli\\ws",
+                     "runtime_cwd":  "C:\\Users\\jaber\\AppData\\Local\\Temp\\env-test-0dfzorli\\ws",
+                     "workspace_exists":  true,
+                     "launch_command":  [
+                                            "python 3.13.2",
+                                            "-c",
+                                            "\u003ctest-run-0133\u003e"
+                                        ],
+                     "failure_code":  "",
+                     "failure_reason":  ""
+                 },
+    "failure":  {
+                    "pid":  1012,
+                    "parent_pid":  9300,
+                    "repaired_attempted":  true,
+                    "repair_result":  {
+                                          "repaired":  true,
+                                          "cwd_exists":  true,
+                                          "cwd_is_directory":  true,
+                                          "absolute":  true,
+                                          "verified_at_launch":  true,
+                                          "note":  "CREATE WORKSPACE â VERIFY â START (013.3 Â§6)"
+                                      }
+                }
+}

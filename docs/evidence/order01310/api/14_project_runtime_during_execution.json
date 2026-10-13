@@ -1,0 +1,481 @@
+﻿{
+    "project_id":  1,
+    "conversation_id":  null,
+    "run_id":  3,
+    "planning_session_id":  1,
+    "name":  "ØªØ¬Ø±Ø¨Ø© ÙØ¨ÙÙ 013.10",
+    "objective":  "Ø§ÙØªØ¨ Ù\u0085ÙÙØ§ ÙØµÙØ§ ÙØµÙØ±Ø§ Ø¨Ø§Ø³Ù\u0085 Ø³ÙØ§Ù\u0085.txt ÙÙ Ù\u0085Ø³Ø§Ø­Ø© Ø§ÙØ¹Ù\u0085Ù ÙØ­ØªÙÙ ÙÙÙ\u0085Ø© Ø§ÙØ³ÙØ§Ù\u0085 ÙÙØ·",
+    "archived_at":  null,
+    "status":  "READY",
+    "phase":  {
+                  "id":  1,
+                  "project_id":  1,
+                  "plan_id":  1,
+                  "ordinal":  1,
+                  "title":  "Ø¥ÙØ´Ø§Ø¡ Ù\u0085ÙÙ Ø³ÙØ§Ù\u0085.txt",
+                  "status":  "RUNNING",
+                  "acceptance_criteria":  [
+                                              "ØªÙ\u0085 Ø¥ÙØ´Ø§Ø¡ Ø§ÙÙ\u0085ÙÙ Ø¨ÙØ¬Ø§Ø­",
+                                              "Ø§ÙÙ\u0085Ø­ØªÙÙ ØµØ­ÙØ­"
+                                          ]
+              },
+    "stage":  "PREPARE",
+    "stage_labels":  {
+                         "GOAL":  "Ø§ÙÙØ¯Ù",
+                         "PLAN":  "Ø§ÙØ®Ø·Ø©",
+                         "APPROVAL":  "Ø§ÙØ§Ø¹ØªÙ\u0085Ø§Ø¯",
+                         "PREPARE":  "Ø§ÙØªÙÙØ¦Ø©",
+                         "EXECUTE":  "Ø§ÙØªÙÙÙØ°",
+                         "TEST":  "Ø§ÙØ§Ø®ØªØ¨Ø§Ø±",
+                         "REVIEW":  "Ø§ÙÙ\u0085Ø±Ø§Ø¬Ø¹Ø©",
+                         "AUDIT":  "Ø§ÙØªØ¯ÙÙÙ",
+                         "DONE":  "Ø§ÙØ§ÙØªÙ\u0085Ø§Ù"
+                     },
+    "step":  null,
+    "current_phase_id":  1,
+    "current_step_id":  null,
+    "plan":  {
+                 "id":  1,
+                 "version":  1,
+                 "approved":  true,
+                 "phases":  1
+             },
+    "progress":  {
+                     "steps_total":  1,
+                     "steps_completed":  0,
+                     "steps_failed":  0,
+                     "percent":  0.0,
+                     "current_step":  null
+                 },
+    "started_at":  "2026-10-12T23:29:31.647716",
+    "updated_at":  "2026-10-12T23:29:15.558089",
+    "elapsed_seconds":  385.0,
+    "elapsed_s":  385.0,
+    "heartbeat_at":  "2026-10-12T23:29:31.680155",
+    "last_meaningful_activity_at":  "2026-10-12T23:29:01.061587+00:00",
+    "planning_silence_s":  null,
+    "timeout_at":  "2026-10-12T23:43:50.459237+00:00",
+    "finished_at":  "2026-10-12T23:29:01.073007",
+    "provider":  "nvidia",
+    "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+    "actual_provider":  "nvidia",
+    "actual_model":  "nvidia/nemotron-3-ultra-550b-a55b",
+    "request_id":  "plan-39511747c59c",
+    "attempt":  1,
+    "retry_count":  1,
+    "waiting_for":  {
+                        "kind":  "none",
+                        "label":  ""
+                    },
+    "blocking_reason":  "",
+    "planning":  {
+                     "active":  false,
+                     "state":  "COMPLETED",
+                     "wait_phase":  "DONE",
+                     "waiting_for":  null,
+                     "retry_available":  false,
+                     "detail":  {
+                                    "id":  1,
+                                    "project_id":  1,
+                                    "attempt":  1,
+                                    "state":  "COMPLETED",
+                                    "provider":  "nvidia",
+                                    "model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                    "request_id":  "plan-39511747c59c",
+                                    "started_at":  "2026-10-12T23:28:50.459237",
+                                    "heartbeat_at":  "2026-10-12T23:29:01.061587+00:00",
+                                    "last_meaningful_activity_at":  "2026-10-12T23:29:01.061587+00:00",
+                                    "silence_s":  null,
+                                    "hard_deadline_at":  "2026-10-12T23:43:50.459237+00:00",
+                                    "hard_deadline_derived_at":  null,
+                                    "hard_timeout_s":  900.0,
+                                    "last_activity_at":  "2026-10-12T23:29:01.061587",
+                                    "lease_expires_at":  "2026-10-12T23:31:01.061587",
+                                    "finished_at":  "2026-10-12T23:29:01.073007",
+                                    "elapsed_s":  10.6,
+                                    "plan_id":  1,
+                                    "error_class":  "",
+                                    "error_detail":  "",
+                                    "retry_of":  null,
+                                    "actual_provider":  "nvidia",
+                                    "actual_model":  "nvidia/nemotron-3-ultra-550b-a55b",
+                                    "reasoning_chars":  439,
+                                    "owner_pid":  9300
+                                }
+                 },
+    "wait_phase":  "DONE",
+    "last_error":  "",
+    "job":  {
+                "id":  3,
+                "status":  "FAILED",
+                "waiting_kind":  "",
+                "heartbeat_at":  "2026-10-12T23:29:31.680155",
+                "tick_count":  0,
+                "attempt":  1
+            },
+    "activity":  {
+                     "role":  "",
+                     "tool":  "",
+                     "provider":  ""
+                 },
+    "environment":  {
+                        "state":  "READY",
+                        "coherent":  {
+                                         "kind":  "READY",
+                                         "label":  "â Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ° Ø¬Ø§ÙØ²Ø©",
+                                         "detail":  "Ø§ÙØ¨ÙØ¦Ø© Â«local-windowsÂ» Ø§Ø¬ØªØ§Ø²Øª ÙØ­ÙØµ Ø§ÙØµØ­Ø© Ø§ÙØ­ÙÙÙÙØ© ÙØªÙØ§ÙÙ Ø§ÙØ³ÙØ§Ø³Ø©"
+                                     },
+                        "environment_id":  1,
+                        "worker_id":  "local",
+                        "backend":  {
+                                        "id":  1,
+                                        "name":  "local-windows",
+                                        "backend":  "LOCAL",
+                                        "status":  "HEALTHY",
+                                        "isolation":  "NONE",
+                                        "sandboxed":  false,
+                                        "is_default":  true,
+                                        "last_verified_at":  "2026-10-12T23:29:31.292408"
+                                    }
+                    },
+    "backend":  {
+                    "id":  1,
+                    "name":  "local-windows",
+                    "backend":  "LOCAL",
+                    "status":  "HEALTHY",
+                    "isolation":  "NONE",
+                    "sandboxed":  false,
+                    "is_default":  true,
+                    "last_verified_at":  "2026-10-12T23:29:31.292408"
+                },
+    "worker":  {
+                   "id":  "local"
+               },
+    "execution":  null,
+    "last_event":  {
+                       "id":  54,
+                       "project_id":  1,
+                       "kind":  "JOB_FAILED",
+                       "payload":  {
+                                       "job_id":  3,
+                                       "error":  "create_execution() got an unexpected keyword argument \u0027command\u0027"
+                                   },
+                       "created_at":  "2026-10-12T23:29:31.813976"
+                   },
+    "last_successful_transition":  {
+                                       "kind":  "EXECUTION_OPENED",
+                                       "id":  53,
+                                       "at":  "2026-10-12T23:29:31.786651",
+                                       "payload":  {
+                                                       "plan_id":  1,
+                                                       "version":  1,
+                                                       "summary":  "Ø§ÙØ®Ø·Ø© Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø© ÙØ§ÙÙØ¯Ø±Ø§Øª Ø¬Ø§ÙØ²Ø© â Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­"
+                                                   }
+                                   },
+    "recent_events":  [
+                          {
+                              "id":  45,
+                              "project_id":  1,
+                              "kind":  "JOB_CREATED",
+                              "payload":  {
+                                              "job_id":  3,
+                                              "note":  "Ø¥Ø¹Ø§Ø¯Ø© ÙØ­Øµ ÙØ§Ø¬Ø­Ø© Ø¨Ø¹Ø¯ Ø§ÙØªÙÙÙØ± â Ø§Ø³ØªØ¦ÙØ§Ù Ø¢ÙÙ",
+                                              "resume_token":  "rsm-d0d9c9e89daf499f",
+                                              "attempt":  0
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.614535"
+                          },
+                          {
+                              "id":  46,
+                              "project_id":  1,
+                              "kind":  "JOB_QUEUED",
+                              "payload":  {
+                                              "job_id":  3,
+                                              "resumed":  false,
+                                              "note":  "Ø¥Ø¹Ø§Ø¯Ø© ÙØ­Øµ ÙØ§Ø¬Ø­Ø© Ø¨Ø¹Ø¯ Ø§ÙØªÙÙÙØ± â Ø§Ø³ØªØ¦ÙØ§Ù Ø¢ÙÙ"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.630147"
+                          },
+                          {
+                              "id":  47,
+                              "project_id":  1,
+                              "kind":  "JOB_STARTED",
+                              "payload":  {
+                                              "job_id":  3,
+                                              "attempt":  1,
+                                              "worker_id":  "local"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.664353"
+                          },
+                          {
+                              "id":  48,
+                              "project_id":  1,
+                              "kind":  "PREFLIGHT_STARTED",
+                              "payload":  {
+                                              "plan_id":  1,
+                                              "version":  1,
+                                              "policy":  "COMPATIBLE_LOCAL"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.699614"
+                          },
+                          {
+                              "id":  49,
+                              "project_id":  1,
+                              "kind":  "CAPABILITIES_EVALUATED",
+                              "payload":  {
+                                              "verdict":  "PASS",
+                                              "required":  [
+                                                               "llm",
+                                                               "sandbox",
+                                                               "filesystem",
+                                                               "network_dns",
+                                                               "network_https",
+                                                               "shell",
+                                                               "persistence"
+                                                           ],
+                                              "capabilities":  [
+                                                                   {
+                                                                       "capability_id":  "llm",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "sandbox",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "filesystem",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "network_dns",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "network_https",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "shell",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   },
+                                                                   {
+                                                                       "capability_id":  "persistence",
+                                                                       "status":  "READY",
+                                                                       "ok":  true
+                                                                   }
+                                                               ],
+                                              "matrix":  [
+                                                             {
+                                                                 "capability":  "Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "execution_policy",
+                                                                 "required":  "Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø©",
+                                                                 "available":  "ØªÙØ§ÙÙ Ù\u0085Ø­ÙÙ â Ø¨ÙØ§ Ø¹Ø²ÙØ Ù\u0085Ø¹ÙÙ",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "environment",
+                                                                 "required":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø£Ù Ø¨ÙØ¦Ø© ØªÙÙÙØ° ØªØ¹Ù\u0085Ù ÙØ¹ÙÙÙØ§ (Ø­ØªÙ Ø§ÙÙ\u0085ØªÙØ§ÙÙØ© ØºÙØ± Ø§ÙÙ\u0085Ø¹Ø²ÙÙØ©) â ÙÙ\u0085 ØªÙØªØ­ÙÙ Ø¨Ø¹Ø¯",
+                                                                 "available":  "local-windows (NONE)",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ÙÙ\u0085Ø§Ø°Ø¬ LLM (Ø§ÙØ£Ø¯ÙØ§Ø±)",
+                                                                 "capability_id":  "llm",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "sandbox",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ÙØ¸Ø§Ù\u0085 Ø§ÙÙ\u0085ÙÙØ§Øª ÙØ§ÙØ£Ø¯ÙØ©",
+                                                                 "capability_id":  "filesystem",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ØªØ­ÙÙÙ DNS",
+                                                                 "capability_id":  "network_dns",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ØªØµØ§Ù HTTPS",
+                                                                 "capability_id":  "network_https",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ÙÙØ´Ø¯Ø© ÙPython",
+                                                                 "capability_id":  "shell",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ÙÙØ§Ø¹Ø¯Ø© Ø§ÙØ¯Ø§Ø¦Ù\u0085Ø©",
+                                                                 "capability_id":  "persistence",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             }
+                                                         ]
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.749715"
+                          },
+                          {
+                              "id":  50,
+                              "project_id":  1,
+                              "kind":  "ENVIRONMENT_CHECK_STARTED",
+                              "payload":  {
+                                              "environment":  {
+                                                                  "id":  1,
+                                                                  "name":  "local-windows",
+                                                                  "isolation":  "NONE"
+                                                              },
+                                              "policy":  "COMPATIBLE_LOCAL"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.762942"
+                          },
+                          {
+                              "id":  51,
+                              "project_id":  1,
+                              "kind":  "PREFLIGHT_PASS",
+                              "payload":  {
+                                              "verdict":  "PASS",
+                                              "summary":  "ÙÙ Ø§ÙÙØ¯Ø±Ø§Øª Ø§ÙÙ\u0085Ø·ÙÙØ¨Ø© Ø¬Ø§ÙØ²Ø© Ø¨Ù\u0085Ø³Ø¨Ø§Ø±Ø§Øª Ø­ÙÙÙÙØ© â Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­ Ø¹Ø¨Ø± Ø¨ÙØ¦Ø©: local-windows (Ù\u0085ØªÙØ§ÙÙØ© Ø¨ÙØ§ Ø¹Ø²Ù â Ù\u0085Ø¹ÙÙ)",
+                                              "policy":  "COMPATIBLE_LOCAL",
+                                              "matrix":  [
+                                                             {
+                                                                 "capability":  "Ø³ÙØ§Ø³Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "execution_policy",
+                                                                 "required":  "Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø©",
+                                                                 "available":  "ØªÙØ§ÙÙ Ù\u0085Ø­ÙÙ â Ø¨ÙØ§ Ø¹Ø²ÙØ Ù\u0085Ø¹ÙÙ",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "environment",
+                                                                 "required":  "Ø§ÙÙ\u0085Ø·ÙÙØ¨: Ø£Ù Ø¨ÙØ¦Ø© ØªÙÙÙØ° ØªØ¹Ù\u0085Ù ÙØ¹ÙÙÙØ§ (Ø­ØªÙ Ø§ÙÙ\u0085ØªÙØ§ÙÙØ© ØºÙØ± Ø§ÙÙ\u0085Ø¹Ø²ÙÙØ©) â ÙÙ\u0085 ØªÙØªØ­ÙÙ Ø¨Ø¹Ø¯",
+                                                                 "available":  "local-windows (NONE)",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ÙÙ\u0085Ø§Ø°Ø¬ LLM (Ø§ÙØ£Ø¯ÙØ§Ø±)",
+                                                                 "capability_id":  "llm",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø¨ÙØ¦Ø© Ø§ÙØªÙÙÙØ°",
+                                                                 "capability_id":  "sandbox",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ÙØ¸Ø§Ù\u0085 Ø§ÙÙ\u0085ÙÙØ§Øª ÙØ§ÙØ£Ø¯ÙØ©",
+                                                                 "capability_id":  "filesystem",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "ØªØ­ÙÙÙ DNS",
+                                                                 "capability_id":  "network_dns",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ØªØµØ§Ù HTTPS",
+                                                                 "capability_id":  "network_https",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ÙÙØ´Ø¯Ø© ÙPython",
+                                                                 "capability_id":  "shell",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             },
+                                                             {
+                                                                 "capability":  "Ø§ÙÙØ§Ø¹Ø¯Ø© Ø§ÙØ¯Ø§Ø¦Ù\u0085Ø©",
+                                                                 "capability_id":  "persistence",
+                                                                 "required":  "Ù\u0085Ø·ÙÙØ¨Ø©",
+                                                                 "available":  "READY",
+                                                                 "decision":  "PROCEED"
+                                                             }
+                                                         ],
+                                              "blocked":  [
+
+                                                          ],
+                                              "environment":  {
+                                                                  "id":  1,
+                                                                  "name":  "local-windows",
+                                                                  "isolation":  "NONE"
+                                                              }
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.770451"
+                          },
+                          {
+                              "id":  52,
+                              "project_id":  1,
+                              "kind":  "ENVIRONMENT_READY",
+                              "payload":  {
+                                              "environment":  {
+                                                                  "id":  1,
+                                                                  "name":  "local-windows",
+                                                                  "isolation":  "NONE"
+                                                              }
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.779240"
+                          },
+                          {
+                              "id":  53,
+                              "project_id":  1,
+                              "kind":  "EXECUTION_OPENED",
+                              "payload":  {
+                                              "plan_id":  1,
+                                              "version":  1,
+                                              "summary":  "Ø§ÙØ®Ø·Ø© Ù\u0085Ø¹ØªÙ\u0085Ø¯Ø© ÙØ§ÙÙØ¯Ø±Ø§Øª Ø¬Ø§ÙØ²Ø© â Ø§ÙØªÙÙÙØ° Ù\u0085ÙØªÙØ­"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.786651"
+                          },
+                          {
+                              "id":  54,
+                              "project_id":  1,
+                              "kind":  "JOB_FAILED",
+                              "payload":  {
+                                              "job_id":  3,
+                                              "error":  "create_execution() got an unexpected keyword argument \u0027command\u0027"
+                                          },
+                              "created_at":  "2026-10-12T23:29:31.813976"
+                          }
+                      ],
+    "available_actions":  [
+                              "run",
+                              "duplicate",
+                              "rename",
+                              "history",
+                              "archive"
+                          ]
+}

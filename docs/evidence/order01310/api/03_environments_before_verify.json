@@ -1,0 +1,43 @@
+﻿{
+    "environments":  [
+                         {
+                             "id":  1,
+                             "name":  "local-windows",
+                             "backend":  "LOCAL",
+                             "status":  "DETECTED",
+                             "profile":  {
+                                             "host_platform":  "Windows/AMD64",
+                                             "os":  "Windows",
+                                             "architecture":  "AMD64",
+                                             "sandboxed":  false,
+                                             "compatibility_mode":  true
+                                         },
+                             "sandboxed":  false,
+                             "isolation":  "NONE",
+                             "host_platform":  "Windows/AMD64",
+                             "compatibility_mode":  true,
+                             "is_default":  true,
+                             "endpoint":  "",
+                             "failure_reason":  "",
+                             "last_verified_at":  null,
+                             "last_probe_detail":  {
+
+                                                   },
+                             "created_at":  "2026-10-12T23:27:59.356024",
+                             "updated_at":  "2026-10-12T23:27:59.356031"
+                         }
+                     ],
+    "supported_backends":  [
+                               {
+                                   "backend":  "LOCAL",
+                                   "description":  "Ø±ÙÙØ²Ø© Linux/x86_64 Ø§ÙÙ\u0085Ø­ÙÙØ© â ØªÙØ´Ù ØªÙÙØ§Ø¦ÙÙØ§",
+                                   "requires":  "Linux/x86_64 (Ø£Ù WSL2 Ø¹ÙÙ Windows)"
+                               },
+                               {
+                                   "backend":  "REMOTE_WORKER",
+                                   "description":  "Ø¹Ø§Ù\u0085Ù Ø¨Ø¹ÙØ¯ Ø­ÙÙÙÙ Ø¹Ø¨Ø± Ø¨Ø±ÙØªÙÙÙÙ HTTP",
+                                   "requires":  "Ø±Ø§Ø¨Ø· Ø¹Ø§Ù\u0085Ù (python scripts/execution_worker.py)"
+                               }
+                           ],
+    "note":  "READY ÙÙØ· Ø¨Ø¹Ø¯ ØªØ­ÙÙ Ø­ÙÙÙÙ â Ø§ÙÙ\u0085Ø³Ø¨Ø§Ø± ÙØ§ÙÙ\u0085ÙÙØ° Ù\u0085Ù Ù\u0085ØµØ¯Ø± ÙØ§Ø­Ø¯"
+}
