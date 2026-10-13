@@ -1,0 +1,6 @@
+{
+  "_substrate_available": false,
+  "checked_at": "2026-10-13T23:01:06.655216+00:00",
+  "clock_source": "Python datetime.datetime.now(datetime.timezone.utc)",
+  "source": "execution.service._substrate_available()"
+}

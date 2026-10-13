@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "name": "local-windows",
+    "backend": "LOCAL",
+    "status": "DETECTED",
+    "profile": {
+      "host_platform": "Windows/AMD64",
+      "os": "Windows",
+      "architecture": "AMD64",
+      "sandboxed": false,
+      "compatibility_mode": true
+    },
+    "sandboxed": false,
+    "isolation": "NONE",
+    "host_platform": "Windows/AMD64",
+    "compatibility_mode": true,
+    "is_default": true,
+    "endpoint": "",
+    "failure_reason": "",
+    "last_verified_at": null,
+    "last_probe_detail": {},
+    "created_at": "2026-10-13T23:01:07.345663",
+    "updated_at": "2026-10-13T23:01:07.345684",
+    "checked_at": "2026-10-13T23:01:07.362813+00:00"
+  }
+]

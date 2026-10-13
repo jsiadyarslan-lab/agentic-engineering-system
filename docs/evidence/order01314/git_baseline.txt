@@ -1,0 +1,16 @@
+origin/main: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+expected_main: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+match: True
+
+source_branch: order01313-first-real-owner-mission
+source_tip: 6b2336697ad0652e3c887aef14cd75d610c5a8dd
+expected_source_tip: 6b2336697ad0652e3c887aef14cd75d610c5a8dd
+match: True
+
+current_branch: order01314-authorized-worker-bootstrap
+current_head: 6b2336697ad0652e3c887aef14cd75d610c5a8dd
+
+tree_status: worktree has 1 modified (E6-R2/e6_commit_manifest.json from prior session) + untracked prior-session artifacts; commit diff will be clean (only new order01314 files)
+
+checked_at: 2026-10-13T23:01:08.675714+00:00
+clock_source: Python datetime.datetime.now(datetime.timezone.utc)

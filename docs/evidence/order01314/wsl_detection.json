@@ -1,0 +1,12 @@
+{
+  "available": false,
+  "reason": "WSL2_NO_DISTRO",
+  "detail": "wsl.exe موجود لكن لا توزيعة Linux تعمل: WSL2 is unable to start since virtualisation is not enabled on this machine.\r\nPlease ensure the \"Virtual Machine Platform\" optional component is enabled and vir",
+  "steps": {
+    "wsl_exe": true,
+    "uname": "WSL2 is unable to start since virtualisation is not enabled on this machine.\r\nPlease ensure the \"Virtual Machine Platfor"
+  },
+  "checked_at": "2026-10-13T23:05:15Z",
+  "clock_source": "Python datetime.datetime.now(datetime.timezone.utc)",
+  "source": "execution.wsl.wsl_available()"
+}

@@ -1,0 +1,7 @@
+{
+  "REMOTE_WORKER_ENDPOINT": "NOT SET",
+  "REMOTE_WORKER_TOKEN": "NOT SET",
+  "REMOTE_WORKER_URL": "NOT SET",
+  "checked_at": "2026-10-13T23:01:07.365231+00:00",
+  "clock_source": "Python datetime.datetime.now(datetime.timezone.utc)"
+}
