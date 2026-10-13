@@ -69,17 +69,22 @@ def _set_local_env(sessions, *, status, sandboxed):
                                            "local-windows")))).first()
         row.status = status
         row.sandboxed = sandboxed
-        row.last_verified_at = (
-            _dt.datetime.now(_dt.timezone.utc) if health else None
-        )
-        row.last_probe_detail = _json.dumps(
-            {"verify": {"ok": True, "status": "READY",
-                        "checks": [{"name": "boot", "ok": True,
-                                    "detail": "seeded"},
-                                   {"name": "filesystem", "ok": True,
-                                    "detail": "seeded"}]}},
-            ensure_ascii=False,
-        ) if health else "{}"
+        # (013.11 §5) البذر يعكس العقد الكامل للخلفية المحلية
+        # (ركيزة 9 فحوص عند العزل، متوافق 10 عند بلا عزل) — لا قائمة
+        # مختزلة يُتوقع منها READY.
+        from execution import policy as execution_policy
+
+        if health:
+            detail = execution_policy.valid_evidence(
+                "LOCAL", bool(sandboxed))
+            row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+        else:
+            detail = {}
+            row.last_verified_at = None
+        s.flush()
+        if isinstance(detail.get("profile"), dict):
+            detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
         return row.id
 

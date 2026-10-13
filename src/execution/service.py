@@ -41,6 +41,10 @@ from execution import policy as execution_policy
 
 _LEGACY_LOCAL_NAME = "local-linux"
 
+#: مهلة مسبار بيئة التنفيذ (§19) — القيمة المرجعية التي يساويها
+#: عمر أدلة التحقق (013.11 §3: VERIFICATION_MAX_AGE_S=300 في policy).
+PROBE_TTL_S = 300
+
 
 _DEFAULT_SESSIONS = None
 
@@ -468,7 +472,13 @@ def select_environment(sessions, *, policy: str | None = None) -> dict | None:
         return execution_policy.select_environment_for_policy(
             environments, policy
         )
-    ready = [env for env in environments if env["status"] == "READY"]
+    # (013.11 §3-5) المسار العام بلا سياسة يخضع للتعريف القانوني نفسه:
+    # جاهز = صحة ناجحة بأدلة تحقق مكتملة وحديثة — لا status خام وحده.
+    ready = [
+        env for env in environments
+        if execution_policy.health_ok(env)
+        and execution_policy.verification_evidence(env)["complete"]
+    ]
     if not ready:
         return None
     for env in ready:
@@ -599,7 +609,7 @@ def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
                     + execution_policy.requirement_text(policy)
                 ),
                 "latency_ms": 0,
-                "ttl_seconds": 300,
+                "ttl_seconds": PROBE_TTL_S,
                 "failure_class": "SANDBOX_FAILURE",
                 "failure_stage": "STARTUP",
                 "details": {"environment_id": None, "policy": policy},
@@ -608,7 +618,7 @@ def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
             "status": "UNAVAILABLE",
             "reason": "لا بيئة تنفيذ مسجلة",
             "latency_ms": 0,
-            "ttl_seconds": 300,
+            "ttl_seconds": PROBE_TTL_S,
             "details": {"environment_id": None},
         }
     import time
@@ -642,7 +652,7 @@ def sandbox_probe_result(sessions, *, policy: str | None = None) -> dict:
             "والكتابة والتنفيذ والتقاط"
         ),
         "latency_ms": int((time.monotonic() - started) * 1000),
-        "ttl_seconds": 300,
+        "ttl_seconds": PROBE_TTL_S,
         "failure_class": "" if result.ok else "SANDBOX_FAILURE",
         "failure_stage": "" if result.ok else "STARTUP",
         "details": {
@@ -678,7 +688,13 @@ def owner_action_for_missing_environment(
         if satisfying:
             return ""
     else:
-        ready = [e for e in environments if e["status"] == "READY"]
+        # (013.11 §3-5) المسار العام يخضع للتعريف القانوني نفسه —
+        # لا status خام وحده.
+        ready = [
+            e for e in environments
+            if execution_policy.health_ok(e)
+            and execution_policy.verification_evidence(e)["complete"]
+        ]
         if ready:
             return ""
     required = (

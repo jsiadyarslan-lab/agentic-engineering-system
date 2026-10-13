@@ -378,17 +378,24 @@ def _state_from_environments(
         # الواحد — HEALTHY بأدلة كاملة وأهلية سياسة = READY (يغلق
         # شق 013.9: بيئة متحققة تبقى DISCOVERING/DEGRADED لأن البوابة
         # كانت تشترط status=="READY" الخام).
-        if execution_policy.environment_satisfies(selected, policy):
+        # (013.11 §3-4) الحجب يعرض أسبابه الحرفية (VERIFICATION_STALE
+        # / VERIFICATION_MALFORMED / …) — حالة الصحة التاريخية تبقى
+        # كما هي، لكنها لا تمنح READY وحدها.
+        verdict = execution_policy.readiness(selected, policy)
+        if verdict["ready"]:
             return (
                 "READY",
                 f"البيئة «{selected['name']}» اجتازت فحوص الصحة الحقيقية "
-                "وتوافق السياسة",
+                "وتوافق السياسة بأدلة كاملة حديثة",
                 _ready_evidence(selected),
             )
+        blockers = "؛ ".join(verdict["blockers"][:3]) if verdict[
+            "blockers"
+        ] else "أعد التحقق"
         return (
             "DEGRADED",
-            f"البيئة «{selected['name']}» مسجلة لكن فحصها غير مكتمل/فاشل — "
-            + str(selected.get("failure_reason") or "أعد التحقق"),
+            f"البيئة «{selected['name']}» مسجلة لكن جاهزيتها محجوبة — "
+            + str(selected.get("failure_reason") or blockers),
             _ready_evidence(selected),
         )
     # لا بيئة موافقة — آخر سجل تجهيز يقرر، وإلا الفجوة البنيوية
@@ -406,6 +413,22 @@ def _state_from_environments(
         )
     # بيئة موجودة لكنها UNKNOWN/فاشلة — تجهيز مطلوب لا استحالة بنيوية
     if environments:
+        # (013.11 §3-4) مرشح سليم الصحة محجوب بأدله (قديمة/فاسدة/مبتورة)
+        # يعرض سببه الحرفي — لا «تحقق» عام يخفي التقادم؛ حالة الصحة
+        # التاريخية باقية والحجب بسبب VERIFICATION_* معلن
+        for e in environments:
+            verdict = execution_policy.readiness(e, policy)
+            evidence_blockers = [
+                b for b in verdict["blockers"]
+                if b.startswith("VERIFICATION_")
+            ]
+            if execution_policy.health_ok(e) and evidence_blockers:
+                return (
+                    "DEGRADED",
+                    f"البيئة «{e['name']}» محجوبة — "
+                    + evidence_blockers[0],
+                    _ready_evidence(e),
+                )
         names = "، ".join(
             f"{e['name']} ({e['status']})" for e in environments[:4]
         )

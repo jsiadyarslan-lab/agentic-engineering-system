@@ -150,25 +150,39 @@ def test_capability_blocked_details_when_nothing_ready(sessions):
 
 
 def test_capability_view_sandbox_from_environments(sessions):
-    """sandbox من سجل البيئات — نفس مصدر المسبار والمنفذ (010 §19)."""
+    """sandbox من سجل البيئات — نفس مصدر المسبار والمنفذ (010 §19).
+
+    (013.11 §5) العزل يُحاكى بعامل بعيد معلن العزل بأدلة كاملة العقد —
+    صف LOCAL المحلي يتبع توفر الركيزة فعليًا (011 §4-§5).
+    """
     from execution import service as execution_service
 
     view = readiness_service.capability_view(sessions, "sandbox")
     assert view["derived_from"] == "execution_environments"
     assert view["readiness_status"] in ("NOT_READY", "UNAVAILABLE")
 
-    execution_service.ensure_local_registered(sessions)
-    with sessions() as s:
-        from execution.models import ExecutionEnvironment
+    import json as _json
 
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.name == "local-linux")).first()
-        row.status = "READY"
-        row.sandboxed = 1
+    from execution import policy as execution_policy
+    from execution.models import ExecutionEnvironment
+
+    detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
+    with sessions() as s:
+        row = ExecutionEnvironment(
+            name="worker-sandbox-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9794", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+        )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
     view = readiness_service.capability_view(sessions, "sandbox")
     assert view["readiness_status"] == "READY"
-    assert "local-linux" in view["reason"]
+    assert "worker-sandbox-seed" in view["reason"]
     assert view["details"]["environment_id"] == row.id
 
 

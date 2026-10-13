@@ -106,20 +106,21 @@ def test_snapshot_progress_is_real_not_invented(wf_env):
 
     execution_service.ensure_local_registered(env["sessions"])
     with env["sessions"]() as s:
+        # (013.11 §5) بذر بعيد معلن العزل بأدلة كاملة العقد (سلم 7)
+        from execution import policy as execution_policy
+
+        detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
         row = ExecutionEnvironment(
             name="worker-snapshot", backend="REMOTE_WORKER",
             endpoint="http://127.0.0.1:9888", status="HEALTHY",
             sandboxed=1, is_default=1,
             last_verified_at=_dt.datetime.now(_dt.timezone.utc),
-            last_probe_detail=_json.dumps(
-                {"verify": {"ok": True, "status": "READY", "checks": [
-                    {"name": "boot", "ok": True, "detail": "seeded"},
-                    {"name": "capture", "ok": True, "detail": "seeded"},
-                ]}},
-                ensure_ascii=False,
-            ),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
         )
         s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
 
     engine, project = _approved(env)

@@ -51,36 +51,52 @@ def _seed(sessions, *, status, sandboxed, verified="now",
     """بذر بيئة بتحكم كامل في العقد: الحالة/العزل/الأدلة.
 
     verified: "now" = تحقق حاضر، None = بلا تحقق، datetime = قيمة.
-    checks: None = فحوص ناجحة افتراضية، [] = بلا فحوص، قائمة = كما هي.
+    checks: None = أدلة كاملة العقد (013.11 §5)، [] = بلا فحوص،
+    قائمة = كما هي (تشويه مقصود).
     """
     import json as _json
 
     import sqlalchemy as sa
 
+    from execution import policy as execution_policy
     from execution import service as execution_service
     from execution.models import ExecutionEnvironment
 
     execution_service.ensure_local_registered(sessions)
     label = name or f"seed-{status}-{sandboxed}-{len(str(checks))}"
-    health_checks = (
-        [{"name": "boot", "ok": True, "detail": "seeded"},
-         {"name": "filesystem", "ok": True, "detail": "seeded"}]
-        if checks is None else checks
-    )
+    if checks is None:
+        # (013.11) العقد الكامل لعامل بعيد معلن العزل — لا قائمة مختزلة
+        detail = execution_policy.valid_evidence(
+            "REMOTE_WORKER", sandboxed)
+        stored_at = (
+            _now() if verified == "now"
+            else (verified if isinstance(verified, _dt.datetime) else None)
+        )
+        detail["last_verified_at"] = (
+            stored_at.isoformat() if stored_at else None
+        )
+    else:
+        detail = ({"verify": {"ok": True, "status": "READY",
+                              "checks": checks}}
+                  if checks else {})
+        stored_at = (
+            _now() if verified == "now"
+            else (verified if isinstance(verified, _dt.datetime) else None)
+        )
     with sessions() as s:
         row = ExecutionEnvironment(
             name=label, backend="REMOTE_WORKER",
             endpoint="http://127.0.0.1:9777",
             status=status, sandboxed=1 if sandboxed else 0,
             is_default=1 if make_default else 0,
-            last_verified_at=_now() if verified == "now" else verified,
-            last_probe_detail=_json.dumps(
-                {"verify": {"ok": True, "status": "READY",
-                            "checks": health_checks}},
-                ensure_ascii=False,
-            ) if health_checks else "{}",
+            last_verified_at=stored_at,
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
         )
         s.add(row)
+        s.flush()
+        if isinstance(detail.get("profile"), dict):
+            detail["profile"]["environment_id"] = row.id
+            row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
         return row.id
 
@@ -247,14 +263,19 @@ class VerifiedBackend:
     def verify(self):
         from execution.backends import VerifyResult
 
+        # (013.11 §5) العقد الكامل لسلم العامل البعيد (7 فحوص) —
+        # قائمة مختصرة لا يُتوقع منها READY خطأً
+        checks = [
+            {"name": n, "ok": self.ok,
+             "detail": "" if self.ok else "فشل مضبوط"}
+            for n in ("connectivity", "authentication", "heartbeat",
+                      "environment_probe", "workspace_probe",
+                      "execute_probe", "artifact_probe")
+        ]
         return VerifyResult(
-            ok=self.ok,
-            status="READY" if self.ok else "NOT_READY",
-            checks=[
-                {"name": "process", "ok": self.ok, "detail": ""},
-                {"name": "filesystem", "ok": self.ok, "detail": ""},
-                {"name": "capture", "ok": self.ok, "detail": ""},
-            ],
+            ok=self.ok and self.sandboxed,
+            status="READY" if (self.ok and self.sandboxed) else "NOT_READY",
+            checks=checks,
             profile=self.describe(),
             reason="" if self.ok else "فشل مضبوط للاختبار",
         )
@@ -335,6 +356,7 @@ def test_runtime_state_blocked_without_eligible_env_no_fallback(
 # ------------------------------------------------------------------ #
 
 def test_compute_state_name_agrees_with_eligible(env_db):
+    from execution import policy as execution_policy
     from execution import service as execution_service
 
     cases = [
@@ -351,6 +373,12 @@ def test_compute_state_name_agrees_with_eligible(env_db):
         ("DETECTED", False, None, "COMPATIBLE_LOCAL", "DETECTED"),
     ]
     for status, sandboxed, verified, policy, expected in cases:
+        # (013.11) أدلة كاملة العقد عندما يُبذر تحقق — لا فحص واحد
+        full_detail = execution_policy.valid_evidence(
+            "REMOTE_WORKER", sandboxed, environment_id=1)
+        full_detail["last_verified_at"] = (
+            _now().isoformat() if verified == "now" else None
+        )
         env = {
             "id": 1, "name": "x", "backend": "REMOTE_WORKER",
             "status": status, "sandboxed": sandboxed,
@@ -358,11 +386,7 @@ def test_compute_state_name_agrees_with_eligible(env_db):
             "last_verified_at": (
                 _now().isoformat() if verified == "now" else None
             ),
-            "last_probe_detail": (
-                {"verify": {"ok": True, "status": "READY", "checks": [
-                    {"name": "boot", "ok": True, "detail": ""}]}}
-                if verified else {}
-            ),
+            "last_probe_detail": full_detail if verified else {},
             "failure_reason": "",
         }
         state = execution_service.compute_environment_state(env, policy)

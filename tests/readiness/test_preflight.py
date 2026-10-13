@@ -24,29 +24,33 @@ from sqlalchemy import select as sa_select
 
 def _sandbox_ready(sessions):
     """بيئة تنفيذ معزولة جاهزة في السجل — مصدر قدرة sandbox الحقيقي
-    (011 §14: الاشتقاق من البيئات لا من مسبار مُفخخ)."""
-    from execution import service as execution_service
+    (011 §14: الاشتقاق من البيئات لا من مسبار مُفخخ).
+
+    (013.11 §5) العزل يُحاكى بعامل بعيد معلن العزل بأدلة كاملة العقد
+    (سلم 7 فحوص) — النمط الصادق عبر المنصات: صف LOCAL المحلي يتبع
+    توفر الركيزة فعليًا عند القراءة (011 §4-§5) ولا يُدّعى عزلًا على
+    مضيف بلا ركيزة.
+    """
+    import json as _json
+
+    from execution import policy as execution_policy
     from execution.models import ExecutionEnvironment
 
-    execution_service.ensure_local_registered(sessions)
+    detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
     with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.backend == "LOCAL")).first()
-        row.status = "READY"
-        row.sandboxed = 1
-        # (013.10 §3) بذر READY بأدلة التحقق الدائمة — الجاهزية بمجرد
-        # الاسم لا تكفي حسب العقد القانوني الموحد.
-        import json as _json
-
-        row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
-        row.last_probe_detail = _json.dumps(
-            {"verify": {"ok": True, "status": "READY", "checks": [
-                {"name": "boot", "ok": True, "detail": "s"},
-                {"name": "filesystem", "ok": True, "detail": "s"},
-            ]}},
-            ensure_ascii=False,
+        row = ExecutionEnvironment(
+            name="worker-sandbox-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9792", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
         )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
+        return row.id
 
 
 def _ddg(sessions, status, reason=""):

@@ -58,19 +58,29 @@ def sessions(tmp_path):
 
 def _sandbox_env_ready(sessions):
     """(011 §14) قدرة sandbox تُشتق من سجل البيئات — بذر بيئة معزولة
-    جاهزة كي يبقى اختبار الانحدار 8 محصورًا بعقد البحث وحده."""
-    from execution import service as execution_service
-    from execution.models import ExecutionEnvironment
-    from sqlalchemy import select as sa_select
+    جاهزة بأدلة كاملة العقد (013.11 §5) كي يبقى اختبار الانحدار 8
+    محصورًا بعقد البحث وحده. العزل يُحاكى بعامل بعيد معلن العزل —
+    صف LOCAL المحلي يتبع توفر الركيزة فعليًا (011 §4-§5)."""
+    import json as _json
 
-    execution_service.ensure_local_registered(sessions)
+    from execution import policy as execution_policy
+    from execution.models import ExecutionEnvironment
+
+    detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
     with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.name.in_(("local-linux",
-                                           "local-windows")))).first()
-        row.status = "READY"
-        row.sandboxed = 1
+        row = ExecutionEnvironment(
+            name="worker-sandbox-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9796", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+        )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
+        return row.id
 
 
 def _seamed(**statuses):
@@ -157,9 +167,13 @@ def test_regression_probe_and_executor_agree(sessions, monkeypatch):
 
         def verify(self):
             AgreeingBackend.verified += 1
+            # (013.11 §5) العقد الكامل لسلم العامل — لا قائمة مختزلة
             return VerifyResult(
                 ok=True, status="READY", checks=[
-                    {"name": "boot", "ok": True, "detail": "x"},
+                    {"name": n, "ok": True, "detail": "x"}
+                    for n in ("connectivity", "authentication", "heartbeat",
+                              "environment_probe", "workspace_probe",
+                              "execute_probe", "artifact_probe")
                 ],
                 profile=self.describe(),
             )

@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import datetime as _dt
+import json
 import sys
 from pathlib import Path
 
@@ -46,10 +48,18 @@ class StubBackend:
                 "sandboxed": True, "available": True}
 
     def verify(self):
+        # (013.11 §5) العقد الكامل لسلم العامل البعيد — خلفية الاختبار
+        # تعكس ما تنتجه الخلفيات الحقيقية لا قائمة مختزلة
         return VerifyResult(
             ok=self.verify_ok,
             status="READY" if self.verify_ok else "NOT_READY",
-            checks=[{"name": "boot", "ok": self.verify_ok, "detail": ""}],
+            checks=[
+                {"name": n, "ok": self.verify_ok,
+                 "detail": "" if self.verify_ok else "stub failure"}
+                for n in ("connectivity", "authentication", "heartbeat",
+                          "environment_probe", "workspace_probe",
+                          "execute_probe", "artifact_probe")
+            ],
             profile=self.describe(),
             reason="" if self.verify_ok else "stubbed failure",
         )
@@ -119,7 +129,7 @@ def test_verify_environment_writes_real_result(sessions, monkeypatch):
     assert out["status"] == "HEALTHY"
     assert out["sandboxed"] is True
     assert out["last_verified_at"]
-    assert out["verify"]["checks"][0]["name"] == "boot"
+    assert out["verify"]["checks"][0]["name"] == "connectivity"
     from execution import policy as execution_policy
 
     assert execution_policy.environment_satisfies(
@@ -142,6 +152,15 @@ def test_select_environment_prefers_ready_default(sessions):
         row = s.scalars(sa_select(ExecutionEnvironment).where(
             ExecutionEnvironment.name == "worker-c")).first()
         row.status = "READY"
+        # (013.11 §5) أدلة كاملة العقد — الاختيار (حتى بلا سياسة)
+        # بتعريف قانوني واحد
+        from execution import policy as execution_policy
+
+        detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
+        row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = json.dumps(detail, ensure_ascii=False)
         s.commit()
     selected = service.select_environment(sessions)
     assert selected is not None and selected["name"] == "worker-c"
@@ -169,6 +188,14 @@ def test_resolve_executor_is_single_source_for_probe_and_run(
         row = s.scalars(sa_select(ExecutionEnvironment).where(
             ExecutionEnvironment.name == "worker-d")).first()
         row.status = "READY"
+        # (013.11 §5) أدلة كاملة العقد — الاختيار بتعريف قانوني واحد
+        from execution import policy as execution_policy
+
+        detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
+        row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = json.dumps(detail, ensure_ascii=False)
         s.commit()
 
     shared = StubBackend()

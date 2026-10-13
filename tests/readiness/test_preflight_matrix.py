@@ -27,17 +27,32 @@ from sqlalchemy import select as sa_select  # noqa: E402
 
 
 def _env_ready(sessions):
-    """بيئة معزولة جاهزة في السجل — مصدر sandbox الحقيقي (011 §14)."""
-    from execution import service as execution_service
+    """بيئة معزولة جاهزة في السجل — مصدر sandbox الحقيقي (011 §14).
+
+    (013.11 §5) العزل يُحاكى بعامل بعيد معلن العزل بأدلة كاملة العقد
+    (سلم 7) — صف LOCAL المحلي يتبع توفر الركيزة فعليًا عند القراءة
+    (011 §4-§5) ولا يُدّعى عزلًا على مضيف بلا ركيزة.
+    """
+    import json as _json
+
+    from execution import policy as execution_policy
     from execution.models import ExecutionEnvironment
 
-    execution_service.ensure_local_registered(sessions)
+    detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
     with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.backend == "LOCAL")).first()
-        row.status = "READY"
-        row.sandboxed = 1
+        row = ExecutionEnvironment(
+            name="worker-sandbox-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9793", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+        )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
+        return row.id
 
 
 def _ddg(sessions, status, reason=""):
@@ -131,19 +146,14 @@ def test_environment_selection_appears_in_result(sessions):
     if env is not None:
         assert env["name"] and env["backend"]
         assert "sandboxed" in env
-    # بعد جعلها READY عبر التحقق الحقيقي (محاكاة) تظهر بالاسم
-    execution_service.ensure_local_registered(sessions)
+    # بعد توفير بيئة موافقة للسياسة (عامل معلن العزل بأدلة كاملة —
+    # 013.11 §5) تظهر بالاسم
     from execution.models import ExecutionEnvironment
-    from sqlalchemy import select as sa_select
 
-    with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.name == "local-linux")).first()
-        row.status = "READY"
-        s.commit()
+    _env_ready(sessions)
     result2 = preflight.task_preflight(sessions, "مهمة", llm_ready=True)
     assert result2["environment"] is not None
-    assert result2["environment"]["name"] == "local-linux"
+    assert result2["environment"]["name"] == "worker-sandbox-seed"
 
 
 def test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds(sessions):

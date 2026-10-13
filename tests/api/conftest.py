@@ -179,30 +179,29 @@ def api_env(tmp_path, monkeypatch):
         # (sandbox_probe_result) يحدّث سجل البيئة نفسه، فالوصفة هنا
         # تحاكي المصدر الحقيقي لا سجل القدرة وحده.
         if capability_id == "sandbox":
-            from execution import service as execution_service
+            import json as _json
+
+            from execution import policy as execution_policy
             from execution.models import ExecutionEnvironment
-            from sqlalchemy import select as sa_select
 
-            execution_service.ensure_local_registered(sessions)
+            # (013.11 §5) العزل يُحاكى بعامل بعيد معلن العزل بأدلة
+            # كاملة العقد (سلم 7) — صف LOCAL المحلي يتبع توفر الركيزة
+            # فعليًا عند القراءة (011 §4-§5) ولا يُدّعى عزلًا.
+            detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
             with sessions() as s:
-                row = s.scalars(sa_select(ExecutionEnvironment).where(
-                    ExecutionEnvironment.backend == "LOCAL")).first()
-                row.status = "READY"
-                row.sandboxed = 1
-                # (013.10 §3) بذر READY بأدلة التحقق الدائمة — بوابة
-                # الجاهزية الموحدة لا تقبل جاهزية بمجرد الاسم.
-                import datetime as _dt
-                import json as _json
-
-                row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
-                row.last_probe_detail = _json.dumps(
-                    {"verify": {"ok": True, "status": "READY", "checks": [
-                        {"name": "boot", "ok": True, "detail": "seeded"},
-                        {"name": "filesystem", "ok": True,
-                         "detail": "seeded"},
-                    ]}},
-                    ensure_ascii=False,
+                row = ExecutionEnvironment(
+                    name="worker-sandbox-seed", backend="REMOTE_WORKER",
+                    endpoint="http://127.0.0.1:9797", status="READY",
+                    sandboxed=1, is_default=1,
+                    last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+                    last_probe_detail=_json.dumps(detail,
+                                                  ensure_ascii=False),
                 )
+                s.add(row)
+                s.flush()
+                detail["profile"]["environment_id"] = row.id
+                row.last_probe_detail = _json.dumps(detail,
+                                                    ensure_ascii=False)
                 s.commit()
         return readiness_registry.record_probe(
             sessions, capability_id,

@@ -128,9 +128,12 @@ def _local_search_source(sessions):
 
 def _sandbox_env(sessions, *, status, sandboxed):
     """ضبط صف البيئة المحلية (نمط 011) — الحتمية عبر المنصات."""
+    import datetime as _dt
+    import json as _json
     import sqlalchemy as sa
 
     from execution.models import ExecutionEnvironment
+    from execution import policy as execution_policy
     from execution import service as execution_service
 
     # الركيزة معزولة محاكاة عالميًا في sandbox_seam fixture
@@ -141,6 +144,15 @@ def _sandbox_env(sessions, *, status, sandboxed):
                                            "local-windows")))).first()
         row.status = status
         row.sandboxed = sandboxed
+        # (013.11 §5) عندما تكون الصحة قائمة: أدلة كاملة العقد
+        # (ركيزة عند العزل، متوافق عند بلا عزل)
+        if status in ("READY", "HEALTHY"):
+            detail = execution_policy.valid_evidence(
+                "LOCAL", bool(sandboxed))
+            row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+            s.flush()
+            detail["profile"]["environment_id"] = row.id
+            row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
         return row.id
 

@@ -160,15 +160,31 @@ def _no_probe(sessions_, capability_id, **_kwargs):
 
 def test_impossible_env_ready_executor_unavailable(sessions):
     """resolve_executor هو طريق المسبار والمنفذ معًا: نفس الهوية تُفحص
-    وتُنفَّذ — والفشل بعد READY يوسم ENVIRONMENT_MISMATCH لا صمت."""
+    وتُنفَّذ — والفشل بعد READY يوسم ENVIRONMENT_MISMATCH لا صمت.
+
+    (013.11 §5) البيئة المعزولة تُحاكى بعامل بعيد معلن العزل بأدلة
+    كاملة العقد — صف LOCAL المحلي يتبع توفر الركيزة فعليًا (011 §4-§5).
+    """
+    import datetime as _dt
+    import json as _json
+
+    from execution import policy as execution_policy
+    from execution.models import ExecutionEnvironment
     from execution import service as execution_service
 
-    execution_service.ensure_local_registered(sessions)
+    detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
     with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.name == "local-linux")).first()
-        row.status = "READY"
-        row.sandboxed = 1
+        row = ExecutionEnvironment(
+            name="worker-ready-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9795", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=_dt.datetime.now(_dt.timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+        )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
     environment, backend = execution_service.resolve_executor(sessions)
     assert environment is not None and environment["status"] == "READY"

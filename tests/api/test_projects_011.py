@@ -132,19 +132,27 @@ def test_recheck_after_provisioning_opens_without_reapproval(
     _sandbox_env(sessions, status="NOT_READY", sandboxed=1)
     blocked = client.post(f"/api/projects/{pid}/preflight").json()
     assert blocked["preflight"]["verdict"] == "BLOCKED"
-    # المالك وفر العامل (البيئة المحلية تصبح جاهزة معزولة)
-    # (013.7 §P1 + 013.10 §3) الجاهزية القانونية: HEALTHY + أدلة تحقق
-    # كاملة (last_verified_at + فحوص مسماة) — لا مجرد وسم حالة.
+    # المالك وفر العامل (بيئة معزولة جاهزة)
+    # (013.7 §P1 + 013.11 §5) الجاهزية القانونية: HEALTHY + أدلة
+    # كاملة العقد — العزل يُحاكى بعامل بعيد معلن العزل (سلم 7 فحوص)
+    # لأن صف LOCAL المحلي يتبع توفر الركيزة فعليًا (011 §4-§5).
+    import json as _json
+
+    from execution import policy as execution_policy
+
     with sessions() as s:
-        row = s.scalars(sa_select(ExecutionEnvironment).where(
-            ExecutionEnvironment.name.in_(("local-linux",
-                                           "local-windows")))).first()
-        row.status = "HEALTHY"
-        row.sandboxed = 1
-        row.last_verified_at = datetime.now(timezone.utc)
-        row.last_probe_detail = json.dumps({
-            "checks": [{"name": "sandbox", "ok": True, "detail": "seam"}],
-        }, ensure_ascii=False)
+        detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
+        row = ExecutionEnvironment(
+            name="worker-sandbox-seed", backend="REMOTE_WORKER",
+            endpoint="http://127.0.0.1:9798", status="READY",
+            sandboxed=1, is_default=1,
+            last_verified_at=datetime.now(timezone.utc),
+            last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+        )
+        s.add(row)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
     rechecked = client.post(f"/api/projects/{pid}/preflight")
     assert rechecked.status_code == 200

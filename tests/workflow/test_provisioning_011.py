@@ -31,6 +31,7 @@ def _set_local_env(sessions, *, status, sandboxed=None):
     — لا معنى لفرض sandboxed=0 على مضيف ركيزته متاحة، لذا محاكاة
     «بيئة متوافقة فقط» تمر عبر بيئة مسماة مستقلة أدناه.
     """
+    from execution import policy as execution_policy
     from execution import service as execution_service
 
     execution_service.ensure_local_registered(sessions)
@@ -41,6 +42,18 @@ def _set_local_env(sessions, *, status, sandboxed=None):
         row.status = status
         if sandboxed is not None:
             row.sandboxed = sandboxed
+        # (013.11 §5) الصحة القائمة تُبذر بأدلة كاملة العقد —
+        # ركيزة (9 فحوص) عند العزل، متوافق (10) عند بلا عزل
+        if status in ("READY", "HEALTHY"):
+            import datetime as _dt
+            import json as _json
+
+            detail = execution_policy.valid_evidence(
+                "LOCAL", bool(sandboxed))
+            row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+            s.flush()
+            detail["profile"]["environment_id"] = row.id
+            row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
     return row.id
 
@@ -48,6 +61,10 @@ def _set_local_env(sessions, *, status, sandboxed=None):
 def _compat_env_only(sessions):
     """(§26 بصدق) بيئة متوافقة وحيدة جاهزة: بيئة مسماة بلا عزل +
     الافتراضية غير جاهزة — كما على مضيف Windows بلا ركيزة."""
+    import datetime as _dt
+    import json as _json
+
+    from execution import policy as execution_policy
     from execution import service as execution_service
 
     _set_local_env(sessions, status="NOT_READY")
@@ -58,6 +75,12 @@ def _compat_env_only(sessions):
         row = s.get(ExecutionEnvironment, env["id"])
         row.status = "READY"
         row.sandboxed = 0
+        # (013.11 §5) أدلة كاملة العقد المتوافق (10 فحوص)
+        detail = execution_policy.valid_evidence("LOCAL", False)
+        row.last_verified_at = _dt.datetime.now(_dt.timezone.utc)
+        s.flush()
+        detail["profile"]["environment_id"] = row.id
+        row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
         s.commit()
     return env["id"]
 
