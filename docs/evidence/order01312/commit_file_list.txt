@@ -1,0 +1,14 @@
+﻿src/execution/policy.py
+src/execution/service.py
+src/execution/runtime_state.py
+src/execution/backends.py
+src/execution/api.py
+scripts/execution_worker.py
+tests/execution/test_trust_boundary_01312.py
+tests/api/test_trust_boundary_01312.py
+tests/execution/test_readiness_evidence_01311.py
+tests/execution/test_readiness_gate_01310.py
+tests/execution/test_service.py
+tests/execution/test_failure_reporting_0139.py
+tests/execution/test_workspace_0133.py
+docs/ORDER01312_REPORT.md

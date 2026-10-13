@@ -1,0 +1,895 @@
+﻿F...........................FF.........................................F [ 41%]
+.............F........F...F.............F...FsssFFFFF................... [ 82%]
+...............................                                          [100%]
+================================== FAILURES ===================================
+______________________ test_mandatory_approval_live_flow ______________________
+
+client = <starlette.testclient.TestClient object at 0x000001F918A9B620>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_mandatory_approval_live_f0')}
+sandbox_seam = None
+
+    def test_mandatory_approval_live_flow(client, project_env, sandbox_seam):
+        """المشهد الكامل (§38 خطوة بخطوة) — الهدف الحرفي للمالك."""
+        sessions = project_env["sessions"]
+        # مصدر بحث حي (HTTP فعلي) كي يكون الحاجب الوحيد هو البيئة —
+        # جاهزية البحث هنا حقيقية المسار لا موضع ثقة
+        _local_search_source(sessions)
+        # البيئة غير مجهزة بعد — مسار §38 خطوة 11 (blocked + provisioning)
+        _sandbox_env(sessions, status="NOT_READY", sandboxed=1)
+    
+        # 1-2. إرسال الهدف وانتظار توليد الخطة
+        created = client.post("/api/projects", json={
+            "name": "منصة OSINT", "objective": OSINT_OBJECTIVE,
+        })
+        assert created.status_code == 201, created.text
+        pid = created.json()["id"]
+        from tests.api.planning_wait import wait_for_plan
+    
+        generated = client.post(f"/api/projects/{pid}/plan/generate")
+        assert generated.status_code == 200, generated.text
+        wait_for_plan(client, pid)
+    
+        # 3-4. لا refresh: لقطة المصالحة تُظهر بطاقة الاعتماد فورًا
+        state = client.get(f"/api/projects/{pid}/state").json()
+        approval_gate = next(
+            (g for g in state["gates"]
+             if g["kind"] == "PLAN_APPROVAL" and g["status"] == "PENDING"),
+            None,
+        )
+        assert approval_gate is not None, "بطاقة الاعتماد غائبة عن اللقطة"
+        before_id = state["last_event_id"]
+    
+        # 5-9. اضغط اعتماد — لا refresh: السلسلة تتدفق بترتيبها المعلن
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["launch"]["launched"] is True
+    
+        events = _consume_run(client, pid, before_id)
+        kinds = _event_kinds(events)
+    
+        # (§4) الترتيب المعلن حرفيًا بعد OWNER_GATE_RESOLVED
+>       assert "OWNER_GATE_RESOLVED" in kinds
+E       AssertionError: assert 'OWNER_GATE_RESOLVED' in []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_approval_live_013.py:239: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+___________________ test_pause_and_resume_same_durable_job ____________________
+
+control_env = {'client': <starlette.testclient.TestClient object at 0x000001F91AC20910>, 'sessions': sessionmaker(class_='Session', ...mp\pytest-of-jaber\pytest-48\test_pause_and_resume_same_dur0\projects-api.db), autoflush=True, expire_on_commit=False)}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F91A900DE0>
+
+    def test_pause_and_resume_same_durable_job(control_env, monkeypatch):
+        """(§13) PAUSE ← PAUSED ← RESUME: نفس الوظيفة الدائمة بلا نسخ."""
+        client = control_env["client"]
+        pid = _plan_project(client)   # خطة تنتظر الاعتماد — لم يُطلق شيء بعد
+    
+        # منفذ بطيء حتمي: يدخل الخطوة وينتظر الإيقاف المؤقت قبل الإكمال.
+        # (الترقيع قبل الاعتماد: الاعتماد نفسه يطلق الحلقة خلفيًا 013 §3
+        # فتصل خطوته إلى المنفذ البطيء — لا حاجة لـrun/stream الحاجز)
+        import hashlib
+    
+        entered = threading.Event()
+        release = threading.Event()
+    
+        def slow_run_task(goal, *, router, role_config=None, workspace=None,
+                          on_event=None, cycle_id=None, stop_controller=None,
+                          resume_from=None, **_kw):
+            from tasks import TaskResult
+    
+            entered.set()
+            release.wait(timeout=20)
+            root = Path(workspace)
+            root.mkdir(parents=True, exist_ok=True)
+            output = root / "deliverable.md"
+            output.write_text(f"# مخرج\n\n{goal}\n", encoding="utf-8")
+            evidence_path = root / "evidence.json"
+            evidence_path.write_text("{}", encoding="utf-8")
+            return TaskResult(
+                verdict="PASS", reason="تم", goal=goal,
+                cycle_id=cycle_id or "", final_state="EVIDENCED",
+                workspace=str(root), files=["deliverable.md"], tool_calls=[],
+                evidence_path=str(evidence_path),
+                evidence_sha256=hashlib.sha256(
+                    evidence_path.read_bytes()).hexdigest(),
+                duration_ms=5, state_history=["EVIDENCED"],
+            )
+    
+        import tasks as tasks_mod
+    
+        monkeypatch.setattr(tasks_mod, "run_task", slow_run_task)
+    
+        # الاعتماد يطلق الحلقة خلفيًا — الخطوة الأولى تدخل المنفذ البطيء
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200, approved.text
+>       assert entered.wait(timeout=20), "الحلقة لم تدخل الخطوة"
+E       AssertionError: الحلقة لم تدخل الخطوة
+E       assert False
+E        +  where False = wait(timeout=20)
+E        +    where wait = <threading.Event at 0x1f91a90e090: unset>.wait
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_control_actions_0134.py:116: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+-------------------------- Captured stdout teardown ---------------------------
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+_____________ test_final_stop_is_durable_and_preserves_everything _____________
+
+control_env = {'client': <starlette.testclient.TestClient object at 0x000001F91AC5D630>, 'sessions': sessionmaker(class_='Session', ...mp\pytest-of-jaber\pytest-48\test_final_stop_is_durable_and0\projects-api.db), autoflush=True, expire_on_commit=False)}
+
+    def test_final_stop_is_durable_and_preserves_everything(control_env):
+        """(§12) final=true: STOPPED دائمة + الأحداث والأدلة باقية."""
+        client = control_env["client"]
+        pid = _approved_project(client)
+    
+        client.post(f"/api/projects/{pid}/run/stream?after=0")
+        stopped = client.post(f"/api/projects/{pid}/stop", json={
+            "reason": "إيقاف نهائي من الاختبار", "final": True,
+        })
+        assert stopped.status_code == 200, stopped.text
+    
+>       runtime = _wait_status(client, pid, {"STOPPED", "PAUSED",
+                                             "COMPLETED", "WAITING_GATE"})
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_control_actions_0134.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <starlette.testclient.TestClient object at 0x000001F91AC5D630>, pid = 1
+statuses = {'COMPLETED', 'PAUSED', 'STOPPED', 'WAITING_GATE'}, timeout = 25.0
+
+    def _wait_status(client, pid, statuses, timeout=25.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            runtime = client.get(f"/api/projects/{pid}/runtime").json()
+            if runtime.get("status") in statuses:
+                return runtime
+            time.sleep(0.1)
+>       raise AssertionError(
+            f"لم تصل الحالة إلى {statuses} — آخر: {runtime.get('status')} "
+            f"({runtime.get('last_error', '')[:150]})"
+        )
+E       AssertionError: لم تصل الحالة إلى {'COMPLETED', 'STOPPED', 'WAITING_GATE', 'PAUSED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_control_actions_0134.py:62: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+____________________ test_provision_ready_resumes_same_job ____________________
+
+client = <starlette.testclient.TestClient object at 0x000001F91E4565F0>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_provision_ready_resumes_s0')}
+sandbox_seam = None
+
+    def test_provision_ready_resumes_same_job(client, project_env, sandbox_seam):
+        """حجب صادق (بيئة غير جاهزة) ← توفير ← إعادة فحص PASS ← إطلاق
+        آلي **بنفس صف الوظيفة** (لا إعادة اعتماد ولا وظيفة جديدة)."""
+        sessions = project_env["sessions"]
+        _local_search_source(sessions)
+        _sandbox_env(sessions, status="NOT_READY", sandboxed=1)
+    
+        created = client.post("/api/projects", json={
+            "name": "توفير ثم استئناف", "objective": OSINT_OBJECTIVE,
+        })
+        pid = created.json()["id"]
+        from tests.api.planning_wait import wait_for_plan
+    
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True}).json()
+        assert approved["launch"]["launched"] is True
+    
+        # حجب صادق: WAITING_WORKER ولا موت صامت
+        job = _wait_job_status(client, pid, {"WAITING_WORKER"})
+        assert job["status"] == "WAITING_WORKER"
+        first_job_id = job["id"]
+        blocked = client.get(f"/api/projects/{pid}/state").json()
+        assert blocked["status"] == "BLOCKED"
+        assert blocked["execution_gate"]["open_for_execution"] is False
+    
+        # (§10) كتلة البيئة تفصل المضيف عن البيئة والمتطلب معلن
+        env_block = blocked["environment"]
+        assert env_block["policy"] == "STRICT_ISOLATED"
+        assert env_block["satisfies_policy"] is False
+        assert env_block["requirement"], "المتطلب الحرفي غائب"
+        assert env_block["host"]["platform"], "المضيف الفعلي غائب"
+    
+        # التوفير: البيئة تصبح جاهزة ثم إعادة الفحص تطلق آليًا
+        _sandbox_env(sessions, status="READY", sandboxed=1)
+        recheck = client.post(f"/api/projects/{pid}/preflight")
+        assert recheck.status_code == 200
+        assert recheck.json()["preflight"]["verdict"] == "PASS"
+>       assert recheck.json()["launch"]["launched"] is True, (
+            "إعادة الفحص الناجحة لم تطلق التنفيذ آليًا — بلا زر إضافي"
+        )
+E       AssertionError: إعادة الفحص الناجحة لم تطلق التنفيذ آليًا — بلا زر إضافي
+E       assert False is True
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_lifecycle_0131.py:168: AssertionError
+__________ test_recheck_after_provisioning_opens_without_reapproval ___________
+
+client = <starlette.testclient.TestClient object at 0x000001F91ECFCBB0>
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-48\test_recheck_after_provisionin0\projects-api.db), autoflush=True, expire_on_commit=False)
+probe_seam = None
+
+    def test_recheck_after_provisioning_opens_without_reapproval(
+            client, sessions, probe_seam):
+        """(§19) توفير ← إعادة فحص ← OPEN ← استئناف — بلا إعادة اعتماد."""
+        pid = _approved_project(client)
+        _sandbox_env(sessions, status="NOT_READY", sandboxed=1)
+        blocked = client.post(f"/api/projects/{pid}/preflight").json()
+        assert blocked["preflight"]["verdict"] == "BLOCKED"
+        # المالك وفر العامل (بيئة معزولة جاهزة)
+        # (013.7 §P1 + 013.11 §5) الجاهزية القانونية: HEALTHY + أدلة
+        # كاملة العقد — العزل يُحاكى بعامل بعيد معلن العزل (سلم 7 فحوص)
+        # لأن صف LOCAL المحلي يتبع توفر الركيزة فعليًا (011 §4-§5).
+        import json as _json
+    
+        from execution import policy as execution_policy
+    
+        with sessions() as s:
+            detail = execution_policy.valid_evidence("REMOTE_WORKER", True)
+            row = ExecutionEnvironment(
+                name="worker-sandbox-seed", backend="REMOTE_WORKER",
+                endpoint="http://127.0.0.1:9798", status="READY",
+                sandboxed=1, is_default=1,
+                last_verified_at=datetime.now(timezone.utc),
+                last_probe_detail=_json.dumps(detail, ensure_ascii=False),
+            )
+            s.add(row)
+            s.flush()
+            detail["profile"]["environment_id"] = row.id
+            row.last_probe_detail = _json.dumps(detail, ensure_ascii=False)
+            s.commit()
+        rechecked = client.post(f"/api/projects/{pid}/preflight")
+        assert rechecked.status_code == 200
+        body = rechecked.json()
+        assert body["preflight"]["verdict"] == "PASS", body
+        assert body["execution_gate"]["state"] == "OPEN"
+        assert body["execution_gate"]["open_for_execution"] is True
+        # الخطة ما زالت معتمدة — لا بوابة اعتماد جديدة
+        detail = client.get(f"/api/projects/{pid}").json()
+        assert detail["plan"]["approved_by_owner"] is True
+        assert not [
+            g for g in detail["gates"]
+            if g["kind"] == "PLAN_APPROVAL" and g["status"] == "PENDING"
+        ]
+        # (013 §38) الاستئناف آلي الآن: إعادة الفحص الناجحة أطلقت الحلقة
+        # نفسها — بلا إعادة اعتماد وبلا زر تشغيل إضافي. نثبت الإطلاق
+        # ثم أن التنفيذ تحرك فعليًا (وظيفة بدأت / مشروع انتقل من BLOCKED).
+>       assert body["launch"]["launched"] is True, body.get("launch")
+E       AssertionError: {'launched': False, 'reason': 'already_running', 'project_id': 1, 'job_id': None, ...}
+E       assert False is True
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_projects_011.py:173: AssertionError
+-------------------------- Captured stdout teardown ---------------------------
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+______________________ test_run_stream_completes_project ______________________
+
+client = <starlette.testclient.TestClient object at 0x000001F9203D1B70>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_run_stream_completes_proj0')}
+
+    def test_run_stream_completes_project(client, project_env):
+        """تشغيل الحلقة عبر SSE حتى المرشح — ثم تحقق المالك."""
+        pid = _create_and_approve(client)
+        with client.stream(
+            "POST", f"/api/projects/{pid}/run/stream"
+        ) as response:
+            assert response.status_code == 200
+            kinds = []
+            for line in response.iter_lines():
+                if line.startswith("data: "):
+                    import json
+    
+                    event = json.loads(line[6:])
+                    kinds.append(event["kind"])
+        assert "run.start" in kinds
+>       assert "PHASE_STARTED" in kinds
+E       AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_projects_api.py:216: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_________________________ test_sub_resources_exposed __________________________
+
+client = <starlette.testclient.TestClient object at 0x000001F9208E33F0>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...[], 'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_sub_resources_exposed0')}
+
+    def test_sub_resources_exposed(client, project_env):
+        """الموارد الفرعية: مراحل/خطوات/تنفيذات/أدلة/تدقيق/أحداث (§18)."""
+        pid = _create_and_approve(client)
+        with client.stream("POST", f"/api/projects/{pid}/run/stream") as response:
+            for _line in response.iter_lines():
+                pass
+        assert client.get(f"/api/projects/{pid}/phases").json()["phases"]
+        steps = client.get(f"/api/projects/{pid}/steps").json()["steps"]
+>       assert steps and steps[0]["status"] == "COMPLETED"
+E       AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + PENDING)
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_projects_api.py:331: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+______________ test_failing_provider_does_not_block_healthy_one _______________
+
+prov_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_failing_provider_does_not0')}
+
+    def test_failing_provider_does_not_block_healthy_one(prov_env):
+        """NVIDIA غير جاهز وzai جاهز ← zai يُستخدم بلا تبدل ولا mock (§9)."""
+        sessions = prov_env["sessions"]
+        # nvidia بلا مفتاح في هذا المخزن المعزول ← مستبعد من الحل
+        # zai_internal: مصادقته من ملف منشأة موجود ← يُحل
+        specs = registry.resolve_provider_specs(sessions)
+>       assert "zai_internal" in specs, "السليم استُبعد مع الفاشل!"
+E       AssertionError: السليم استُبعد مع الفاشل!
+E       assert 'zai_internal' in {}
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_providers_crud.py:413: AssertionError
+___________________ test_server_restart_preserves_workflow ____________________
+
+client = <starlette.testclient.TestClient object at 0x000001F91AC5F070>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_server_restart_preserves_0')}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F920C2F690>
+
+    def test_server_restart_preserves_workflow(client, project_env,
+                                               monkeypatch):
+        """§35 خطوة بخطوة — 13 نقطة، ولا شيء يضيع."""
+        sessions = project_env["sessions"]
+        _local_search_source(sessions)
+        _sandbox_env(sessions, status="READY", sandboxed=1)
+    
+        # 1-3. إنشاء ← خطة ← اعتماد معلق
+        created = client.post("/api/projects", json={
+            "name": "استرداد", "objective": "هدف اختبار الاسترداد",
+        })
+        pid = created.json()["id"]
+        # (013.4 §1) التوليد خلفي — ننتظر نتيجته
+        from tests.api.planning_wait import wait_for_plan
+    
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+        state = client.get(f"/api/projects/{pid}/state").json()
+        gate = next((g for g in state["gates"]
+                     if g["kind"] == "PLAN_APPROVAL"
+                     and g["status"] == "PENDING"), None)
+        assert gate is not None
+    
+        # 4-6. restart (استرداد الإقلاع على نفس القاعدة) ← الحالة باقية
+        from api.projects import run_startup_recovery
+    
+        run_startup_recovery(sessions)
+        fresh = TestClient(routes.app)   # «فتح المتصفح من جديد»
+        state = fresh.get(f"/api/projects/{pid}/state").json()
+        gate = next((g for g in state["gates"]
+                     if g["kind"] == "PLAN_APPROVAL"
+                     and g["status"] == "PENDING"), None)
+        assert gate is not None, "الاعتماد المعلق ضاع بعد restart"
+    
+        # 7-8. اعتماد ← التنفيذ يبدأ (إطلاق خلفي) — و«الموت» أثناء الخطوة:
+        # نمسك run_task داخل التنفيذ فعلًا (العملية «تموت» والخيط معلق)
+        import tasks as tasks_mod
+    
+        original_run_task = tasks_mod.run_task
+        hold = threading.Event()
+    
+        def holding_run_task(*args, **kwargs):
+            result = original_run_task(*args, **kwargs)
+            hold.wait(timeout=20)   # الموت أثناء الخطوة — بعد كتابة الملفات
+            return result
+    
+        monkeypatch.setattr(tasks_mod, "run_task", holding_run_task,
+                            raising=True)
+    
+        approved = fresh.post(f"/api/projects/{pid}/plan/approve",
+                              json={"approved": True})
+        assert approved.status_code == 200
+        assert approved.json()["launch"]["launched"] is True
+    
+        deadline = time.monotonic() + 25.0
+        entered_execution = False
+        while time.monotonic() < deadline:
+            events = fresh.get(
+                f"/api/projects/{pid}/events?limit=100"
+            ).json()["events"]
+            if "STEP_STARTED" in [e["kind"] for e in events]:
+                entered_execution = True
+                break
+            time.sleep(0.1)
+>       assert entered_execution, "التنفيذ لم يبدأ بعد الاعتماد"
+E       AssertionError: التنفيذ لم يبدأ بعد الاعتماد
+E       assert False
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_restart_013.py:96: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+-------------------------- Captured stdout teardown ---------------------------
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+___________________ test_two_tabs_receive_same_live_events ____________________
+
+client = <starlette.testclient.TestClient object at 0x000001F921EFD550>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_two_tabs_receive_same_liv0')}
+
+    def test_two_tabs_receive_same_live_events(client, project_env):
+        """(§41) اعتماد من التبويب A ← التبويب B يتحدث تلقائيًا — لا Refresh.
+    
+        تبويبان = اشتراكان متزامنان في بث التشغيل نفسه؛ كلاهما يرى
+        السلسلة كاملة (replay + حي) بترتيب واحد — لا انقسام حقيقة.
+        """
+        sessions = project_env["sessions"]
+        _local_search_source(sessions)
+        _sandbox_env(sessions, status="READY", sandboxed=1)
+    
+        created = client.post("/api/projects", json={
+            "name": "تبويبان", "objective": "هدف اختبار التبويبين",
+        })
+        pid = created.json()["id"]
+        # (013.4 §1) التوليد خلفي — ننتظر نتيجته قبل الاعتماد
+        from tests.api.planning_wait import wait_for_plan
+    
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+    
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200
+    
+        # التبويبان يفتحان البث (بعد القرار مباشرة — كلاهما يلحق بالسلسلة)
+        tab_events: dict[str, list[dict]] = {"a": [], "b": []}
+    
+        def consume(bucket: list) -> None:
+            try:
+                bucket.extend(_consume_run(client, pid, after=None))
+            except Exception:  # noqa: BLE001 — تبويب واحد لا يكسر الآخر
+                pass
+    
+        threads = [
+            threading.Thread(target=consume, args=(tab_events["a"],),
+                             daemon=True),
+            threading.Thread(target=consume, args=(tab_events["b"],),
+                             daemon=True),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=40.0)
+    
+        kinds_a = _kinds(tab_events["a"], pid)
+        kinds_b = _kinds(tab_events["b"], pid)
+        # كلا التبويبين رأى القرار والسلسلة — بلا أي refresh
+        for required in ("PLAN_APPROVED", "JOB_CREATED", "JOB_STARTED",
+                         "PREFLIGHT_STARTED"):
+>           assert required in kinds_a, f"التبويب A فقده: {required}"
+E           AssertionError: التبويب A فقده: PLAN_APPROVED
+E           assert 'PLAN_APPROVED' in []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_sse_013.py:110: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+-------------------------- Captured stdout teardown ---------------------------
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+___________________ test_live_event_replay_after_disconnect ___________________
+
+client = <starlette.testclient.TestClient object at 0x000001F9221CB4D0>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_live_event_replay_after_d0')}
+
+    def test_live_event_replay_after_disconnect(client, project_env):
+        """(§42) انقطاع أثناء التنفيذ ← إعادة اتصال بعد معرف ← replay
+        الفائت بترتيب رتيب — بلا فقد وبلا تكرار."""
+        sessions = project_env["sessions"]
+        _local_search_source(sessions)
+        _sandbox_env(sessions, status="READY", sandboxed=1)
+    
+        created = client.post("/api/projects", json={
+            "name": "انقطاع", "objective": "هدف اختبار الانقطاع",
+        })
+        pid = created.json()["id"]
+        # (013.4 §1) التوليد خلفي — ننتظر نتيجته
+        from tests.api.planning_wait import wait_for_plan
+    
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+    
+        # نقطة الانقطاع: آخر معرف قبل الاعتماد
+        state = client.get(f"/api/projects/{pid}/state").json()
+        last_id = state["last_event_id"]
+    
+        # الاعتماد يجري «أثناء انقطاع التبويب» — الأحداث تولد في الدائمة
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200
+        # انتظر اكتمال الدورة (أحداث كثيرة فاتت التبويب المنقطع)
+        deadline = time.monotonic() + 30.0
+        while time.monotonic() < deadline:
+            state = client.get(f"/api/projects/{pid}/state").json()
+            if state["job"] and state["job"]["status"] in (
+                "WAITING_GATE", "COMPLETED",
+            ):
+                break
+            time.sleep(0.25)
+    
+        # إعادة الاتصال: البث من نقطة الانقطاع — الفائت يُعاد كاملًا
+        reconnected = _consume_run(client, pid, after=last_id)
+        kinds = _kinds(reconnected, pid)
+        for required in ("OWNER_GATE_RESOLVED", "PLAN_APPROVED",
+                         "JOB_CREATED", "JOB_STARTED", "PREFLIGHT_STARTED",
+                         "EVIDENCE_CREATED"):
+>           assert required in kinds, \
+                f"{required} ضاع بعد الانقطاع ولم يُعَد: {kinds[:20]}"
+E           AssertionError: OWNER_GATE_RESOLVED ضاع بعد الانقطاع ولم يُعَد: []
+E           assert 'OWNER_GATE_RESOLVED' in []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_sse_013.py:159: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+DEBUG: tick 60, action=blocked, blocked_kind=preflight
+DEBUG: tick 70, action=blocked, blocked_kind=preflight
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
+_____________________ test_state_snapshot_reconciliation ______________________
+
+client = <starlette.testclient.TestClient object at 0x000001F91CADA890>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...'tmp_path': WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-48/test_state_snapshot_reconcilia0')}
+
+    def test_state_snapshot_reconciliation(client, project_env):
+        """(§6) initial snapshot + event stream: اللقطة تعيد بناء كل شيء."""
+        sessions = project_env["sessions"]
+        _sandbox_env(sessions, status="READY", sandboxed=1)
+        created = client.post("/api/projects", json={
+            "name": "مصالحة", "objective": "هدف اختبار المصالحة",
+        })
+        pid = created.json()["id"]
+        # (013.4 §1) التوليد خلفي — ننتظر نتيجته قبل الاعتماد
+        from tests.api.planning_wait import wait_for_plan
+    
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+        client.post(f"/api/projects/{pid}/plan/approve", json={"approved": True})
+    
+        # انتظر اكتمال الدورة ثم اعِد البناء من اللقطة وحدها
+        deadline = time.monotonic() + 30.0
+        while time.monotonic() < deadline:
+            state = client.get(f"/api/projects/{pid}/state").json()
+            if state["job"] and state["job"]["status"] in (
+                "WAITING_GATE", "COMPLETED",
+            ):
+                break
+            time.sleep(0.25)
+    
+>       assert state["status"] in ("COMPLETED", "VERIFIED")
+E       AssertionError: assert 'BLOCKED' in ('COMPLETED', 'VERIFIED')
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_sse_013.py:195: AssertionError
+---------------------------- Captured stdout call -----------------------------
+DEBUG: tick 10, action=blocked, blocked_kind=preflight
+-------------------------- Captured stdout teardown ---------------------------
+DEBUG: tick 20, action=blocked, blocked_kind=preflight
+DEBUG: tick 30, action=blocked, blocked_kind=preflight
+DEBUG: tick 40, action=blocked, blocked_kind=preflight
+DEBUG: tick 50, action=blocked, blocked_kind=preflight
+____________ test_task_live_cycle_passes_and_persists_conversation ____________
+
+client = <starlette.testclient.TestClient object at 0x000001F91B4BCBB0>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0x000001F9222E5CC0>, 'sessions': sessionmaker(class_='Session', bind...l\Temp\pytest-of-jaber\pytest-48\test_task_live_cycle_passes_an0\api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_live_cycle_passes_and_persists_conversation(client, api_env):
+        """مهمة كاملة عبر المسار الحي: دورة PASS + محادثة مرتبطة (§14)."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "اكتب تقريرًا قصيرًا عن موضوع المهمة",
+        })
+        assert resp.status_code == 200, resp.text[:400]
+        events = sse_events(resp)
+        kinds = [e["kind"] for e in events]
+    
+        assert "task.conversation" in kinds
+        assert "task_done" in kinds
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_task_live.py:37: AssertionError
+___________ test_task_each_role_receives_its_own_provider_and_model ___________
+
+client = <starlette.testclient.TestClient object at 0x000001F91B0033F0>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0x000001F9222F3460>, 'sessions': sessionmaker(class_='Session', bind...l\Temp\pytest-of-jaber\pytest-48\test_task_each_role_receives_i0\api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_each_role_receives_its_own_provider_and_model(client, api_env):
+        """§3+§4: كل دور يستلم اختياره المستقل — لا دور يرث مزود دور آخر."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "مهمة توجيه الأدوار",
+            "roles": {
+                "thinker": {"provider": "nvidia", "model": "model-thinker-x"},
+                "reviewer": {"provider": "zai-test", "model": "model-reviewer-y"},
+                "verifier": {"provider": "openrouter-test",
+                             "model": "model-verifier-z"},
+            },
+        })
+        assert resp.status_code == 200
+        events = sse_events(resp)
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\api\test_task_live.py:78: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+src\api\routes.py:2150
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\api\routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\api\test_sandbox_integration.py:30: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:69: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:81: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+FAILED tests/api/test_approval_live_013.py::test_mandatory_approval_live_flow
+FAILED tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job
+FAILED tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything
+FAILED tests/api/test_lifecycle_0131.py::test_provision_ready_resumes_same_job
+FAILED tests/api/test_projects_011.py::test_recheck_after_provisioning_opens_without_reapproval
+FAILED tests/api/test_projects_api.py::test_run_stream_completes_project - As...
+FAILED tests/api/test_projects_api.py::test_sub_resources_exposed - Assertion...
+FAILED tests/api/test_providers_crud.py::test_failing_provider_does_not_block_healthy_one
+FAILED tests/api/test_restart_013.py::test_server_restart_preserves_workflow
+FAILED tests/api/test_sse_013.py::test_two_tabs_receive_same_live_events - As...
+FAILED tests/api/test_sse_013.py::test_live_event_replay_after_disconnect - A...
+FAILED tests/api/test_sse_013.py::test_state_snapshot_reconciliation - Assert...
+FAILED tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation
+FAILED tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model
+14 failed, 158 passed, 3 skipped, 5 warnings in 5316.91s (1:28:36)
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight

@@ -1,0 +1,10 @@
+﻿FAILED tests/core/test_stop_api.py::test_cycle_status_finished_shape - Assert...
+FAILED tests/core/test_stop_api.py::test_cycle_stop_finished_cycle_409 - Asse...
+FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http
+FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess
+FAILED tests/execution/test_workspace_0133.py::test_f_strict_windows_wsl_ready_registers_worker
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+FAILED tests/workflow/test_provisioning_011.py::test_blocked_then_provisioned_recheck_resume_without_reapproval
+FAILED tests/workflow/test_provisioning_011.py::test_run_rechecks_provisioning_automatically

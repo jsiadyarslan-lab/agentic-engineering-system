@@ -1,0 +1,48 @@
+﻿...                                                                      [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+src\api\routes.py:2150
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\api\routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 5 warnings in 72.04s (0:01:12)
+DEBUG: tick 80, action=blocked, blocked_kind=preflight
+DEBUG: tick 90, action=blocked, blocked_kind=preflight
+DEBUG: tick 100, action=blocked, blocked_kind=preflight
+DEBUG: tick 110, action=blocked, blocked_kind=preflight
+DEBUG: tick 120, action=blocked, blocked_kind=preflight
+DEBUG: tick 130, action=blocked, blocked_kind=preflight
+DEBUG: tick 140, action=blocked, blocked_kind=preflight
+DEBUG: tick 150, action=blocked, blocked_kind=preflight
+DEBUG: tick 160, action=blocked, blocked_kind=preflight
+DEBUG: tick 170, action=blocked, blocked_kind=preflight
+DEBUG: tick 180, action=blocked, blocked_kind=preflight
+DEBUG: tick 190, action=blocked, blocked_kind=preflight
+DEBUG: tick 200, action=blocked, blocked_kind=preflight
