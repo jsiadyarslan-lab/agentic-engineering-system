@@ -416,18 +416,28 @@ def _state_from_environments(
         # (013.11 §3-4) مرشح سليم الصحة محجوب بأدله (قديمة/فاسدة/مبتورة)
         # يعرض سببه الحرفي — لا «تحقق» عام يخفي التقادم؛ حالة الصحة
         # التاريخية باقية والحجب بسبب VERIFICATION_* معلن
+        # (013.12 D1) الحكم بأدلة كاملة: قواميس actual مختزلة بلا
+        # last_probe_detail — الحجب عليها يتحول زورًا إلى
+        # REQUIRED_MISSING؛ الأدلة تُقرأ من قواميس الخدمة الكاملة.
+        from execution import service as execution_service
+
+        full_envs = {
+            e.get("id"): e
+            for e in execution_service.list_environments(sessions)
+        }
         for e in environments:
-            verdict = execution_policy.readiness(e, policy)
+            full = full_envs.get(e.get("id"), e)
+            verdict = execution_policy.readiness(full, policy)
             evidence_blockers = [
                 b for b in verdict["blockers"]
                 if b.startswith("VERIFICATION_")
             ]
-            if execution_policy.health_ok(e) and evidence_blockers:
+            if execution_policy.health_ok(full) and evidence_blockers:
                 return (
                     "DEGRADED",
-                    f"البيئة «{e['name']}» محجوبة — "
+                    f"البيئة «{full['name']}» محجوبة — "
                     + evidence_blockers[0],
-                    _ready_evidence(e),
+                    _ready_evidence(full),
                 )
         names = "، ".join(
             f"{e['name']} ({e['status']})" for e in environments[:4]

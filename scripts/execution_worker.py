@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-"""عامل التنفيذ البعيد (الأمر 010 §21) — الطرف الآخر الحقيقي للبروتوكول.
+# -*- coding: utf-8 -*-
+"""عامل التنفيذ البعيد (الأمر 010 §21 + 013.12 D2) — الطرف الآخر الحقيقي للبروتوكول.
 
 تشغيله على أي جهاز فيه Python 3.10+ (بلا تبعيات خارجية إطلاقًا):
 
@@ -24,18 +24,33 @@
     GET  /health        → {ok, uptime_s, active_runs, backend_mode}
     GET  /capabilities  → وصف البيئة الفعلي من هذا العامل
     POST /probe         → فحوص boot/write/execute/capture حقيقية
+    POST /probe_isolation → (013.12 D2) اختبار منع الشبكة الحي داخل
+                            الركيزة نفسها، بتحدي جديد لكل استدعاء:
+                            {challenge_id} → نتيجة تكرر التحدي وتحمل
+                            worker_id وverified_at وverdict حاسم
+                            (BLOCKED/BROKEN/INCONCLUSIVE/
+                            NOT_ISOLATED_MODE). في وضع subprocess
+                            يرفض العامل إطلاقًا أي ادعاء عزل.
     POST /run           → {run_id, code, timeout_s} → سجل التنفيذ
     POST /cancel        → {run_id} → إلغاء جارٍ (SIGKILL لمجموعة العملية)
+
+حدود الثقة (013.12 D2 §8): اختبار العزل إثبات سلوكي حي لمنع الشبكة
+داخل الركيزة التي يشغّل فيها العامل المهام — وليس إثباتًا تشفيريًا
+لهوية مشغّل العامل؛ مصادقة القناة (توكن مشترك) ضمن نموذج الثقة
+المعلن نفسه.
 """
 
 from __future__ import annotations
 
 import argparse
 import base64
+import datetime as _dt
+import errno
 import json
 import os
 import platform
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -74,7 +89,14 @@ def _describe() -> dict:
         ),
         "workspace_root": tempfile.gettempdir(),
         "artifacts_root": "/artifacts" if _SUBSTRATE_MODE else "artifacts",
-        "network_policy": "unrestricted (worker host network)",
+        "network_policy": (
+            # (013.12 D2) داخل الركيزة: الشبكة محجوبة عن مهام التنفيذ
+            # (NetworkMode.NONE) — قناة التحكم للعامل نفسه فقط.
+            "jobs: blocked by sandbox (NetworkMode.NONE); "
+            "control channel: worker host network"
+            if _SUBSTRATE_MODE else
+            "unrestricted (worker host network)"
+        ),
         "resource_limits": (
             "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog"
             if _SUBSTRATE_MODE else
@@ -85,11 +107,18 @@ def _describe() -> dict:
             "linux-namespaces+seccomp" if _SUBSTRATE_MODE
             else "none — declared direct subprocess (honest mode)"
         ),
+        # (013.12 D2) إعلان دعم اختبار العزل الحي في وضع الركيزة فقط
+        "isolation_probe": (
+            "supported (live network-block test inside substrate)"
+            if _SUBSTRATE_MODE else
+            "not-applicable (no isolation to probe — honest refusal)"
+        ),
         "capabilities": [
             "code_execution", "filesystem_write", "artifact_capture",
             "python_runtime",
         ],
         "worker_pid": os.getpid(),
+        "worker_id": _worker_id(),
     }
 
 
@@ -231,6 +260,176 @@ _PROBE_CODE_SANDBOX = (
 )
 
 
+# ------------------------------------------------------------------ #
+# (013.12 D2) اختبار العزل الحي — منع الشبكة داخل الركيزة نفسها
+# ------------------------------------------------------------------ #
+
+_ERRNO_BLOCKED = frozenset({
+    "ENETUNREACH", "EHOSTUNREACH", "ENETDOWN", "EPERM", "EACCES",
+    "EAFNOSUPPORT", "ENONET", "ENOSR", "ENOTCONN",
+})
+
+
+def _worker_id() -> str:
+    return (
+        f"execution-worker/1.0:{platform.node()}:pid={os.getpid()}"
+    )
+
+
+_ISOLATION_PROBE_TEMPLATE = """
+import errno as _errno
+import json as _json
+import socket as _socket
+import time as _time
+
+_target = {target!r}
+_challenge = {challenge!r}
+started = _time.monotonic()
+verdict = "INCONCLUSIVE"
+errno_name = ""
+detail = ""
+try:
+    sock = _socket.create_connection(_target, timeout=6.0)
+    sock.close()
+    verdict = "BROKEN"
+    detail = "اتصال صادر من داخل العزل نجح — العزل مكسور"
+except OSError as _error:
+    errno_name = (
+        _errno.errorcode.get(_error.errno, "")
+        if _error.errno is not None else ""
+    )
+    if errno_name == "ECONNREFUSED":
+        # الهدف يعمل (إثبات التحكم نجح قبله) لكن الرفض من الداخل
+        # لا يُنسب لعزل الشبكة بيقين — غير حاسم وليس نجاحًا.
+        verdict = "INCONCLUSIVE"
+        detail = f"رفض اتصال من الداخل (ECONNREFUSED) — غير حاسم"
+    elif errno_name in {blocked!r} or isinstance(_error, _socket.timeout):
+        verdict = "BLOCKED"
+        detail = (
+            "منع شبكة مؤكد من داخل العزل: "
+            + (errno_name or "timeout")
+        )
+    else:
+        verdict = "INCONCLUSIVE"
+        detail = f"خطأ غير مصنف: " + (errno_name or repr(_error))[:80]
+except Exception as _error:  # noqa: BLE001
+    verdict = "INCONCLUSIVE"
+    detail = "خطأ غير متوقع: " + repr(_error)[:80]
+print("ISOLATION_PROBE_RESULT:" + _json.dumps({{
+    "challenge_id": _challenge,
+    "target": _target,
+    "verdict": verdict,
+    "errno": errno_name,
+    "detail": detail,
+    "elapsed_ms": int((_time.monotonic() - started) * 1000),
+}}))
+"""
+
+
+def _isolation_probe(target: tuple[str, int], challenge_id: str) -> dict:
+    """(013.12 D2) اختبار منع الشبكة الحي — داخل الركيزة نفسها.
+
+    المنهج: العامل يثبت أولًا من **عمليته الخاصة** (خارج العزل) أن
+    الهدف قابل للاتصال (إثبات التحكم) — الهدف هو منفذ العامل نفسه
+    الذي تصل إليه قناة التحكم أصلًا. ثم يشغّل المسبار عبر آلية
+    التنفيذ ذاتها (‎_run_in_substrate) برنامجًا يحاول الاتصال بالهدف:
+      BROKEN        اتصال من الداخل نجح → العزل مكسور (فشل)
+      BLOCKED       المنع واضح السبب (قائمة errno/مهلة) → نجاح
+      INCONCLUSIVE  لا يُنسب لأي من الطرفين بيقين → ليس نجاحًا
+    """
+    started = time.monotonic()
+    now_iso = (
+        _dt.datetime.now(_dt.timezone.utc).isoformat()
+        if _dt else ""
+    )
+    base = {
+        "challenge_id": challenge_id,
+        "worker_id": _worker_id(),
+        "verified_at": now_iso,
+        "target": f"{target[0]}:{target[1]}",
+    }
+    if not _SUBSTRATE_MODE:
+        # الوضع المعلن: بلا عزل أصلًا — رفض صادق لأي ادعاء (لا انتحال)
+        return {
+            **base,
+            "ok": False,
+            "verdict": "NOT_ISOLATED_MODE",
+            "control_proof": {"ok": False, "errno": ""},
+            "latency_ms": int((time.monotonic() - started) * 1000),
+            "detail": (
+                "وضع subprocess المعلن بلا عزل — لا يُطلق اختبار عزل "
+                "ولا يُصادر ادعاء عزل (صدق الإعلان)"
+            ),
+        }
+    # إثبات التحكم من عملية العامل نفسها: الهدف قابل للاتصال خارج العزل
+    control_ok, control_errno = False, ""
+    try:
+        sock = socket.create_connection(target, timeout=6.0)
+        sock.close()
+        control_ok = True
+    except OSError as error:
+        control_errno = (
+            errno.errorcode.get(error.errno, "")
+            if error.errno is not None else ""
+        )
+    if not control_ok:
+        # لا يمكن التمييز بين منع العزل وانقطاع الشبكة كليًا — غير حاسم
+        return {
+            **base,
+            "ok": False,
+            "verdict": "INCONCLUSIVE",
+            "control_proof": {"ok": False, "errno": control_errno},
+            "latency_ms": int((time.monotonic() - started) * 1000),
+            "detail": (
+                "إثبات التحكم فشل ("
+                + (control_errno or "خطأ")
+                + ") — لا يمكن تمييز منع العزل عن غياب الشبكة: "
+                "غير حاسم وليس نجاحًا"
+            ),
+        }
+    code = _ISOLATION_PROBE_TEMPLATE.format(
+        target=f"{target[0]}:{target[1]}",
+        challenge=challenge_id,
+        blocked=sorted(_ERRNO_BLOCKED),
+    )
+    result = _run_in_substrate(code, 30.0)
+    stdout = result.get("stdout", "")
+    parsed = None
+    for line in stdout.splitlines():
+        if line.startswith("ISOLATION_PROBE_RESULT:"):
+            try:
+                parsed = json.loads(
+                    line.split("ISOLATION_PROBE_RESULT:", 1)[1]
+                )
+            except ValueError:
+                parsed = None
+            break
+    if parsed is None:
+        return {
+            **base,
+            "ok": False,
+            "verdict": "INCONCLUSIVE",
+            "control_proof": {"ok": True, "errno": ""},
+            "latency_ms": int((time.monotonic() - started) * 1000),
+            "detail": (
+                "لا نتيجة قابلة للتحليل من داخل الركيزة "
+                f"(termination={result.get('termination')}) — غير حاسم"
+            ),
+        }
+    echo_ok = parsed.get("challenge_id") == challenge_id
+    verdict = str(parsed.get("verdict", "INCONCLUSIVE"))
+    return {
+        **base,
+        "ok": bool(echo_ok and verdict == "BLOCKED"),
+        "verdict": verdict,
+        "challenge_echoed": bool(echo_ok),
+        "control_proof": {"ok": True, "errno": ""},
+        "probe_errno": parsed.get("errno", ""),
+        "latency_ms": int((time.monotonic() - started) * 1000),
+        "detail": str(parsed.get("detail", ""))[:200],
+    }
+
+
 def _probe() -> dict:
     started = time.monotonic()
     if _SUBSTRATE_MODE:
@@ -349,6 +548,25 @@ class WorkerHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/probe":
             self._send(200, _probe())
+        elif self.path == "/probe_isolation":
+            # (013.12 D2) اختبار العزل الحي — تحدٍّ جديد إلزامي لكل
+            # استدعاء؛ الهدف هو منفذ العامل نفسه (القناة الواصلة إليه
+            # تثبت قابلية الاتصال خارج العزل).
+            challenge_id = str(payload.get("challenge_id") or "").strip()
+            if not challenge_id:
+                self._send(422, {
+                    "error": "challenge_id مطلوب — بلا تحدٍّ لا نتيجة"
+                })
+                return
+            server_host, server_port = self.server.server_address[:2]
+            target_host = (
+                "127.0.0.1"
+                if server_host in ("", "0.0.0.0", "::") else server_host
+            )
+            result = _isolation_probe(
+                (target_host, int(server_port)), challenge_id
+            )
+            self._send(200, result)
         elif self.path == "/run":
             run_id = str(payload.get("run_id") or uuid.uuid4().hex[:12])
             code = str(payload.get("code") or "")

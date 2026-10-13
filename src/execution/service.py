@@ -419,6 +419,11 @@ def verify_environment(sessions, environment_id: int) -> dict:
         raise KeyError(f"بيئة غير معروفة: {environment_id}")
     backend = build_backend(environment)
     result: VerifyResult = backend.verify()
+    # (013.12 D1) عقد الهوية: الأدلة المسجلة تحمل معرف البيئة التي
+    # سُجلت لها — الكتابة نفسها تربط الهوية صراحةً داخل الأدلة (تخزين
+    # الأدلة على الصف ليس بديلًا عن الحقن الصريح)، فأي تحقق جديد يولّد
+    # دليل هوية حاضرًا تحت STRICT دون مساس بالسجلات القديمة.
+    result.profile["environment_id"] = int(environment_id)
     with sessions() as session:
         row = session.get(ExecutionEnvironment, int(environment_id))
         # (013.7 §P1) التحقق الناجح = HEALTHY؛ READY تُحدَّد لاحقاً

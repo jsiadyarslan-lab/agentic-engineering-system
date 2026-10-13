@@ -69,8 +69,11 @@ def _backend_with_run_failure(monkeypatch, failure_dict):
     backend = LocalProcessBackend(environment_id="d2-test")
 
     def fake_run(code, args, *, workspace, timeout_s):
+        # (013.12 D3) عقد _run الستي: الخامس تقرير فشل الإطلاق حصرًا
+        # والسادس بيانات العملية (فارغة — لم يُطلق أصلًا).
         return (
-            -1, "", "FAILED_TO_START: boom", "startup", dict(failure_dict),
+            -1, "", "FAILED_TO_START: boom", "startup",
+            dict(failure_dict), {},
         )
 
     monkeypatch.setattr(backend, "_run", fake_run)
@@ -158,7 +161,9 @@ def test_run_oserror_path_formats_safely_without_code(monkeypatch, tmp_path):
     monkeypatch.setattr(backends_mod.subprocess, "Popen", hostile_popen)
 
     backend = LocalProcessBackend(environment_id="d2-run-path")
-    exit_code, stdout, stderr, detail, failure = backend._run(
+    # (013.12 D3) عقد _run الحرفي سداسي الآن: الخامس تقرير فشل الإطلاق
+    # حصرًا والسادس بيانات العملية (فارغة هنا — لم تُطلق أصلًا).
+    exit_code, stdout, stderr, detail, failure, _process = backend._run(
         "print('x')", [], workspace=tmp_path / "ws", timeout_s=5.0,
     )
     # عقد _run الحرفي: الموضع الثالث يحمل النص التشخيصي والرابع
@@ -169,6 +174,7 @@ def test_run_oserror_path_formats_safely_without_code(monkeypatch, tmp_path):
     assert "No such file or directory" in stderr, "السبب الخام يبقى ظاهرًا"
     assert FAILURE_CODE_FALLBACK in stderr, "رمز بديل معلن بدل KeyError"
     assert failure == {"cwd": str(tmp_path / "ws")}, "التقرير الأصلي سليم"
+    assert _process == {}, "لا بيانات عملية في فشل لم يُطلق"
 
 
 def test_execute_preserves_success_fields_on_failure(tmp_path, monkeypatch):
@@ -182,9 +188,9 @@ def test_execute_preserves_success_fields_on_failure(tmp_path, monkeypatch):
     assert outcome.backend == "LOCAL"
     assert outcome.duration_ms >= 0
     assert isinstance(outcome.stdout, str) and isinstance(outcome.stderr, str)
-    # مسار الإصلاح الواحد موثق في التقرير (§10): repaired_attempted
-    # يُضاف للتقرير الأصلي — لا استبدال للتفاصيل الأولى.
-    assert outcome.failure["repaired_attempted"] is True
+    # (013.12 D3) مسار الإصلاح الواحد موثق: بيانات الإصلاح في حقل
+    # repair المستقل — والتقرير الأصلي يبقى في failure بلا خلط.
+    assert outcome.repair["attempted"] is True
     assert outcome.failure["reason"] == "WORKSPACE_MISSING_AT_LAUNCH"
 
 

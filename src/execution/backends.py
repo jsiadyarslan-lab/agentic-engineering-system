@@ -1,4 +1,4 @@
-"""خلفيات التنفيذ (الأمر 010 §16 + الأمر 011 §4-§11) — حقيقة تشغيلية.
+"""خلفيات التنفيذ (الأمر 010 §16 + الأمر 011 §4-§11 + 013.12 D2) — حقيقة تشغيلية.
 
     ExecutionBackend (عقد موحد §6: probe/workspace/execute/capture/…)
     ├── LocalSandboxBackend   ركيزة Linux/x86_64 المعزولة (namespaces+
@@ -8,7 +8,9 @@
     │                         Platform Compatibility Mode، لا ادعاء عزل)
     └── RemoteWorkerBackend   عامل بعيد عبر HTTP (011 §9-§10: سلم الجاهزية
                               connectivity→auth→heartbeat→env→workspace→
-                              execute→artifact قبل READY)
+                              execute→artifact قبل READY؛ و013.12 D2:
+                              العامل المعلن العزل يُلحق اختبار العزل الحي
+                              isolation_probe بتحدي جديد لكل تحقق)
 
 الفصل الجوهري (011 §4): Host Platform ≠ Execution Backend ≠ Isolation —
 اسم البيئة من runtime الفعلي (لا ``local-linux`` على مضيف Windows)،
@@ -20,10 +22,12 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import subprocess
 import urllib.error
 import urllib.request
+import uuid as _uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -36,6 +40,13 @@ from execution.workspace import (  # noqa: F401 — re-export للعقد
 
 #: مهلة HTTP للعامل البعيد (تحقق/تنفيذ محدود)
 WORKER_HTTP_TIMEOUT = 240.0
+
+#: (013.12 D2) سماح حداثة نتيجة اختبار العزل — الرد يتولد الآن لدى
+#: العامل؛ أي زمن أبعد من هذا السماح (قديم/مستقبلي مزور) يُرفض.
+ISOLATION_PROBE_FRESHNESS_S = 120.0
+
+#: (013.12 D2) حكم اختبار العزل الوحيد المقبول لإثبات منع الشبكة.
+ISOLATION_PROBE_BLOCKED = "BLOCKED"
 
 
 #: (013.9 D2) رمز بديل معلن حين يغيب ``code`` أو يفسد من تقرير
@@ -105,6 +116,12 @@ class ExecutionOutcome:
     #: بتقرير مهيكل (host/runtime/cwd/environment_id/worker_id/mode)،
     #: ليس «فشل تنفيذ» عامًا. فارغ = لا فشل مساحة عمل.
     failure: dict = field(default_factory=dict)
+    #: (013.12 D3) معلومات الإصلاح (§10) في حقل مستقل — لا تُطُن داخل
+    #: قاموس الفشل: نجاح بعد إصلاح = repair موثق وfailure فارغ.
+    repair: dict = field(default_factory=dict)
+    #: (013.12 D3) بيانات العملية المفيدة (pid/parent_pid) في موضعها
+    #: الصحيح — لا تُعرض بوصفها فشلًا في النتائج الناجحة.
+    process_info: dict = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -716,12 +733,19 @@ class LocalProcessBackend:
             self._environment_view(), workspace=workspace,
         )
 
-    def _run(self, code: str, args: list[str], *,
-             workspace: Path, timeout_s: float) -> tuple[int, str, str, str, dict]:
+    def _run(
+        self, code: str, args: list[str], *,
+        workspace: Path, timeout_s: float,
+    ) -> tuple[int, str, str, str, dict, dict]:
         """إطلاق العملية — الخطأ التشغيلي يُصنّف لا يُبتلع (013.3 §9).
 
-        الخامس في الرجوع: تقرير فشل مساحة العمل المهيكل إن كان الخطأ
-        من عائلة cwd (WinError 267/ENOTDIR/ENOENT-on-cwd)، وإلا {}.
+        (013.12 D3) فصل قاموسين لا يجتمعان أبدًا في حقل واحد:
+          العنصر الخامس  failure_report — تقرير فشل الإطلاق/مساحة العمل
+                         حصرًا ({} في النجاح والمهلة — لا بيانات عملية
+                         تُعرض كفشل: إلغاء FAILURE_UNCODED من النجاح).
+          العنصر السادس  process_info — بيانات العملية المفيدة (pid/
+                         parent_pid) في موضعها الصحيح، لا تُمحى ولا
+                         تُنسخ إلى قاموس الفشل.
         """
         import sys
         import time as _time
@@ -744,12 +768,13 @@ class LocalProcessBackend:
                     parent_pid = parent.pid
             except Exception:
                 pass
+            process = {"pid": pid, "parent_pid": parent_pid}
             try:
                 stdout, stderr = proc.communicate(timeout=timeout_s)
                 elapsed = int((_time.monotonic() - started) * 1000)
                 return (
                     proc.returncode, stdout or "", stderr or "",
-                    f"{elapsed}ms", {"pid": pid, "parent_pid": parent_pid},
+                    f"{elapsed}ms", {}, process,
                 )
             except subprocess.TimeoutExpired:
                 proc.kill()
@@ -757,12 +782,12 @@ class LocalProcessBackend:
                 elapsed = int((_time.monotonic() - started) * 1000)
                 return (
                     -1, stdout or "", f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ",
-                    "timeout", {"pid": pid, "parent_pid": parent_pid},
+                    "timeout", {}, process,
                 )
         except subprocess.TimeoutExpired as error:
             return (
                 -1, (error.stdout or "") if isinstance(error.stdout, str) else "",
-                f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ", "timeout", {},
+                f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ", "timeout", {}, {},
             )
         except OSError as error:
             from execution.workspace import classify_process_oserror
@@ -787,7 +812,7 @@ class LocalProcessBackend:
                     f"{failure.get('execution_mode', '')} environment_id="
                     f"{self.environment_id}"
                 )
-            return -1, "", detail, "startup", failure
+            return -1, "", detail, "startup", failure, {}
 
     def verify(self) -> VerifyResult:
         import tempfile
@@ -812,7 +837,7 @@ class LocalProcessBackend:
                           f"write_read_delete="
                           f"{pre.get('write_read_delete')}",
             })
-            exit_code, stdout, stderr, detail, _failure = self._run(
+            exit_code, stdout, stderr, detail, _failure, _process = self._run(
                 _COMPAT_PROBE_CODE, [str(artifacts / "probe.txt")],
                 workspace=workspace, timeout_s=60.0,
             )
@@ -904,31 +929,36 @@ class LocalProcessBackend:
                 invalid.report, profile, started,
             )
 
-        exit_code, stdout, stderr, detail, failure = self._run(
-            code, [], workspace=Path(resolved.host_path),
-            timeout_s=timeout_s,
+        exit_code, stdout, stderr, detail, failure_report, process_info = (
+            self._run(
+                code, [], workspace=Path(resolved.host_path),
+                timeout_s=timeout_s,
+            )
         )
 
         # (§10) فشل مساحة عمل ← إصلاح واحد ← إعادة واحدة — لا أكثر
-        repaired: dict = {}
-        if failure:
+        # (013.12 D3) بيانات الإصلاح تعيش في حقل repair المستقل — لا
+        # تُطُن داخل قاموس الفشل ولا تختفي معه.
+        repair: dict = {}
+        if failure_report:
             try:
                 resolved = repair_workspace(
                     self._environment_view(),
                     workspace=Path(resolved.host_path),
                 )
-                repaired = {"repaired": True, **resolved.preflight}
-                exit_code, stdout, stderr, detail, failure = self._run(
+                repair = {"attempted": True, **resolved.preflight}
+                (
+                    exit_code, stdout, stderr, detail,
+                    failure_report, process_info,
+                ) = self._run(
                     code, [], workspace=Path(resolved.host_path),
                     timeout_s=timeout_s,
                 )
-                if failure:
-                    # الإصلاح أُجرِط والفشل باقٍ — نهائي معلن (لا حلقة)
-                    failure = {
-                        **failure,
-                        "repaired_attempted": True,
-                        "repair_result": repaired,
-                    }
+                if failure_report:
+                    # الإصلاح أُجرِط والفشل باقٍ — نهائي معلن (لا حلقة):
+                    # التقرير الأصلي ظاهر كما هو، ومحاولة الإصلاح
+                    # موثقة في حقل repair المستقل.
+                    repair = {**repair, "followup_failed": True}
             except WorkspaceInvalid as invalid:
                 return self._workspace_invalid_outcome(
                     invalid.report, profile, started, repaired=True,
@@ -953,15 +983,19 @@ class LocalProcessBackend:
             "[COMPATIBLE MODE — بلا عزل، معلن] host="
             f"{profile['host_platform']}"
         )
-        if repaired:
-            final_detail += f" [REPAIR_WORKSPACE: {repaired}]"
-        if failure:
+        if repair:
+            final_detail += f" [REPAIR_WORKSPACE: {repair}]"
+        if failure_report:
             # (013.3 §9) الرمز المسمى ظاهر في التفصيل نفسه — لا بحث.
             # (013.9 D2) غياب/فساد code يُعرض بالرمز البديل المعلن
             # بدل KeyError يُسقط الاستجابة كلها في HTTP 500 ثانوي.
+            # (013.12 D3) هذا الفرع يُلحق FAILURE_UNCODED بالتفصيل في
+            # الفشل الحقيقي فقط — النتيجة الناجحة لا تحمل قاموس فشل
+            # ولا وسم فشل مطلقًا.
             final_detail += (
-                f" [{_failure_code(failure)}/{failure.get('reason', '')}"
-                f" cwd={failure.get('cwd', '')}]"
+                f" [{_failure_code(failure_report)}/"
+                f"{failure_report.get('reason', '')}"
+                f" cwd={failure_report.get('cwd', '')}]"
             )
         return ExecutionOutcome(
             environment_id=self.environment_id,
@@ -971,7 +1005,11 @@ class LocalProcessBackend:
             detail=final_detail,
             artifacts=captured,
             duration_ms=int((_time.monotonic() - started) * 1000),
-            failure=failure,
+            # (013.12 D3) فصل صادق: الفشل تقريره الصريح فقط ({} في
+            # النجاح)، والعملية والإصلاح في حقليهما المستقلين.
+            failure=failure_report,
+            repair=repair,
+            process_info=process_info,
         )
 
     def _workspace_invalid_outcome(
@@ -1014,6 +1052,71 @@ class LocalProcessBackend:
             duration_ms=int(((__import__('time')).monotonic() - started)
                             * 1000),
         )
+
+
+# ------------------------------------------------------------------ #
+# (013.12 D2) اختبار العزل الحي للعامل البعيد — عقد التحقق من النتيجة
+# ------------------------------------------------------------------ #
+
+def validate_isolation_probe_response(
+    response: Any, *, challenge_id: str,
+    now: _dt.datetime | None = None,
+    freshness_s: float = ISOLATION_PROBE_FRESHNESS_S,
+) -> tuple[bool, str]:
+    """تحقق خالص من نتيجة ‎/probe_isolation — يرفض القدم والمزور والغموض.
+
+    الشروط الحرفية (كلها إلزامية للنجاح):
+      1. الرد قاموس يحمل verdict وchallenge_id وverified_at وworker_id.
+      2. تكرار التحدي مطابق حرفيًا للتحدي الصادر — أي نتيجة بلا التحدي
+         أو بتحدي آخر = نتيجة قديمة أو معاد استخدامها → مرفوضة.
+      3. verified_at حاضر (± freshness_s) — نتيجة قديمة/مستقبلية مرفوضة.
+      4. verdict == BLOCKED حصرًا — BROKEN (عزل مكسور)،
+         INCONCLUSIVE (لا يُنسب لأحد بيقين)، NOT_ISOLATED_MODE (العامل
+         بلا عزل) كلها فشل صادق، والغموض ليس نجاحًا أبدًا.
+    """
+    if not isinstance(response, dict):
+        return False, "رد العامل ليس نتيجة مسبار عزل صالحة"
+    echo = response.get("challenge_id")
+    if echo != challenge_id:
+        return False, (
+            "تحدي اختبار العزل غير مطابق — نتيجة قديمة أو معاد "
+            f"استخدامها (توقع {challenge_id[:8]}…، ورد "
+            f"{str(echo)[:8]}…)"
+        )
+    worker_id = response.get("worker_id")
+    if not worker_id:
+        return False, "نتيجة اختبار العزل بلا هوية عامل"
+    raw_time = response.get("verified_at")
+    if isinstance(raw_time, _dt.datetime):
+        probe_time = raw_time
+    elif isinstance(raw_time, str) and raw_time.strip():
+        try:
+            probe_time = _dt.datetime.fromisoformat(
+                raw_time.strip().replace("Z", "+00:00")
+            )
+        except ValueError:
+            return False, "زمن نتيجة اختبار العزل غير قابل للتحليل"
+    else:
+        return False, "زمن نتيجة اختبار العزل غائب"
+    if probe_time.tzinfo is None:
+        probe_time = probe_time.replace(tzinfo=_dt.timezone.utc)
+    current = (now or _dt.datetime.now(_dt.timezone.utc))
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=_dt.timezone.utc)
+    age = (current - probe_time).total_seconds()
+    if age > freshness_s:
+        return False, (
+            f"نتيجة اختبار العزل قديمة (عمرها {int(age)}ث > {int(freshness_s)}ث)"
+        )
+    if age < -freshness_s:
+        return False, "زمن نتيجة اختبار العزل مستقبلي غير معقول"
+    verdict = str(response.get("verdict", ""))
+    if verdict != ISOLATION_PROBE_BLOCKED:
+        return False, (
+            f"اختبار العزل لم يثبت منع الشبكة (verdict={verdict or 'غائب'}"
+            f": {str(response.get('detail', ''))[:120]})"
+        )
+    return True, "منع شبكة مؤكد من داخل الركيزة بتحدي هذا التحقق"
 
 
 #: توافق خلفي بالاسم القديم (اختبارات 010 ووثائقها)
@@ -1098,6 +1201,18 @@ class RemoteWorkerBackend:
 
     def health(self) -> dict:
         return self._request("GET", "/health", timeout=15.0)
+
+    def probe_isolation(self, challenge_id: str) -> dict:
+        """(013.12 D2) اختبار العزل الحي لدى العامل — تحدٍّ جديد لكل تحقق.
+
+        POST /probe_isolation {challenge_id} — العامل يشغّل داخل
+        الركيزة نفسها (آلية تنفيذ المهام ذاتها) برنامجًا يحاول اتصالًا
+        صادرًا، ويعيد نتيجة تكرر التحدي مع worker_id وverified_at.
+        """
+        return self._request(
+            "POST", "/probe_isolation",
+            payload={"challenge_id": challenge_id}, timeout=60.0,
+        )
 
     def cancel(self, run_id: str) -> dict:
         """إلغاء تنفيذ جارٍ لدى العامل (011 §6 cancel) — POST /cancel."""
@@ -1267,6 +1382,29 @@ class RemoteWorkerBackend:
             "detail": str(by_name.get("capture", {}).get("detail", "غائب"))
             [:150],
         })
+
+        # (013.12 D2) اختبار العزل الحي — إلزامي للعامل المعلن العزل:
+        # إعلان sandboxed=True وحده لم يعد إثباتًا؛ العامل يُسأل الآن
+        # بتحدٍّ جديد لكل تحقق ويعيد نتيجة منع الشبكة من داخل الركيزة
+        # نفسها (آلية تنفيذ المهام ذاتها). العامل subprocess المعلن
+        # بلا عزل لا يُطلب منه الاختبار (عقده: 7 فحوص متوافقة).
+        if bool(profile.get("sandboxed")):
+            challenge_id = _uuid.uuid4().hex
+            try:
+                isolation = self.probe_isolation(challenge_id)
+            except (ConnectionError, WorkerHttpError) as error:
+                checks.append({
+                    "name": "isolation_probe", "ok": False,
+                    "detail": f"تعذر إجراء اختبار العزل: {str(error)[:150]}",
+                })
+            else:
+                probe_ok, probe_detail = validate_isolation_probe_response(
+                    isolation, challenge_id=challenge_id,
+                )
+                checks.append({
+                    "name": "isolation_probe", "ok": probe_ok,
+                    "detail": probe_detail[:200],
+                })
 
         ok = all(check["ok"] for check in checks)
         reason = "" if ok else "؛ ".join(

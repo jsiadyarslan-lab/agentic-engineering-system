@@ -48,17 +48,19 @@ class StubBackend:
                 "sandboxed": True, "available": True}
 
     def verify(self):
-        # (013.11 §5) العقد الكامل لسلم العامل البعيد — خلفية الاختبار
-        # تعكس ما تنتجه الخلفيات الحقيقية لا قائمة مختزلة
+        # (013.11 §5 + 013.12 D2) العقد الكامل للعامل المعلن العزل —
+        # سلم 7 + isolation_probe الحي: خلفية الاختبار تعكس ما تنتجه
+        # الخلفيات الحقيقية لا قائمة مختزلة
+        names = ["connectivity", "authentication", "heartbeat",
+                 "environment_probe", "workspace_probe",
+                 "execute_probe", "artifact_probe", "isolation_probe"]
         return VerifyResult(
             ok=self.verify_ok,
             status="READY" if self.verify_ok else "NOT_READY",
             checks=[
                 {"name": n, "ok": self.verify_ok,
                  "detail": "" if self.verify_ok else "stub failure"}
-                for n in ("connectivity", "authentication", "heartbeat",
-                          "environment_probe", "workspace_probe",
-                          "execute_probe", "artifact_probe")
+                for n in names
             ],
             profile=self.describe(),
             reason="" if self.verify_ok else "stubbed failure",

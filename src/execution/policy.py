@@ -21,6 +21,17 @@ STRICT_ISOLATED هي الافتراضية لأن النظام هندسي وال�
   - الدليل له عمر أقصى (VERIFICATION_MAX_AGE_S) — القديم لا يمنح
     READY مع بقاء حالة الصحة التاريخية كما هي (لا حذف ولا حالة جديدة
     في المفردات؛ الحجب بسبب حرفي VERIFICATION_STALE).
+
+(013.12 D1+D2) إغلاق حدود الثقة — حكم التحكيم على 013.11:
+  - D1 الهوية: تحت STRICT_ISOLATED يجب أن تحمل الأدلة معرف بيئة صريحًا
+    يطابق الصف الحامل — الغائب = VERIFICATION_IDENTITY_MISSING،
+    والمختلف = VERIFICATION_IDENTITY_MISMATCH (فاسد تحت أي سياسة).
+    توافق COMPATIBLE_LOCAL: سجل قديم بلا هوية يُقبل هناك بلا ادعاء
+    عزل — الموثق صراحة في تقرير 013.12 §3.
+  - D2 عقد العامل المعزول: فحص isolation_probe الحي (اختبار منع شبكة
+    داخل الركيزة نفسها بتحدي جديد لكل تحقق) أصبح جزءًا من السلم
+    المطلوب للعامل المعلن العزل — REQUIRED_CHECKS للعامل المعلن
+    العزل = سلم 7 + isolation_probe (8).
 """
 
 from __future__ import annotations
@@ -88,12 +99,19 @@ _WORKER_CHECKS: tuple[str, ...] = (
     "connectivity", "authentication", "heartbeat", "environment_probe",
     "workspace_probe", "execute_probe", "artifact_probe",
 )
+# (013.12 D2) العامل المعلن العزل: اختبار العزل الحي جزء من عقده —
+# إعلان sandboxed=True وحده لم يعد يكفي أبدًا.
+_WORKER_ISOLATED_CHECKS: tuple[str, ...] = (
+    *_WORKER_CHECKS, "isolation_probe",
+)
 
 _REQUIRED_CHECKS: dict[tuple[str, bool], tuple[str, ...]] = {
     ("LOCAL", True): _SUBSTRATE_CHECKS,
     ("LOCAL", False): _COMPAT_CHECKS,
-    # العامل البعيد: السلم نفسه معزولًا أو لا (الإعلان في الملف الشخصي)
-    ("REMOTE_WORKER", True): _WORKER_CHECKS,
+    # العامل البعيد المعلن العزل: السلم + اختبار العزل الحي (8 فحوص).
+    # العامل subprocess المعلن بلا عزل: السلم حصرًا (عقد متوافق) —
+    # لا يُحول صامتًا إلى عامل معزول (013.12 D2 §7).
+    ("REMOTE_WORKER", True): _WORKER_ISOLATED_CHECKS,
     ("REMOTE_WORKER", False): _WORKER_CHECKS,
 }
 
@@ -105,6 +123,9 @@ EVIDENCE_BLOCKERS: dict[str, str] = {
     "VERIFICATION_STALE": "أدلة التحقق تجاوزت عمرها الأقصى",
     "VERIFICATION_ISOLATION_PROOF_MISSING": "لا إثبات عزل صريح داخل الأدلة",
     "VERIFICATION_IDENTITY_MISMATCH": "أدلة التحقق تعود لبيئة أخرى",
+    # (013.12 D1) تحت STRICT: الهوية الصريحة داخل الأدلة إلزامية —
+    # السجل القديم بلا هوية يبقى محفوظًا لكنه يحتاج تحققًا جديدًا.
+    "VERIFICATION_IDENTITY_MISSING": "أدلة التحقق بلا معرف بيئة صريح (مطلوب تحت العزل الصارم)",
 }
 
 
@@ -176,14 +197,23 @@ def _parse_verified_at(value) -> tuple[_dt.datetime | None, str]:
 def valid_evidence(
     backend: str, sandboxed: bool, *, environment_id: int | None = None,
     verified_at=None, os_name: str = "Linux", arch: str = "x86_64",
+    challenge_id: str | None = None,
 ) -> dict:
     """بناء أدلة تحقق صحيحة **كاملة العقد** — للبذر والاختبار والتوثيق.
 
     تعكس الشكل الحرفي الذي يكتبه verify_environment
     (result.to_dict(): ok/status/checks/profile/reason) بكل فحوص
     المجموعة المطلوبة للخلفية ناجحة — لا قائمة مختزلة (013.11 §5:
-    البيانات الاصطناعية يجب أن تعكس العقد الكامل).
+    البيانات الاصطناعية يجب أن تعكس العقد الكامل). وعقد العامل المعلن
+    العزل (013.12 D2) يشمل فحص isolation_probe الحي، وتحديه يُوثق في
+    الأدلة (profile.isolation_probe) — البذر بلا تحدٍّ يستخدم تحديًا
+    رمزيًا معلنًا (نمط اختبار فقط).
     """
+    moment_iso = (
+        verified_at if verified_at is not None
+        else _dt.datetime.now(_dt.timezone.utc).isoformat()
+    )
+    probe_challenge = challenge_id or "seed-challenge-01312"
     profile = {
         "environment_id": environment_id,
         "backend": backend,
@@ -196,19 +226,33 @@ def valid_evidence(
                            else ("namespaces-no-egress" if sandboxed
                                  else "host")),
     }
+    if backend == "REMOTE_WORKER" and sandboxed:
+        # (013.12 D2) وثيقة المسبار الحي داخل الأدلة — الربط بالتحدي
+        # الصادر لحظة التحقق (نمط بذر فقط؛ التحقق الحي يصدر تحديه).
+        profile["isolation_probe"] = {
+            "challenge_id": probe_challenge,
+            "verdict": "BLOCKED",
+            "verified_at": moment_iso,
+        }
     return {
         "ok": True,
         "status": "READY",
         "checks": [
-            {"name": name, "ok": True, "detail": "عقد كامل (013.11)"}
+            {
+                "name": name,
+                "ok": True,
+                "detail": (
+                    "منع شبكة مؤكد من داخل الركيزة بتحدي هذا التحقق "
+                    f"(challenge={probe_challenge[:12]}…)"
+                    if name == "isolation_probe"
+                    else "عقد كامل (013.11)"
+                ),
+            }
             for name in required_check_names(backend, sandboxed)
         ],
         "profile": profile,
         "reason": "",
-        "last_verified_at": (
-            verified_at if verified_at is not None
-            else _dt.datetime.now(_dt.timezone.utc).isoformat()
-        ),
+        "last_verified_at": moment_iso,
     }
 
 
@@ -224,12 +268,16 @@ def verification_evidence(environment: dict) -> dict:
          موجودة كاملة بأسمائها — خلفية غير معروفة لا تُحقق أبدًا.
       5. الزمن: موجود، قابل للتحليل، ليس مستقبليًا غير معقول، وعمره
          ≤ VERIFICATION_MAX_AGE_S — وإلا الدليل غير صالح/قديم.
-      6. هوية البيئة: profile.environment_id (إن وُجد في الأدلة)
-         يطابق البيئة الحاملة — وإلا أدلة لبيئة أخرى (فاسدة).
+      6. هوية البيئة: profile.environment_id داخل الأدلة يطابق البيئة
+         الحاملة — اختلافه = أدلة لبيئة أخرى (فاسدة دائمًا، 013.11 §2).
+         غياب الهوية كليًا: `identity_missing=True` — يُحجب تحت العزل
+         الصارم (013.12 D1) ويُتسامح فيه في المسار العام/المتوافق
+         (توافق موثق: الأدلة مخزنة على الصف نفسه كتبه verify_environment).
 
-    ملاحظة توافق: records قديمة بلا profile.environment_id تُقبل
-    بلا حكم هوية (الربط البنيوي: الأدلة مخزنة على صف البيئة نفسها
-    كتبها verify_environment) — الموثق في التقرير 013.11 §6-2.
+    ملاحظة توافق (محدّثة 013.12 D1): records قديمة بلا
+    profile.environment_id تُقبل فقط في COMPATIBLE_LOCAL والمسار بلا
+    سياسة — تحت STRICT_ISOLATED تُحجب بـ VERIFICATION_IDENTITY_MISSING
+    وتحتاج تحققًا جديدًا. لا تُعدّل بيانات قديمة ولا تُحذف.
     """
     detail = environment.get("last_probe_detail") or {}
     verify = detail.get("verify") or detail
@@ -285,13 +333,22 @@ def verification_evidence(environment: dict) -> dict:
         else:
             fresh = True
 
-    # هوية البيئة داخل الأدلة (013.11 §2)
+    # هوية البيئة داخل الأدلة (013.11 §2 + 013.12 D1)
+    # - المطابقة: evidence.profile.environment_id (إن وُجد) يجب أن يطابق
+    #   معرف الصف الحامل — اختلافه = أدلة لبيئة أخرى (فاسدة دائمًا).
+    # - الوجود: تحت STRICT يصبح المعرف الصريح إلزاميًا (readiness يقرر
+    #   حسب السياسة) — تخزين الأدلة داخل الصف ليس بديلًا عن عقد الهوية.
+    #   توافق COMPATIBLE_LOCAL: سجل قديم بلا معرف يُقبل هناك بلا ادعاء
+    #   عزل — الموثق في تقرير 013.12 §3.
     identity_reject = ""
+    identity_missing = False
     profile = verify.get("profile") or {}
     evidence_env_id = profile.get("environment_id") if isinstance(
         profile, dict) else None
     env_id = environment.get("id")
-    if evidence_env_id is not None and env_id is not None:
+    if evidence_env_id is None or env_id is None:
+        identity_missing = True
+    else:
         try:
             if int(evidence_env_id) != int(env_id):
                 identity_reject = (
@@ -305,14 +362,18 @@ def verification_evidence(environment: dict) -> dict:
 
     # إثبات العزل الصريح تحت العقد (للمسار الصارم يُستهلك في readiness)
     # - LOCAL معزولة: فحص isolation داخل العقد هو الإثبات الحي.
-    # - REMOTE_WORKER: لا فحص عزل في سلمها (فرق عقد موثق) — الإثبات
-    #   الممكن هو profile.sandboxed=True داخل الأدلة نفسها.
+    # - REMOTE_WORKER معلن العزل (013.12 D2): الإثبات هو فحص
+    #   isolation_probe الحي (اختبار منع الشبكة داخل الركيزة نفسها
+    #   بتحدي هذا التحقق) — إعلان profile.sandboxed وحده لم يعد إثباتًا
+    #   وإنما شرط استدعاء المسبار إطلاقًا. والعامل subprocess المعلن
+    #   بلا عزل لا يُطالب ولا يُمنح إثباتًا.
     isolation_proof = False
     if (backend, sandboxed) == ("LOCAL", True):
         isolation_proof = "isolation" in ok_names
     elif backend == "REMOTE_WORKER":
         isolation_proof = bool(
             isinstance(profile, dict) and profile.get("sandboxed")
+            and "isolation_probe" in ok_names
         )
     elif (backend, sandboxed) == ("LOCAL", False):
         # الوضع المتوافق: فحص isolation معكوس الدلالة (شبكة تعمل) —
@@ -332,6 +393,8 @@ def verification_evidence(environment: dict) -> dict:
         "required_missing": required_missing,
         "malformed": malformed,
         "identity_reject": identity_reject,
+        "identity_missing": identity_missing,
+        "identity_ok": bool(not identity_missing and not identity_reject),
         "isolation_proof": isolation_proof,
         "complete": complete,
     }
@@ -361,15 +424,17 @@ def policy_eligibility(environment: dict, policy: str) -> tuple[bool, str]:
 
 
 def readiness(environment: dict, policy: str) -> dict:
-    """حكم الجاهزية الكامل — التعريف القانوني الواحد (013.10 §3 + 013.11 §2+§3).
+    """حكم الجاهزية الكامل — التعريف القانوني الواحد (013.10 §3 + 013.11 §2+§3 + 013.12 D1+D2).
 
     ready = صحة ناجحة ∧ أدلة تحقق مكتملة **وصالحة البنية وحديثة** ∧ أهلية
-    السياسة (∧ إثبات عزل صريح تحت STRICT حيث يتطلبه العقد).
+    السياسة (∧ إثبات عزل صريح تحت STRICT حيث يتطلبه العقد ∧ هوية الدليل
+    صريحة ومطابقة تحت STRICT — 013.12 D1).
     blockers أسباب حرفية بأكواد قابلة للفحص (EVIDENCE_BLOCKERS).
     """
     h = health_ok(environment)
     evidence = verification_evidence(environment)
     eligible, ineligibility = policy_eligibility(environment, policy)
+    strict = policy == "STRICT_ISOLATED"
     blockers: list[str] = []
     if not h:
         blockers.append(
@@ -390,21 +455,30 @@ def readiness(environment: dict, policy: str) -> dict:
     if evidence["stale_reason"]:
         blockers.append(evidence["stale_reason"])
     if evidence["identity_reject"]:
+        # أدلة لبيئة أخرى: فاسدة تحت أي سياسة (لا تُعتمد أبدًا)
         blockers.append(evidence["identity_reject"])
-    if h and eligible and policy == "STRICT_ISOLATED" and not evidence[
-        "isolation_proof"
-    ]:
+    if strict and evidence["identity_missing"]:
+        # (013.12 D1) تحت العزل الصارم الهوية الصريحة إلزامية — سجل
+        # قديم بلا هوية يحتاج تحققًا جديدًا (لا تُمس بياناته)
+        blockers.append(
+            "VERIFICATION_IDENTITY_MISSING: أدلة التحقق بلا معرف بيئة "
+            "صريح داخل الأدلة — العزل الصارم يشترط ربط الدليل بهويته "
+            "(أعد التحقق ليتولّد دليل هوية حاضر)"
+        )
+    if h and eligible and strict and not evidence["isolation_proof"]:
         blockers.append(
             "VERIFICATION_ISOLATION_PROOF_MISSING: لا إثبات عزل صريح "
-            "داخل أدلة التحقق (فحص العزل للركيزة، أو إعلان العامل "
-            "المسجل لحظة التحقق) — sandboxed وحده لا يكفي (013.11 §2)"
+            "داخل أدلة التحقق (فحص العزل للركيزة، أو اختبار العزل "
+            "الحي isolation_probe للعامل — 013.12 D2) — sandboxed "
+            "وحده لا يكفي (013.11 §2)"
         )
     if not eligible and h:
         # سبب الأهلية يُذكر صراحة عندما تكون الصحة قائمة (غيره مكرر)
         blockers.append(ineligibility)
     ready = bool(
         h and evidence["complete"] and eligible
-        and (policy != "STRICT_ISOLATED" or evidence["isolation_proof"])
+        and (not strict or evidence["isolation_proof"])
+        and (not strict or evidence["identity_ok"])
     )
     return {
         "health_ok": h,
@@ -510,12 +584,30 @@ REQUIRED_CHECKS_DOC: dict[str, dict] = {
         "checks": list(_COMPAT_CHECKS),
         "isolation_proof": "لا شيء — فحص isolation هنا معكوس الدلالة (شبكة تعمل = صدق إعلان)",
     },
-    "REMOTE_WORKER": {
+    "REMOTE_WORKER_subprocess": {
         "source": "src/execution/backends.py RemoteWorkerBackend.verify (وسم 011 §10)",
         "checks": list(_WORKER_CHECKS),
         "isolation_proof": (
-            "لا فحص عزل في السلم (فرق عقد موثق) — الإثبات الممكن: "
-            "profile.sandboxed داخل الأدلة (إعلان العامل لحظة التحقق)"
+            "لا شيء — عامل معلن بلا عزل (عقد متوافق): لا يُحول صامتًا "
+            "إلى عامل معزول ولا يكتسب أهلية STRICT (013.12 D2 §7)"
+        ),
+    },
+    "REMOTE_WORKER_isolated": {
+        "source": (
+            "src/execution/backends.py RemoteWorkerBackend.verify + "
+            "scripts/execution_worker.py /probe_isolation (013.12 D2)"
+        ),
+        "checks": list(_WORKER_ISOLATED_CHECKS),
+        "isolation_proof": (
+            "فحص isolation_probe الحي: اختبار منع الشبكة داخل الركيزة "
+            "نفسها (آلية تنفيذ المهام ذاتها) بتحدي جديد لكل تحقق، "
+            "نتيجته تكرر التحدي وتحمل worker_id وverified_at حاضرًا — "
+            "النتيجة غير الحاسمة ليست نجاحًا (013.12 D2 §4-§5)"
+        ),
+        "trust_boundary": (
+            "اختبار العزل إثبات سلوكي حي لمنع الشبكة، وليس إثباتًا "
+            "تشفيريًا لهوية مشغّل العامل؛ مصادقة القناة (توكن مشترك) "
+            "ضمن نموذج الثقة المعلن (013.12 D2 §8)"
         ),
     },
 }

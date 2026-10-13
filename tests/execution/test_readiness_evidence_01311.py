@@ -502,15 +502,28 @@ def test_integration_selection_runtime_state_preflight_fresh_then_stale(
 def test_backend_contracts_match_documented_differences():
     substrate = execution_policy.required_check_names("LOCAL", True)
     compatible = execution_policy.required_check_names("LOCAL", False)
-    worker = execution_policy.required_check_names("REMOTE_WORKER", True)
+    worker_isolated = execution_policy.required_check_names(
+        "REMOTE_WORKER", True)
+    worker_subprocess = execution_policy.required_check_names(
+        "REMOTE_WORKER", False)
     # الركيزة: 9 فحوص — isolation فيها إثبات حي
     assert len(substrate) == 9 and "isolation" in substrate \
         and "preflight" not in substrate
     # المتوافق: 10 فحوص (تضاف preflight) — isolation معكوسة الدلالة
     assert len(compatible) == 10 and "preflight" in compatible
-    # العامل: 7 فحوص سلم — لا فحص عزل إطلاقًا (فرق موثق)
-    assert len(worker) == 7 and "isolation" not in worker
+    # (013.12 D2) العامل المعلن العزل: سلم 7 + isolation_probe (8) —
+    # إعلان sandboxed وحده لم يعد إثباتًا
+    assert len(worker_isolated) == 8
+    assert "isolation_probe" in worker_isolated
+    assert "isolation" not in worker_isolated
+    # العامل subprocess المعلن بلا عزل: السلم حصرًا (عقد متوافق) —
+    # لا تحويل صامت إلى عامل معزول
+    assert worker_subprocess == tuple(
+        name for name in worker_isolated if name != "isolation_probe")
     # خلفية غير معروفة: لا عقد → لا تحقيق أبدًا (فشل مغلق)
     assert execution_policy.required_check_names("DOCKER", True) == ()
     doc = execution_policy.REQUIRED_CHECKS_DOC
-    assert doc["REMOTE_WORKER"]["isolation_proof"].startswith("لا فحص عزل")
+    assert doc["REMOTE_WORKER_isolated"][
+        "isolation_proof"].startswith("فحص isolation_probe")
+    assert doc["REMOTE_WORKER_subprocess"][
+        "isolation_proof"].startswith("لا شيء")

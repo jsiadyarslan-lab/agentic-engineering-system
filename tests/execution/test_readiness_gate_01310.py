@@ -263,14 +263,18 @@ class VerifiedBackend:
     def verify(self):
         from execution.backends import VerifyResult
 
-        # (013.11 §5) العقد الكامل لسلم العامل البعيد (7 فحوص) —
-        # قائمة مختصرة لا يُتوقع منها READY خطأً
+        # (013.11 §5 + 013.12 D2) العقد الكامل للعامل المعلن العزل:
+        # سلم 7 فحوص + isolation_probe الحي — قائمة مختصرة أو بلا مسبار
+        # العزل لا يُتوقع منها READY خطأً.
+        names = ["connectivity", "authentication", "heartbeat",
+                 "environment_probe", "workspace_probe",
+                 "execute_probe", "artifact_probe"]
+        if self.sandboxed:
+            names.append("isolation_probe")
         checks = [
             {"name": n, "ok": self.ok,
              "detail": "" if self.ok else "فشل مضبوط"}
-            for n in ("connectivity", "authentication", "heartbeat",
-                      "environment_probe", "workspace_probe",
-                      "execute_probe", "artifact_probe")
+            for n in names
         ]
         return VerifyResult(
             ok=self.ok and self.sandboxed,

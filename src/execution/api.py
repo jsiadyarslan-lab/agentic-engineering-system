@@ -259,5 +259,9 @@ def test_run(environment_id: int) -> dict:
             "failure_code": outcome.failure.get("code", ""),
             "failure_reason": outcome.failure.get("reason", ""),
         },
+        # (013.12 D3) الفشل تقريره الحقيقي فقط (None في النجاح) —
+        # بيانات العملية والإصلاح في حقليهما المستقلين لا داخل الفشل.
         "failure": outcome.failure or None,
+        "repair": outcome.repair or None,
+        "process_info": outcome.process_info or None,
     }

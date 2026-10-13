@@ -653,7 +653,10 @@ def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
     )
     assert outcome.termination == "FAILED_TO_START"
     assert outcome.failure["code"] == RUNTIME_WORKSPACE_INVALID
-    assert outcome.failure.get("repaired_attempted") is True
+    # (013.12 D3) بيانات الإصلاح في حقلها المستقل لا داخل تقرير الفشل
+    assert outcome.repair["attempted"] is True
+    assert outcome.repair["followup_failed"] is True
+    assert outcome.failure.get("repaired_attempted") is None
 
 
 # ------------------------------------------------------------------ #
