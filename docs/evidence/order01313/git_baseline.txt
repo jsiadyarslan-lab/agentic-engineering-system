@@ -1,0 +1,15 @@
+origin/main: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+expected_main: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+match: true
+
+source_branch: order01312-real-trial-trust-closure
+source_tip: 65a54b3cc3a5bffa2b61137b5fea6d0556d0772a
+expected_source_tip: 65a54b3cc3a5bffa2b61137b5fea6d0556d0772a
+match: true
+
+current_branch: order01313-first-real-owner-mission
+current_head: 65a54b3cc3a5bffa2b61137b5fea6d0556d0772a
+
+tree_status: clean (1 modified from prior session: E6-R2/e6_commit_manifest.json — unrelated)
+
+checked_at: 2025-01-15T18:45:15Z

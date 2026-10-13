@@ -1,0 +1,20 @@
+{
+  "os": "Windows",
+  "os_release": "10",
+  "architecture": "AMD64",
+  "kernel": "10",
+  "python": "3.13.2",
+  "python_executable": "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+  "git": "git version 2.55.0.windows.3",
+  "node": "v24.20.0",
+  "shell": "C:\\Windows\\system32\\cmd.exe",
+  "container_runtime": "",
+  "wsl": false,
+  "docker": "",
+  "cpu_cores": 4,
+  "memory": "",
+  "disk_free_gb": 2.3,
+  "network": "unknown",
+  "captured_at": "2025-01-15T18:45:00Z",
+  "source": "execution.backends.runtime_truth()"
+}

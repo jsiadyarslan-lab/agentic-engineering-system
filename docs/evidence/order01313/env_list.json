@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "name": "local-windows",
+    "backend": "LOCAL",
+    "status": "DETECTED",
+    "isolation": "process",
+    "sandboxed": false,
+    "is_default": true,
+    "endpoint": "",
+    "token": "",
+    "last_verified_at": null,
+    "last_probe_detail": null,
+    "failure_reason": null
+  }
+]
