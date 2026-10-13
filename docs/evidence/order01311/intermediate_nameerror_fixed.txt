@@ -1,0 +1,40 @@
+﻿F                                                                        [100%]
+================================== FAILURES ===================================
+________________ test_compute_state_name_agrees_with_eligible _________________
+
+env_db = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-156\test_compute_state_name_agrees0\gate-01310.db), autoflush=True, expire_on_commit=False)
+
+    def test_compute_state_name_agrees_with_eligible(env_db):
+        from execution import service as execution_service
+    
+        cases = [
+            # (status, sandboxed, verified, policy, expected_state)
+            ("HEALTHY", True, "now", "STRICT_ISOLATED", "READY"),
+            ("READY", True, "now", "STRICT_ISOLATED", "READY"),  # توافق تاريخي
+            ("HEALTHY", False, "now", "STRICT_ISOLATED", "HEALTHY"),
+            ("HEALTHY", True, None, "STRICT_ISOLATED", "HEALTHY"),
+            ("DETECTED", True, "now", "STRICT_ISOLATED", "DETECTED"),
+            ("ONLINE", True, None, "STRICT_ISOLATED", "ONLINE"),
+            ("NOT_READY", True, "now", "STRICT_ISOLATED", "NOT_READY"),
+            ("UNAVAILABLE", True, None, "STRICT_ISOLATED", "UNAVAILABLE"),
+            ("HEALTHY", False, "now", "COMPATIBLE_LOCAL", "READY"),
+            ("DETECTED", False, None, "COMPATIBLE_LOCAL", "DETECTED"),
+        ]
+        for status, sandboxed, verified, policy, expected in cases:
+            # (013.11) أدلة كاملة العقد عندما يُبذر تحقق — لا فحص واحد
+>           full_detail = execution_policy.valid_evidence(
+                          ^^^^^^^^^^^^^^^^
+                "REMOTE_WORKER", sandboxed, environment_id=1)
+E           NameError: name 'execution_policy' is not defined
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_readiness_gate_01310.py:376: NameError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/execution/test_readiness_gate_01310.py::test_compute_state_name_agrees_with_eligible
+1 failed, 1 warning in 1.52s

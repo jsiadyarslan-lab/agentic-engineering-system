@@ -1,0 +1,797 @@
+﻿....F...................s.........F..................................... [ 38%]
+......F...................F.F..F....F..sF...FF.FFF...FF.F............... [ 77%]
+.....F.......F....F.......F.F.....F..F.....                              [100%]
+================================== FAILURES ===================================
+_________________ test_remote_worker_protocol_real_over_http __________________
+
+    @pytest.mark.timeout(90)
+    def test_remote_worker_protocol_real_over_http():
+        """البروتوكول كاملًا ضد عامل حقيقي: توكن + قدرات + فحص + تنفيذ (§21)."""
+        with RealWorker() as worker:
+            good = RemoteWorkerBackend(worker.url, token=worker.token)
+            # التوكن مطلوب: بقيمة خاطئة = خطأ معلن
+            bad = RemoteWorkerBackend(worker.url, token="wrong")
+            with pytest.raises(ConnectionError):
+                bad.health()
+            # الصحة والقدرات — وصف صادق من العامل نفسه
+            health = good.health()
+            assert health["ok"] is True
+            caps = good.describe()
+            assert caps["os"] and caps["architecture"] and caps["runtime"]
+            assert isinstance(caps["sandboxed"], bool)
+            assert caps["available"] is True
+            # التحقق: سلم الجاهزية الكامل (011 §10) — درجات مسماة
+            verify = good.verify()
+            assert verify.status == "READY", verify.reason
+            names = {c["name"] for c in verify.checks}
+            assert names >= {
+                "connectivity", "authentication", "heartbeat",
+                "environment_probe", "workspace_probe", "execute_probe",
+                "artifact_probe",
+            }
+            assert all(c["ok"] for c in verify.checks)
+            # التنفيذ الفعلي عبر العامل + التقاط artifact
+            # (اصطلاح الأدلة داخل الركيزة: ‎/artifacts مطلق — معلن في capabilities)
+            code = (
+                "import pathlib\n"
+                "p = pathlib.Path('/artifacts/order010.txt')\n"
+                "p.write_text('remote-ok', encoding='utf-8')\n"
+                "print('remote-exec-ok')\n"
+            )
+            import tempfile
+    
+            with tempfile.TemporaryDirectory() as tmp:
+                outcome = good.run_code(
+                    code, workspace=Path(tmp) / "ws",
+                    artifacts=Path(tmp) / "art", timeout_s=60,
+                )
+            assert outcome.ok, outcome.detail
+            assert "remote-exec-ok" in outcome.stdout
+>           assert outcome.artifacts.get("order010.txt") == "remote-ok"
+E           AssertionError: assert None == 'remote-ok'
+E            +  where None = <built-in method get of dict object at 0x00000248EF47EB00>('order010.txt')
+E            +    where <built-in method get of dict object at 0x00000248EF47EB00> = {}.get
+E            +      where {} = ExecutionOutcome(environment_id='remote-worker', backend='REMOTE_WORKER', exit_code=0, stdout='remote-exec-ok\r\n', st...nation='COMPLETED', detail='direct subprocess (sandboxed=false — declared)', artifacts={}, duration_ms=252, failure={}).artifacts
+
+tests\execution\test_backends.py:174: AssertionError
+_______________________ test_provision_full_cycle_real ________________________
+
+env_db = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_provision_full_cycle_real0\prov013.db), autoflush=True, expire_on_commit=False)
+
+    def test_provision_full_cycle_real(env_db):
+        """(§44) تجهيز ← صحة ← تنفيذ معزول ← التقاط — دورة حقيقية.
+    
+        في بيئة فيها ركيزة حقيقية (Linux/container) تكتمل الدورة إلى
+        READY بفحوص فعلية؛ في بيئة بلا ركيزة تكون النتيجة صادقة
+        (FAILED/PROVISIONING_UNAVAILABLE بسبب حرفي) — كلاهما مقبول،
+        المرفوض هو READY بلا فحص.
+        """
+        result = provisioner.provision(env_db)
+        states = [s["state"] for s in result["steps"]]
+    
+>       assert "DISCOVERING" in states and "PROVISIONING" in states
+E       AssertionError: assert ('DISCOVERING' in ['DISCOVERING', 'DISCOVERING'] and 'PROVISIONING' in ['DISCOVERING', 'DISCOVERING'])
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_provisioner_013.py:52: AssertionError
+________________ test_compute_state_name_agrees_with_eligible _________________
+
+env_db = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_compute_state_name_agrees0\gate-01310.db), autoflush=True, expire_on_commit=False)
+
+    def test_compute_state_name_agrees_with_eligible(env_db):
+        from execution import service as execution_service
+    
+        cases = [
+            # (status, sandboxed, verified, policy, expected_state)
+            ("HEALTHY", True, "now", "STRICT_ISOLATED", "READY"),
+            ("READY", True, "now", "STRICT_ISOLATED", "READY"),  # توافق تاريخي
+            ("HEALTHY", False, "now", "STRICT_ISOLATED", "HEALTHY"),
+            ("HEALTHY", True, None, "STRICT_ISOLATED", "HEALTHY"),
+            ("DETECTED", True, "now", "STRICT_ISOLATED", "DETECTED"),
+            ("ONLINE", True, None, "STRICT_ISOLATED", "ONLINE"),
+            ("NOT_READY", True, "now", "STRICT_ISOLATED", "NOT_READY"),
+            ("UNAVAILABLE", True, None, "STRICT_ISOLATED", "UNAVAILABLE"),
+            ("HEALTHY", False, "now", "COMPATIBLE_LOCAL", "READY"),
+            ("DETECTED", False, None, "COMPATIBLE_LOCAL", "DETECTED"),
+        ]
+        for status, sandboxed, verified, policy, expected in cases:
+            # (013.11) أدلة كاملة العقد عندما يُبذر تحقق — لا فحص واحد
+>           full_detail = execution_policy.valid_evidence(
+                          ^^^^^^^^^^^^^^^^
+                "REMOTE_WORKER", sandboxed, environment_id=1)
+E           NameError: name 'execution_policy' is not defined
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_readiness_gate_01310.py:376: NameError
+_________________ test_a_valid_cwd_runs_and_reports_preflight _________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-149/test_a_valid_cwd_runs_and_repo0')
+
+    def test_a_valid_cwd_runs_and_reports_preflight(tmp_path):
+        """(A) مساحة عمل صالحة: إنشاء ← تحقق ← إطلاع ← نجاح حقيقي."""
+        backend = LocalProcessBackend(environment_id="ws-a")
+        workspace = tmp_path / "jobs" / "123" / "ws"
+        workspace.mkdir(parents=True)
+        outcome = backend.run_code(
+            "import os; print('cwd-ok', os.getcwd())",
+            workspace=workspace, artifacts=tmp_path / "art", timeout_s=30,
+        )
+        assert outcome.ok, outcome.detail
+        assert "cwd-ok" in outcome.stdout
+>       assert outcome.failure == {}  # لا فشل مساحة عمل
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'pid': 5152,...': True, ...}} == {}
+E         
+E         Left contains 4 more items:
+E         {'parent_pid': 8212,
+E          'pid': 5152,
+E          'repair_result': {'absolute': True,
+E                            'cwd_exists': True,
+E                            'cwd_is_directory': True,...
+E         
+E         ...Full output truncated (5 lines hidden), use '-vv' to show
+
+tests\execution\test_workspace_0133.py:81: AssertionError
+__________________ test_b_windows_nonexistent_cwd_classified __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-149/test_b_windows_nonexistent_cwd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000248F11C4130>
+
+    def test_b_windows_nonexistent_cwd_classified(tmp_path, monkeypatch):
+        """(B) إطلاق بـ cwd غير موجود: WinError 267 يُصنّف مسمّى لا عامًا،
+        مع كل الحقول (host/cwd/environment_id/execution_mode)."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        # مسار بنمط Windows (يفسَّر نسبيًا على مضيف Linux الاختباري — يُنشأ
+        # تحت tmp_path فلا يلوث شيئًا، والسلوك المرجو هو نفسه على Windows)
+        monkeypatch.chdir(tmp_path)
+        workspace = Path("C:/agent-runtime/jobs/1/ws")
+    
+        calls = {"n": 0}
+    
+        def fake_run(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", fake_run)
+        backend = LocalProcessBackend(environment_id="ws-b")
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert outcome.termination == "FAILED_TO_START"
+E       AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E         
+E         - FAILED_TO_START
+E         + COMPLETED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_workspace_0133.py:150: AssertionError
+_________ test_c_linux_path_on_windows_rejected_before_createprocess __________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-149/test_c_linux_path_on_windows_r0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000248F11C7850>
+
+    def test_c_linux_path_on_windows_rejected_before_createprocess(
+        tmp_path, monkeypatch,
+    ):
+        """(C) ‎/workspace أو ‎/work كـ cwd على Windows: مرفوض قبل أي
+        subprocess.run — هذا بالضبط ما كان يصل إلى CreateProcess."""
+        import execution.backends as backends
+        import execution.workspace as ws_mod
+    
+        monkeypatch.setattr(ws_mod, "host_os_detected", lambda: "Windows")
+        monkeypatch.setattr(backends, "host_os_detected", lambda: "Windows")
+    
+        def must_not_launch(*_args, **_kwargs):
+            raise AssertionError(
+                "CreateProcess استُدعي بمسار Linux على Windows — ممنوع (§2)"
+            )
+    
+        monkeypatch.setattr(backends.subprocess, "run", must_not_launch)
+    
+        backend = LocalProcessBackend(environment_id="ws-c")
+        for linux_path in ("/workspace/job-1", "/work", "/tmp/run"):
+            outcome = backend.run_code(
+                "print('x')", workspace=Path(linux_path),
+                artifacts=Path("/tmp/art"), timeout_s=10,
+            )
+>           assert outcome.termination == "FAILED_TO_START"
+E           AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E             
+E             - FAILED_TO_START
+E             + COMPLETED
+
+tests\execution\test_workspace_0133.py:219: AssertionError
+______________ test_f_strict_windows_wsl_ready_registers_worker _______________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_f_strict_windows_wsl_read0\ws-0133.db), autoflush=True, expire_on_commit=False)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000248F12FB5B0>
+
+    def test_f_strict_windows_wsl_ready_registers_worker(sessions, monkeypatch):
+        """(F+§3) WSL2 متاح فعليًا: التجهيز يعبر الحد الصريح ويسجل بيئة
+        العامل ثم يتحقق منها — READY فقط عبر فحوص حقيقية."""
+        import execution.backends as backends_mod
+        import execution.service as service_mod
+        from execution import wsl as wsl_mod
+    
+        monkeypatch.setattr(backends_mod, "runtime_truth", _windows_truth)
+        monkeypatch.setattr(service_mod, "_substrate_available",
+                            lambda: False)
+        monkeypatch.setattr(
+            wsl_mod, "wsl_available",
+            lambda **_kw: {
+                "available": True, "reason": "", "detail": "Linux/x86_64",
+                "os": "Linux", "architecture": "x86_64", "python": "3.10",
+                "steps": {"wsl_exe": True, "uname": "Linux x86_64",
+                          "python3": "Python 3.10.12"},
+            },
+        )
+    
+        # العامل «داخل WSL» حقيقي هنا كعملية Linux داخل حاوية الاختبار —
+        # نفس بروتوكول HTTP الذي سيستمع داخل WSL على جهاز المالك
+        with RealWorker(token="wsl-sim-0133") as worker:
+            def fake_launch(**_kwargs):
+                return {
+                    "ok": True, "stage": "WORKER_LAUNCHED",
+                    "endpoint": worker.url,
+                    "boundary": "Windows ← wsl.exe ← Linux ← worker",
+                }
+    
+            monkeypatch.setattr(wsl_mod, "launch_wsl_worker", fake_launch)
+    
+            # add_environment قد استُدعي قبل الربط الحقيقي — نعيد توجيهه
+            # إلى endpoint العامل الحقيقي عبر تسجيل مباشر بعد التسجيل الأول
+            from execution import provisioner
+            from execution import service as execution_service
+    
+            result = provisioner.provision(
+                sessions, policy="STRICT_ISOLATED",
+            )
+            # بيئة العامل مسجلة فعلاً باسم wsl2-linux
+            envs = execution_service.list_environments(sessions)
+            wsl_env = next(
+                (e for e in envs if e["name"] == wsl_mod.WSL_ENVIRONMENT_NAME),
+                None,
+            )
+            assert wsl_env is not None, [e["name"] for e in envs]
+    
+            # أعِد الربط إلى العامل الحقيقي ثم تحقق — سلم الجاهزية كاملًا
+            from execution.models import ExecutionEnvironment
+            from sqlalchemy import select as sa_select
+    
+            with sessions() as s:
+                row = s.scalars(sa_select(ExecutionEnvironment).where(
+                    ExecutionEnvironment.name == wsl_mod.WSL_ENVIRONMENT_NAME
+                )).first()
+                row.endpoint = worker.url
+                row.token_ref = ""
+                from secrets_store import store as secrets_store
+    
+                secrets_store.set_key("execution::wsl2-linux",
+                                      "wsl-sim-0133")
+                row.token_ref = "execution::wsl2-linux"
+                s.commit()
+    
+            verified = execution_service.verify_environment(
+                sessions, wsl_env["id"],
+            )
+            # هذا المضيف Linux والركيزة متاحة للعامل → sandboxed من العامل
+            if (verified.get("verify") or {}).get("ok"):
+>               assert verified["status"] == "READY"
+E               AssertionError: assert 'HEALTHY' == 'READY'
+E                 
+E                 - READY
+E                 + HEALTHY
+
+tests\execution\test_workspace_0133.py:542: AssertionError
+__________________ test_i_no_infinite_retry_same_invalid_cwd __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-149/test_i_no_infinite_retry_same_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000248F151A900>
+
+    def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
+        """(I §10) إطلاعان حصرًا: المحاولة الأولى + إعادة واحدة بعد
+        REPAIR — الفشل بعدها نهائي مهما تكرر الخطأ."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        calls = {"n": 0}
+    
+        def always_267(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", always_267)
+        backend = LocalProcessBackend(environment_id="ws-i")
+        workspace = tmp_path / "ws-i"
+        workspace.mkdir()
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert calls["n"] == 2, (
+            f"الإطلاقات = {calls['n']} — يجب أن تكون 2 بالضبط "
+            "(أولى + إعادة واحدة بعد الإصلاح، لا حلقة)"
+        )
+E       AssertionError: الإطلاقات = 0 — يجب أن تكون 2 بالضبط (أولى + إعادة واحدة بعد الإصلاح، لا حلقة)
+E       assert 0 == 2
+
+tests\execution\test_workspace_0133.py:650: AssertionError
+____________________________ test_all_ready_passes ____________________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_all_ready_passes0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_all_ready_passes(sessions):
+        _sandbox_ready(sessions)
+        _ddg(sessions, "READY")
+        result = preflight.task_preflight(
+            sessions, "ابحث عن مشروع مفتوح المصدر واكتب ملخصًا",
+            run_probe_fn=_fast_probe({}),
+        )
+>       assert result["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:113: AssertionError
+____________ test_required_missing_blocks_with_reason_and_recovery ____________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_required_missing_blocks_w0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_required_missing_blocks_with_reason_and_recovery(sessions):
+        _sandbox_ready(sessions)
+        # (011 §12) البحث يُشتق من مزوديه — DDG فاشل بمسبار حقيقي مسجل
+        _ddg(sessions, "NOT_READY", "لم تُرجع الأداة مادة قابلة للتحليل")
+        result = preflight.task_preflight(
+            sessions, "مهمة بحث",
+            run_probe_fn=_fast_probe({}),
+        )
+        assert result["verdict"] == "BLOCKED"
+        blocked = result["blocked"]
+>       assert [b["capability_id"] for b in blocked] == ["web_search"]
+E       AssertionError: assert ['sandbox', 'web_search'] == ['web_search']
+E         
+E         At index 0 diff: 'sandbox' != 'web_search'
+E         Left contains one more item: 'web_search'
+E         Use -v to get more diff
+
+tests\readiness\test_preflight.py:128: AssertionError
+_______________ test_optional_capability_missing_does_not_block _______________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_optional_capability_missi0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_optional_capability_missing_does_not_block(sessions):
+        """الاختياري الغائب لا يحجب (§28) — القدرات المطلوبة فقط تحكم."""
+        _sandbox_ready(sessions)
+        result = preflight.task_preflight(
+            sessions, "مهمة",
+            run_probe_fn=_fast_probe({"git": _not_ready("git غائب",
+                                                        "DEPENDENCY_FAILURE")}),
+        )
+        # git ليس في required_capabilities — غيابه لا يظهر أصلًا في المطلوب
+>       assert result["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:156: AssertionError
+_____________________ test_ttl_fresh_ready_skips_reprobe ______________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_ttl_fresh_ready_skips_rep0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_ttl_fresh_ready_skips_reprobe(sessions):
+        """جاهزية صالحة (داخل TTL) لا تُعاد فحصها (§24) — قراءة من القاعدة."""
+        probe_calls = {"n": 0}
+    
+        def counting_probe(sessions_, capability_id, **kwargs):
+            probe_calls["n"] += 1
+            return registry.record_probe(sessions_, capability_id, _ready())
+    
+        _sandbox_ready(sessions)
+        first = preflight.task_preflight(
+            sessions, "مهمة", run_probe_fn=counting_probe)
+>       assert first["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight.py:170: AssertionError
+________________________ test_stale_ready_is_reprobed _________________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_stale_ready_is_reprobed0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_stale_ready_is_reprobed(sessions):
+        calls = {"n": 0}
+    
+        def probe(sessions_, capability_id, **kwargs):
+            calls["n"] += 1
+            return registry.record_probe(
+                sessions_, capability_id,
+                ProbeResult(
+                    status="READY", reason="ok",
+                    checked_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+                    expires_at=(_dt.datetime.now(_dt.timezone.utc)
+                                - _dt.timedelta(seconds=1)).isoformat(),
+                    ttl_seconds=1,
+                ),
+            )
+    
+        _sandbox_ready(sessions)
+        preflight.task_preflight(sessions, "مهمة", run_probe_fn=probe)
+        preflight.task_preflight(sessions, "مهمة", run_probe_fn=probe)
+        # منتهية الصلاحية أُعيد فحصها (لا جاهزية أبدية §24) — sandbox مستثناة
+        # (جاهزيتها من سجل البيئات لا من مسبار قابل للانتهاء — 011 §14)
+>       assert calls["n"] == 2 * (len(preflight.required_capabilities("مهمة")) - 1)
+E       AssertionError: assert 14 == (2 * (7 - 1))
+E        +  where 7 = len(['llm', 'sandbox', 'filesystem', 'network_dns', 'network_https', 'shell', ...])
+E        +    where ['llm', 'sandbox', 'filesystem', 'network_dns', 'network_https', 'shell', ...] = <function required_capabilities at 0x00000248ED655D00>('مهمة')
+E        +      where <function required_capabilities at 0x00000248ED655D00> = preflight.required_capabilities
+
+tests\readiness\test_preflight.py:202: AssertionError
+________________ test_environment_selection_appears_in_result _________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_environment_selection_app0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_environment_selection_appears_in_result(sessions):
+        """§18: البيئة المختارة تُسمّى — لا تنفيذ عبر بيئة غير معلنة."""
+        from execution import service as execution_service
+    
+        result = preflight.task_preflight(
+            sessions, "مهمة", llm_ready=True, force=True,
+        )
+        # في بيئة الاختبار: local-linux مسجلة UNKNOWN → ليست جاهزة → None
+        assert "environment" in result
+        env = result["environment"]
+        if env is not None:
+            assert env["name"] and env["backend"]
+            assert "sandboxed" in env
+        # بعد جعلها READY عبر التحقق الحقيقي (محاكاة) تظهر بالاسم
+        execution_service.ensure_local_registered(sessions)
+        from execution.models import ExecutionEnvironment
+        from sqlalchemy import select as sa_select
+    
+        with sessions() as s:
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\readiness\test_preflight_matrix.py:154: AttributeError
+________ test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds _________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_search_blocked_goal_block0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds(sessions):
+        """§39.8 الجوهر: البحث معطل ≠ الإنترنت مقطوع — مهمة الجلب تستمر."""
+        # شبكة وجلب وملفات جاهزة؛ البحث معطل (المزود في مصدره — 011 §12)
+        _env_ready(sessions)
+        for cap in ("filesystem", "network_dns", "network_https",
+                    "shell", "persistence"):
+            _set_status(sessions, cap, "READY")
+        _ddg(sessions, "NOT_READY", "كل مزودي البحث غير جاهزين")
+        _set_status(sessions, "web_fetch", "READY")
+    
+        # هدف OSINT (يطلب البحث جوهريًا) → BLOCKED بقرار واعٍ
+        osint = preflight.task_preflight(
+            sessions, "ابنِ منصة OSINT متقدمة ببحث ومصادر", llm_ready=True,
+            run_probe_fn=_use_seamed(web_search="NOT_READY"),
+        )
+        assert osint["verdict"] == "BLOCKED"
+        blocked_ids = {b["capability_id"] for b in osint["blocked"]}
+        assert "web_search" in blocked_ids
+        assert "web_fetch" not in blocked_ids  # الجلب جاهز فلا يُحجب
+        row = [r for r in osint["matrix"] if r["capability_id"] == "web_search"][0]
+        assert row["decision"] == "BLOCK"
+    
+        # هدف بلا بحث (جلب مباشر) → يمر — القدرات منفصلة (§23)
+        fetch_only = preflight.task_preflight(
+            sessions, "اجلب صفحة الوثائق من رابط معطى وحللها واكتب تقريرًا", llm_ready=True,
+            run_probe_fn=_use_seamed(web_search="NOT_READY"),
+        )
+>       assert fetch_only["verdict"] == "PASS", fetch_only["summary"]
+E       AssertionError: الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده
+E       assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+tests\readiness\test_preflight_matrix.py:198: AssertionError
+_____________ test_preflight_events_carry_matrix_and_environment ______________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_preflight_events_carry_ma0\preflight-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_preflight_events_carry_matrix_and_environment(sessions):
+        """§29: الأحداث الحية تحمل المصفوفة — الواجهة تعرضها بلا طلب إضافي."""
+        _env_ready(sessions)
+        for cap in ("filesystem", "network_dns", "network_https",
+                    "shell", "persistence"):
+            _set_status(sessions, cap, "READY")
+        result = preflight.task_preflight(
+            sessions, "مهمة عادية", llm_ready=True,
+            run_probe_fn=_use_seamed(),
+        )
+        events = preflight.preflight_events(result)
+        kinds = [e["kind"] for e in events]
+        assert kinds[0] == "preflight.started"
+>       assert "preflight.passed" in kinds
+E       AssertionError: assert 'preflight.passed' in ['preflight.started', 'preflight.blocked']
+
+tests\readiness\test_preflight_matrix.py:231: AssertionError
+_______________ test_capability_view_sandbox_from_environments ________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_capability_view_sandbox_f0\readiness-011.db), autoflush=True, expire_on_commit=False)
+
+    def test_capability_view_sandbox_from_environments(sessions):
+        """sandbox من سجل البيئات — نفس مصدر المسبار والمنفذ (010 §19)."""
+        from execution import service as execution_service
+    
+        view = readiness_service.capability_view(sessions, "sandbox")
+        assert view["derived_from"] == "execution_environments"
+        assert view["readiness_status"] in ("NOT_READY", "UNAVAILABLE")
+    
+        execution_service.ensure_local_registered(sessions)
+        from execution import policy as execution_policy
+    
+        with sessions() as s:
+            from execution.models import ExecutionEnvironment
+    
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\readiness\test_service_011.py:168: AttributeError
+____________ test_regression_search_down_fetch_up_capability_aware ____________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_regression_search_down_fe0\regression-test.db), autoflush=True, expire_on_commit=False)
+
+    def test_regression_search_down_fetch_up_capability_aware(sessions):
+        from research import service as research_service
+        from execution.models import ResearchProvider
+    
+        _sandbox_env_ready(sessions)
+        # (011 §12) البحث من مزوديه: DDG فاشل بمسبار حقيقي مسجل
+        research_service.ensure_seeded(sessions)
+        with sessions() as s:
+            from sqlalchemy import select as sa_select
+    
+            row = s.scalars(sa_select(ResearchProvider).where(
+                ResearchProvider.kind == "search_ddg")).first()
+            row.last_probe_status = "NOT_READY"
+            row.failure_reason = "مهلة من هذه الشبكة"
+            row.last_probe_at = _dt.datetime.now(_dt.timezone.utc)
+            s.commit()
+        result = preflight.task_preflight(
+            sessions, "منصة OSINT بمصادر مفتوحة", llm_ready=True,
+            run_probe_fn=_seamed(web_search="NOT_READY"),
+        )
+        assert result["verdict"] == "BLOCKED"
+        ids = {b["capability_id"] for b in result["blocked"]}
+>       assert ids == {"web_search"}, (
+            f"الحجب يجب أن يكون للبحث وحده (الجلب جاهز): {ids}"
+        )
+E       AssertionError: الحجب يجب أن يكون للبحث وحده (الجلب جاهز): {'sandbox', 'web_search'}
+E       assert {'sandbox', 'web_search'} == {'web_search'}
+E         
+E         Extra items in the left set:
+E         'sandbox'
+E         Use -v to get more diff
+
+tests\regression\test_order010_regressions.py:253: AssertionError
+_______________ test_impossible_env_ready_executor_unavailable ________________
+
+sessions = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-149\test_impossible_env_ready_exec0\order011.db), autoflush=True, expire_on_commit=False)
+
+    def test_impossible_env_ready_executor_unavailable(sessions):
+        """resolve_executor هو طريق المسبار والمنفذ معًا: نفس الهوية تُفحص
+        وتُنفَّذ — والفشل بعد READY يوسم ENVIRONMENT_MISMATCH لا صمت."""
+        from execution import service as execution_service
+    
+        execution_service.ensure_local_registered(sessions)
+        with sessions() as s:
+            row = s.scalars(sa_select(ExecutionEnvironment).where(
+                ExecutionEnvironment.name == "local-linux")).first()
+>           row.status = "READY"
+            ^^^^^^^^^^
+E           AttributeError: 'NoneType' object has no attribute 'status' and no __dict__ for setting new attributes
+
+tests\regression\test_order011_regressions.py:170: AttributeError
+_______ test_blocked_then_provisioned_recheck_resume_without_reapproval _______
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x00000248F0D82140>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x00000248F1BF93A0>, ...}
+probe_seam = <function probe_seam.<locals>.fake_sandbox_probe at 0x00000248F1BF9300>
+
+    def test_blocked_then_provisioned_recheck_resume_without_reapproval(
+            wf_env, probe_seam):
+        """(§19 حرفيًا) الخطة لم تتغير → لا إعادة اعتماد أبدًا."""
+        pid = _approved_project(wf_env)
+        sessions = wf_env["sessions"]
+    
+        # 1) لا بيئة جاهزة → الفحص يحجب قبل أول خطوة
+        engine = wf_env["build_engine"]()
+        outcome = engine.run(pid)
+        assert outcome["action"] == "blocked"
+        assert outcome.get("blocked_kind") == "preflight"
+        project = service.get_project(sessions, pid)
+        assert project["status"] == "BLOCKED"
+    
+        # بوابة توفير (BLOCKED) لا قرار — والسبب يسمي المطلوب
+        gates_rows = service.open_gates(sessions, pid)
+        assert len(gates_rows) == 1
+        gate = gates_rows[0]
+        assert gate["kind"] == "PREFLIGHT_BLOCKED"
+        assert gate["status"] == "BLOCKED"
+        assert gate["details"]["recheck_hint"]
+    
+        # الأحداث الدائمة: PREFLIGHT_BLOCKED بالقصة كاملة
+        kinds = [e["kind"] for e in service.list_events(sessions, pid, 100)]
+        assert "PREFLIGHT_BLOCKED" in kinds
+    
+        # 2) المالك يوفر البيئة (التسجيل في المصدر: سجل البيئات)
+        _set_local_env(sessions, status="READY", sandboxed=1)
+    
+        # 3) إعادة الفحص → PASS → حل آلي للبوابة → READY
+        recheck = engine.recheck_preflight(pid)
+>       assert recheck["verdict"] == "PASS"
+E       AssertionError: assert 'BLOCKED' == 'PASS'
+E         
+E         - PASS
+E         + BLOCKED
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_provisioning_011.py:154: AssertionError
+________________ test_run_rechecks_provisioning_automatically _________________
+
+wf_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\py...ct at 0x00000248F1B75150>, 'build_engine': <function wf_env.<locals>.build_engine_instance at 0x00000248F1BDA7A0>, ...}
+probe_seam = <function probe_seam.<locals>.fake_sandbox_probe at 0x00000248F1BDA660>
+
+    def test_run_rechecks_provisioning_automatically(wf_env, probe_seam):
+        """زر «تشغيل» وحده يكفي بعد التوفير: tick يرى بوابات توفير فقط
+        فيعيد الفحص تلقائيًا (BLOCKED ← RECHECK ← READY ← OPEN)."""
+        pid = _approved_project(wf_env)
+        sessions = wf_env["sessions"]
+        engine = wf_env["build_engine"]()
+        engine.run(pid)   # حجب
+        assert service.get_project(sessions, pid)["status"] == "BLOCKED"
+        # المالك وفر البيئة ثم ضغط «تشغيل» مباشرة (بلا زر إعادة فحص)
+        _set_local_env(sessions, status="READY", sandboxed=1)
+        outcome = wf_env["build_engine"]().run(pid)
+>       assert outcome.get("blocked_kind") != "preflight"
+E       AssertionError: assert 'preflight' != 'preflight'
+E        +  where 'preflight' = <built-in method get of dict object at 0x00000248F1CADF40>('blocked_kind')
+E        +    where <built-in method get of dict object at 0x00000248F1CADF40> = {'action': 'blocked', 'blocked_kind': 'preflight', 'reason': 'الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده', 'gates': ['PREFLIGHT_BLOCKED'], ...}.get
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\workflow\test_provisioning_011.py:206: AssertionError
+_____________________ test_cycle_stop_finished_cycle_409 ______________________
+
+client = <starlette.testclient.TestClient object at 0x00000248F197AF90>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0x00000248EFCC8D70>}
+
+    def test_cycle_stop_finished_cycle_409(client, live_task_env):
+        """الأمر 006: الدورة المنجزة عبر المسار الحي — طلب الإيقاف يُرفض 409."""
+>       _events, cycle_id = _run_task_to_completion(client)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <starlette.testclient.TestClient object at 0x00000248F197AF90>
+goal = 'دورة كاملة لعقد الإيقاف'
+
+    def _run_task_to_completion(client, goal="دورة كاملة لعقد الإيقاف"):
+        """تشغيل مهمة حية عبر الـAPI وانتظار ختامها — يعيد (الأحداث، cycle_id)."""
+        resp = client.post("/api/cycle/stream", json={"goal": goal})
+        assert resp.status_code == 200, resp.text[:400]
+        events = [
+            json.loads(line[5:])
+            for line in resp.text.split("\n\n")
+            if line.startswith("data: ")
+        ]
+        done = [e for e in events if e.get("kind") == "task_done"]
+>       assert done, f"لا task_done في البث: {[e.get('kind') for e in events]}"
+E       AssertionError: لا task_done في البث: ['task.conversation', 'preflight.started', 'preflight.blocked', 'CONFIGURATION_REQUIRED', 'stream.done']
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:172: AssertionError
+______________________ test_cycle_status_finished_shape _______________________
+
+client = <starlette.testclient.TestClient object at 0x00000248F1B76B50>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0x00000248F1EAD810>}
+
+    def test_cycle_status_finished_shape(client, live_task_env):
+        """حالة مهمة منجزة عبر المسار الحي — الشكل الكامل بعد الانتهاء."""
+>       _events, cycle_id = _run_task_to_completion(client)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:204: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <starlette.testclient.TestClient object at 0x00000248F1B76B50>
+goal = 'دورة كاملة لعقد الإيقاف'
+
+    def _run_task_to_completion(client, goal="دورة كاملة لعقد الإيقاف"):
+        """تشغيل مهمة حية عبر الـAPI وانتظار ختامها — يعيد (الأحداث، cycle_id)."""
+        resp = client.post("/api/cycle/stream", json={"goal": goal})
+        assert resp.status_code == 200, resp.text[:400]
+        events = [
+            json.loads(line[5:])
+            for line in resp.text.split("\n\n")
+            if line.startswith("data: ")
+        ]
+        done = [e for e in events if e.get("kind") == "task_done"]
+>       assert done, f"لا task_done في البث: {[e.get('kind') for e in events]}"
+E       AssertionError: لا task_done في البث: ['task.conversation', 'preflight.started', 'preflight.blocked', 'CONFIGURATION_REQUIRED', 'stream.done']
+E       assert []
+
+C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\core\test_stop_api.py:172: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests\execution\test_backends.py:131
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_backends.py:131: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(90)
+
+tests\execution\test_backends.py:178
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\tests\execution\test_backends.py:178: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(60)
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+.venv\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+src\api\routes.py:2150
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\src\api\routes.py:2150: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4681
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\execution\test_failure_reporting_0139.py:195: يتطلب ركيزة Linux متاحة (available() تتحقق أولًا)
+SKIPPED [1] tests\execution\test_workspace_0133.py:616: المنصة تسمح بالكتابة رغم 0o500
+FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http
+FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real
+FAILED tests/execution/test_readiness_gate_01310.py::test_compute_state_name_agrees_with_eligible
+FAILED tests/execution/test_workspace_0133.py::test_a_valid_cwd_runs_and_reports_preflight
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess
+FAILED tests/execution/test_workspace_0133.py::test_f_strict_windows_wsl_ready_registers_worker
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+FAILED tests/readiness/test_preflight.py::test_all_ready_passes - AssertionEr...
+FAILED tests/readiness/test_preflight.py::test_required_missing_blocks_with_reason_and_recovery
+FAILED tests/readiness/test_preflight.py::test_optional_capability_missing_does_not_block
+FAILED tests/readiness/test_preflight.py::test_ttl_fresh_ready_skips_reprobe
+FAILED tests/readiness/test_preflight.py::test_stale_ready_is_reprobed - Asse...
+FAILED tests/readiness/test_preflight_matrix.py::test_environment_selection_appears_in_result
+FAILED tests/readiness/test_preflight_matrix.py::test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds
+FAILED tests/readiness/test_preflight_matrix.py::test_preflight_events_carry_matrix_and_environment
+FAILED tests/readiness/test_service_011.py::test_capability_view_sandbox_from_environments
+FAILED tests/regression/test_order010_regressions.py::test_regression_search_down_fetch_up_capability_aware
+FAILED tests/regression/test_order011_regressions.py::test_impossible_env_ready_executor_unavailable
+FAILED tests/workflow/test_provisioning_011.py::test_blocked_then_provisioned_recheck_resume_without_reapproval
+FAILED tests/workflow/test_provisioning_011.py::test_run_rechecks_provisioning_automatically
+FAILED tests/core/test_stop_api.py::test_cycle_stop_finished_cycle_409 - Asse...
+FAILED tests/core/test_stop_api.py::test_cycle_status_finished_shape - Assert...
+23 failed, 162 passed, 2 skipped, 7 warnings in 207.51s (0:03:27)
