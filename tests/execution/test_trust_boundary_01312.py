@@ -652,6 +652,84 @@ def test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode():
             process.kill()
 
 
+# ================================================================== #
+# (013.15) الاختباران الحيّان على Linux/ركيزة — كانا placeholder
+# يفشل بعناد على Linux حتى يتوفر مضيف ركيزة حقيقي (دلالة 013.12 §4).
+# توفر المضيف الآن فعليًا، فصار الجسد برهانًا حيًا كاملًا: عامل حقيقي
+# في وضع الركيزة على قناة 127.0.0.1 محمية، توكن يولَّد وقت التشغيل
+# (لا نص حرفي في Git أبدًا). يبقى skipif(not linux) كما هو (على
+# Windows: NOT RUN صادق)، وعلى Linux بلا ركيزة: skip صادق معلن —
+# أبدًا لا يتحول SKIP إلى PASS.
+# ================================================================== #
+
+import contextlib  # noqa: E402 — قسم 013.15 الحي
+
+
+def _substrate_ok_on_this_host() -> bool:
+    """هل ركيزة Linux الحقيقية متاحة فعلًا هنا؟ قياس لا افتراض."""
+    repo = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(repo / "src"))
+    try:
+        from substrate.local_substrate import default_local_images
+        return bool(default_local_images())
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _worker_call(method, base, auth, path, payload=None):
+    import urllib.request  # noqa: E402 — قسم 013.15 الحي
+    data = _json.dumps(payload).encode() if payload is not None else None
+    headers = dict(auth)
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(
+        base + path, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        return _json.loads(resp.read())
+
+
+@contextlib.contextmanager
+def _live_worker():
+    """يطلق العامل الحقيقي (سكربت المصدر نفسه) في وضع الركيزة على
+    قناة 127.0.0.1 محمية؛ التوكن يولَّد وقت التشغيل ولا يُطبع ولا
+    يُكتب في أي ملف أبدًا."""
+    import secrets as _secrets  # noqa: E402 — قسم 013.15 الحي
+    import socket as _socket
+    import subprocess as _subprocess
+    import time as _time_mod
+    repo = Path(__file__).resolve().parents[2]
+    with _socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    token = _secrets.token_urlsafe(24)
+    proc = _subprocess.Popen(
+        [sys.executable, str(repo / "scripts" / "execution_worker.py"),
+         "--port", str(port), "--host", "127.0.0.1", "--token", token],
+        cwd=str(repo), stdout=_subprocess.DEVNULL,
+        stderr=_subprocess.DEVNULL,
+    )
+    base = f"http://127.0.0.1:{port}"
+    auth = {"Authorization": f"Bearer {token}"}
+    try:
+        deadline = _time_mod.monotonic() + 25
+        ready = False
+        while _time_mod.monotonic() < deadline and not ready:
+            try:
+                ready = _worker_call(
+                    "GET", base, auth, "/health").get("ok") is True
+            except OSError:
+                _time_mod.sleep(0.2)
+        assert ready, "العامل الحي لم يقبل الاتصال خلال 25ث"
+        yield base, auth
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except _subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+
+
 @pytest.mark.skipif(
     not sys.platform.startswith("linux"),
     reason="اختبار العزل الحي يتطلب ركيزة Linux (substrate) — "
@@ -659,9 +737,35 @@ def test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode():
            "(013.12 §4 حرفيًا).",
 )
 def test_d2_live_substrate_isolation_probe_on_linux():
-    """D2-ح (حي — NOT RUN على هذا المضيف): العامل الحقيقي على Linux/ركيزة
-    يجتاز المسبار الحي. يُشغل على مضيف ركيزة عند توفره فقط."""
-    raise AssertionError("NOT RUN على مضيف Windows — يسجل كما هو")
+    """D2-ح (حي — 013.15): العامل الحقيقي على Linux/ركيزة يجتاز المسبار
+    الحي: منع شبكة مؤكد من داخل الركيزة (verdict=BLOCKED بتحدٍ متكرر)
+    مع بقاء قناة التحكم المصرح بها متاحة خارجها.
+
+    وهو أيضًا اختبار الانحدار لعيب 013.15: قالب المسبار كان يستقبل
+    الهدف سلسلة "host:port" بدل زُبع (host, port) فينفجر داخل
+    الركيزة بـ ValueError ويرجع INCONCLUSIVE (الدليل:
+    docs/evidence/order01315/worker_probe_bug_baseline_622be149.json).
+    يُشغل على مضيف ركيزة عند توفره فقط."""
+    if not _substrate_ok_on_this_host():
+        pytest.skip("NOT RUN — لا ركيزة على هذا المضيف (لا محاكاة)")
+    with _live_worker() as (base, auth):
+        health = _worker_call("GET", base, auth, "/health")
+        assert health["backend_mode"] == "substrate", health
+        caps = _worker_call("GET", base, auth, "/capabilities")
+        assert caps["sandboxed"] is True, caps
+        assert caps["isolation"] == "linux-namespaces+seccomp", caps
+        challenge = _uuid.uuid4().hex
+        iso = _worker_call(
+            "POST", base, auth, "/probe_isolation",
+            {"challenge_id": challenge})
+        assert iso["ok"] is True, iso
+        assert iso["verdict"] == "BLOCKED", iso
+        assert iso["challenge_id"] == challenge, iso
+        assert iso["challenge_echoed"] is True, iso
+        # قناة التحكم المصرح بها متاحة خارج العزل
+        assert iso["control_proof"]["ok"] is True, iso
+        assert iso["probe_errno"], iso
+        assert iso["worker_id"] and iso["verified_at"], iso
 
 
 # ================================================================== #
@@ -780,5 +884,38 @@ def test_d3_success_after_repair_keeps_repair_out_of_failure(
            "NOT RUN (يُغطى عقد الركيزة باختباراتها الخاصة على مضيف ركيزة).",
 )
 def test_d3_isolated_success_contract_on_linux():
-    """D3-4 (حي — NOT RUN على هذا المضيف): عقد نتيجة ناجحة معزولة."""
-    raise AssertionError("NOT RUN على مضيف Windows — يسجل كما هو")
+    """D3-4 (حي — 013.15): عقد نتيجة ناجحة معزولة عبر /run في وضع
+    الركيزة: نجاح حقيقي يُبلَّغ نجاحًا — مخرجات فعلية وartifacts حقيقية
+    مقروءة، لا حقول فشل مضللة ولا FAILURE_UNCODED، والسجل نفسه يصرّح
+    sandboxed=true من الوضع الفعلي لا من قيمة ثابتة.
+    يُشغل على مضيف ركيزة عند توفره فقط."""
+    if not _substrate_ok_on_this_host():
+        pytest.skip("NOT RUN — لا ركيزة على هذا المضيف (لا محاكاة)")
+    import base64 as _b64
+    with _live_worker() as (base, auth):
+        caps = _worker_call("GET", base, auth, "/capabilities")
+        assert caps["sandboxed"] is True, caps
+        assert caps["isolation"] == "linux-namespaces+seccomp", caps
+        code = (
+            "import pathlib, sys\n"
+            "p = pathlib.Path('/artifacts/d3-success.txt')\n"
+            "p.write_text('d3-ok', encoding='utf-8')\n"
+            "print('D3_MARKER:', p.read_text(encoding='utf-8'))\n"
+            "print('PY:', sys.version_info[:3])\n"
+        )
+        run = _worker_call(
+            "POST", base, auth, "/run",
+            {"run_id": "d3-live-" + _uuid.uuid4().hex[:8],
+             "code": code, "timeout_s": 60})
+        assert run["sandboxed"] is True, run
+        assert run["exit_code"] == 0, run
+        assert run["termination"] == "COMPLETED", run
+        assert "D3_MARKER: d3-ok" in run["stdout"], run
+        assert "PY:" in run["stdout"], run
+        assert "FAILURE_UNCODED" not in run["stderr"], run
+        assert "FAILURE_UNCODED" not in str(run.get("detail", "")), run
+        arts = {a["name"]: a for a in run.get("artifacts", [])}
+        assert "d3-success.txt" in arts, sorted(arts)
+        assert _b64.b64decode(
+            arts["d3-success.txt"]["b64"]).decode("utf-8") == "d3-ok"
+        assert isinstance(run["duration_ms"], int) and run["duration_ms"] >= 0

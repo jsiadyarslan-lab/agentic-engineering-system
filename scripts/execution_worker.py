@@ -388,7 +388,12 @@ def _isolation_probe(target: tuple[str, int], challenge_id: str) -> dict:
             ),
         }
     code = _ISOLATION_PROBE_TEMPLATE.format(
-        target=f"{target[0]}:{target[1]}",
+        # (013.15) عيب فعلي كشفه تشغيل هذه الجلسة: القالب كان يستقبل
+        # الهدف سلسلة "host:port" بينما socket.create_connection يشترط
+        # زُبعًا (host, port) — انفجر داخل الركيزة بـ ValueError
+        # (too many values to unpack) وأرجع INCONCLUSIVE. الدليل:
+        # docs/evidence/order01315/worker_probe_bug_baseline_622be149.json
+        target=(target[0], target[1]),
         challenge=challenge_id,
         blocked=sorted(_ERRNO_BLOCKED),
     )

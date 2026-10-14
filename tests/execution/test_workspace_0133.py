@@ -539,7 +539,15 @@ def test_f_strict_windows_wsl_ready_registers_worker(sessions, monkeypatch):
         )
         # هذا المضيف Linux والركيزة متاحة للعامل → sandboxed من العامل
         if (verified.get("verify") or {}).get("ok"):
-            assert verified["status"] == "READY"
+            # (013.15) سلم المفردات المعلن (service.py:355-385): التحقق
+            # الناجح يكتب HEALTHY على محور صحة صف البيئة، وREADY تُوثَّق
+            # داخل last_probe_detail.status — كان هذا الفرع ميتًا خاملًا
+            # (التحقق لا ينجح أبدًا قبل إصلاح مسبار 013.15) فانكشف أن
+            # توقعه القديم (READY على الصف) يخالف العقد؛ صُحح هنا لا في
+            # المنتج — والفرع الآن يطابق عقد المصدر المعلن ويثبت أكثر.
+            assert verified["status"] == "HEALTHY", verified["status"]
+            probe_detail = verified.get("last_probe_detail") or {}
+            assert probe_detail.get("status") == "READY", probe_detail
             assert verified["sandboxed"] in (0, 1)
 
 
