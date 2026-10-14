@@ -1,0 +1,63 @@
+{
+ "health": {
+  "http": 200,
+  "body": {
+   "ok": true,
+   "uptime_s": 34,
+   "active_runs": 0,
+   "backend_mode": "subprocess"
+  }
+ },
+ "capabilities": {
+  "http": 200,
+  "body": {
+   "backend_id": "execution-worker/1.0",
+   "os": "Windows",
+   "architecture": "AMD64",
+   "runtime": "python 3.13.2",
+   "workspace_root": "C:\\Users\\jaber\\AppData\\Local\\Temp",
+   "artifacts_root": "artifacts",
+   "network_policy": "unrestricted (worker host network)",
+   "resource_limits": "subprocess: wall-clock timeout + output caps",
+   "sandboxed": false,
+   "isolation": "none — declared direct subprocess (honest mode)",
+   "isolation_probe": "not-applicable (no isolation to probe — honest refusal)",
+   "capabilities": [
+    "code_execution",
+    "filesystem_write",
+    "artifact_capture",
+    "python_runtime"
+   ],
+   "worker_pid": 604,
+   "worker_id": "execution-worker/1.0:DESKTOP-4QO4S31:pid=604"
+  }
+ },
+ "isolation_probe": {
+  "http": 200,
+  "challenge_sent": "order01317-1792010885-2449d291",
+  "body": {
+   "challenge_id": "order01317-1792010885-2449d291",
+   "worker_id": "execution-worker/1.0:DESKTOP-4QO4S31:pid=604",
+   "verified_at": "2026-10-14T20:48:05.092134+00:00",
+   "target": "127.0.0.1:8901",
+   "ok": false,
+   "verdict": "NOT_ISOLATED_MODE",
+   "control_proof": {
+    "ok": false,
+    "errno": ""
+   },
+   "latency_ms": 0,
+   "detail": "وضع subprocess المعلن بلا عزل — لا يُطلق اختبار عزل ولا يُصادر ادعاء عزل (صدق الإعلان)"
+  }
+ },
+ "conclusion": {
+  "backend_mode": "subprocess",
+  "sandboxed": false,
+  "isolation_probe_supported": "not-applicable (no isolation to probe — honest refusal)",
+  "isolation_verdict": "NOT_ISOLATED_MODE",
+  "challenge_repeated": true,
+  "strict_isolated_gate": "FAIL — worker not in substrate mode on this host",
+  "token_fingerprint_sha256_16": "75a4f1624a3c589c",
+  "probed_at": "2026-10-14T20:48:05Z"
+ }
+}

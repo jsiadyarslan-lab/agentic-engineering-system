@@ -1,0 +1,15 @@
+﻿scripts/order01317_fixture.py
+scripts/e11_session_01317.py
+tests/execution/test_fixture_verifier_01317.py
+docs/ORDER01317_REPORT.md
+docs/evidence/order01317/approved_fixture.csv
+docs/evidence/order01317/approved_fixture_sha256.txt
+docs/evidence/order01317/git_prestate.json
+docs/evidence/order01317/self_audit_proof.txt
+docs/evidence/order01317/substrate_fresh_check.json
+docs/evidence/order01317/worker_reverification_windows_host.json
+docs/evidence/order01317/prior_nonconformance/01316_report.md
+docs/evidence/order01317/prior_nonconformance/01316_test_tool.py
+docs/evidence/order01317/prior_nonconformance/01316_tool.py
+docs/evidence/order01317/prior_nonconformance/01316_transactions.csv
+docs/evidence/order01317/prior_nonconformance/prior_nonconformance_record.json

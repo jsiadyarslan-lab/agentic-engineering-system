@@ -1,0 +1,164 @@
+{
+ "01316_transactions.csv": {
+  "sha256": "7ed9b2e963687069d98112cc32bcf507d7db8e9e20b8472778d0430605be6c44",
+  "bytes": 87,
+  "source": "docs/evidence/order01316/mission_artifacts/transactions.csv",
+  "preserved_unmodified": true
+ },
+ "01316_test_tool.py": {
+  "sha256": "c22616717334fbe7b548215c50d611fe2b6851a73cab81711438743e6d9d3eec",
+  "bytes": 3707,
+  "source": "docs/evidence/order01316/mission_artifacts/test_tool.py",
+  "preserved_unmodified": true
+ },
+ "verifier_on_prior_file": {
+  "ok": false,
+  "findings": [
+   {
+    "kind": "header_mismatch",
+    "expected": [
+     "date",
+     "category",
+     "amount"
+    ],
+    "actual": [
+     "category",
+     "amount"
+    ],
+    "note": "عمود date مطلوب بالترتيب date,category,amount"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 1,
+    "column": "date",
+    "expected": "2026-10-01",
+    "actual": "food"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 1,
+    "column": "category",
+    "expected": "food",
+    "actual": "10.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 1,
+    "expected": 3,
+    "actual": 2
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 2,
+    "column": "date",
+    "expected": "2026-10-02",
+    "actual": "food"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 2,
+    "column": "category",
+    "expected": "travel",
+    "actual": "15.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 2,
+    "expected": 3,
+    "actual": 2
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 3,
+    "column": "date",
+    "expected": "2026-10-03",
+    "actual": "travel"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 3,
+    "column": "category",
+    "expected": "food",
+    "actual": "20.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 3,
+    "expected": 3,
+    "actual": 2
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 4,
+    "column": "date",
+    "expected": "2026-10-04",
+    "actual": "travel"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 4,
+    "column": "category",
+    "expected": "tools",
+    "actual": "20.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 4,
+    "expected": 3,
+    "actual": 2
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 5,
+    "column": "date",
+    "expected": "2026-10-05",
+    "actual": "tools"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 5,
+    "column": "category",
+    "expected": "travel",
+    "actual": "10.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 5,
+    "expected": 3,
+    "actual": 2
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 6,
+    "column": "date",
+    "expected": "2026-10-06",
+    "actual": "tools"
+   },
+   {
+    "kind": "cell_mismatch",
+    "row": 6,
+    "column": "category",
+    "expected": "food",
+    "actual": "10.00"
+   },
+   {
+    "kind": "row_width",
+    "row": 6,
+    "expected": 3,
+    "actual": 2
+   }
+  ],
+  "totals": {
+   "total": "0.00"
+  },
+  "compared_rows": 6,
+  "source": "APPROVED_CSV literal in order01317_fixture.py"
+ },
+ "historical_defect_mechanically_detected": true,
+ "defects": [
+  "013.16 transactions.csv had NO date column (category,amount) while approved ORDER013.13 data requires date,category,amount",
+  "013.16 rows were executor-invented (food 10+15, travel 20+20, tools 10+10) with matching totals only",
+  "013.16 test_tool.py tested a different sample (Grand Total 30.00) not the approved data"
+ ],
+ "preserved_at": "2026-10-14 (this host clock; see report D1)"
+}

@@ -1,0 +1,2 @@
+dc53f5a7f15475b619552fbdbf4dbcebeb9249391185642011b706c9b6d69654  approved_fixture.csv
+source: scripts/order01317_fixture.py APPROVED_CSV (ORDER013.13 literal data)

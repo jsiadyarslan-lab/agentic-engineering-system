@@ -1,0 +1,46 @@
+{
+ "scope": "tests/execution tests/substrate tests/readiness/test_preflight_matrix.py tests/api/test_sandbox_integration.py tests/api/test_ui_structure_order010.py",
+ "host": "Windows 10 (no Linux substrate) — session executor host",
+ "base": {
+  "ref": "948ee49ea2ca692413578a7713b448a42326dbeb (013.16 head)",
+  "worktree": "aes-01317-base (throwaway, detached)",
+  "summary": {
+   "failed": 7,
+   "passed": 146,
+   "skipped": 27,
+   "raw": "21 warnings in 126.79s (0:02:06)"
+  },
+  "failures": [
+   "FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http",
+   "FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real",
+   "FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified",
+   "FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess",
+   "FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd",
+   "FAILED tests/substrate/test_worker_seed_v11_01316.py::test_seed_oversize_and_invalid_entries_skipped",
+   "FAILED tests/substrate/test_worker_seed_v11_01316.py::test_write_then_run_sequence_through_worker_substrate"
+  ]
+ },
+ "branch": {
+  "ref": "order01317-e11-fixture-owner-gate-closure",
+  "worktree": "aes-01317-wt",
+  "summary": {
+   "failed": 7,
+   "passed": 157,
+   "skipped": 27,
+   "raw": "21 warnings in 123.77s (0:02:03)"
+  },
+  "failures": [
+   "FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http",
+   "FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real",
+   "FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified",
+   "FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess",
+   "FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd",
+   "FAILED tests/substrate/test_worker_seed_v11_01316.py::test_seed_oversize_and_invalid_entries_skipped",
+   "FAILED tests/substrate/test_worker_seed_v11_01316.py::test_write_then_run_sequence_through_worker_substrate"
+  ]
+ },
+ "new_failures": [],
+ "fixed_failures": [],
+ "added_passing": 11,
+ "note": "added_passing == 11 == the new fixture-verifier tests (tests/execution/test_fixture_verifier_01317.py). The 7 failures are the pre-existing Windows-host set (substrate tests + workspace Windows assumptions), identical on both sides. The 013.16 published Linux-session numbers (4 failures) are PUBLISHED/EXECUTOR-REPORTED, not re-run here — different host."
+}

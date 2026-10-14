@@ -1,0 +1,381 @@
+﻿....F...................s.........F..................................... [ 40%]
+........................................s...s..F..F.......sF...sssssssss [ 80%]
+ssssss.s.ssss.FF.....sss............                                     [100%]
+================================== FAILURES ===================================
+_________________ test_remote_worker_protocol_real_over_http __________________
+
+    @pytest.mark.timeout(90)
+    def test_remote_worker_protocol_real_over_http():
+        """البروتوكول كاملًا ضد عامل حقيقي: توكن + قدرات + فحص + تنفيذ (§21)."""
+        with RealWorker() as worker:
+            good = RemoteWorkerBackend(worker.url, token=worker.token)
+            # التوكن مطلوب: بقيمة خاطئة = خطأ معلن
+            bad = RemoteWorkerBackend(worker.url, token="wrong")
+            with pytest.raises(ConnectionError):
+                bad.health()
+            # الصحة والقدرات — وصف صادق من العامل نفسه
+            health = good.health()
+            assert health["ok"] is True
+            caps = good.describe()
+            assert caps["os"] and caps["architecture"] and caps["runtime"]
+            assert isinstance(caps["sandboxed"], bool)
+            assert caps["available"] is True
+            # التحقق: سلم الجاهزية الكامل (011 §10) — درجات مسماة
+            verify = good.verify()
+            assert verify.status == "READY", verify.reason
+            names = {c["name"] for c in verify.checks}
+            assert names >= {
+                "connectivity", "authentication", "heartbeat",
+                "environment_probe", "workspace_probe", "execute_probe",
+                "artifact_probe",
+            }
+            assert all(c["ok"] for c in verify.checks)
+            # التنفيذ الفعلي عبر العامل + التقاط artifact
+            # (اصطلاح الأدلة داخل الركيزة: ‎/artifacts مطلق — معلن في capabilities)
+            code = (
+                "import pathlib\n"
+                "p = pathlib.Path('/artifacts/order010.txt')\n"
+                "p.write_text('remote-ok', encoding='utf-8')\n"
+                "print('remote-exec-ok')\n"
+            )
+            import tempfile
+    
+            with tempfile.TemporaryDirectory() as tmp:
+                outcome = good.run_code(
+                    code, workspace=Path(tmp) / "ws",
+                    artifacts=Path(tmp) / "art", timeout_s=60,
+                )
+            assert outcome.ok, outcome.detail
+            assert "remote-exec-ok" in outcome.stdout
+>           assert outcome.artifacts.get("order010.txt") == "remote-ok"
+E           AssertionError: assert None == 'remote-ok'
+E            +  where None = <built-in method get of dict object at 0x000002AEEA79C1C0>('order010.txt')
+E            +    where <built-in method get of dict object at 0x000002AEEA79C1C0> = {}.get
+E            +      where {} = ExecutionOutcome(environment_id='remote-worker', backend='REMOTE_WORKER', exit_code=0, stdout='remote-exec-ok\r\n', st...direct subprocess (sandboxed=false — declared)', artifacts={}, duration_ms=166, failure={}, repair={}, process_info={}).artifacts
+
+tests\execution\test_backends.py:174: AssertionError
+_______________________ test_provision_full_cycle_real ________________________
+
+env_db = sessionmaker(class_='Session', bind=Engine(sqlite:///C:\Users\jaber\AppData\Local\Temp\pytest-of-jaber\pytest-14\test_provision_full_cycle_real0\prov013.db), autoflush=True, expire_on_commit=False)
+
+    def test_provision_full_cycle_real(env_db):
+        """(§44) تجهيز ← صحة ← تنفيذ معزول ← التقاط — دورة حقيقية.
+    
+        في بيئة فيها ركيزة حقيقية (Linux/container) تكتمل الدورة إلى
+        READY بفحوص فعلية؛ في بيئة بلا ركيزة تكون النتيجة صادقة
+        (FAILED/PROVISIONING_UNAVAILABLE بسبب حرفي) — كلاهما مقبول،
+        المرفوض هو READY بلا فحص.
+        """
+        result = provisioner.provision(env_db)
+        states = [s["state"] for s in result["steps"]]
+    
+>       assert "DISCOVERING" in states and "PROVISIONING" in states
+E       AssertionError: assert ('DISCOVERING' in ['DISCOVERING', 'DISCOVERING'] and 'PROVISIONING' in ['DISCOVERING', 'DISCOVERING'])
+
+C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\execution\test_provisioner_013.py:52: AssertionError
+__________________ test_b_windows_nonexistent_cwd_classified __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-14/test_b_windows_nonexistent_cwd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002AEEA6AD470>
+
+    def test_b_windows_nonexistent_cwd_classified(tmp_path, monkeypatch):
+        """(B) إطلاق بـ cwd غير موجود: WinError 267 يُصنّف مسمّى لا عامًا،
+        مع كل الحقول (host/cwd/environment_id/execution_mode)."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        # مسار بنمط Windows (يفسَّر نسبيًا على مضيف Linux الاختباري — يُنشأ
+        # تحت tmp_path فلا يلوث شيئًا، والسلوك المرجو هو نفسه على Windows)
+        monkeypatch.chdir(tmp_path)
+        workspace = Path("C:/agent-runtime/jobs/1/ws")
+    
+        calls = {"n": 0}
+    
+        def fake_run(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", fake_run)
+        backend = LocalProcessBackend(environment_id="ws-b")
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert outcome.termination == "FAILED_TO_START"
+E       AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E         
+E         - FAILED_TO_START
+E         + COMPLETED
+
+C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\execution\test_workspace_0133.py:150: AssertionError
+_________ test_c_linux_path_on_windows_rejected_before_createprocess __________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-14/test_c_linux_path_on_windows_r0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002AEED208830>
+
+    def test_c_linux_path_on_windows_rejected_before_createprocess(
+        tmp_path, monkeypatch,
+    ):
+        """(C) ‎/workspace أو ‎/work كـ cwd على Windows: مرفوض قبل أي
+        subprocess.run — هذا بالضبط ما كان يصل إلى CreateProcess."""
+        import execution.backends as backends
+        import execution.workspace as ws_mod
+    
+        monkeypatch.setattr(ws_mod, "host_os_detected", lambda: "Windows")
+        monkeypatch.setattr(backends, "host_os_detected", lambda: "Windows")
+    
+        def must_not_launch(*_args, **_kwargs):
+            raise AssertionError(
+                "CreateProcess استُدعي بمسار Linux على Windows — ممنوع (§2)"
+            )
+    
+        monkeypatch.setattr(backends.subprocess, "run", must_not_launch)
+    
+        backend = LocalProcessBackend(environment_id="ws-c")
+        for linux_path in ("/workspace/job-1", "/work", "/tmp/run"):
+            outcome = backend.run_code(
+                "print('x')", workspace=Path(linux_path),
+                artifacts=Path("/tmp/art"), timeout_s=10,
+            )
+>           assert outcome.termination == "FAILED_TO_START"
+E           AssertionError: assert 'COMPLETED' == 'FAILED_TO_START'
+E             
+E             - FAILED_TO_START
+E             + COMPLETED
+
+tests\execution\test_workspace_0133.py:219: AssertionError
+__________________ test_i_no_infinite_retry_same_invalid_cwd __________________
+
+tmp_path = WindowsPath('C:/Users/jaber/AppData/Local/Temp/pytest-of-jaber/pytest-14/test_i_no_infinite_retry_same_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002AEED3C86E0>
+
+    def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
+        """(I §10) إطلاعان حصرًا: المحاولة الأولى + إعادة واحدة بعد
+        REPAIR — الفشل بعدها نهائي مهما تكرر الخطأ."""
+        import execution.backends as backends
+    
+        _simulate_windows_host(monkeypatch, tmp_path)
+        calls = {"n": 0}
+    
+        def always_267(*_args, **_kwargs):
+            calls["n"] += 1
+            raise _WinError267()
+    
+        monkeypatch.setattr(backends.subprocess, "run", always_267)
+        backend = LocalProcessBackend(environment_id="ws-i")
+        workspace = tmp_path / "ws-i"
+        workspace.mkdir()
+        outcome = backend.run_code(
+            "print('x')", workspace=workspace,
+            artifacts=tmp_path / "art", timeout_s=10,
+        )
+>       assert calls["n"] == 2, (
+            f"الإطلاقات = {calls['n']} — يجب أن تكون 2 بالضبط "
+            "(أولى + إعادة واحدة بعد الإصلاح، لا حلقة)"
+        )
+E       AssertionError: الإطلاقات = 0 — يجب أن تكون 2 بالضبط (أولى + إعادة واحدة بعد الإصلاح، لا حلقة)
+E       assert 0 == 2
+
+tests\execution\test_workspace_0133.py:658: AssertionError
+____________ test_write_then_run_sequence_through_worker_substrate ____________
+
+    def test_write_then_run_sequence_through_worker_substrate():
+        """التسلسل الكامل عبر وحدة العامل: كتابة في تشغيل، بذر وتشغيل في
+        التشغيل التالي — الكود الثاني يرى ملفات الأول داخل ‎/artifacts."""
+        worker = _load_worker_module()
+    
+        # (1) تشغيل كتابة v1 — ملف يُعاد في الاستجابة
+        write_code = (
+            "import pathlib\n"
+            "target = pathlib.Path('/artifacts/note.txt')\n"
+            "target.write_text('written in run one', encoding='utf-8')\n"
+            "print('wrote')\n"
+        )
+>       first = worker._run_in_substrate(write_code, 60.0)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\substrate\test_worker_seed_v11_01316.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts\execution_worker.py:178: in _run_in_substrate
+    request = SandboxRequest(
+<string>:12: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = SandboxRequest(sandbox_id='worker-09d9f34b', image=None, command=('python', '-c', "import pathlib\ntarget = pathlib.Pa...r-run-_do_xmmh\\ws', artifacts_dir='C:\\Users\\jaber\\AppData\\Local\\Temp\\worker-run-_do_xmmh\\art', sources_root='')
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.sandbox_id, str) or not self.sandbox_id:
+            raise ValueError("sandbox_id must be a non-empty string")
+        if not isinstance(self.image, str) or not self.image:
+>           raise ValueError("image must be a non-empty string")
+E           ValueError: image must be a non-empty string
+
+src\substrate\sandbox.py:172: ValueError
+_______________ test_seed_oversize_and_invalid_entries_skipped ________________
+
+    def test_seed_oversize_and_invalid_entries_skipped():
+        """حدود البذر: ملف فوق 256KB ومدخل تالف يُتجاهلان بلا انفجار."""
+        worker = _load_worker_module()
+        code = (
+            "import pathlib\n"
+            "print(sorted(p.name for p in pathlib.Path('/artifacts').iterdir()))\n"
+        )
+>       result = worker._run_in_substrate(code, 60.0, {
+            "ok.txt": _b64("small"),
+            "big.bin": _b64("x" * 262_145),
+            "../escape": _b64("no"),
+            "bad.b64": "not-base64!!",
+        })
+
+tests\substrate\test_worker_seed_v11_01316.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+scripts\execution_worker.py:178: in _run_in_substrate
+    request = SandboxRequest(
+<string>:12: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = SandboxRequest(sandbox_id='worker-abb8f6bb', image=None, command=('python', '-c', "import pathlib\nprint(sorted(p.name...r-run-j7_761m5\\ws', artifacts_dir='C:\\Users\\jaber\\AppData\\Local\\Temp\\worker-run-j7_761m5\\art', sources_root='')
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.sandbox_id, str) or not self.sandbox_id:
+            raise ValueError("sandbox_id must be a non-empty string")
+        if not isinstance(self.image, str) or not self.image:
+>           raise ValueError("image must be a non-empty string")
+E           ValueError: image must be a non-empty string
+
+src\substrate\sandbox.py:172: ValueError
+============================== warnings summary ===============================
+..\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests\execution\test_backends.py:131
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\execution\test_backends.py:131: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(90)
+
+tests\execution\test_backends.py:178
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\execution\test_backends.py:178: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(60)
+
+tests\substrate\test_bridge.py:41
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:41: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:49
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:49: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:62
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:62: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:76
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:76: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:90
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:90: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:113
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:113: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:127
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:127: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:145
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:145: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:155
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:155: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:168
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:168: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:206
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:206: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:219
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:219: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:248
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:248: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests\substrate\test_bridge.py:263
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\tests\substrate\test_bridge.py:263: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\aes-01317-base\src\api\routes.py:2154: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\execution\test_failure_reporting_0139.py:201: يتطلب ركيزة Linux متاحة (available() تتحقق أولًا)
+SKIPPED [1] tests\execution\test_trust_boundary_01312.py:733: اختبار العزل الحي يتطلب ركيزة Linux (substrate) — المضيف الحالي Windows: يُسجل NOT RUN ولا يُوصف بأنه متحقق حيًا (013.12 §4 حرفيًا).
+SKIPPED [1] tests\execution\test_trust_boundary_01312.py:881: تنفيذ معزول حي يتطلب ركيزة Linux — المضيف Windows: NOT RUN (يُغطى عقد الركيزة باختباراتها الخاصة على مضيف ركيزة).
+SKIPPED [1] tests\execution\test_workspace_0133.py:624: المنصة تسمح بالكتابة رغم 0o500
+SKIPPED [1] tests\substrate\test_bridge.py:41: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:49: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:62: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:113: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:90: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:127: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:145: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:155: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:168: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:206: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:219: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:248: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_bridge.py:263: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests\substrate\test_linux_import_chain_0139.py:79: عيب D1 خاص بـ Linux — يُختبر عليها حصرًا
+SKIPPED [1] tests\substrate\test_linux_import_chain_0139.py:88: دليل «لا اعتماد على win32» خاص بـ Linux
+SKIPPED [1] tests\substrate\test_linux_import_chain_0139.py:129: العلم الصادق يُقرأ على Linux حيث pywin32 غائب
+SKIPPED [1] tests\substrate\test_no_filesystem_escape.py:13: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\substrate\test_no_network_escape.py:15: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\substrate\test_resource_limits_enforced.py:15: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\substrate\test_watchdog_kills_stuck_process.py:18: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:30: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:69: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:81: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+FAILED tests/execution/test_backends.py::test_remote_worker_protocol_real_over_http
+FAILED tests/execution/test_provisioner_013.py::test_provision_full_cycle_real
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_c_linux_path_on_windows_rejected_before_createprocess
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+FAILED tests/substrate/test_worker_seed_v11_01316.py::test_write_then_run_sequence_through_worker_substrate
+FAILED tests/substrate/test_worker_seed_v11_01316.py::test_seed_oversize_and_invalid_entries_skipped
+7 failed, 146 passed, 27 skipped, 21 warnings in 126.79s (0:02:06)

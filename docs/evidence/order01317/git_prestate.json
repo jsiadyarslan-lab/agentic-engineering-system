@@ -1,0 +1,13 @@
+{
+ "origin_main": "0a26fc70ce13e69932db7fe54c810fcbf0f99d3f",
+ "expected_main": "0a26fc70ce13e69932db7fe54c810fcbf0f99d3f",
+ "source_branch": "order01316-e11-first-real-mission",
+ "source_tip": "948ee49ea2ca692413578a7713b448a42326dbeb",
+ "expected_source_tip": "948ee49ea2ca692413578a7713b448a42326dbeb",
+ "worktree_branch": "order01317-e11-fixture-owner-gate-closure",
+ "worktree_head": "948ee49ea2ca692413578a7713b448a42326dbeb",
+ "worktree_root": "C:\\Users\\jaber\\Documents\\GitHub\\aes-01317-wt",
+ "worktree_kind": "isolated clean worktree (git worktree add)",
+ "main_match": true,
+ "source_match": true
+}
