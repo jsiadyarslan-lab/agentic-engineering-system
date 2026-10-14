@@ -1,0 +1,21 @@
+{
+ "backend_id": "execution-worker/1.0",
+ "os": "Linux",
+ "architecture": "x86_64",
+ "runtime": "python 3.12.15",
+ "workspace_root": "/tmp",
+ "artifacts_root": "/artifacts",
+ "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+ "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+ "sandboxed": true,
+ "isolation": "linux-namespaces+seccomp",
+ "isolation_probe": "supported (live network-block test inside substrate)",
+ "capabilities": [
+  "code_execution",
+  "filesystem_write",
+  "artifact_capture",
+  "python_runtime"
+ ],
+ "worker_pid": 9035,
+ "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=9035"
+}

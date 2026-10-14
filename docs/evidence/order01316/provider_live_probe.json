@@ -1,0 +1,26 @@
+{
+ "status": "READY",
+ "checked_at": "2026-10-14T18:51:59.812889+00:00",
+ "latency_ms": 215,
+ "http_status": 200,
+ "error_code": null,
+ "error_message": null,
+ "endpoint": "https://internal-api.z.ai/v1/chat/completions",
+ "model": "glm-4.6",
+ "reason": "المسبار نجح — اتصال حقيقي",
+ "diagnosis": {
+  "stored_base_url": "https://internal-api.z.ai/v1",
+  "api_style": "openai_compatible",
+  "model": "glm-4.6",
+  "auth_type": "config_file",
+  "final_url": "https://internal-api.z.ai/v1/chat/completions",
+  "http_method": "GET",
+  "auth": "config_file",
+  "endpoint_path": "/models",
+  "response_status": 200,
+  "response_body_excerpt": "{\"choices\":[{\"finish_reason\":\"length\",\"index\":0,\"message\":{\"content\":\"`\",\"role\":\"assistant\"}}],\"crea",
+  "problem": "none",
+  "models_endpoint_status": 404,
+  "models_body_excerpt": "404 page not found"
+ }
+}

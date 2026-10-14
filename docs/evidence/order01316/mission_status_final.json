@@ -1,0 +1,12 @@
+{
+ "running": false,
+ "cycle_id": "mission-f747c1918553",
+ "state": "EVIDENCED",
+ "last_result": {
+  "cycle_id": "mission-f747c1918553",
+  "verdict": "PASS",
+  "pdf_path": ""
+ },
+ "stop_requested": false,
+ "stop_receipt": null
+}

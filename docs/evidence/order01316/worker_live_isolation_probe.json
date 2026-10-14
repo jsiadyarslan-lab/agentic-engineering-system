@@ -1,0 +1,16 @@
+{
+ "challenge_id": "order01316-1792003919-6f66f746",
+ "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=9035",
+ "verified_at": "2026-10-14T18:51:59.092001+00:00",
+ "target": "127.0.0.1:8900",
+ "ok": true,
+ "verdict": "BLOCKED",
+ "challenge_echoed": true,
+ "control_proof": {
+  "ok": true,
+  "errno": ""
+ },
+ "probe_errno": "ENETUNREACH",
+ "latency_ms": 79,
+ "detail": "منع شبكة مؤكد من داخل العزل: ENETUNREACH"
+}

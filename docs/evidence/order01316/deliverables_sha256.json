@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-10-14T18:56:20.333585+00:00",
+  "cycle_id": "mission-f747c1918553",
+  "verdict": "E11_FULL_VERTICAL_SLICE_PASS (PASS + VERIFIED)",
+  "deliverables_sha256": {
+    "tool.py": {
+      "sha256": "9782a9c47e9927b0ce9c0b98973a38619edabbe4bf74353938ed028b316a8246",
+      "bytes": 2493
+    },
+    "transactions.csv": {
+      "sha256": "7ed9b2e963687069d98112cc32bcf507d7db8e9e20b8472778d0430605be6c44",
+      "bytes": 87
+    },
+    "test_tool.py": {
+      "sha256": "c22616717334fbe7b548215c50d611fe2b6851a73cab81711438743e6d9d3eec",
+      "bytes": 3707
+    },
+    "report.md": {
+      "sha256": "c00b18a90ee7a398389833f87d65b450ea2e18cc720c9f8b84a8c8d904bdb086",
+      "bytes": 106
+    },
+    "evidence.json": {
+      "sha256": "fddb0fd26c97c2148d0f5e7a092c81638a1aac13c10db2c992ba559501bdee4d",
+      "bytes": 10452
+    }
+  },
+  "key_evidence_sha256": {
+    "mission_db_events.json": {
+      "sha256": "81dd624bca2d634436e1d95a06e4eb8d98612e0558e4c69c5f3f6d349147ad63",
+      "bytes": 17686
+    },
+    "mission_evidence.json": {
+      "sha256": "fddb0fd26c97c2148d0f5e7a092c81638a1aac13c10db2c992ba559501bdee4d",
+      "bytes": 10452
+    },
+    "worker_live_isolation_probe.json": {
+      "sha256": "2860c08505fc22acf3e8e40bc823748364acf583fc670f3a139732f53fd30761",
+      "bytes": 456
+    },
+    "environment_verify_8_8.json": {
+      "sha256": "99459dd5744b6421a972866e7b2a3bec3dbb070b81b49b6b56f3df8effef915e",
+      "bytes": 4794
+    },
+    "provider_live_probe.json": {
+      "sha256": "d8346626b7168a9424ec1ac16fcb2cb1653ae0bfd6a6522b2f8d4ee803c92e6a",
+      "bytes": 884
+    },
+    "session_summary.json": {
+      "sha256": "aed32dc0752f1b71720445544ad3b2f905d4a9d9ffd73e67e12fda7120d51b57",
+      "bytes": 662
+    }
+  }
+}

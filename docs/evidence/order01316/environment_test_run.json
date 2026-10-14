@@ -1,0 +1,32 @@
+{
+ "environment": "order01316-worker-linux",
+ "status": "HEALTHY",
+ "ok": true,
+ "termination": "COMPLETED",
+ "exit_code": 0,
+ "stdout": "os: Linux\narch: x86_64\npython: (3, 12, 15)\ncwd: /tmp\nfile_write_read_delete: True\nfile_gone: True\n",
+ "stderr": "",
+ "detail": "",
+ "duration_ms": 190,
+ "evidence": {
+  "environment_id": 1,
+  "runtime_type": "REMOTE_WORKER",
+  "execution_boundary": "REMOTE_PROCESS",
+  "host_os": "Linux",
+  "architecture": "x86_64",
+  "worker_id": "remote-worker:pid=9035",
+  "host_cwd": "",
+  "runtime_cwd": "worker-managed (يُنشأ لكل تشغيل داخل العامل ويُبرهن عبر /probe)",
+  "workspace_exists": true,
+  "launch_command": [
+   "python 3.12.15",
+   "-c",
+   "<test-run-0133>"
+  ],
+  "failure_code": "",
+  "failure_reason": ""
+ },
+ "failure": null,
+ "repair": null,
+ "process_info": null
+}

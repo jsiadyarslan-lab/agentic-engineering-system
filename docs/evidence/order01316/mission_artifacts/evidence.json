@@ -1,0 +1,329 @@
+{
+ "goal": "مهمة برمجية: اكتب أداة Python باسم tool.py تستخدم المكتبات القياسية فقط (stdlib)، تقرأ ملف transactions.csv وتنتج report.md بالإجماليات. بيانات الإدخال ستة سجلات بإجمالي كلي 85.00: food بإجمالي 25.00 وtravel بإجمالي 40.00 وtools بإجمالي 20.00. اكتب أيضًا ملف اختبارات test_tool.py يغطي ثلاث حالات: الإدخال الصحيح، وملف CSV فارغ (ترفضه الأداة برمز خروج غير صفري)، ومبلغ غير صالح (ترفضه الأداة برمز خروج غير صفري). نفّذ الأداة والاختبارات فعليًا داخل الركيزة المعزولة وتحقق أن report.md ناتج فعلي من تنفيذ الأداة.",
+ "cycle_id": "mission-f747c1918553",
+ "final_state": "EVIDENCED",
+ "verdict_inputs": {
+  "pdf_exists": false,
+  "pdf_pages": 0,
+  "sources_count": 0,
+  "state": "EVIDENCED"
+ },
+ "sources": [],
+ "files": {
+  "report.md": {
+   "sha256": "c00b18a90ee7a398389833f87d65b450ea2e18cc720c9f8b84a8c8d904bdb086",
+   "bytes": 106
+  },
+  "stderr-worker-102f30b6.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-432ddbbe.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-76cd4269.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-8485d7ac.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-93c4fe55.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-a0ee0186.txt": {
+   "sha256": "8fc50f9160988f006f49a8a5a08d687c94f32b8ada07b039165d73cf41725023",
+   "bytes": 2534
+  },
+  "stderr-worker-b6df86a6.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-ce67f74e.txt": {
+   "sha256": "c8e9257b103975b1d5c8c984ddc3c399e9a504150ef9202ebb73d5d228e2cf8b",
+   "bytes": 656
+  },
+  "stderr-worker-d8ae2a11.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-e21f5057.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stderr-worker-fe402ef7.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stdout-worker-102f30b6.txt": {
+   "sha256": "e9a0f9687d9fcea8af79794aa10232b1709e7bbe21cd39f8fad583cb8add6ab0",
+   "bytes": 33
+  },
+  "stdout-worker-432ddbbe.txt": {
+   "sha256": "85634efd96d2d3d542aaccba9d4268c44309f68f92623519ddbd742a52a98259",
+   "bytes": 43
+  },
+  "stdout-worker-76cd4269.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stdout-worker-8485d7ac.txt": {
+   "sha256": "b04a5d4bff97b2415286500c05e22abcfd512cdc4eab99e1b3b5d90e9f559c0b",
+   "bytes": 35
+  },
+  "stdout-worker-93c4fe55.txt": {
+   "sha256": "923a1f6d95cf994dcb6885fa2944ff75a33c190ea15be9388b7a77c625c99992",
+   "bytes": 33
+  },
+  "stdout-worker-a0ee0186.txt": {
+   "sha256": "4bf2eb9cf357f3c13219affa0f6ee8c1482c66ccf5159da8d298247bdcf345c6",
+   "bytes": 147
+  },
+  "stdout-worker-b6df86a6.txt": {
+   "sha256": "1a91af817f552dbd23b2153928a2109855812fd9cf38a1bd0cfc9613d7203ad4",
+   "bytes": 28
+  },
+  "stdout-worker-ce67f74e.txt": {
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "bytes": 0
+  },
+  "stdout-worker-d8ae2a11.txt": {
+   "sha256": "7abb1adbb372be9820104b2717254c4b6141d3a148d425d632f0e8c9812d72ac",
+   "bytes": 27
+  },
+  "stdout-worker-e21f5057.txt": {
+   "sha256": "7bfc971d95565e210e2dc524be547b8d394bb1bc146136c8f3eb945bc0bb98d1",
+   "bytes": 28
+  },
+  "stdout-worker-fe402ef7.txt": {
+   "sha256": "b04a5d4bff97b2415286500c05e22abcfd512cdc4eab99e1b3b5d90e9f559c0b",
+   "bytes": 35
+  },
+  "test_tool.py": {
+   "sha256": "c22616717334fbe7b548215c50d611fe2b6851a73cab81711438743e6d9d3eec",
+   "bytes": 3707
+  },
+  "tool.py": {
+   "sha256": "9782a9c47e9927b0ce9c0b98973a38619edabbe4bf74353938ed028b316a8246",
+   "bytes": 2493
+  },
+  "transactions.csv": {
+   "sha256": "7ed9b2e963687069d98112cc32bcf507d7db8e9e20b8472778d0430605be6c44",
+   "bytes": 87
+  }
+ },
+ "tool_calls": [
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/tool.py"
+   },
+   "output_sha256": "ba2fa82d8f615604b493cbf82bab754a598852fe8ff49d96127e3a874b9c363f",
+   "execution_site": "substrate",
+   "duration_ms": 90,
+   "tool_call_id": "tc-7444099034",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/transactions.csv"
+   },
+   "output_sha256": "da88760962945628719b730a49cd47d613ee180c6fec0ab25207515fab9abbb2",
+   "execution_site": "substrate",
+   "duration_ms": 90,
+   "tool_call_id": "tc-434ae275da",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "transactions.csv"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/test_tool.py"
+   },
+   "output_sha256": "46324822a8ba680fa23b4880fb10d757d34482a7efdda94ee461cc041bf192f4",
+   "execution_site": "substrate",
+   "duration_ms": 90,
+   "tool_call_id": "tc-bebf3f1e6a",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "test_tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/report.md"
+   },
+   "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "execution_site": "substrate",
+   "duration_ms": 91,
+   "tool_call_id": "tc-37dcffcc16",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "report.md"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "run_python",
+   "args_summary": {
+    "path": "tool.py",
+    "exit_code": 0,
+    "stdout_head": ""
+   },
+   "output_sha256": "ca181a01aeb39efecebc39469566fdaa99c49bf00435333a0b5ac3ba03a16bd0",
+   "execution_site": "substrate",
+   "duration_ms": 95,
+   "tool_call_id": "tc-bc83a53bae",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 1,
+   "query": "tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "run_python",
+   "args_summary": {
+    "path": "test_tool.py",
+    "exit_code": 1,
+    "stdout_head": "\n--- Running Test Case 1: Valid Input ---\n\n--- Running Test Case 2: Empty CSV ---\n\n--- Running Test Case 3: Invalid Amount ---\n\nSome tests failed.\n"
+   },
+   "output_sha256": "ae43bf259e92adac58a84040828949b4aa7216f48e58e259dde51cfcc64b456f",
+   "execution_site": "substrate",
+   "duration_ms": 142,
+   "tool_call_id": "tc-0acc926980",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 1,
+   "query": "test_tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/tool.py"
+   },
+   "output_sha256": "9782a9c47e9927b0ce9c0b98973a38619edabbe4bf74353938ed028b316a8246",
+   "execution_site": "substrate",
+   "duration_ms": 100,
+   "tool_call_id": "tc-22a8eccd22",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/transactions.csv"
+   },
+   "output_sha256": "7ed9b2e963687069d98112cc32bcf507d7db8e9e20b8472778d0430605be6c44",
+   "execution_site": "substrate",
+   "duration_ms": 96,
+   "tool_call_id": "tc-fc30dcbad6",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "transactions.csv"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "write_file",
+   "args_summary": {
+    "path": "/home/z/my-project/order01316_work/runtime/missions/default/test_tool.py"
+   },
+   "output_sha256": "c22616717334fbe7b548215c50d611fe2b6851a73cab81711438743e6d9d3eec",
+   "execution_site": "substrate",
+   "duration_ms": 92,
+   "tool_call_id": "tc-3878f6d0e6",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 0,
+   "query": "test_tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "run_python",
+   "args_summary": {
+    "path": "tool.py",
+    "exit_code": 0,
+    "stdout_head": "Report successfully generated at report.md\n"
+   },
+   "output_sha256": "8bffc6fac5383079308aa283d1b39793b9412cc93366efe0147c4b7e65ee6064",
+   "execution_site": "substrate",
+   "duration_ms": 94,
+   "tool_call_id": "tc-47fa337c0f",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 1,
+   "query": "tool.py"
+  },
+  {
+   "role": "implementer",
+   "kind": "tool.call",
+   "tool": "run_python",
+   "args_summary": {
+    "path": "test_tool.py",
+    "exit_code": 0,
+    "stdout_head": ""
+   },
+   "output_sha256": "1e5551d537bbed7ebfdc8bb2b3a3218afa3e3f321ebab990127fd0c20702616f",
+   "execution_site": "substrate",
+   "duration_ms": 238,
+   "tool_call_id": "tc-5f0af1d424",
+   "attempt": 1,
+   "transport_status": "SUCCESS",
+   "result_status": "USABLE",
+   "result_count": 1,
+   "query": "test_tool.py"
+  }
+ ],
+ "state_history": [
+  "DRAFT",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "EXECUTING",
+  "EXECUTED",
+  "VERIFYING",
+  "EVIDENCED"
+ ],
+ "arbiter_decisions": [],
+ "duration_ms": 57092,
+ "resumed_from": "",
+ "verdict": "PASS",
+ "verdict_reasons": []
+}

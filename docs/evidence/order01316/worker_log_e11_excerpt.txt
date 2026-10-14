@@ -1,0 +1,30 @@
+==============================================================
+عامل التنفيذ البعيد — Agentic Engineering System
+الاستماع: http://127.0.0.1:8900
+وضع التنفيذ: substrate (معزولة)
+المنصة: Linux/x86_64
+==============================================================
+[worker] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /capabilities HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /probe HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /probe_isolation HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /capabilities HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /health HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /capabilities HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /probe HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /probe_isolation HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "GET /capabilities HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -
+[worker] 127.0.0.1 "POST /run HTTP/1.1" 200 -

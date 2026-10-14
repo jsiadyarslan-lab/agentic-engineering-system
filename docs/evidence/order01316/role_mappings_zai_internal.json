@@ -1,0 +1,44 @@
+{
+ "success": true,
+ "saved": [
+  "arbiter",
+  "chat",
+  "implementer",
+  "reviewer",
+  "thinker",
+  "verifier"
+ ],
+ "selections": {
+  "thinker": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  },
+  "reviewer": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  },
+  "implementer": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  },
+  "verifier": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  },
+  "arbiter": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  },
+  "chat": {
+   "provider": "zai_internal",
+   "configuration": "",
+   "model": "glm-4.6"
+  }
+ },
+ "note": "حُفظ ربط الأدوار في القاعدة — المهام القادمة تستخدمه"
+}

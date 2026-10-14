@@ -1,0 +1,23 @@
+{
+ "ok": true,
+ "checks": [
+  {
+   "name": "boot",
+   "ok": true,
+   "detail": "COMPLETED"
+  },
+  {
+   "name": "write+execute",
+   "ok": true,
+   "detail": "exit=0 "
+  },
+  {
+   "name": "capture",
+   "ok": true,
+   "detail": "exec-ok: boot-ok\n"
+  }
+ ],
+ "reason": "",
+ "backend_mode": "substrate",
+ "latency_ms": 82
+}

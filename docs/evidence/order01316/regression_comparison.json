@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-14T18:55:53.351903+00:00",
+  "scope": "tests/execution + tests/substrate + tests/readiness/test_preflight_matrix.py + tests/api/test_sandbox_integration.py + tests/api/test_ui_structure_order010.py (+ tests/roles/test_code_mission_01316.py on branch)",
+  "baseline_0bcc716": {
+    "failed": 4,
+    "passed": 159,
+    "skipped": 14,
+    "failures": [
+      "tests/execution/test_trust_boundary_01312.py::test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode",
+      "tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified",
+      "tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd",
+      "tests/readiness/test_preflight_matrix.py::test_environment_selection_appears_in_result"
+    ]
+  },
+  "branch_order01316": {
+    "failed": 4,
+    "passed": 171,
+    "skipped": 14,
+    "failures": "SAME 4 as baseline (pre-existing, kept visible)"
+  },
+  "new_failures": 0,
+  "new_passing_on_branch": 12,
+  "d2_d3_live": {
+    "test_d2_live_substrate_isolation_probe_on_linux": "PASSED (no SKIP)",
+    "test_d3_isolated_success_contract_on_linux": "PASSED (no SKIP)"
+  },
+  "pre_existing_environment_notes": [
+    "tests/orchestrator collection error (ModuleNotFoundError: aiohttp) exists at BASELINE TOO — aiohttp not in .[test,pdf] extras; suite outside 013.15 regression scope"
+  ]
+}

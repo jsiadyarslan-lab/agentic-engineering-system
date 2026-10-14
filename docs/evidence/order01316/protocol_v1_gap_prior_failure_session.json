@@ -1,0 +1,26 @@
+{
+ "order": "013.16 E11 live session",
+ "env_id": 1,
+ "provider_id": 3,
+ "config_id": 3,
+ "mission": {
+  "mission_created_from": "browser Control Room UI",
+  "final_status": {
+   "running": false,
+   "cycle_id": "mission-ca7172c1f346",
+   "state": "FAILED",
+   "last_result": {
+    "cycle_id": "mission-ca7172c1f346",
+    "verdict": "HARD STOP",
+    "pdf_path": ""
+   },
+   "stop_requested": false,
+   "stop_receipt": null
+  },
+  "cycle_id": "mission-ca7172c1f346",
+  "timed_out": false,
+  "verdict": "HARD STOP",
+  "owner_verify": null
+ },
+ "duration_s": 70.0
+}

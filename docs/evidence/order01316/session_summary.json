@@ -1,0 +1,31 @@
+{
+ "order": "013.16 E11 live session",
+ "env_id": 1,
+ "provider_id": 3,
+ "config_id": 3,
+ "mission": {
+  "mission_created_from": "browser Control Room UI",
+  "final_status": {
+   "running": false,
+   "cycle_id": "mission-f747c1918553",
+   "state": "EVIDENCED",
+   "last_result": {
+    "cycle_id": "mission-f747c1918553",
+    "verdict": "PASS",
+    "pdf_path": ""
+   },
+   "stop_requested": false,
+   "stop_receipt": null
+  },
+  "cycle_id": "mission-f747c1918553",
+  "timed_out": false,
+  "verdict": "PASS",
+  "owner_verify": {
+   "http": 200,
+   "cycle_id": "mission-f747c1918553",
+   "state": "VERIFIED",
+   "badge": "✔ VERIFIED"
+  }
+ },
+ "duration_s": 71.4
+}
