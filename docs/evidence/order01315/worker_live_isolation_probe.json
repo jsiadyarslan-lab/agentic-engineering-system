@@ -1,0 +1,31 @@
+{
+  "checked_at": "2026-10-14T16:44:32.370063+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "payload": {
+    "challenge_id": "888b357efba04acbbc9a1435f463a90a",
+    "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=2222",
+    "verified_at": "2026-10-14T16:44:32.289254+00:00",
+    "target": "127.0.0.1:59465",
+    "ok": true,
+    "verdict": "BLOCKED",
+    "challenge_echoed": true,
+    "control_proof": {
+      "ok": true,
+      "errno": ""
+    },
+    "probe_errno": "ENETUNREACH",
+    "latency_ms": 80,
+    "detail": "منع شبكة مؤكد من داخل العزل: ENETUNREACH"
+  },
+  "asserts": {
+    "ok_true": true,
+    "verdict_blocked": true,
+    "challenge_echoed": true,
+    "control_proof_ok_outside_sandbox": true,
+    "worker_id_present": true,
+    "verified_at_present": true,
+    "probe_errno_in_blocked_set": true
+  },
+  "meaning": "control channel (loopback) served this very API call OUTSIDE the sandbox while the in-sandbox connection attempt to the same target was BLOCKED — the §5 isolation proof"
+}

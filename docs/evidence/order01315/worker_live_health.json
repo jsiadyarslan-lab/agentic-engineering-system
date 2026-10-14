@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-10-14T16:44:32.204433+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "payload": {
+    "ok": true,
+    "uptime_s": 0,
+    "active_runs": 0,
+    "backend_mode": "substrate"
+  },
+  "assert_backend_mode": true
+}

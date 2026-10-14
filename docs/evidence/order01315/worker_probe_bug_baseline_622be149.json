@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-10-14T16:38:36.295172+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "payload": {
+    "challenge_id": "d9dd3cf5618e442ba73f5b848dc8d44a",
+    "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=1619",
+    "verified_at": "2026-10-14T16:38:36.205510+00:00",
+    "target": "127.0.0.1:52059",
+    "ok": false,
+    "verdict": "INCONCLUSIVE",
+    "challenge_echoed": true,
+    "control_proof": {
+      "ok": true,
+      "errno": ""
+    },
+    "probe_errno": "",
+    "latency_ms": 89,
+    "detail": "خطأ غير متوقع: ValueError('too many values to unpack (expected 2)')"
+  },
+  "asserts": {
+    "ok_true": false,
+    "verdict_blocked": false,
+    "challenge_echoed": true,
+    "control_proof_ok_outside_sandbox": true,
+    "worker_id_present": true,
+    "verified_at_present": true,
+    "probe_errno_in_blocked_set": false
+  },
+  "meaning": "control channel (loopback) served this very API call OUTSIDE the sandbox while the in-sandbox connection attempt to the same target was BLOCKED — the §5 isolation proof",
+  "regression_note": {
+    "finding": "REAL DEFECT revealed by this run (§6): isolation probe template passes target as STRING host:port while socket.create_connection requires a TUPLE (host, port). Inside the substrate the probe died with ValueError(too many values to unpack (expected 2)) → INCONCLUSIVE. This substrate-mode probe path was never exercised before (013.12 ran on Windows host without substrate).",
+    "baseline_commit": "622be149 (branch point, unmodified product code)",
+    "fix": "scripts/execution_worker.py: pass target=(host, port) tuple into the probe template format call"
+  }
+}

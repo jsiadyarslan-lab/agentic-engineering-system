@@ -1,0 +1,136 @@
+{
+  "checked_at": "2026-10-14T16:44:35.244538+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "api_environment": {
+    "id": 1,
+    "name": "order01315-worker-linux",
+    "backend": "REMOTE_WORKER",
+    "status": "HEALTHY",
+    "profile": {
+      "backend_id": "execution-worker/1.0",
+      "os": "Linux",
+      "architecture": "x86_64",
+      "runtime": "python 3.12.15",
+      "workspace_root": "/tmp",
+      "artifacts_root": "/artifacts",
+      "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+      "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+      "sandboxed": true,
+      "isolation": "REMOTE",
+      "isolation_probe": "supported (live network-block test inside substrate)",
+      "capabilities": [
+        "code_execution",
+        "filesystem_write",
+        "artifact_capture",
+        "python_runtime"
+      ],
+      "worker_pid": 2222,
+      "worker_id": "remote-worker:pid=2222",
+      "environment_id": 1,
+      "backend": "REMOTE_WORKER",
+      "endpoint": "http://127.0.0.1:59465",
+      "execution_mode": "REMOTE_PROCESS",
+      "host_platform": "Linux/x86_64",
+      "available": true
+    },
+    "sandboxed": true,
+    "isolation": "WORKER_DECLARED",
+    "host_platform": "Linux/x86_64",
+    "compatibility_mode": false,
+    "is_default": false,
+    "endpoint": "http://127.0.0.1:59465",
+    "failure_reason": "",
+    "last_verified_at": "2026-10-14T16:44:33.531870",
+    "last_probe_detail": {
+      "ok": true,
+      "status": "READY",
+      "checks": [
+        {
+          "name": "connectivity",
+          "ok": true,
+          "detail": "HTTP 200"
+        },
+        {
+          "name": "authentication",
+          "ok": true,
+          "detail": "موثق"
+        },
+        {
+          "name": "heartbeat",
+          "ok": true,
+          "detail": "uptime=1s active=0"
+        },
+        {
+          "name": "environment_probe",
+          "ok": true,
+          "detail": "Linux/x86_64 runtime=python 3.12.15"
+        },
+        {
+          "name": "workspace_probe",
+          "ok": true,
+          "detail": "COMPLETED"
+        },
+        {
+          "name": "execute_probe",
+          "ok": true,
+          "detail": "exit=0 "
+        },
+        {
+          "name": "artifact_probe",
+          "ok": true,
+          "detail": "exec-ok: boot-ok\n"
+        },
+        {
+          "name": "isolation_probe",
+          "ok": true,
+          "detail": "منع شبكة مؤكد من داخل الركيزة بتحدي هذا التحقق"
+        }
+      ],
+      "profile": {
+        "backend_id": "execution-worker/1.0",
+        "os": "Linux",
+        "architecture": "x86_64",
+        "runtime": "python 3.12.15",
+        "workspace_root": "/tmp",
+        "artifacts_root": "/artifacts",
+        "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+        "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+        "sandboxed": true,
+        "isolation": "REMOTE",
+        "isolation_probe": "supported (live network-block test inside substrate)",
+        "capabilities": [
+          "code_execution",
+          "filesystem_write",
+          "artifact_capture",
+          "python_runtime"
+        ],
+        "worker_pid": 2222,
+        "worker_id": "remote-worker:pid=2222",
+        "environment_id": 1,
+        "backend": "REMOTE_WORKER",
+        "endpoint": "http://127.0.0.1:59465",
+        "execution_mode": "REMOTE_PROCESS",
+        "host_platform": "Linux/x86_64",
+        "available": true
+      },
+      "reason": ""
+    },
+    "created_at": "2026-10-14T16:44:33.355194",
+    "updated_at": "2026-10-14T16:44:33.531925"
+  },
+  "ui_card_text": "order01315-worker-linux\nHEALTHY\nالخلفية\nREMOTE_WORKER\nالمضيف\nLinux/x86_64\nالنظام\nLinux / x86_64\nالعزل\nحسب إعلان العامل\nالعامل\nhttp://127.0.0.1:59465\nالشبكة\njobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network\nالقدرات\ncode_execution، filesystem_write، artifact_capture، python_runtime\nآخر تحقق\n2026-10-14 16:44:33\nتحقق (فحوص حقيقية)\nتنفيذ اختباري\nتعيين افتراضية\nحذف",
+  "ui_host_truth_text": "حقيقة المضيف — من الـruntime الفعلي لا من الأسماء\nالمنصة المضيفة\nLinux/x86_64\nالتنفيذ المحلي\nمتاح (معزول)\nالعزل المحلي\nمتاح (ركيزة namespaces+seccomp)\nPython\n3.12.15\nGit\ngit version 2.47.3\nالنواة\n5.10.134-013.15.kangaroo.al8.x86_64\nالمعالجات/الذاكرة\n2 · 3 GB\nالركيزة المعزولة متاحة محليًا على هذا المضيف",
+  "screenshot": "ui_settings_execution.png",
+  "matches": {
+    "name_in_card": true,
+    "backend_in_card": true,
+    "status_in_card": true,
+    "worker_endpoint_in_card": true,
+    "isolation_label_in_card": true,
+    "system_row_in_card": true,
+    "last_verified_in_card": true,
+    "sandboxed_via_isolation_vocab": true,
+    "host_truth_local_isolation_available": true,
+    "token_never_rendered": true
+  }
+}

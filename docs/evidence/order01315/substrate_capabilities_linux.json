@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-10-14T16:33:18.446672+00:00",
+  "clock_source": "time_daemons_installed=none; time_daemons_running=none; kernel_clocksource=unreadable",
+  "finding": "Real Linux substrate capabilities measured on THIS host (the executor session machine). No inference from distro name — live probes below.",
+  "architecture": "x86_64",
+  "python": "3.12.15",
+  "cgroups_v2": {
+    "controllers_file": "ABSENT",
+    "cgroup.controllers_list": [],
+    "self_cgroup_path": "11:name=systemd:/k8s.io/c-6acfa0ba-145cf406-388e5f2a96e9\n10:devices:/k8s.io/c-6acfa0ba-145cf406-388e5f2a96e9\n9:blkio:/k8s.io/c-6acfa0ba-145cf406-388e5f2a96e9\n8:net_cls,net_prio:/k8s.io/c-6acfa0ba-145cf406-388e5f2a96e9\n7:perf_event:/k8s.io/c-6acfa0ba-145cf406-388e5f2a96e9\n6:cpuset:/k8s.io/c-6acfa0ba-",
+    "subtree_control": "ABSENT"
+  },
+  "namespaces": {
+    "userns_sysctl": "not-present (default enabled on this kernel)",
+    "userns_live_probe": {
+      "rc": 0,
+      "out": "1001\nUSERNS_OK",
+      "err": ""
+    },
+    "userns_live_ok": true
+  },
+  "seccomp": {
+    "self_status_seccomp": "2",
+    "self_status_no_new_privs": "0",
+    "inside_unshare_seccomp": "Seccomp:\t2"
+  },
+  "privileges": {
+    "uid": 1001,
+    "euid": 1001,
+    "cap_eff": "0000000000000000"
+  },
+  "resources": {
+    "cpu_cores": 2,
+    "mem_total_kb": 4138564
+  }
+}

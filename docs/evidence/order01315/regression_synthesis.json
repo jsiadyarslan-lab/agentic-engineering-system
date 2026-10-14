@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-10-14T17:30:00Z",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "scope": [
+    "tests/execution (كاملًا)", "tests/substrate (كاملًا)",
+    "tests/readiness/test_preflight_matrix.py",
+    "tests/api/test_ui_structure_order010.py",
+    "tests/api/test_sandbox_integration.py"
+  ],
+  "baseline_commit": "622be149ce86e054c77431f14594705f8d5327dc",
+  "baseline_summary": "7 failed / 153 passed / 14 skipped (execution+substrate: 6f/137p; preflight+ui010: 1f/16p)",
+  "branch_summary": "4 failed / 157 passed / 14 skipped (execution+substrate: 3f/140p; preflight+ui010: 1f/16p; sandbox_integration: 3p)",
+  "repaired_by_this_order": {
+    "test_d2_live_substrate_isolation_probe_on_linux": {
+      "baseline": "FAIL — tripwire AssertionError('NOT RUN')",
+      "branch": "PASS — برهان حي كامل: عامل حقيقي وضع substrate، مسبار عزل BLOCKED بتحدٍ متكرر + إثبات تحكم خارج العزل",
+      "cause": "استبدال placeholder باختبار حي حقيقي (طلب §5 الحرفي)"
+    },
+    "test_d3_isolated_success_contract_on_linux": {
+      "baseline": "FAIL — tripwire AssertionError('NOT RUN')",
+      "branch": "PASS — نجاح معزول حقيقي عبر /run يُبلَّغ نجاحًا: مخرجات وartifacts فعلية، sandboxed=true من الوضع الفعلي",
+      "cause": "استبدال placeholder باختبار حي حقيقي (طلب §5 الحرفي)"
+    },
+    "test_remote_worker_protocol_real_over_http": {
+      "baseline": "FAIL — isolation_probe: INCONCLUSIVE (ValueError: too many values to unpack (expected 2)) → verify NOT_READY",
+      "branch": "PASS — isolation_probe BLOCKED → verify READY",
+      "cause": "العيب نفسه المُصلح في scripts/execution_worker.py (هدف المسبار كسلسلة بدل زُبع) — دليل فشل خط الأساس: worker_probe_bug_baseline_622be149.json"
+    },
+    "test_f_strict_windows_wsl_ready_registers_worker": {
+      "baseline": "PASS فارغ — الفرع المحمي بـ if verify.ok لم يكن يتحقق قط (التحقيق يفشل دائمًا قبل إصلاح المسبار؛ وعلى Windows لا ركيزة أصلًا) — رمز ميت خامل",
+      "branch": "PASS حقيقي — الفرع أُحيي بالإصلاح وذيله صُحح ليطابق عقد المفردات المعلن (HEALTHY محور الصحة + READY داخل last_probe_detail) — يثبت أكثر من الأصل",
+      "cause": "عيب كامن كشفه هذا التشغيل (§6): توقع قديم (READY على صف البيئة) يخالف service.py:355-385؛ صُحح في الاختبار لا في المنتج"
+    }
+  },
+  "preexisting_failures_unchanged_documented": {
+    "test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode": "يفترض مضيف Windows بلا ركيزة (عامل في وضع subprocess)؛ هنا العامل في وضع substrate فيرفض بطريقة أخرى صادقة — نفس الفشل عند الأساس والفرع",
+    "test_workspace_0133::test_b_windows_nonexistent_cwd_classified": "دلالات مسارات Windows — فشل مطابق عند الأساس والفرع",
+    "test_workspace_0133::test_i_no_infinite_retry_same_invalid_cwd": "دلالات مسارات Windows — فشل مطابق عند الأساس والفرع",
+    "readiness::test_environment_selection_appears_in_result": "فشل مطابق عند الأساس والفرع — خارج نطاق هذا الأمر (§6)"
+  },
+  "new_failures_introduced": [],
+  "verdict": "صفر انحدارات جديدة؛ 4 حالات مُصلحة (2 بطلب §5 + 1 بنفس جذر عيب المسبار + 1 عيب كامن أُحيي وصُحح)؛ 4 فشول قائمة موثقة بلا إخفاء وبلا تحويل SKIP إلى PASS"
+}

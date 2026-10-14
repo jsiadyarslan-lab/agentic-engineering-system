@@ -1,0 +1,7 @@
+SKIPPED [1] tests/substrate/test_bridge.py:219: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:248: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+SKIPPED [1] tests/substrate/test_bridge.py:263: SUBSTRATE_TEST_SOCKET not set - requires running substrate server
+FAILED tests/execution/test_trust_boundary_01312.py::test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode
+FAILED tests/execution/test_workspace_0133.py::test_b_windows_nonexistent_cwd_classified
+FAILED tests/execution/test_workspace_0133.py::test_i_no_infinite_retry_same_invalid_cwd
+3 failed, 140 passed, 14 skipped, 20 warnings in 51.52s

@@ -1,0 +1,75 @@
+{
+  "checked_at": "2026-10-14T16:36:07.793331+00:00",
+  "method_ntp_udp": {
+    "pool.ntp.org": {
+      "ok": true,
+      "rtt_ms": 8.0,
+      "server_str": "2026-10-14T16:36:07Z",
+      "offset_s": 0.0
+    },
+    "time.google.com": {
+      "ok": true,
+      "rtt_ms": 18.6,
+      "server_str": "2026-10-14T16:36:07Z",
+      "offset_s": 0.001
+    },
+    "time.cloudflare.com": {
+      "ok": true,
+      "rtt_ms": 6.8,
+      "server_str": "2026-10-14T16:36:07Z",
+      "offset_s": -0.0
+    },
+    "ntp.aliyun.com": {
+      "ok": true,
+      "rtt_ms": 49.1,
+      "server_str": "2026-10-14T16:36:07Z",
+      "offset_s": -0.001
+    },
+    "time.windows.com": {
+      "ok": true,
+      "rtt_ms": 7.3,
+      "server_str": "2026-10-14T16:36:07Z",
+      "offset_s": 0.001
+    }
+  },
+  "method_http_date": {
+    "https://www.google.com": {
+      "ok": true,
+      "server": "gws",
+      "rtt_ms": 57.0,
+      "date_header": "Wed, 14 Oct 2026 16:36:07 GMT",
+      "offset_s": -0.912
+    },
+    "https://www.cloudflare.com": {
+      "ok": false,
+      "error": "<HTTPError 403: 'Forbidden'>"
+    },
+    "https://api.github.com": {
+      "ok": false,
+      "error": "<HTTPError 403: 'rate limit exceeded'>"
+    },
+    "https://pypi.org": {
+      "ok": true,
+      "server": "gunicorn",
+      "rtt_ms": 178.7,
+      "date_header": "Wed, 14 Oct 2026 16:36:08 GMT",
+      "offset_s": -0.174
+    },
+    "https://internal-api.z.ai": {
+      "ok": false,
+      "error": "<HTTPError 404: 'Not Found'>"
+    }
+  },
+  "method_json_time": {
+    "ok": false,
+    "error": "ConnectionResetError(104, 'Connection reset by peer')"
+  },
+  "offsets_summary": {
+    "ntp_ok_count": 5,
+    "http_ok_count": 2,
+    "json_ok_count": 0,
+    "offset_min_s": -0.912,
+    "offset_max_s": 0.001
+  },
+  "verdict": "PROVEN_AT_CAPTURE: ساعة هذه الجلسة تتفق مع 5 سلطات NTP مستقلة عند إزاحة إجماع +0.0002s وتشتت ≤ 2.0ms. رؤوس HTTP Date المتسقة مع الإجماع: 2 (ضمن دقتها 1ث)؛ لا شواذّ. لا يوجد خفيض ساعات داخل الحاوية: المصدر ساعة نواة المضيف؛ آلية المزامنة غير مرئية من داخل الحاوية (تدار من المضيف) — الدقة المقاسة عند الالتقاط هي المتاح إثباته، وقد أُثبتت ضمن ملّي ثانية."
+}

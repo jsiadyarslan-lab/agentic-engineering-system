@@ -1,0 +1,33 @@
+{
+  "checked_at": "2026-10-14T16:44:32.288350+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "payload": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "boot",
+        "ok": true,
+        "detail": "COMPLETED"
+      },
+      {
+        "name": "write+execute",
+        "ok": true,
+        "detail": "exit=0 "
+      },
+      {
+        "name": "capture",
+        "ok": true,
+        "detail": "exec-ok: boot-ok\n"
+      }
+    ],
+    "reason": "",
+    "backend_mode": "substrate",
+    "latency_ms": 81
+  },
+  "asserts": {
+    "ok": true,
+    "all_checks_ok": true,
+    "backend_mode_substrate": true
+  }
+}

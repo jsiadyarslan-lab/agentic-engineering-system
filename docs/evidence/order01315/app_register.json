@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-10-14T16:44:33.357898+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "request_echo_token_redacted": {
+    "name": "order01315-worker-linux",
+    "backend": "REMOTE_WORKER",
+    "endpoint": "http://127.0.0.1:59465",
+    "token": "<REDACTED-runtime-generated>",
+    "make_default": false
+  },
+  "response": {
+    "id": 1,
+    "name": "order01315-worker-linux",
+    "backend": "REMOTE_WORKER",
+    "status": "UNKNOWN",
+    "profile": {},
+    "sandboxed": false,
+    "isolation": "WORKER_DECLARED",
+    "host_platform": "remote",
+    "compatibility_mode": false,
+    "is_default": false,
+    "endpoint": "http://127.0.0.1:59465",
+    "failure_reason": "",
+    "last_verified_at": null,
+    "last_probe_detail": {},
+    "created_at": "2026-10-14T16:44:33.355194",
+    "updated_at": "2026-10-14T16:44:33.355199"
+  },
+  "token_fingerprint": "sha256:5e64895ace202757",
+  "token_leak_in_response": false
+}

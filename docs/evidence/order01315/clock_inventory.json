@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-10-14T16:33:18.450694+00:00",
+  "clock_source": "time_daemons_installed=none; time_daemons_running=none; kernel_clocksource=unreadable",
+  "utc_now": "2026-10-14T16:33:18.448842+00:00",
+  "w32tm_applicable": false,
+  "note": "w32tm/Windows-Time is a Windows-host concept — not applicable on this Linux host. External-authority comparison is captured separately (02_clock_external.py).",
+  "timezone": [
+    "UTC",
+    "UTC"
+  ],
+  "boot_relative": {
+    "proc_uptime_s": 3608.99
+  }
+}

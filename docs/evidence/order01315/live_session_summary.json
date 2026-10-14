@@ -1,0 +1,269 @@
+{
+  "checked_at": "2026-10-14T16:44:35.513519+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "phases": {
+    "A_worker": {
+      "worker_port": 59465,
+      "channel": "127.0.0.1 loopback only (protected local channel)",
+      "boot": "OK",
+      "health": {
+        "ok": true,
+        "uptime_s": 0,
+        "active_runs": 0,
+        "backend_mode": "substrate"
+      },
+      "capabilities": {
+        "backend_id": "execution-worker/1.0",
+        "os": "Linux",
+        "architecture": "x86_64",
+        "runtime": "python 3.12.15",
+        "workspace_root": "/tmp",
+        "artifacts_root": "/artifacts",
+        "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+        "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+        "sandboxed": true,
+        "isolation": "linux-namespaces+seccomp",
+        "isolation_probe": "supported (live network-block test inside substrate)",
+        "capabilities": [
+          "code_execution",
+          "filesystem_write",
+          "artifact_capture",
+          "python_runtime"
+        ],
+        "worker_pid": 2222,
+        "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=2222"
+      },
+      "asserts_capabilities": {
+        "sandboxed_true": true,
+        "isolation_linux_namespaces_seccomp": true,
+        "artifacts_root_absolute": true,
+        "network_policy_blocks_jobs": true,
+        "worker_id_present": true
+      },
+      "probe": {
+        "ok": true,
+        "checks": [
+          {
+            "name": "boot",
+            "ok": true,
+            "detail": "COMPLETED"
+          },
+          {
+            "name": "write+execute",
+            "ok": true,
+            "detail": "exit=0 "
+          },
+          {
+            "name": "capture",
+            "ok": true,
+            "detail": "exec-ok: boot-ok\n"
+          }
+        ],
+        "reason": "",
+        "backend_mode": "substrate",
+        "latency_ms": 81
+      },
+      "asserts_probe": {
+        "ok": true,
+        "all_checks_ok": true,
+        "backend_mode_substrate": true
+      },
+      "isolation_probe": {
+        "challenge_id": "888b357efba04acbbc9a1435f463a90a",
+        "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=2222",
+        "verified_at": "2026-10-14T16:44:32.289254+00:00",
+        "target": "127.0.0.1:59465",
+        "ok": true,
+        "verdict": "BLOCKED",
+        "challenge_echoed": true,
+        "control_proof": {
+          "ok": true,
+          "errno": ""
+        },
+        "probe_errno": "ENETUNREACH",
+        "latency_ms": 80,
+        "detail": "منع شبكة مؤكد من داخل العزل: ENETUNREACH"
+      },
+      "asserts_isolation": {
+        "ok_true": true,
+        "verdict_blocked": true,
+        "challenge_echoed": true,
+        "control_proof_ok_outside_sandbox": true,
+        "worker_id_present": true,
+        "verified_at_present": true,
+        "probe_errno_in_blocked_set": true
+      },
+      "phase_pass": true
+    },
+    "B_app": {
+      "fresh_db": true,
+      "app_port": 42893,
+      "boot": "OK",
+      "register": {
+        "status": 200,
+        "env_id": 1,
+        "token_leak": false
+      },
+      "verify": {
+        "probe_detail_status": "READY",
+        "checks_count": 8
+      },
+      "asserts_verify": {
+        "http_200": true,
+        "all_checks_ok": true,
+        "isolation_probe_check_ok": true,
+        "probe_detail_status_ready": true,
+        "probe_detail_ok": true,
+        "row_status_health_axis": true,
+        "sandboxed_true": true,
+        "worker_identity_present": true
+      },
+      "env_row": {
+        "id": 1,
+        "name": "order01315-worker-linux",
+        "backend": "REMOTE_WORKER",
+        "status": "HEALTHY",
+        "profile": {
+          "backend_id": "execution-worker/1.0",
+          "os": "Linux",
+          "architecture": "x86_64",
+          "runtime": "python 3.12.15",
+          "workspace_root": "/tmp",
+          "artifacts_root": "/artifacts",
+          "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+          "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+          "sandboxed": true,
+          "isolation": "REMOTE",
+          "isolation_probe": "supported (live network-block test inside substrate)",
+          "capabilities": [
+            "code_execution",
+            "filesystem_write",
+            "artifact_capture",
+            "python_runtime"
+          ],
+          "worker_pid": 2222,
+          "worker_id": "remote-worker:pid=2222",
+          "environment_id": 1,
+          "backend": "REMOTE_WORKER",
+          "endpoint": "http://127.0.0.1:59465",
+          "execution_mode": "REMOTE_PROCESS",
+          "host_platform": "Linux/x86_64",
+          "available": true
+        },
+        "sandboxed": true,
+        "isolation": "WORKER_DECLARED",
+        "host_platform": "Linux/x86_64",
+        "compatibility_mode": false,
+        "is_default": false,
+        "endpoint": "http://127.0.0.1:59465",
+        "failure_reason": "",
+        "last_verified_at": "2026-10-14T16:44:33.531870",
+        "last_probe_detail": {
+          "ok": true,
+          "status": "READY",
+          "checks": [
+            {
+              "name": "connectivity",
+              "ok": true,
+              "detail": "HTTP 200"
+            },
+            {
+              "name": "authentication",
+              "ok": true,
+              "detail": "موثق"
+            },
+            {
+              "name": "heartbeat",
+              "ok": true,
+              "detail": "uptime=1s active=0"
+            },
+            {
+              "name": "environment_probe",
+              "ok": true,
+              "detail": "Linux/x86_64 runtime=python 3.12.15"
+            },
+            {
+              "name": "workspace_probe",
+              "ok": true,
+              "detail": "COMPLETED"
+            },
+            {
+              "name": "execute_probe",
+              "ok": true,
+              "detail": "exit=0 "
+            },
+            {
+              "name": "artifact_probe",
+              "ok": true,
+              "detail": "exec-ok: boot-ok\n"
+            },
+            {
+              "name": "isolation_probe",
+              "ok": true,
+              "detail": "منع شبكة مؤكد من داخل الركيزة بتحدي هذا التحقق"
+            }
+          ],
+          "profile": {
+            "backend_id": "execution-worker/1.0",
+            "os": "Linux",
+            "architecture": "x86_64",
+            "runtime": "python 3.12.15",
+            "workspace_root": "/tmp",
+            "artifacts_root": "/artifacts",
+            "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+            "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+            "sandboxed": true,
+            "isolation": "REMOTE",
+            "isolation_probe": "supported (live network-block test inside substrate)",
+            "capabilities": [
+              "code_execution",
+              "filesystem_write",
+              "artifact_capture",
+              "python_runtime"
+            ],
+            "worker_pid": 2222,
+            "worker_id": "remote-worker:pid=2222",
+            "environment_id": 1,
+            "backend": "REMOTE_WORKER",
+            "endpoint": "http://127.0.0.1:59465",
+            "execution_mode": "REMOTE_PROCESS",
+            "host_platform": "Linux/x86_64",
+            "available": true
+          },
+          "reason": ""
+        },
+        "created_at": "2026-10-14T16:44:33.355194",
+        "updated_at": "2026-10-14T16:44:33.531925"
+      },
+      "host_truth": {
+        "isolation": "SANDBOXED",
+        "local_execution": "AVAILABLE"
+      },
+      "phase_pass": true,
+      "_app_port": 42893
+    },
+    "C_ui": {
+      "matches": {
+        "name_in_card": true,
+        "backend_in_card": true,
+        "status_in_card": true,
+        "worker_endpoint_in_card": true,
+        "isolation_label_in_card": true,
+        "system_row_in_card": true,
+        "last_verified_in_card": true,
+        "sandboxed_via_isolation_vocab": true,
+        "host_truth_local_isolation_available": true,
+        "token_never_rendered": true
+      },
+      "phase_pass": true
+    }
+  },
+  "token_fingerprint": "sha256:5e64895ace202757",
+  "token_leak_scan": {
+    "files_scanned": "all evidence + logs",
+    "leaks": [],
+    "clean": true
+  },
+  "worktree_state_after_live_session": " M scripts/execution_worker.py\n?? docs/evidence/order01315/\n?? src/agentic_engineering_system.egg-info/\n",
+  "duration_s": 3.6
+}

@@ -1,0 +1,33 @@
+{
+  "checked_at": "2026-10-14T16:44:32.205845+00:00",
+  "clock_source": "host kernel clock; NTP-consensus proven at capture (02)",
+  "http_status": 200,
+  "payload": {
+    "backend_id": "execution-worker/1.0",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "runtime": "python 3.12.15",
+    "workspace_root": "/tmp",
+    "artifacts_root": "/artifacts",
+    "network_policy": "jobs: blocked by sandbox (NetworkMode.NONE); control channel: worker host network",
+    "resource_limits": "substrate: RLIMIT_AS/NPROC/FSIZE/CPU + watchdog",
+    "sandboxed": true,
+    "isolation": "linux-namespaces+seccomp",
+    "isolation_probe": "supported (live network-block test inside substrate)",
+    "capabilities": [
+      "code_execution",
+      "filesystem_write",
+      "artifact_capture",
+      "python_runtime"
+    ],
+    "worker_pid": 2222,
+    "worker_id": "execution-worker/1.0:c-6acfa0ba-145cf406-388e5f2a96e9:pid=2222"
+  },
+  "asserts": {
+    "sandboxed_true": true,
+    "isolation_linux_namespaces_seccomp": true,
+    "artifacts_root_absolute": true,
+    "network_policy_blocks_jobs": true,
+    "worker_id_present": true
+  }
+}

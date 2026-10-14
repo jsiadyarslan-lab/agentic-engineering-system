@@ -1,0 +1,46 @@
+============================= test session starts ==============================
+collecting ... collected 2 items
+
+tests/execution/test_trust_boundary_01312.py::test_d2_live_substrate_isolation_probe_on_linux FAILED [ 50%]
+tests/execution/test_trust_boundary_01312.py::test_d3_isolated_success_contract_on_linux FAILED [100%]
+
+=================================== FAILURES ===================================
+_______________ test_d2_live_substrate_isolation_probe_on_linux ________________
+
+    @pytest.mark.skipif(
+        not sys.platform.startswith("linux"),
+        reason="اختبار العزل الحي يتطلب ركيزة Linux (substrate) — "
+               "المضيف الحالي Windows: يُسجل NOT RUN ولا يُوصف بأنه متحقق حيًا "
+               "(013.12 §4 حرفيًا).",
+    )
+    def test_d2_live_substrate_isolation_probe_on_linux():
+        """D2-ح (حي — NOT RUN على هذا المضيف): العامل الحقيقي على Linux/ركيزة
+        يجتاز المسبار الحي. يُشغل على مضيف ركيزة عند توفره فقط."""
+>       raise AssertionError("NOT RUN على مضيف Windows — يسجل كما هو")
+E       AssertionError: NOT RUN على مضيف Windows — يسجل كما هو
+
+tests/execution/test_trust_boundary_01312.py:664: AssertionError
+__________________ test_d3_isolated_success_contract_on_linux __________________
+
+    @pytest.mark.skipif(
+        not sys.platform.startswith("linux"),
+        reason="تنفيذ معزول حي يتطلب ركيزة Linux — المضيف Windows: "
+               "NOT RUN (يُغطى عقد الركيزة باختباراتها الخاصة على مضيف ركيزة).",
+    )
+    def test_d3_isolated_success_contract_on_linux():
+        """D3-4 (حي — NOT RUN على هذا المضيف): عقد نتيجة ناجحة معزولة."""
+>       raise AssertionError("NOT RUN على مضيف Windows — يسجل كما هو")
+E       AssertionError: NOT RUN على مضيف Windows — يسجل كما هو
+
+tests/execution/test_trust_boundary_01312.py:784: AssertionError
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/_pytest/config/__init__.py:1464
+  /home/z/my-project/order01315_run/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/execution/test_trust_boundary_01312.py::test_d2_live_substrate_isolation_probe_on_linux
+FAILED tests/execution/test_trust_boundary_01312.py::test_d3_isolated_success_contract_on_linux
+========================= 2 failed, 1 warning in 0.31s =========================
