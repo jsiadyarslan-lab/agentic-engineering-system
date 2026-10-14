@@ -50,6 +50,7 @@ TOOL_WHITELIST: tuple[str, ...] = (
     "fetch_page",
     "write_file",
     "read_file",
+    "run_python",
     "generate_pdf_arabic",
     "verify_pdf_pages",
     "http_get_text",
@@ -235,6 +236,54 @@ def read_file(ctx: ToolContext, path: str) -> str:
             failure_class="VALIDATION_FAILURE", reason="OUTPUT_UNPARSEABLE",
             stage="TOOL_RESULT", retryable=True,
         ) from error
+
+
+def run_python(ctx: ToolContext, path: str,
+               args: list[str] | None = None) -> dict:
+    """تشغيل ملف Python من المجلد الممنوح داخل الركيزة (013.16 §2).
+
+    تنفيذ حقيقي محكوم: exit_code/stdout/stderr فعليون من البيئة
+    المعزولة (نفس خلفية مسبار sandbox — run_code_unified)، لا نص
+    نموذج ولا محاكاة. الخروج غير الصفري نتيجة مشروعة تُعاد كما هي
+    (فصل transport عن result — إتمام الأداة شيء ونجاح البرنامج شيء):
+    فشل الاختبارات معلومة للمدقق وإعادة التخطيط، لا استثناء أداة.
+    الاستثناء فقط لفشل الركيزة نفسها أو خروج عن المنحة.
+    """
+    _bounded_path(ctx.grant_root, path)  # رفض خارج المنحة قبل أي تنفيذ
+    workspace = ctx.grant_root / "_ws"
+    artifacts = ctx.grant_root
+    workspace.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "path": path,
+        "args": [str(a) for a in (args or [])],
+    }
+    code = (
+        "import json, os, runpy, sys\n"
+        f"payload = json.loads({json.dumps(payload)!r})\n"
+        "script = '/artifacts/' + payload['path']\n"
+        "sys.argv = [script] + payload['args']\n"
+        "# مجلد العمل داخل الركيزة = جذر الأدلة: المسارات النسبية\n"
+        "# في الأداة (transactions.csv وreport.md) تُحل هناك حصرًا.\n"
+        "os.chdir('/artifacts')\n"
+        "try:\n"
+        "    runpy.run_path(script, run_name='__main__')\n"
+        "except SystemExit as exit_signal:\n"
+        "    status = exit_signal.code\n"
+        "    if status is None:\n"
+        "        status = 0\n"
+        "    elif not isinstance(status, int):\n"
+        "        status = 1\n"
+        "    sys.exit(status)\n"
+    )
+    exit_code, stdout, stderr = _run_in_substrate(ctx, code, workspace,
+                                                  artifacts)
+    return {
+        "path": path,
+        "exit_code": exit_code,
+        "ok": exit_code == 0,
+        "stdout": stdout[:4000],
+        "stderr": stderr[:1500],
+    }
 
 
 def generate_pdf_arabic(ctx: ToolContext, md_path: str, out_path: str) -> str:
@@ -512,6 +561,28 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
             finalize(record)
             _finish_success(ctx, record, value, digest, site,
                             {"chars": len(str(value))})
+        elif name == "run_python":
+            # (013.16 §2) تنفيذ برمجي حي داخل الركيزة — الخروج غير الصفري
+            # نتيجة تُوثّق (result_status) لا فشل نقل: الأداة اكتملت
+            # والبرنامج هو الذي فشل — هذا هو الفصل المعلن §5.
+            raw_args = args.get("args") or []
+            if not isinstance(raw_args, list):
+                raw_args = [raw_args]
+            value = run_python(
+                ctx, str(args.get("path", "")),
+                [str(a) for a in raw_args],
+            )
+            digest = _sha256_text(
+                f"exit={value['exit_code']}\n{value['stdout']}"
+                f"\n{value['stderr']}"
+            )
+            finalize(record)
+            _finish_success(
+                ctx, record, value, digest, site,
+                {"path": value["path"], "exit_code": value["exit_code"],
+                 "stdout_head": value["stdout"][:200]},
+                result_count=1,
+            )
         elif name == "generate_pdf_arabic":
             value = generate_pdf_arabic(
                 ctx, str(args.get("md_path", "")), str(args.get("out_path", ""))

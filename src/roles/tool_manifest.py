@@ -12,6 +12,10 @@ TOOLS_MANIFEST: list[dict] = [
      "desc": "كتابة ملف داخل المجلد الممنوح (داخل الركيزة)"},
     {"tool": "read_file", "args": {"path": "report.md"},
      "desc": "قراءة ملف من المجلد الممنوح (داخل الركيزة)"},
+    {"tool": "run_python",
+     "args": {"path": "tool.py", "args": ["وسيطة-اختيارية"]},
+     "desc": "تشغيل ملف Python من المجلد الممنوح داخل الركيزة المعزولة — "
+             "يعيد exit_code/stdout/stderr الفعلية (013.16)"},
     {"tool": "generate_pdf_arabic",
      "args": {"md_path": "report.md", "out_path": "report.pdf"},
      "desc": "توليد PDF عربي RTL بحجم A4 من ملف Markdown (داخل الركيزة)"},

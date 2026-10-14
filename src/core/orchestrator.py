@@ -593,12 +593,22 @@ class Orchestrator:
                 all_artifacts: list[str] = []
                 for outcome in outcomes:
                     all_artifacts += outcome.artifacts
+                # (013.16 §4) أحكام المدقق لكل مهمة حقائق ميكانيكية
+                # تصل التحقق الكلي كمراجع — لا يعيد الحكم من الصفر على
+                # ما ثبت بالفعل فيتحقق المهمة ثم «يفقده» التجميع (دليل
+                # حي: تحقق T1 بثقة 100% ثم رفض التجميع بمعيار مُهلوس).
+                rollup_refs = list(ctx.evidence_refs) + [
+                    f"task_verification:{o.task_id}:"
+                    + ("evidenced" if o.evidenced else "not_evidenced")
+                    + (":execution_failed" if o.execution_failed else "")
+                    for o in outcomes
+                ]
                 t2 = time.monotonic()
                 rollup = self._roles[RoleType.VERIFIER].run(
                     VerifierRequest(
                         task_acceptance_criteria=all_criteria,
                         artifacts=list(dict.fromkeys(all_artifacts)),
-                        evidence_refs=list(ctx.evidence_refs),
+                        evidence_refs=rollup_refs,
                     )
                 )
                 evidenced = rollup.verdict is VerifierVerdict.EVIDENCED

@@ -1427,10 +1427,32 @@ class RemoteWorkerBackend:
 
         run_id = f"run-{uuid_mod.uuid4().hex[:10]}"
         started = time.monotonic()
+        # (013.16 v1.1) بذر ملفات مجلد أدوات الطالب قبل التشغيل:
+        # بروتوكول v1 كان يعطي كل تشغيل مجلدًا مؤقتًا فارغًا لدى العامل،
+        # فتعمل الكتابة (تعيد الملفات في الاستجابة) لكن «اكتب ثم شغّل»
+        # يفشل بـFileNotFoundError — البذر يرسل الحالة الحالية فيراها
+        # الكود داخل ‎/artifacts. حدود معلنة: 64 ملفًا × 256KB.
+        seed: dict[str, str] = {}
+        if artifacts.is_dir():
+            for path in sorted(artifacts.rglob("*")):
+                if len(seed) >= 64:
+                    break
+                if not path.is_file() or path.stat().st_size > 262_144:
+                    continue
+                try:
+                    rel = str(path.relative_to(artifacts))
+                    seed[rel] = base64.b64encode(
+                        path.read_bytes()
+                    ).decode("ascii")
+                except (OSError, ValueError):
+                    continue
+        request_payload = {
+            "run_id": run_id, "code": code, "timeout_s": timeout_s,
+        }
+        if seed:
+            request_payload["artifacts_b64"] = seed
         try:
-            result = self._request("POST", "/run", payload={
-                "run_id": run_id, "code": code, "timeout_s": timeout_s,
-            })
+            result = self._request("POST", "/run", payload=request_payload)
         except (ConnectionError, WorkerHttpError) as error:
             return ExecutionOutcome(
                 environment_id=self.environment_id,

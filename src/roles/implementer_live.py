@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 
 from roles.implementer import (
+    CodeMissionFiles,
     ImplementerRequest,
     ImplementerResult,
     ImplementerStatus,
@@ -41,6 +42,14 @@ from router.model_router import ChatMessage
 
 _TRUNCATE = 400
 _PDF_HINT = re.compile(r"\.pdf\b", re.IGNORECASE)
+
+#: (013.16 §2) بصمة المهمة البرمجية — وصف المهمة أو معايير قبولها
+#: يذكر ملف Python أو بيانات CSV برمجية. كشف حتمي معلن: إن لم يطبع
+#: فالمسار التقريري الافتراضي هو الصحيح؛ وإن طبع خطأً فالمدقق يرفض
+#: بصراحة ودورة إعادة التخطيط تصحح — لا تخمين خفي.
+_CODE_MISSION_HINT = re.compile(
+    r"\.py\b|transactions\.csv|python|بايثون", re.IGNORECASE
+)
 
 
 def _sources_section(markdown: str) -> str:
@@ -72,6 +81,124 @@ class LiveImplementer(LiveRoleBase):
         check = getattr(ctx, "stop_check", None)
         if check is not None and check():
             raise CycleStopSignal(at_step)
+
+    # ------------------------------------------------------------------ #
+    # 0) المهمة البرمجية (013.16 §2) — كتابة ← تشغيل ← اختبار
+    # ------------------------------------------------------------------ #
+
+    @classmethod
+    def _is_code_mission(cls, request: ImplementerRequest) -> bool:
+        """كشف حتمي معلن: المهمة برمجية إن ذكر وصفها/معاييرها كودًا."""
+        text = " ".join(
+            [request.task.description, *request.task.acceptance_criteria]
+        )
+        return bool(_CODE_MISSION_HINT.search(text))
+
+    def _run_code_mission(
+        self,
+        task_payload: dict,
+        ctx: ToolContext,
+        root: Path,
+        previous_attempts: list[str],
+    ) -> ImplementerResult:
+        """مسار المهمة البرمجية — ثلاث مراحل كلها عبر الأدوات الموثقة.
+
+        1. النموذج يكتب الملفات (أداة/بيانات/اختبارات) بعقد صارم.
+        2. write_file لكل ملف داخل الركيزة (سجل sha256 لكل كتابة).
+        3. run_python للأداة ثم للاختبارات — المخرجات الفعلية وحدها
+           تحدد النتيجة: فشل التشغيل أو فشل الاختبارات = فشل تنفيذي
+           مفصل يصل المحكّم؛ لا نص نموذج يُدّعى مخرجًا أبدًا.
+        """
+        self._stop_requested(ctx, "implementer.plan_code")
+        payload = dict(task_payload)
+        payload["previous_attempts"] = list(previous_attempts[-3:])
+        spec = self._validated_completion(
+            payload, CodeMissionFiles,
+            system_prompt=load_prompt("implementer_code"),
+        )
+
+        written: list[str] = []
+        for spec_file in spec.files[:12]:
+            self._stop_requested(ctx, "implementer.write_code")
+            run_tool(
+                "write_file",
+                {"path": spec_file.path, "content": spec_file.content},
+                ctx,
+            )
+            written.append(spec_file.path)
+
+        self._stop_requested(ctx, "implementer.run_code")
+        run_out = run_tool("run_python", {"path": spec.entrypoint}, ctx)
+        self._stop_requested(ctx, "implementer.run_tests")
+        tests_out = run_tool(
+            "run_python", {"path": spec.tests_entrypoint}, ctx,
+        )
+
+        # الأدلة: كل ملف فعلي في مجلد المهمة (مكتوب أو منتج) ببصمة
+        artifacts: list[str] = []
+        evidence_refs: list[str] = []
+        for produced in sorted(p for p in root.iterdir()
+                               if p.is_file() and p.name != "sources.json"):
+            artifacts.append(str(produced))
+            evidence_refs.append(
+                f"sha256:{_sha16(produced)}:{produced.name}"
+            )
+        evidence_refs.append(
+            f"run:exit={run_out['exit_code']}:{spec.entrypoint}"
+        )
+        evidence_refs.append(
+            f"run:exit={tests_out['exit_code']}:{spec.tests_entrypoint}"
+        )
+        evidence_refs.append(
+            "run:stdout:" + run_out["stdout"][:300].replace("\n", " ⏎ ")
+        )
+        evidence_refs.append(
+            "tests:stdout:" + tests_out["stdout"][:300].replace("\n", " ⏎ ")
+        )
+
+        tool_ok = run_out["exit_code"] == 0
+        tests_ok = tests_out["exit_code"] == 0
+        if not (tool_ok and tests_ok):
+            failed_run = run_out if not tool_ok else tests_out
+            failed_path = (
+                spec.entrypoint if not tool_ok else spec.tests_entrypoint
+            )
+            return ImplementerResult(
+                status=ImplementerStatus.FAILED,
+                artifacts=artifacts,
+                evidence_refs=evidence_refs,
+                stderr_truncated=(
+                    f"تنفيذ برمجي فشل: {failed_path} خرج "
+                    f"{failed_run['exit_code']} — "
+                    + failed_run["stderr"][:200]
+                )[:_TRUNCATE],
+                failure={
+                    "class": "CODE_RUN_FAILURE",
+                    "stage": "TOOL_RESULT",
+                    "tool": "run_python",
+                    "reason": (
+                        "ENTRYPOINT_NONZERO" if not tool_ok
+                        else "TESTS_NONZERO"
+                    ),
+                    "retryable": True,
+                    "entrypoint": spec.entrypoint,
+                    "tests_entrypoint": spec.tests_entrypoint,
+                    "entry_exit": run_out["exit_code"],
+                    "tests_exit": tests_out["exit_code"],
+                    "stderr_head": failed_run["stderr"][:200],
+                    "files_written": written,
+                },
+            )
+        return ImplementerResult(
+            status=ImplementerStatus.EXECUTED,
+            artifacts=artifacts,
+            stdout_truncated=(
+                f"كُتب {len(written)} ملفًا ونُفّذت داخل الركيزة: "
+                f"الأداة خرجت {run_out['exit_code']} والاختبارات "
+                f"خرجت {tests_out['exit_code']}"
+            )[:_TRUNCATE],
+            evidence_refs=evidence_refs,
+        )
 
     # ------------------------------------------------------------------ #
     # 1) خطة الأدوات — بروتوكول سطر لكل استدعاء (لا JSON: أقواس LLM
@@ -225,6 +352,13 @@ class LiveImplementer(LiveRoleBase):
         ctx.grant_root = root
 
         try:
+            # (013.16 §2) المهمة البرمجية: النموذج يكتب الأداة وبياناتها
+            # واختباراتها، ثم تُنفّذ فعليًا داخل الركيزة (write_file ←
+            # run_python ×2) — المخرج من البرنامج لا من النموذج.
+            if self._is_code_mission(request):
+                return self._run_code_mission(
+                    task_payload, ctx, root, request.previous_attempts,
+                )
             # (1) خطة الأدوات ← تنفيذها بتعافٍ مصنَّف (إضافة 008 §8-§12):
             # لا إعادة عمياء — فشل عابر يعاد، ولا مادة يعاد باستراتيجية
             # مختلفة (استعلام مراجَع أو أداة بديلة مسجلة)، والمصادقة/

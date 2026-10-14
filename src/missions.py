@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,6 +34,13 @@ from roles.tools import ToolContext
 DEFAULT_MISSION_GOAL = (
     "تقرير من صفحة واحدة عن الوضع الجيوسياسي في الشرق الأوسط، "
     "من 5-8 مصادر موثقة، عربي RTL، PDF بحجم A4"
+)
+
+#: (013.16 §5) بصمة المهمة البرمجية على مستوى الهدف — نفس نمط بصمة
+#: المنفذ (roles/implementer_live._CODE_MISSION_HINT): حكم المهمة
+#: البرمجية يتبع تحقق المدقق المستقل، لا عقد PDF/المصادر التقريري.
+_CODE_MISSION_GOAL_HINT = re.compile(
+    r"\.py\b|transactions\.csv|python|بايثون", re.IGNORECASE
 )
 
 MISSIONS_DIR = Path("runtime") / "missions"
@@ -82,6 +90,7 @@ def run_mission(
     cycle_id: str | None = None,
     stop_controller: StopController | None = None,
     resume_from: dict | None = None,
+    sessions: Any = None,
 ) -> MissionResult:
     """تشغيل المهمة الحية كاملة — دورة الأدوار الخمسة بأدوار حية.
 
@@ -91,6 +100,10 @@ def run_mission(
     الإيقاف — يربط نقاط تفتيش المنسق والمنفذ الحي بطلب المالك.
     resume_from (الأمر 004): لقطة إيقاف دورة سابقة — تُحقن في دورة
     جديدة (الهدف من اللقطة إن لم يُحدد).
+    sessions (013.16 §1): جلسة قاعدة الخادم — تُمرّر لسياق الأدوات
+    فيمر تنفيذ أدوات المهمة عبر بيئة التنفيذ الموحدة المسجلة
+    والمتحقق منها (العامل المعزول) لا بالركيزة المحلية الصامتة؛
+    None (اختبارات/تشغيل مباشر) = السلوك التاريخي نفسه.
     """
     from core.wiring import build_live_orchestrator
     from core.stop_controller import load_resume_point
@@ -117,7 +130,8 @@ def run_mission(
     })
 
     # سياق الأدوات — المنحة: مجلد المهمة وحده؛ أحداث الأدوات تُبث فورًا
-    ctx = ToolContext(grant_root=target_dir)
+    # (013.16 §1) جلسة الخادم تُمرّر: التنفيذ عبر بيئة التنفيذ الموحدة
+    ctx = ToolContext(grant_root=target_dir, sessions=sessions)
 
     def tool_event_sink(event: dict) -> None:
         sink({"role": "implementer", **event})
@@ -133,6 +147,45 @@ def run_mission(
     if facts_builder is None:
         def facts_builder(request) -> dict:
             facts: dict[str, Any] = {}
+            # (013.16 §4) جرد ملفات المهمة الفعلي — بصمة وحجم لكل ملف:
+            # حقائق ميكانيكية عامة للمهام البرمجية وغيرها على السواء.
+            inventory: dict[str, dict] = {}
+            for item in sorted(target_dir.iterdir()):
+                if item.is_file() and item.name != "sources.json":
+                    inventory[item.name] = {
+                        "bytes": item.stat().st_size,
+                        "sha256_head": hashlib.sha256(
+                            item.read_bytes()
+                        ).hexdigest()[:16],
+                    }
+            if inventory:
+                facts["mission_files"] = inventory
+            # (013.16 §4) رأس مخرج الأداة إن وُجد — المحتوى الفعلي
+            # الذي أنتجه البرنامج لا نص النموذج؛ حكم المدقق على أرقام
+            # مثبتة (الإجماليات والفئات) من الملف نفسه.
+            report_path = target_dir / "report.md"
+            if report_path.is_file():
+                try:
+                    head = report_path.read_text(encoding="utf-8")[:2000]
+                    facts["report_md_head"] = head
+                except (OSError, ValueError):
+                    facts["report_md_head"] = None
+            # (013.16 §4) عدد سجلات ملف البيانات المعلن — عدد ميكانيكي
+            # يفحصه المدقق كصفحات PDF تمامًا (دليل: أمر يحدد ستة سجلات
+            # سُلّمت خمسة ومرّ التحقق لأن العدد لم يكن قابلاً للفحص).
+            data_path = target_dir / "transactions.csv"
+            if data_path.is_file():
+                try:
+                    lines = [
+                        line for line in
+                        data_path.read_text(encoding="utf-8").splitlines()
+                        if line.strip()
+                    ]
+                    facts["transactions_records"] = max(
+                        len(lines) - 1, 0
+                    )  # بدون سطر العناوين
+                except (OSError, ValueError):
+                    facts["transactions_records"] = -1
             pdf_files = [
                 p for p in target_dir.glob("*.pdf")
             ]
@@ -270,6 +323,21 @@ def run_mission(
             f"عند {stop_block.get('phase', 'خطوة غير معروفة')}"
         ]
         verdict = "STOPPED"
+    elif _CODE_MISSION_GOAL_HINT.search(goal):
+        # (013.16 §5) مهمة برمجية: الحكم يتبع تحقق المدقق المستقل وحده
+        # (EVIDENCED = كل معايير الخطة أثبتت ميكانيكيًا) — لا اشتراط
+        # PDF/مصادر لم تطلبها المهمة البرمجية أصلًا؛ دعته السابقة حكمت
+        # عليها HARD STOP زورًا رغم استيفاء المعايير لأن عقد مهمة
+        # التقارير (PDF صفحة واحدة + 5-8 مصادر) كان مفروضًا على الجميع.
+        if cycle.final_state is PlanState.EVIDENCED:
+            reasons = []
+            verdict = "PASS"
+        else:
+            reasons = [
+                f"الحالة النهائية {cycle.final_state.value} — تحقق المدقق "
+                "المستقل لم يبلغ EVIDENCED"
+            ]
+            verdict = "HARD STOP"
     else:
         reasons = []
         if cycle.final_state not in (PlanState.EVIDENCED, PlanState.ADJUDICATED):

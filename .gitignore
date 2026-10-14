@@ -12,6 +12,7 @@ node_modules/
 .env
 *.log
 src/agent_hub_v2.egg-info/
+src/agentic_engineering_system.egg-info/
 runtime/secrets/
 
 # Runtime databases and artifacts

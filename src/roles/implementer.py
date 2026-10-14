@@ -59,6 +59,26 @@ class ImplementerResult(BaseModel):
     failure: dict | None = None
 
 
+class CodeFileSpec(BaseModel):
+    """ملف واحد في مهمة برمجية (013.16 §2) — مسار نسبي ومحتوى خام."""
+
+    path: str
+    content: str
+
+
+class CodeMissionFiles(BaseModel):
+    """عقد ملفات المهمة البرمجية — ما ينتجه النموذج كتابةً قبل التنفيذ.
+
+    المحتوى ينفَّذ لاحقًا حقيقةً داخل الركيزة (run_python) — فالصحة
+    هنا شرط نجاح لا تجميل: كود مكسور = فشل تنفيذي صريح يصل المحكَّم.
+    """
+
+    files: list[CodeFileSpec]
+    entrypoint: str
+    tests_entrypoint: str
+    notes: list[str] = Field(default_factory=list)
+
+
 _SAFE_ID = re.compile(r"[^A-Za-z0-9_-]+")
 
 #: أقصى طول نصي يُردّ من مخرجات التنفيذ (العقد: مقطوعات لا محتوى كامل).

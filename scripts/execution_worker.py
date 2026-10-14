@@ -20,7 +20,7 @@
 2. subprocess — ما عدا ذلك: تنفيذ مباشر محدود المهلة في مجلد مؤقت
    — sandboxed: false معلنة؛ /capabilities تذكرها صراحة فلا خداع.
 
-البروتوكول (v1 — تشغيل متزامن محدود + سجل كامل):
+البروتوكول (v1.1 — تشغيل متزامن محدود + بذر ملفات + سجل كامل):
     GET  /health        → {ok, uptime_s, active_runs, backend_mode}
     GET  /capabilities  → وصف البيئة الفعلي من هذا العامل
     POST /probe         → فحوص boot/write/execute/capture حقيقية
@@ -31,7 +31,13 @@
                             (BLOCKED/BROKEN/INCONCLUSIVE/
                             NOT_ISOLATED_MODE). في وضع subprocess
                             يرفض العامل إطلاقًا أي ادعاء عزل.
-    POST /run           → {run_id, code, timeout_s} → سجل التنفيذ
+    POST /run           → {run_id, code, timeout_s,
+                           artifacts_b64?: {اسم: base64}} → سجل التنفيذ.
+                           (013.16 v1.1) بذر اختياري: ملفات الطالب
+                           تُكتب في مجلد أدوات هذا التشغيل قبل الإقلاع
+                           فيرى الكود ‎/artifacts/الملف — تسلسل «اكتب ثم
+                           شغّل» عبر العامل كان مستحيلًا في v1 (مجلد
+                           مؤقت فارغ لكل تشغيل)؛ الغياب = سلوك v1.
     POST /cancel        → {run_id} → إلغاء جارٍ (SIGKILL لمجموعة العملية)
 
 حدود الثقة (013.12 D2 §8): اختبار العزل إثبات سلوكي حي لمنع الشبكة
@@ -58,7 +64,7 @@ import threading
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 _STARTED_AT = time.monotonic()
 _ACTIVE_RUNS: dict[str, dict] = {}
@@ -122,7 +128,39 @@ def _describe() -> dict:
     }
 
 
-def _run_in_substrate(code: str, timeout_s: float) -> dict:
+def _safe_seed_name(name: str) -> Path | None:
+    """اسم ملف بذر آمن — مسار نسبي بلا هروب، وإلا يُرفض الملف."""
+    if not name or len(name) > 200:
+        return None
+    candidate = PurePosixPath(name)
+    if candidate.is_absolute() or any(
+        part in ("..", "") for part in candidate.parts
+    ):
+        return None
+    return Path(*candidate.parts)
+
+
+def _seed_artifacts(artifacts_dir: Path, seed: dict) -> int:
+    """كتابة ملفات بذر الطالب في مجلد أدوات التشغيل قبل الإقلاع."""
+    written = 0
+    for name, b64 in (seed or {}).items():
+        target = _safe_seed_name(str(name))
+        if target is None:
+            continue
+        try:
+            payload = base64.b64decode(str(b64))
+        except (ValueError, TypeError):
+            continue
+        if len(payload) > 262_144:  # حد البذر: 256KB للملف
+            continue
+        (artifacts_dir / target).parent.mkdir(parents=True, exist_ok=True)
+        (artifacts_dir / target).write_bytes(payload)
+        written += 1
+    return written
+
+
+def _run_in_substrate(code: str, timeout_s: float,
+                      seed_artifacts: dict | None = None) -> dict:
     from substrate.limits import E1_LIMITS_DEFAULTS
     from substrate.local_substrate import local_sandbox_manager
     from substrate.sandbox import NetworkMode, SandboxRequest
@@ -132,6 +170,9 @@ def _run_in_substrate(code: str, timeout_s: float) -> dict:
         artifacts = Path(tmp) / "art"
         workspace.mkdir()
         artifacts.mkdir()
+        # (013.16 v1.1) بذر ملفات الطالب قبل الإقلاع — يرى الكود
+        # ‎/artifacts/الملفات فيعمل تسلسل «اكتب ثم شغّل» عبر العامل.
+        _seed_artifacts(artifacts, seed_artifacts)
         manager = local_sandbox_manager()
         image = next(iter(manager.image_allowlist), None)
         request = SandboxRequest(
@@ -188,12 +229,15 @@ def _run_in_substrate(code: str, timeout_s: float) -> dict:
         }
 
 
-def _run_in_subprocess(code: str, timeout_s: float, run_id: str) -> dict:
+def _run_in_subprocess(code: str, timeout_s: float, run_id: str,
+                       seed_artifacts: dict | None = None) -> dict:
     """وضع معلن صادق: تنفيذ مباشر بلا عزل — يُذكر في كل نتيجة."""
     with tempfile.TemporaryDirectory(prefix="worker-run-") as tmp:
         root = Path(tmp)
         artifacts = root / "artifacts"
         artifacts.mkdir()
+        # (013.16 v1.1) البذر نفسه في الوضع المعلن — سلوك موحد
+        _seed_artifacts(artifacts, seed_artifacts)
         script = root / "run_code.py"
         script.write_text(code, encoding="utf-8")
         started = time.monotonic()
@@ -579,10 +623,15 @@ class WorkerHandler(BaseHTTPRequestHandler):
                 self._send(422, {"error": "code مطلوب"})
                 return
             timeout_s = min(float(payload.get("timeout_s", 120)), 600)
+            # (013.16 v1.1) بذر اختياري — قاموس أسماء→base64 يُتحقق
+            # منه نوعيًا؛ أي شيء غير ذلك يُتجاهل (سلوك v1 عند الغياب)
+            seed = payload.get("artifacts_b64")
+            if not isinstance(seed, dict):
+                seed = None
             if _SUBSTRATE_MODE:
-                result = _run_in_substrate(code, timeout_s)
+                result = _run_in_substrate(code, timeout_s, seed)
             else:
-                result = _run_in_subprocess(code, timeout_s, run_id)
+                result = _run_in_subprocess(code, timeout_s, run_id, seed)
             result["run_id"] = run_id
             result["sandboxed"] = _SUBSTRATE_MODE
             self._send(200, result)

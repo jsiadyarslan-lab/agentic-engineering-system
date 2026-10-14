@@ -96,10 +96,16 @@ class LiveRoleBase:
     # الاستدعاء + التحقق + إعادة المحاولة الواحدة (§2.3)
     # ------------------------------------------------------------------ #
 
-    def _validated_completion(self, payload: dict, result_model: type[BaseModel]) -> BaseModel:
-        """استدعاء حي واحد مع تحقق العقد — إعادة واحدة ثم فشل الدور."""
+    def _validated_completion(self, payload: dict, result_model: type[BaseModel],
+                              *, system_prompt: str | None = None) -> BaseModel:
+        """استدعاء حي واحد مع تحقق العقد — إعادة واحدة ثم فشل الدور.
+
+        system_prompt (013.16 §3): برومبت بديل للدور نفسه — يستخدمه
+        المنفذ للمهمة البرمجية (implementer_code) بلا دور جديد.
+        """
+        prompt = system_prompt if system_prompt is not None else self._system_prompt
         messages = [
-            ChatMessage(role="system", content=self._system_prompt),
+            ChatMessage(role="system", content=prompt),
             ChatMessage(role="user", content=json.dumps(payload, ensure_ascii=False)),
         ]
         last_error: Exception | None = None

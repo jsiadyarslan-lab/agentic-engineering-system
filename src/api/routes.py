@@ -1941,6 +1941,10 @@ async def _stream_mission_run(
                 cycle_id=cycle_id,
                 stop_controller=stop,
                 resume_from=resume_from,
+                # (013.16 §1) تنفيذ أدوات المهمة عبر بيئة التنفيذ
+                # الموحدة المسجلة (العامل المعزول المتحقق منه) —
+                # المصنع نفسه (لا جلسة): resolve_executor يستدعيه
+                sessions=_sessions,
             )
             with _mission_state["lock"]:
                 _mission_state["orchestrator"] = result.orchestrator
