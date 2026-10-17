@@ -908,15 +908,16 @@ class LocalSubstrateAdapter(SubstrateAdapter):
         base_dir: Path | str | None = None,
         self_check: bool = True,
     ) -> None:
-        # الأمر 005: على منصة غير مدعومة لا انهيار عند الإنشاء — كل
-        # طلب تنفيذ يُردّ عليه بسجل فشل صادق (fail-closed لكل طلب).
+        # الأمر 005 + 013.17-R1 §3: على منصة غير مدعومة لا انهيار عند
+        # الإنشاء ولا RuntimeError غير معالج — تُسجَّل أسباب الرفض
+        # الفعلية، وكل طلب تنفيذ يُردّ عليه بسجل فشل صادق (fail-closed
+        # لكل طلب). الـAdapter عاجز عن التنفيذ هنا، لكنه يصف نفسه
+        # بصدق بدل إسقاط المتصل.
+        self._capability_refusal: dict[str, object] = {}
         if self_check and _SUPPORTED_ARCH:
             capabilities = substrate_capabilities()
             if not capabilities["supported"]:
-                raise RuntimeError(
-                    "local substrate unsupported in this environment: "
-                    f"{capabilities}"
-                )
+                self._capability_refusal = dict(capabilities)
         self._images: dict[str, LocalImage] = dict(
             images if images is not None else default_local_images()
         )
@@ -957,6 +958,16 @@ class LocalSubstrateAdapter(SubstrateAdapter):
     def _execute(self, request: SandboxRequest) -> SandboxExecutionRecord:
         if not isinstance(request, SandboxRequest):
             raise TypeError("expected SandboxRequest")
+        if self._capability_refusal:
+            # (013.17-R1 §3) فشل-مغلق لكل طلب: فحص القدرات الفعلي رفض
+            # هذا المضيف (لا يُلتفّ ولا يُخفّض) — سجل صادق بالسبب لا
+            # استثناء خام، والتنفيذ مستحيل هنا بكل الأحوال.
+            return self._failure_record(
+                request, SandboxTermination.FAILED_TO_START,
+                "local substrate unsupported in this environment "
+                "(capability check refused it — fail-closed per "
+                f"request): {self._capability_refusal}",
+            )
         if not _SUPPORTED_ARCH:
             return self._failure_record(
                 request, SandboxTermination.FAILED_TO_START,

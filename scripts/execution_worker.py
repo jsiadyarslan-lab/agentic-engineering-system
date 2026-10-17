@@ -70,15 +70,34 @@ _STARTED_AT = time.monotonic()
 _ACTIVE_RUNS: dict[str, dict] = {}
 _LOCK = threading.Lock()
 
-#: محاولة تحميل الركيزة (تعمل فقط من جذر المستودع على Linux/x86_64)
+#: وضع التشغيل الفعلي (013.17-R1 §4): الركيزة تُعلن فقط عندما يجتاز
+#: فحص القدرات نفسه — وجود تعريفات الصور وحده ليس دليلًا على العزل
+#: (درس Cloud Shell: صور موجودة وseccomp_self_mode=0 ثم انهيار العامل
+#: عند أول طلب فأغلق الاتصال دون رد). الرفض يُوثق حرفيًا أدناه.
 _SUBSTRATE_MODE = False
+_SUBSTRATE_REFUSAL = ""
 try:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-    from substrate.local_substrate import default_local_images  # noqa: E402
+    from substrate.local_substrate import (  # noqa: E402
+        default_local_images,
+        substrate_capabilities,
+    )
 
     if default_local_images():
-        _SUBSTRATE_MODE = True
-except Exception:  # noqa: BLE001 — الجهاز بلا ركيزة: وضع معلن لا انهيار
+        _capabilities = substrate_capabilities()
+        if _capabilities.get("supported"):
+            _SUBSTRATE_MODE = True
+        else:
+            _SUBSTRATE_REFUSAL = json.dumps(
+                _capabilities, ensure_ascii=False, sort_keys=True)
+    else:
+        _SUBSTRATE_REFUSAL = (
+            "no local execution images on this platform "
+            "(default_local_images() is empty)")
+except Exception as _mode_error:  # noqa: BLE001 — وضع معلن لا انهيار
+    _SUBSTRATE_REFUSAL = (
+        f"substrate import/capability check failed: "
+        f"{type(_mode_error).__name__}: {_mode_error}")
     _SUBSTRATE_MODE = False
 
 _TOKEN = ""
@@ -119,6 +138,9 @@ def _describe() -> dict:
             if _SUBSTRATE_MODE else
             "not-applicable (no isolation to probe — honest refusal)"
         ),
+        # (013.17-R1 §4) سبب رفض الركيزة الفعلي إن وُجد — صدق كامل
+        "substrate_refusal": (
+            "" if _SUBSTRATE_MODE else _SUBSTRATE_REFUSAL),
         "capabilities": [
             "code_execution", "filesystem_write", "artifact_capture",
             "python_runtime",
@@ -568,104 +590,149 @@ class WorkerHandler(BaseHTTPRequestHandler):
             "[worker] %s %s\n" % (self.address_string(), fmt % args)
         )
 
-    def do_GET(self):  # noqa: N802
-        if not self._authorized():
-            self._send(401, {"error": "توكن غير صالح"})
-            return
-        if self.path == "/health":
-            with _LOCK:
-                active = len(_ACTIVE_RUNS)
-            self._send(200, {
-                "ok": True,
-                "uptime_s": int(time.monotonic() - _STARTED_AT),
-                "active_runs": active,
-                "backend_mode": "substrate" if _SUBSTRATE_MODE else "subprocess",
+    def _internal_error(self, error: Exception) -> None:
+        """(013.17-R1 §4.5) أي خطأ داخلي يُردّ بر JSON صريح برمز 500
+        مع تشخيص كامل في سجل العامل — لا إسقاط اتصال بلا استجابة
+        (RemoteDisconnected ممنوع)، ولا أسرار ولا جسم طلب في الرد
+        أو السجل (التوكن لا يُطبع أبدًا)."""
+        import traceback
+
+        sys.stderr.write(
+            "[worker] INTERNAL ERROR on %s: %s: %s\n%s" % (
+                self.path, type(error).__name__, error,
+                traceback.format_exc()))
+        try:
+            self._send(500, {
+                "ok": False,
+                "error": (
+                    f"internal worker error — {type(error).__name__}"),
+                "error_type": type(error).__name__,
             })
-        elif self.path == "/capabilities":
-            self._send(200, _describe())
-        else:
-            self._send(404, {"error": f"مسار غير معروف: {self.path}"})
+        except OSError:
+            pass  # العميل قطع الاتصال — لا شيء يُرد إليه
+
+    def do_GET(self):  # noqa: N802
+        try:
+            if not self._authorized():
+                self._send(401, {"error": "توكن غير صالح"})
+                return
+            if self.path == "/health":
+                with _LOCK:
+                    active = len(_ACTIVE_RUNS)
+                self._send(200, {
+                    "ok": True,
+                    "uptime_s": int(time.monotonic() - _STARTED_AT),
+                    "active_runs": active,
+                    "backend_mode": (
+                        "substrate" if _SUBSTRATE_MODE else "subprocess"),
+                })
+            elif self.path == "/capabilities":
+                self._send(200, _describe())
+            else:
+                self._send(404, {"error": f"مسار غير معروف: {self.path}"})
+        except Exception as error:  # noqa: BLE001
+            self._internal_error(error)
 
     def do_POST(self):  # noqa: N802
-        if not self._authorized():
-            self._send(401, {"error": "توكن غير صالح"})
-            return
         try:
-            payload = self._body()
-        except ValueError as error:
-            self._send(400, {"error": str(error)})
-            return
-        if self.path == "/probe":
-            self._send(200, _probe())
-        elif self.path == "/probe_isolation":
-            # (013.12 D2) اختبار العزل الحي — تحدٍّ جديد إلزامي لكل
-            # استدعاء؛ الهدف هو منفذ العامل نفسه (القناة الواصلة إليه
-            # تثبت قابلية الاتصال خارج العزل).
-            challenge_id = str(payload.get("challenge_id") or "").strip()
-            if not challenge_id:
-                self._send(422, {
-                    "error": "challenge_id مطلوب — بلا تحدٍّ لا نتيجة"
-                })
+            if not self._authorized():
+                self._send(401, {"error": "توكن غير صالح"})
                 return
-            server_host, server_port = self.server.server_address[:2]
-            target_host = (
-                "127.0.0.1"
-                if server_host in ("", "0.0.0.0", "::") else server_host
-            )
-            result = _isolation_probe(
-                (target_host, int(server_port)), challenge_id
-            )
-            self._send(200, result)
-        elif self.path == "/run":
-            run_id = str(payload.get("run_id") or uuid.uuid4().hex[:12])
-            code = str(payload.get("code") or "")
-            if not code.strip():
-                self._send(422, {"error": "code مطلوب"})
+            try:
+                payload = self._body()
+            except ValueError as error:
+                self._send(400, {"error": str(error)})
                 return
-            timeout_s = min(float(payload.get("timeout_s", 120)), 600)
-            # (013.16 v1.1) بذر اختياري — قاموس أسماء→base64 يُتحقق
-            # منه نوعيًا؛ أي شيء غير ذلك يُتجاهل (سلوك v1 عند الغياب)
-            seed = payload.get("artifacts_b64")
-            if not isinstance(seed, dict):
-                seed = None
-            if _SUBSTRATE_MODE:
-                result = _run_in_substrate(code, timeout_s, seed)
+            if self.path == "/probe":
+                self._send(200, _probe())
+            elif self.path == "/probe_isolation":
+                # (013.12 D2) اختبار العزل الحي — تحدٍّ جديد إلزامي لكل
+                # استدعاء؛ الهدف هو منفذ العامل نفسه (القناة الواصلة إليه
+                # تثبت قابلية الاتصال خارج العزل).
+                challenge_id = str(payload.get("challenge_id") or "").strip()
+                if not challenge_id:
+                    self._send(422, {
+                        "error": "challenge_id مطلوب — بلا تحدٍّ لا نتيجة"
+                    })
+                    return
+                server_host, server_port = self.server.server_address[:2]
+                target_host = (
+                    "127.0.0.1"
+                    if server_host in ("", "0.0.0.0", "::") else server_host
+                )
+                result = _isolation_probe(
+                    (target_host, int(server_port)), challenge_id
+                )
+                self._send(200, result)
+            elif self.path == "/run":
+                run_id = str(payload.get("run_id") or uuid.uuid4().hex[:12])
+                code = str(payload.get("code") or "")
+                if not code.strip():
+                    self._send(422, {"error": "code مطلوب"})
+                    return
+                timeout_s = min(float(payload.get("timeout_s", 120)), 600)
+                # (013.16 v1.1) بذر اختياري — قاموس أسماء→base64 يُتحقق
+                # منه نوعيًا؛ أي شيء غير ذلك يُتجاهل (سلوك v1 عند الغياب)
+                seed = payload.get("artifacts_b64")
+                if not isinstance(seed, dict):
+                    seed = None
+                if _SUBSTRATE_MODE:
+                    result = _run_in_substrate(code, timeout_s, seed)
+                else:
+                    result = _run_in_subprocess(code, timeout_s, run_id, seed)
+                result["run_id"] = run_id
+                result["sandboxed"] = _SUBSTRATE_MODE
+                self._send(200, result)
+            elif self.path == "/cancel":
+                run_id = str(payload.get("run_id") or "")
+                with _LOCK:
+                    active = _ACTIVE_RUNS.pop(run_id, None)
+                cancelled = False
+                if active and "pid" in active:
+                    try:
+                        os.kill(active["pid"], signal.SIGKILL)
+                        cancelled = True
+                    except (ProcessLookupError, PermissionError):
+                        cancelled = False
+                self._send(200, {"cancelled": cancelled, "run_id": run_id})
             else:
-                result = _run_in_subprocess(code, timeout_s, run_id, seed)
-            result["run_id"] = run_id
-            result["sandboxed"] = _SUBSTRATE_MODE
-            self._send(200, result)
-        elif self.path == "/cancel":
-            run_id = str(payload.get("run_id") or "")
-            with _LOCK:
-                active = _ACTIVE_RUNS.pop(run_id, None)
-            cancelled = False
-            if active and "pid" in active:
-                try:
-                    os.kill(active["pid"], signal.SIGKILL)
-                    cancelled = True
-                except (ProcessLookupError, PermissionError):
-                    cancelled = False
-            self._send(200, {"cancelled": cancelled, "run_id": run_id})
-        else:
-            self._send(404, {"error": f"مسار غير معروف: {self.path}"})
+                self._send(404, {"error": f"مسار غير معروف: {self.path}"})
+        except Exception as error:  # noqa: BLE001
+            self._internal_error(error)
 
 
 def main() -> int:
-    global _TOKEN  # noqa: PLW0603
+    global _TOKEN, _SUBSTRATE_MODE  # noqa: PLW0603
     parser = argparse.ArgumentParser(description="عامل التنفيذ البعيد")
     parser.add_argument("--port", type=int, default=8900)
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--token", default=os.environ.get(
         "EXECUTION_WORKER_TOKEN", ""))
+    parser.add_argument(
+        "--mode", choices=("auto", "substrate", "subprocess"),
+        default="auto",
+        help="(013.17-R1 §4) auto=حسب فحص القدرات | subprocess=فرض الوضع "
+             "المعلن الصادق | substrate=اشتراط العزل — بلا تخفيض صامت")
     args = parser.parse_args()
     _TOKEN = args.token
+    if args.mode == "subprocess":
+        # فرض الوضع المعلن الصادق — للاختبار أو تشغيل بلا عزل معلن
+        _SUBSTRATE_MODE = False
+    elif args.mode == "substrate" and not _SUBSTRATE_MODE:
+        # اشتراط العزل والمضيف لا يستوفيه: فشل صريح فوري — لا تخفيض
+        # صامت إلى subprocess (الانتحال ممنوع 013.17-R1 §4)
+        print("FATAL: substrate mode required but the capability check "
+              "refused this host (no silent downgrade):",
+              _SUBSTRATE_REFUSAL or "unknown refusal", flush=True)
+        return 2
     mode = "substrate (معزولة)" if _SUBSTRATE_MODE else \
         "subprocess (معلن بلا عزل)"
     print("=" * 62)
     print("عامل التنفيذ البعيد — Agentic Engineering System")
     print(f"الاستماع: http://{args.host}:{args.port}")
     print(f"وضع التنفيذ: {mode}")
+    if _SUBSTRATE_REFUSAL and not _SUBSTRATE_MODE:
+        print(f"سبب رفض الركيزة: {_SUBSTRATE_REFUSAL}")
     print(f"المنصة: {platform.system()}/{platform.machine()}")
     if not _TOKEN:
         print("تحذير: بلا توكن — استخدم --token للإنتاج")

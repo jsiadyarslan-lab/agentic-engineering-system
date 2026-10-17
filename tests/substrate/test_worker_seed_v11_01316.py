@@ -16,9 +16,28 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 _WORKER_PATH = (
     Path(__file__).resolve().parents[2] / "scripts" / "execution_worker.py"
 )
+
+
+def _require_live_substrate() -> None:
+    """(013.17-R1 §5) اختبارات بذر حية عبر الركيزة الفعلية: تُسجل
+    SKIPPED — NOT RUN بالسبب المحدد عندما يرفض فحص القدرات الفعلي
+    المضيف — لا خطأ ولا نجاح مزيف ولا محاكاة."""
+    sys.path.insert(0, str(_WORKER_PATH.parents[1] / "src"))
+    from substrate.local_substrate import substrate_capabilities
+
+    caps = substrate_capabilities()
+    if not caps.get("supported"):
+        pytest.skip(
+            "SKIPPED — NOT RUN: بذر حي داخل الركيزة يتطلب مضيفًا يجتاز "
+            "فحص القدرات الفعلي؛ هنا: "
+            + "; ".join(f"{k}={caps.get(k)}" for k in (
+                "seccomp_self_mode", "user_namespaces_enabled"))
+            + " — لا محاكاة ولا تخفيض معيار")
 
 
 def _load_worker_module():
@@ -48,6 +67,7 @@ def test_safe_seed_name_refuses_escapes():
 def test_write_then_run_sequence_through_worker_substrate():
     """التسلسل الكامل عبر وحدة العامل: كتابة في تشغيل، بذر وتشغيل في
     التشغيل التالي — الكود الثاني يرى ملفات الأول داخل ‎/artifacts."""
+    _require_live_substrate()
     worker = _load_worker_module()
 
     # (1) تشغيل كتابة v1 — ملف يُعاد في الاستجابة
@@ -84,6 +104,7 @@ def test_write_then_run_sequence_through_worker_substrate():
 
 def test_seed_oversize_and_invalid_entries_skipped():
     """حدود البذر: ملف فوق 256KB ومدخل تالف يُتجاهلان بلا انفجار."""
+    _require_live_substrate()
     worker = _load_worker_module()
     code = (
         "import pathlib\n"

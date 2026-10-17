@@ -1,0 +1,1 @@
+PARTIAL RUN — intentionally stopped before completion (see full_pytest_windows_host.txt §5): no exit code claimed for the full suite

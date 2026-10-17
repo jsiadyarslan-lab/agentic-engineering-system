@@ -28,8 +28,13 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_manager_builds_and_executes_for_real(tmp_path):
-    """بناء manager بالصور الافتراضية + طلب تنفيذ حقيقي يكتمل."""
+    """بناء manager بالصور الافتراضية + طلب تنفيذ حقيقي يكتمل.
+
+    (013.17-R1 §5) بنية الصور تُتحقق وحدويًا على أي مضيف Linux، أما
+    التنفيذ الحي فيُسجل SKIPPED — NOT RUN بالسبب المحدد إن رفض فحص
+    القدرات الفعلي المضيف (لا خطأ ولا نجاح مزيف)."""
     from substrate.limits import E1_LIMITS_DEFAULTS
+    from substrate.local_substrate import substrate_capabilities
     from substrate.sandbox import NetworkMode, SandboxRequest, SandboxTermination
 
     images = default_local_images()
@@ -43,6 +48,15 @@ def test_manager_builds_and_executes_for_real(tmp_path):
 
     git = local_git_image()
     assert git.interpreter == "/usr/bin/git"
+
+    caps = substrate_capabilities()
+    if not caps.get("supported"):
+        pytest.skip(
+            "SKIPPED — NOT RUN: تنفيذ حي داخل الركيزة يتطلب مضيفًا يجتاز "
+            "فحص القدرات الفعلي؛ هنا: "
+            + "; ".join(f"{k}={caps.get(k)}" for k in (
+                "seccomp_self_mode", "user_namespaces_enabled"))
+            + " — لا محاكاة ولا تخفيض معيار")
 
     manager = local_sandbox_manager(images={**images, "git": git})
     image_name = next(iter(images))
@@ -67,7 +81,20 @@ def test_manager_builds_and_executes_for_real(tmp_path):
 
 
 def test_write_file_tool_executes_inside_substrate(tmp_path):
-    """مسار الأدوات: write_file يعمل داخل الركيزة — الملف يُكتب فعلًا."""
+    """مسار الأدوات: write_file يعمل داخل الركيزة — الملف يُكتب فعلًا.
+
+    (013.17-R1 §5) تنفيذ حي: SKIPPED — NOT RUN بالسبب المحدد عندما
+    يرفض فحص القدرات الفعلي المضيف (الاختبارات الوحدوية تظل تعمل)."""
+    from substrate.local_substrate import substrate_capabilities
+
+    caps = substrate_capabilities()
+    if not caps.get("supported"):
+        pytest.skip(
+            "SKIPPED — NOT RUN: مسار الأدوات داخل الركيزة يتطلب مضيفًا "
+            "يجتاز فحص القدرات الفعلي؛ هنا: "
+            + "; ".join(f"{k}={caps.get(k)}" for k in (
+                "seccomp_self_mode", "user_namespaces_enabled"))
+            + " — لا محاكاة")
     from roles.tools import ToolContext, write_file
 
     ctx = ToolContext(grant_root=tmp_path)

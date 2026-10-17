@@ -155,11 +155,20 @@ def test_remote_worker_protocol_real_over_http():
         }
         assert all(c["ok"] for c in verify.checks)
         # التنفيذ الفعلي عبر العامل + التقاط artifact
-        # (اصطلاح الأدلة داخل الركيزة: ‎/artifacts مطلق — معلن في capabilities)
+        # (013.17-R1 §8) وضعا العامل: الركيزة (‎/artifacts مطلق —
+        # اصطلاحها المعلن) والمعلن (نسبي artifacts/) — الكود يكتب في
+        # كليهما فينجح عقد الالتقاط أيا كان وضع المضيف، واصطلاح كل وضع
+        # مغطى باختباراته المخصصة على مضيف ركيزة
         code = (
             "import pathlib\n"
-            "p = pathlib.Path('/artifacts/order010.txt')\n"
-            "p.write_text('remote-ok', encoding='utf-8')\n"
+            "for target in ('/artifacts/order010.txt',\n"
+            "               'artifacts/order010.txt'):\n"
+            "    try:\n"
+            "        p = pathlib.Path(target)\n"
+            "        p.parent.mkdir(parents=True, exist_ok=True)\n"
+            "        p.write_text('remote-ok', encoding='utf-8')\n"
+            "    except OSError:\n"
+            "        pass\n"
             "print('remote-exec-ok')\n"
         )
         import tempfile

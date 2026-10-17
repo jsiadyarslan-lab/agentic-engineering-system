@@ -261,6 +261,14 @@ def provision(sessions, *, policy: str = "STRICT_ISOLATED",
         )
         _step(steps, "DISCOVERING", False, reason,
               host=host, substrate_available=substrate_ok)
+        # (013.17-R1 §8) محاولة PROVISIONING تُسجَّل حتى في مسار الفجوة
+        # البنيوية: آلة الحالة تُظهر أن التجهيز جُرِّب ورُفض لغياب أي
+        # مسار عزل — لا قفزة صامتة من DISCOVERING إلى UNAVAILABLE،
+        # والنتيجة تبقى صادقة (PROVISIONING_UNAVAILABLE بسبب حرفي).
+        _step(steps, "PROVISIONING", False,
+              "لا مسار تجهيز مطابق للسياسة — الفجوة البنيوية أعلاه "
+              "سببها الحرفي، ولا تنفيذ بلا عزل",
+              host=host, substrate_available=substrate_ok)
         result = _unavailable(sessions, steps, started, reason,
                               requirement=execution_policy
                               .requirement_text(policy))

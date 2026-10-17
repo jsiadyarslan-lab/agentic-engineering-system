@@ -1,0 +1,79 @@
+{
+ "host": "Windows (session executor host)",
+ "proofs": {
+  "auto_mode_honest": {
+   "backend_mode": "subprocess",
+   "sandboxed": false,
+   "isolation": "none — declared direct subprocess (honest mode)",
+   "isolation_probe_support": "not-applicable (no isolation to probe — honest refusal)",
+   "substrate_refusal_declared": true,
+   "probe_status": 200,
+   "probe_verdict": "NOT_ISOLATED_MODE",
+   "probe_ok": false,
+   "challenge_echoed": true
+  },
+  "forced_substrate_refused": {
+   "exit_code": 2,
+   "fatal_message_prefix": [
+    "FATAL: substrate mode required but the capability check refused this host (no silent downgrade): no local execution images on this platform (default_local_images() is empty)"
+   ]
+  },
+  "session_preflight_gate": {
+   "exit_code": 1,
+   "runtime_db_existed_before": true,
+   "runtime_db_deleted": false,
+   "missions_dir_existed_before": false,
+   "missions_dir_deleted": false,
+   "blocked_marker_in_output": true,
+   "session_stdout_tail": "[session 01:42:03] self-audit (AST): no auto-approval call in session source ✓\n[session 01:42:03] saved strict_session_preflight.json\n[session 01:42:03] saved session_summary.json\n[session 01:42:03] === SESSION BLOCKED AT PREFLIGHT — runtime state untouched ===\n[session 01:42:03] {\n \"order\": \"013.17 E11 fixture fidelity + owner gate\",\n \"correction\": \"013.17-R1 §7 — preflight قبل أي إعادة ضبط حالة\",\n \"preflight\": {\n  \"gate\": \"013.17-R1 §7 preflight — قبل أي إعادة ضبط حالة\",\n  \"substrate_capabilities\": {\n   \"arch_x86_64_linux\": false,\n   \"real_uid\": -1,\n   \"user_namespaces_enabled\": false,\n   \"seccomp_self_mode\": -1,\n   \"interpreter\": \"C:\\\\Users\\\\jaber\\\\Documents\\\\GitHub\\\\agentic-engineering-system\\\\.venv\\\\Scripts\\\\python.exe\",\n   \"interpreter_resolvable\": true,\n   \"supported\": false\n  },\n  \"execution_images_present\": [],\n  \"substrate_supported\": false,\n  \"strict_worker_authorized\": false,\n  \"mission_started\": false,\n  \"runtime_state_reset\": false,\n  \"verdict\": \"BLOCKED_NO_AUTHORIZED_STRICT_WORKER\",\n  \"blocker\": \"فحص القدرات الفعلي رفض المضيف — عامل STRICT غير متاح هنا؛ التجربة الحية تُغلق بأمان (لا التفاف). المطلوب: بيئة Linux مخوّلة بالعزل (013.15/013.16 أو ما يعادلها).\"\n },\n \"verdict\": \"BLOCKED_NO_AUTHORIZED_STRICT_WORKER\",\n \"mission_started\": false,\n \"runtime_state_reset\": false,\n \"duration_s\": 0.2\n}\n"
+  },
+  "session_gate_artifacts": {
+   "strict_session_preflight_json": {
+    "gate": "013.17-R1 §7 preflight — قبل أي إعادة ضبط حالة",
+    "substrate_capabilities": {
+     "arch_x86_64_linux": false,
+     "real_uid": -1,
+     "user_namespaces_enabled": false,
+     "seccomp_self_mode": -1,
+     "interpreter": "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+     "interpreter_resolvable": true,
+     "supported": false
+    },
+    "execution_images_present": [],
+    "substrate_supported": false,
+    "strict_worker_authorized": false,
+    "mission_started": false,
+    "runtime_state_reset": false,
+    "verdict": "BLOCKED_NO_AUTHORIZED_STRICT_WORKER",
+    "blocker": "فحص القدرات الفعلي رفض المضيف — عامل STRICT غير متاح هنا؛ التجربة الحية تُغلق بأمان (لا التفاف). المطلوب: بيئة Linux مخوّلة بالعزل (013.15/013.16 أو ما يعادلها)."
+   },
+   "session_summary_json": {
+    "order": "013.17 E11 fixture fidelity + owner gate",
+    "correction": "013.17-R1 §7 — preflight قبل أي إعادة ضبط حالة",
+    "preflight": {
+     "gate": "013.17-R1 §7 preflight — قبل أي إعادة ضبط حالة",
+     "substrate_capabilities": {
+      "arch_x86_64_linux": false,
+      "real_uid": -1,
+      "user_namespaces_enabled": false,
+      "seccomp_self_mode": -1,
+      "interpreter": "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+      "interpreter_resolvable": true,
+      "supported": false
+     },
+     "execution_images_present": [],
+     "substrate_supported": false,
+     "strict_worker_authorized": false,
+     "mission_started": false,
+     "runtime_state_reset": false,
+     "verdict": "BLOCKED_NO_AUTHORIZED_STRICT_WORKER",
+     "blocker": "فحص القدرات الفعلي رفض المضيف — عامل STRICT غير متاح هنا؛ التجربة الحية تُغلق بأمان (لا التفاف). المطلوب: بيئة Linux مخوّلة بالعزل (013.15/013.16 أو ما يعادلها)."
+    },
+    "verdict": "BLOCKED_NO_AUTHORIZED_STRICT_WORKER",
+    "mission_started": false,
+    "runtime_state_reset": false,
+    "duration_s": 0.2
+   }
+  }
+ }
+}

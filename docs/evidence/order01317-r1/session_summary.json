@@ -1,0 +1,27 @@
+{
+ "order": "013.17 E11 fixture fidelity + owner gate",
+ "correction": "013.17-R1 §7 — preflight قبل أي إعادة ضبط حالة",
+ "preflight": {
+  "gate": "013.17-R1 §7 preflight — قبل أي إعادة ضبط حالة",
+  "substrate_capabilities": {
+   "arch_x86_64_linux": false,
+   "real_uid": -1,
+   "user_namespaces_enabled": false,
+   "seccomp_self_mode": -1,
+   "interpreter": "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\.venv\\Scripts\\python.exe",
+   "interpreter_resolvable": true,
+   "supported": false
+  },
+  "execution_images_present": [],
+  "substrate_supported": false,
+  "strict_worker_authorized": false,
+  "mission_started": false,
+  "runtime_state_reset": false,
+  "verdict": "BLOCKED_NO_AUTHORIZED_STRICT_WORKER",
+  "blocker": "فحص القدرات الفعلي رفض المضيف — عامل STRICT غير متاح هنا؛ التجربة الحية تُغلق بأمان (لا التفاف). المطلوب: بيئة Linux مخوّلة بالعزل (013.15/013.16 أو ما يعادلها)."
+ },
+ "verdict": "BLOCKED_NO_AUTHORIZED_STRICT_WORKER",
+ "mission_started": false,
+ "runtime_state_reset": false,
+ "duration_s": 0.2
+}

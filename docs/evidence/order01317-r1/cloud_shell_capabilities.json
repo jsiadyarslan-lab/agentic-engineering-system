@@ -1,0 +1,15 @@
+{
+ "source": "OBSERVED — لصق المالك المباشر من Google Cloud Shell (Linux x86_64, Python 3.12, ~/order01317_work) أثناء تشغيل أمر 013.17؛ لم يُعاد التقاطه من مضيف المنفّذ (Windows) — أمر الالتقاط أدناه قابل لإعادة التشغيل للتحقق الحي",
+ "observed_by_owner_in_cloud_shell": {
+  "arch_x86_64_linux": true,
+  "real_uid": 1000,
+  "max_user_namespaces": 63746,
+  "user_namespaces_enabled": true,
+  "seccomp_self_mode": 0,
+  "interpreter": "/home/jaber_alsayadi1/order01317_work/.venv/bin/python",
+  "interpreter_resolvable": true,
+  "supported": false
+ },
+ "interpretation": "user namespaces متاحة لكن seccomp_self_mode=0 (العملية بلا فلتر seccomp) — فحص القدرات يرفض المضيف fail-closed. الأمر 013.17-R1 §1 يمنع تخفيف هذا المعيار: المطلوب صدق الكشف لا إجبار Cloud Shell على الاجتياز.",
+ "recapture_command": "python -c \"import sys,json; sys.path.insert(0,'src'); from substrate.local_substrate import substrate_capabilities; print(json.dumps(substrate_capabilities(), indent=1))\""
+}

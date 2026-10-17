@@ -347,8 +347,16 @@ class LocalSandboxBackend:
         return local_sandbox_manager()
 
     def available(self) -> tuple[bool, str]:
-        """هل الركيزة المحلية ممكنة أصلًا على هذه المنصة؟ (§20 صادق)"""
-        from substrate.local_substrate import default_local_images
+        """هل الركيزة المحلية ممكنة أصلًا على هذه المنصة؟ (§20 صادق)
+
+        (013.17-R1 §3) الحكم من فحص القدرات الفعلي — وجود تعريفات
+        الصور وحده ليس دليلًا على إمكان إنشاء العزل (درس Cloud Shell:
+        صور موجودة وseccomp_self_mode=0 → الرفض صادق ومعلن بالسبب).
+        """
+        from substrate.local_substrate import (
+            default_local_images,
+            substrate_capabilities,
+        )
 
         images = default_local_images()
         if not images:
@@ -356,6 +364,17 @@ class LocalSandboxBackend:
                 "الركيزة المعزولة غير متاحة — تتطلب Linux/x86_64 والفحص "
                 "الذاتي للمنصة رفضها. المسار الحقيقي: أضف عاملًا بعيدًا "
                 "يعمل على Linux/WSL2 (بيئات التنفيذ ← إضافة بيئة ← "
+                "REMOTE_WORKER) ثم تحقق"
+            )
+        caps = substrate_capabilities()
+        if not caps.get("supported"):
+            return False, (
+                "الركيزة المعزولة رفضها فحص القدرات الفعلي رغم وجود تعريفات "
+                f"الصور ({len(images)}): seccomp_self_mode="
+                f"{caps.get('seccomp_self_mode')}، "
+                f"user_namespaces_enabled={caps.get('user_namespaces_enabled')} "
+                "— لا تُلتفّ هذه النتيجة ولا يُعلن عزل هنا. المسار الحقيقي: "
+                "عامل Linux مخوّل بالعزل (بيئات التنفيذ ← إضافة بيئة ← "
                 "REMOTE_WORKER) ثم تحقق"
             )
         return True, ""

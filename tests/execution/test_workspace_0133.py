@@ -137,11 +137,14 @@ def test_b_windows_nonexistent_cwd_classified(tmp_path, monkeypatch):
 
     calls = {"n": 0}
 
-    def fake_run(*_args, **_kwargs):
+    def fake_launch(*_args, **_kwargs):
         calls["n"] += 1
         raise _WinError267()
 
-    monkeypatch.setattr(backends.subprocess, "run", fake_run)
+    # (013.17-R1 §6) المحاكاة على واجهة الإطلاق الفعلية (`Popen` في
+    # LocalProcessBackend._run) — محاكاة `run` المهجورة لم تعد تلمس
+    # مسار المنتج فأنتجت COMPLETED زائفًا على Linux.
+    monkeypatch.setattr(backends.subprocess, "Popen", fake_launch)
     backend = LocalProcessBackend(environment_id="ws-b")
     outcome = backend.run_code(
         "print('x')", workspace=workspace,
@@ -196,7 +199,13 @@ def test_c_linux_path_on_windows_rejected_before_createprocess(
     tmp_path, monkeypatch,
 ):
     """(C) ‎/workspace أو ‎/work كـ cwd على Windows: مرفوض قبل أي
-    subprocess.run — هذا بالضبط ما كان يصل إلى CreateProcess."""
+    إطلاق — هذا بالضبط ما كان يصل إلى CreateProcess.
+
+    (013.17-R1 §6) المسار يُمرر بنصه الخام (شكل الإدخال الواقعي من
+    إعداد البيئة) لأن Path() على مضيف Windows حقيقي يُطبّع الفواصل
+    ويمحو شكل POSIX قبل الفحص — والعقد §2 يحكم على النص الخام. حظر
+    الإطلاق يُبرهن على واجهتي الإطلاق معًا (Popen وrun) لا الواجهة
+    المهجورة وحدها."""
     import execution.backends as backends
     import execution.workspace as ws_mod
 
@@ -205,15 +214,16 @@ def test_c_linux_path_on_windows_rejected_before_createprocess(
 
     def must_not_launch(*_args, **_kwargs):
         raise AssertionError(
-            "CreateProcess استُدعي بمسار Linux على Windows — ممنوع (§2)"
+            "إطلاق استُدعي بمسار Linux على Windows — ممنوع (§2)"
         )
 
     monkeypatch.setattr(backends.subprocess, "run", must_not_launch)
+    monkeypatch.setattr(backends.subprocess, "Popen", must_not_launch)
 
     backend = LocalProcessBackend(environment_id="ws-c")
     for linux_path in ("/workspace/job-1", "/work", "/tmp/run"):
         outcome = backend.run_code(
-            "print('x')", workspace=Path(linux_path),
+            "print('x')", workspace=linux_path,
             artifacts=Path("/tmp/art"), timeout_s=10,
         )
         assert outcome.termination == "FAILED_TO_START"
@@ -647,7 +657,10 @@ def test_i_no_infinite_retry_same_invalid_cwd(tmp_path, monkeypatch):
         calls["n"] += 1
         raise _WinError267()
 
-    monkeypatch.setattr(backends.subprocess, "run", always_267)
+    # (013.17-R1 §6) المحاكاة على واجهة الإطلاق الفعلية (`Popen`) —
+    # عدّاد المحاولات يقيس الإطلاق الحقيقي: أولى + إعادة واحدة بعد
+    # الإصلاح، لا حلقة.
+    monkeypatch.setattr(backends.subprocess, "Popen", always_267)
     backend = LocalProcessBackend(environment_id="ws-i")
     workspace = tmp_path / "ws-i"
     workspace.mkdir()

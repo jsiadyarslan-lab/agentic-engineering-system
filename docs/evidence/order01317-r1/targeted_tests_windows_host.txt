@@ -1,0 +1,51 @@
+﻿........................s...s.............s.....sssss.....               [100%]
+============================== warnings summary ===============================
+..\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\_pytest\config\__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests\execution\test_backends.py:131
+  C:\Users\jaber\Documents\GitHub\aes-01317-wt\tests\execution\test_backends.py:131: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(90)
+
+tests\execution\test_backends.py:187
+  C:\Users\jaber\Documents\GitHub\aes-01317-wt\tests\execution\test_backends.py:187: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(60)
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\aes-01317-wt\src\api\routes.py:2154: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/execution/test_provisioner_013.py::test_provisioner_endpoint_registered
+  C:\Users\jaber\Documents\GitHub\agentic-engineering-system\.venv\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\execution\test_trust_boundary_01312.py:744: اختبار العزل الحي يتطلب ركيزة Linux (substrate) — المضيف الحالي Windows: يُسجل NOT RUN ولا يُوصف بأنه متحقق حيًا (013.12 §4 حرفيًا).
+SKIPPED [1] tests\execution\test_trust_boundary_01312.py:892: تنفيذ معزول حي يتطلب ركيزة Linux — المضيف Windows: NOT RUN (يُغطى عقد الركيزة باختباراتها الخاصة على مضيف ركيزة).
+SKIPPED [1] tests\execution\test_workspace_0133.py:634: المنصة تسمح بالكتابة رغم 0o500
+SKIPPED [2] tests\substrate\test_worker_seed_v11_01316.py:35: SKIPPED — NOT RUN: بذر حي داخل الركيزة يتطلب مضيفًا يجتاز فحص القدرات الفعلي؛ هنا: seccomp_self_mode=-1; user_namespaces_enabled=False — لا محاكاة ولا تخفيض معيار
+SKIPPED [1] tests\api\test_sandbox_integration.py:30: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:83: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+SKIPPED [1] tests\api\test_sandbox_integration.py:108: الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2
+50 passed, 8 skipped, 7 warnings in 88.36s (0:01:28)

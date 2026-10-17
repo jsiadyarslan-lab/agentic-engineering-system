@@ -39,7 +39,13 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+try:
+    from playwright.sync_api import sync_playwright
+except ImportError:
+    # (013.17-R1 §7) بوابة ما قبل التشغيل والتدقيق الذاتي لا تتطلبان
+    # متصفحًا — غياب playwright لا يجوز أن يسقط الجلسة قبل بوابة
+    # الركيزة؛ المهمة الحية وحدها تطلبه وتفشل بسببيْن معلنين.
+    sync_playwright = None
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from order01317_fixture import APPROVED_CSV, verify_fixture  # noqa: E402
@@ -51,7 +57,10 @@ VENV_PY = os.environ.get(
 TOKEN_FILE = Path(os.environ.get(
     "ORDER01317_TOKEN_FILE",
     str(WORK.parent / ".order01317_worker_token")))
-EVID = WORK / "docs" / "evidence" / "order01317"
+EVID = Path(os.environ.get(
+    "ORDER01317_EVID", str(WORK / "docs" / "evidence" / "order01317")))
+if not EVID.is_absolute():
+    EVID = WORK / EVID
 SERVER = os.environ.get("ORDER01317_SERVER", "http://127.0.0.1:8010")
 WORKER = os.environ.get("ORDER01317_WORKER", "http://127.0.0.1:8900")
 
@@ -287,6 +296,13 @@ def run_browser_mission() -> dict:
     """(D2-3/4) الدورة من الواجهة — والتوقف عند بوابة موافقة المالك:
     لا استدعاء موافقة إطلاقًا؛ تسليم يد موثق (معرف + رابط + الإجراء
     الوحيد). لا ui_owner_verified.png في هذا الأمر أبدًا."""
+    if sync_playwright is None:
+        # (013.17-R1 §7.7) سبب مسمّى لا استثناء خام — المهمة الحية
+        # تتطلب متصفحًا؛ هذا لا يُصل بعد بوابة الركيزة أصلًا.
+        raise RuntimeError(
+            "playwright غير مثبت في بيئة الجلسة — المهمة الحية عبر "
+            "الواجهة تتطلبه (pip install playwright && playwright "
+            "install chromium)")
     result: dict = {"mission_created_from": "browser Control Room UI"}
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
@@ -535,13 +551,103 @@ def reset_session_state() -> None:
     log("session state reset: fresh DB + fresh mission dir")
 
 
+def ensure_worker_token() -> dict:
+    """(013.17-R1 §7.5-6) تهيئة رمز العامل قبل أي إعادة ضبط حالة:
+    موجود فيُقرأ ويُتحقق من صلاحيته؛ غائب فيولَّد وقت التشغيل
+    (secrets.token_urlsafe) ويُكتب بصلاحيات ملف مقيدة (0600).
+    القيمة لا تُطبع ولا تُكتب في Git أو الأدلة — توصيف الشكل فقط."""
+    import secrets
+
+    if TOKEN_FILE.exists():
+        source = "existing"
+        token = TOKEN_FILE.read_text(encoding="utf-8").strip()
+    else:
+        source = "generated (runtime-only, never printed)"
+        token = secrets.token_urlsafe(32)
+        TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        TOKEN_FILE.write_text(token + "\n", encoding="utf-8")
+        try:
+            TOKEN_FILE.chmod(0o600)
+        except OSError:
+            pass  # Windows: الإدارة عبر ACL — أفضل جهد بلا انهيار
+    # (§7.6) تحقق نهائي من الوجود والصلاحية قبل المتابعة — لا تخمين
+    verified = (
+        TOKEN_FILE.exists()
+        and len(TOKEN_FILE.read_text(encoding="utf-8").strip()) >= 16)
+    if not verified:
+        raise RuntimeError(
+            f"worker token file invalid after initialization: {TOKEN_FILE}")
+    return {"token_file": str(TOKEN_FILE), "source": source,
+            "length": len(token), "value": "(not printed)"}
+
+
+def preflight_strict_requirements() -> dict:
+    """(013.17-R1 §7.1-4) بوابة ما قبل التشغيل — قبل أي حذف أو إعادة
+    ضبط: فحص قدرات الركيزة الفعلي هو الحكم. عند عدم الدعم تُحفظ أدلة
+    صادقة وينتهي التشغيل برمز غير صفري دون مساس بالحالة التشغيلية
+    (لا حذف قاعدة، لا مجلد مهمة، لا عمليات)."""
+    sys.path.insert(0, str(WORK / "src"))
+    from substrate.local_substrate import (  # noqa: E402
+        default_local_images,
+        substrate_capabilities,
+    )
+
+    caps = substrate_capabilities()
+    images = sorted(default_local_images())
+    supported = bool(caps.get("supported"))
+    preflight = {
+        "gate": "013.17-R1 §7 preflight — قبل أي إعادة ضبط حالة",
+        "substrate_capabilities": caps,
+        "execution_images_present": images,
+        "substrate_supported": supported,
+        "strict_worker_authorized": supported,
+        "mission_started": False,
+        "runtime_state_reset": False,
+        "verdict": (
+            "PREFLIGHT_OK" if supported
+            else "BLOCKED_NO_AUTHORIZED_STRICT_WORKER"),
+    }
+    if not supported:
+        preflight["blocker"] = (
+            "فحص القدرات الفعلي رفض المضيف — عامل STRICT غير متاح هنا؛ "
+            "التجربة الحية تُغلق بأمان (لا التفاف). المطلوب: بيئة Linux "
+            "مخوّلة بالعزل (013.15/013.16 أو ما يعادلها).")
+        return preflight
+    # البيئة مستوفية فقط هنا: يُؤمَّن الرمز قبل أي إعادة ضبط
+    preflight["worker_token"] = ensure_worker_token()
+    return preflight
+
+
 def main() -> int:
     EVID.mkdir(parents=True, exist_ok=True)
     (WORK / "runtime/logs").mkdir(parents=True, exist_ok=True)
     self_audit_no_auto_approval()
-    reset_session_state()
     started = time.monotonic()
-    summary: dict = {"order": "013.17 E11 fixture fidelity + owner gate"}
+    summary: dict = {
+        "order": "013.17 E11 fixture fidelity + owner gate",
+        "correction": "013.17-R1 §7 — preflight قبل أي إعادة ضبط حالة",
+    }
+    # (013.17-R1 §7.2) فحص القدرات الفعلي قبل أي حذف أو إعادة ضبط
+    try:
+        preflight = preflight_strict_requirements()
+    except Exception as error:  # noqa: BLE001 — (§7.7) سبب واضح لا استثناء خام
+        preflight = {"verdict": "PREFLIGHT_FAILED",
+                     "error": f"{type(error).__name__}: {error}"}
+    summary["preflight"] = preflight
+    if preflight.get("verdict") != "PREFLIGHT_OK":
+        summary["verdict"] = preflight.get("verdict")
+        summary["mission_started"] = False
+        summary["runtime_state_reset"] = False
+        summary["duration_s"] = round(time.monotonic() - started, 1)
+        save("strict_session_preflight.json", preflight)
+        save("session_summary.json", summary)
+        log("=== SESSION BLOCKED AT PREFLIGHT — runtime state untouched ===")
+        log(json.dumps(summary, ensure_ascii=False, indent=1)[:3000])
+        return 1
+    log("preflight ok: substrate authorized + token secured — "
+        "resetting session state now")
+    reset_session_state()
+    summary["runtime_state_reset"] = True
     try:
         start_processes()
         probe_worker_directly()
@@ -549,6 +655,10 @@ def main() -> int:
         summary.update(infra)
         mission = run_browser_mission()
         summary["mission"] = mission
+        summary["verdict"] = (
+            "E11_FIXTURE_PASS_WAITING_OWNER_APPROVAL"
+            if mission.get("verdict") == "PASS" else
+            f"MISSION_{mission.get('verdict') or 'INCOMPLETE'}")
         audit = independent_d1_audit()
         summary["d1_independent_audit"] = {
             k: audit.get(k) for k in (
@@ -557,6 +667,9 @@ def main() -> int:
         collect_evidence(mission, audit)
         if mission.get("verdict") == "PASS":
             owner_handoff(mission)
+    except Exception as error:  # noqa: BLE001 — (§7.7) سبب مسمّى في الملخص
+        summary["verdict"] = "SESSION_FAILED"
+        summary["fatal"] = f"{type(error).__name__}: {error}"
     finally:
         for proc in reversed(processes):
             proc.terminate()
@@ -570,7 +683,8 @@ def main() -> int:
     save("session_summary.json", summary)
     log("=== SESSION SUMMARY ===")
     log(json.dumps(summary, ensure_ascii=False, indent=1)[:3000])
-    return 0
+    return 0 if summary.get("verdict") == (
+        "E11_FIXTURE_PASS_WAITING_OWNER_APPROVAL") else 1
 
 
 if __name__ == "__main__":

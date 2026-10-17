@@ -1,0 +1,16 @@
+﻿branch: order01317-e11-fixture-owner-gate-closure
+HEAD (R1 commit): 6cb8142dbb5629c4817d283cb41d12265a7aab0e
+parent (013.17 tip): 1755015988bb6e3bfde7cfcf336852ce0381f62a
+origin/main: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+origin branch (pre-push): 1755015988bb6e3bfde7cfcf336852ce0381f62a
+main_expected: 0a26fc70ce13e69932db7fe54c810fcbf0f99d3f
+
+git status --short --branch:
+## order01317-e11-fixture-owner-gate-closure
+
+git diff --check (whitespace errors):
+(clean)
+
+note: HEAD 6cb8142 = 013.17-R1 commit on top of published 013.17
+tip 1755015. main untouched; no merge; no reset; no force-push.
+push: branch only (git push origin order01317-e11-fixture-owner-gate-closure).

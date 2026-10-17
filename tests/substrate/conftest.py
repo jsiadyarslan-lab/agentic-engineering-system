@@ -20,8 +20,22 @@ from substrate.sandbox import SandboxRequest
 
 @pytest.fixture
 def adapter() -> LocalSubstrateAdapter:
+    """الركيزة الحية فقط: (013.17-R1 §5) الحكم من فحص القدرات الفعلي
+    لا من وجود تعريفات صور — على مضيف غير مدعوم: SKIPPED — NOT RUN
+    بالسبب المحدد (لا خطأ ولا نجاح مزيف)."""
     if not _SUPPORTED_ARCH:
         pytest.skip("الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2")
+    from substrate.local_substrate import substrate_capabilities
+
+    caps = substrate_capabilities()
+    if not caps.get("supported"):
+        pytest.skip(
+            "SKIPPED — NOT RUN: فحص قدرات الركيزة الفعلي رفض هذا المضيف: "
+            + "; ".join(
+                f"{key}={caps.get(key)}"
+                for key in ("seccomp_self_mode", "user_namespaces_enabled",
+                            "max_user_namespaces"))
+            + " — اختبار عزل حي، لا محاكاة ولا تخفيض معيار")
     return LocalSubstrateAdapter()
 
 

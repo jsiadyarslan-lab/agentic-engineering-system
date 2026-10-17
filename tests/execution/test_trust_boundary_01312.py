@@ -614,7 +614,10 @@ def test_d2_real_worker_script_refuses_isolation_claim_in_subprocess_mode():
     process = subprocess.Popen(
         [sys.executable, str(worker_script),
          "--port", str(port), "--host", "127.0.0.1",
-         "--token", "test-token-01312"],
+         "--token", "test-token-01312",
+         # (013.17-R1 §4/§5.6) فرض الوضع المعلن الصادق صراحة — العقد
+         # يُختبر على كل مضيف بأي حال قدراته، لا حسب تفاصيل المضيف
+         "--mode", "subprocess"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     try:
@@ -666,12 +669,20 @@ import contextlib  # noqa: E402 — قسم 013.15 الحي
 
 
 def _substrate_ok_on_this_host() -> bool:
-    """هل ركيزة Linux الحقيقية متاحة فعلًا هنا؟ قياس لا افتراض."""
+    """هل ركيزة Linux الحقيقية متاحة فعلًا هنا؟ قياس لا افتراض.
+
+    (013.17-R1 §5) الحكم من فحص القدرات الفعلي + الصور اللازمة —
+    وجود تعريفات الصور وحده ليس دليلًا (درس Cloud Shell:
+    seccomp_self_mode=0 مع صور موجودة)."""
     repo = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(repo / "src"))
     try:
-        from substrate.local_substrate import default_local_images
-        return bool(default_local_images())
+        from substrate.local_substrate import (
+            default_local_images,
+            substrate_capabilities,
+        )
+        return bool(default_local_images()) and bool(
+            substrate_capabilities()["supported"])
     except Exception:  # noqa: BLE001
         return False
 
