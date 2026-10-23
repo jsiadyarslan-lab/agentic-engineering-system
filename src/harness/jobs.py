@@ -41,8 +41,11 @@ DEFAULT_MAX_TICKS = 200
 
 #: (§6 AES-EXP-04) حد نبضات الحجب بالفحص المسبق بلا أي تقدم — بعده
 #: تُنهى الوظيفة بفشل صادق (لا حلقة إعادة فحص مفتوحة تحجز خيط
-#: الحلقات الوحيد). قابل للضبط عبر AES_PREFLIGHT_RECHECK_LIMIT.
-DEFAULT_PREFLIGHT_RECHECK_LIMIT = 4
+#: الحلقات الوحيد). القيمة توازن حالتين: انتظار المالك للتوفير يبقى
+#: مستقرًا دقائق (خنق إعادة الفحص 5ث يجعل كلفة النبضة زهيدة)،
+#: والتحرر المؤكد لخيط الحلقات ضمن نافذة معقولة. قابل للضبط عبر
+#: AES_PREFLIGHT_RECHECK_LIMIT.
+DEFAULT_PREFLIGHT_RECHECK_LIMIT = 60
 
 
 def preflight_recheck_limit() -> int:

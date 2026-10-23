@@ -686,16 +686,22 @@ class ProjectEngine:
                 if now_mono - last_recheck >= _AUTO_RECHECK_INTERVAL_S:
                     self._last_auto_recheck_at = now_mono
                     recheck = self.recheck_preflight(project_id)
+                    self._last_recheck_result = recheck
                 else:
-                    recheck = {
-                        "verdict": "BLOCKED",
-                        "summary": (
-                            "الفحص الأخير محجوب — إعادة الفحص الآلية "
-                            "مبرمجة كل "
-                            f"{_AUTO_RECHECK_INTERVAL_S:.0f}ث"
-                        ),
-                        "matrix": [],
-                    }
+                    # نبضة خنق: نعيد استخدام آخر نتيجة فحص حقيقية (≤5ث)
+                    # كاملة الأ shape — التصنيف يقرأ blocked منها كما هي
+                    recheck = getattr(self, "_last_recheck_result", None)
+                    if not recheck:
+                        recheck = {
+                            "verdict": "BLOCKED",
+                            "summary": (
+                                "الفحص الأخير محجوب — إعادة الفحص الآلية "
+                                "مبرمجة كل "
+                                f"{_AUTO_RECHECK_INTERVAL_S:.0f}ث"
+                            ),
+                            "blocked": [],
+                            "matrix": [],
+                        }
                 if recheck["verdict"] == "PASS":
                     return self.tick(project_id)
                 return {
