@@ -1,0 +1,33 @@
+name: AES trusted suite
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project + test extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[test]' pytest-asyncio pytest-timeout
+
+      - name: Trusted suite
+        # المجموعة الموثوقة: الجاهزية + النواة + مسار API الحي + تراجعات
+        # AES-EXP-03. لا تشمل أجيال المهام القديمة (e3/e4/e6) — تحتاج
+        # ركيزة عزل (bwrap) وتُعالج في خطة الإصلاح المعتمدة (AES-EXP-04).
+        run: |
+          pytest tests/readiness tests/core tests/api \
+            --timeout=150 -q --no-header \
+            -p no:cacheprovider 2>&1 | tail -40
