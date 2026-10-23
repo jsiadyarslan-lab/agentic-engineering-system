@@ -66,7 +66,7 @@ def test_chat_single_failure_does_not_starve_executor(
 
     # المحادثة التالية على نفس المنفّذ تنجح — لا تجويع بعد الفشل
     second = chat_client.post("/api/chat/stream", json={
-        "message": "رسالة تلي الفشل مباشرة", "provider": "zai-test",
+        "message": "رسالة سليمة تلي الفشل", "provider": "zai-test",
         "model": "glm-test",
     })
     assert second.status_code == 200, second.text[:200]
@@ -87,9 +87,15 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
 ):
     """(§6) مهمة محجوبة بالفحص المسبق تنتهي بحد معلن ويُحرَّر الخيط.
 
-    محرك بلا حقن مسبارات + AES_PROBE_TIMEOUT_S قصيرة = حجب صادق سريع؛
+    محرك بلا حقن مسبارات + AES_PROBE_TIMEOUT_S قصيرة = حجب صادق؛
     حد إعادة الفحص ينهي الوظيفة بفشل مسمّى بدل حلقة مفتوحة. المهمة
     التالية (بحقن الـfixture القياسي) تكتمل — دليل تحرر الخيط.
+
+    (AES-EXP-04) السقف مضبوط للاختبار (30ث عبر AES_PREFLIGHT_
+    BLOCKED_LIMIT_S — العقد نفسه، قيمة أضيق للحتمية): بالسقف
+    الافتراضي 120ث كانت مرحلة الحجب وحدها + التحقق تتجاوز مهلة
+    الاختبار الكلية (150ث) على شبكة سوداء المسبارات (كل نبضة
+    تنتظر مهلة اتصال كاملة) فيفشل الاختبار زمنيًا لا عقديًا.
     """
     from api import projects as projects_mod
     from tests.api.planning_wait import wait_for_plan
@@ -97,6 +103,7 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
 
     sessions = project_env["sessions"]
     real_factory = projects_mod._test_engine_factory
+    monkeypatch.setenv("AES_PREFLIGHT_BLOCKED_LIMIT_S", "30")
 
     def no_injection_factory(on_event=None, **_kw):
         engine = real_factory(on_event=on_event)
@@ -116,9 +123,10 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
                            json={"approved": True})
     assert approved.status_code == 200
 
-    # الحجب الصادق يصل ثم الوظيفة تنتهي بالسقف الزمني الحائط (120ث
-    # افتراضيًا) — لا انتظار مفتوح ولا احتجاز دائم للخيط الوحيد
-    deadline = time.monotonic() + 220.0
+    # الحجب الصادق يصل ثم الوظيفة تنتهي بالسقف الزمني الحائط
+    # المضبوط أعلاه — لا انتظار مفتوح ولا احتجاز دائم للخيط الوحيد
+    # (نافذة التحقق = السقف + أبطأ نبضة مسبارات + هامش)
+    deadline = time.monotonic() + 100.0
     released = False
     while time.monotonic() < deadline:
         if wf_runner.active_run(sessions) is None:

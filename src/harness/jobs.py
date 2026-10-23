@@ -324,21 +324,27 @@ class JobManager:
         })
         return self.get_job(job_id)
 
-    def run_loop(self, job_id: int) -> dict:
+    def run_loop(self, job_id: int, *,
+                 should_yield=None) -> dict:
         """حلقة النبضات — tick واحدًا تلو الآخر مع دفتر الوظيفة.
 
         كل دورة: tick المحرك (كل الحالة من القاعدة) ← تصنيف حتمي ←
         تحديث الصف (نبضة/مؤشرات/انتظار) ← حدث عند كل انتقال. توقف
         الحلقة عند أي انتظار أو حالة نهائية — والاستئناف قرار صريح.
+
+        should_yield (AES-EXP-04 §6): قابلية فحص تسليم المنفّذ — تعيد
+        True عندما تكون هذه الحلقة قد استُلمت من بيئة أعلى أولوية؛
+        الحلقة تخرج عند نقطة أمان النبضة التالية بلا أي كتابة كاذبة
+        (الحالة الدائمة كما هي والاستئناف قرار صريح).
         """
         with self._loop_lock:
             self._active_job_id = int(job_id)
             try:
-                return self._run_loop_locked(job_id)
+                return self._run_loop_locked(job_id, should_yield=should_yield)
             finally:
                 self._active_job_id = None
 
-    def _run_loop_locked(self, job_id: int) -> dict:
+    def _run_loop_locked(self, job_id: int, *, should_yield=None) -> dict:
         import json
 
         from workflow import service
@@ -367,6 +373,18 @@ class JobManager:
         prev_status = "RUNNING"
         try:
             while ticks < self._max_ticks:
+                # (AES-EXP-04 §6) نقطة أمان بين النبضات: بيئة أعلى
+                # أولوية استلمت المنفّذ الوحيد — تسليم فوري بلا كتابة
+                # حالة كاذبة؛ دفتر الوظيفة يبقى على صدق آخر نبضة
+                # (انتظارًا كان أو تنفيذًا) والاستئناف قرار صريح.
+                if should_yield is not None and should_yield():
+                    self._append_note(
+                        job_id,
+                        "سلّمت المنفّذ الوحيد لبيئة أعلى أولوية عند "
+                        "نقطة أمان بين النبضات — الحالة القائمة باقية "
+                        "والاستئناف قرار صريح",
+                    )
+                    break
                 tick_result = self._engine.tick(project_id)
                 ticks += 1
                 # أحداث هذه النبضة (للإعادات ونقاط الحفظ الصادقة)

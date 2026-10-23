@@ -278,13 +278,23 @@ def configure_provider(
     return record
 
 
-def search(sessions, query: str) -> dict:
-    """البحث بأول مزود جاهز (§25) — فشل الجميع يعاد مفصلًا لا مجملًا."""
+def search(sessions, query: str, *, deadline: float | None = None) -> dict:
+    """البحث بأول مزود جاهز (§25) — فشل الجميع يعاد مفصلًا لا مجملًا.
+
+    deadline (AES-EXP-04 §6): سقف زمني تعاوني — لا تُبدأ محاولة
+    مزود جديدة بعد تجاوزه (المحاولة الجارية تكمل بمهلتها الفردية).
+    يسمح للخيوط المتروكة خلف ميزانية المحادثة بإعادة تدوير نفسها
+    سريعًا بدل الجري خلف السلسلة كاملة على شبكة متدهورة.
+    """
+    import time as _time
+
     ensure_seeded(sessions)
     attempts: list[dict] = []
     for record in list_providers(sessions):
         if not record["enabled"]:
             continue
+        if deadline is not None and _time.monotonic() > deadline:
+            break
         provider = build_provider(record)
         try:
             results = provider.search(query)
