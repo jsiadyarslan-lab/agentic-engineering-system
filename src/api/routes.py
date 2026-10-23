@@ -228,10 +228,13 @@ def index() -> FileResponse:
 @app.get("/health")
 def health() -> dict:
     substrate_available = False
+    substrate_kind = None
     try:
-        from substrate.local_substrate import _SUPPORTED_ARCH
+        from substrate.factory import substrate_capabilities_report
 
-        substrate_available = bool(_SUPPORTED_ARCH)
+        _report = substrate_capabilities_report()
+        substrate_available = bool(_report.get("supported"))
+        substrate_kind = _report.get("kind")
     except Exception:  # noqa: BLE001 — إعلان صادق لا انهيار
         substrate_available = False
     return {
@@ -241,10 +244,13 @@ def health() -> dict:
         "phase": "agentic-engineering-system: durable-projects+autonomous-loop+provider-management",
         "substrate": {
             "available": substrate_available,
-            "isolation": "linux-namespaces+seccomp",
+            "kind": substrate_kind,
+            "isolation": "linux-namespaces+seccomp"
+            if substrate_available else "none",
             "note": (
-                "معزولة على Linux/x86_64 (WSL2 على Windows) — "
-                "وإلا وضع متوافق معلن بلا ادعاء عزل"
+                "معزولة على هذا المضيف (ركيزة مختارة بقدرات مثبتة فعليًا)"
+                if substrate_available else
+                "لا ركيزة عزل متاحة — وضع متوافق معلن بلا ادعاء عزل"
             ),
         },
     }
@@ -1687,20 +1693,23 @@ def _eoe_event_shape(run_id: str, seq_box: list, kind: str, payload: dict) -> di
 
 def _build_eoe_engine(working_repo: str):
     from eoe.eoe_engine import EoeEngine
-    from substrate.local_substrate import (
-        SubstrateUnavailable,
-        default_local_images,
-        local_git_image,
-        local_sandbox_manager,
+    from substrate.factory import (
+        default_sandbox_images,
+        make_sandbox_manager,
+        sandbox_git_image,
     )
+    from substrate.local_substrate import SubstrateUnavailable
+    from substrate.sandbox import SandboxManager
 
-    # الأمر 006 §11: منصة غير مدعومة = إعلان صادق لا استثناء خام —
-    # المحرك يُبنى بلا صورة git، وكل قسم git سيفشل FAILED_TO_START بسبب واضح.
+    # الأمر 006 §11 + AES-EXP-04 §3: منصة غير مدعومة = إعلان صادق لا
+    # استثناء خام — المحرك يُبنى بلا صورة git، وكل قسم git سيفشل
+    # FAILED_TO_START بسبب واضح؛ وبلا ركيزة أصلًا = مدير بلا محوّل
+    # (كل طلب BLOCKED بسبب صادق — لا رجوع للتنفيذ على المضيف).
     try:
-        images = {**default_local_images(), "git": local_git_image()}
+        images = {**default_sandbox_images(), "git": sandbox_git_image()}
     except SubstrateUnavailable:
-        images = dict(default_local_images())
-    manager = local_sandbox_manager(images=images)
+        images = dict(default_sandbox_images())
+    manager = make_sandbox_manager(images=images) or SandboxManager()
     work_base = Path(settings.db_path).parent / "eoe-runs" / uuid.uuid4().hex[:8]
     work_base.mkdir(parents=True, exist_ok=True)
     return EoeEngine(

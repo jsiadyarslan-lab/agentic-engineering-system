@@ -400,11 +400,13 @@ def run_textstats_mission(
         PushEngine,
     )
     from roles.live import ArbiterLive, ReviewerLive, ThinkerLive, VerifierLive
-    from substrate.local_substrate import (
-        default_local_images,
-        local_git_image,
-        local_sandbox_manager,
+    from substrate.factory import (
+        default_sandbox_images,
+        make_sandbox_manager,
+        sandbox_git_image,
     )
+    from substrate.local_substrate import SubstrateUnavailable
+    from substrate.sandbox import SandboxManager
 
     started = time.monotonic()
     repo = Path(repo_root) if repo_root else _default_repo_root()
@@ -599,8 +601,13 @@ def run_textstats_mission(
         return hard_stop("؛ ".join(reasons))
 
     # ---- الدفع عبر المحرك المنقول كما هو (§4.3) -----------------------
-    images = {**default_local_images(), "git": local_git_image()}
-    manager = local_sandbox_manager(images=images)
+    # AES-EXP-04 §3.3: الركيزة من المصنع الواحد؛ بلا ركيزة = مدير بلا
+    # محوّل (كل طلب BLOCKED بسبب صادق) وبلا صورة git = فشل قسم git صادق
+    try:
+        images = {**default_sandbox_images(), "git": sandbox_git_image()}
+    except SubstrateUnavailable:
+        images = dict(default_sandbox_images())
+    manager = make_sandbox_manager(images=images) or SandboxManager()
     grantor_key = uuid.uuid4().bytes
     approval_key = uuid.uuid4().bytes
     grantor = GrantorService(grantor_key)

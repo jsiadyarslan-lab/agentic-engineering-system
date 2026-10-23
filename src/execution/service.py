@@ -106,13 +106,22 @@ def _json_loads(raw: str, default):
 
 
 def _substrate_available() -> bool:
-    """هل الركيزة المعزولة متاحة على هذا المضيف فعلًا؟ (011 §4)"""
-    try:
-        from substrate.local_substrate import default_local_images
+    """هل الركيزة المعزولة متاحة على هذا المضيف فعلًا؟ (011 §4)
 
-        return bool(default_local_images())
+    AES-EXP-04 §3.3: المصدر الواحد للحقيقة = substrate.factory
+    (محلي x86_64 أو bwrap بقدرات مثبتة) — مع مسار احتياطي قديم.
+    """
+    try:
+        from substrate.factory import substrate_available as _selected
+
+        return bool(_selected())
     except Exception:  # noqa: BLE001 — أي عائق = غير متاحة بلا ادعاء
-        return False
+        try:
+            from substrate.local_substrate import default_local_images
+
+            return bool(default_local_images())
+        except Exception:  # noqa: BLE001
+            return False
 
 
 def ensure_local_registered(sessions) -> dict:
@@ -187,8 +196,10 @@ def ensure_local_registered(sessions) -> dict:
                 session.refresh(found)
             return _row_to_dict(found)
         # لا بيئة موجودة — نحاول الإدراج
+        # (§20 لا افتراض جاهزية): الحالة الأولى UNKNOWN — READY/NOT_READY
+        # نتيجة تحقق فعلي لاحق لا افتراض إقلاع.
         row = ExecutionEnvironment(
-            name=correct_name, backend="LOCAL", status="DETECTED",
+            name=correct_name, backend="LOCAL", status="UNKNOWN",
             endpoint="", is_default=1, sandboxed=sandboxed,
             profile_json=json.dumps({
                 "host_platform": host_platform_label(),
@@ -429,9 +440,12 @@ def verify_environment(sessions, environment_id: int) -> dict:
     result: VerifyResult = backend.verify()
     with sessions() as session:
         row = session.get(ExecutionEnvironment, int(environment_id))
-        # (013.7 §P1) التحقق الناجح = HEALTHY؛ READY تُحدَّد لاحقاً
-        # بالسياسة والأهلية — لا READY فوري
-        row.status = "HEALTHY" if result.ok else result.status
+        # (§19/§42 + تصحيح AES-EXP-04): حكم الخلفية هو المصدر الواحد —
+        # نتيجة verify الحقيقية (READY/NOT_READY/UNAVAILABLE) تُكتب كما
+        # هي. تحويلها إلى HEALTHY كان يقطع سلسلة الجاهزية (لا READY
+        # أبدًا ← اختيار فارغ ← عقد ENVIRONMENT_MISMATCH ميت). الأهلية
+        # بالسياسة تُطبق عند الاختيار لا هنا.
+        row.status = result.status
         row.profile_json = json.dumps(
             result.profile, ensure_ascii=False, default=str
         )
@@ -445,7 +459,8 @@ def verify_environment(sessions, environment_id: int) -> dict:
         session.commit()
     out = get_environment(sessions, environment_id)
     out["verify"] = result.to_dict()
-    # لا نبلغ READY هنا — الحالة الصريحة تُحسب بالسياسة
+    # الحالة المكتوبة = حكم الخلفية المُثبت (مصدر واحد §19)؛ الأهلية
+    # بالسياسة تُحسب عند الاختيار (§18).
     return out
 
 

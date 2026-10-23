@@ -57,26 +57,30 @@ def run_command(
         )
     import uuid as uuid_mod
 
+    from substrate.factory import make_sandbox_manager
     from substrate.limits import E1_LIMITS_DEFAULTS
-    from substrate.local_substrate import local_sandbox_manager
     from substrate.sandbox import NetworkMode, SandboxRequest
 
-    manager = local_sandbox_manager()
-    image = next(iter(manager.image_allowlist))
-    workspace = ctx.grant_root / "_ws"
-    workspace.mkdir(parents=True, exist_ok=True)
-    request = SandboxRequest(
-        sandbox_id=f"proc-{uuid_mod.uuid4().hex[:8]}",
-        image=image,
-        command=tuple(argv),
-        limits=E1_LIMITS_DEFAULTS,
-        env_names=frozenset({"PATH"}),
-        network=NetworkMode.NONE,
-        workspace_root=str(workspace),
-        artifacts_dir=str(ctx.grant_root),
-    )
-    outcome = manager.execute(request)
-    record = outcome.record
+    # AES-EXP-04 §3.3: الركيزة من المصنع الواحد — بلا ركيزة أو بلا
+    # صورة يكون المسار المعلن (in_process_declared) كما في العقد الحالي
+    manager = make_sandbox_manager()
+    image = next(iter(manager.image_allowlist), None) if manager else None
+    outcome = None
+    if manager is not None and image is not None:
+        workspace = ctx.grant_root / "_ws"
+        workspace.mkdir(parents=True, exist_ok=True)
+        request = SandboxRequest(
+            sandbox_id=f"proc-{uuid_mod.uuid4().hex[:8]}",
+            image=image,
+            command=tuple(argv),
+            limits=E1_LIMITS_DEFAULTS,
+            env_names=frozenset({"PATH"}),
+            network=NetworkMode.NONE,
+            workspace_root=str(workspace),
+            artifacts_dir=str(ctx.grant_root),
+        )
+        outcome = manager.execute(request)
+    record = outcome.record if outcome is not None else None
     site = "substrate"
     if record is not None and record.executed:
         exit_code = record.exit_code if record.exit_code is not None else -1
