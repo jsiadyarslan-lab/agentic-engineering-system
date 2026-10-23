@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import os
+
 import datetime as _dt
 import json
 
@@ -151,14 +153,45 @@ def probe_provider(sessions, provider_id: int) -> dict:
     return out
 
 
+#: (AES-EXP-04 §6) الميزانية الكلية لمسبار البحث المجمّع — فحص كل
+#: المزودين تسلسليًا على شبكة ميتة كان يستهلك دقائق داخل إعادة فحص
+#: واحدة (وخيط الحلقات معها). ما تجاوز الميزانية يعلن بصدق أنه غير
+#: مثبت (لا جاهزية مزيفة). قابل للضبط عبر AES_RESEARCH_PROBE_BUDGET_S.
+_DEFAULT_PROBE_BUDGET_S = 10.0
+
+
+def probe_budget() -> float:
+    """الميزانية الكلية لمسبار البحث — AES_RESEARCH_PROBE_BUDGET_S."""
+    raw = os.environ.get("AES_RESEARCH_PROBE_BUDGET_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_PROBE_BUDGET_S
+    return value if value > 0 else _DEFAULT_PROBE_BUDGET_S
+
+
 def probe_all(sessions) -> list[dict]:
     ensure_seeded(sessions)
+    import time as _time
+
+    started = _time.monotonic()
     out = []
     for record in list_providers(sessions):
         if not record["enabled"]:
             out.append({
                 "provider_id": record["id"], "name": record["name"],
                 "status": "DISABLED", "reason": "معطل بقرار المالك",
+            })
+            continue
+        if _time.monotonic() - started >= probe_budget():
+            out.append({
+                "provider_id": record["id"], "name": record["name"],
+                "status": "UNKNOWN",
+                "reason": (
+                    "فحص مزود البحث تجاوز الميزانية الزمنية الكلية "
+                    f"({probe_budget():.0f}ث) — الحالة غير مثبتة؛ "
+                    "أعد الفحص من لوحة البحث"
+                ),
             })
             continue
         out.append(probe_provider(sessions, record["id"]))

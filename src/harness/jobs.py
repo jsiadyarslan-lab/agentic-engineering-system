@@ -39,6 +39,23 @@ from harness.seams import HarnessSeams
 #: سقف النبضات الافتراضي لكل run_loop — سخي بلا لانهائية.
 DEFAULT_MAX_TICKS = 200
 
+#: (§6 AES-EXP-04) حد نبضات الحجب بالفحص المسبق بلا أي تقدم — بعده
+#: تُنهى الوظيفة بفشل صادق (لا حلقة إعادة فحص مفتوحة تحجز خيط
+#: الحلقات الوحيد). قابل للضبط عبر AES_PREFLIGHT_RECHECK_LIMIT.
+DEFAULT_PREFLIGHT_RECHECK_LIMIT = 4
+
+
+def preflight_recheck_limit() -> int:
+    """حد نبضات الحجب بالفحص المسبق — AES_PREFLIGHT_RECHECK_LIMIT."""
+    import os
+
+    raw = os.environ.get("AES_PREFLIGHT_RECHECK_LIMIT", "")
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_PREFLIGHT_RECHECK_LIMIT
+    return value if value > 0 else DEFAULT_PREFLIGHT_RECHECK_LIMIT
+
 _RETRY_KIND = "RETRY_REQUESTED"
 _CHECKPOINT_KIND = "CHECKPOINT_CREATED"
 
@@ -344,15 +361,13 @@ class JobManager:
 
         last_tick: dict = {}
         ticks = 0
+        preflight_blocked_ticks = 0
         last_event_id = self._last_event_id(project_id)
         prev_status = "RUNNING"
         try:
             while ticks < self._max_ticks:
                 tick_result = self._engine.tick(project_id)
                 ticks += 1
-                # DEBUG
-                if ticks % 10 == 0:
-                    print(f"DEBUG: tick {ticks}, action={tick_result.get('action')}, blocked_kind={tick_result.get('blocked_kind')}", flush=True)
                 # أحداث هذه النبضة (للإعادات ونقاط الحفظ الصادقة)
                 new_events = self._events_after(project_id,
                                                 last_event_id)
@@ -380,6 +395,29 @@ class JobManager:
                 if classification.get("waiting_kind") in ("WORKER", "CAPABILITY") \
                         and tick_result.get("blocked_kind") == "preflight":
                     time.sleep(0.5)
+
+                # (§6 AES-EXP-04) المهمة المحجوبة بالفحص المسبق تنهي نفسها
+                # بعد حد معلن بلا أي تقدم — كل إعادة فحص كانت تعيد المسبارات
+                # وتحجز خيط الحلقات الوحيد؛ الفشل صادق مسمّى والإجراء للمالك
+                if tick_result.get("blocked_kind") == "preflight":
+                    preflight_blocked_ticks += 1
+                else:
+                    preflight_blocked_ticks = 0
+                if preflight_blocked_ticks >= preflight_recheck_limit():
+                    reason = (
+                        "الفحص المسبق محجوب بقدرات غير جاهزة بعد "
+                        f"{preflight_blocked_ticks} نبضات بلا تقدم — "
+                        "الإجراء: جهّز القدرات المحجوبة (المصفوفة في أحداث "
+                        "PREFLIGHT_BLOCKED) ثم أعد تشغيل المشروع"
+                    )
+                    self._write(job_id, status="FAILED",
+                                last_error=reason[:800],
+                                finished_at=_utc_now())
+                    self._emit(project_id, "JOB_FAILED", {
+                        "job_id": job_id, "error": reason,
+                    })
+                    self._finish(job_id, "FAILED", note=reason)
+                    break
 
                 checkpoint = service.latest_checkpoint(
                     sessions, project_id
@@ -422,6 +460,14 @@ class JobManager:
                 )
                 if retry_requested:
                     self._increment(job_id, "retries", 1)
+                # (AES-EXP-04 §14) الاستئناف الآلي من انتظار بوابة/قدرة/
+                # عامل = محاولة جديدة على نفس صف الوظيفة — نفس دلالة
+                # استئناف المالك (mark_resumed) لا صفّ جديد ولا محاولة
+                # كاذبة تبقى 1.
+                if (prev_status in ("WAITING_CAPABILITY", "WAITING_WORKER",
+                                    "WAITING_GATE")
+                        and new_status == "RUNNING"):
+                    self._increment(job_id, "attempt", 1)
                 if new_checkpoints:
                     self._increment(job_id, "checkpoints",
                                     new_checkpoints)

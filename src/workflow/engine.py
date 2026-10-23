@@ -33,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import subprocess
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -40,6 +41,11 @@ from router.role_config import RoleSelection
 from workflow import auditor, planning_runtime, service
 from workflow.models import GATE_KINDS, _utc_now
 from workflow.service import PROJECT_ROLES
+
+#: (AES-EXP-04 §6) خنق إعادة الفحص الآلية داخل فرع الحجب — كل نبضة كانت
+#: تجري فحصًا قسريًا كاملًا (بإقلاع رمل حقيقي) كل 0.5ث فتزاحم الطلبات
+#: اليدوية وقاعدة SQLite. إعادة الفحص الآلية كل 5ث تكفي للتوفير الآلي.
+_AUTO_RECHECK_INTERVAL_S = 5.0
 
 #: الحالات التي تُوقف الحلقة (نهائية أو انتظار قرار).
 WAITING_STATES = ("AWAITING_OWNER_APPROVAL", "BLOCKED", "PAUSED")
@@ -67,6 +73,7 @@ class ProjectEngine:
         on_event: Callable[[dict], None] | None = None,
         role_mappings_provider: Callable[[], dict] | None = None,
         max_step_failures: int = MAX_STEP_FAILURES,
+        probe_injections: dict | None = None,
     ):
         self._sessions = sessions
         self._router_factory = router_factory
@@ -74,6 +81,10 @@ class ProjectEngine:
         self._on_event = on_event
         self._role_mappings_provider = role_mappings_provider
         self._max_step_failures = max(1, int(max_step_failures))
+        # (AES-EXP-04 §6) حقن مسبارات القدرات للاختبارات — نفس عقد
+        # registry.run_probe المعلن (search_fn/fetch_fn/https_fn/…
+        # «للاختبارات حصرًا»). None في الإنتاج = المسار الحقيقي كاملًا.
+        self._probe_injections = probe_injections or None
 
     # ------------------------------------------------------------------ #
     # الأحداث — دائمة + بث لحظي
@@ -669,7 +680,22 @@ class ProjectEngine:
             if provisioning and not pending:
                 # (011 §19) BLOCKED ← RECHECK ← READY ← OPEN: التوفير
                 # اكتمل؟ أعد الفحص تلقائيًا — بلا إعادة اعتماد الخطة.
-                recheck = self.recheck_preflight(project_id)
+                # (AES-EXP-04 §6) بخنق زمني: لا فحص قسري كل نبضة.
+                now_mono = time.monotonic()
+                last_recheck = getattr(self, "_last_auto_recheck_at", 0.0)
+                if now_mono - last_recheck >= _AUTO_RECHECK_INTERVAL_S:
+                    self._last_auto_recheck_at = now_mono
+                    recheck = self.recheck_preflight(project_id)
+                else:
+                    recheck = {
+                        "verdict": "BLOCKED",
+                        "summary": (
+                            "الفحص الأخير محجوب — إعادة الفحص الآلية "
+                            "مبرمجة كل "
+                            f"{_AUTO_RECHECK_INTERVAL_S:.0f}ث"
+                        ),
+                        "matrix": [],
+                    }
                 if recheck["verdict"] == "PASS":
                     return self.tick(project_id)
                 return {
@@ -831,14 +857,29 @@ class ProjectEngine:
 
     def _run_preflight(self, project: dict, plan: dict, *,
                        force: bool = False) -> dict:
-        """تنفيذ الفحص المسبق الفعلي — policy من المشروع (011 §26)."""
+        """تنفيذ الفحص المسبق الفعلي — policy من المشروع (011 §26).
+
+        (AES-EXP-04 §6): حقن المسبارات (إن وُجد) يمر عبر العقد المعلن
+        نفسه — run_probe_fn — فلا مسار مزدوج ولا تجاوز للحقيقة.
+        """
         from readiness import preflight as preflight_mod
+        from readiness import registry as readiness_registry
 
         unready = self._unready_roles()
+        injected_probe = None
+        if self._probe_injections:
+            injections = dict(self._probe_injections)
+
+            def injected_probe(sessions, capability_id: str) -> dict:
+                return readiness_registry.run_probe(
+                    sessions, capability_id, **injections
+                )
+
         return preflight_mod.task_preflight(
             self._sessions, self._preflight_goal(project, plan),
             policy=project.get("execution_policy") or "STRICT_ISOLATED",
             force=force,
+            run_probe_fn=injected_probe,
             llm_ready=not unready,
             llm_detail={"unready_roles": unready} if unready else None,
         )

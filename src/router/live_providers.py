@@ -9,6 +9,7 @@ resolve_live_providers + ProviderCallError: منطق «أي مفتاح لأي م
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 
 from core.config import live_model_settings
@@ -187,13 +188,26 @@ def live_cfg_max_tokens(live_cfg: "Any" = None) -> int:
 
 
 def live_cfg_timeout(live_cfg: "Any" = None) -> float:
-    """مهلة نقل معلنة لكل استدعاء — تكفي لاستدلال طويل شرعي."""
+    """مهلة نقل معلنة لكل استدعاء — تكفي لاستدلال طويل شرعي.
+
+    (AES-EXP-04 §6): قابلة للضبط بصدق عبر ``AES_LLM_TIMEOUT_S`` —
+    بيئات الاختبار (بلا خروج شبكي) تضبطها بدل انتظار مهلة TCP كاملة
+    يحتجز بها خيط منفّذ مشترك. أولوية الضبط: إعداد المزود ثم البيئة
+    ثم الافتراض (600ث).
+    """
     cfg = live_cfg or live_model_settings
     try:
         value = float(getattr(cfg, "timeout", 0) or 0)
     except (TypeError, ValueError):
         value = 0.0
-    return value if value > 0 else DEFAULT_REQUEST_TIMEOUT
+    if value > 0:
+        return value
+    raw = os.environ.get("AES_LLM_TIMEOUT_S", "")
+    try:
+        env_value = float(raw)
+    except (TypeError, ValueError):
+        env_value = 0.0
+    return env_value if env_value > 0 else DEFAULT_REQUEST_TIMEOUT
 
 
 def _resolve_db_provider_specs() -> dict[str, dict] | None:

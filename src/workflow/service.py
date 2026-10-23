@@ -538,12 +538,19 @@ def update_step(sessions, step_id: int, **fields) -> None:
 
 def create_execution(sessions, step_id: int, *, attempt: int,
                      provider: str, model: str, workspace: str,
-                     agent_role: str = "implementer") -> int:
+                     agent_role: str = "implementer",
+                     command: str = "", cwd: str = "",
+                     command_type: str = "") -> int:
+    """(AES-EXP-04 تصحيح): الأعمدة command/cwd/command_type موجودة في
+    النموذج (013.7 §P14) وكان المحرك يمررها — الدالة فقط لم تُحدَّث
+    فكانت كل خطوة تنفيذ حقيقية تنفجر TypeError قبل أن تبدأ."""
     with sessions() as session:
         execution = Execution(
             step_id=int(step_id), attempt=attempt, status="RUNNING",
             agent_role=agent_role, provider=provider, model=model,
             workspace=workspace,
+            command=command or "", cwd=cwd or "",
+            command_type=command_type or "",
         )
         session.add(execution)
         session.commit()
