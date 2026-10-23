@@ -251,6 +251,11 @@ textarea, select, input {
   flex-direction: column;
   min-width: 0;
   background: var(--bg);
+  /* (AES-EXP-03) مرساة تموضع لمناظر مركز التحكم (.cc-view داخل
+     main.chat) — كانت absolute;inset:0 تحل إلى نافذة العرض كاملة
+     فتغطي الشريط الجانبي وتمنع الوصول للإعدادات ما دام المنظر
+     مفتوحًا؛ مع المرساة تغطي منطقة العمل وحدها كما تقصد البنية. */
+  position: relative;
 }
 
 .chat-head {
