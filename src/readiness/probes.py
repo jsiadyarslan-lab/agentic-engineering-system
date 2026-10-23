@@ -19,6 +19,7 @@ import shutil
 import socket
 import subprocess
 import tempfile
+import threading
 import time
 import urllib.request
 from dataclasses import dataclass, field
@@ -33,6 +34,42 @@ WEB_SEARCH_PROBE_QUERY = "open source python"
 
 #: مهل المسبارات (ثوان) — قصيرة: الفحص خفيف أو مفشَّل سريعًا.
 PROBE_TIMEOUT = 8.0
+
+#: مهلة حل أسماء DNS (ثوان) — ``socket.gethostbyname`` لا يقبل مهلة
+#: أصلًا، فالتقييد بخيط حاجب بحد زمني صارم عبر ``run_bounded``.
+#: هذا هو الجذر المثبّت لتعليق ``GET /api/environment/inventory``
+#: الموثق في AES-EXP-01: مُحلِّل بطيء كان يجمّد مسار الطلب عشرات
+#: الثواني بلا سقف. النداء لا يُحتجز أبعد من هذا الحد.
+DNS_RESOLVE_TIMEOUT = 5.0
+
+
+def run_bounded(fn: Callable[[], Any],
+                timeout: float) -> tuple[bool, Any]:
+    """تشغيل دالة حاجبة بحد زمني صارم — خيط daemon + صندوق نتيجة.
+
+    الخيط لا يُقتل (بايثون لا تسمح) لكنه daemon فلا يمنع الإطفاء،
+    والنداء يستعيد السيطرة فور انتهاء المهلة — وهذا عقد المسبارات:
+    الفحص خفيف أو مفشَّل سريعًا (رأس الملف §0). يعيد زوجًا:
+    ``(True, نتيجة)`` عند الإتمام، و``(False, None)`` عند تجاوز
+    المهلة، ويُعاد رفع استثناء الدالة كما هو إن حدث بعد الإتمام.
+    """
+    box: dict = {}
+
+    def _target() -> None:
+        try:
+            box["result"] = fn()
+        except BaseException as error:  # noqa: BLE001 — يُعاد للنداء
+            box["error"] = error
+
+    worker = threading.Thread(target=_target, daemon=True,
+                              name="aes-bounded-probe")
+    worker.start()
+    worker.join(timeout)
+    if worker.is_alive():
+        return False, None
+    if "error" in box:
+        raise box["error"]
+    return True, box.get("result")
 
 #: TTL افتراضي لكل عائلة (§24) — الجاهزية تنتهي لا تدوم.
 TTL_DEFAULTS = {
@@ -93,18 +130,36 @@ def _finish(status: str, reason: str, started: float, ttl: int,
 # الشبكة: DNS / HTTPS / بحث حقيقي (§6)
 # ------------------------------------------------------------------ #
 
-def probe_dns(host: str = DNS_PROBE_HOST) -> ProbeResult:
-    """فحص resolve حقيقي — لا افتراض توفر."""
+def probe_dns(host: str = DNS_PROBE_HOST,
+              timeout: float | None = None) -> ProbeResult:
+    """فحص resolve حقيقي — لا افتراض توفر، وبحد زمني صارم (§6).
+
+    (AES-EXP-03 P1) كان الحل عبر ``gethostbyname`` بلا مهلة — دالة
+    حاجبة لا تقبل سقفًا؛ الآن الحل داخل خيط محدود ``DNS_RESOLVE_TIMEOUT``
+    فالمسبار يفشل بوضوح بدل أن يجمّد مسار الطلب. المهلة تُقرأ وقت
+    الاستدعاء (لا وقت الاستيراد) فالضبط والاختبار يغيرانها بفعالية.
+    """
+    if timeout is None:
+        timeout = DNS_RESOLVE_TIMEOUT
     started = time.monotonic()
     try:
-        addr = socket.gethostbyname(host)
-        return _finish("READY", f"حلّ {host} ← {addr}", started,
-                       TTL_DEFAULTS["NETWORK"], details={"host": host,
-                                                          "address": addr})
+        bounded, addr = run_bounded(
+            lambda: socket.gethostbyname(host), timeout)
     except OSError as error:
         return _finish("NOT_READY", f"تعذر حل {host}: {error}", started,
-                       TTL_DEFAULTS["NETWORK"], failure_class="NETWORK_FAILURE",
+                       TTL_DEFAULTS["NETWORK"],
+                       failure_class="NETWORK_FAILURE",
                        failure_stage="TOOL_EXECUTION", details={"host": host})
+    if not bounded:
+        return _finish(
+            "NOT_READY",
+            f"تجاوز حل {host} مهلة {timeout:.0f}ث — المُحلِّل لا يستجيب",
+            started, TTL_DEFAULTS["NETWORK"], failure_class="TIMEOUT",
+            failure_stage="TOOL_EXECUTION",
+            details={"host": host, "timeout_s": timeout})
+    return _finish("READY", f"حلّ {host} ← {addr}", started,
+                   TTL_DEFAULTS["NETWORK"], details={"host": host,
+                                                      "address": addr})
 
 
 def probe_https(url: str = HTTPS_PROBE_URL,

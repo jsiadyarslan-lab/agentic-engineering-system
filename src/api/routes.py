@@ -906,6 +906,15 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
 
     def run_chat_in_thread() -> None:
         try:
+            # (AES-EXP-03 P1) تهيئة نص البث الجزئي وعلم البث **قبل أي نقطة
+            # فشل محتملة**. كان التهيئان بعد مسار البحث في الويب، فأي
+            # فشل قبلهما (بناء الموجّه، البحث، قراءة السجل…) كان يُسقط
+            # معالج الفشل نفسه بـ UnboundLocalError: partial ويُميت
+            # الخيط صامتة بلا chat.error — جذر عطل معالج الأخطاء الموثق.
+            streamed = False
+            # (013.5 §G) نصّ متراكم — إن فشل المزود بعد بث جزئي، الفشل
+            # يُدوَّن **مع** ما وصل، فلا تختفي إجابة عند التحديث.
+            partial = {"text": ""}
             router = _build_live_router(
                 on_event=lambda e: put({
                     "kind": "router.event", "role": "router", **e
@@ -1095,10 +1104,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     "details": {"conversation_id": conversation_id},
                 })
 
-            streamed = False
-            # (013.5 §G) نصّ متراكم — إن فشل المزود بعد بث جزئي، الفشل
-            # يُدوَّن **مع** ما وصل، فلا تختفي إجابة عند التحديث.
-            partial = {"text": ""}
+            # (AES-EXP-03 P1) streamed/partial مُهيَّآن أعلاه قبل كل نقطة فشل
 
             def on_delta_tracked(delta: str) -> None:
                 partial["text"] += delta

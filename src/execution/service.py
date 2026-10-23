@@ -153,7 +153,17 @@ def ensure_local_registered(sessions) -> dict:
                 session.commit()
                 session.refresh(found)
             # عزل البيئة المحلية يتبع توفر الركيزة الآن (WSL2 مثلا)
-            if bool(found.sandboxed) != bool(sandboxed):
+            # (AES-EXP-03) كان التصفير غير المشروط: كل استدعاء
+            # list_environments يمحو نتيجة تحقق حقيقي (مسبار
+            # sandbox_probe_result أو دورة تجهيز) فلا يثبت عزل أبدًا
+            # — preflight يحجب كل مهمة رغم بيئة READY معزولة، وتناقض
+            # «بيئة جاهزة» مع حجب السياسة (العطل الموثق في
+            # AES-EXP-01: تناقض مؤشرات البيئة/التنفيذ). التصحيح الآلي
+            # للهوية يعمل قبل الحسم فقط: حالة لم تُحقق بعد — وبعد
+            # تحقق حقيقي تكون الحقيقة للمسبار/التجهيز لا للاستدلال.
+            if (bool(found.sandboxed) != bool(sandboxed)
+                    and (found.status or "") in (
+                        "", "UNKNOWN", "DETECTED")):
                 found.sandboxed = sandboxed
                 found.updated_at = _utc_now()
                 session.commit()

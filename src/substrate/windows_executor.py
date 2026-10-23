@@ -674,11 +674,19 @@ import os
 import tempfile
 import uuid
 import subprocess
-import win32pipe
-import win32file
-import win32event
-import win32con
-import win32api
+# (AES-EXP-03) هذه الكتلة كانت استيرادًا مكشوفًا لوحدات pywin32 —
+# تكسر جمع 19 ملف اختبار على Linux رغم أن رأس الملف نفسه يحمي
+# نفس الاستيرادات (try/except ImportError مع بديل subprocess).
+# الحماية هنا بنمط الملف نفسه: على Windows تُستورد كما كان،
+# وعلى Linux تسقط بصمت لأن كل الاستخدام محمي بـ HAS_PYWIN32.
+try:
+    import win32pipe
+    import win32file
+    import win32event
+    import win32con
+    import win32api
+except ImportError:  # noqa: F401 — بيئة بلا pywin32 (Linux)
+    pass
 import hashlib
 import json
 import time
