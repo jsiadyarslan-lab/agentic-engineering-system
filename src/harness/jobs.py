@@ -39,25 +39,23 @@ from harness.seams import HarnessSeams
 #: سقف النبضات الافتراضي لكل run_loop — سخي بلا لانهائية.
 DEFAULT_MAX_TICKS = 200
 
-#: (§6 AES-EXP-04) حد نبضات الحجب بالفحص المسبق بلا أي تقدم — بعده
-#: تُنهى الوظيفة بفشل صادق (لا حلقة إعادة فحص مفتوحة تحجز خيط
-#: الحلقات الوحيد). القيمة توازن حالتين: انتظار المالك للتوفير يبقى
-#: مستقرًا دقائق (خنق إعادة الفحص 5ث يجعل كلفة النبضة زهيدة)،
-#: والتحرر المؤكد لخيط الحلقات ضمن نافذة معقولة. قابل للضبط عبر
-#: AES_PREFLIGHT_RECHECK_LIMIT.
-DEFAULT_PREFLIGHT_RECHECK_LIMIT = 60
+#: (§6 AES-EXP-04) سقف الزمن الحائط للبقاء محجوبًا بالفحص المسبق بلا
+#: توفير — بعده تُنهى الوظيفة بفشل صادق (لا حلقة مفتوحة). الزمن لا
+#: عدّاد النبضات: النبضات رخيصة بعد الخنق (5ث) وأسرعها لا يقصّر نافذة
+#: توفير المالك. قابل للضبط عبر AES_PREFLIGHT_BLOCKED_LIMIT_S.
+DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S = 120.0
 
 
-def preflight_recheck_limit() -> int:
-    """حد نبضات الحجب بالفحص المسبق — AES_PREFLIGHT_RECHECK_LIMIT."""
+def preflight_blocked_limit_s() -> float:
+    """سقف ثواني البقاء محجوبًا بالفحص المسبق — AES_PREFLIGHT_BLOCKED_LIMIT_S."""
     import os
 
-    raw = os.environ.get("AES_PREFLIGHT_RECHECK_LIMIT", "")
+    raw = os.environ.get("AES_PREFLIGHT_BLOCKED_LIMIT_S", "")
     try:
-        value = int(raw)
+        value = float(raw)
     except (TypeError, ValueError):
-        return DEFAULT_PREFLIGHT_RECHECK_LIMIT
-    return value if value > 0 else DEFAULT_PREFLIGHT_RECHECK_LIMIT
+        return DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S
+    return value if value > 0 else DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S
 
 _RETRY_KIND = "RETRY_REQUESTED"
 _CHECKPOINT_KIND = "CHECKPOINT_CREATED"
@@ -364,7 +362,7 @@ class JobManager:
 
         last_tick: dict = {}
         ticks = 0
-        preflight_blocked_ticks = 0
+        blocked_since: float | None = None
         last_event_id = self._last_event_id(project_id)
         prev_status = "RUNNING"
         try:
@@ -402,14 +400,19 @@ class JobManager:
                 # (§6 AES-EXP-04) المهمة المحجوبة بالفحص المسبق تنهي نفسها
                 # بعد حد معلن بلا أي تقدم — كل إعادة فحص كانت تعيد المسبارات
                 # وتحجز خيط الحلقات الوحيد؛ الفشل صادق مسمّى والإجراء للمالك
+                import time as _t
+
                 if tick_result.get("blocked_kind") == "preflight":
-                    preflight_blocked_ticks += 1
+                    if blocked_since is None:
+                        blocked_since = _t.monotonic()
                 else:
-                    preflight_blocked_ticks = 0
-                if preflight_blocked_ticks >= preflight_recheck_limit():
+                    blocked_since = None
+                if (blocked_since is not None
+                        and _t.monotonic() - blocked_since
+                        >= preflight_blocked_limit_s()):
                     reason = (
-                        "الفحص المسبق محجوب بقدرات غير جاهزة بعد "
-                        f"{preflight_blocked_ticks} نبضات بلا تقدم — "
+                        "الفحص المسبق محجوب بقدرات غير جاهزة لأكثر من "
+                        f"{preflight_blocked_limit_s():.0f}ث بلا توفير — "
                         "الإجراء: جهّز القدرات المحجوبة (المصفوفة في أحداث "
                         "PREFLIGHT_BLOCKED) ثم أعد تشغيل المشروع"
                     )

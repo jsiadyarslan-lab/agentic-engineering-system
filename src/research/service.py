@@ -173,21 +173,44 @@ def probe_budget() -> float:
 
 
 def probe_all(sessions) -> list[dict]:
+    """فحص كل مزود بحث — **بالتوازي** بميزانية كلية (AES-EXP-04 §6).
+
+    التسلسل كان يجعل المصدر المحلي السريع ينتظر وراء المزودين ميتي
+    الاتصال (ترتيب البذر لا علاقة له بالصلة) فتتجاوز الميزانية قبل
+    الوصول إليه وتقلب الجاهزية عرَضًا. الآن: كل المزودين المفعّلين
+    تُفحص دفعة واحدة، والميزانية تحدد الانتظار الكلي، وما تجاوزها
+    يعلن بصدق أنه غير مثبت (لا جاهزية مزيفة).
+    """
     ensure_seeded(sessions)
     import time as _time
+    from concurrent.futures import ThreadPoolExecutor, wait
 
-    started = _time.monotonic()
-    out = []
-    for record in list_providers(sessions):
-        if not record["enabled"]:
+    records = list_providers(sessions)
+    enabled = [r for r in records if r["enabled"]]
+    out = [{
+        "provider_id": r["id"], "name": r["name"],
+        "status": "DISABLED", "reason": "معطل بقرار المالك",
+    } for r in records if not r["enabled"]]
+
+    if enabled:
+        started = _time.monotonic()
+        pool = ThreadPoolExecutor(
+            max_workers=min(6, len(enabled)),
+            thread_name_prefix="aes-research-probe",
+        )
+        futures = {
+            pool.submit(probe_provider, sessions, r["id"]): r
+            for r in enabled
+        }
+        done, pending = wait(futures, timeout=probe_budget())
+        for future in pending:
+            future.cancel()
+        pool.shutdown(wait=False)
+        exceeded = {futures[f]["id"] for f in pending}
+        for future in pending:
             out.append({
-                "provider_id": record["id"], "name": record["name"],
-                "status": "DISABLED", "reason": "معطل بقرار المالك",
-            })
-            continue
-        if _time.monotonic() - started >= probe_budget():
-            out.append({
-                "provider_id": record["id"], "name": record["name"],
+                "provider_id": futures[future]["id"],
+                "name": futures[future]["name"],
                 "status": "UNKNOWN",
                 "reason": (
                     "فحص مزود البحث تجاوز الميزانية الزمنية الكلية "
@@ -195,8 +218,17 @@ def probe_all(sessions) -> list[dict]:
                     "أعد الفحص من لوحة البحث"
                 ),
             })
-            continue
-        out.append(probe_provider(sessions, record["id"]))
+        for future in done:
+            record = futures[future]
+            try:
+                out.append(future.result())
+            except Exception as error:  # noqa: BLE001 — فشل صادق مسمى
+                out.append({
+                    "provider_id": record["id"], "name": record["name"],
+                    "status": "NOT_READY",
+                    "reason": f"{type(error).__name__}: {error}"[:200],
+                })
+        del exceeded
     return out
 
 

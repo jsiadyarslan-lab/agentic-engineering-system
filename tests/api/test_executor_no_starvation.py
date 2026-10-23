@@ -116,8 +116,9 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
                            json={"approved": True})
     assert approved.status_code == 200
 
-    # الحجب الصادق يصل ثم الوظيفة تنتهي بحد إعادة الفحص (لا انتظار مفتوح)
-    deadline = time.monotonic() + 90.0
+    # الحجب الصادق يصل ثم الوظيفة تنتهي بالسقف الزمني الحائط (120ث
+    # افتراضيًا) — لا انتظار مفتوح ولا احتجاز دائم للخيط الوحيد
+    deadline = time.monotonic() + 220.0
     released = False
     while time.monotonic() < deadline:
         if wf_runner.active_run(sessions) is None:

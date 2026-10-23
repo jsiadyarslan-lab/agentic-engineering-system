@@ -712,6 +712,10 @@ class ProjectEngine:
                         "verdict": recheck["verdict"],
                         "summary": recheck["summary"],
                         "matrix": recheck.get("matrix", []),
+                        # (AES-EXP-04 تصحيح): قائمة المحجوبات لازمة
+                        # للتصنيف الصادق (sandbox وحده = WAITING_WORKER)
+                        # — كان غيابها يصنف كل حجب بعد التحقق CAPABILITY
+                        "blocked": recheck.get("blocked", []),
                     },
                 }
             return {"action": "blocked",
@@ -1037,7 +1041,11 @@ class ProjectEngine:
         plan = self._active_plan(project)
         if plan is None:
             raise EngineError("لا خطة معتمدة تُعاد فحص جاهزيتها")
-        result = self._run_preflight(project, plan, force=True)
+        # (AES-EXP-04 §6): إعادة الفحص الآلية تحترم مهل التخزين (TTL) —
+        # القدرات حديثة الفحص تبقى مخزنة وما عادا جاهزًا يُعاد فحصه
+        # فعلًا؛ force=True كان يعيد فحص web_search قسريًا (ميزانية كاملة)
+        # في كل خنقة فبطئ الوظائف المنتظرة تحت الحمل.
+        result = self._run_preflight(project, plan, force=False)
         # نفس شكل تفاصيل _emit_preflight — السبب الحقيقي يصل الواجهة
         # حرفيًا (011 §3: سبب دقيق لا placeholder)
         self._emit(project_id, "PREFLIGHT_RECHECKED", {
