@@ -24,6 +24,26 @@ sys.path.insert(0, str(REPO / "tests" / "workflow"))
 from plans import SCRIPTED_PLAN  # noqa: E402
 
 
+class _FakeHTTPSResponse:
+    """استجابة https محقونة — عبر آلية الحقن المعلنة للاختبارات حصرًا."""
+
+    status = 200
+    headers = {"Content-Type": "text/plain"}
+
+    def read(self, *_args, **_kwargs):
+        return b"aes-harness-test-ok"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+def _fake_https_getter(url, timeout=None):  # noqa: ARG001
+    return _FakeHTTPSResponse()
+
+
 class ScriptedRouter:
     """موجّه اختباري — حدود صادقة فقط (من له نقل حي)."""
 
@@ -135,6 +155,13 @@ def harness_env(tmp_path, monkeypatch):
             router_factory=lambda: router_holder["router"],
             planner_factory=lambda: planner,
             on_event=on_event,
+            # (AES-EXP-04 §6) مسبار network_https محقون عبر العقد
+            # المعلن (registry.run_probe «الحقن للاختبارات حصرًا») —
+            # هدف سلسلة الـharness دورة الوظيفة لا وصول المضيف؛ بلا
+            # الحقن كان المسبار الحقيقي على مضيف بلا خروج يحجب كل
+            # دورة (حاجب شبكة إضافي فوق حاجب sandbox المقصود) فيقلب
+            # التصنيف WAITING_WORKER إلى WAITING_CAPABILITY.
+            probe_injections={"https_fn": _fake_https_getter},
         )
 
     def build_manager(engine=None, on_event=None):

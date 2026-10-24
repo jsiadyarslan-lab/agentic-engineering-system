@@ -7,6 +7,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+import sys
+
 import pytest
 
 from src.factory.tools import RunCommandTool, RunCommandInput
@@ -24,6 +26,11 @@ class TestRunCommandTool:
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات ويندوز حصراً: الأمر مبني على مفسّر cmd "
+               "غير الموجود على POSIX — غير قابل للتطبيق هنا",
+    )
     async def test_run_command_basic(self, tool: RunCommandTool, temp_workspace: Path) -> None:
         """Test basic command execution."""
         args = RunCommandInput(
@@ -50,6 +57,11 @@ class TestRunCommandTool:
         assert "STDERR" in result.output or "stderr" in result.output.lower()
         assert result.evidence_hash != ""
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات ويندوز حصراً: الأمر مبني على مفسّر cmd "
+               "غير الموجود على POSIX — غير قابل للتطبيق هنا",
+    )
     async def test_run_command_failure(self, tool: RunCommandTool, temp_workspace: Path) -> None:
         """Test command that fails."""
         args = RunCommandInput(
@@ -62,6 +74,11 @@ class TestRunCommandTool:
         assert "exited with code 1" in result.error.lower()
         assert result.evidence_hash != ""
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات ويندوز حصراً: الأمر مبني على مفسّر cmd "
+               "غير الموجود على POSIX — غير قابل للتطبيق هنا",
+    )
     async def test_run_command_working_dir(self, tool: RunCommandTool, temp_workspace: Path) -> None:
         """Test command with working directory."""
         (temp_workspace / "subdir").mkdir()
@@ -111,6 +128,11 @@ class TestRunCommandTool:
         # May succeed or fail depending on timing, but should not hang
         assert result.evidence_hash != ""
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات ويندوز حصراً: الأمر مبني على مفسّر cmd "
+               "غير الموجود على POSIX — غير قابل للتطبيق هنا",
+    )
     async def test_run_command_invalid_working_dir(self, tool: RunCommandTool, temp_workspace: Path) -> None:
         """Test invalid working directory."""
         args = RunCommandInput(

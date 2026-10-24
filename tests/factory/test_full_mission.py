@@ -6,7 +6,7 @@ Requires a real LLM provider (Ollama, NVIDIA, OpenAI, Anthropic, Google) to be c
 import asyncio
 import pytest
 import os
-import requests
+requests = pytest.importorskip("requests")  # (AES-EXP-04) تخطٍ صادق عند غياب المكتبة
 
 from src.factory.orchestrator import AgentFactoryOrchestrator, MissionState
 

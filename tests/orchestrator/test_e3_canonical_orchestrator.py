@@ -124,7 +124,18 @@ class TestE3CanonicalOrchestrator:
     @pytest.mark.asyncio
     async def test_e3_baseline_verification(self):
         """AC-00: Hard baseline — LOCAL == REMOTE on main."""
+        # (AES-EXP-04) عقد أساس النشر: يُطبَّق فقط عندما يكون HEAD على
+        # main — على فرع عمل معزول لا ينطبق بالتصميم؛ تخطٍ موثق.
         import subprocess
+        _branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        if _branch != "main":
+            pytest.skip(
+                f"deployment baseline invariant inapplicable on work branch '{_branch}'"
+            )
+
         head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
         remote = subprocess.run(
             ["git", "ls-remote", "origin", "refs/heads/main"],

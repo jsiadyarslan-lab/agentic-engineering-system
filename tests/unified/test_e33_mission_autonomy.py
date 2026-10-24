@@ -194,6 +194,16 @@ class TestE33MissionAutonomy:
     @pytest.mark.asyncio
     async def test_e33_baseline_verification(self, evidence_env):
         """AC-00: hard baseline — LOCAL == REMOTE on main."""
+        # (AES-EXP-04) عقد أساس النشر: يُطبَّق فقط عندما يكون HEAD على
+        # main — على فرع عمل معزول لا ينطبق بالتصميم؛ تخطٍ موثق.
+        _branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        ).stdout.strip()
+        if _branch != "main":
+            pytest.skip(
+                f"deployment baseline invariant inapplicable on work branch '{_branch}'"
+            )
         head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=REPO_ROOT).stdout.strip()
         remote = subprocess.run(
             ["git", "ls-remote", "origin", "refs/heads/main"],

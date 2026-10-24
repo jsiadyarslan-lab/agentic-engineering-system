@@ -1448,7 +1448,10 @@ class TestE6RegressionMatrix:
         """E5 tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/orchestrator/test_e5_agent_runtime_integration.py", "-v", "--tb=short"],
+            # (AES-EXP-04) جيل E5 الحقيقي في هذا المستودع هو test_vs002.py
+            # (AC-E5-01..15، الصنف TestVS002OrchestratorAgentRuntimeIntegration) —
+            # الملف القديم test_e5_agent_runtime_integration.py لم يوجد قط.
+            [sys.executable, "-m", "pytest", "tests/unified/test_vs002.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E5 regression failed: {proc.stderr}"
@@ -1458,7 +1461,7 @@ class TestE6RegressionMatrix:
         """E4 tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/orchestrator/test_e4_multi_task_mission.py", "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/orchestrator/test_e4_multi_task_mission.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E4 regression failed: {proc.stderr}"
@@ -1468,7 +1471,7 @@ class TestE6RegressionMatrix:
         """E3 tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/orchestrator/test_e3_canonical_orchestrator.py", "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/orchestrator/test_e3_canonical_orchestrator.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E3 regression failed: {proc.stderr}"
@@ -1478,7 +1481,7 @@ class TestE6RegressionMatrix:
         """E32f tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/unified/test_e32f_autonomous_replanning.py", "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/unified/test_e32f_autonomous_replanning.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E32f regression failed: {proc.stderr}"
@@ -1488,7 +1491,7 @@ class TestE6RegressionMatrix:
         """E32e tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/unified/test_e32e_durable_execution.py", "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/unified/test_e32e_durable_execution.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E32e regression failed: {proc.stderr}"
@@ -1498,7 +1501,7 @@ class TestE6RegressionMatrix:
         """E33 tests should still pass."""
         import subprocess
         proc = subprocess.run(
-            ["python", "-m", "pytest", "tests/unified/test_e33_mission_autonomy.py", "-v", "--tb=short"],
+            [sys.executable, "-m", "pytest", "tests/unified/test_e33_mission_autonomy.py", "-v", "--tb=short"],
             capture_output=True, text=True, timeout=300
         )
         assert proc.returncode == 0, f"E33 regression failed: {proc.stderr}"

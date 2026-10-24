@@ -14,7 +14,12 @@ from src.factory.events import EventBus, FactoryEvent, EventType
 def _has_provider():
     """Check if any LLM provider is available for testing."""
     import os
-    import requests
+    try:
+        import requests
+    except ImportError:
+        # (AES-EXP-04) لا مكتبة requests على مضيف الاختبار المعزول —
+        # لا مزود قابل للاستقصاء؛ تخطٍ صادق بدل انهيار تجميع الملف.
+        return False
     # Check for API keys
     if os.getenv("NVIDIA_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GOOGLE_API_KEY"):
         return True
