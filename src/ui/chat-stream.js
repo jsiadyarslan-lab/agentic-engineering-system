@@ -65,7 +65,7 @@
       '<span class="meta-prov" dir="ltr">' + Hub.esc(this.provider) + "</span>" +
       '<span class="meta-model" dir="ltr">' + Hub.esc(this.model) + "</span>" +
       (streaming
-        ? '<span class="meta-stream">● streaming</span>'
+        ? '<span class="meta-stream">streaming</span>'
         : "");
   };
 
@@ -277,14 +277,14 @@
     var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
     setCurrentConversation(conversationId);
     var msg = ensureLive(event);
-    msg.setStatus("generating", event.text || "🌐 بحث في الويب…");
+    msg.setStatus("generating", event.text || "بحث في الويب…");
   };
 
   H["research.results"] = function (event) {
     var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
     setCurrentConversation(conversationId);
     var msg = ensureLive(event);
-    msg.setStatus("generating", event.text || "🌐 نتائج البحث وصلت");
+    msg.setStatus("generating", event.text || "نتائج البحث وصلت");
     setLastSourcesForMessage(conversationId, event.message_id || "", {
       show: true,
       sources: ((event.details || {}).results || []).map(function (r) {
@@ -298,21 +298,21 @@
     setCurrentConversation(conversationId);
     var msg = ensureLive(event);
     msg.setStatus("generating",
-      event.text || "🌐 البحث غير متاح — الإجابة بلا ويب");
+      event.text || "البحث غير متاح — الإجابة بلا ويب");
   };
 
   H["research.fetched"] = function (event) {
     var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
     setCurrentConversation(conversationId);
     var msg = ensureLive(event);
-    msg.setStatus("generating", event.text || "🌐 جُلبت صفحة");
+    msg.setStatus("generating", event.text || "جُلبت صفحة");
   };
 
   H["research.fetch_failed"] = function (event) {
     var conversationId = event.details && event.details.conversation_id ? event.details.conversation_id : getCurrentConversationId();
     setCurrentConversation(conversationId);
     var msg = ensureLive(event);
-    msg.setStatus("generating", event.text || "🌐 تعذر جلب صفحة");
+    msg.setStatus("generating", event.text || "تعذر جلب صفحة");
   };
 
   H["research.used"] = function (event) {

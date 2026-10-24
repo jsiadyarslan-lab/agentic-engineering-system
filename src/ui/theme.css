@@ -1,0 +1,188 @@
+/* ==========================================================================
+   AES-UI-PREMIUM-REDESIGN-001 — نظام التصميم الموحد
+   Premium Engineering Workspace — مصدر الحقيقة الوحيد للرموز البصرية.
+
+   يُحمَّل أولاً قبل كل ملفات CSS. كل الأسماء القديمة المتناثرة
+   (--muted/--fg/--line/--card/--panel/--ink…) تُعرَّف هنا مرة واحدة،
+   فتنتهي حالة «أربع لوحات ألوان تتصارع» التي كانت في
+   app-shell/control-center/harness/projects/live.
+   الخط: IBM Plex Sans Arabic محلي (صفر موارد خارجية).
+   ========================================================================== */
+
+:root {
+  /* ---------- الطبقات اللونية (فحمي هادئ مزرق) ---------- */
+  --bg: #0D1014;            /* الخلفية العامة */
+  --bg-sidebar: #10141A;    /* الشريط الجانبي */
+  --bg-raised: #141920;     /* أسطح العمل الأساسية */
+  --bg-elevated: #1B222A;   /* الأسطح المرتفعة والقوائم */
+  --bg-input: #161C24;      /* حقول الإدخال */
+  --bg-hover: #1F2731;      /* حالة التحويم الهادئة */
+
+  --bubble-user: #1E2630;
+  --bubble-assistant: transparent;
+
+  /* ---------- الحدود ---------- */
+  --border: #2A333D;
+  --border-soft: #202932;
+  --border-strong: #3A4550;
+
+  /* ---------- النصوص ---------- */
+  --text: #F0F3F6;
+  --text-mid: #A6B0BC;
+  --text-dim: #7E8994;
+  --text-faint: #5C6670;
+
+  /* ---------- التمييز: ذهبي هادئ واحد ---------- */
+  --accent: #D4AC55;
+  --accent-strong: #E2BE6A;
+  --accent-soft: rgba(212, 172, 85, 0.10);
+  --accent-softer: rgba(212, 172, 85, 0.05);
+  --accent-border: rgba(212, 172, 85, 0.38);
+  --accent-ink: #171307;    /* نص فوق خلفية ذهبية صلبة */
+
+  /* ---------- الحالات الدلالية (مفهومة بالنص والرمز لا باللون وحده) ---------- */
+  --ok: #5CB87A;
+  --ok-soft: rgba(92, 184, 122, 0.10);
+  --ok-border: rgba(92, 184, 122, 0.35);
+  --ok-chip: rgba(92, 184, 122, 0.14);
+
+  --danger: #E06C5F;
+  --danger-soft: rgba(224, 108, 95, 0.09);
+  --danger-border: rgba(224, 108, 95, 0.38);
+  --danger-chip: rgba(224, 108, 95, 0.14);
+
+  --warn: #D9A03F;
+  --warn-soft: rgba(217, 160, 63, 0.10);
+  --warn-border: rgba(217, 160, 63, 0.36);
+  --warn-chip: rgba(217, 160, 63, 0.14);
+
+  --info: #5B9BD5;
+  --info-soft: rgba(91, 155, 213, 0.10);
+  --info-border: rgba(91, 155, 213, 0.36);
+  --info-chip: rgba(91, 155, 213, 0.14);
+
+  /* ---------- المقياس (شبكة 4px) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---------- الأنصاف والزوايا ---------- */
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --radius-pill: 999px;
+
+  /* ---------- الظلال (خفيفة — مساحة عمل لا معرض) ---------- */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+
+  /* ---------- الأبعاد ---------- */
+  --chat-width: 860px;
+  --sidebar-width: 264px;
+  --drawer-width: 440px;
+  --header-h: 56px;
+
+  /* ---------- الحركة ---------- */
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-fast: 0.14s;
+  --dur: 0.22s;
+
+  /* ---------- الطبقات ---------- */
+  --z-sidebar: 50;
+  --z-drawer: 61;
+  --z-modal: 70;
+  --z-boundary: 300;
+
+  /* ==========================================================================
+     الأسماء القديمة — مستوحاة من كل وحدة على حدة سابقاً. الآن تُعرَّف هنا
+     مرة واحدة فتسقط كل القيم الاحتياطية المتضاربة في app-shell وغيره.
+     ========================================================================== */
+  --panel: var(--bg-raised);
+  --panel-2: var(--bg-elevated);
+  --ink: var(--text);
+  --ink-2: var(--text-mid);
+  --line: var(--border-soft);
+  --muted: var(--text-dim);
+  --fg: var(--text);
+  --card: var(--bg-raised);
+  --card-2: var(--bg-elevated);
+
+  /* الحالات الخضراء/الحمراء/الصفراء/الزرقاء القديمة المتناثرة */
+  --ok-strong: var(--ok);
+  --ok-bg: var(--ok-chip);
+  --danger-strong: var(--danger);
+  --danger-bg: var(--danger-chip);
+  --warn-strong: var(--warn);
+  --warn-bg: var(--warn-chip);
+  --info-strong: var(--info);
+  --info-bg: var(--info-chip);
+}
+
+/* ---------- احترام تقليل الحركة ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- التركيز المرئي الموحد (لوحة المفاتيح) ---------- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+::selection {
+  background: rgba(212, 172, 85, 0.28);
+  color: var(--text);
+}
+
+/* ---------- شريط التمرير الموحد ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2C3640;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: #3A4550; }
+
+/* ---------- الأيقونات الوظيفية الموحدة (SVG داخل .icon) ---------- */
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.icon.sm { width: 15px; height: 15px; }
+.icon.lg { width: 22px; height: 22px; }
+
+/* شارة حالة صغيرة — نقطة + نص، مفهومة بلا لون */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+  display: inline-block;
+}
+.status-dot.on { background: var(--ok); }
+.status-dot.off { background: var(--warn); }
+.status-dot.err { background: var(--danger); }

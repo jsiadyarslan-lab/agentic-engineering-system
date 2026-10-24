@@ -19,7 +19,7 @@ APP_NAME = "Agentic Engineering System"
 #: الوحيد للحقيقة (3.8.0)؛ /health كانت تناقضه بإصدار أقدم. التزام
 #: EXP-03 (a909597) ادّعى المحاذاة في رسالته لكنه لم يمس هذا الملف
 #: — التصحيح هنا فعلي ومتحقق منه في /health.
-APP_VERSION = "3.8.0"
+APP_VERSION = "4.0.0"
 
 
 class Settings(BaseSettings):
