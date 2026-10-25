@@ -24,6 +24,14 @@ from .providers import (
     quick_chat,
 )
 from .orchestrator_adapter import OrchestratorLLMProvider, create_orchestrator_provider, create_orchestrator_provider_from_env
+from .provider_errors import (
+    ProviderErrorClass,
+    ProviderFailure,
+    as_provider_failure,
+    classify_exception,
+    classify_http_status,
+)
+from .retry import execute_with_retry
 
 __all__ = [
     "LLMProvider",
@@ -55,4 +63,11 @@ __all__ = [
     "OrchestratorLLMProvider",
     "create_orchestrator_provider",
     "create_orchestrator_provider_from_env",
+    # §1 reliability: classified provider failures + bounded retry
+    "ProviderErrorClass",
+    "ProviderFailure",
+    "as_provider_failure",
+    "classify_exception",
+    "classify_http_status",
+    "execute_with_retry",
 ]
