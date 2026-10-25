@@ -7,11 +7,11 @@
 
 /* ---------- نقطة التشغيل الحي بجانب المشروع (§33) ---------- */
 .proj-run-dot { font-size: var(--fs-11); margin-inline-end: var(--sp-1); }
-.proj-run-dot.live { color: var(--ok); }
+.proj-run-dot.live { color: var(--accent-agent); }  /* (007 N-4) حي=أزرق وكيل */
 .proj-run-dot.paused { color: var(--warn); }
 .proj-run-dot.waiting { color: var(--warn); }
 .proj-run-dot.warn { color: var(--danger); }
-.proj-run-dot.ok { color: var(--info); }
+.proj-run-dot.ok { color: var(--ok); }
 
 /* ---------- أسطح مركز التحكم (runs/archive) ---------- */
 .cc-view {
@@ -68,11 +68,11 @@
 }
 .cc-run-card:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
 .cc-run-dot { font-size: var(--fs-15); }
-.cc-run-dot.live { color: var(--ok); animation: cc-pulse 2s infinite; }
+.cc-run-dot.live { color: var(--accent-agent); animation: cc-pulse 2s infinite; }  /* (007 N-4) */
 .cc-run-dot.paused { color: var(--warn); }
 .cc-run-dot.waiting { color: var(--warn); }
 .cc-run-dot.warn { color: var(--danger); }
-.cc-run-dot.ok { color: var(--info); }
+.cc-run-dot.ok { color: var(--ok); }
 @keyframes cc-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: .45; }

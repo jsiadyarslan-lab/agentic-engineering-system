@@ -707,8 +707,14 @@
     }
     if (d.evidence_path) {
       var note = el("div", "task-evidence");
-      note.textContent = "الأدلة: " + d.evidence_path +
-        (d.evidence_sha256 ? " · sha256: " + String(d.evidence_sha256).slice(0, 16) + "…" : "");
+      // (007 مراجعة N-1) السطر عربي طبيعي والمسار معزول LTR — كان السطر
+      // كله يُ force LTR فيتداخل ترتيب «الأدلة:» مع علامات الترقيم.
+      note.innerHTML = "الأدلة: <span class=\"tech\">" +
+        Hub.esc(d.evidence_path) +
+        (d.evidence_sha256
+          ? " · sha256: " + Hub.esc(String(d.evidence_sha256).slice(0, 16)) + "…"
+          : "") +
+        "</span>";
       card.actions.appendChild(note);
     }
     Hub.scrollDown();

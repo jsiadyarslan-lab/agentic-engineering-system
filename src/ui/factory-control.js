@@ -21,6 +21,7 @@
 
   var state = {
     mode: "overview",           // overview | create-mission | mission-view | run-view
+    missionTab: "overview",     // (007) قبل بناء HTML التبويبات — أول عرض بلا active
     activeMissionId: null,
     activeRunId: null,
     sseController: null,

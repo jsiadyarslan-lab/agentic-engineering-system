@@ -341,7 +341,7 @@
   bottom: -1px;
   height: 2px;
   border-radius: 99px;
-  background: var(--acc);
+  background: var(--accent);  /* (007 N-3) تبويب واحد ذهبي في كل النظام — الأزرق للحيوية فقط */
 }
 #fc-mission-tab-body { padding: 16px; }
 

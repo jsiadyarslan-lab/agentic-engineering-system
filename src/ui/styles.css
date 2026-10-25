@@ -34,14 +34,30 @@ button {
 
 textarea, select, input { font-family: inherit; color: var(--text); }
 
-/* السلاسل التقنية داخل سياق عربي — عزل LTR بخط mono (theme.css) */
-.task-state-line, .rd-model, .router-line, .task-evidence,
+/* السلاسل التقنية داخل سياق عربي — عزل LTR بخط mono (theme.css)
+   (007 مراجعة مستقلة N-1: استبعاد pv-meta/task-evidence من التوجيه
+   القسري كامل السطر — هما سطران مختلطا العربية واللاتينية يُعالجان
+   بعزل القيم وحدها في JS/CSS أدناه) */
+.task-state-line, .rd-model, .router-line,
 .ts-model, .composer-shortcut, .pv-chip, .cfg-url-input, .cfg-meta b,
-#modal-json, .pv-meta {
+#modal-json {
   font-family: var(--font-mono);
   direction: ltr;
   unicode-bidi: isolate;
   text-align: left;
+}
+
+/* سطر meta للمزود: عربي طبيعي — القيم اللاتينية معزولة داخل <code dir=ltr> */
+.pv-meta {
+  font-size: var(--fs-11);
+  color: var(--text-faint);
+  margin-top: var(--sp-1);
+  line-height: 1.8;
+}
+.pv-meta code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-dim);
 }
 
 /* ---------- الهيكل العام ---------- */
@@ -528,7 +544,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   max-width: var(--chat-width);
   width: 100%;
   margin: 0 auto;
-  padding: 0 var(--sp-3) var(--sp-1);
+  padding: 0 18px var(--sp-1);
 }
 
 .task-settings-toggle {
@@ -573,7 +589,8 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   max-width: var(--chat-width);
   width: 100%;
   margin: 0 auto;
-  padding: var(--sp-1) var(--sp-3) var(--sp-4);
+  /* (007 مراجعة N-5) نفس إزاحة العمود المحوري 18px كرسائل app-shell — حافة واحدة */
+  padding: var(--sp-1) 18px var(--sp-4);
   position: relative;
 }
 
@@ -581,7 +598,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 .composer::before {
   content: "";
   position: absolute;
-  inset-inline: var(--sp-3);
+  inset-inline: 18px;
   top: -28px;
   height: 28px;
   background: linear-gradient(to top, var(--bg), transparent);
@@ -966,12 +983,13 @@ textarea, select, input { font-family: inherit; color: var(--text); }
     box-shadow: var(--shadow-modal);
   }
   .sidebar-collapsed .sidebar { box-shadow: none; }
-  .messages, .composer, .task-settings { padding-inline: var(--sp-3); }
-  .composer::before { inset-inline: var(--sp-3); }
   .bubble { max-width: 96%; }
 }
 
 @media (max-width: 720px) {
+  /* (007 N-5) توافق الإزاحة المحورية مع رسائل app-shell عند 720 (10px) */
+  .messages, .composer, .task-settings { padding-inline: 10px; }
+  .composer::before { inset-inline: 10px; }
   .suggestions { grid-template-columns: 1fr; }
   .welcome { padding: var(--sp-8) var(--sp-4); }
 }

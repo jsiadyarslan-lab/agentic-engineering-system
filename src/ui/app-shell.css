@@ -336,8 +336,11 @@
 .task-evidence {
   font-size: var(--fs-12);
   color: var(--text-faint);
-  word-break: break-all;
+  word-break: break-word;
+  line-height: 1.8;
+  /* (007 N-1) سطر عربي طبيعي — المسار/sha معزولان بفئة .tech (theme.css) */
 }
+.task-evidence .tech { font-size: var(--fs-11); color: var(--text-dim); }
 
 /* ---------- بطاقات نظامية رفيعة ---------- */
 
@@ -1097,12 +1100,14 @@
 .eb-actions { display: flex; gap: var(--sp-2); }
 
 .eb-btn {
-  background: var(--danger);
+  /* (007 N-6) خلفية أغمق قليلًا من الدلالي ليبلغ نص الطوارئ الأبيض ~4:1 */
+  background: color-mix(in srgb, var(--danger) 82%, black);
   color: #fff;
   border: none;
   border-radius: var(--btn-radius);
   padding: 6px var(--sp-3);
   font-size: var(--fs-12);
+  font-weight: 600;
   cursor: pointer;
   font-family: inherit;
 }
