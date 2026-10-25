@@ -739,7 +739,17 @@ class Orchestrator:
             )
             if implementation.status is not ImplementerStatus.EXECUTED:
                 outcome.execution_failed = True
-                outcome.failure = implementation.failure
+                # (RLR-001 §4d) الفشل بلا كتلة منظمة يحمل سببه الحقيقي
+                # (stderr) — وإلا رأى المخطط INSUFFICIENT_EVIDENCE العامة
+                # وأعاد نفس الخطأ كل مراجعة (حلقة عمياء).
+                outcome.failure = implementation.failure or {
+                    "class": "INSUFFICIENT_EVIDENCE",
+                    "stage": "IMPLEMENTATION",
+                    "reason": (implementation.stderr_truncated
+                               or "EXECUTION_FAILED")[:400],
+                    "tool": "",
+                    "retryable": True,
+                }
                 previous.append(
                     f"محاولة {attempt}: فشل تنفيذي — "
                     f"{implementation.stderr_truncated[:100]}"
