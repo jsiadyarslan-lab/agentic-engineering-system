@@ -27,11 +27,43 @@ from __future__ import annotations
 
 import json
 import socket
+import ssl
 import urllib.error
 import urllib.request
 from typing import Any
 
 from router.live_providers import ProviderCallError
+
+
+def _classify_transport_failure(error: BaseException) -> tuple[str, bool]:
+    """(RLR-001 §1) سبب الجذر ← (فئة من taxonomy السبع، قابل للإعادة؟).
+
+    - CONNECT_REFUSED: اتصال مرفوض/منقطع (جسر ميت مثلاً) — عابر: يُعاد.
+    - DNS_FAILURE / TLS_FAILURE: تكوين/بيئة — لا إعادة (فشل صريح فوري).
+    - REQUEST_TIMEOUT: عابر — يُعاد.
+    المجهول النقل يعامل عابرًا (نفس قرار v1 الموثق في failover_chain).
+    """
+    items: list[BaseException | str] = []
+    if isinstance(error, urllib.error.URLError):
+        items.append(getattr(error, "reason", error))
+    items.append(error)
+    cur = getattr(error, "__cause__", None)
+    for _ in range(4):
+        if cur is None:
+            break
+        items.append(cur)
+        cur = cur.__cause__ or cur.__context__
+    for item in items:
+        text = str(item).lower()
+        if isinstance(item, ConnectionRefusedError) or "connection refused" in text or "actively refused" in text:
+            return ("CONNECT_REFUSED", True)
+        if isinstance(item, socket.gaierror) or "getaddrinfo" in text or "name or service not known" in text or "temporary failure in name resolution" in text:
+            return ("DNS_FAILURE", False)
+        if isinstance(item, ssl.SSLError) or "certificate" in text or "handshake" in text or "ssl:" in text:
+            return ("TLS_FAILURE", False)
+    if isinstance(error, (TimeoutError, socket.timeout)):
+        return ("REQUEST_TIMEOUT", True)
+    return ("CONNECT_REFUSED", True)
 
 
 def read_json_response(
@@ -55,21 +87,34 @@ def read_json_response(
                 code=code,
                 is_throttle=True,
                 retry_after=int(retry_after) if retry_after and retry_after.isdigit() else None,
+                error_class="RATE_LIMITED",
             ) from error
         if code >= 500:
             raise ProviderCallError(
                 f"{code} خطأ خادم من {base_url}: {detail}",
                 code=code,
                 is_server_error=True,
+                error_class="SERVER_ERROR",
+            ) from error
+        if code in (401, 403):
+            raise ProviderCallError(
+                f"{code} رفض مصادقة من {base_url} (مفتاح؟): {detail}",
+                code=code,
+                error_class="AUTH_FAILURE",
             ) from error
         raise ProviderCallError(
             f"{code} خطأ عميل من {base_url} (مفتاح/عنوان؟): {detail}",
             code=code,
+            error_class="INVALID_RESPONSE",
         ) from error
     except (urllib.error.URLError, TimeoutError, socket.timeout) as error:
+        # (RLR-001 §1) التصنيف من سبب الجذر — Connection refused ليس مهلة!
+        error_class, retryable = _classify_transport_failure(error)
         raise ProviderCallError(
-            f"مهلة/اتصال فشل مع {base_url}: {error}",
-            is_timeout=True,
+            f"[{error_class}] فشل نقل مع {base_url}: {error}",
+            is_timeout=(error_class == "REQUEST_TIMEOUT"),
+            is_server_error=(retryable and error_class != "REQUEST_TIMEOUT"),
+            error_class=error_class,
         ) from error
 
 

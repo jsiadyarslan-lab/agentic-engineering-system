@@ -26,14 +26,41 @@ self.last_execution {provider, failed_over, attempts…} بعد كل تنفيذ.
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, Callable
 
 #: إعداد السلسلة الافتراضي — مطابق لسياسة v1 الموحدة (retries_on_5xx=2).
+#: (RLR-001 §1) قابل للرفع بالبيئة حتى سقف الأمر (3 إعادات كحد أقصى)
+#: ليتسع التراجع لفجوات الجسر المعروفة: base=15 → انتظار 15/30/60ث.
 DEFAULT_CONFIG: dict = {
     "max_retries": 2,        # إعادات داخلية لكل عضو قبل التبدّل
     "backoff_base": 2.0,     # ثواني التراجع: base × 2^(n-1) → 2، 4…
 }
+
+#: سقف إعادات الأمر التنفيذي (RLR-001 §1): لا أكثر من 3 إعادات أبدًا.
+MAX_RETRIES_CAP = 3
+
+
+def _env_config() -> dict:
+    """الافتراضي + تجاوز بيئي معلن (AES_FAILOVER_MAX_RETRIES / _BACKOFF_BASE).
+
+    التكوين الصريح في الكود يبقى أعلى من البيئة (نفس عقد .env-vis).
+    """
+    cfg = dict(DEFAULT_CONFIG)
+    try:
+        cfg["max_retries"] = max(
+            0, min(int(os.environ.get("AES_FAILOVER_MAX_RETRIES", cfg["max_retries"])), MAX_RETRIES_CAP)
+        )
+    except (TypeError, ValueError):
+        pass
+    try:
+        cfg["backoff_base"] = max(
+            0.5, min(float(os.environ.get("AES_FAILOVER_BACKOFF_BASE", cfg["backoff_base"])), 60.0)
+        )
+    except (TypeError, ValueError):
+        pass
+    return cfg
 
 
 class FailoverExhausted(RuntimeError):
@@ -80,7 +107,7 @@ class FailoverChain:
         if not providers:
             raise ValueError("سلسلة التبدّل تحتاج عضوًا واحدًا على الأقل")
         self.providers = [str(p) for p in providers]
-        self.config = {**DEFAULT_CONFIG, **(config or {})}
+        self.config = {**_env_config(), **(config or {})}
         self._sleeper = sleeper
         self._on_event = on_event
         self.events: list[dict] = []
@@ -132,6 +159,17 @@ class FailoverChain:
                         raise  # خطأ عميل حتمي — لا فائدة من أي إعادة
                     if attempt <= max_retries:
                         wait = backoff_base * (2 ** (attempt - 1))
+                        # (RLR-001 §1) حدث إعادة حقيقي — للوحة التنفيذ لا للمزيف
+                        self._emit(
+                            {
+                                "kind": "provider.retry",
+                                "provider": provider,
+                                "attempt": attempt,
+                                "wait_seconds": round(wait, 2),
+                                "error_class": getattr(exc, "error_class", "") or "UNCLASSIFIED",
+                                "reason": str(exc)[:200],
+                            }
+                        )
                         if wait > 0:
                             self._sleeper(wait)
                         continue
