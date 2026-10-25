@@ -9,10 +9,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from substrate.local_substrate import (  # noqa: E402
-    default_local_images,
-    local_git_image,
-    local_sandbox_manager,
+from substrate.factory import (  # noqa: E402
+    default_sandbox_images,
+    make_sandbox_manager,
+    sandbox_git_image,
+    substrate_available,
+    substrate_failure_reason,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -26,11 +28,24 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     )
 
 
+def _session_skip_reason() -> str:
+    return "لا ركيزة عزل متاحة على هذا المضيف — " + substrate_failure_reason()
+
+
 @pytest.fixture(scope="session")
 def sandbox_manager():
-    """مدير ركيزة بصورتين: python (الافتراضية) و git (للدفع)."""
-    images = {**default_local_images(), "git": local_git_image()}
-    return local_sandbox_manager(images=images)
+    """مدير ركيزة بصورتين: python (الافتراضية) و git (للدفع).
+
+    AES-EXP-04 §3.3: الصور والمدير من المصنع الواحد (محلي x86_64 أو
+    bwrap بقدرات مثبتة) — خارج التوفر: تخطٍ صادق ببيان السبب.
+    """
+    if not substrate_available():
+        pytest.skip(_session_skip_reason())
+    images = {**default_sandbox_images(), "git": sandbox_git_image()}
+    manager = make_sandbox_manager(images=images)
+    if manager is None:  # pragma: no cover — تناقض مع substrate_available
+        pytest.skip(_session_skip_reason())
+    return manager
 
 
 @pytest.fixture()

@@ -9,6 +9,8 @@ import hashlib
 import tempfile
 from pathlib import Path
 
+import sys
+
 import pytest
 
 from src.factory.tools import ReadFileTool, ReadFileInput, ToolRegistry
@@ -67,6 +69,12 @@ class TestReadFileTool:
         assert "escapes" in result.error.lower() or "absolute" in result.error.lower()
         assert result.evidence_hash == ""
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات مسار ويندوز حصراً: سياسة المنتج ترفض "
+               "المسارات المطلقة فعلاً (is_absolute في filesystem.py) لكن "
+               "'C:/...' ليست مطلقة على POSIX — الفحص غير قابل للتطبيق هنا",
+    )
     async def test_absolute_path_rejected(self, tool: ReadFileTool, temp_workspace: Path) -> None:
         """Test that absolute paths are rejected."""
         # Use an absolute path

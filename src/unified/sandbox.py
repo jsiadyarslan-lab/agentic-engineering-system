@@ -468,7 +468,7 @@ def create_sandbox_manager(
 def create_sandbox_backend(backend: SandboxBackend, artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
     """Create sandbox backend implementation."""
     if backend == SandboxBackend.LOCAL_SUBSTRATE:
-        return create_local_substrate_adapter()
+        return create_local_substrate_adapter(artifacts_base_dir=artifacts_base_dir)
     elif backend == SandboxBackend.WINDOWS_EXECUTOR:
         return create_windows_executor_adapter(artifacts_base_dir=artifacts_base_dir)
     elif backend == SandboxBackend.DOCKER:
@@ -477,13 +477,35 @@ def create_sandbox_backend(backend: SandboxBackend, artifacts_base_dir: Optional
         raise ValueError(f"Unknown sandbox backend: {backend}")
 
 
-def create_local_substrate_adapter() -> ExecutionSandbox:
-    """Create LocalSubstrateAdapter (Linux only)."""
-    try:
-        from core.substrate import LocalSubstrateAdapter
-        return LocalSubstrateAdapter()
-    except ImportError as e:
-        raise SandboxUnavailableError(f"LocalSubstrateAdapter not available: {e}")
+def create_local_substrate_adapter(artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
+    """Create LocalSubstrateAdapter — عبر مصنع الركيزة الموحد (AES-EXP-04 §3.3).
+
+    قبل EXP-04 كانت هذه الدالة تستورد ``core.substrate`` — وحدة لا
+    وجود لها في المستودع — فكان أي سند لينكس في هذا الجيل يفشل
+    بـ ``SandboxUnavailableError`` قبل أي تنفيذ. الآن الاختيار من
+    المصنع المصدر الواحد (``substrate.factory``): bwrap بشهادة قدرات
+    على أي معمارية، أو local-ns على x86_64 — وغيابهما فشل صادق
+    مغلق بالسبب الكامل من المصنع.
+    """
+    import tempfile
+    from substrate.factory import KIND_LOCAL, default_sandbox_images, select_substrate
+
+    selection = select_substrate()
+    kind = selection.get("kind")
+    if not kind:
+        raise SandboxUnavailableError(
+            "لا ركيزة عزل على هذا المضيف — "
+            + str(selection.get("reason") or "سبب غير معروف")
+        )
+    images = default_sandbox_images()
+    if kind == KIND_LOCAL:
+        from substrate.local_substrate import LocalSubstrateAdapter as _RealAdapter
+    else:
+        from substrate.bwrap_substrate import BubblewrapSubstrateAdapter as _RealAdapter
+    real = _RealAdapter(images=images)
+    if not artifacts_base_dir:
+        artifacts_base_dir = tempfile.mkdtemp(prefix="unified-substrate-")
+    return LocalSubstrateBridge(real, images, artifacts_base_dir)
 
 
 def create_windows_executor_adapter(artifacts_base_dir: Optional[str] = None) -> ExecutionSandbox:
@@ -551,6 +573,165 @@ class BaseSandboxAdapter:
     def _compute_sha256(self, content: bytes) -> str:
         import hashlib
         return hashlib.sha256(content).hexdigest()
+
+
+class LocalSubstrateBridge(BaseSandboxAdapter):
+    """جسر الجيل القديم (unified) ← الركيزة الحقيقية المعزولة (AES-EXP-04 §3.3).
+
+    عقد الأدلة (artifact custody): الكتابة/القراءة/الجرد تتم على
+    المضيف داخل دليل حضانة لكل sandbox_id — وهو نفس الدليل الذي
+    تربطه الركيزة داخل العزل عند التنفيذ (المخرج الوحيد للأدلة)،
+    فلا يظهر للرمل شيء خارج حضانته ولا يخرج منها شيء بلا إثبات.
+    """
+
+    #: خريطة صريحة: أسماء صور الجيل القديم ← صور الركيزة الحقيقية.
+    _IMAGE_ALIASES = {
+        "python:3.11-slim": "local-python-3.12",
+        "python:3.11": "local-python-3.12",
+        "python:3.12": "local-python-3.12",
+        "python": "local-python-3.12",
+        "python3": "local-python-3.12",
+    }
+
+    def __init__(self, real_adapter, images, artifacts_base_dir: str):
+        super().__init__()
+        self._real = real_adapter
+        self._images = dict(images)
+        self.artifacts_base_dir = artifacts_base_dir
+
+    # ---- عقد الجيل القديم (ExecutionSandbox) ----
+    @property
+    def backend_name(self) -> str:
+        try:
+            return f"substrate:{self._real.descriptor().name}"
+        except Exception:
+            return "substrate:real"
+
+    def is_available(self) -> bool:
+        try:
+            self._real.descriptor()
+            return True
+        except Exception:
+            return False
+
+    async def execute(self, request: SandboxRequest) -> SandboxExecutionRecord:
+        import asyncio
+        from datetime import datetime as _dt
+        from unified.domain_model import (
+            SandboxExecutionRecord as _Record,
+            SandboxTermination as _Term,
+        )
+        from substrate.limits import ExecutionLimits as _RealLimits
+        from substrate.sandbox import NetworkMode as _Net
+        from substrate.sandbox import SandboxRequest as _RealRequest
+
+        image = self._IMAGE_ALIASES.get(request.image)
+        if image is None and request.image in self._images:
+            image = request.image
+        if image is None:
+            raise SandboxError(
+                f"صورة {request.image!r} ليس لها صورة ركيزة حقيقية "
+                f"(المتوفر: {sorted(self._images)})"
+            )
+        base = Path(self.artifacts_base_dir)
+        limits_kw = {"timeout_seconds": int(request.wall_time_seconds or 300)}
+        if request.memory_bytes:
+            limits_kw["memory_bytes"] = int(request.memory_bytes)
+        if request.max_processes:
+            limits_kw["max_processes"] = int(request.max_processes)
+        real_request = _RealRequest(
+            sandbox_id=request.sandbox_id,
+            image=image,
+            command=tuple(str(part) for part in request.command),
+            limits=_RealLimits(**limits_kw),
+            network=_Net.NONE,
+            workspace_root=str(base / (request.sandbox_id + "-workspace")),
+            artifacts_dir=str(base / request.sandbox_id),
+            sources_root=str(getattr(request, "sources_root", "") or ""),
+        )
+        record = await asyncio.to_thread(self._real.execute, real_request)
+        return _Record(
+            sandbox_id=record.sandbox_id,
+            executed=bool(record.executed),
+            exit_code=record.exit_code,
+            termination=_Term(record.termination.value),
+            duration_ms=int(record.duration_ms),
+            stdout_reference=record.stdout_reference or "",
+            stderr_reference=record.stderr_reference or "",
+            started_at=_dt.fromtimestamp(record.started_at or 0.0) if record.started_at else _dt.utcnow(),
+            finished_at=_dt.fromtimestamp(record.finished_at or 0.0) if record.finished_at else _dt.utcnow(),
+            artifacts=[entry.path for entry in record.artifacts],
+        )
+
+    async def write_artifact(
+        self, sandbox_id: str, path: str, content: bytes,
+        artifact_id: Optional[str] = None,
+    ):
+        import hashlib
+        from pathlib import PurePosixPath
+        from unified.domain_model import Artifact as _Artifact
+
+        custody = self._custody_root(sandbox_id)
+        target = self._safe_target(custody, path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        artifact = _Artifact(
+            name=PurePosixPath(path).name,
+            path=str(path),
+            sha256=hashlib.sha256(content).hexdigest(),
+            size_bytes=len(content),
+            created_by=sandbox_id,
+        )
+        if artifact_id is not None:
+            artifact.artifact_id = artifact_id
+        return artifact
+
+    async def read_artifact(self, sandbox_id: str, path: str) -> bytes:
+        target = Path(self.artifacts_base_dir) / sandbox_id / path
+        if not target.is_file():
+            raise SandboxError(f"أثر {path!r} غير موجود في حضانة {sandbox_id}")
+        return target.read_bytes()
+
+    async def list_artifacts(self, sandbox_id: str):
+        import hashlib
+        from unified.domain_model import Artifact as _Artifact
+
+        custody = Path(self.artifacts_base_dir) / sandbox_id
+        out: List[_Artifact] = []
+        if custody.is_dir():
+            for file in sorted(custody.rglob("*")):
+                if file.is_file():
+                    data = file.read_bytes()
+                    out.append(
+                        _Artifact(
+                            name=file.name,
+                            path=file.relative_to(custody).as_posix(),
+                            sha256=hashlib.sha256(data).hexdigest(),
+                            size_bytes=len(data),
+                            created_by=sandbox_id,
+                        )
+                    )
+        return out
+
+    async def teardown(self, sandbox_id: str) -> None:
+        import asyncio
+
+        try:
+            await asyncio.to_thread(self._real.teardown, sandbox_id)
+        except Exception:
+            pass  # best-effort — عقد المدير القديم: teardown لا يفشل أبداً
+
+    # ---- أدوات داخلية ----
+    def _custody_root(self, sandbox_id: str) -> Path:
+        root = Path(self.artifacts_base_dir) / sandbox_id
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+
+    def _safe_target(self, custody: Path, path: str) -> Path:
+        resolved = (custody / path).resolve()
+        if resolved != custody.resolve() and custody.resolve() not in resolved.parents:
+            raise SandboxError(f"مسار خارج حضانة الأدلة: {path!r}")
+        return resolved
 
 
 # ============================================================

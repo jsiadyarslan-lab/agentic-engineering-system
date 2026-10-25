@@ -19,6 +19,33 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 
+class _FakeHTTPSResponse:
+    """استجابة https محقونة — عبر آلية الحقن المعلنة للاختبارات حصرًا.
+
+    (AES-EXP-04 §6) مسبار network_https حد خارجي بالفلسفة المعلنة
+    أعلاه («كل شيء حقيقي إلا الحدود الخارجية») — كان غائبًا فصارت
+    السلسلة كلها رهينة خروج المضيف للإنترنت: على مضيف بلا خروج
+    حجب الفحص المسبق كل دورة حياة (23 فشلاً بحالة PLANNED أبدًا).
+    الفحص الشبكي الحقيقي له سلسلته الخاصة (tests/readiness).
+    """
+
+    status = 200
+    headers = {"Content-Type": "text/plain"}
+
+    def read(self, *_args, **_kwargs):
+        return b"aes-workflow-test-ok"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+def _fake_https_getter(url, timeout=None):  # noqa: ARG001
+    return _FakeHTTPSResponse()
+
+
 class ScriptedRouter:
     """موجّه اختباري — حدود صادقة فقط (من له نقل حي)."""
 
@@ -157,6 +184,7 @@ def wf_env(tmp_path, monkeypatch):
             router_factory=router_factory,
             planner_factory=lambda: selected_planner,
             on_event=on_event,
+            probe_injections={"https_fn": _fake_https_getter},
         )
 
     yield {

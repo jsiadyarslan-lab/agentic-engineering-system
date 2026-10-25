@@ -339,6 +339,11 @@ class AgentContext:
     sandbox_manager: Optional[Any] = None  # SandboxManager
     # Evidence store
     evidence_store: Optional[Any] = None  # EvidenceStore
+    # (AES-EXP-04) E9-R1 على سياق الوكيل أيضاً: التنفيذ الإنتاجي محكوم
+    # عبر ToolExecutor؛ مسار المهمة (mission_controller) يقرأ الحقل
+    # بـ getattr منذ E9-R1، لكن العقد القديم كان يحجبه فتتعطل كل دورة
+    # مبنية على AgentContext عند بوابة E9-R1 بلا مخرج محكوم.
+    tool_executor: Optional[Any] = None  # ToolExecutor
     # Grant validator
     grant_validator: Optional[callable] = None
     # State

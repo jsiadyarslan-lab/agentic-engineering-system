@@ -48,7 +48,7 @@ def stub_search(monkeypatch):
     """حدود المزود منظمة (نقل الشبكة وحده) — الخدمة والمصفوفة حقيقيان."""
     from research import service as research_service
 
-    def fake_search(sessions, query):
+    def fake_search(sessions, query, **_kw):
         return {"provider": "منظّم", "provider_kind": "search_test",
                 "results": [dict(r) for r in FAKE_RESULTS], "attempts": []}
 
@@ -132,7 +132,7 @@ def test_web_unavailable_is_honest(client, api_env, monkeypatch):
     from research import service as research_service
     from roles.tool_failures import ToolFailure
 
-    def dead_search(sessions, query):
+    def dead_search(sessions, query, **_kw):
         raise ToolFailure(
             "web_search", "لا مزود بحث جاهز: ddg: محجوب؛ bing: محجوب",
             failure_class="DEPENDENCY_FAILURE",
@@ -200,3 +200,44 @@ def test_search_and_browser_are_distinct_capabilities(client, api_env):
     kinds = [e["kind"] for e in events]
     assert not any(k.startswith("browser.") for k in kinds), \
         "المحادثة لا تستدعي المتصفح ضمنًا — قدرة معلنة منفصلة (§27)"
+
+
+# --------------- (AES-EXP-04 §6) ميزانية البحث الكلية -------------- #
+
+def test_chat_search_budget_bounds_hung_network(client, api_env,
+                                                monkeypatch):
+    """(§6) بحث المحادثة محدود بميزانية كلية — شبكة معلقة (مزود لا
+    يعود) لا تحتجز خيط المحادثة: WEB_UNAVAILABLE صادقة خلال
+    الميزانية والإجابة تكمل معلنة، لا مهلة اختبار كاملة (149.7ث
+    القديمة كانت هذا المسار بعينه — التفريغ: v2-chat عالق في
+    sock.connect داخل provider.search)."""
+    import time as _time
+
+    from research import chat_research
+    from research import service as research_service
+
+    def hung_search(sessions, query, **_kw):  # noqa: ARG001
+        # شبكة سوداء محاكاة: سلسلة لا تعود أبدًا خلال الاختبار
+        _time.sleep(25.0)
+        return {"provider": "hung", "results": []}
+
+    monkeypatch.setattr(research_service, "search", hung_search)
+    monkeypatch.setenv("AES_CHAT_RESEARCH_BUDGET_S", "2")
+
+    started = _time.monotonic()
+    events = _chat(client, "ابحث لي عن أحدث الأخبار")
+    elapsed = _time.monotonic() - started
+
+    # الجوهر: خيط المحادثة تحرر خلال الميزانية لا خلال مهلة كاملة
+    assert elapsed < 30.0, (
+        f"خيط المحادثة احتُجز {elapsed:.0f}ث — الميزانية الكلية لم تعمل"
+    )
+    kinds = [e["kind"] for e in events]
+    assert "research.unavailable" in kinds, kinds
+    unavailable = next(
+        e for e in events if e["kind"] == "research.unavailable"
+    )
+    # السبب الصادق المفصل — لا فشل مبهم ولا نجاح ملفق
+    assert "الميزانية الزمنية الكلية" in unavailable["details"]["error"]
+    # المحادثة أكملت من الذاكرة مع الإعلان الصريح (013.5 §L/§30)
+    assert "message_completed" in kinds, kinds

@@ -1,287 +1,588 @@
-/* FACTORY CONTROL ROOM — أنماط غرفة التحكم بالمصنع (E2-UI) */
+/* FACTORY CONTROL ROOM — أنماط غرفة التحكم بالمصنع (E2-UI).
+ * ==========================================================================
+ * AES-UI-PREMIUM-REDESIGN-003: تطبيق التصميم المرجعي المرفق (Qwen_html)
+ * حرفياً على سطح المصنع — scoped بالكامل داخل #factory-view:
+ *   • الرموز اللونية نفسها (--bg #0b0e14 … --acc #58a6ff) دون تعديل.
+ *   • الخط: IBM Plex Sans Arabic + IBM Plex Mono (مضمنان محلياً).
+ *   • الأنصاف 8/12/16، الظل، شريط التمرير، التحديد، التركيز — كما في المرجع.
+ *   • البطاقات برؤوس card-h، التبويبات بخط سفلي، الوسوم أحادية العرض،
+ *     الأزرار pri، صفوف بلا حدود مع تحويم هادئ، نقاط حالات نابضة.
+ * لا يمتد أي من هذا إلى بقية التطبيق (المحادثة/الإعدادات/المشاريع)
+ * ولا إلى أسطح التشغيلات/الأرشيف (control-center.css).
+ * ========================================================================== */
 
-.fc-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  background: var(--bg-raised);
-  padding: 16px;
-  margin-bottom: 16px;
+/* ---------- 1) الرموز المرجعية — قيم حرفية من التصميم المرفق ---------- */
+#factory-view {
+  --bg: #0b0e14;
+  --s1: #0f141d;
+  --s2: #121826;
+  --s3: #171e2c;
+  --line: #222a38;
+  --line2: #2b3547;
+  --text: #e9edf5;
+  --mut: #9aa4b4;
+  --dim: #69748a;
+  --acc: #58a6ff;
+  --acc-ink: #04101c;
+  --acc-soft: rgba(88, 166, 255, 0.12);
+  --acc-hi: #bcd9ff;
+  --ok: #43cf90;
+  --warn: #ff9e64;
+  --err: #f06969;
+  --info: #6aa6ff;
+  --r-s: 8px;
+  --r-m: 12px;
+  --r-l: 16px;
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.42);
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.75;
 }
 
-.fc-card h3 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 12px;
+#factory-view ::selection {
+  background: rgba(88, 166, 255, 0.28);
   color: var(--text);
 }
+#factory-view :focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+#factory-view ::-webkit-scrollbar { width: 9px; height: 9px; }
+#factory-view ::-webkit-scrollbar-thumb {
+  background: #242c3b;
+  border-radius: 99px;
+  border: 2px solid var(--bg);
+}
+#factory-view ::-webkit-scrollbar-thumb:hover { background: #2b3547; }
+#factory-view ::-webkit-scrollbar-track { background: transparent; }
 
-.fc-system-card {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
+/* ---------- 2) رأس الغرفة — كتلة .top المرجعية (تعتيم + ضبابية) ---------- */
+#factory-view .cc-head {
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(15, 20, 29, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+#factory-view .cc-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+#factory-view .cc-sub,
+#factory-system-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--mono);
+  color: var(--acc-hi);
+  background: var(--acc-soft);
+  border: 1px solid rgba(88, 166, 255, 0.32);
+}
+#factory-system-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--acc);
+  animation: fc-pulse 1.4s infinite;
+  flex: none;
+}
+#factory-system-status.bad {
+  color: var(--err);
+  background: rgba(240, 105, 105, 0.1);
+  border-color: rgba(240, 105, 105, 0.32);
+}
+#factory-system-status.bad::before {
+  background: var(--err);
+  animation: none;
 }
 
+/* زر أيقوني — .ibtn المرجعي */
+#factory-view .icon-btn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--mut);
+  cursor: pointer;
+  transition: 0.15s;
+  padding: 0;
+}
+#factory-view .icon-btn:hover {
+  color: var(--text);
+  border-color: var(--line2);
+  background: var(--s2);
+}
+#factory-view .icon-btn .icon,
+#factory-view .icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- 3) عمود المحتوى — .col المرجعي (780px وسط) ---------- */
+#factory-view .cc-body {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: block;
+  background: transparent;
+}
+.factory-overview,
+.factory-create-mission,
+.factory-mission-view {
+  max-width: 780px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 26px 22px 44px;
+}
+/* انحراف وظيفي واحد موثق: عرض التشغيل ثلاثي اللوحات أوسع قليلاً من
+ * عمود المحادثة كي تبقى لوحات التسلسل/الرسم/الوكيل قابلة للقراءة. */
+.factory-run-view {
+  max-width: 1080px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px 22px 44px;
+}
+
+/* ---------- 4) البطاقات — .card/.card-h المرجعية ---------- */
+.fc-card {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+.fc-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--s2);
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.fc-card > *:not(h3) { padding-inline: 16px; }
+.fc-card > .fc-mission-tabs { margin: 0; padding: 0 8px; }
+.fc-card > :last-child { padding-bottom: 16px; }
+.fc-card > .fc-mission-tabs { padding-bottom: 0; }
+.fc-card h4 {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mut);
+  margin: 0 0 10px;
+}
+
+/* ---------- 5) الإحصاءات — بلاطات pcard ---------- */
 .fc-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  padding: 16px;
 }
-
 .fc-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
 }
-
 .fc-stat {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-s);
-  border: 1px solid var(--border-soft);
+  padding: 12px 14px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
 }
-
 .fc-stat-label {
   font-size: 11px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  color: var(--dim);
+  letter-spacing: 0.04em;
 }
-
 .fc-stat-value {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: var(--mono);
+  line-height: 1.4;
+}
+.fc-stat-value.ok { color: var(--ok); }
+.fc-stat-value.bad { color: var(--err); }
+.fc-stat-value.warn { color: var(--warn); }
+
+/* ---------- 6) الوسوم — .tag المرجعي (أحادي العرض) ---------- */
+.fc-run-status,
+.fc-mission-status {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  border-radius: 6px;
+  padding: 2px 7px;
+  flex: none;
+  margin-inline-start: auto;
+  color: var(--mut);
+  background: var(--s1);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.fc-run-status.ok,
+.fc-mission-status.ok {
+  color: var(--ok);
+  background: rgba(67, 207, 144, 0.1);
+  border-color: rgba(67, 207, 144, 0.3);
+}
+.fc-run-status.bad,
+.fc-mission-status.bad {
+  color: var(--err);
+  background: rgba(240, 105, 105, 0.1);
+  border-color: rgba(240, 105, 105, 0.32);
+}
+.fc-run-status.warn,
+.fc-mission-status.warn {
+  color: var(--warn);
+  background: rgba(255, 158, 100, 0.08);
+  border-color: rgba(255, 158, 100, 0.35);
 }
 
-.fc-stat-value.ok { color: var(--ok); }
-.fc-stat-value.bad { color: var(--danger); }
-.fc-stat-value.warn { color: var(--accent); }
+/* شارة مباشرة — .pill.run المرجعي بنقطة نابضة */
+.fc-run-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--mut);
+  background: var(--s1);
+  border: 1px solid var(--line);
+  flex: none;
+}
+.fc-run-live-badge.live {
+  color: var(--acc-hi);
+  background: var(--acc-soft);
+  border-color: rgba(88, 166, 255, 0.32);
+}
+.fc-run-live-badge.live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--acc);
+  animation: fc-pulse 1.4s infinite;
+}
+.fc-run-live-badge.disconnected {
+  color: var(--err);
+  background: rgba(240, 105, 105, 0.1);
+  border-color: rgba(240, 105, 105, 0.32);
+}
+.fc-run-live-badge.connecting {
+  color: var(--warn);
+  background: rgba(255, 158, 100, 0.08);
+  border-color: rgba(255, 158, 100, 0.35);
+}
 
+/* ---------- 7) التبويبات — .tab بخط سفلي، بلا صناديق ---------- */
+.fc-mission-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+}
+.fc-tab {
+  position: relative;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--mut);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.fc-tab:hover { color: var(--text); background: none; }
+.fc-tab.active {
+  color: var(--text);
+  font-weight: 600;
+  background: none;
+}
+.fc-tab.active::after {
+  content: "";
+  position: absolute;
+  inset-inline: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--acc);
+}
+#fc-mission-tab-body { padding: 16px; }
+
+/* ---------- 8) الحقول — .field المرجعي ---------- */
+.fc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+.fc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fc-field label {
+  font-size: 11px;
+  color: var(--dim);
+  margin: 0;
+}
+.fc-field input,
+.fc-field textarea,
+.fc-field select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.fc-field input:focus,
+.fc-field textarea:focus,
+.fc-field select:focus {
+  border-color: #3d4b66;
+  box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.12);
+}
+.fc-field input::placeholder,
+.fc-field textarea::placeholder { color: var(--dim); }
+.fc-field textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.8;
+}
+.fc-field select { cursor: pointer; }
+.fc-field select option { background: var(--s1); color: var(--text); }
+
+/* ---------- 9) الأزرار — .btn/.btn.pri المرجعية ---------- */
+#factory-view .btn {
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+  color: var(--text);
+  transition: 0.15s;
+}
+#factory-view .btn:hover { border-color: #3d4b66; background: var(--s2); }
+#factory-view .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  border-color: var(--line);
+}
+#factory-view .btn.primary {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--acc-ink);
+}
+#factory-view .btn.primary:hover {
+  filter: brightness(1.07);
+  background: var(--acc);
+  border-color: var(--acc);
+}
 .fc-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
+  padding: 0 16px 16px;
+  margin: 0;
 }
+.fc-card > .fc-actions { margin-top: 0; }
 
-.fc-empty {
-  color: var(--text-faint);
-  font-size: 13px;
-  text-align: center;
-  padding: 24px;
-}
-
-.fc-runs-list, .fc-missions-list, .fc-tasks-tree, .fc-artifacts-list, .fc-evidence-list, .fc-agents-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fc-run-row, .fc-mission-row, .fc-run-detail, .fc-artifact-row, .fc-evidence-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-s);
-  background: var(--bg-elevated);
-  cursor: pointer;
-  transition: all 0.15s var(--ease);
-}
-
-.fc-run-row:hover, .fc-mission-row:hover, .fc-run-detail:hover, .fc-artifact-row:hover, .fc-evidence-row:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
-}
-
-.fc-run-info, .fc-mission-info {
+/* ---------- 10) صفوف القوائم — بلا حدود، تحويم هادئ كالمرجعي ---------- */
+.fc-runs-list,
+.fc-missions-list,
+.fc-tasks-tree,
+.fc-artifacts-list,
+.fc-evidence-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 10px 8px 12px;
+}
+.fc-run-row,
+.fc-mission-row,
+.fc-run-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--mut);
+  cursor: pointer;
+  text-align: start;
+  transition: 0.15s;
+}
+.fc-run-row:hover,
+.fc-mission-row:hover,
+.fc-run-detail:hover {
+  background: #141b28;
+  color: var(--text);
+}
+.fc-run-info,
+.fc-mission-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.fc-run-id,
+.fc-mission-id {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.fc-run-mission,
+.fc-mission-title {
+  font-size: 11.5px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fc-run-meta {
+  font-size: 10px;
+  color: var(--dim);
+  font-family: var(--mono);
+  margin: 0;
 }
 
-.fc-run-id, .fc-mission-id {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12px;
+/* ---------- 11) لوحات عرض التشغيل — بلاطات s2 ---------- */
+.fc-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--s2);
+  padding: 0;
+  min-height: 200px;
+  overflow: hidden;
+}
+.fc-panel h4 {
+  padding: 12px 16px 8px;
+  margin: 0;
+  font-size: 12.5px;
   font-weight: 600;
+  color: var(--text);
+  border: 0;
 }
-
-.fc-run-mission, .fc-mission-title {
-  font-size: 11px;
-  color: var(--text-dim);
+.fc-panel h4:not(:first-child) {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
-
-.fc-run-status, .fc-mission-status, .fc-task-status {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.fc-run-status.ok, .fc-mission-status.ok { color: var(--ok); background: var(--ok-soft); }
-.fc-run-status.bad, .fc-mission-status.bad { color: var(--danger); background: var(--danger-soft); }
-.fc-run-status.warn, .fc-mission-status.warn { color: var(--accent); background: var(--accent-soft); }
+.fc-panel > div { padding: 0 16px 16px; }
+.fc-full-width { grid-column: 1 / -1; }
 
 .fc-run-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 4px 2px 0;
+  margin: 0;
+  border: 0;
 }
-
-.fc-run-live-badge {
-  font-size: 11px;
+.fc-run-header h3 {
+  font-size: 14px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-}
-
-.fc-run-live-badge.live { color: var(--ok); background: var(--ok-soft); }
-.fc-run-live-badge.disconnected { color: var(--danger); background: var(--danger-soft); }
-.fc-run-live-badge.connecting { color: var(--accent); background: var(--accent-soft); }
-
-.fc-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.fc-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fc-field label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-mid);
-}
-
-.fc-field input, .fc-field textarea, .fc-field select {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-s);
-  padding: 10px 12px;
-  font-size: 13px;
+  margin: 0;
   color: var(--text);
-  outline: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.fc-field input:focus, .fc-field textarea:focus, .fc-field select:focus {
-  border-color: var(--border-strong);
-}
-
-.fc-field textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.fc-mission-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border-soft);
-  padding-bottom: 4px;
-}
-
-.fc-tab {
-  padding: 8px 14px;
-  border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: var(--radius-s) var(--radius-s) 0 0;
-  background: var(--bg-elevated);
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.15s var(--ease);
-}
-
-.fc-tab:hover {
-  color: var(--text);
-  border-color: var(--border-soft);
-}
-
-.fc-tab.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  border-bottom-color: var(--bg-raised);
-  margin-bottom: -1px;
-}
-
-.fc-panel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  background: var(--bg-raised);
-  padding: 16px;
-  min-height: 200px;
-}
-
-.fc-panel h4 {
-  font-size: 12.5px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: var(--text-mid);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.fc-full-width {
-  grid-column: 1 / -1;
-}
-
-.fc-timeline, .fc-event-stream {
+/* ---------- 12) صفوف الأحداث والتسلسل — أحادية العرض ---------- */
+.fc-timeline,
+.fc-event-stream {
   display: flex;
   flex-direction: column;
   gap: 4px;
   max-height: 300px;
   overflow-y: auto;
 }
-
-.fc-timeline-item, .fc-event-row {
+.fc-timeline-item,
+.fc-event-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-s);
-  background: var(--bg-elevated);
-  font-size: 11.5px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 10.5px;
   cursor: pointer;
-  transition: all 0.15s var(--ease);
+  transition: 0.15s;
 }
-
-.fc-timeline-item:hover, .fc-event-row:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
+.fc-timeline-item:hover,
+.fc-event-row:hover {
+  border-color: var(--line2);
+  background: var(--s2);
 }
-
-.fc-event-time, .fc-tl-time {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  color: var(--text-dim);
+.fc-event-time,
+.fc-tl-time {
+  color: var(--dim);
   flex: none;
 }
-
-.fc-event-type, .fc-tl-type {
-  color: var(--accent);
+.fc-event-type,
+.fc-tl-type {
+  color: var(--acc);
   font-weight: 500;
   flex: none;
 }
-
-.fc-event-task, .fc-tl-detail, .fc-event-agent {
-  color: var(--text-mid);
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+.fc-event-task,
+.fc-tl-detail,
+.fc-event-agent {
+  color: var(--mut);
   flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* ---------- 13) عقد رسم المهام ---------- */
 .fc-task-graph {
   display: flex;
   flex-direction: column;
@@ -289,211 +590,292 @@
   max-height: 400px;
   overflow-y: auto;
 }
-
 .fc-task-graph-node {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-s);
-  background: var(--bg-elevated);
-  font-size: 12.5px;
-  transition: all 0.2s var(--ease);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--mut);
+  transition: 0.2s;
+}
+.fc-task-graph-node.pending { opacity: 0.5; }
+.fc-task-graph-node.running {
+  border-color: rgba(88, 166, 255, 0.45);
+  background: var(--acc-soft);
+  color: var(--acc-hi);
+}
+.fc-task-graph-node.completed {
+  border-color: rgba(67, 207, 144, 0.3);
+  background: rgba(67, 207, 144, 0.07);
+  color: var(--ok);
+}
+.fc-task-graph-node.failed {
+  border-color: rgba(240, 105, 105, 0.32);
+  background: rgba(240, 105, 105, 0.06);
+  color: var(--err);
+}
+.fc-task-graph-node.blocked {
+  border-color: rgba(255, 158, 100, 0.35);
+  background: rgba(255, 158, 100, 0.08);
+  color: var(--warn);
+  opacity: 0.8;
 }
 
-.fc-task-graph-node.pending { opacity: 0.5; border-color: var(--border); }
-.fc-task-graph-node.running { border-color: var(--accent-border); background: var(--accent-soft); }
-.fc-task-graph-node.completed { border-color: var(--ok); background: var(--ok-soft); }
-.fc-task-graph-node.failed { border-color: var(--danger-border); background: var(--danger-soft); }
-
-.fc-task-graph-node.blocked { border-color: var(--accent); background: var(--accent-soft); opacity: 0.7; }
-
-.fc-current-agent, .fc-current-action {
-  min-height: 100px;
-}
-
-.fc-agent-info, .fc-action-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fc-agent-info div, .fc-action-info div {
-  font-size: 12.5px;
-  color: var(--text-mid);
-}
-
-.fc-agent-info strong, .fc-action-info strong {
-  color: var(--text);
-}
-
-.fc-json, .fc-json-small {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-s);
-  padding: 10px;
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--text-mid);
-  overflow: auto;
-  max-height: 200px;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  direction: ltr;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.fc-json-small { max-height: 150px; font-size: 10px; }
-
-.fc-loading {
-  color: var(--text-dim);
-  text-align: center;
-  padding: 24px;
-}
-
-.fc-error {
-  color: var(--danger);
-  text-align: center;
-  padding: 24px;
-  border: 1px solid var(--danger-border);
-  background: var(--danger-soft);
-  border-radius: var(--radius-s);
-}
-
+/* ---------- 14) شجرة مهام المهمة — نقاط حالات كمرجع المشاريع ---------- */
 .fc-task-node {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-s);
-  background: var(--bg-elevated);
-  margin-bottom: 4px;
-  font-size: 12px;
-  transition: all 0.15s var(--ease);
+  gap: 9px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--mut);
+  cursor: default;
+  transition: 0.15s;
 }
-
-.fc-task-node:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-soft);
-}
-
+.fc-task-node:hover { background: #141b28; color: var(--text); }
 .fc-task-status {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
   flex: none;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+  background: var(--dim);
 }
-
 .fc-task-status.ok { background: var(--ok); }
-.fc-task-status.warn { background: var(--accent); }
-.fc-task-status.bad { background: var(--danger); }
-.fc-task-status:not(.ok):not(.warn):not(.bad) { background: var(--text-faint); }
+.fc-task-status.warn { background: var(--acc); animation: fc-pulse 1.6s infinite; }
+.fc-task-status.bad { background: var(--err); }
+.fc-task-name { flex: 1; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-task-state { font-size: 9.5px; color: var(--dim); font-family: var(--mono); flex: none; }
+.fc-task-agent { font-size: 9.5px; color: var(--acc); font-family: var(--mono); flex: none; }
 
-.fc-task-name { flex: 1; font-weight: 500; }
-.fc-task-state { font-size: 11px; color: var(--text-dim); font-family: "IBM Plex Mono", ui-monospace, monospace; }
-.fc-task-agent { font-size: 11px; color: var(--accent); font-family: "IBM Plex Mono", ui-monospace, monospace; }
-
+/* ---------- 15) بطاقات الوكلاء — .pcard المرجعية ---------- */
+.fc-agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+  padding: 16px;
+}
 .fc-agent-card {
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-m);
-  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--s2);
   padding: 14px;
 }
-
 .fc-agent-card h4 {
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin: 0 0 10px;
   color: var(--text);
 }
-
+.fc-agent-key {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--dim);
+}
+.fc-agent-ready {
+  font-size: 11.5px;
+  color: var(--dim);
+  margin: -4px 0 8px;
+}
 .fc-agent-meta {
   display: flex;
   flex-direction: column;
   gap: 4px;
   font-size: 11.5px;
-  color: var(--text-dim);
+  color: var(--dim);
 }
 
+/* ---------- 16) الكتل البرمجية — لون كود المرجع #9ecbff ---------- */
+.fc-json,
+.fc-json-small {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  padding: 10px 12px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #9ecbff;
+  overflow: auto;
+  max-height: 240px;
+  font-family: var(--mono);
+  direction: ltr;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.fc-json-small { max-height: 150px; font-size: 10.5px; }
+
+.fc-current-agent,
+.fc-current-action { min-height: 100px; }
+.fc-agent-info,
+.fc-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fc-agent-info div,
+.fc-action-info div {
+  font-size: 12.5px;
+  color: var(--mut);
+}
+.fc-agent-info strong,
+.fc-action-info strong { color: var(--text); font-weight: 600; }
+
+/* ---------- 17) الحالات الفارغة والخطأ — .notice المرجعي ---------- */
+.fc-empty {
+  color: var(--dim);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 28px 16px;
+}
+.fc-loading {
+  color: var(--dim);
+  font-size: 11.5px;
+  font-family: var(--mono);
+  text-align: center;
+  padding: 24px 16px;
+}
+.fc-loading::after {
+  content: "···";
+  display: inline-block;
+  margin-inline-start: 6px;
+  color: var(--acc);
+  animation: fc-blink 1s infinite;
+}
+.fc-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--mut);
+  font-size: 12.5px;
+  text-align: start;
+  padding: 12px 14px;
+  border: 1px solid rgba(240, 105, 105, 0.32);
+  border-inline-start: 3px solid var(--err);
+  background: rgba(240, 105, 105, 0.06);
+  border-radius: var(--r-m);
+}
+.fc-error::before {
+  content: "!";
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  color: var(--err);
+  border: 1px solid rgba(240, 105, 105, 0.45);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ---------- 18) صفوف الأدلة والمخرجات ---------- */
 .fc-evidence-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 8px;
   align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--bg);
+  cursor: pointer;
+  transition: 0.15s;
 }
-
+.fc-evidence-row:hover,
+.fc-artifact-row:hover {
+  border-color: var(--line2);
+  background: var(--s2);
+}
 .fc-artifact-row {
   display: grid;
   grid-template-columns: 80px 1fr 120px 1fr;
   gap: 8px;
   align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--bg);
+  cursor: pointer;
+  transition: 0.15s;
 }
-
-.fc-artifact-type, .fc-artifact-name, .fc-artifact-sha, .fc-artifact-task {
-  font-size: 11.5px;
+.fc-artifact-type,
+.fc-artifact-name,
+.fc-artifact-sha,
+.fc-artifact-task {
+  font-size: 11px;
 }
-
 .fc-artifact-type {
-  color: var(--accent);
+  color: var(--acc);
   font-weight: 500;
+  font-family: var(--mono);
 }
-
+.fc-artifact-name { color: var(--text); }
 .fc-artifact-sha {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  color: var(--text-dim);
+  font-family: var(--mono);
+  color: var(--dim);
 }
-
 .fc-evidence-id {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 11px;
-  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--mut);
 }
-
 .fc-evidence-type {
-  color: var(--accent);
+  color: var(--acc);
   font-weight: 500;
-  font-size: 11.5px;
+  font-size: 10.5px;
+  font-family: var(--mono);
 }
-
 .fc-evidence-hash {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 11px;
-  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+}
+.fc-evidence-task,
+.fc-artifact-task {
+  font-size: 10.5px;
+  color: var(--dim);
 }
 
-.fc-evidence-task, .fc-artifact-task {
-  font-size: 11px;
-  color: var(--text-faint);
+/* ---------- 19) الحركات المرجعية ---------- */
+@keyframes fc-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.35); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@keyframes fc-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
 }
 
-.fc-run-meta {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
+/* حالات نصية مفردة داخل أجسام التبويبات ولوحة الإجراء الحالي */
+#factory-view .ok { color: var(--ok); }
+#factory-view .bad { color: var(--err); }
 
-/* Responsive */
+/* ---------- 20) الاستجابة ---------- */
 @media (max-width: 1100px) {
-  .fc-grid-3 {
-    grid-template-columns: 1fr;
-  }
+  .fc-grid-3 { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 800px) {
-  .fc-grid-2 {
-    grid-template-columns: 1fr;
-  }
-  .fc-evidence-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-  .fc-artifact-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-  .fc-mission-tabs {
-    flex-wrap: wrap;
-  }
+  .fc-grid-2 { grid-template-columns: 1fr; }
+  .fc-evidence-row { grid-template-columns: 1fr; gap: 4px; }
+  .fc-artifact-row { grid-template-columns: 1fr; gap: 4px; }
+  .factory-overview,
+  .factory-create-mission,
+  .factory-mission-view,
+  .factory-run-view { padding: 18px 14px 36px; }
+  .fc-mission-tabs { padding: 0 2px; }
+  .fc-tab { padding: 9px 10px; font-size: 12.5px; }
 }

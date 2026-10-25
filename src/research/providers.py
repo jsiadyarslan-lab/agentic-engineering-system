@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import html as html_lib
 import json
+import os
 import re
 import urllib.error
 import urllib.parse
@@ -26,8 +27,31 @@ import urllib.request
 from typing import Callable, Protocol
 
 MAX_SEARCH_RESULTS = 8
-SEARCH_TIMEOUT = 15.0
-FETCH_TIMEOUT = 20.0
+#: (AES-EXP-04 §6) مهلات البحث/الجلب — قابلة للضبط بصدق عبر
+#: AES_RESEARCH_TIMEOUT_S: الشبكات المعزولة/بيئات الاختبار تضبطها بدل
+#: انتظار مهلة TCP كاملة لكل مزود داخل خيط المحادثة المشترك.
+_DEFAULT_SEARCH_TIMEOUT = 15.0
+_DEFAULT_FETCH_TIMEOUT = 20.0
+
+
+def search_timeout() -> float:
+    """مهلة مزود بحث واحد — AES_RESEARCH_TIMEOUT_S."""
+    raw = os.environ.get("AES_RESEARCH_TIMEOUT_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_SEARCH_TIMEOUT
+    return value if value > 0 else _DEFAULT_SEARCH_TIMEOUT
+
+
+def fetch_timeout() -> float:
+    """مهلة جلب صفحة واحدة — AES_RESEARCH_TIMEOUT_S."""
+    raw = os.environ.get("AES_RESEARCH_TIMEOUT_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_FETCH_TIMEOUT
+    return value if value > 0 else _DEFAULT_FETCH_TIMEOUT
 MAX_PAGE_BYTES = 400_000
 
 _USER_AGENT = (
@@ -252,7 +276,9 @@ class SearchProvider(Protocol):
     provider_id: str
     kind: str
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         """[{title, url, snippet}] — بلا نتائج تحليلية = خطأ مصنّف."""
 
     def describe(self) -> dict:
@@ -348,7 +374,9 @@ class WikipediaSearchProvider:
             })
         return results
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         attempts: list[dict] = []
         collected: list[dict] = []
         seen: set[str] = set()
@@ -442,7 +470,9 @@ class DuckDuckGoSearchProvider:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return response.read().decode("utf-8", "replace")
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         attempts: list[dict] = []
         #: آخر نتائج حُلّلت ورُفضت لعدم الصلة — تُرفق في التفصيل
         last_results: list[dict] = []
@@ -614,7 +644,9 @@ class BingSearchProvider:
             "config": {"endpoint": self.endpoint},
         }
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         import base64
 
         url = (self.endpoint + "?q=" + urllib.parse.quote(query)
@@ -705,7 +737,9 @@ class SearxJsonSearchProvider:
             "config": {"base_url": self.base_url or "غير مُعد — عيّن الرابط"},
         }
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         if not self.base_url:
             raise ProviderNotReady(
                 "searx: بلا رابط مثيل — عيّن base_url من إعدادات البحث"
@@ -775,7 +809,9 @@ class ApiSearchProvider:
             },
         }
 
-    def search(self, query: str, *, timeout: float = SEARCH_TIMEOUT) -> list[dict]:
+    def search(self, query: str, *, timeout: float | None = None) -> list[dict]:
+        if timeout is None:
+            timeout = search_timeout()
         if not self.endpoint:
             raise ProviderNotReady(
                 "api: بلا نقطة نهاية — عيّنها من إعدادات البحث"
@@ -861,10 +897,12 @@ def _parse_api_payload(data: dict, style: str) -> list[dict]:
 # ------------------------------------------------------------------ #
 
 def fetch_page(
-    url: str, *, timeout: float = FETCH_TIMEOUT,
+    url: str, *, timeout: float | None = None,
     max_bytes: int = MAX_PAGE_BYTES,
 ) -> str:
     """جلب صفحة واستخلاص نصها — نفس عقد web_tools.fetch_page."""
+    if timeout is None:
+        timeout = fetch_timeout()
     if not url.startswith(("http://", "https://")):
         raise ValueError(f"رابط غير مدعوم: {url[:80]}")
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})

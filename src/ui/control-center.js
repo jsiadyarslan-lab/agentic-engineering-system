@@ -39,6 +39,17 @@
     var taskSettings = document.getElementById("task-settings");
     var isChat = name === "chat";
     hideSurfaces();
+    // (AES-UI-PREMIUM-REDESIGN-001) إصلاح خلل قديم منذ إنشاء الملف: النقر
+    // على «التشغيلات» أو «الأرشيف» كان يخفي المحادثة دون إظهار السطح
+    // المستهدف (لا يوجد أي موضع يرفع hidden عنهما) — فتبقى الشاشة
+    // فارغة. السطح المستهدف يُظهر صراحة هنا.
+    if (name === "runs" && runsView()) runsView().hidden = false;
+    if (name === "archive" && archiveView()) archiveView().hidden = false;
+    // والعودة للمحادثة من وضع المصنع تُخلي سطح المصنع أيضاً
+    if (isChat && window.FactoryControl &&
+        document.body.classList.contains("mode-factory")) {
+      window.FactoryControl.hide();
+    }
     if (!isChat) {
       // فتح سطح التحكم يخرج من وضع المشروع أولاً (المشهد قابه للعودة)
       if (document.body.classList.contains("mode-project") &&

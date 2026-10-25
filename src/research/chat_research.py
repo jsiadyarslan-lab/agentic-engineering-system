@@ -14,8 +14,46 @@ WEB_UNAVAILABLE معلنة بالسبب — لا نتائج ملفقة أبدً�
 
 from __future__ import annotations
 
+import os
 import re
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as _FutureTimeout
 from typing import Callable
+
+#: (AES-EXP-04 §6) الميزانية الزمنية الكلية لبحث المحادثة — خيط
+#: المحادثة لا يُحتجز أبدًا خلف سلسلة مزودين على شبكة متدهورة:
+#: 3 مزودين مزروعين × مهلة اتصال لكل محاولة × عناوين IP متعددة
+#: لكل مزود كانت تتجاوز 150ث على مضيف بلا خروج صريح (التفريغات
+#: مثبتة: v2-chat عالق في sock.connect داخل provider.search) —
+#: بصمة مهلات 149.7ث المتكررة القديمة نفسها. قابل للضبط عبر
+#: AES_CHAT_RESEARCH_BUDGET_S؛ تجاوزها = WEB_UNAVAILABLE صادقة
+#: والإجابة تكمل من الذاكرة مع الإعلان (لا نتائج ملفقة أبدًا).
+_DEFAULT_CHAT_SEARCH_BUDGET_S = 20.0
+
+_CHAT_RESEARCH_POOL: dict = {"pool": None, "lock": threading.Lock()}
+
+
+def _chat_research_pool() -> ThreadPoolExecutor:
+    """منفّذ بحث المحادثة — خيوط قليلة مخصصة؛ خيط المحادثة نفسه
+    لا ينتظر السلسلة أبدًا بل حتى الميزانية فقط."""
+    with _CHAT_RESEARCH_POOL["lock"]:
+        if _CHAT_RESEARCH_POOL["pool"] is None:
+            _CHAT_RESEARCH_POOL["pool"] = ThreadPoolExecutor(
+                max_workers=3, thread_name_prefix="aes-chat-research",
+            )
+        return _CHAT_RESEARCH_POOL["pool"]
+
+
+def chat_search_budget_s() -> float:
+    """ميزانية بحث المحادثة الكلية — AES_CHAT_RESEARCH_BUDGET_S."""
+    raw = os.environ.get("AES_CHAT_RESEARCH_BUDGET_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_CHAT_SEARCH_BUDGET_S
+    return value if value > 0 else _DEFAULT_CHAT_SEARCH_BUDGET_S
 
 #: روابط URL داخل النص — مسار WEB_FETCH عند وجودها.
 _URL_RE = re.compile(
@@ -201,18 +239,37 @@ def search_for_chat(sessions, query: str) -> dict:
     يعيد {ok, provider, results} عند النجاح أو {ok: False, error,
     providers_tried} عند فشل الجميع — الواجهة تعرض WEB_UNAVAILABLE
     بالسبب الحرفي، لا نتائج وهمية أبدًا.
+
+    (AES-EXP-04 §6) السلسلة تُنفّذ في منفّذ البحث المخصص بميزانية
+    كلية (AES_CHAT_RESEARCH_BUDGET_S، 20ث افتراضيًا): الشبكة
+    المتدهورة لا تحتجز خيط المحادثة — عند التجاوز يعلن فشل
+    صادق وتكمل الإجابة من الذاكرة مع الإعلان. الخيط المتروك
+    خلف التجاوز تقتله مهل الاتصال الفردية نفسها (محدودة دائمًا).
     """
     from research import service as research_service
     from research.providers import ProviderNotReady
 
+    budget = chat_search_budget_s()
+    deadline = time.monotonic() + budget
+    future = _chat_research_pool().submit(
+        research_service.search, sessions, query, deadline=deadline
+    )
     try:
-        outcome = research_service.search(sessions, query)
+        outcome = future.result(timeout=budget)
+    except _FutureTimeout:
+        # عامل قيد التشغيل لا يُقتل منتصفًا — مهله الفردية تُنهيه؛
+        # خيط المحادثة حر الآن والإعلان صادق مفصل.
+        future.cancel()
         return {
-            "ok": True,
-            "provider": outcome.get("provider", ""),
-            "provider_kind": outcome.get("provider_kind", ""),
-            "results": outcome.get("results", [])[:8],
-            "attempts": outcome.get("attempts", []),
+            "ok": False,
+            "error": (
+                f"تجاوز بحث الويب الميزانية الزمنية الكلية "
+                f"({budget:.0f}ث) قبل أي نتيجة — الشبكة متدهورة أو "
+                "المصادر محجوبة؛ أكمل الإجابة من الذاكرة مع هذا "
+                "الإعلان الصريح"
+            ),
+            "providers_tried": [],
+            "budget_exceeded": True,
         }
     except Exception as error:  # noqa: BLE001 — فشل مفصل لا ملفق
         reason = ""
@@ -227,6 +284,14 @@ def search_for_chat(sessions, query: str) -> dict:
                 reason = f"{type(error).__name__}: {error}"
         return {"ok": False, "error": reason[:400],
                 "providers_tried": ["ddg", "bing"]}
+
+    return {
+        "ok": True,
+        "provider": outcome.get("provider", ""),
+        "provider_kind": outcome.get("provider_kind", ""),
+        "results": outcome.get("results", [])[:8],
+        "attempts": outcome.get("attempts", []),
+    }
 
 
 def fetch_for_chat(url: str, *, timeout: float = 12.0) -> dict:

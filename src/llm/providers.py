@@ -13,7 +13,15 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Dict, List, Optional, Type
 from enum import Enum
 
-import aiohttp
+# (AES-EXP-03) aiohttp تبعية غير معلنة في pyproject (جيل src/llm
+# الموازي غير الموصول بالمسار الحي) — الاستيراد المكشوف كان يكسر جمع
+# ملفي اختبار orchestrator على أي تثبيت نظيف. النمط نفسه المعتمد في
+# substrate/windows_executor: حماية الاستيراد، والاستخدام الفعلي
+# للعميل يفشل صريحًا عند النداء إن لم تتوفر المكتبة.
+try:
+    import aiohttp
+except ImportError:  # noqa: F401 — بيئة بلا aiohttp (اختبارات فقط)
+    aiohttp = None
 from pydantic import BaseModel, Field
 
 from .provider import RetryPolicy, LLMRateLimitError, LLMTimeoutError, LLMProviderUnavailableError

@@ -18,10 +18,27 @@
 
 from __future__ import annotations
 
+import os
+from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any
 
 from readiness import registry
 from readiness import service as readiness_service
+
+#: الميزانية الزمنية الكلية للفحوص المتوازية (§6 AES-EXP-04): فحوص
+#: preflight تعمل بدفعة متوازية بهذا السقف بدل تسلسل يعلق خيط الحلقات
+#: الوحيد دقائق على شبكة ميتة. قابل للضبط عبر AES_PREFLIGHT_BUDGET_S.
+_DEFAULT_PREFLIGHT_BUDGET_S = 20.0
+
+
+def preflight_budget() -> float:
+    """الميزانية الكلية للفحوص المتوازية — AES_PREFLIGHT_BUDGET_S."""
+    raw = os.environ.get("AES_PREFLIGHT_BUDGET_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_PREFLIGHT_BUDGET_S
+    return value if value > 0 else _DEFAULT_PREFLIGHT_BUDGET_S
 
 #: كلمات تدل على اعتماد المهمة جوهريًا على البحث الخارجي (§16
 #: Capability Analysis): حين يطلب المالك بحثًا/مصادر/OSINT صراحة
@@ -91,6 +108,65 @@ def _owner_action(sessions, capability_id: str, failure_class: str,
     return None
 
 
+def _probe_required_parallel(
+    sessions, required: list[str], llm_ready: bool | None, *, force: bool,
+) -> tuple[dict[str, dict], set[str]]:
+    """فحص القدرات المطلوبة بدفعة متوازية بميزانية كلية (§6).
+
+    الجذر المثبّت: فحوص الشبكة كانت تسلسلًا على خيط الحلقات الوحيد
+    (max_workers=1) — شبكة ميتة × 8ث × عدة قدرات = دقائق حجز لكل
+    tick، فتتسلسل المعلقات عبر كل المهمات اللاحقة. الآن: دفعة متوازية
+    (حتى 6 خيوط) بسقف زمني كلي، وما تجاوز الميزانية يعلن بصدق
+    (حالة غير مثبتة — لا جاهزية مزيفة ولا انتظار مفتوح).
+
+    يعيد (نتائج المكتملة: capability_id ← capability_view، المجموعة
+    التي تجاوزت ميزانيتها). الاختبارات بحقن run_probe_fn لا تمر من
+    هنا أصلًا (مسارها المتسلسل محفوظ كما هو).
+    """
+    ids: list[str] = []
+    for capability_id in required:
+        if capability_id == "llm" and llm_ready is not None:
+            continue  # حكم الموجّه الفعلي لا مسبار مستقل
+        try:
+            current = readiness_service.capability_view(
+                sessions, capability_id
+            )
+        except Exception:  # noqa: BLE001 — الفحص الفردي لا يجمّد الدفعة
+            continue
+        if current is None:
+            continue
+        if force or current["readiness_status"] != "READY":
+            ids.append(capability_id)
+    if not ids:
+        return {}, set()
+    budget = preflight_budget()
+    pool = ThreadPoolExecutor(
+        max_workers=min(6, len(ids)), thread_name_prefix="aes-preflight"
+    )
+    futures = {
+        pool.submit(registry.run_probe, sessions, cid): cid for cid in ids
+    }
+    done, pending = wait(futures, timeout=budget)
+    for future in pending:
+        future.cancel()
+    pool.shutdown(wait=False)
+    results: dict[str, dict] = {}
+    exceeded: set[str] = set()
+    for future in pending:
+        exceeded.add(futures[future])
+    for future in done:
+        capability_id = futures[future]
+        try:
+            future.result()
+            view = readiness_service.capability_view(sessions, capability_id)
+        except Exception:  # noqa: BLE001 — فشل مسبار = حالة غير مثبتة
+            exceeded.add(capability_id)
+            continue
+        if view is not None:
+            results[capability_id] = view
+    return results, exceeded
+
+
 def task_preflight(
     sessions,
     goal: str,
@@ -116,6 +192,15 @@ def task_preflight(
     capabilities: list[dict] = []
     blocked: list[dict] = []
 
+    # (§6 AES-EXP-04) الدفعة المتوازية للمسار الحقيقي فقط — مسار حقن
+    # الاختبارات يبقى متسلسلًا كما كتبته اختباراته حرفيًا.
+    budgeted: dict[str, dict] = {}
+    exceeded: set[str] = set()
+    if run_probe_fn is None:
+        budgeted, exceeded = _probe_required_parallel(
+            sessions, required, llm_ready, force=force,
+        )
+
     for capability_id in required:
         if capability_id == "llm" and llm_ready is not None:
             ok = bool(llm_ready)
@@ -139,7 +224,32 @@ def task_preflight(
                 blocked.append(entry)
             continue
         # (011 §14) الحالة من مصدر واحد — readiness.service
-        current = readiness_service.capability_view(sessions, capability_id)
+        if capability_id in exceeded:
+            # تجاوز ميزانية الفحص — الحالة غير مثبتة بصدق (لا جاهزية مزيفة،
+            # ولا إعادة فحص تسلسلي تعيد احتجاز خيط الحلقات)
+            entry = {
+                "capability_id": capability_id,
+                "name": capability_id,
+                "status": "UNKNOWN",
+                "ok": False,
+                "reason": (
+                    "فحص القدرة تجاوز الميزانية الزمنية الكلية "
+                    f"({preflight_budget():.0f}ث) — الحالة غير مثبتة؛ "
+                    "أعد الفحص من لوحة البيئة ثم أعد المحاولة"
+                ),
+                "last_probe": None,
+                "latency_ms": 0,
+                "recovery": _recovery_hint(capability_id),
+                "owner_action": None,
+                "required_environment": "",
+                "budget_exceeded": True,
+            }
+            capabilities.append(entry)
+            blocked.append(entry)
+            continue
+        current = budgeted.get(capability_id) or (
+            readiness_service.capability_view(sessions, capability_id)
+        )
         if current is None:
             capabilities.append({
                 "capability_id": capability_id, "status": "UNAVAILABLE",
@@ -148,10 +258,12 @@ def task_preflight(
             })
             continue
         status = current["readiness_status"]
-        # STALE أو UNKNOWN = أعد الفحص قبل الاعتماد (§24)
+        # STALE أو UNKNOWN = أعد الفحص قبل الاعتماد (§24)؛ ما فُحص في
+        # الدفعة المتوازية حديثًا لا يُعاد فحصه تسلسليًا
         needs_probe = (
-            force or status in ("UNKNOWN", "STALE", "NOT_READY",
-                                "UNAVAILABLE")
+            (force or status in ("UNKNOWN", "STALE", "NOT_READY",
+                                "UNAVAILABLE"))
+            and capability_id not in budgeted
         )
         if needs_probe:
             probe(sessions, capability_id)

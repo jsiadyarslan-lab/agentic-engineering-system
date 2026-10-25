@@ -65,7 +65,7 @@ class RunHandle:
     """مقبض تشغيل خلفي — يُعاد فورًا ويمتلئ لاحقًا."""
 
     __slots__ = ("project_id", "job_id", "done", "error", "correlation_id",
-                 "launched_at", "db_key")
+                 "launched_at", "db_key", "superseded")
 
     def __init__(self, project_id: int, correlation_id: str = "",
                  db_key: str = ""):
@@ -75,6 +75,10 @@ class RunHandle:
         self.error: str = ""
         self.correlation_id = correlation_id
         self.db_key = db_key
+        #: (AES-EXP-04 §6) بيئة أعلى أولوية استلمت المنفّذ الوحيد —
+        #: الحلقة تسلّمه عند نقطة أمان النبضة التالية (لا قتل في منتصف
+        #: عمل؛ الحالة الدائمة باقية والاستئناف قرار صريح).
+        self.superseded = threading.Event()
 
     def describe(self, *, launched: bool, reason: str = "") -> dict:
         return {
@@ -167,6 +171,14 @@ def launch(
                 f"مشروع آخر يعمل حاليًا (#{current.project_id}) — "
                 "الحلقة الذاتية واحدة في كل لحظة"
             )
+        # (AES-EXP-04 §6) بيئة مختلفة (قاعدة أخرى) تستلم المنفّذ الوحيد:
+        # حلقة البيئة السابقة يتيمة الآن — نطلب منها التسليم عند نبضتها
+        # التالية بدل احتجاز الخيط طوال نافذة توفيرها (120ث). في الإنتاج
+        # قاعدة واحدة ⟶ مسار الاستلام لا يحدث أبدًا؛ عزل الاختبارات
+        # (قاعدة لكل اختبار) هو المستفيد — ولا مساس بعقد الازدواج §40.
+        if (current is not None and not current.done.is_set()
+                and current.db_key != db_key):
+            current.superseded.set()
         handle = RunHandle(project_id, correlation_id or uuid.uuid4().hex[:12],
                            db_key=db_key)
         _ACTIVE["handle"] = handle
@@ -225,7 +237,7 @@ def _run_loop_thread(handle: RunHandle, engine_factory, sessions,
             "job_id": job["id"], "reason": reason,
             "correlation_id": handle.correlation_id,
         })
-        manager.run_loop(job["id"])
+        manager.run_loop(job["id"], should_yield=handle.superseded.is_set)
     except Exception as error:  # noqa: BLE001 — فشل صريح معلن لا موت صامت
         handle.error = str(error)[:500]
         _broadcast(project_id, "run.error", {

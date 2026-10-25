@@ -7,6 +7,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+import sys
+
 import pytest
 
 from src.factory.tools import ParsePythonTool, ParsePythonInput
@@ -161,6 +163,12 @@ def broken(
         assert result.ok is False
         assert "escapes" in result.error.lower() or "absolute" in result.error.lower()
     
+    @pytest.mark.skipif(
+        sys.platform != "win32",
+        reason="(AES-EXP-04) دلالات مسار ويندوز حصراً: سياسة المنتج ترفض "
+               "المسارات المطلقة فعلاً (is_absolute في filesystem.py) لكن "
+               "'C:/...' ليست مطلقة على POSIX — الفحص غير قابل للتطبيق هنا",
+    )
     async def test_parse_python_absolute_path(self, tool: ParsePythonTool, temp_workspace: Path) -> None:
         """Test absolute path rejection."""
         args = ParsePythonInput(path=str(Path("C:/Windows/test.py")))

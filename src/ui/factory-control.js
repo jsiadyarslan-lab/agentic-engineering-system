@@ -42,6 +42,9 @@
     factoryView.hidden = false;
     renderFactory();
     checkSystemConnection();
+    // التحميل يُطلق من هنا فقط — كان داخل renderOverview فيصل حلقة
+    // لا نهائية (رسم ← تحميل ← رسم...) بعاصفة طلبات؛ انظر queueOverviewRender.
+    if (state.mode === "overview") loadOverviewData();
   }
 
   function hideFactoryView() {
@@ -72,16 +75,16 @@
       if (out.ok && out.j) {
         state.systemConnected = true;
         factorySystemStatus.textContent = "SYSTEM: CONNECTED";
-        factorySystemStatus.style.color = "var(--ok)";
+        factorySystemStatus.classList.remove("bad");
       } else {
         state.systemConnected = false;
         factorySystemStatus.textContent = "SYSTEM: DISCONNECTED";
-        factorySystemStatus.style.color = "var(--danger)";
+        factorySystemStatus.classList.add("bad");
       }
     }, function () {
       state.systemConnected = false;
       factorySystemStatus.textContent = "SYSTEM: DISCONNECTED";
-      factorySystemStatus.style.color = "var(--danger)";
+      factorySystemStatus.classList.add("bad");
     });
   }
 
@@ -174,17 +177,18 @@
     html += '</div>';
     factoryBody.innerHTML = html;
     wireOverviewButtons();
-    loadOverviewData();
+    // لا استدعاء لـ loadOverviewData هنا — المحفّز الوحيد showFactoryView
+    // وأزرار التحديث؛ وضعه هنا كان يسبب حلقة رسم/تحميل لا نهائية.
   }
 
   function renderRunSummary(run) {
     var statusClass = run.status === "RUNNING" ? "ok" : (run.status === "COMPLETED" ? "ok" : (run.status === "FAILED" ? "bad" : "warn"));
     var statusText = {
-      "RUNNING": "● تشغيل",
-      "COMPLETED": "✓ مكتمل",
-      "FAILED": "✕ فاشل",
-      "STOPPED": "■ متوقف",
-      "PAUSED": "⏸ موقوف",
+      "RUNNING": "تشغيل",
+      "COMPLETED": "مكتمل",
+      "FAILED": "فاشل",
+      "STOPPED": "متوقف",
+      "PAUSED": "موقوف",
     }[run.status] || run.status;
     return '<div class="fc-run-row" data-run-id="' + esc(run.run_id) + '">' +
       '<div class="fc-run-info">' +
@@ -196,8 +200,10 @@
   }
 
   function renderMissionSummary(mission) {
-    var statusClass = mission.state === "EXECUTING" ? "ok" : (mission.state === "EVIDENCED" || mission.state === "VERIFIED" ? "ok" : (mission.state === "FAILED" ? "bad" : "warn"));
+    var state = mission.state || mission.status || "";
+    var statusClass = state === "EXECUTING" ? "ok" : (state === "EVIDENCED" || state === "VERIFIED" ? "ok" : (state === "FAILED" ? "bad" : "warn"));
     var statusText = {
+      "DRAFT": "مسودة",
       "RECEIVED": "مستلمة",
       "ANALYZING": "تحليل",
       "PLANNING": "تخطيط",
@@ -212,13 +218,14 @@
       "VERIFIED": "موثقة",
       "FAILED": "فاشلة",
       "STOPPED": "متوقفة",
-    }[mission.state] || mission.state;
-    return '<div class="fc-mission-row" data-mission-id="' + esc(mission.mission_id) + '">' +
+      "ARCHIVED": "مؤرشفة",
+    }[state] || state || "غير محدد";
+    return '<div class="fc-mission-row" data-mission-id="' + esc(mission.mission_id || mission.id || "—") + '">' +
       '<div class="fc-mission-info">' +
-      '<span class="fc-mission-id">' + esc(mission.mission_id) + '</span>' +
-      '<span class="fc-mission-title">' + esc(mission.user_request || "بدون عنوان") + '</span>' +
+      '<span class="fc-mission-id">' + esc(mission.mission_id || mission.id || "—") + '</span>' +
+      '<span class="fc-mission-title">' + esc(mission.user_request || mission.name || mission.objective || "بدون عنوان") + '</span>' +
       '</div>' +
-      '<span class="fc-mission-status ' + statusClass + '">' + statusText + '</span>' +
+      '<span class="fc-mission-status ' + statusClass + '">' + esc(statusText) + '</span>' +
       '</div>';
   }
 
@@ -436,7 +443,7 @@
       var data = out.j;
       var html = '<div class="fc-grid-2">';
       html += '<div><strong>Cycle ID:</strong> ' + esc(data.cycle_id || "—") + '</div>';
-      html += '<div><strong>الحالة:</strong> <span class="' + (data.running ? "ok" : "bad") + '">' + (data.running ? "● تشغيل" : "○ متوقفة") + '</span></div>';
+      html += '<div><strong>الحالة:</strong> <span class="' + (data.running ? "ok" : "bad") + '">' + (data.running ? "تشغيل" : "متوقفة") + '</span></div>';
       html += '<div><strong>آخر حالة:</strong> ' + esc(data.last_state || "—") + '</div>';
       html += '<div><strong>Stop Requested:</strong> ' + (data.stop_requested ? "نعم" : "لا") + '</div>';
       html += '</div>';
@@ -536,12 +543,18 @@
       var roles = out.j.roles || [];
       var html = '<div class="fc-agents-grid">';
       roles.forEach(function (role) {
+        var sel = role.live_selection || role.selection || {};
+        var ready = sel.ready;
         html += '<div class="fc-agent-card">';
-        html += '<h4>' + esc(role.label) + ' (' + esc(role.key) + ')</h4>';
+        html += '<h4>' + esc(role.display || role.label || "—") +
+          ' <span class="fc-agent-key" dir="ltr">(' + esc(role.role || role.key || "—") + ')</span></h4>';
+        if (typeof ready === "boolean") {
+          html += '<div class="fc-agent-ready">حالة التهيئة: <span class="' + (ready ? "ok" : "bad") + '">' + (ready ? "جاهز" : "غير مهيأ") + '</span></div>';
+        }
         html += '<div class="fc-agent-meta">';
-        html += '<div>مزود: ' + esc(role.selection?.provider || "—") + '</div>';
-        html += '<div>نموذج: ' + esc(role.selection?.model || "—") + '</div>';
-        html += '<div>تكوين: ' + esc(role.selection?.configuration || "—") + '</div>';
+        html += '<div>مزود: ' + esc(sel.provider || "—") + '</div>';
+        html += '<div>نموذج: ' + esc(sel.model || "—") + '</div>';
+        html += '<div>تكوين: ' + esc(sel.configuration || "—") + '</div>';
         html += '</div>';
         html += '</div>';
       });
@@ -837,6 +850,18 @@
   }
 
   // ---------- Data Loading ----------
+  /* دمج رَسَمات إكمال المحمّلات الثلاثة في رسمة واحدة لكل دورة —
+     يمنع تكرار innerHTML ويحفظ الحلقة مغلقة (الدخول هو المحفّز الوحيد). */
+  var overviewRenderPending = false;
+  function queueOverviewRender() {
+    if (overviewRenderPending) return;
+    overviewRenderPending = true;
+    setTimeout(function () {
+      overviewRenderPending = false;
+      if (state.mode === "overview") renderFactory();
+    }, 0);
+  }
+
   function loadOverviewData() {
     loadMissions();
     loadRuns();
@@ -847,7 +872,7 @@
     fetchJSON("/api/projects").then(function (out) {
       if (out.ok) {
         state.missions = out.j.projects || [];
-        if (state.mode === "overview") renderFactory();
+        queueOverviewRender();
       }
     });
   }
@@ -864,7 +889,7 @@
           started_at: out.j.started_at,
           current_phase: out.j.last_state,
         }];
-        if (state.mode === "overview") renderFactory();
+        queueOverviewRender();
       }
     });
   }
@@ -873,15 +898,16 @@
     fetchJSON("/api/harness/roles").then(function (out) {
       if (out.ok) {
         state.agents = (out.j.roles || []).map(function (r) {
+          var sel = r.live_selection || r.selection || {};
           return {
-            agent_id: r.key,
-            role: r.label,
-            status: "AVAILABLE", // We don't have real-time agent status yet
-            model: r.selection?.model,
-            provider: r.selection?.provider,
+            agent_id: r.role || r.key,
+            role: r.display || r.label,
+            status: sel.ready === false ? "NOT_READY" : "AVAILABLE",
+            model: sel.model,
+            provider: sel.provider,
           };
         });
-        if (state.mode === "overview") renderFactory();
+        queueOverviewRender();
       }
     });
   }

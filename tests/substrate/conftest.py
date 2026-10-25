@@ -1,7 +1,9 @@
 """أدوات اختبارات الركيزة — بناء المحوّل والطلبات بأمان.
 
-الاختبارات السالبة تعمل على Linux/x86_64 فقط (على Windows عبر WSL2) —
-وتُتخطى بصدق مع بيان السبب خارجها (لا فشل صامت ولا نجاح مزيف).
+AES-EXP-04 §3.2: البوابة الآن قدرة فعلية مثبتة (المصنع الواحد) لا فرض
+معماري — المحوّل المختار قد يكون الركيزة المحلية (x86_64) أو bwrap
+(أي معمارية تثبت قدراتها). خارج التوفر: تخطٍ صادق ببيان السبب (لا فشل
+صامت ولا نجاح مزيف).
 """
 
 from __future__ import annotations
@@ -10,23 +12,30 @@ from pathlib import Path
 
 import pytest
 
-from substrate.local_substrate import (
-    _SUPPORTED_ARCH,
-    LocalSubstrateAdapter,
+from substrate.factory import (
+    make_sandbox_manager,
+    substrate_available,
+    substrate_failure_reason,
 )
 from substrate.limits import E1_LIMITS_DEFAULTS, ExecutionLimits
-from substrate.sandbox import SandboxRequest
+from substrate.sandbox import SandboxRequest, SubstrateAdapter
 
 
 @pytest.fixture
-def adapter() -> LocalSubstrateAdapter:
-    if not _SUPPORTED_ARCH:
-        pytest.skip("الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2")
-    return LocalSubstrateAdapter()
+def adapter() -> SubstrateAdapter:
+    if not substrate_available():
+        pytest.skip(
+            "لا ركيزة عزل متاحة على هذا المضيف — " + substrate_failure_reason()
+        )
+    manager = make_sandbox_manager()
+    substrate = manager.substrate if manager is not None else None
+    if substrate is None:  # pragma: no cover — تناقض مع substrate_available
+        pytest.skip("لا محوّل ركيزة رغم توفر الاختيار — حالة غير متسقة")
+    return substrate
 
 
 def run_in_sandbox(
-    adapter: LocalSubstrateAdapter,
+    adapter: SubstrateAdapter,
     tmp_path: Path,
     code: str,
     *,
