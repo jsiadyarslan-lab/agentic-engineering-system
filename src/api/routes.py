@@ -24,17 +24,19 @@ core.orchestrator؛ هذه الطبقة نقل وتسجيل فقط.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import re
+import subprocess
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -60,6 +62,38 @@ from research.api import router as research_router
 logger = logging.getLogger("agent-hub-v2.api")
 
 UI_DIR = Path(__file__).resolve().parents[1] / "ui"
+_APP_ROOT = Path(__file__).resolve().parents[2]
+
+
+#: (الأمر 011) هوية إصدار الأصول: بصمة الالتزام أولًا (git rev-parse)،
+#: وإن غاب git فبصمة محتوى/حجم/زمن ملفات الواجهة كلها. الروابط في
+#: index.html تُعاد كتابتها وقت الخدمة إلى ?v=<هوية الإصدار> فيحصل
+#: كل إصدار على عناوين أصول فريدة — دفاع ثانٍ مستقل عن الترويسات.
+#: الملف على القرص يبقى حرفيًا كما هو، فاختبارات البنية التي تقرأ
+#: الملف نفسه غير متأثرة.
+def _asset_version() -> str:
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--short=8", "HEAD"],
+            cwd=_APP_ROOT, capture_output=True, timeout=5,
+        )
+        if proc.returncode == 0:
+            sha = proc.stdout.decode("ascii", "replace").strip()
+            if re.fullmatch(r"[0-9a-f]{8}", sha):
+                return sha
+    except Exception:  # pragma: no cover — بيئة بلا git
+        pass
+    digest = hashlib.sha256()
+    for p in sorted(UI_DIR.rglob("*")):
+        if p.is_file():
+            st = p.stat()
+            digest.update(f"{p.name}:{st.st_size}:{st.st_mtime_ns}".encode())
+    return digest.hexdigest()[:8]
+
+
+_ASSET_VERSION = _asset_version()
+logger.info("asset version (011): %s", _ASSET_VERSION)
+_V_PATTERN = re.compile(rb"\?v=[0-9A-Za-z._\-]+")
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -73,11 +107,23 @@ async def _no_cache_ui(request, call_next):
     المتصفح من استخدام نسخة app.js قديمة بعد git pull — السبب الجذري
     الموثق لـ«الواجهة لا تستجيب بعد التحديث» في v1، منقول الآن إلى v2
     مع الروابط المرقّمة في index.html (طبقتا دفاع مستقلتان).
+
+    (الأمر 011) سياسة لكل نوع أصل: الأصول المرقّمة بهوية الإصدار الحي
+    تأخذ تخزينًا طويلًا آمنًا (عنوانها فريد لكل إصدار فلا خطر من قِدَم
+    بعد التحديث)، وما عداها — أو من يحمل ترقيم إصدار غير الحي — يبقى
+    no-cache تحققًا رخيصًا. الصفحة نفسها no-cache دائمًا مع etag مشتق
+    من البايتات المخدومة فيتغير مع كل إصدار حتى لو لم يتغير ملف
+    index.html نفسه.
     """
     response = await call_next(request)
     path = request.url.path
-    if path == "/" or path.startswith("/static/"):
+    if path == "/":
         response.headers["Cache-Control"] = "no-cache"
+    elif path.startswith("/static/"):
+        if request.query_params.get("v") == _ASSET_VERSION:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
     return response
 
 
@@ -221,8 +267,28 @@ class CycleResumeIn(BaseModel):
 
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(UI_DIR / "index.html")
+def index(request: Request) -> Response:
+    """الواجهة — الروابط تُرقّم وقت الخدمة بهوية الإصدار الحي (الأمر 011).
+
+    etag مشتق من البايتات المخدومة (لا من ملف القرص) — فيتغير مع كل
+    إصدار ولو لم يتغير index.html نفسه، فيحصل المتصفح الحامل لنسخة
+    قديمة على 200 بهيكل مرقّم جديد بدل 304 على قِدَم.
+    """
+    etag = f'"ui{_ASSET_VERSION}"'
+    inm = request.headers.get("if-none-match", "")
+    tokens = [t.strip() for t in inm.split(",") if t.strip()]
+    if etag in tokens or f"W/{etag}" in tokens or "*" in tokens:
+        return Response(status_code=304, headers={"ETag": etag,
+                                                  "Cache-Control": "no-cache"})
+    html = _V_PATTERN.sub(
+        b"?v=" + _ASSET_VERSION.encode("ascii"),
+        (UI_DIR / "index.html").read_bytes(),
+    )
+    return Response(
+        content=html,
+        media_type="text/html",
+        headers={"ETag": etag, "Cache-Control": "no-cache"},
+    )
 
 
 @app.get("/health")
