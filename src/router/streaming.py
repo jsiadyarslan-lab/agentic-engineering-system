@@ -18,6 +18,7 @@ import urllib.request
 from typing import Any, Callable, Generator
 
 from router.model_router import ChatMessage, ProviderCallError
+from router.provider_response import classify_network_error  # RLR-001 §1
 
 
 def streaming_live_transport(
@@ -73,20 +74,28 @@ def streaming_live_transport(
                 raise ProviderCallError(
                     f"429 اختناق من {base_url}: {detail}",
                     code=code, is_throttle=True,
+                    error_class="RATE_LIMITED",
+                ) from error
+            if code in (401, 403):
+                raise ProviderCallError(
+                    f"{code} فشل مصادقة من {base_url} (مفتاح مرفوض/ناقص): {detail}",
+                    code=code, error_class="AUTH_FAILURE",
                 ) from error
             if code >= 500:
                 raise ProviderCallError(
                     f"{code} خطأ خادم من {base_url}: {detail}",
                     code=code, is_server_error=True,
+                    error_class="SERVER_ERROR",
                 ) from error
             raise ProviderCallError(
-                f"{code} خطأ عميل من {base_url} (مفتاح/عنوان؟): {detail}",
+                f"{code} رد غير صالح من {base_url} (مفتاح/عنوان/طلب؟): {detail}",
                 code=code,
+                error_class="INVALID_RESPONSE",
             ) from error
         except (urllib.error.URLError, TimeoutError, socket.timeout) as error:
-            raise ProviderCallError(
-                f"مهلة/اتصال فشل مع {base_url}: {error}", is_timeout=True,
-            ) from error
+            # (RLR-001 §1) رفض الاتصال ليس مهلة — تصنيف الشبكة الدقيق واحد
+            # للنقلين المتدفق والكامل (classify_network_error)
+            raise classify_network_error(error, base_url) from error
 
         with response:
             reasoning_chars = 0

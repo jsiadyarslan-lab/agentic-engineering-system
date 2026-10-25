@@ -65,6 +65,14 @@ class CallRecord:
         }
 
 
+def _urerror_refused(error: BaseException) -> bool:
+    """هل URLError سببه رفض اتصال فعلًا؟ (RLR-001 §1) — لا خلط بالمهلة."""
+    reason = getattr(error, "reason", None)
+    if isinstance(reason, ConnectionRefusedError):
+        return True
+    return "connection refused" in f"{reason or error}".lower()
+
+
 def classify_failure(error: BaseException) -> tuple[str, str]:
     """تصنيف صادق لفشل الاستدعاء (§4) — (error_class, detail).
 
@@ -111,7 +119,9 @@ def classify_failure(error: BaseException) -> tuple[str, str]:
             return "MODEL_RESPONSE_INVALID", text[:400]
     except ImportError:
         pass
-    if name in ("TimeoutError", "socket.timeout", "URLError") or \
+    if name == "URLError" and _urerror_refused(error):
+        return "CONNECT_REFUSED", text
+    if name in ("TimeoutError", "socket.timeout") or \
             "timed out" in lowered_safe(text):
         return "MODEL_TIMEOUT", text
     # عقد الرد (pydantic/JSON) — فشل الصياغة لا فشل المزود
@@ -123,6 +133,22 @@ def classify_failure(error: BaseException) -> tuple[str, str]:
 
 def lowered_safe(text: str) -> str:
     return text.lower()
+
+
+#: أصناف فشل المزود العابرة (RLR-001 §1) — الدورة محفوظة قابلة
+#: للاستئناف عند عودة المسار، ولا تُحرق ميزانية مراجعة الخطة بها.
+TRANSIENT_PROVIDER_CLASSES = frozenset({
+    "CONNECT_REFUSED",        # الوسيط/المنفذ غير متاح لحظيًا
+    "REQUEST_TIMEOUT",        # مهلة بلا رد
+    "SERVER_ERROR",           # 5xx
+    "RATE_LIMITED",           # 429 (بعد استنفاد انتظارات التبريد)
+    "NETWORK_UNREACHABLE",    # لا مسار حاليًا (قد يعود)
+})
+
+
+def is_transient_provider_failure(error_class: str) -> bool:
+    """هل الصنف من العابرة؟ — قرار الحفظ/الاستئناف لا السقوط إلى DRAFT."""
+    return error_class in TRANSIENT_PROVIDER_CLASSES
 
 
 class TrackedCall:
@@ -233,5 +259,7 @@ class TrackedCall:
 __all__ = [
     "CallRecord",
     "TrackedCall",
+    "TRANSIENT_PROVIDER_CLASSES",
     "classify_failure",
+    "is_transient_provider_failure",
 ]

@@ -219,9 +219,30 @@ class ProjectEngine:
                 project["objective"], previous_failure=previous_failure
             )
         except Exception as error:  # noqa: BLE001 — فشل صريح موثق
-            from router.call_tracker import classify_failure
+            from router.call_tracker import (
+                classify_failure,
+                is_transient_provider_failure,
+            )
 
             error_class, _detail = classify_failure(error)
+            if is_transient_provider_failure(error_class):
+                # (RLR-001 §1) فشل اتصال عابر لا يسقط المشروع إلى DRAFT:
+                # الحالة تُحفظ قابلة للاستئناف والسبب مصنّف للمالك مع
+                # الإجراء التالي — لا صمت ولا نجاح وهمي.
+                service.update_project(
+                    self._sessions, project_id, status="PAUSED",
+                    last_error=f"انتظار المزود [{error_class}]: {error}",
+                )
+                self._emit(project_id, "PROVIDER_TRANSIENT_FAILURE", {
+                    "phase": "PLANNING", "error_class": error_class,
+                    "error_detail": str(error)[:400],
+                    "next_action": "يُستأنف التوليد عند عودة الاتصال "
+                                   "أو بإعادة الاستئناف يدويًا",
+                    "retry_available": True,
+                })
+                raise EngineError(
+                    f"انتظار المزود [{error_class}]: {error}"
+                ) from error
             service.update_project(
                 self._sessions, project_id, status="DRAFT",
                 last_error=f"فشل توليد الخطة [{error_class}]: {error}",
@@ -1248,6 +1269,29 @@ class ProjectEngine:
                                     or "")[:200],
                     "error": str(event.get("error") or "")[:200],
                 })
+                # (AES-LIVE-FACTORY-E2E-001 المرحلة 4د) ملف يُكتب فعليًا
+                # = حدث دائم باسم الملف والوكيل والبصمة — يسنده تبويب
+                # الملفات إلى دور حقيقي لا اجتهاد. المسار نسبي للمشروع.
+                if kind == "tool.call" and str(
+                        event.get("tool", "")) in ("write_file",
+                                                   "generate_pdf_arabic"):
+                    summary = event.get("args_summary")
+                    written = ""
+                    if isinstance(summary, dict):
+                        written = str(summary.get("path") or "")
+                    if written:
+                        marker = str(Path(workspace).resolve()) \
+                            if workspace else ""
+                        if marker and marker in written:
+                            written = written.split(marker, 1)[1].lstrip("/")
+                        self._emit(project_id, "FILE_WRITTEN", {
+                            "step_id": step["id"],
+                            "execution_id": execution_id,
+                            "path": written[:300],
+                            "role": event.get("role", "implementer"),
+                            "sha256": str(
+                                event.get("output_sha256") or "")[:64],
+                        })
             elif kind in _BROWSER_DURABLE:
                 payload = {
                     "step_id": step["id"],
@@ -1313,10 +1357,14 @@ class ProjectEngine:
                 stop_cycle_id=f"project-{project_id}",
             )
         except Exception as error:  # noqa: BLE001 — فشل صريح موثق
+            from router.call_tracker import classify_failure
+
+            error_class, _detail = classify_failure(error)
             service.update_execution(self._sessions, execution_id,
                                      status="FAILED", error=str(error))
             return self._on_step_failure(project, plan, phase, step,
-                                         execution_id, str(error))
+                                         execution_id, str(error),
+                                         error_class=error_class)
         finally:
             _ACTIVE_CONTROLLERS.pop(project_id, None)
 
@@ -1457,9 +1505,21 @@ class ProjectEngine:
                 "gate_id": gate_id}
 
     def _on_step_failure(self, project: dict, plan: dict, phase: dict,
-                         step: dict, execution_id: int, reason: str) -> dict:
-        """تصنيف الفشل (§13) — إعادة أو بوابة مالك، لا توقف أعمى."""
+                         step: dict, execution_id: int, reason: str,
+                         error_class: str = "") -> dict:
+        """تصنيف الفشل (§13) — إعادة أو بوابة مالك، لا توقف أعمى.
+
+        (RLR-001 §1) فشل المزود العابر لا يحرق ميزانية إعادة الخطوة
+        ولا يفتح بوابة مراجعة خطة زائفة — الدورة تُحفظ عبر بوابة
+        PROVIDER_ACTION_REQUIRED بالتصنيف الصريح والإجراء التالي.
+        """
         project_id = project["id"]
+        if error_class:
+            from router.call_tracker import TRANSIENT_PROVIDER_CLASSES
+
+            if error_class in TRANSIENT_PROVIDER_CLASSES:
+                return self._block_provider_transient(
+                    project, step, execution_id, error_class, reason)
         failures = self._step_failures(step["id"])
         if failures < self._max_step_failures:
             service.create_retry(
@@ -1499,6 +1559,38 @@ class ProjectEngine:
                     "reason": reason[:300], "exhausted": True})
         return {"action": "blocked", "reason": "استنفدت المحاولات — بوابة مالك",
                 "gate_id": gate_id}
+
+    def _block_provider_transient(self, project: dict, step: dict,
+                                  execution_id: int, error_class: str,
+                                  reason: str) -> dict:
+        """حجب صادق بانتظار المزود (RLR-001 §1) — لا مراجعة خطة زائفة.
+
+        الخطوة تبقى READY (تعود للعمل عند الاستئناف مباشرة)، والمشروع
+        BLOCKED ببوابة PROVIDER_ACTION_REQUIRED تحمل التصنيف والإجراء
+        التالي — عكس مسار استنفاد المحاولات الذي يفتح PLAN_REVISION.
+        """
+        project_id = project["id"]
+        service.update_step(self._sessions, step["id"], status="READY",
+                            last_error=f"[{error_class}] {reason[:400]}")
+        gate_id = service.open_gate(
+            self._sessions, project_id, "PROVIDER_ACTION_REQUIRED",
+            f"عطل مزود عابر [{error_class}] — الدورة محفوظة قابلة للاستئناف",
+            {"error_class": error_class, "execution_id": execution_id,
+             "step_id": step["id"],
+             "required_action": "تحقق من مسار الشبكة/الوكيل ثم استأنف — "
+                                "والفحص التلقائي يحترم TTL"},
+        )
+        service.update_project(self._sessions, project_id, status="BLOCKED",
+                               last_error=f"[{error_class}] {reason[:500]}")
+        self._emit(project_id, "PROVIDER_TRANSIENT_FAILURE", {
+            "step_id": step["id"], "execution_id": execution_id,
+            "error_class": error_class, "gate_id": gate_id,
+            "error_detail": reason[:400],
+            "next_action": "الاستئناف عند عودة الاتصال — لا مراجعة خطة",
+        })
+        return {"action": "blocked",
+                "reason": f"انتظار المزود [{error_class}]",
+                "gate_id": gate_id, "blocked_kind": "provider_transient"}
 
     def _step_failures(self, step_id: int) -> int:
         """عدد التنفيذات الفاشلة للخطوة — ميزانية الإعادات للفشل فقط."""

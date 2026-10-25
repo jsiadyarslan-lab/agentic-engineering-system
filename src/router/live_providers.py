@@ -31,6 +31,8 @@ class ProviderCallError(Exception):
     is_throttle:      429/503-overloaded — يدخل حلقة التبريد.
     is_server_error:  5xx غير الاختناقي — إعادات ثم تبدّل.
     is_timeout:       انتهت مهلة الاتصال/الفتحة — كخطأ خادم.
+    is_transient:     (RLR-001 §1) عطل شبكة عابر (رفض اتصال/مهلة) —
+                      قابل للإعادة داخل النداء، والدورة قابلة للاستئناف.
     retry_after:      ثواني رأس Retry-After إن أرسلها المزود.
     error_class:      (013.5 §B) تصنيف صريح يسبق الخريطة العامة —
                       مثل REASONING_ONLY_RESPONSE: المزود رد فعلًا
@@ -45,6 +47,7 @@ class ProviderCallError(Exception):
         is_throttle: bool = False,
         is_server_error: bool = False,
         is_timeout: bool = False,
+        is_transient: bool = False,
         retry_after: int | None = None,
         error_class: str = "",
     ) -> None:
@@ -53,6 +56,7 @@ class ProviderCallError(Exception):
         self.is_throttle = is_throttle
         self.is_server_error = is_server_error
         self.is_timeout = is_timeout
+        self.is_transient = is_transient
         self.retry_after = retry_after
         self.error_class = error_class
 

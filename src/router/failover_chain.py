@@ -10,7 +10,8 @@ provider.failover في المنسق. v2 يجمع المنطق في وحدة وا
 تصنيف الأخطاء (بطرفية — duck typing، نفس فئات v1 الثلاث):
   - throttle (‎.is_throttle): تُرفع فورًا بلا إعادة ولا تبدّل — حلقة
     التبريد وحدها تملك انتظار الاختناق (لا انتظار مزدوج أبدًا).
-  - server (‎.is_server_error أو ‎.is_timeout): إعادات داخلية
+  - server (‎.is_server_error أو ‎.is_timeout) وعابر
+    (‎.is_transient — RLR-001 §1): إعادات داخلية
     (max_retries=2 — مطابق لـ retries_on_5xx في v1) بتراجع
     backoff_base × 2^(n-1)، ثم تبدّل للعضو التالي بنفس الاستدعاء.
   - client (غيرها، مثل 401): تُرفع فورًا — لا فائدة من أي إعادة.
@@ -52,12 +53,16 @@ def _is_retryable(exc: BaseException) -> bool:
     """عقد التصنيف (بطرفية — أي استثناء يفي به):
 
     - مهلة (TimeoutError أو ‎.is_timeout) → قابل للإعادة.
+    - (RLR-001 §1) ‎.is_transient → قابل للإعادة (رفض اتصال/مهلة طلب
+      — الوسيط قد يعود أثناء الانتظار التصاعدي).
     - ‎.is_server_error موجود → قيمته تحكم (5xx صريح أو عميل مصنف).
     - غير مصنف أصلًا: أخطاء البرمجة (TypeError…) تفشل فورًا، وما
       عداها يُعامل كخطأ خادم قابل للإعادة — نفس قرار v1 الذي صنّف
       كل مجهول النقل "server" (انحراف موثق: أخطاء البرمجة استثناء).
     """
     if isinstance(exc, TimeoutError) or bool(getattr(exc, "is_timeout", False)):
+        return True
+    if bool(getattr(exc, "is_transient", False)):
         return True
     if hasattr(exc, "is_server_error"):
         return bool(exc.is_server_error)
