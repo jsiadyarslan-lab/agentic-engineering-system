@@ -40,6 +40,8 @@ from roles.web_tools import (
     FETCH_TIMEOUT,  # noqa: F401
     _USER_AGENT,  # noqa: F401 — data_tools يستورده من هنا
     fetch_page,
+    web_open,  # noqa: F401 — RLR-001 §2
+    web_read,
     web_search,
 )
 
@@ -48,6 +50,8 @@ from roles.web_tools import (
 TOOL_WHITELIST: tuple[str, ...] = (
     "web_search",
     "fetch_page",
+    "web_open",
+    "web_read",
     "write_file",
     "read_file",
     "generate_pdf_arabic",
@@ -191,7 +195,12 @@ def _substrate_failure(tool: str, path: str, stderr: str) -> ToolFailure:
 
 
 def write_file(ctx: ToolContext, path: str, content: str) -> str:
-    """كتابة ملف داخل المجلد الممنوح فقط — داخل الركيزة (§3.1)."""
+    """كتابة ملف داخل المجلد الممنوح فقط — داخل الركيزة (§3.1).
+
+    (AES-LIVE-FACTORY-E2E-001 المرحلة 4د) قبل أي استبدال لمحتوى
+    قائم تُحفظ النسخة السابقة تحت _versions/ داخل المنحة نفسها —
+    فالفرق قبل/بعد قابل للعرض لاحقًا من ملفات حقيقية لا ادعاء.
+    """
     target = _bounded_path(ctx.grant_root, path)
     workspace = ctx.grant_root / "_ws"
     artifacts = ctx.grant_root
@@ -200,10 +209,26 @@ def write_file(ctx: ToolContext, path: str, content: str) -> str:
         "import json\n"
         f"payload = json.loads({json.dumps({'path': path, 'content': content}, ensure_ascii=False)!r})\n"
         "import pathlib\n"
-        "target = pathlib.Path('/artifacts') / payload['path']\n"
+        "art = pathlib.Path('/artifacts')\n"
+        "target = art / payload['path']\n"
         "target.parent.mkdir(parents=True, exist_ok=True)\n"
+        # (LF-E2E §4د) نسخة احتياطية للنسخة السابقة قبل الاستبدال
+        "snapshot = None\n"
+        "if target.exists():\n"
+        "    vroot = art / '_versions' / pathlib.PurePosixPath(payload['path']).parent\n"
+        "    vroot.mkdir(parents=True, exist_ok=True)\n"
+        "    stem = pathlib.PurePosixPath(payload['path']).name\n"
+        "    n = 0\n"
+        "    for old in vroot.iterdir():\n"
+        "        name = old.name\n"
+        "        if name.startswith(stem + '.v') and name[len(stem) + 2:].isdigit():\n"
+        "            n = max(n, int(name[len(stem) + 2:]))\n"
+        "    snapshot = vroot / (stem + '.v' + str(n + 1))\n"
+        "    snapshot.write_bytes(target.read_bytes())\n"
         "target.write_text(payload['content'], encoding='utf-8')\n"
         "print('wrote', len(payload['content']), 'chars to', payload['path'])\n"
+        "if snapshot:\n"
+        "    print('versioned', snapshot.name)\n"
     )
     exit_code, stdout, stderr = _run_in_substrate(ctx, code, workspace, artifacts)
     if exit_code != 0:
@@ -463,7 +488,8 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
         raise failure
     site = (
         "in_process_declared"
-        if name in ("web_search", "fetch_page") or name in DATA_TOOLS
+        if name in ("web_search", "fetch_page", "web_open", "web_read")
+        or name in DATA_TOOLS
         or name in BROWSER_TOOLS
         else "substrate"
     )
@@ -499,6 +525,22 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
             finalize(record)
             _finish_success(ctx, record, value, digest, site,
                             {"chars": len(value)}, result_count=1)
+        elif name in ("web_open", "web_read"):
+            # (RLR-001 §2) فتح صفحة خارجية وقراءتها — المصدر + تاريخ
+            # الجلب + حالة النجاح في سجل التنفيذ، والمحتوى موسوم
+            # EXTERNAL_UNTRUSTED (لا يُطب كتعليمات نظام أبدًا).
+            url = str(args.get("url", ""))
+            value = web_read(**args)
+            ctx.fetched_urls.append(url)
+            digest = _sha256_text(str(value.get("content", "")))
+            finalize(record)
+            _finish_success(ctx, record, value, digest, site,
+                            {"source": value.get("source", ""),
+                             "fetched_at": value.get("fetched_at", ""),
+                             "status": value.get("status", ""),
+                             "trust": value.get("trust", ""),
+                             "chars": value.get("chars", 0)},
+                            result_count=1)
         elif name == "write_file":
             value = write_file(ctx, str(args.get("path", "")),
                                str(args.get("content", "")))
