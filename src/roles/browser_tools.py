@@ -27,6 +27,11 @@ def _session_of(ctx) -> Any:
     session = getattr(ctx, _SESSION_KEY, None)
     if session is not None:
         return session
+    return _open_fresh_session(ctx)
+
+
+def _open_fresh_session(ctx) -> Any:
+    """فتح جلسة جديدة وتثبيتها في السياق (RLR-001 §4d)."""
     opened = browser_service.open_session(on_event=_emitter_of(ctx))
     session = browser_service.get_session(opened["session_id"])
     try:
@@ -55,7 +60,12 @@ def _fail(tool: str, error: Exception) -> ToolFailure:
 
 
 def browser_navigate(url: str, ctx) -> dict:
-    """التنقل إلى رابط — فحص السياسة ثم تنقل فعلي وحدث حي."""
+    """التنقل إلى رابط — فحص السياسة ثم تنقل فعلي وحدث حي.
+
+    (RLR-001 §4d) جلسة ميتة (بعد استئناف دورة/إغلاق سابق) تفشل فورًا
+    (‎~4ms) فيتكرر الفشل حتى يحكم المحكم بالركود. الفشل الفوري هنا
+    يستعيد جلسة حية ويحاول مرة واحدة — والفشل بعدها صادق مفصّل.
+    """
     try:
         session = _session_of(ctx)
         if not getattr(session, "_pages", None):
@@ -63,8 +73,17 @@ def browser_navigate(url: str, ctx) -> dict:
         result = session.navigate(url)
         ctx.fetched_urls = list(getattr(ctx, "fetched_urls", [])) + [url]
         return {"ok": True, **result}
-    except (ProviderNotReady, Exception) as error:  # noqa: BLE001
-        raise _fail("browser_navigate", error) from error
+    except Exception as error:  # noqa: BLE001 — استرداد جلسة ثم صدق
+        try:
+            fresh = _open_fresh_session(ctx)
+            if not getattr(fresh, "_pages", None):
+                fresh.new_page()
+            result = fresh.navigate(url)
+            ctx.fetched_urls = list(
+                getattr(ctx, "fetched_urls", [])) + [url]
+            return {"ok": True, "session_recovered": True, **result}
+        except Exception:
+            raise _fail("browser_navigate", error) from error
 
 
 def browser_click(selector: str, ctx) -> dict:
