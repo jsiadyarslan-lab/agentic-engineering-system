@@ -149,6 +149,12 @@ def project_env(tmp_path, monkeypatch):
             router_factory=FakeRouter,
             planner_factory=ScriptedPlanner,
             on_event=on_event,
+            # (AES-EXP-04 §6) حقن مسبار network_https عبر العقد المعلن
+            # (registry.run_probe «الحقن للاختبارات حصرًا») — هدف هذه
+            # الاختبارات عقد ناقل الأحداث لا وصول المضيف للإنترنت؛
+            # على مضيف بلا خروج شبكي كان المسبار الحقيقي يحجب الفحص
+            # المسبق ويحوّل كل هذه الاختبارات إلى اختبارات شبكة.
+            probe_injections={"https_fn": _fake_https_getter},
         )
 
     monkeypatch.setattr(projects, "_test_engine_factory", factory)
@@ -168,6 +174,27 @@ def project_env(tmp_path, monkeypatch):
 @pytest.fixture()
 def client(project_env):
     return TestClient(routes.app)
+
+
+class _FakeHTTPSResponse:
+    """استجابة تفي بعقد probe_https كاملًا (status + read + headers)."""
+
+    status = 200
+    headers = {"Content-Type": "text/plain"}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self, n=-1):
+        return b"aes-test-ok"
+
+
+def _fake_https_getter(url, timeout=None):
+    """مسبار https محقون — عبر آلية الحقن المعلنة للاختبارات حصرًا."""
+    return _FakeHTTPSResponse()
 
 
 def _create_and_approve(client):

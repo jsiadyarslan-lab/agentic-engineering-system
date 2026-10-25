@@ -95,9 +95,12 @@ class Implementer:
 
     def _sandbox_manager(self):
         if self._manager is None:
-            from substrate.local_substrate import local_sandbox_manager
+            # AES-EXP-04 §3.3: الركيزة من المصنع الواحد؛ بلا ركيزة =
+            # مدير بلا محوّل (كل طلب BLOCKED بسبب صادق — لا رجوع للمضيف)
+            from substrate.factory import make_sandbox_manager
+            from substrate.sandbox import SandboxManager
 
-            self._manager = local_sandbox_manager()
+            self._manager = make_sandbox_manager() or SandboxManager()
         return self._manager
 
     # ------------------------------------------------------------------ #

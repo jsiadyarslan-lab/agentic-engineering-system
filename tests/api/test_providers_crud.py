@@ -404,14 +404,33 @@ def test_role_mapping_persists_and_reloads(client, prov_env):
 # §19 Failure isolation — المزود الفاشل لا يمنع السليم
 # ------------------------------------------------------------------ #
 
-def test_failing_provider_does_not_block_healthy_one(prov_env):
-    """NVIDIA غير جاهز وzai جاهز ← zai يُستخدم بلا تبدل ولا mock (§9)."""
+def test_failing_provider_does_not_block_healthy_one(client, prov_env):
+    """NVIDIA غير جاهز وzai جاهز ← zai يُستخدم بلا تبدل ولا mock (§9).
+
+    مصادقة zai_internal عبر مسار ملف الإعدادات الحقيقي نفسه (JSON:
+    apiKey) لكن من ملف مؤقت يكتبه الاختبار — الاعتماد على ملف المضيف
+    /etc/.z-ai-config (منشأة الحاوية حصرًا) جعل الاختبار يفشل على أي
+    مضيف بلا الملف كأن السليم استُبعد؛ هنا الآلية حقيقية والحتمية
+    عبر المنصات.
+    """
     sessions = prov_env["sessions"]
+    factory_cfg = prov_env["tmp_path"] / "zai_factory_auth.json"
+    factory_cfg.write_text(json.dumps({
+        "baseUrl": "https://internal-api.z.ai/v1",
+        "apiKey": "test-factory-key-013",
+    }, ensure_ascii=False), encoding="utf-8")
+    updated = client.put(
+        f"/api/provider-configurations/"
+        f"{_primary_config_id(client, 'zai_internal')}",
+        json={"config_file": str(factory_cfg)},
+    )
+    assert updated.status_code == 200, updated.text
     # nvidia بلا مفتاح في هذا المخزن المعزول ← مستبعد من الحل
-    # zai_internal: مصادقته من ملف منشأة موجود ← يُحل
+    # zai_internal: مصادقته من ملف الإعدادات (المسار المحدّث) ← يُحل
     specs = registry.resolve_provider_specs(sessions)
     assert "zai_internal" in specs, "السليم استُبعد مع الفاشل!"
     assert specs["zai_internal"]["base_url"].startswith("https://")
+    assert specs["zai_internal"].get("api_key"), "ملف المصادقة لم يُحل"
     # nvidia بلا مفتاح: لا نقل له — لا يُنادى أبدًا
     assert "nvidia" not in specs or specs["nvidia"].get("api_key"), (
         "nvidia حُل بلا مفتاح — انتهاك الفشل الصريح"

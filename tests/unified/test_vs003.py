@@ -43,7 +43,7 @@ from unified.contracts import (
     FactoryEvent, EVENT_CATALOG,
 )
 from unified.execution import ExecutionEngine, ExecutionContext, FileEvidenceStore
-from unified.sandbox import SandboxManager, create_sandbox_manager
+from unified.sandbox import SandboxManager, SandboxBackend, create_sandbox_manager
 from unified.windows_adapter import WindowsExecutorAdapter
 from unified.test_agent import E4TestAgent, register_e4_test_agent
 
@@ -58,16 +58,29 @@ class TestVS003AgentLifecycle:
             yield Path(tmpdir)
     
     @pytest.fixture
-    def sandbox_manager(self, temp_dir):
-        """Create sandbox manager with Windows adapter."""
+    def engine(self, temp_dir):
+        """(AES-EXP-04) محرك تنفيذ حقيقي واحد للدورة كاملة.
+
+        منذ E9-R1 التنفيذ محكوم عبر ToolExecutor؛ ومنذ جسر EXP-04
+        (§3.3) يمر سند المحرك بمصنع الركيزة الموحد — فتُنفَّذ كتابات
+        الأدلة عبر الركيزة المعزولة الحقيقية (bwrap هنا) بدل وهم
+        windows_adapter الذي لم يعمل قط على لينكس (خطأ الإعداد القديم
+        core.substrate). عند غياب أي ركيزة: تخطٍ صادق ببيان السبب.
+        """
+        from substrate.factory import substrate_available, substrate_failure_reason
+        if not substrate_available():
+            pytest.skip("لا ركيزة عزل متاحة — " + substrate_failure_reason())
         artifacts_dir = temp_dir / "artifacts"
         artifacts_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Create SandboxManager using factory function
-        manager = create_sandbox_manager(
+        return ExecutionEngine(
+            sandbox_backend=SandboxBackend.LOCAL_SUBSTRATE,
             artifacts_base_dir=str(artifacts_dir),
         )
-        return manager, str(artifacts_dir)
+
+    @pytest.fixture
+    def sandbox_manager(self, temp_dir, engine):
+        """مدير السند من المحرك نفسه — الكائن ذاته الذي يحكمه ToolExecutor."""
+        return engine.sandbox_manager, str(temp_dir / "artifacts")
     
     @pytest.fixture
     def event_collector(self):
@@ -78,10 +91,9 @@ class TestVS003AgentLifecycle:
         return events, collector
     
     @pytest.fixture
-    def evidence_store(self, temp_dir):
-        """Create file evidence store."""
-        artifacts_dir = temp_dir / "artifacts"
-        return FileEvidenceStore(str(artifacts_dir))
+    def evidence_store(self, engine):
+        """(AES-EXP-04) مخزن أدلة المحرك — الكائن ذاته الذي يسجّل فيه ToolExecutor."""
+        return engine.evidence_store
     
     @pytest.fixture(autouse=True)
     def reset_registry(self):
@@ -393,7 +405,7 @@ class TestVS003AgentLifecycle:
             factory.create_agent_by_id("unknown-agent", None)
     
     @pytest.mark.asyncio
-    async def test_vs003_full_lifecycle(self, sandbox_manager, event_collector, evidence_store, temp_dir):
+    async def test_vs003_full_lifecycle(self, sandbox_manager, event_collector, evidence_store, temp_dir, engine):
         """AC-E4-12: VS-003 completes through real E3 execution engine."""
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -420,9 +432,16 @@ class TestVS003AgentLifecycle:
             context={"content": b"Hello, VS-003 from E4TestAgent!", "path": "e4_test_output.txt"},
         )
         
-        # Create attempt
+        # (AES-EXP-04) التعيين عبر واجهة المنتج الذرية (اختيار + حجز
+        # حصري + AVAILABLE→ASSIGNED): بوابة حالة المصنع تتطلبه قبل
+        # التنفيذ؛ القفز القديم إلى التنفيذ بلا تعيين يسقط عندها.
         attempt_id = new_attempt_id()
-        agent_id = new_agent_id()
+        reservation = agent_registry.reserve_agent(
+            task_id=task.task_id, attempt_id=attempt_id,
+            agent_type=AgentType.IMPLEMENTER,
+        )
+        assert reservation is not None, "لا وكيل IMPLEMENTER متاح للحجز"
+        agent_id = reservation.agent_id
         
         # Create agent context
         context = AgentContext(
@@ -436,6 +455,7 @@ class TestVS003AgentLifecycle:
             sandbox_manager=manager,
             event_emitter=collector,
             evidence_store=evidence_store,
+            tool_executor=engine.tool_executor,
         )
         
         # Execute via AgentFactory
@@ -469,10 +489,13 @@ class TestVS003AgentLifecycle:
         assert EventType.AGENT_COMPLETED in event_types
         
         # Verify agent lifecycle
-        assert agent_registry.get_lifecycle_state("e4-test-agent-001") == AgentLifecycleState.COMPLETED
+        # (AES-EXP-04) قانون E15 الحالي: الوكيل يُحرَّر إلى AVAILABLE
+        # بعد اكتمال التنفيذ (الحجز يُفك للجولة التالية) — نفس عقد
+        # vs002 المحدث؛ الحالة COMPLETED تمر أثناء التنفيذ عبر الأحداث.
+        assert agent_registry.get_lifecycle_state("e4-test-agent-001") == AgentLifecycleState.AVAILABLE
     
     @pytest.mark.asyncio
-    async def test_agent_failure_preserved(self, sandbox_manager, event_collector, temp_dir, evidence_store):
+    async def test_agent_failure_preserved(self, sandbox_manager, event_collector, temp_dir, evidence_store, engine):
         """AC-E4-13: Agent failure is preserved in execution history."""
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -511,17 +534,27 @@ class TestVS003AgentLifecycle:
             acceptance_criteria=[],
         )
         
+        # (AES-EXP-04) التعيين عبر واجهة المنتج الذرية (اختيار + حجز
+        # حصري + AVAILABLE→ASSIGNED): بوابة حالة المصنع تتطلبه قبل
+        # التنفيذ؛ القفز القديم إلى التنفيذ بلا تعيين يسقط عندها.
+        _attempt_id = new_attempt_id()
+        _reservation = agent_registry.reserve_agent(
+            task_id=task.task_id, attempt_id=_attempt_id,
+            agent_type=AgentType.IMPLEMENTER,
+        )
+        assert _reservation is not None, "لا وكيل IMPLEMENTER متاح للحجز"
         context = AgentContext(
             mission_id=mission.mission_id,
             run_id=run.run_id,
             task_id=task.task_id,
-            attempt_id=new_attempt_id(),
-            agent_id=new_agent_id(),
+            attempt_id=_attempt_id,
+            agent_id=_reservation.agent_id,
             agent_type=AgentType.IMPLEMENTER,
             sandbox_id="test-sandbox",
             sandbox_manager=manager,
             event_emitter=collector,
             evidence_store=evidence_store,
+            tool_executor=engine.tool_executor,
         )
         
         factory = AgentFactory(agent_registry)
@@ -537,12 +570,13 @@ class TestVS003AgentLifecycle:
         assert EventType.AGENT_FAILED in event_types
         
         # Verify lifecycle state is FAILED
-        assert agent_registry.get_lifecycle_state("failing-agent") == AgentLifecycleState.FAILED
-        
-        # Failed attempt should be in history (agent can be retried)
-        # Reset to AVAILABLE and retry
-        agent_registry.set_lifecycle_state("failing-agent", AgentLifecycleState.AVAILABLE)
+        # (AES-EXP-04) قانون E15 الحالي: فشل المحاولة لا يحتجز الوكيل
+        # — يُحرَّر إلى AVAILABLE لإعادة الإسناد عند إعادة المحاولة.
         assert agent_registry.get_lifecycle_state("failing-agent") == AgentLifecycleState.AVAILABLE
+        
+        # (AES-EXP-04) تحت E15 لا حاجة لإعادة الضبط اليدوية: الوكيل
+        # متاح بالفعل بعد تحرير الحجز، والمصنع يرفض انتقال
+        # AVAILABLE→AVAILABLE الصوري — إعادة الإسناد جاهزة فوراً.
     
     def test_e3_regression(self):
         """AC-E4-14: E3 tests remain green."""
@@ -584,7 +618,7 @@ class TestVS003AgentLifecycle:
         # No LLM gateway needed for basic execution
     
     @pytest.mark.asyncio
-    async def test_evidence_from_real_execution(self, sandbox_manager, event_collector, evidence_store, temp_dir):
+    async def test_evidence_from_real_execution(self, sandbox_manager, event_collector, evidence_store, temp_dir, engine):
         """AC-E4-16: Evidence is generated from real execution."""
         manager, artifacts_dir = sandbox_manager
         events, collector = event_collector
@@ -604,17 +638,27 @@ class TestVS003AgentLifecycle:
             context={"content": b"Hello, Evidence!", "path": "evidence_test.txt"},
         )
         
+        # (AES-EXP-04) التعيين عبر واجهة المنتج الذرية (اختيار + حجز
+        # حصري + AVAILABLE→ASSIGNED): بوابة حالة المصنع تتطلبه قبل
+        # التنفيذ؛ القفز القديم إلى التنفيذ بلا تعيين يسقط عندها.
+        _attempt_id = new_attempt_id()
+        _reservation = agent_registry.reserve_agent(
+            task_id=task.task_id, attempt_id=_attempt_id,
+            agent_type=AgentType.IMPLEMENTER,
+        )
+        assert _reservation is not None, "لا وكيل IMPLEMENTER متاح للحجز"
         context = AgentContext(
             mission_id=mission.mission_id,
             run_id=run.run_id,
             task_id=task.task_id,
-            attempt_id=new_attempt_id(),
-            agent_id=new_agent_id(),
+            attempt_id=_attempt_id,
+            agent_id=_reservation.agent_id,
             agent_type=AgentType.IMPLEMENTER,
             sandbox_id="test-sandbox",
             sandbox_manager=manager,
             event_emitter=collector,
             evidence_store=evidence_store,
+            tool_executor=engine.tool_executor,
         )
         
         factory = AgentFactory(agent_registry)

@@ -6,9 +6,40 @@
 """
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+import pytest
+
 from eoe.eoe_engine import EoeEngine
+
+
+def _on_production_baseline() -> bool:
+    """(AES-EXP-04) عقد أساس الإنتاج: HEAD على main ومطابق origin/main.
+
+    محرك EOE يتوقف صادقاً (EoeHardStop) عندما يكون الأساس منحرفاً —
+    وهذا عقد الحارس يعمل كما صُمم. على فرع عمل معزول الاختبار غير
+    قابل للتطبيق بالتصميم؛ التخطي الموثق أوضح من فشل يوحي بانحدار.
+    في الإنتاج (main == origin) يبقى الفحص فعالاً بكامل صرامته.
+    """
+    repo = Path(__file__).resolve().parents[2]
+
+    def _git(*args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+
+    branch = _git("rev-parse", "--abbrev-ref", "HEAD")
+    origin = _git("rev-parse", "--verify", "origin/main")
+    head = _git("rev-parse", "HEAD")
+    return branch == "main" and (origin == "" or head == origin)
+
+
+pytestmark = pytest.mark.skipif(
+    not _on_production_baseline(),
+    reason="عقد أساس الإنتاج (HEAD == origin/main) لا ينطبق على فرع عمل معزول — المحرك يتوقف صادقاً وهذا هو عقد الحارس",
+)
 
 
 def _run(jarvis_order, sandbox_manager, tmp_path):

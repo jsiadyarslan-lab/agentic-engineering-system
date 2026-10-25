@@ -39,6 +39,24 @@ from harness.seams import HarnessSeams
 #: سقف النبضات الافتراضي لكل run_loop — سخي بلا لانهائية.
 DEFAULT_MAX_TICKS = 200
 
+#: (§6 AES-EXP-04) سقف الزمن الحائط للبقاء محجوبًا بالفحص المسبق بلا
+#: توفير — بعده تُنهى الوظيفة بفشل صادق (لا حلقة مفتوحة). الزمن لا
+#: عدّاد النبضات: النبضات رخيصة بعد الخنق (5ث) وأسرعها لا يقصّر نافذة
+#: توفير المالك. قابل للضبط عبر AES_PREFLIGHT_BLOCKED_LIMIT_S.
+DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S = 120.0
+
+
+def preflight_blocked_limit_s() -> float:
+    """سقف ثواني البقاء محجوبًا بالفحص المسبق — AES_PREFLIGHT_BLOCKED_LIMIT_S."""
+    import os
+
+    raw = os.environ.get("AES_PREFLIGHT_BLOCKED_LIMIT_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S
+    return value if value > 0 else DEFAULT_PREFLIGHT_BLOCKED_LIMIT_S
+
 _RETRY_KIND = "RETRY_REQUESTED"
 _CHECKPOINT_KIND = "CHECKPOINT_CREATED"
 
@@ -306,21 +324,27 @@ class JobManager:
         })
         return self.get_job(job_id)
 
-    def run_loop(self, job_id: int) -> dict:
+    def run_loop(self, job_id: int, *,
+                 should_yield=None) -> dict:
         """حلقة النبضات — tick واحدًا تلو الآخر مع دفتر الوظيفة.
 
         كل دورة: tick المحرك (كل الحالة من القاعدة) ← تصنيف حتمي ←
         تحديث الصف (نبضة/مؤشرات/انتظار) ← حدث عند كل انتقال. توقف
         الحلقة عند أي انتظار أو حالة نهائية — والاستئناف قرار صريح.
+
+        should_yield (AES-EXP-04 §6): قابلية فحص تسليم المنفّذ — تعيد
+        True عندما تكون هذه الحلقة قد استُلمت من بيئة أعلى أولوية؛
+        الحلقة تخرج عند نقطة أمان النبضة التالية بلا أي كتابة كاذبة
+        (الحالة الدائمة كما هي والاستئناف قرار صريح).
         """
         with self._loop_lock:
             self._active_job_id = int(job_id)
             try:
-                return self._run_loop_locked(job_id)
+                return self._run_loop_locked(job_id, should_yield=should_yield)
             finally:
                 self._active_job_id = None
 
-    def _run_loop_locked(self, job_id: int) -> dict:
+    def _run_loop_locked(self, job_id: int, *, should_yield=None) -> dict:
         import json
 
         from workflow import service
@@ -344,15 +368,25 @@ class JobManager:
 
         last_tick: dict = {}
         ticks = 0
+        blocked_since: float | None = None
         last_event_id = self._last_event_id(project_id)
         prev_status = "RUNNING"
         try:
             while ticks < self._max_ticks:
+                # (AES-EXP-04 §6) نقطة أمان بين النبضات: بيئة أعلى
+                # أولوية استلمت المنفّذ الوحيد — تسليم فوري بلا كتابة
+                # حالة كاذبة؛ دفتر الوظيفة يبقى على صدق آخر نبضة
+                # (انتظارًا كان أو تنفيذًا) والاستئناف قرار صريح.
+                if should_yield is not None and should_yield():
+                    self._append_note(
+                        job_id,
+                        "سلّمت المنفّذ الوحيد لبيئة أعلى أولوية عند "
+                        "نقطة أمان بين النبضات — الحالة القائمة باقية "
+                        "والاستئناف قرار صريح",
+                    )
+                    break
                 tick_result = self._engine.tick(project_id)
                 ticks += 1
-                # DEBUG
-                if ticks % 10 == 0:
-                    print(f"DEBUG: tick {ticks}, action={tick_result.get('action')}, blocked_kind={tick_result.get('blocked_kind')}", flush=True)
                 # أحداث هذه النبضة (للإعادات ونقاط الحفظ الصادقة)
                 new_events = self._events_after(project_id,
                                                 last_event_id)
@@ -380,6 +414,34 @@ class JobManager:
                 if classification.get("waiting_kind") in ("WORKER", "CAPABILITY") \
                         and tick_result.get("blocked_kind") == "preflight":
                     time.sleep(0.5)
+
+                # (§6 AES-EXP-04) المهمة المحجوبة بالفحص المسبق تنهي نفسها
+                # بعد حد معلن بلا أي تقدم — كل إعادة فحص كانت تعيد المسبارات
+                # وتحجز خيط الحلقات الوحيد؛ الفشل صادق مسمّى والإجراء للمالك
+                import time as _t
+
+                if tick_result.get("blocked_kind") == "preflight":
+                    if blocked_since is None:
+                        blocked_since = _t.monotonic()
+                else:
+                    blocked_since = None
+                if (blocked_since is not None
+                        and _t.monotonic() - blocked_since
+                        >= preflight_blocked_limit_s()):
+                    reason = (
+                        "الفحص المسبق محجوب بقدرات غير جاهزة لأكثر من "
+                        f"{preflight_blocked_limit_s():.0f}ث بلا توفير — "
+                        "الإجراء: جهّز القدرات المحجوبة (المصفوفة في أحداث "
+                        "PREFLIGHT_BLOCKED) ثم أعد تشغيل المشروع"
+                    )
+                    self._write(job_id, status="FAILED",
+                                last_error=reason[:800],
+                                finished_at=_utc_now())
+                    self._emit(project_id, "JOB_FAILED", {
+                        "job_id": job_id, "error": reason,
+                    })
+                    self._finish(job_id, "FAILED", note=reason)
+                    break
 
                 checkpoint = service.latest_checkpoint(
                     sessions, project_id
@@ -422,6 +484,14 @@ class JobManager:
                 )
                 if retry_requested:
                     self._increment(job_id, "retries", 1)
+                # (AES-EXP-04 §14) الاستئناف الآلي من انتظار بوابة/قدرة/
+                # عامل = محاولة جديدة على نفس صف الوظيفة — نفس دلالة
+                # استئناف المالك (mark_resumed) لا صفّ جديد ولا محاولة
+                # كاذبة تبقى 1.
+                if (prev_status in ("WAITING_CAPABILITY", "WAITING_WORKER",
+                                    "WAITING_GATE")
+                        and new_status == "RUNNING"):
+                    self._increment(job_id, "attempt", 1)
                 if new_checkpoints:
                     self._increment(job_id, "checkpoints",
                                     new_checkpoints)

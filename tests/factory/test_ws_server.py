@@ -10,7 +10,7 @@ import json
 import pytest
 import websockets
 import os
-import requests
+requests = pytest.importorskip("requests")  # (AES-EXP-04) تخطٍ صادق عند غياب المكتبة
 from src.factory.orchestrator import AgentFactoryOrchestrator, MissionState
 from src.factory.events import WebSocketEventServer, run_server
 

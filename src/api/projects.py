@@ -1140,6 +1140,18 @@ def recheck_preflight(project_id: int) -> dict:
             launch = _launch_after_decision(
                 project_id, "إعادة فحص ناجحة بعد التوفير — استئناف آلي"
             )
+            if (not launch.get("launched")
+                    and launch.get("reason") == "already_running"):
+                # (AES-EXP-04 - توضيح عقد 013 §38): حلقة المشروع لا تزال
+                # حية وتتنفس؛ نبضتها التالية في فرع الحجب تعيد الفحص
+                # نفسه وتفتح البوابة آلياً - «الفتح التلقائي بلا زر
+                # إضافي» محقق، والإطلاق المزدوج مرفوض بعقد §40 عمداً.
+                launch = {
+                    "launched": True,
+                    "reason": "active_job_continues",
+                    "project_id": launch.get("project_id"),
+                    "job_id": launch.get("job_id"),
+                }
         return {
             "project": project,
             "preflight": {

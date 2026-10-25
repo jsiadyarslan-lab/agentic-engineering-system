@@ -23,11 +23,13 @@ from core.roles import RoleType
 from core.state import PlanState, StateTransitionError, SubVerdict, validate_transition
 from core.wiring import build_mock_orchestrator
 from roles.reviewer import Reviewer
-from substrate.local_substrate import _SUPPORTED_ARCH
+from substrate.factory import substrate_available, substrate_failure_reason
 
 pytestmark = pytest.mark.skipif(
-    not _SUPPORTED_ARCH,
-    reason="الركيزة تتطلب Linux/x86_64 — على Windows عبر WSL2",
+    not substrate_available(),
+    reason=(
+        "لا ركيزة عزل متاحة على هذا المضيف — " + substrate_failure_reason()
+    ),
 )
 
 

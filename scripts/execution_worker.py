@@ -49,13 +49,14 @@ _STARTED_AT = time.monotonic()
 _ACTIVE_RUNS: dict[str, dict] = {}
 _LOCK = threading.Lock()
 
-#: محاولة تحميل الركيزة (تعمل فقط من جذر المستودع على Linux/x86_64)
+#: محاولة تحميل الركيزة (تعمل فقط من جذر المستودع على مضيف تثبت
+#: قدراته — AES-EXP-04 §3.3: القرار من المصنع الواحد لا فرض معماري)
 _SUBSTRATE_MODE = False
 try:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-    from substrate.local_substrate import default_local_images  # noqa: E402
+    from substrate.factory import substrate_available  # noqa: E402
 
-    if default_local_images():
+    if substrate_available():
         _SUBSTRATE_MODE = True
 except Exception:  # noqa: BLE001 — الجهاز بلا ركيزة: وضع معلن لا انهيار
     _SUBSTRATE_MODE = False
@@ -94,8 +95,8 @@ def _describe() -> dict:
 
 
 def _run_in_substrate(code: str, timeout_s: float) -> dict:
+    from substrate.factory import make_sandbox_manager
     from substrate.limits import E1_LIMITS_DEFAULTS
-    from substrate.local_substrate import local_sandbox_manager
     from substrate.sandbox import NetworkMode, SandboxRequest
 
     with tempfile.TemporaryDirectory(prefix="worker-run-") as tmp:
@@ -103,8 +104,16 @@ def _run_in_substrate(code: str, timeout_s: float) -> dict:
         artifacts = Path(tmp) / "art"
         workspace.mkdir()
         artifacts.mkdir()
-        manager = local_sandbox_manager()
-        image = next(iter(manager.image_allowlist), None)
+        manager = make_sandbox_manager()
+        image = next(iter(manager.image_allowlist), None) if manager else None
+        if manager is None or image is None:
+            return {
+                "exit_code": -1, "stdout": "", "stderr": "",
+                "termination": "FAILED_TO_START",
+                "detail": "لا ركيزة عزل مسجلة — التنفيذ المعزول محجوب",
+                "artifacts": [],
+                "duration_ms": 0,
+            }
         request = SandboxRequest(
             sandbox_id=f"worker-{uuid.uuid4().hex[:8]}",
             image=image,

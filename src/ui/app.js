@@ -635,6 +635,12 @@
   $("sidebar-toggle").addEventListener("click", toggleSidebar);
   var collapseBtn = $("sidebar-collapse");
   if (collapseBtn) collapseBtn.addEventListener("click", toggleSidebar);
+  // (AES-EXP-03) على الشاشات الضيقة: الشريط يبدأ مطويًا — كان يفتح
+  // افتراضيًا فيغطي الدردشة على الهاتف (390px) ويقصّها إلى شريط ضيق.
+  // نفس دلالة الصنف القائمة (collapsed = مخفي) والزر ☰ يفتحه overlay.
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    document.body.classList.add("sidebar-collapsed");
+  }
 
   // ---------- النمط: محادثة / مهمة ----------
   function setMode(mode, opts) {

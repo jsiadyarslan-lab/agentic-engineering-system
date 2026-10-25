@@ -463,18 +463,26 @@ def runtime_snapshot(sessions, project_id: int, *,
 
 
 def _execution_detail(sessions, project_id: int) -> dict | None:
-    """(013.7 §P14) تفاصيل تنفيذ الأمر الحالي — للواجهة."""
-    from workflow import service
-    from workflow.models import Project, Execution
+    """(013.7 §P14) تفاصيل تنفيذ الأمر الحالي — للواجهة.
+
+    (AES-EXP-04 تصحيح): current_execution_id عمود في الخطوة لا في
+    المشروع — المسار الصحيح: مشروع ← خطأته الحالية ← تنفيذها الحالي؛
+    والقراءة عبر خصائص ORM (كان .get الخاص بالقواميس يفجر AttributeError
+    ويكسر /runtime كلها فتقرأ الواجهة status=None).
+    """
+    from workflow.models import Execution, Project, Step
 
     with sessions() as session:
         project = session.get(Project, int(project_id))
         if project is None:
             return None
-        exec_id = project.get("current_execution_id")
-        if not exec_id:
+        step_id = project.current_step_id
+        if not step_id:
             return None
-        exec_row = session.get(Execution, int(exec_id))
+        step = session.get(Step, int(step_id))
+        if step is None or not step.current_execution_id:
+            return None
+        exec_row = session.get(Execution, int(step.current_execution_id))
         if exec_row is None:
             return None
         return {
@@ -487,10 +495,8 @@ def _execution_detail(sessions, project_id: int) -> dict | None:
             "cwd": exec_row.cwd,
             "pid": exec_row.pid,
             "parent_pid": exec_row.parent_pid,
-            "command_type": exec_row.command_type,
             "started_at": exec_row.started_at.isoformat() if exec_row.started_at else None,
             "finished_at": exec_row.finished_at.isoformat() if exec_row.finished_at else None,
-            "status": exec_row.status,
             "agent_role": exec_row.agent_role,
         }
 

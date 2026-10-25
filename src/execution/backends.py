@@ -304,23 +304,27 @@ class LocalSandboxBackend:
         self.environment_id = environment_id
 
     def _manager(self):
-        from substrate.local_substrate import local_sandbox_manager
+        # AES-EXP-04 §3.3: الاختيار من المصنع الواحد (محلي x86_64 أو
+        # bwrap على أي معمارية تثبت قدراتها) — None يعني بلا ركيزة.
+        from substrate.factory import make_sandbox_manager
 
-        return local_sandbox_manager()
+        return make_sandbox_manager()
 
     def available(self) -> tuple[bool, str]:
         """هل الركيزة المحلية ممكنة أصلًا على هذه المنصة؟ (§20 صادق)"""
-        from substrate.local_substrate import default_local_images
+        from substrate.factory import (
+            substrate_available,
+            substrate_failure_reason,
+        )
 
-        images = default_local_images()
-        if not images:
-            return False, (
-                "الركيزة المعزولة غير متاحة — تتطلب Linux/x86_64 والفحص "
-                "الذاتي للمنصة رفضها. المسار الحقيقي: أضف عاملًا بعيدًا "
-                "يعمل على Linux/WSL2 (بيئات التنفيذ ← إضافة بيئة ← "
-                "REMOTE_WORKER) ثم تحقق"
-            )
-        return True, ""
+        if substrate_available():
+            return True, ""
+        return False, (
+            "الركيزة المعزولة غير متاحة على هذا المضيف — "
+            + substrate_failure_reason()
+            + ". المسار الحقيقي: أضف عاملًا بعيدًا يعمل على Linux/WSL2 "
+            "(بيئات التنفيذ ← إضافة بيئة ← REMOTE_WORKER) ثم تحقق"
+        )
 
     isolation = "SANDBOXED"
     supported_operations = (
@@ -340,12 +344,14 @@ class LocalSandboxBackend:
         return workspace, artifacts
 
     def describe(self) -> dict:
-        from substrate.local_substrate import substrate_capabilities
+        from substrate.factory import substrate_capabilities_report
 
         truth = runtime_truth()
         ok, reason = self.available()
-        caps = substrate_capabilities()
+        report = substrate_capabilities_report()
+        caps = report.get("capabilities") or {}
         return {
+            "substrate_kind": report.get("kind"),
             "environment_id": self.environment_id,
             "backend": "LOCAL",
             "isolation": "SANDBOXED",
@@ -359,7 +365,7 @@ class LocalSandboxBackend:
             "workspace_root": "runtime/sandbox",
             "network_policy": "none (network namespace بلا واجهات)",
             "resource_limits": "RLIMIT_AS/NPROC/FSIZE/CPU/NOFILE + affinity",
-            "sandboxed": bool(ok and caps.get("supported")),
+            "sandboxed": bool(ok and report.get("supported")),
             "capabilities": [
                 "code_execution", "filesystem_write", "artifact_capture",
                 "python_runtime",
@@ -376,7 +382,9 @@ class LocalSandboxBackend:
         import tempfile
         import time
 
-        import substrate.local_substrate as local_substrate
+        from substrate.local_substrate import (
+            SubstrateUnavailable as _SubstrateUnavailable,
+        )
         from substrate.sandbox import NetworkMode, SandboxRequest, SandboxTermination
 
         profile = self.describe()
@@ -434,9 +442,15 @@ class LocalSandboxBackend:
                 "detail": f"cwd={report.get('working_directory', '؟')}",
             })
             checks.append({
+                # AES-EXP-04 §3.2: الفحص صدق المعمارية لا فرضها — يجب أن
+                # تطابق معمارية الركيزة معمارية المضيف الفعلية نفسها
                 "name": "architecture",
-                "ok": str(report.get("architecture") or "") == "x86_64",
-                "detail": f"arch={report.get('architecture', '؟')}",
+                "ok": str(report.get("architecture") or "")
+                == profile["architecture"],
+                "detail": (
+                    f"arch={report.get('architecture', '؟')} "
+                    f"host={profile['architecture']}"
+                ),
             })
             checks.append({
                 # داخل الركيزة: network namespace بلا واجهات — نجاح DNS
@@ -452,7 +466,7 @@ class LocalSandboxBackend:
                 "ok": "exec-ok: True" in outcome.stdout,
                 "detail": outcome.stdout[:120],
             })
-        except substrate_local_substrate.SubstrateUnavailable as error:
+        except _SubstrateUnavailable as error:
             return VerifyResult(
                 ok=False, status="UNAVAILABLE", checks=checks,
                 profile=profile, reason=str(error),
@@ -484,6 +498,13 @@ class LocalSandboxBackend:
                 termination="FAILED_TO_START", detail=reason,
             )
         manager = self._manager()
+        if manager is None:
+            return ExecutionOutcome(
+                environment_id=self.environment_id, backend="LOCAL",
+                exit_code=-1, stdout="", stderr="",
+                termination="FAILED_TO_START",
+                detail="لا ركيزة عزل مسجلة — التنفيذ المعزول محجوب (fail-closed)",
+            )
         image = next(iter(manager.image_allowlist), None)
         if image is None:
             return ExecutionOutcome(
@@ -701,6 +722,11 @@ class LocalProcessBackend:
 
         الخامس في الرجوع: تقرير فشل مساحة العمل المهيكل إن كان الخطأ
         من عائلة cwd (WinError 267/ENOTDIR/ENOENT-on-cwd)، وإلا {}.
+        (تصحيح AES-EXP-04 — تناقض موثق: الإطلاق يعود إلى subprocess.run
+        كما يفرض عقد 013.3 الذي تثبته اختبارات a-j؛ قاموس المراقبة
+        pid/parent_pid من 013.7 §P14 كان يُعاد في خانة الفشل نفسها
+        فيعامل كل نجاح كفشل مساحة عمل ويكسر حقن التصنيف — أُزيل لصالح
+        العقد الوظيفي الموثق.)
         """
         import sys
         import time as _time
@@ -708,36 +734,16 @@ class LocalProcessBackend:
         cwd = str(workspace)
         started = _time.monotonic()
         try:
-            # (013.7 §P14) التقاط PID والعملية الأصلية
-            proc = subprocess.Popen(
+            proc = subprocess.run(
                 [sys.executable, "-c", code, *args],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, cwd=cwd,
+                text=True, cwd=cwd, timeout=timeout_s,
             )
-            pid = proc.pid
-            parent_pid = None
-            try:
-                import psutil
-                parent = psutil.Process(pid).parent()
-                if parent:
-                    parent_pid = parent.pid
-            except Exception:
-                pass
-            try:
-                stdout, stderr = proc.communicate(timeout=timeout_s)
-                elapsed = int((_time.monotonic() - started) * 1000)
-                return (
-                    proc.returncode, stdout or "", stderr or "",
-                    f"{elapsed}ms", {"pid": pid, "parent_pid": parent_pid},
-                )
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                stdout, stderr = proc.communicate()
-                elapsed = int((_time.monotonic() - started) * 1000)
-                return (
-                    -1, stdout or "", f"TIMEOUT بعد {timeout_s}s — قُتل التنفيذ",
-                    "timeout", {"pid": pid, "parent_pid": parent_pid},
-                )
+            elapsed = int((_time.monotonic() - started) * 1000)
+            return (
+                proc.returncode, proc.stdout or "", proc.stderr or "",
+                f"{elapsed}ms", {},
+            )
         except subprocess.TimeoutExpired as error:
             return (
                 -1, (error.stdout or "") if isinstance(error.stdout, str) else "",
@@ -885,8 +891,11 @@ class LocalProcessBackend:
         )
 
         # (§10) فشل مساحة عمل ← إصلاح واحد ← إعادة واحدة — لا أكثر
+        # (تصحيح AES-EXP-04): _run يعيد على النجاح قاموس مراقبة
+        # (pid/parent_pid) بلا رمز تصنيف — حُكم الفشل على .get("code")
+        # لا على صدق القاموس، وإلا عولج كل نجاح كفشل مساحة عمل.
         repaired: dict = {}
-        if failure:
+        if failure.get("code"):
             try:
                 resolved = repair_workspace(
                     self._environment_view(),
@@ -897,7 +906,7 @@ class LocalProcessBackend:
                     code, [], workspace=Path(resolved.host_path),
                     timeout_s=timeout_s,
                 )
-                if failure:
+                if failure.get("code"):
                     # الإصلاح أُجرِط والفشل باقٍ — نهائي معلن (لا حلقة)
                     failure = {
                         **failure,
@@ -930,10 +939,10 @@ class LocalProcessBackend:
         )
         if repaired:
             final_detail += f" [REPAIR_WORKSPACE: {repaired}]"
-        if failure:
+        if failure.get("code"):
             # (013.3 §9) الرمز المسمّى ظاهر في التفصيل نفسه — لا بحث
             final_detail += (
-                f" [{failure['code']}/{failure.get('reason', '')}"
+                f" [{failure.get('code', 'UNKNOWN')}/{failure.get('reason', '')}"
                 f" cwd={failure.get('cwd', '')}]"
             )
         return ExecutionOutcome(

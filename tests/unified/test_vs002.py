@@ -41,6 +41,7 @@ from unified.contracts import (
     new_action_id,
 )
 from unified.execution import ExecutionEngine, ExecutionContext
+from unified.sandbox import SandboxBackend
 from unified.agent_role import (
     AgentDefinition,
     AgentLifecycleState,
@@ -76,6 +77,27 @@ def evidence_store(temp_dir):
     artifacts_dir = os.path.join(temp_dir, "artifacts")
     os.makedirs(artifacts_dir, exist_ok=True)
     return FileEvidenceStore(artifacts_dir)
+
+
+@pytest.fixture(autouse=True)
+def reset_registry():
+    """(AES-EXP-04) عزل الحالة: السجل العام مشترك على مستوى الوحدة —
+    إعادة الضبط قبل/بعد كل اختبار (نفس نمط vs003 المعتمد) حتى لا
+    يلوث ترتيبُ التشغيل الكامل اختيارَ الوكيل وحالته عبر الملفات."""
+    agent_registry._definitions.clear()
+    agent_registry._type_to_definition.clear()
+    agent_registry._implementations.clear()
+    agent_registry._instances.clear()
+    agent_registry._instance_states.clear()
+    from unified.agent_role import clear_all_reservations
+    clear_all_reservations()
+    yield
+    agent_registry._definitions.clear()
+    agent_registry._type_to_definition.clear()
+    agent_registry._implementations.clear()
+    agent_registry._instances.clear()
+    agent_registry._instance_states.clear()
+    clear_all_reservations()
 
 
 @pytest.fixture
@@ -179,7 +201,14 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
             pass  # Already registered
         
         # Create execution engine (orchestrator)
-        engine = ExecutionEngine(artifacts_base_dir=artifacts_dir)
+        # (AES-EXP-04) الركيزة الحقيقية عبر جسر المصنع الموحد (§3.3)
+        from substrate.factory import substrate_available, substrate_failure_reason
+        if not substrate_available():
+            pytest.skip("لا ركيزة عزل متاحة — " + substrate_failure_reason())
+        engine = ExecutionEngine(
+            sandbox_backend=SandboxBackend.LOCAL_SUBSTRATE,
+            artifacts_base_dir=artifacts_dir,
+        )
         
         # Subscribe to engine events
         engine.event_bus.subscribe(collector)
@@ -229,6 +258,7 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
             sandbox_manager=manager,
             event_emitter=collector,
             evidence_store=engine.evidence_store,
+            tool_executor=engine.tool_executor,
         )
         
         # Execute agent through orchestrator (using automatic selection)
@@ -474,7 +504,14 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
         except ValueError:
             pass  # Already registered
         
-        engine = ExecutionEngine(artifacts_base_dir=artifacts_dir)
+        # (AES-EXP-04) الركيزة الحقيقية عبر جسر المصنع الموحد (§3.3)
+        from substrate.factory import substrate_available, substrate_failure_reason
+        if not substrate_available():
+            pytest.skip("لا ركيزة عزل متاحة — " + substrate_failure_reason())
+        engine = ExecutionEngine(
+            sandbox_backend=SandboxBackend.LOCAL_SUBSTRATE,
+            artifacts_base_dir=artifacts_dir,
+        )
         mission = engine.create_mission("Test artifact tampering detection")
         run = engine.create_run(mission.mission_id)
         task = create_agent_task(run.run_id, mission.mission_id, "Test", "Test", AgentType.IMPLEMENTER)
@@ -491,6 +528,7 @@ class TestVS002OrchestratorAgentRuntimeIntegration:
             sandbox_manager=manager,
             event_emitter=collector,
             evidence_store=engine.evidence_store,
+            tool_executor=engine.tool_executor,
         )
         
         # Execute agent to produce artifact

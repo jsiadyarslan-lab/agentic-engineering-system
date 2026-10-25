@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+import os
+
 import datetime as _dt
 import json
 
@@ -151,17 +153,82 @@ def probe_provider(sessions, provider_id: int) -> dict:
     return out
 
 
+#: (AES-EXP-04 §6) الميزانية الكلية لمسبار البحث المجمّع — فحص كل
+#: المزودين تسلسليًا على شبكة ميتة كان يستهلك دقائق داخل إعادة فحص
+#: واحدة (وخيط الحلقات معها). ما تجاوز الميزانية يعلن بصدق أنه غير
+#: مثبت (لا جاهزية مزيفة). قابل للضبط عبر AES_RESEARCH_PROBE_BUDGET_S.
+_DEFAULT_PROBE_BUDGET_S = 25.0  # يكفي لعبور المزودات الافتراضية
+#: (DDG+wikipedia) قبل المصادر المحلية تحت الحمل — الغاية تقييد
+#: الكارثة التسلسلية (دقائق) لا خنق المسبار المشروع
+
+
+def probe_budget() -> float:
+    """الميزانية الكلية لمسبار البحث — AES_RESEARCH_PROBE_BUDGET_S."""
+    raw = os.environ.get("AES_RESEARCH_PROBE_BUDGET_S", "")
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_PROBE_BUDGET_S
+    return value if value > 0 else _DEFAULT_PROBE_BUDGET_S
+
+
 def probe_all(sessions) -> list[dict]:
+    """فحص كل مزود بحث — **بالتوازي** بميزانية كلية (AES-EXP-04 §6).
+
+    التسلسل كان يجعل المصدر المحلي السريع ينتظر وراء المزودين ميتي
+    الاتصال (ترتيب البذر لا علاقة له بالصلة) فتتجاوز الميزانية قبل
+    الوصول إليه وتقلب الجاهزية عرَضًا. الآن: كل المزودين المفعّلين
+    تُفحص دفعة واحدة، والميزانية تحدد الانتظار الكلي، وما تجاوزها
+    يعلن بصدق أنه غير مثبت (لا جاهزية مزيفة).
+    """
     ensure_seeded(sessions)
-    out = []
-    for record in list_providers(sessions):
-        if not record["enabled"]:
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor, wait
+
+    records = list_providers(sessions)
+    enabled = [r for r in records if r["enabled"]]
+    out = [{
+        "provider_id": r["id"], "name": r["name"],
+        "status": "DISABLED", "reason": "معطل بقرار المالك",
+    } for r in records if not r["enabled"]]
+
+    if enabled:
+        started = _time.monotonic()
+        pool = ThreadPoolExecutor(
+            max_workers=min(6, len(enabled)),
+            thread_name_prefix="aes-research-probe",
+        )
+        futures = {
+            pool.submit(probe_provider, sessions, r["id"]): r
+            for r in enabled
+        }
+        done, pending = wait(futures, timeout=probe_budget())
+        for future in pending:
+            future.cancel()
+        pool.shutdown(wait=False)
+        exceeded = {futures[f]["id"] for f in pending}
+        for future in pending:
             out.append({
-                "provider_id": record["id"], "name": record["name"],
-                "status": "DISABLED", "reason": "معطل بقرار المالك",
+                "provider_id": futures[future]["id"],
+                "name": futures[future]["name"],
+                "status": "UNKNOWN",
+                "reason": (
+                    "فحص مزود البحث تجاوز الميزانية الزمنية الكلية "
+                    f"({probe_budget():.0f}ث) — الحالة غير مثبتة؛ "
+                    "أعد الفحص من لوحة البحث"
+                ),
             })
-            continue
-        out.append(probe_provider(sessions, record["id"]))
+        for future in done:
+            record = futures[future]
+            try:
+                out.append(future.result())
+            except Exception as error:  # noqa: BLE001 — فشل صادق مسمى
+                out.append({
+                    "provider_id": record["id"], "name": record["name"],
+                    "status": "NOT_READY",
+                    "reason": f"{type(error).__name__}: {error}"[:200],
+                })
+        del exceeded
     return out
 
 
@@ -211,13 +278,23 @@ def configure_provider(
     return record
 
 
-def search(sessions, query: str) -> dict:
-    """البحث بأول مزود جاهز (§25) — فشل الجميع يعاد مفصلًا لا مجملًا."""
+def search(sessions, query: str, *, deadline: float | None = None) -> dict:
+    """البحث بأول مزود جاهز (§25) — فشل الجميع يعاد مفصلًا لا مجملًا.
+
+    deadline (AES-EXP-04 §6): سقف زمني تعاوني — لا تُبدأ محاولة
+    مزود جديدة بعد تجاوزه (المحاولة الجارية تكمل بمهلتها الفردية).
+    يسمح للخيوط المتروكة خلف ميزانية المحادثة بإعادة تدوير نفسها
+    سريعًا بدل الجري خلف السلسلة كاملة على شبكة متدهورة.
+    """
+    import time as _time
+
     ensure_seeded(sessions)
     attempts: list[dict] = []
     for record in list_providers(sessions):
         if not record["enabled"]:
             continue
+        if deadline is not None and _time.monotonic() > deadline:
+            break
         provider = build_provider(record)
         try:
             results = provider.search(query)

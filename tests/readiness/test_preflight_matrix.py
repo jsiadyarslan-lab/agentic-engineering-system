@@ -140,6 +140,10 @@ def test_environment_selection_appears_in_result(sessions):
         row = s.scalars(sa_select(ExecutionEnvironment).where(
             ExecutionEnvironment.name == "local-linux")).first()
         row.status = "READY"
+        # (AES-EXP-03) السياسة الافتراضية STRICT_ISOLATED تطلب عزلًا
+        # (011 §26) — التحقق الحقيقي المحاكى يشمل العزل وإلا تناقض
+        # الاختبار العقد نفسه: بيئة بلا عزل تحت سياسة عزل صارم.
+        row.sandboxed = 1
         s.commit()
     result2 = preflight.task_preflight(sessions, "مهمة", llm_ready=True)
     assert result2["environment"] is not None

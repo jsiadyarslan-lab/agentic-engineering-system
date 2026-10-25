@@ -78,10 +78,20 @@ def test_local_backend_run_code_real_execution(tmp_path):
 
 
 def test_local_backend_unsupported_platform_honest_reason(tmp_path, monkeypatch):
-    """محاكاة منصة غير مدعومة: FAILED_TO_START بالسبب المعلن (§20)."""
-    import substrate.local_substrate as ls
+    """لا ركيزة على المضيف (محاكاة على مستوى المصنع): FAILED_TO_START صادق.
 
-    monkeypatch.setattr(ls, "_SUPPORTED_ARCH", False)
+    AES-EXP-04 §3.3: مصدر حقيقة عدم التوفر أصبح substrate.factory —
+    المحاكاة تُحقن هناك (نقطة _SUPPORTED_ARCH القديمة لم تعد قرارًا).
+    """
+    import substrate.factory as sf
+
+    monkeypatch.setattr(sf, "substrate_available", lambda *a, **k: False)
+    monkeypatch.setattr(
+        sf, "substrate_failure_reason",
+        lambda *a, **k: (
+            "الركيزة المعزولة غير متاحة على هذا المضيف — محاكاة اختبار"
+        ),
+    )
     backend = LocalLinuxBackend()
     outcome = backend.run_code(
         "print('x')", workspace=tmp_path / "ws", artifacts=tmp_path / "art",

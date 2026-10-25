@@ -24,8 +24,12 @@
 from __future__ import annotations
 
 import datetime as _dt
+import json
+
+from sqlalchemy import select
 
 from readiness import registry
+from readiness.probes import TTL_DEFAULTS
 
 #: صلاحية مسبار مزود البحث (ثواني) — تنتهي فيُعرض STALE لا READY
 RESEARCH_PROVIDER_TTL_S = 600
@@ -224,7 +228,154 @@ def _web_search_capability(sessions, stored: dict) -> dict:
 _AGGREGATED: dict[str, str] = {
     "web_search": "research_providers",
     "sandbox": "execution_environment",
+    # (AES-EXP-03 P2) الجاهزية الحقيقية للاستخدام: دليل استدعاء حي
+    # حديث (نجاح/فشل مسجل) لا سؤال «هل فُحص المزود؟» — هذا هو جذر
+    # التناقض الموثق: محادثة ناجحة فعليًا بينما readiness_status=UNKNOWN.
+    "llm": "live_call_evidence",
 }
+
+
+# ------------------------------------------------------------------ #
+# قدرة LLM — اشتقاق من أدلة الاستدعاء الحي + المسبار المخزن (AES-EXP-03 P2)
+# ------------------------------------------------------------------ #
+
+def _llm_live_evidence(sessions) -> dict:
+    """آخر دليل اتصال حي (نجاح/فشل) من جدول events — بلا أي أسرار.
+
+    المصدر الحقيقي لـ«آخر نجاح فعلي»: أحداث المحادثة المسجلة
+    (message_completed / chat.error) بحمولتها الكاملة. لا مسبار
+    جديد مكلف ولا قراءة أسرار — قراءة أدلة مسجلة أصلًا.
+    """
+    from persistence.models import Event
+
+    out: dict = {"success": None, "failure": None}
+    with sessions() as session:
+        rows = session.scalars(
+            select(Event)
+            .where(Event.kind.in_(("message_completed", "chat.error")))
+            .order_by(Event.created_at.desc(), Event.id.desc())
+            .limit(25)
+        ).all()
+        for row in rows:
+            try:
+                payload = json.loads(row.payload or "{}")
+            except ValueError:
+                continue
+            details = payload.get("details") or {}
+            entry = {
+                "at": row.created_at.isoformat() if row.created_at else "",
+                "provider": str(details.get("provider", "") or ""),
+                "model": str(details.get("model", "") or ""),
+            }
+            if row.kind == "message_completed" and out["success"] is None:
+                out["success"] = entry
+            elif row.kind == "chat.error" and out["failure"] is None:
+                entry["error_class"] = str(
+                    details.get("error_class", "")
+                    or payload.get("code", "") or "")
+                out["failure"] = entry
+            if out["success"] and out["failure"]:
+                break
+    return out
+
+
+def _providers_overview(sessions) -> list[dict]:
+    """بُعد «هل المزود معد؟» — has_key منطقي فقط، لا قيم ولا أسرار."""
+    try:
+        from providers_registry import registry as providers_registry
+
+        states = providers_registry.list_providers(sessions)
+    except Exception:  # noqa: BLE001 — البُعد تحسين لا شرط
+        return []
+    return [
+        {
+            "name": p.get("name", ""),
+            "enabled": bool(p.get("enabled", True)),
+            "has_key": p.get("has_key"),
+        }
+        for p in states
+    ]
+
+
+def _llm_capability(sessions, stored: dict) -> dict:
+    """جاهزية LLM من أدلتها الفعلية — الأبعاد منفصلة والعرض متسق.
+
+    (AES-EXP-03 P2) الأبعاد المنفصلة الصادقة: (1) إعداد المزود
+    (has_key)، (2) آخر نجاح اتصال حي مسجل، (3) آخر فشل مصنف،
+    (4) المسبار المخزن. الحالة المعروضة مشتقة من **أحدث دليل**:
+
+    - فشل حي أحدث من آخر نجاح ← NOT_READY بصنفه ومزوده وزمنه.
+    - نجاح حي داخل نافذة الصلاحية ← READY بدليل live_call (لا
+      يُشترط مسبار جديد كل فتح صفحة — الدليل المسجل يكفي).
+    - نجاح حي منتهي النافذة ← STALE بعمر الدليل المعلن.
+    - لا دليل حي إطلاقًا ← حالة المسبار المخزن كما هي؛ وإن كانت
+      UNKNOWN فتبقى UNKNOWN **بسبب معلن** — لا جاهزية بلا دليل،
+      ولا ادعاء عكسه.
+    """
+    out = dict(stored)
+    out["derived_from"] = "live_call_evidence"
+    evidence = _llm_live_evidence(sessions)
+    success = evidence["success"]
+    failure = evidence["failure"]
+    ttl = TTL_DEFAULTS["LLM"]
+    details = {
+        **(out.get("details") or {}),
+        "evidence_ttl_s": ttl,
+        "last_live_success": success,
+        "last_live_failure": failure,
+        "providers": _providers_overview(sessions),
+    }
+    out["details"] = details
+    success_at = _parse_ts(success["at"]) if success else None
+    failure_at = _parse_ts(failure["at"]) if failure else None
+
+    if failure_at is not None and (
+        success_at is None or failure_at > success_at
+    ):
+        error_class = failure.get("error_class") or "LIVE_CALL_FAILED"
+        out["readiness_status"] = "NOT_READY"
+        out["failure_reason"] = error_class
+        out["reason"] = (
+            f"آخر استدعاء حي فشل [{error_class}] على مزود "
+            f"'{failure['provider']}' — راجع إعدادات المزود أو أعد الفحص"
+        )
+        return out
+
+    if success_at is not None:
+        age = (_utc_now() - success_at).total_seconds()
+        if age <= ttl:
+            out["readiness_status"] = "READY"
+            out["failure_reason"] = ""
+            out["reason"] = (
+                f"اتصال حي ناجح مسجل على مزود '{success['provider']}' "
+                f"قبل {int(age)}ث — دليل استخدام فعلي لا مسبار"
+            )
+            out["details"] = {
+                **details, "evidence_kind": "live_call",
+                "evidence_age_s": int(age),
+            }
+            return out
+        out["readiness_status"] = "STALE"
+        out["reason"] = (
+            f"نجاح حي مسجل قبل {int(age)}ث — خارج نافذة الصلاحية "
+            f"({ttl}ث)؛ لا جاهزية بلا دليل حديث"
+        )
+        out["failure_reason"] = out["reason"]
+        out["details"] = {
+            **details, "evidence_kind": "live_call",
+            "evidence_age_s": int(age),
+        }
+        return out
+
+    # لا دليل حي إطلاقًا — المسبار المخزن هو الحكم كما هو.
+    if out.get("readiness_status") in ("UNKNOWN", None, ""):
+        out["reason"] = (
+            "لا مسبار حديث ولا استدعاء حي مسجل — الحالة غير معروفة: "
+            "افحص المزود من الإعدادات أو أرسل رسالة محادثة لتسجيل دليل حي"
+        )
+        if not out.get("failure_reason"):
+            out["failure_reason"] = out["reason"]
+    return out
 
 
 def capability_view(sessions, capability_id: str) -> dict | None:
@@ -238,6 +389,10 @@ def capability_view(sessions, capability_id: str) -> dict | None:
         return None
     if capability_id == "web_search":
         return _web_search_capability(sessions, stored)
+    if capability_id == "llm":
+        # (AES-EXP-03 P2) اشتقاق من أدلة الاتصال الحي — لا تناقض
+        # «محادثة ناجحة / جاهزية UNKNOWN» بعد الآن.
+        return _llm_capability(sessions, stored)
     if capability_id == "sandbox":
         # الحقيقة من سجل البيئات نفسها (المسبار والمنفذ من مصدر واحد)
         from execution import service as execution_service

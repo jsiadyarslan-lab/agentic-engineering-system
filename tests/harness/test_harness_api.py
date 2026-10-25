@@ -16,7 +16,9 @@ sys.path.insert(0, str(REPO / "tests" / "api"))
 
 from api import routes  # noqa: E402
 
-from test_projects_api import FakeRouter, ScriptedPlanner  # noqa: E402
+from test_projects_api import (  # noqa: E402
+    FakeRouter, ScriptedPlanner, _fake_https_getter,
+)
 
 
 @pytest.fixture()
@@ -69,6 +71,11 @@ def client(tmp_path, monkeypatch):
         return ProjectEngine(
             sessions, router_factory=FakeRouter,
             planner_factory=ScriptedPlanner, on_event=on_event,
+            # (AES-EXP-04 §6) مسبار network_https محقون عبر العقد
+            # المعلن — نفس نمط tests/api: هدف هذه الاختبارات عقد API
+            # الوظائف لا وصول المضيف للإنترنت (على مضيف بلا خروج كانت
+            # الدورات تحجب عند الفحص المسبق فتنفجر مهلات 150ث).
+            probe_injections={"https_fn": _fake_https_getter},
         )
 
     monkeypatch.setattr(projects, "_test_engine_factory", factory)
