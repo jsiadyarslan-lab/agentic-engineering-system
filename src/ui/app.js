@@ -639,6 +639,26 @@
 
   $("new-chat").addEventListener("click", newChat);
 
+  // (AES-DESIGN-IMPL-012) اختصار Ctrl+K كما في التصميم
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === "k") {
+      e.preventDefault();
+      newChat();
+    }
+  });
+
+  // (AES-DESIGN-IMPL-012) بحث الشريط الجانبي: تصفية المحادثات والمشاريع
+  var sideSearch = document.getElementById("side-search");
+  if (sideSearch) {
+    sideSearch.addEventListener("input", function () {
+      var q = this.value.trim().toLowerCase();
+      var items = document.querySelectorAll("#conversations .conv-item, #projects-list .pj-item");
+      items.forEach(function (el) {
+        el.hidden = !!q && el.textContent.toLowerCase().indexOf(q) === -1;
+      });
+    });
+  }
+
   // ---------- طي الشريط الجانبي ----------
   function toggleSidebar() {
     document.body.classList.toggle("sidebar-collapsed");
@@ -1078,6 +1098,7 @@
     removeWorking: removeWorking,
     addWorking: addWorking,
     openModal: openModal,
+    setMode: setMode,  /* (AES-DESIGN-IMPL-012) إصلاح TypeError: factory-control ينادي Hub.setMode عند العودة من المصنع */
     setBusy: setBusy,
     onChatDone: onChatDone,
     loadConversations: function () { loadConversations(); },

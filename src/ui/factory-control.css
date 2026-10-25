@@ -49,7 +49,7 @@
 }
 
 #factory-view ::selection {
-  background: rgba(212, 172, 85, 0.28);
+  background: rgba(88, 166, 255, 0.28);
   color: var(--text);
 }
 #factory-view :focus-visible {

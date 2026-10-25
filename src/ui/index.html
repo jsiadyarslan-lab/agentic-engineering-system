@@ -103,8 +103,8 @@
         <span class="brand">
           <span class="brand-mark icon lg"><svg><use href="#i-logo"/></svg></span>
           <span class="brand-text">
-            <span class="brand-name">Agentic Engineering</span>
-            <span class="brand-sub">System</span>
+            <span class="brand-name">نظام الهندسة الوكيلي</span>
+            <span class="brand-sub" dir="ltr">AGENTIC ENGINEERING</span>
           </span>
         </span>
         <button class="icon-btn" id="sidebar-collapse" title="طي الشريط">
@@ -112,10 +112,18 @@
         </button>
       </div>
 
-      <button class="new-chat" id="new-chat" title="بدء محادثة جديدة">
-        <span class="icon sm"><svg><use href="#i-new"/></svg></span>
-        <span>محادثة جديدة</span>
+      <button class="new-chat" id="new-chat" title="بدء محادثة جديدة (Ctrl+K)">
+        <span class="new-chat-main">
+          <span class="icon sm"><svg><use href="#i-new"/></svg></span>
+          <span>محادثة جديدة</span>
+        </span>
+        <span class="new-chat-key" dir="ltr">Ctrl K</span>
       </button>
+
+      <div class="side-search">
+        <span class="icon sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+        <input id="side-search" type="search" placeholder="ابحث في المحادثات والمشاريع…" aria-label="ابحث في المحادثات والمشاريع">
+      </div>
 
       <!-- التنقل الأساسي: محادثة/تشغيلات/مصنع/أرشيف -->
       <nav class="side-nav" id="side-nav" aria-label="التنقل الأساسي">

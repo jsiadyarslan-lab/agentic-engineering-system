@@ -98,7 +98,18 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   min-width: 0;
 }
 
-.brand-mark { color: var(--accent); flex: none; }
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #1d2534, #131926);
+  border: 1px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.brand-mark svg { width: 18px; height: 18px; }
 
 .brand-text {
   display: flex;
@@ -118,9 +129,10 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 }
 
 .brand-sub {
-  font-size: var(--fs-11);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
   color: var(--text-faint);
-  letter-spacing: 1.6px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
 }
@@ -140,29 +152,71 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 
 .new-chat {
   margin: var(--sp-1) var(--sp-3) var(--sp-2);
-  padding: 9px 14px;
-  border-radius: var(--btn-radius);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(180deg, #1b2334, #141b29);
   color: var(--text);
   font-size: var(--fs-13);
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
-  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+  justify-content: space-between;
+  gap: 8px;
+  transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   text-align: start;
 }
+
+.new-chat-main { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 
 .new-chat .icon { color: var(--text-mid); }
 
 .new-chat:hover {
-  border-color: var(--border-strong);
-  background: var(--bg-elevated);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
   color: var(--text);
 }
 
 .new-chat:hover .icon { color: var(--accent); }
+
+.new-chat-key {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  letter-spacing: 0.04em;
+  flex: none;
+}
+
+/* البحث في الشريط الجانبي — كما في التصميم */
+.side-search { position: relative; margin: 0 var(--sp-3) var(--sp-2); }
+.side-search .icon {
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.side-search input {
+  width: 100%;
+  padding: 8px 12px;
+  padding-inline-start: 34px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: var(--fs-13);
+  outline: none;
+  color: var(--text);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.side-search input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.12);
+}
+.side-search input::placeholder { color: var(--text-faint); }
 
 /* التنقل الأساسي (007: تسميات 13px — إصلاح الهرمية المقلوبة) */
 .side-nav {
@@ -193,7 +247,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 .side-nav-item:hover { background: var(--bg-hover); color: var(--text); }
 .side-nav-item:hover .icon { color: var(--text-mid); }
 
-.side-nav-item.active { background: var(--bg-elevated); color: var(--text); }
+.side-nav-item.active { background: var(--bg-raised); color: var(--text); }
 .side-nav-item.active .icon { color: var(--accent); }
 
 .side-nav-item.active::before {
@@ -347,23 +401,29 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 }
 
 .chat-title {
-  font-size: var(--fs-15);
-  font-weight: 600;
-  color: var(--text);
+  flex: 0 1 auto;
+  max-width: 46%;
+  font-size: var(--fs-12);
+  font-weight: 500;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  border-radius: var(--radius-pill);
+  padding: 3px 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
 }
 
 .mode-badge {
   flex: none;
-  font-size: var(--fs-12);
-  color: var(--text-mid);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  color: var(--accent-hi, var(--accent));
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius-pill);
-  padding: 2px 10px;
+  padding: 3px 10px;
 }
 
 /* ---------- منطقة التمرير ---------- */
@@ -472,10 +532,10 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 }
 
 .bubble.user {
-  align-self: flex-start;          /* RTL: يمين الشاشة */
+  align-self: flex-end;           /* التصميم: رسالة المالك على الجهة المقابلة */
   background: var(--bubble-user);
-  border: 1px solid var(--border-soft);
-  border-start-end-radius: 4px;
+  border: 1px solid var(--border-strong);
+  border-end-end-radius: 4px;
 }
 
 .bubble.assistant {
@@ -609,17 +669,17 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   display: flex;
   align-items: flex-end;
   gap: var(--sp-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-l);
-  background: var(--bg-input);
+  background: var(--bg-raised);
   padding: 9px 10px;
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
   transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
 .composer-inner:focus-within {
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 3px var(--accent-softer), var(--shadow-1);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(106, 166, 255, 0.10), var(--shadow-2);
 }
 
 /* الترتيب في RTL: أول عنصر DOM يظهر يمينًا — الإرسال أولًا */
@@ -820,7 +880,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   color: var(--accent);
 }
 
-.btn.primary:hover { background: rgba(212, 172, 85, 0.17); border-color: var(--accent); }
+.btn.primary:hover { background: rgba(88, 166, 255, 0.17); border-color: var(--accent); }
 
 .btn.danger {
   background: var(--danger-soft);
@@ -840,8 +900,8 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 7, 10, 0.38);
-  backdrop-filter: blur(2px);
+  background: rgba(5, 8, 13, 0.62);
+  backdrop-filter: blur(5px);
   z-index: var(--z-drawer);
   animation: fade-in var(--dur) var(--ease);
 }

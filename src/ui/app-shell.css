@@ -17,7 +17,7 @@
 
 .messages {
   width: 100%;
-  max-width: 920px;          /* §3: 820-960 — قراءة مريحة لا ضغط */
+  max-width: 780px;          /* §3 (012): عمود التصميم 780px */
   margin: 0 auto;
   padding: 18px 18px 30px;
   display: flex;
@@ -150,7 +150,7 @@
   align-self: stretch;
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
-  background: var(--bg-raised);
+  background: var(--bg-sidebar);
   overflow: hidden;
 }
 
@@ -158,8 +158,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: var(--sp-4) var(--sp-5);
-  border-bottom: 1px solid var(--border-soft);
+  padding: 12px 16px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border);
 }
 
 .task-title { font-weight: 600; font-size: var(--fs-15); flex: 1; }
@@ -182,37 +183,77 @@
 
 .task-steps {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-5) var(--sp-1);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 18px var(--sp-4) 14px;
 }
 
 .step {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-pill);
-  padding: var(--sp-1) 13px;
-  font-size: var(--fs-13);
+  gap: 7px;
+  min-width: 78px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--fs-11);
   color: var(--text-dim);
   transition: all var(--dur) var(--ease);
 }
 
-.step .step-mark { font-size: var(--fs-13); line-height: 1; }
+/* موصل الخطوة السابقة — يلوَّن بحالة العقدة التالية */
+.step + .step::before {
+  content: "";
+  position: absolute;
+  inset-inline-end: 100%;
+  top: 13px;
+  width: 16px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--border);
+}
 
-.step.active {
-  color: var(--text);
-  border-color: var(--accent-border);
+.step + .step.done::before,
+.step + .step.active::before { background: var(--ok-border); }
+
+.step .step-mark {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 99px;
+  background: var(--bg-sidebar);
+  color: var(--text-dim);
+  font-size: var(--fs-11);
+  line-height: 1;
+}
+
+.step.active { color: var(--text); }
+
+.step.active .step-mark {
+  border-color: var(--accent);
+  color: var(--accent);
   background: var(--accent-soft);
+  animation: ring-pulse 1.8s infinite;
+}
+
+@keyframes ring-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.35); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 .step.active .step-mark { color: var(--accent); }
 
-.step.done {
-  color: var(--text-mid);
-  border-color: var(--border);
-  background: var(--bg-elevated);
+.step.done { color: var(--text-mid); }
+
+.step.done .step-mark {
+  border-color: var(--ok-border);
+  color: var(--ok);
+  background: var(--ok-soft);
 }
 
 .step.done .step-mark { color: var(--ok); }

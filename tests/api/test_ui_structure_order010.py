@@ -53,8 +53,8 @@ def test_conversation_identity_survives_refresh():
 
 
 def test_message_stream_width_and_full_use():
-    """(§3) التدفق يستعمل المساحة المتاحة بعرض 820-960 لا ضغطًا."""
-    assert "max-width: 920px" in SHELL_CSS
+    """(§3) التدفق يستعمل عمود التصميم 780px لا ضغطًا."""
+    assert "max-width: 780px" in SHELL_CSS
     assert ".bubble.assistant" in SHELL_CSS
     assert "align-self: stretch" in SHELL_CSS  # رد المساعد بكامل العرض
 

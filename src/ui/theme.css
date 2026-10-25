@@ -12,65 +12,65 @@
 
 :root {
   /* ---------- الطبقات اللونية (فحمي هادئ مزرق) ---------- */
-  --bg: #0D1014;            /* الخلفية العامة */
-  --bg-sidebar: #10141A;    /* الشريط الجانبي */
-  --bg-raised: #141920;     /* أسطح العمل الأساسية */
-  --bg-elevated: #1B222A;   /* الأسطح المرتفعة والقوائم */
-  --bg-input: #161C24;      /* حقول الإدخال */
-  --bg-hover: #1F2731;      /* حالة التحويم الهادئة */
+  --bg: #0b0e14;            /* الخلفية العامة */
+  --bg-sidebar: #0f141d;    /* الشريط الجانبي */
+  --bg-raised: #121826;     /* أسطح العمل الأساسية */
+  --bg-elevated: #171e2c;   /* الأسطح المرتفعة والقوائم */
+  --bg-input: #0b0e14;      /* حقول الإدخال */
+  --bg-hover: #141b28;      /* حالة التحويم الهادئة */
 
-  --bubble-user: #1E2630;
+  --bubble-user: #171e2c;
   --bubble-assistant: transparent;
 
   /* ---------- الحدود ---------- */
-  --border: #2A333D;
-  --border-soft: #202932;
-  --border-strong: #3A4550;
+  --border: #222a38;
+  --border-soft: #1b2231;
+  --border-strong: #2b3547;
 
   /* ---------- النصوص — سُلّم تباين مقيس (007) ----------
      text 17.1:1 · mid 8.7:1 · dim 7.0:1 · faint 5.8:1 على --bg
      وكلها ≥4.9:1 على أضعف سطح elevated — لا فشل AA في أي نص محتوى. */
-  --text: #F0F3F6;
-  --text-mid: #A6B0BC;
-  --text-dim: #939EA9;
-  --text-faint: #84909C;
-  --text-disabled: #5C6670;  /* للعناصر المعطلة فقط (معفاة من AA) */
+  --text: #e9edf5;
+  --text-mid: #9aa4b4;
+  --text-dim: #75808f;
+  --text-faint: #707b8d;
+  --text-disabled: #4c5568;  /* للعناصر المعطلة فقط (معفاة من AA) */
 
   /* ---------- التمييز: ذهبي هادئ واحد ---------- */
-  --accent: #D4AC55;
-  --accent-strong: #E2BE6A;
-  --accent-soft: rgba(212, 172, 85, 0.10);
-  --accent-softer: rgba(212, 172, 85, 0.05);
-  --accent-border: rgba(212, 172, 85, 0.38);
-  --accent-ink: #171307;    /* نص فوق خلفية ذهبية صلبة */
+  --accent: #58a6ff;
+  --accent-strong: #7db8ff;
+  --accent-soft: rgba(88, 166, 255, 0.12);
+  --accent-softer: rgba(88, 166, 255, 0.06);
+  --accent-border: rgba(88, 166, 255, 0.32);
+  --accent-ink: #04101c;    /* نص فوق خلفية ذهبية صلبة */
 
   /* ---------- تمييز الوكيل/النظام (007) ----------
      أزرق مرجع المصنع 003 يصبح دلالة «حيوية وكيل» داخل النظام الواحد،
      لا لوحة موازية: شارات LIVE ونبض النشاط فقط. */
-  --accent-agent: #58A6FF;
-  --accent-agent-soft: rgba(88, 166, 255, 0.12);
-  --accent-agent-border: rgba(88, 166, 255, 0.38);
+  --accent-agent: var(--accent);
+  --accent-agent-soft: var(--accent-soft);
+  --accent-agent-border: var(--accent-border);
 
   /* ---------- الحالات الدلالية (مفهومة بالنص والرمز لا باللون وحده) ---------- */
-  --ok: #5CB87A;
-  --ok-soft: rgba(92, 184, 122, 0.10);
-  --ok-border: rgba(92, 184, 122, 0.35);
-  --ok-chip: rgba(92, 184, 122, 0.14);
+  --ok: #43cf90;
+  --ok-soft: rgba(67, 207, 144, 0.10);
+  --ok-border: rgba(67, 207, 144, 0.30);
+  --ok-chip: rgba(67, 207, 144, 0.14);
 
-  --danger: #E06C5F;
-  --danger-soft: rgba(224, 108, 95, 0.09);
-  --danger-border: rgba(224, 108, 95, 0.38);
-  --danger-chip: rgba(224, 108, 95, 0.14);
+  --danger: #f06969;
+  --danger-soft: rgba(240, 105, 105, 0.06);
+  --danger-border: rgba(240, 105, 105, 0.32);
+  --danger-chip: rgba(240, 105, 105, 0.10);
 
-  --warn: #D9A03F;
-  --warn-soft: rgba(217, 160, 63, 0.10);
-  --warn-border: rgba(217, 160, 63, 0.36);
-  --warn-chip: rgba(217, 160, 63, 0.14);
+  --warn: #ff9e64;
+  --warn-soft: rgba(255, 158, 100, 0.08);
+  --warn-border: rgba(255, 158, 100, 0.35);
+  --warn-chip: rgba(255, 158, 100, 0.14);
 
-  --info: #5B9BD5;
-  --info-soft: rgba(91, 155, 213, 0.10);
-  --info-border: rgba(91, 155, 213, 0.36);
-  --info-chip: rgba(91, 155, 213, 0.14);
+  --info: #6aa6ff;
+  --info-soft: rgba(106, 166, 255, 0.10);
+  --info-border: rgba(106, 166, 255, 0.36);
+  --info-chip: rgba(106, 166, 255, 0.14);
 
   /* ---------- أدوار المصنع — ألوان هوية داخل النظام الواحد (007) ---------- */
   --role-thinker: #D98BA8;
@@ -107,19 +107,19 @@
   --sp-10: 40px;
 
   /* ---------- الأنصاف والزوايا ---------- */
-  --radius-s: 6px;
-  --radius-m: 10px;
-  --radius-l: 14px;
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
   --radius-pill: 999px;
 
   /* ---------- الظلال (خفيفة — مساحة عمل لا معرض) ---------- */
   --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.32);
-  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.38);
+  --shadow-2: 0 10px 34px rgba(0, 0, 0, 0.42);
   --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
 
   /* ---------- الأبعاد ---------- */
-  --chat-width: 920px;      /* (007) عمود المحتوى — متطابق مع عقد 920px في app-shell.css */
-  --sidebar-width: 264px;
+  --chat-width: 780px;      /* (007) عمود المحتوى — متطابق مع عقد 920px في app-shell.css */
+  --sidebar-width: 292px;
   --drawer-width: 440px;
   --header-h: 56px;
 
@@ -178,25 +178,25 @@
 
 /* ---------- التركيز المرئي الموحد (لوحة المفاتيح) ---------- */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--info);
   outline-offset: 2px;
   border-radius: var(--radius-s);
 }
 
 ::selection {
-  background: rgba(212, 172, 85, 0.28);
+  background: rgba(88, 166, 255, 0.28);
   color: var(--text);
 }
 
 /* ---------- شريط التمرير الموحد ---------- */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #2C3640;
+  background: #242c3b;
   border-radius: var(--radius-pill);
   border: 2px solid var(--bg);
 }
-::-webkit-scrollbar-thumb:hover { background: #3A4550; }
+::-webkit-scrollbar-thumb:hover { background: #2b3547; }
 
 /* ---------- الأيقونات الوظيفية الموحدة (SVG داخل .icon) ---------- */
 .icon {
