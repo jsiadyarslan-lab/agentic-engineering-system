@@ -38,6 +38,15 @@
   $("settings-close").addEventListener("click", closeDrawer);
   backdrop.addEventListener("click", closeDrawer);
   document.addEventListener("hub:open-settings", openDrawer);
+  // (AES-UI-PREMIUM-REDESIGN-001) Esc يغلق اللوحة — إلا أثناء الكتابة في حقل نصي
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || drawer.hidden) return;
+    var a = document.activeElement;
+    var typing = a && drawer.contains(a) &&
+      (a.tagName === "TEXTAREA" ||
+       (a.tagName === "INPUT" && a.type !== "checkbox" && a.type !== "radio"));
+    if (!typing) closeDrawer();
+  });
 
   // ---------- (010 §8) التبويبات: أقسام منظمة لا كومة حقول ----------
 

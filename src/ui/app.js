@@ -481,9 +481,12 @@
         (c.conversation_id === state.conversationId ? " active" : "");
       var updated = new Date(c.updated_at);
       var when = updated >= today ? "اليوم" : "سابقًا";
-      var icon = c.mode === "task" ? "🎯" : "💬";
+      // (AES-UI-PREMIUM-REDESIGN-001) أيقونة SVG موحدة بدل الرموز التعبيرية
+      var icon = c.mode === "task"
+        ? '<span class="icon sm"><svg><use href="#i-task"/></svg></span>'
+        : '<span class="icon sm"><svg><use href="#i-chat"/></svg></span>';
       item.innerHTML =
-        '<span class="conv-icon">' + icon + "</span>" +
+        icon +
         '<span class="conv-text">' + esc(c.title) + "</span>" +
         '<span class="conv-when">' + when + "</span>";
       item.title = c.title + " — " + when;

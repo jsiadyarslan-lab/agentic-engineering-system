@@ -80,12 +80,12 @@ def test_projects_view_consumes_harness_truth():
 
 def test_index_html_includes_harness_assets():
     html = _read("index.html")
-    assert "harness.css?v=3.6.0" in html
-    assert "harness.js?v=3.6.0" in html
+    assert "harness.css?v=4.0.0" in html
+    assert "harness.js?v=4.0.0" in html
     # أصول 013 الحية موجودة وموصلة قبل العارض
-    assert "live-events.js?v=3.6.0" in html
-    assert "project-live.js?v=3.6.0" in html
-    assert "project-live.css?v=3.6.0" in html
+    assert "live-events.js?v=4.0.0" in html
+    assert "project-live.js?v=4.0.0" in html
+    assert "project-live.css?v=4.0.0" in html
     assert html.index("harness.js") < html.index("projects.js")
     # كل الأصول على الإصدار الجديد — لا رجوع لكاش قديم
     assert "?v=3.4.0" not in html
@@ -94,7 +94,7 @@ def test_index_html_includes_harness_assets():
 def test_ui_version_bumped():
     from core.config import APP_VERSION
 
-    assert APP_VERSION == "3.6.0"
+    assert APP_VERSION == "4.0.0"
 
 
 # ---------- لا عبارات مضللة ----------

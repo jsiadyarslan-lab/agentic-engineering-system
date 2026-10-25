@@ -1,59 +1,11 @@
 /* ==========================================================================
-   agent hub v2 — واجهة محادثة أولًا (الأمر 006).
-   إعادة تصميم كاملة بروح ChatGPT الحديثة (بلا نسخ حرفي): شريط جانبي
-   للمحادثات، منطقة دردشة واسعة، composer بزر ＋ يسارًا وإرسال يمينًا،
-   بطاقات تنفيذ أنيقة، ولوحة إعدادات جانبية للنماذج.
-   الأساس: أسود عميق متدرج الطبقات + ذهبي قرارات المالك حصرًا.
-   الخط: IBM Plex Sans Arabic (محلي، صفر موارد خارجية). سقف: <1200 سطر.
+   قشرة المحادثة الرئيسية (AES-UI-PREMIUM-REDESIGN-001).
+   الرموز البصرية كلها في theme.css (المصدر الوحيد) — هذا الملف
+   يبني فوقها: شريط جانبي، رسائل، صندوق كتابة، لوحة إعدادات.
+   الخط: IBM Plex Sans Arabic (محلي، صفر موارد خارجية).
    ========================================================================== */
 
-:root {
-  --bg: #0a0a0b;
-  --bg-sidebar: #0e0e10;
-  --bg-raised: #131316;
-  --bg-elevated: #17171b;
-  --bg-input: #141417;
-
-  --bubble-user: #1e1e23;
-  --bubble-assistant: #131316;
-
-  --border: #26262c;
-  --border-soft: #1c1c21;
-  --border-strong: #34343c;
-
-  --text: #ececef;
-  --text-mid: #a6a6ad;
-  --text-dim: #767680;
-  --text-faint: #565660;
-
-  --accent: #d4a04a;
-  --accent-soft: rgba(212, 160, 74, 0.09);
-  --accent-border: rgba(212, 160, 74, 0.38);
-
-  --ok: #7fb98a;
-  --ok-soft: rgba(127, 185, 138, 0.09);
-  --danger: #c96a5f;
-  --danger-soft: rgba(201, 106, 95, 0.08);
-  --danger-border: rgba(201, 106, 95, 0.35);
-
-  --chat-width: 820px;
-  --sidebar-width: 280px;
-  --drawer-width: 480px;
-  --radius-s: 8px;
-  --radius-m: 12px;
-  --radius-l: 16px;
-  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.4);
-  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-  /* (013.5 §N) أسماء قديمة من control-center/harness/projects.css كانت
-     تسقط على القيمة الاحتياطية الفاتحة فيظهر مربع أبيض داخل السطح
-     الداكن؛ الحل الدائم اسم واحد هنا لا مطاردة 40 موضعًا. */
-  --panel: var(--bg-raised);
-  --panel-2: var(--bg-elevated);
-  --ink: var(--text);
-  --ink-2: var(--text-mid);
-  --line: var(--border);
-}
+/* الرموز تُعرَّف في theme.css المُحمّل أولاً. */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -64,10 +16,11 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.75;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 button {
@@ -91,13 +44,13 @@ textarea, select, input {
 }
 
 /* ==========================================================================
-   الشريط الجانبي — المحادثات
+   الشريط الجانبي — هوية النظام والتنقل
    ========================================================================== */
 
 .sidebar {
   width: var(--sidebar-width);
   background: var(--bg-sidebar);
-  border-inline-start: 1px solid var(--border-soft);
+  border-inline-start: none;
   border-inline-end: 1px solid var(--border-soft);
   display: flex;
   flex-direction: column;
@@ -110,13 +63,45 @@ textarea, select, input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 18px 10px;
+  gap: 8px;
+  padding: 16px 16px 12px;
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-mark {
+  color: var(--accent);
+  flex: none;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.brand-name {
   font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 0.4px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .icon-btn {
@@ -127,43 +112,119 @@ textarea, select, input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .icon-btn:hover {
-  background: var(--bg-raised);
+  background: var(--bg-hover);
   color: var(--text);
 }
 
 .new-chat {
-  margin: 6px 14px 12px;
-  padding: 10px 14px;
+  margin: 4px 12px 10px;
+  padding: 9px 14px;
   border-radius: var(--radius-m);
   border: 1px solid var(--border);
   background: var(--bg-raised);
   color: var(--text);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
   text-align: start;
 }
 
-.new-chat:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+.new-chat .icon { color: var(--text-mid); }
 
-.new-chat-plus {
-  color: var(--text-mid);
-  font-size: 16px;
-  line-height: 1;
+.new-chat:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.new-chat:hover .icon { color: var(--accent); }
+
+/* التنقل الأساسي */
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 12px 8px;
+}
+
+.side-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-s);
+  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: start;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.side-nav-item .icon { color: var(--text-faint); transition: color var(--dur-fast) var(--ease); }
+
+.side-nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.side-nav-item:hover .icon { color: var(--text-mid); }
+
+.side-nav-item.active {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.side-nav-item.active .icon { color: var(--accent); }
+
+.side-nav-item.active::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -12px;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.side-nav-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-badge {
+  flex: none;
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .conversations {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 10px 12px;
+  padding: 4px 12px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -171,9 +232,9 @@ textarea, select, input {
 
 .conv-empty {
   color: var(--text-faint);
-  font-size: 13px;
+  font-size: 12.5px;
   text-align: center;
-  padding: 28px 10px;
+  padding: 22px 10px;
 }
 
 .conv-item {
@@ -181,43 +242,53 @@ textarea, select, input {
   align-items: center;
   gap: 9px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-s);
-  color: var(--text-mid);
-  font-size: 13.5px;
+  color: var(--text-dim);
+  font-size: 13px;
   text-align: start;
-  transition: background 0.13s var(--ease), color 0.13s var(--ease);
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
-.conv-item:hover { background: var(--bg-raised); color: var(--text); }
+.conv-item:hover { background: var(--bg-hover); color: var(--text); }
 
 .conv-item.active {
   background: var(--bg-elevated);
   color: var(--text);
 }
 
+.conv-item .icon { color: var(--text-faint); }
+.conv-item.active .icon { color: var(--accent); }
+
 .conv-icon { flex: none; font-size: 14px; opacity: 0.85; }
 
 .conv-text {
   flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.conv-when { flex: none; font-size: 11px; color: var(--text-faint); }
+.conv-when { flex: none; font-size: 10.5px; color: var(--text-faint); }
 
 .sidebar-foot {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 11px 14px;
   border-top: 1px solid var(--border-soft);
   font-size: 12px;
   color: var(--text-dim);
 }
 
-.substrate-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.substrate-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .substrate-dot {
   width: 8px;
@@ -228,7 +299,7 @@ textarea, select, input {
 }
 
 .substrate-dot.on { background: var(--ok); }
-.substrate-dot.off { background: var(--accent); }
+.substrate-dot.off { background: var(--warn); }
 
 /* طي الشريط */
 .sidebar-collapsed .sidebar {
@@ -256,16 +327,17 @@ textarea, select, input {
 .chat-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 22px;
+  gap: 10px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border-soft);
-  background: var(--bg);
-  min-height: 58px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  min-height: var(--header-h);
 }
 
 .chat-title {
   font-size: 14.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -278,7 +350,8 @@ textarea, select, input {
   font-size: 11.5px;
   color: var(--text-mid);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-pill);
   padding: 2px 10px;
 }
 
@@ -293,12 +366,18 @@ textarea, select, input {
 .welcome {
   max-width: var(--chat-width);
   margin: 0 auto;
-  padding: 9vh 24px 24px;
+  padding: 10vh 24px 24px;
   text-align: center;
 }
 
+.welcome-mark {
+  color: var(--accent);
+  opacity: 0.9;
+  margin-bottom: 18px;
+}
+
 .welcome h1 {
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: 0.2px;
   margin-bottom: 10px;
@@ -306,9 +385,9 @@ textarea, select, input {
 
 .tagline {
   color: var(--text-mid);
-  font-size: 15px;
+  font-size: 14.5px;
   max-width: 560px;
-  margin: 0 auto 28px;
+  margin: 0 auto 26px;
 }
 
 .suggestions {
@@ -319,26 +398,37 @@ textarea, select, input {
 }
 
 .suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
   background: var(--bg-raised);
   color: var(--text-mid);
-  padding: 12px 18px;
+  padding: 11px 18px;
   font-size: 13.5px;
-  transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+  transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
-.suggestion:hover { border-color: var(--accent-border); color: var(--text); }
+.suggestion .icon { color: var(--text-faint); }
 
-/* ---------- الرسائل: فقاعات حديثة ---------- */
+.suggestion:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-softer);
+  color: var(--text);
+}
+
+.suggestion:hover .icon { color: var(--accent); }
+
+/* ---------- الرسائل: المستخدم فقاعة مضغوطة، المساعد نص منبثق ---------- */
 
 .messages {
   max-width: var(--chat-width);
   margin: 0 auto;
-  padding: 26px 24px 12px;
+  padding: 22px 24px 12px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .bubble {
@@ -355,18 +445,20 @@ textarea, select, input {
 }
 
 .bubble.assistant {
-  align-self: flex-end;            /* RTL: يسار الشاشة */
-  background: var(--bubble-assistant);
-  border: 1px solid var(--border-soft);
-  border-start-start-radius: 4px;
+  align-self: stretch;
+  background: none;
+  border: none;
+  border-radius: 0;
 }
 
 .bubble-body {
-  padding: 12px 16px;
+  padding: 11px 16px;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 14.5px;
 }
+
+.bubble.assistant .bubble-body { padding: 0; }
 
 .bubble-foot {
   padding: 6px 16px 9px;
@@ -376,6 +468,8 @@ textarea, select, input {
   text-align: right;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
+
+.bubble.assistant .bubble-foot { padding: 6px 0 0; }
 
 /* ---------- مؤشر العمل ---------- */
 
@@ -684,16 +778,20 @@ textarea, select, input {
 
 .btn {
   border-radius: var(--radius-m);
-  padding: 9px 16px;
+  padding: 8px 16px;
   font-size: 13.5px;
   font-weight: 500;
   border: 1px solid var(--border);
   color: var(--text);
   background: var(--bg-elevated);
-  transition: all 0.15s var(--ease);
+  transition: all var(--dur-fast) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.btn:hover { border-color: var(--border-strong); }
+.btn:hover { border-color: var(--border-strong); background: var(--bg-hover); }
 
 .btn.primary {
   background: var(--accent-soft);
@@ -701,7 +799,7 @@ textarea, select, input {
   color: var(--accent);
 }
 
-.btn.primary:hover { background: rgba(212, 160, 74, 0.16); }
+.btn.primary:hover { background: rgba(212, 172, 85, 0.17); border-color: var(--accent); }
 
 .btn.danger {
   background: var(--danger-soft);
@@ -785,14 +883,26 @@ textarea, select, input {
 .ts-hint { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
 /* ==========================================================================
-   الـcomposer — ＋ يسارًا والإرسال يمينًا (RTL)
+   الـcomposer — منطقة كتابة موحدة نظيفة
    ========================================================================== */
 
 .composer {
   max-width: var(--chat-width);
   width: 100%;
   margin: 0 auto;
-  padding: 8px 24px 16px;
+  padding: 6px 24px 14px;
+  position: relative;
+}
+
+/* تلاشٍ خفيف فوق آخر رسالة حتى لا يغطيها الصندوق عند التمرير */
+.composer::before {
+  content: "";
+  position: absolute;
+  inset-inline: 24px;
+  top: -28px;
+  height: 28px;
+  background: linear-gradient(to top, var(--bg), transparent);
+  pointer-events: none;
 }
 
 .composer-inner {
@@ -802,30 +912,34 @@ textarea, select, input {
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
   background: var(--bg-input);
-  padding: 10px 12px;
-  transition: border-color 0.15s var(--ease);
+  padding: 9px 10px;
+  box-shadow: var(--shadow-1);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
 
-.composer-inner:focus-within { border-color: var(--border-strong); }
+.composer-inner:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--accent-softer), var(--shadow-1);
+}
 
 /* الترتيب في RTL: أول عنصر DOM يظهر يمينًا — الإرسال أولًا */
 #send {
   order: 0;
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-m);
   background: var(--accent);
-  color: #141410;
+  color: var(--accent-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.15s var(--ease), transform 0.1s var(--ease);
+  transition: opacity var(--dur-fast) var(--ease), transform 0.1s var(--ease), background var(--dur-fast) var(--ease);
 }
 
-#send:hover:not(:disabled) { opacity: 0.92; }
+#send:hover:not(:disabled) { background: var(--accent-strong); }
 
-#send:active:not(:disabled) { transform: scale(0.95); }
+#send:active:not(:disabled) { transform: scale(0.94); }
 
 #send:disabled { opacity: 0.35; cursor: not-allowed; }
 
@@ -839,6 +953,7 @@ textarea, select, input {
   font-size: 14.5px;
   line-height: 1.6;
   max-height: 180px;
+  min-height: 36px;
   padding: 7px 4px;
   color: var(--text);
 }
@@ -852,30 +967,28 @@ textarea, select, input {
 }
 
 #plus {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-m);
   border: 1px solid var(--border);
-  color: var(--text-mid);
-  font-size: 17px;
-  line-height: 1;
+  color: var(--text-dim);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s var(--ease);
+  transition: all var(--dur-fast) var(--ease);
 }
 
 #plus:hover { border-color: var(--border-strong); color: var(--text); }
 
 .plus-menu {
   position: absolute;
-  bottom: 48px;
+  bottom: 46px;
   inset-inline-start: 0;
   min-width: 170px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  box-shadow: var(--shadow-modal);
+  box-shadow: var(--shadow-2);
   padding: 6px;
   z-index: 40;
   display: flex;
@@ -884,27 +997,55 @@ textarea, select, input {
 }
 
 .plus-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   text-align: start;
-  padding: 10px 13px;
+  padding: 9px 12px;
   border-radius: var(--radius-s);
   font-size: 13.5px;
   color: var(--text-mid);
 }
 
-.plus-option:hover { background: var(--bg-raised); color: var(--text); }
+.plus-option .icon { color: var(--text-faint); }
+
+.plus-option:hover { background: var(--bg-hover); color: var(--text); }
+.plus-option:hover .icon { color: var(--accent); }
+
+.web-toggle {
+  order: 3;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-m);
+  border: 1px solid transparent;
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-fast) var(--ease);
+}
+
+.web-toggle:hover { color: var(--text-mid); background: var(--bg-hover); }
+
+.web-toggle.on { color: var(--info); border-color: var(--info-border); background: var(--info-soft); }
+.web-toggle.auto { color: var(--text-dim); }
 
 .composer-foot {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 6px 0;
+  padding: 7px 8px 0;
+  min-height: 28px;
 }
 
 .mode-chip {
+  flex: none;
   font-size: 11.5px;
   color: var(--text-mid);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-pill);
   padding: 2px 11px;
 }
 
@@ -914,63 +1055,119 @@ textarea, select, input {
   background: var(--accent-soft);
 }
 
+.composer-hint {
+  font-size: 11.5px;
+  color: var(--warn);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-shortcut {
+  margin-inline-start: auto;
+  flex: none;
+  font-size: 11px;
+  color: var(--text-faint);
+  direction: ltr;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (max-width: 720px) {
+  .composer-shortcut { display: none; }
+}
+
 .stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-inline-start: auto;
   font-size: 12px;
   color: var(--danger);
   border: 1px solid var(--danger-border);
   background: var(--danger-soft);
-  border-radius: 999px;
-  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  padding: 3px 13px;
 }
+
+.stop-btn + .composer-shortcut { margin-inline-start: 0; }
 
 .stop-btn:disabled { opacity: 0.5; }
 
 /* ==========================================================================
-   لوحة الإعدادات الجانبية (drawer)
+   لوحة الإعدادات الجانبية — تعتيم خفيف + حواف مرئية
    ========================================================================== */
 
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 60;
+  background: rgba(5, 7, 10, 0.38);
+  backdrop-filter: blur(2px);
+  z-index: var(--z-drawer);
+  animation: fade-in var(--dur) var(--ease);
 }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 .drawer {
   position: fixed;
   top: 0;
   bottom: 0;
   inset-inline-end: 0;              /* RTL: تنزلق من اليسار بصريًا */
-  width: min(var(--drawer-width), 94vw);
+  width: min(var(--drawer-width), 92vw);
   background: var(--bg-sidebar);
   border-inline-start: 1px solid var(--border);
-  z-index: 61;
+  z-index: calc(var(--z-drawer) + 1);
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-modal);
+  animation: drawer-in var(--dur) var(--ease);
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(-24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer { animation: none; }
+  .drawer-backdrop { animation: none; }
 }
 
 .drawer-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border-soft);
   font-weight: 600;
 }
 
+.drawer-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.drawer-title .icon { color: var(--text-dim); }
+
 .drawer-body {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 20px 30px;
+  padding: 4px 18px 28px;
 }
 
-.drawer-section { padding: 18px 0; border-bottom: 1px solid var(--border-soft); }
+.drawer-section { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+.drawer-section:last-child { border-bottom: none; }
 
 .drawer-section h3 { font-size: 14.5px; font-weight: 600; margin-bottom: 4px; }
 
-.drawer-note { font-size: 12px; color: var(--text-dim); margin-bottom: 12px; }
+.drawer-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  line-height: 1.7;
+}
 
 .drawer-warning {
   font-size: 12px;
@@ -1116,6 +1313,117 @@ textarea, select, input {
 
 .pv-chip.default { color: var(--accent); border-color: var(--accent-border); }
 
+/* ---------- بطاقة تكوين داخل مزود (settings.js) — كانت بلا تنسيق ---------- */
+
+.cfg-card {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-m);
+  background: var(--bg-elevated);
+  padding: 11px 13px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.cfg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cfg-name {
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cfg-primary {
+  font-size: 10.5px;
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+  padding: 1px 8px;
+  font-weight: 500;
+}
+
+.cfg-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cfg-url-input {
+  flex: 1;
+  min-width: 0;
+  direction: ltr;
+  text-align: left;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 7px 10px;
+  outline: none;
+  color: var(--text-mid);
+}
+
+.cfg-url-input:focus { border-color: var(--border-strong); color: var(--text); }
+
+.cfg-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.cfg-meta b {
+  direction: ltr;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11.5px;
+  color: var(--text-mid);
+  word-break: break-all;
+}
+
+.cfg-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.cfg-models:empty { display: none; }
+
+.cfg-add-model {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cfg-new-box, .prov-new-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-m);
+  padding: 12px;
+  margin-top: 10px;
+  background: var(--bg-raised);
+}
+
+.pv-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pv-store { line-height: 1.8; }
+
 /* الأدوات المتقدمة */
 .advanced-grid {
   display: grid;
@@ -1132,12 +1440,14 @@ textarea, select, input {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 70;
+  background: rgba(5, 7, 10, 0.5);
+  backdrop-filter: blur(3px);
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
+  animation: fade-in var(--dur) var(--ease);
 }
 
 .modal {
@@ -1156,10 +1466,13 @@ textarea, select, input {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 13px 18px;
   border-bottom: 1px solid var(--border-soft);
   font-size: 13.5px;
 }
+
+.modal-head #modal-title { flex: 1; }
 
 #modal-json {
   flex: 1;
@@ -1173,26 +1486,28 @@ textarea, select, input {
   word-break: break-word;
 }
 
-/* ---------- شريط تمرير موحد ---------- */
-
-::-webkit-scrollbar { width: 9px; height: 9px; }
-
-::-webkit-scrollbar-track { background: transparent; }
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
-  border: 2px solid var(--bg);
-}
-
-::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+/* شريط التمرير الموحد معرّف في theme.css */
 
 /* ---------- شاشات ضيقة ---------- */
 
 @media (max-width: 900px) {
-  .sidebar { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: 50; box-shadow: var(--shadow-modal); }
+  .sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: var(--z-sidebar);
+    box-shadow: var(--shadow-modal);
+  }
   .sidebar-collapsed .sidebar { box-shadow: none; }
   .messages, .composer, .task-settings { padding-inline: 14px; }
+  .composer::before { inset-inline: 14px; }
   .bubble { max-width: 96%; }
   .advanced-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .composer-foot { flex-wrap: wrap; row-gap: 6px; }
+  .welcome { padding-top: 7vh; }
+  .welcome h1 { font-size: 24px; }
+  .suggestion { padding: 10px 14px; }
 }

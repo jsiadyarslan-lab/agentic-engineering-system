@@ -45,7 +45,7 @@
 .pl-head-status.live { color: var(--ok); border-color: rgba(127,185,138,.35); }
 .pl-head-status.ok { color: var(--ok); border-color: rgba(127,185,138,.35); }
 .pl-head-status.gold { color: var(--accent); border-color: var(--accent-border); }
-.pl-head-status.warn { color: #d9b25f; border-color: rgba(217,178,95,.35); }
+.pl-head-status.warn { color: var(--accent); border-color: rgba(217,178,95,.35); }
 .pl-head-status.danger { color: var(--danger); border-color: var(--danger-border); }
 
 .pl-scroll {
@@ -132,7 +132,7 @@
 .pl-status.ok { color: var(--ok); background: var(--ok-soft); }
 .pl-status.gold { color: var(--accent); background: var(--accent-soft); }
 .pl-status.live { color: var(--ok); background: var(--ok-soft); }
-.pl-status.warn { color: #d9b25f; background: rgba(217,178,95,.08); }
+.pl-status.warn { color: var(--accent); background: rgba(217,178,95,.08); }
 .pl-status.danger { color: var(--danger); background: var(--danger-soft); }
 .pl-status.dim { color: var(--text-dim); background: var(--bg-raised); }
 
@@ -208,7 +208,7 @@
 /* ---------- بطاقة الحجب (§27) ---------- */
 
 .pl-blocked { border-color: rgba(217,178,95,.4); }
-.pl-blocked .pl-title { color: #d9b25f; }
+.pl-blocked .pl-title { color: var(--accent); }
 .pl-progress {
   font-size: 13px; color: var(--text-mid);
   padding: 8px 12px; border-radius: var(--radius-s);
@@ -231,7 +231,7 @@
 .pl-act-icon { flex-shrink: 0; font-size: 12.5px; }
 .pl-act.role { color: var(--accent); }
 .pl-act.err { color: var(--danger); }
-.pl-act.waiting { color: #d9b25f; }
+.pl-act.waiting { color: var(--accent); }
 @keyframes pl-fade-in { from { opacity: 0; transform: translateY(3px); } }
 
 /* ---------- التحقق النهائي (§51) ---------- */
@@ -354,7 +354,7 @@
 .pj-dot.live { background: var(--ok); animation: pl-pulse 1.6s ease infinite; }
 .pj-dot.ok { background: var(--ok); }
 .pj-dot.gold { background: var(--accent); }
-.pj-dot.warn { background: #d9b25f; }
+.pj-dot.warn { background: var(--accent); }
 .pj-dot.danger { background: var(--danger); }
 @keyframes pl-pulse { 50% { opacity: .35; } }
 .pj-list-empty {
@@ -392,7 +392,7 @@ body.live-disconnected .substrate-dot {
    ========================================================================== */
 
 .pl-env.ready .pl-title { color: var(--ok); }
-.pl-env.notready .pl-title { color: #d9b25f; }
+.pl-env.notready .pl-title { color: var(--accent); }
 .pl-env.notready { border-color: rgba(217,178,95,.35); }
 
 .pl-env-rows {
