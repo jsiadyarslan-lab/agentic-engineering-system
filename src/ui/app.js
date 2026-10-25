@@ -573,6 +573,14 @@
         }
         (out.j.messages || []).forEach(addHistoryMessage);
         state.historyLoaded = true;
+        // (007 BUG-04) محادثة موجودة بلا رسائل مرئية كانت تعرض لوحة
+        // فارغة صامتة — حالة فراغ صادقة بدل السواد الأبيض.
+        if (!out.j.messages || !out.j.messages.length) {
+          var emptyNote = el("div", "history-loading",
+            "لا رسائل مرئية في هذه المحادثة بعد — أرسل رسالة للبدء.");
+          emptyNote.style.color = "var(--text-dim)";
+          messagesEl.appendChild(emptyNote);
+        }
         scrollDown();
         renderConversations(_lastConversations);
         // (013.5 §G) الآن فقط — الاشتراك الحي والمصالحة
@@ -641,8 +649,25 @@
   // (AES-EXP-03) على الشاشات الضيقة: الشريط يبدأ مطويًا — كان يفتح
   // افتراضيًا فيغطي الدردشة على الهاتف (390px) ويقصّها إلى شريط ضيق.
   // نفس دلالة الصنف القائمة (collapsed = مخفي) والزر ☰ يفتحه overlay.
-  if (window.matchMedia("(max-width: 900px)").matches) {
+  var sidebarMq = window.matchMedia("(max-width: 900px)");
+  if (sidebarMq.matches) {
     document.body.classList.add("sidebar-collapsed");
+  }
+  // (007 BUG-03) كان الطي يُقرر مرة عند التحميل فقط — تغيير حجم النافذة
+  // بعد التحميل (جوال↔سطح مكتب، أو تدوير جهاز) كان يُبقي الحالة القديمة:
+  // شريط مطوي فوق سطح 1440، أو شريط مفتوح يغطي 390. الآن يتزامن مع
+  // عبور نقطة الانكسار 900px، مع احترام اختيار المستخدم اليدوي المؤقت
+  // (لا نفتح عليه شريطًا فتحه بنفسه ثم ضيّق النافذة هربًا منه).
+  var sidebarUserOverride = false;
+  ["sidebar-toggle", "sidebar-collapse"].forEach(function (id) {
+    var btn = $(id);
+    if (btn) btn.addEventListener("click", function () { sidebarUserOverride = true; });
+  });
+  if (sidebarMq.addEventListener) {
+    sidebarMq.addEventListener("change", function (e) {
+      if (sidebarUserOverride) return;
+      document.body.classList.toggle("sidebar-collapsed", e.matches);
+    });
   }
 
   // ---------- النمط: محادثة / مهمة ----------

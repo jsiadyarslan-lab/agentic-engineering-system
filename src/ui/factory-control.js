@@ -712,7 +712,11 @@
     });
 
     // Listen for events via the global renderEvent
-    var originalRenderEvent = Hub.renderEvent;
+    // (007 BUG-02) كان الأصل يُلتقط من Hub.renderEvent المُغلَّف نفسه عند
+    // كل زيارة لعرض تشغيل فتتكدس الأغلفة بلا نهاية. يُحفظ الأصل مرة واحدة.
+    if (!Hub.__factoryOriginalRenderEvent) {
+      Hub.__factoryOriginalRenderEvent = Hub.renderEvent;
+    }
     Hub.renderEvent = function (event) {
       if (state.mode === "run-view" && state.activeRunId === runId) {
         appendEventToStream(event);
@@ -721,7 +725,7 @@
         updateCurrentAgent(event);
         updateCurrentAction(event);
       }
-      originalRenderEvent(event);
+      Hub.__factoryOriginalRenderEvent(event);
     };
     if (statusEl) {
       statusEl.textContent = "LIVE";
@@ -741,7 +745,11 @@
       // but we can stop listening
       state.sseController = null;
     }
-    Hub.renderEvent = Hub.renderEvent; // Restore original
+    // (007 BUG-02) استرجاع حقيقي للأصل المحفوظ مرة واحدة — لا no-op
+    if (Hub.__factoryOriginalRenderEvent) {
+      Hub.renderEvent = Hub.__factoryOriginalRenderEvent;
+      Hub.__factoryOriginalRenderEvent = null;
+    }
   }
 
   function appendEventToStream(event) {

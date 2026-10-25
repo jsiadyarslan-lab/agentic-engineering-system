@@ -163,7 +163,14 @@
     if (!messageAllowed(conversationId, id)) return null;
     var state = getLiveState(conversationId);
     if (state.live && state.activeId === id) return state.live;
-    if (state.live) { state.live.complete({}); setLiveState(conversationId, null, state.activeId, undefined, Object.assign({}, state.frozen, (_obj = {}, _obj[state.activeId] = true, _obj))); }
+    if (state.live) {
+      // (007 BUG-01) كان _obj غير معلن — ReferenceError تحت "use strict"
+      // عند ورود رسالة حية أثناء بثّ رسالة أخرى بنفس المحادثة.
+      state.live.complete({});
+      var frozen = Object.assign({}, state.frozen);
+      frozen[state.activeId] = true;
+      setLiveState(conversationId, null, state.activeId, undefined, frozen);
+    }
     var live = new LiveMessage(id);
     setLiveState(conversationId, live, id, undefined, undefined, undefined);
     Hub.insertAtEnd(live.root);

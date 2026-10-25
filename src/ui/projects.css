@@ -1,7 +1,10 @@
-/* Agentic Engineering System — تنسيقات المشاريع وإدارة المزودين (007).
+/* Agentic Engineering System — تنسيقات المشاريع (011 + 007).
  * منفصل عن styles.css عمدًا: عائلتان مستقلتان (محادثة/مشروع) وسقف
  * نحافة لكل ملف. درس الأمر 006 الموثق مطبق: display:flex يقهر hidden
  * — لذا القاعدة [hidden]{display:none!important} تحكم دائمًا.
+ * (007) بطاقات المزودين (pv/cfg) انتقلت إلى app-shell.css — هنا فقط
+ * ما يخص المشروع، وكل القيم من رموز theme.css (كانت قيم Tailwind
+ * حرفية: amber-400/blue-400 وزجاج أبيض).
  */
 
 /* ---------- وضع المشروع: عرض المشروع يحل محل المحادثة ---------- */
@@ -32,7 +35,7 @@ body.mode-project .project-view {
 
 .projects-side {
   border-top: 1px solid var(--line);
-  padding: 10px 0 4px;
+  padding: 10px 0 var(--sp-1);
   display: flex;
   flex-direction: column;
   min-height: 90px;
@@ -43,8 +46,8 @@ body.mode-project .project-view {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px 6px;
-  font-size: 12px;
+  padding: 0 14px var(--sp-1);
+  font-size: var(--fs-12);
   color: var(--muted);
   font-weight: 600;
   letter-spacing: 0.4px;
@@ -52,25 +55,25 @@ body.mode-project .project-view {
 
 .projects-list {
   overflow-y: auto;
-  padding: 0 8px;
+  padding: 0 var(--sp-2);
 }
 
 .pj-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
   width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 4px;
+  padding: var(--sp-2) 10px;
+  margin-bottom: var(--sp-1);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-s);
   background: transparent;
   color: inherit;
   cursor: pointer;
   text-align: start;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .pj-item:hover { background: var(--bg-hover); }
@@ -84,17 +87,18 @@ body.mode-project .project-view {
 
 .pj-empty, .pj-ev-empty {
   color: var(--muted);
-  font-size: 12px;
-  padding: 6px 8px;
+  font-size: var(--fs-12);
+  padding: var(--sp-1) var(--sp-2);
 }
 
-/* ---------- شارات الحالة الصادقة ---------- */
+/* ---------- شارات الحالة الصادقة — قواعد الحبة الموحدة (007) ---------- */
 
 .pj-badge {
   flex-shrink: 0;
-  font-size: 10.5px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  font-size: var(--fs-11);
+  font-weight: 600;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   color: var(--muted);
   white-space: nowrap;
@@ -107,7 +111,7 @@ body.mode-project .project-view {
 
 /* ---------- رأس المشروع ---------- */
 
-.pj-head { display: flex; flex-direction: column; gap: 8px; }
+.pj-head { display: flex; flex-direction: column; gap: var(--sp-2); }
 
 .pj-title-row {
   display: flex;
@@ -118,71 +122,71 @@ body.mode-project .project-view {
 
 .pj-title-row h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--fs-19);
   font-weight: 700;
 }
 
 .pj-objective {
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: var(--fs-13);
   line-height: 1.7;
   white-space: pre-wrap;
 }
 
-.pj-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.pj-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 
 /* ---------- بوابات المالك ---------- */
 
 .pj-gates {
   border: 1px solid var(--warn-border);
-  background: rgba(251, 191, 36, 0.06);
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: var(--warn-soft);
+  border-radius: var(--radius-l);
+  padding: var(--sp-4) var(--sp-4);
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.pj-gates h3 { margin: 0; font-size: 14px; color: var(--warn); }
+.pj-gates h3 { margin: 0; font-size: var(--fs-14); color: var(--warn); }
 
 .pj-gate {
-  border-top: 1px dashed rgba(251, 191, 36, 0.25);
+  border-top: 1px dashed var(--warn-border);
   padding-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-1);
 }
 
-.pj-gate-kind { font-weight: 700; font-size: 13px; }
-.pj-gate-reason { font-size: 12.5px; color: var(--muted); line-height: 1.7; }
-.pj-gate-actions { display: flex; gap: 8px; }
+.pj-gate-kind { font-weight: 700; font-size: var(--fs-13); }
+.pj-gate-reason { font-size: var(--fs-13); color: var(--muted); line-height: 1.7; }
+.pj-gate-actions { display: flex; gap: var(--sp-2); }
 
 /* ---------- الخطة والمراحل والخطوات ---------- */
 
 .pj-plan {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: var(--radius-l);
+  padding: var(--sp-4) var(--sp-4);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
-.pj-plan.empty { color: var(--muted); font-size: 13px; }
-.pj-plan-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.pj-plan-head h3 { margin: 0; font-size: 15px; }
-.pj-plan-state { font-size: 12px; color: var(--muted); }
-.pj-plan-rev { font-size: 12px; color: var(--warn); }
+.pj-plan.empty { color: var(--muted); font-size: var(--fs-13); }
+.pj-plan-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.pj-plan-head h3 { margin: 0; font-size: var(--fs-15); }
+.pj-plan-state { font-size: var(--fs-12); color: var(--muted); }
+.pj-plan-rev { font-size: var(--fs-12); color: var(--warn); }
 
-.pj-list-block { font-size: 13px; line-height: 1.8; }
-.pj-list-block b { font-size: 12px; color: var(--muted); }
-.pj-list-block ul { margin: 4px 0 0; padding-inline-start: 20px; }
+.pj-list-block { font-size: var(--fs-13); line-height: 1.8; }
+.pj-list-block b { font-size: var(--fs-12); color: var(--muted); }
+.pj-list-block ul { margin: var(--sp-1) 0 0; padding-inline-start: var(--sp-5); }
 
-.pj-phases { display: flex; flex-direction: column; gap: 8px; }
+.pj-phases { display: flex; flex-direction: column; gap: var(--sp-2); }
 
 .pj-phase {
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-l);
   padding: 0;
   overflow: hidden;
 }
@@ -192,9 +196,9 @@ body.mode-project .project-view {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
+  padding: var(--sp-3) var(--sp-4);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: 600;
   list-style: none;
 }
@@ -202,16 +206,16 @@ body.mode-project .project-view {
 .pj-phase summary::-webkit-details-marker { display: none; }
 .pj-phase[open] summary { border-bottom: 1px solid var(--line); }
 
-.pj-steps { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+.pj-steps { padding: var(--sp-2) var(--sp-3) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1); }
 
 .pj-step {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  font-size: 13px;
+  padding: var(--sp-2) 10px;
+  border-radius: var(--radius-s);
+  background: var(--bg-raised);
+  font-size: var(--fs-13);
 }
 
 .pj-step-icon {
@@ -221,7 +225,7 @@ body.mode-project .project-view {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: var(--fs-11);
   border: 1px solid var(--line);
   color: var(--muted);
 }
@@ -233,19 +237,19 @@ body.mode-project .project-view {
 
 .pj-step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pj-step-obj { line-height: 1.6; }
-.pj-step-meta { font-size: 11.5px; color: var(--muted); }
+.pj-step-meta { font-size: var(--fs-12); color: var(--muted); }
 
 /* ---------- سجل الأحداث ---------- */
 
-.pj-events h3 { margin: 0 0 8px; font-size: 14px; }
+.pj-events h3 { margin: 0 0 var(--sp-2); font-size: var(--fs-14); }
 
 .pj-events-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
   max-height: 280px;
   overflow-y: auto;
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 
 .pj-ev {
@@ -253,19 +257,20 @@ body.mode-project .project-view {
   gap: 10px;
   align-items: baseline;
   padding: 5px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: var(--radius-s);
+  background: var(--bg-raised);
 }
 
-.pj-ev.live { border-right: 2px solid var(--info); }
+.pj-ev.live { border-inline-start: 2px solid var(--info); }
 
 .pj-ev-kind {
   flex-shrink: 0;
   width: 210px;
-  font-family: ui-monospace, monospace;
-  font-size: 10.5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
   color: var(--muted);
   direction: ltr;
+  unicode-bidi: isolate;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -273,7 +278,7 @@ body.mode-project .project-view {
 }
 
 .pj-ev-payload {
-  color: var(--ink, var(--text));
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -285,62 +290,15 @@ body.mode-project .project-view {
   text-align: center;
 }
 
-/* ---------- إدارة المزودين (لوحة الإعدادات) ---------- */
-
-.pv-store {
-  font-size: 11.5px;
-  color: var(--muted);
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  margin-bottom: 10px;
-  line-height: 1.7;
-}
-
-.prov-new-box, .cfg-new-box {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border: 1px dashed var(--line);
-  border-radius: 10px;
-  margin-top: 8px;
-}
-
-.cfg-card {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin: 8px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.cfg-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.cfg-name { font-weight: 700; font-size: 13px; }
-.cfg-primary {
-  font-size: 10px;
-  color: var(--ok);
-  border: 1px solid var(--ok-border);
-  padding: 1px 7px;
-  border-radius: 999px;
-  margin-inline-start: 6px;
-}
+/* ---------- شارات جاهزية الأدوار (settings.js) ---------- */
 
 .rd-badge {
-  font-family: ui-monospace, monospace;
-  font-size: 10.5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
   direction: ltr;
-  padding: 2px 8px;
-  border-radius: 999px;
+  unicode-bidi: isolate;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   color: var(--muted);
 }
@@ -348,71 +306,46 @@ body.mode-project .project-view {
 .rd-badge.ok { color: var(--ok); border-color: var(--ok-border); }
 .rd-badge.bad { color: var(--danger); border-color: var(--danger-border); }
 
-.cfg-url { display: flex; gap: 6px; align-items: center; }
-
-.cfg-url-input {
-  flex: 1;
-  min-width: 0;
-  font-family: ui-monospace, monospace;
-  font-size: 12px;
-  padding: 6px 9px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: inherit;
-}
-
-.cfg-meta { font-size: 11.5px; color: var(--muted); }
-
-.cfg-models { display: flex; flex-wrap: wrap; gap: 4px; }
-
-.cfg-add-model { display: flex; gap: 6px; }
-
-.pv-result {
-  font-size: 12.5px;
-  line-height: 1.7;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+.rd-detail {
+  margin-top: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--muted);
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
 }
 
 .pv-result.ok { color: var(--ok); }
 .pv-result.bad { color: var(--danger); }
 
-.rd-detail {
-  margin-top: 4px;
-  font-family: ui-monospace, monospace;
-  font-size: 10.5px;
-  color: var(--muted);
-}
-
 /* ---------- تكوين الأدوار: عمود التكوين الجديد ---------- */
 
-.role-config-row { gap: 6px; }
+.role-config-row { gap: var(--sp-1); }
 .role-config-row select { min-width: 0; flex: 1; }
 
 /* ============ الأمر 011 — بوابة التنفيذ والسياسة والتزامن ============ */
 
 /* بطاقة بوابة التنفيذ المشتقة (011 §1-§3) — لا «البوابة ليست مفتوحة» */
 .pj-exec-gate {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: var(--sp-3) var(--sp-4);
   margin: 10px 0;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-raised);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 .pj-exec-gate.open { border-color: var(--ok-border); }
-.pj-exec-gate.blocked { border-color: rgba(251, 191, 36, 0.5); }
+.pj-exec-gate.blocked { border-color: var(--warn-border); }
 .pj-exec-gate.probing { opacity: 0.7; }
-.pjeg-row.plan { font-weight: 700; font-size: 14px; }
-.pjeg-row.state { font-size: 13.5px; }
+.pjeg-row.plan { font-weight: 700; font-size: var(--fs-14); }
+.pjeg-row.state { font-size: var(--fs-13); }
 .pjeg-row.state.ok { color: var(--ok); font-weight: 700; }
-.pjeg-block { font-size: 13px; line-height: 1.8; color: var(--ink, var(--text)); }
+.pjeg-block { font-size: var(--fs-13); line-height: 1.8; color: var(--ink); }
 .pjeg-block b { color: var(--warn); }
-.pjeg-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.pjeg-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-1); }
 
 /* سياسة التنفيذ (011 §26) — قرار ظاهر */
 .pj-policy {
@@ -420,52 +353,52 @@ body.mode-project .project-view {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  font-size: 13px;
-  margin: 6px 0 10px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-s);
+  background: var(--bg-raised);
+  font-size: var(--fs-13);
+  margin: var(--sp-1) 0 10px;
 }
 .pj-policy-label { font-weight: 700; }
 .pj-policy select {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-input);
   color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12.5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 4px var(--sp-2);
+  font-size: var(--fs-13);
 }
-.pj-policy-hint { color: var(--muted); font-size: 12px; }
+.pj-policy-hint { color: var(--muted); font-size: var(--fs-12); }
 
 /* بوابة توفير (BLOCKED) — تُحل بإعادة الفحص لا بقرار (011 §19) */
 .pj-gate.provisioning { border-color: var(--warn-border); }
-.pj-gate-status { font-weight: 400; font-size: 12px; color: var(--muted); }
+.pj-gate-status { font-weight: 400; font-size: var(--fs-12); color: var(--muted); }
 
 /* لوحة حقيقة المضيف (011 §24-§25) — Host ≠ Backend ≠ Isolation */
 .host-truth {
   border: 1px solid var(--info-border);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: var(--radius-m);
+  padding: var(--sp-3) var(--sp-4);
   margin-bottom: 14px;
-  background: rgba(96, 165, 250, 0.05);
+  background: var(--info-soft);
 }
-.host-truth.compat { border-color: rgba(251, 191, 36, 0.45); }
-.ht-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
-.ht-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px 14px; }
-.ht-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.06); }
+.host-truth.compat { border-color: var(--warn-border); }
+.ht-title { font-weight: 700; font-size: var(--fs-13); margin-bottom: var(--sp-2); }
+.ht-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--sp-1) 14px; }
+.ht-row { display: flex; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-13); padding: 3px 0; border-bottom: 1px dashed var(--border-soft); }
 .ht-row span { color: var(--muted); }
-.ht-note { margin-top: 8px; font-size: 12.5px; line-height: 1.7; }
-.ht-cmd { margin-top: 6px; font-size: 12px; direction: rtl; }
-.ht-cmd code { background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 5px; font-size: 11.5px; }
+.ht-note { margin-top: var(--sp-2); font-size: var(--fs-13); line-height: 1.7; }
+.ht-cmd { margin-top: var(--sp-1); font-size: var(--fs-12); direction: rtl; }
+.ht-cmd code { background: var(--bg-elevated); padding: 2px 6px; border-radius: var(--radius-s); font-size: var(--fs-12); }
 
 /* شارة الوضع المتوافق على بطاقة البيئة (011 §4) */
 .env-compat {
-  font-size: 11px; padding: 2px 8px; border-radius: 999px;
-  background: rgba(251, 191, 36, 0.15); color: var(--warn);
+  font-size: var(--fs-11); padding: 2px var(--sp-2); border-radius: var(--radius-pill);
+  background: var(--warn-chip); color: var(--warn);
 }
 .env-ladder-note {
-  font-size: 11.5px; color: var(--muted);
-  padding: 6px 8px; margin-bottom: 6px;
-  border-radius: 6px; background: rgba(255, 255, 255, 0.03);
+  font-size: var(--fs-12); color: var(--muted);
+  padding: var(--sp-1) var(--sp-2); margin-bottom: var(--sp-1);
+  border-radius: var(--radius-s); background: var(--bg-raised);
   line-height: 1.7;
 }
