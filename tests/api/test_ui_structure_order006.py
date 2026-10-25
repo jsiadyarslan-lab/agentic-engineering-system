@@ -118,23 +118,37 @@ def test_chat_and_task_stream_endpoints_wired():
 
 
 def test_versioned_assets_and_new_modules():
-    """(الأمر 008+010) أصول مرقمة + الوحدات بالترتيب — العارض قبل
-    النواة، وحدود الأخطاء قبل الإعدادات، والبحث وبيئات التنفيذ قبل
-    المشاريع."""
-    assert "styles.css?v=3.6.0" in HTML
-    assert "app-shell.css?v=3.6.0" in HTML
-    assert "markdown.js?v=3.6.0" in HTML
-    md_pos = HTML.index("markdown.js?v=3.6.0")
-    app_pos = HTML.index("app.js?v=3.6.0")
-    chat_pos = HTML.index("chat-stream.js?v=3.6.0")
-    task_pos = HTML.index("task-cards.js?v=3.6.0")
-    picker_pos = HTML.index("model-picker.js?v=3.6.0")
-    boundary_pos = HTML.index("error-boundary.js?v=3.6.0")
-    settings_pos = HTML.index("settings.js?v=3.6.0")
-    env_pos = HTML.index("environment.js?v=3.6.0")
-    research_pos = HTML.index("research-ui.js?v=3.6.0")
-    exec_pos = HTML.index("execution-env.js?v=3.6.0")
-    projects_pos = HTML.index("projects.js?v=3.6.0")
+    """(الأمر 008+010 + AES-LIVE-FACTORY-E2E-001) أصول مرقمة موحدة
+    + الوحدات بالترتيب — العارض قبل النواة، وحدود الأخطاء قبل
+    الإعدادات، والبحث وبيئات التنفيذ قبل المشاريع.
+
+    الإصدار يُشتق من الملف نفسه لا يُثبَّت في الاختبار — فرفع
+    الإصدار عند كل نشر لا يكسر الاختبار، وبقاؤه قديمًا يكسره
+    (أصل ثابت واحد: pyproject هو مصدر الحقيقة للرقم الأدنى)."""
+    import re as _re
+    versions = set(_re.findall(r"\?v=([0-9]+\.[0-9]+\.[0-9]+[a-z0-9.-]*)", HTML))
+    assert versions, "لا مراجع إصدار في index.html"
+    assert len(versions) == 1, (
+        f"إصدارات أصول غير موحدة: {sorted(versions)} — المتصفح قد "
+        "يخدم خليطاً قديماً وجديداً بعد النشر")
+    version = versions.pop()
+    for asset in ("styles.css", "app-shell.css", "markdown.js",
+                  "app.js", "chat-stream.js", "task-cards.js",
+                  "model-picker.js", "error-boundary.js", "settings.js",
+                  "environment.js", "research-ui.js", "execution-env.js",
+                  "projects.js"):
+        assert f"{asset}?v={version}" in HTML, asset
+    md_pos = HTML.index(f"markdown.js?v={version}")
+    app_pos = HTML.index(f"app.js?v={version}")
+    chat_pos = HTML.index(f"chat-stream.js?v={version}")
+    task_pos = HTML.index(f"task-cards.js?v={version}")
+    picker_pos = HTML.index(f"model-picker.js?v={version}")
+    boundary_pos = HTML.index(f"error-boundary.js?v={version}")
+    settings_pos = HTML.index(f"settings.js?v={version}")
+    env_pos = HTML.index(f"environment.js?v={version}")
+    research_pos = HTML.index(f"research-ui.js?v={version}")
+    exec_pos = HTML.index(f"execution-env.js?v={version}")
+    projects_pos = HTML.index(f"projects.js?v={version}")
     assert md_pos < app_pos < chat_pos < task_pos < picker_pos
     assert picker_pos < boundary_pos < settings_pos < env_pos
     assert env_pos < research_pos < exec_pos < projects_pos

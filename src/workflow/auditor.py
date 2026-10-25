@@ -18,8 +18,14 @@ import re
 from pathlib import Path
 
 #: الرمز الملفي — اسم ملف بامتغال قابل للفحص داخل نص المعيار.
+#: (AES-LIVE-FACTORY-E2E-001 المرحلة 6ي) الجذر ASCII حصراً كي لا تلتصق
+#: واو العطف العربية بالاسم (أثبت حياً: «وcategory.html» رُئي اسماً
+#: واحداً فحُسبت المرحلة ناقصة كذباً — مشروع 17)، مع إضافة امتدادات
+#: الويب css/js/mjs التي كانت غائبة فلا تُفحص ملفات المواقع إطلاقاً.
 _FILE_TOKEN = re.compile(
-    r"[\w\-.]+\.(?:md|pdf|json|txt|csv|py|html|htm|xml|log|yml|yaml|toml|svg|png)"
+    r"[A-Za-z0-9_][A-Za-z0-9_.\-]*"
+    r"\.(?:md|pdf|json|txt|csv|py|html|htm|xml|log|yml|yaml|toml|"
+    r"svg|png|css|js|mjs)"
 )
 
 

@@ -237,10 +237,23 @@ def health() -> dict:
         substrate_kind = _report.get("kind")
     except Exception:  # noqa: BLE001 — إعلان صادق لا انهيار
         substrate_available = False
+    # (AES-ORACLE-UI-RUNTIME-002 §5) معرف البناء المنشور — من ملف
+    # BUILD_ID إن وُجد، ليُثبت أن الرابط يقدم النسخة المصححة فعلًا
+    build_id = ""
+    try:
+        from pathlib import Path as _BuildPath
+
+        _build_file = _BuildPath("runtime/BUILD_ID")
+        if _build_file.is_file():
+            build_id = _build_file.read_text(
+                encoding="utf-8").strip()[:64]
+    except Exception:  # noqa: BLE001 — القراءة اختيارية لا حياتية
+        build_id = ""
     return {
         "status": "ok",
         "app": settings.app_name,
         "version": settings.app_version,
+        "build": build_id or None,
         "phase": "agentic-engineering-system: durable-projects+autonomous-loop+provider-management",
         "substrate": {
             "available": substrate_available,

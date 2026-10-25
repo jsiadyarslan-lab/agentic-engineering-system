@@ -873,6 +873,12 @@
    * + [التفاصيل] [إيقاف التنفيذ] — الإيقاف الصريح وحده يوقف (§19). */
   function renderExecutionCard(state, actions) {
     var job = state.job;
+    /* (AES-ORACLE-UI-RUNTIME-002 §2) سجل التنفيذ من اللقطة الفعلية
+     * (runtime_snapshot "execution") — بلا سجل: حالة فارغة صريحة،
+     * ولا PID/أمر/مسار وهميًا أبدًا (§10). الإصلاح المرجعي لعطل
+     * ReferenceError: execution is not defined الذي كان يقتل
+     * رسم المشهد كله قبل بطاقة النشاط الحي. */
+    var execution = state.execution || null;
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-exec live");
 
@@ -933,22 +939,50 @@
       }
     }
 
-    // (013.7 §P14) أمر التنفيذ الحالي
-    if (execution.command) {
-      rows.appendChild(envRow("الأمر الحالي",
-        String(execution.command).slice(0, 200)));
+    // (013.7 §P14) أمر التنفيذ الحالي — حقول اختيارية بأمان من
+    // سجل اللقطة؛ لا سجل تنفيذ = سطر حالة صريح لا صمت ولا استثناء
+    var execHasAny = execution && (execution.command || execution.cwd
+      || execution.pid || execution.parent_pid
+      || execution.command_type);
+    if (execHasAny) {
+      if (execution.command) {
+        rows.appendChild(envRow("الأمر الحالي",
+          String(execution.command).slice(0, 200)));
+      }
+      if (execution.cwd) {
+        var cwdRow = el("div", "pl-env-row");
+        cwdRow.appendChild(el("span", "pl-env-k", "مسار العمل: "));
+        var cwdText = el("span", "pl-env-v", String(execution.cwd));
+        cwdText.dir = "ltr";
+        cwdRow.appendChild(cwdText);
+        rows.appendChild(cwdRow);
+      }
+      if (execution.pid) {
+        rows.appendChild(envRow("معرّف العملية (PID)",
+          String(execution.pid)));
+      }
+      if (execution.parent_pid) {
+        rows.appendChild(envRow("معرّف العملية الأصلية (PPID)",
+          String(execution.parent_pid)));
+      }
+      if (execution.command_type) {
+        rows.appendChild(envRow("نوع الأمر",
+          String(execution.command_type)));
+      }
+    } else {
+      rows.appendChild(envRow("العملية",
+        "تفاصيل العملية لم تتوفر بعد — بانتظار بدء الخطوة الحالية"));
     }
-    if (execution.cwd) {
-      rows.appendChild(envRow("مسار العمل", execution.cwd));
-    }
-    if (execution.pid) {
-      rows.appendChild(envRow("معرّف العملية (PID)", String(execution.pid)));
-    }
-    if (execution.parent_pid) {
-      rows.appendChild(envRow("معرّف العملية الأصلية (PPID)", String(execution.parent_pid)));
-    }
-    if (execution.command_type) {
-      rows.appendChild(envRow("نوع الأمر", execution.command_type));
+
+    // (AES-ORACLE-UI-RUNTIME-002 §3) الدور/الأداة/المزود النشط —
+    // من حقل اللقطة "activity" (من آخر الأحداث الفعلية لا تخمين)
+    var act = state.activity || {};
+    var actParts = [];
+    if (act.role) actParts.push(ROLE_LABELS[act.role] || act.role);
+    if (act.tool) actParts.push("أداة " + act.tool);
+    if (act.provider) actParts.push("مزود " + act.provider);
+    if (actParts.length) {
+      rows.appendChild(envRow("نشاط حالي", actParts.join(" · ")));
     }
 
     var lastEvent = (state.events || []).filter(function (e) {
@@ -1577,6 +1611,38 @@
 
   /* ---------- تركيب المشهد الكامل من اللقطة ---------- */
 
+  /* (AES-ORACLE-UI-RUNTIME-002 §2) حدود الرسم: فشل بطاقة واحدة
+   * لا يقتل بقية المشهد — رسالة قابلة للتشخيص مكانها + تقرير
+   * لحدود الأخطاء العامة، بلا Promise غير معالج. */
+  function appendSafe(container, name, buildThunk) {
+    var built = null;
+    try {
+      built = buildThunk();
+      if (built && built.row) container.appendChild(built.row);
+    } catch (err) {
+      try {
+        var wrap = msgRow("assistant");
+        var card = el("div", "pl-card");
+        card.appendChild(el("div", "pl-title",
+          "تعذر رسم قسم: " + name));
+        card.appendChild(el("div", "pl-note",
+          String((err && err.message) || err).slice(0, 220)
+          + " — أعد تحميل الصفحة إن استمر"));
+        wrap.flow.appendChild(card);
+        container.appendChild(wrap.row);
+      } catch (e2) { /* حتى رسالة الخطأ تعذّرت — لا نفجّر المشهد */ }
+      if (window.ErrorBoundary && window.ErrorBoundary.report) {
+        try {
+          window.ErrorBoundary.report(
+            "renderProjectScene/" + name + ": "
+            + ((err && err.message) || err),
+            err && err.stack ? err.stack : "");
+        } catch (e3) { /* حد الأخطاء نفسه لا يرمي */ }
+      }
+    }
+    return built;
+  }
+
   function renderProjectScene(container, state, actions) {
     container.textContent = "";
 
@@ -1588,33 +1654,32 @@
 
     // بطاقة المشروع (§10): الحالة الحية + خط المراحل — كل مؤشر
     // مرتبط بحالة حقيقية من اللقطة والأحداث
-    container.appendChild(renderProjectCard(state).row);
+    appendSafe(container, "بطاقة المشروع",
+      function () { return renderProjectCard(state); });
 
     if (state.plan) {
-      var planCard = renderPlanCard(state.plan, state);
-      container.appendChild(planCard.row);
+      appendSafe(container, "بطاقة الخطة",
+        function () { return renderPlanCard(state.plan, state); });
     }
 
     // (013.4 §3+§36) بطاقة التخطيط الحي — قبل أي اعتماد: ماذا ينتظر
     // حرفيًا (مزود/نموذج/طلب/مضي)، والفشل مصنّفه مع زر الإعادة
-    var planningCard = renderPlanningCard(state, actions);
-    if (planningCard && planningCard.row) {
-      container.appendChild(planningCard.row);
-    }
+    appendSafe(container, "بطاقة التخطيط",
+      function () { return renderPlanningCard(state, actions); });
 
     if (state.status === "AWAITING_OWNER_APPROVAL" ||
         (state.gates || []).some(function (g) {
           return g.status === "PENDING";
         })) {
-      var approval = renderApprovalCard(state, actions);
-      if (approval) container.appendChild(approval.row);
+      appendSafe(container, "بطاقة الاعتماد",
+        function () { return renderApprovalCard(state, actions); });
     }
 
     // (013.1 §18) بطاقة بيئة التنفيذ — دائمًا بعد الاعتماد: جاهزة
     // أو غير جاهزة بالمتطلب الحرفي، لا صمت ولا وعود
     if (state.plan) {
-      var envCard = renderEnvironmentCard(state, actions);
-      if (envCard) container.appendChild(envCard.row);
+      appendSafe(container, "بطاقة البيئة",
+        function () { return renderEnvironmentCard(state, actions); });
     }
 
     // (013.1 §21) بطاقة التنفيذ الحية — أثناء العمل الفعلي فقط؛
@@ -1627,31 +1692,35 @@
       || (state.job && ["RUNNING", "RETRYING"].indexOf(
           state.job.status) !== -1));
     if (execRunning && state.plan) {
-      container.appendChild(renderExecutionCard(state, actions).row);
+      appendSafe(container, "بطاقة التنفيذ",
+        function () { return renderExecutionCard(state, actions); });
     }
 
     // (013.1 §17) بطاقة التوقف/الاستئناف: BLOCKED وPAUSED والوظيفة
     // المنقطعة (انقطاع عامل/إعادة تشغيل) — كلها تستأنف بنفس الصف
     if (state.status === "BLOCKED" || state.status === "PAUSED"
         || jobHalted) {
-      container.appendChild(
-        renderBlockedCard(state, actions).row);
+      appendSafe(container, "بطاقة التوقف",
+        function () { return renderBlockedCard(state, actions); });
     }
 
     if (["RUNNING", "REVISING"].indexOf(state.status) !== -1 ||
         (state.job && ["RUNNING", "RETRYING", "WAITING_CAPABILITY",
                        "WAITING_WORKER", "WAITING_GATE"]
           .indexOf(state.job.status) !== -1)) {
-      var activity = renderActivityCard();
-      container.appendChild(activity.row);
-      (state.events || []).slice(-ACTIVITY_LIMIT).forEach(function (e) {
-        var line = activityLine(e.kind, e.payload || {});
-        if (line) activity.list.appendChild(line);
+      appendSafe(container, "بطاقة النشاط الحي", function () {
+        var activity = renderActivityCard();
+        (state.events || []).slice(-ACTIVITY_LIMIT).forEach(function (e) {
+          var line = activityLine(e.kind, e.payload || {});
+          if (line) activity.list.appendChild(line);
+        });
+        return activity;
       });
     }
 
     if (state.status === "COMPLETED" || state.status === "VERIFIED") {
-      container.appendChild(renderVerifyCard(state, actions).row);
+      appendSafe(container, "بطاقة التحقق",
+        function () { return renderVerifyCard(state, actions); });
     }
 
     var footer = el("div", "pl-footer");
@@ -1687,6 +1756,10 @@
     "EXECUTION_STARTED", "EXECUTION_COMPLETED", "EXECUTION_FAILED",
     "EVIDENCE_CREATED", "AUDIT_COMPLETED", "OWNER_STOP_REQUESTED",
     "PROJECT_ARCHIVED", "PROJECT_RESTORED", "WORKFLOW_DIAGNOSED",
+    // (AES-ORACLE-UI-RUNTIME-002 §3) نشاط الأدوار والأدوات ونداءات
+    // النموذج يحدّث المشهد حيًا — لا نشاط يظهر بعد انتهائه فقط
+    "ROLE_EXECUTING", "TOOL_EXECUTION", "MODEL_CALL_STARTED",
+    "MODEL_CALL_PROGRESS", "MODEL_CALL_COMPLETED", "MODEL_CALL_FAILED",
   ];
 
   function isSceneChange(kind) {
@@ -1695,6 +1768,10 @@
 
   window.ProjectLive = {
     renderProjectScene: renderProjectScene,
+    // (AES-ORACLE-UI-RUNTIME-002) مُصدَّرة لاختبارات التراجع: بطاقة
+    // التنفيذ لا ترمي مع بيانات ناقصة أو بلا سجل تنفيذ
+    renderExecutionCard: renderExecutionCard,
+    appendSafe: appendSafe,
     activityLine: activityLine,
     isSceneChange: isSceneChange,
     ACTIVITY_LIMIT: ACTIVITY_LIMIT,

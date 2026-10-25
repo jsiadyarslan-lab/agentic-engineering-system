@@ -51,6 +51,13 @@ def load_prompt(name: str) -> str:
 
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
 
+#: (AES-LIVE-FACTORY-E2E-001 المرحلة 6) امتدادات معاينة المحتوى
+#: الميكانيكية لمحقق الدورة — نصية فقط وبسقف حجم معلن.
+_TEXT_PREVIEW_EXTS = frozenset({
+    ".html", ".htm", ".css", ".js", ".mjs", ".json", ".md", ".txt",
+    ".py", ".ts", ".svg", ".xml",
+})
+
 
 def extract_json(text: str) -> dict:
     """استخراج أول كائن JSON من رد النموذج — يتحمل أي لفّ نصي حوله."""
@@ -181,7 +188,7 @@ class VerifierLive(LiveRoleBase):
         facts: dict[str, Any] = {"files": {}}
         for reference in request.artifacts:
             path = Path(reference)
-            facts["files"][path.name] = {
+            entry: dict[str, Any] = {
                 "exists": path.is_file(),
                 "sha256_head": (
                     __import__("hashlib")
@@ -191,6 +198,23 @@ class VerifierLive(LiveRoleBase):
                     else None
                 ),
             }
+            # (AES-LIVE-FACTORY-E2E-001 المرحلة 6ب) محتوى كامل ميكانيكي للملفات
+            # النصية الصغيرة: الحكم على بنية المحتوى وعناصره يصبح على
+            # النص المثبت نفسه لا على بصمة عمياء (أثبت حياً أن المحقق
+            # يطلب المحتوى الكامل ليحكم). سقف 16K حرفاً لكل ملف —
+            # والمتجاوز أو غير النصي بلا معاينة (حد معلن لا اختلاق).
+            if path.is_file():
+                try:
+                    size = path.stat().st_size
+                    if (path.suffix.lower() in _TEXT_PREVIEW_EXTS
+                            and 0 < size <= 200_000):
+                        entry["bytes"] = size
+                        entry["content_full"] = path.read_text(
+                            encoding="utf-8", errors="replace"
+                        )[:16000]
+                except OSError:
+                    pass
+            facts["files"][path.name] = entry
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))

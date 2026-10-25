@@ -49,13 +49,18 @@ def open_session(*, on_event: Callable[[str, dict], None] | None = None,
 
     on_event: مستقبِل أحداث العملية (kind, event) — يمررها المحرك
     إلى الأحداث الدائمة BROWSER_* (§13 قابلية التسجيل).
+    (AES-LIVE-FACTORY-E2E-001 المرحلة 6ط) الفحص والإطلاق عبر خيط
+    الممثل — سياق الاستدعي قد يكون async فيرفضه Playwright Sync.
     """
+    from browser.provider import _on_browser_thread
+
     prov = provider or DEFAULT_PROVIDER
-    ok, reason = prov.available()
+    ok, reason = _on_browser_thread(prov.available)
     if not ok:
         raise ProviderNotReady(reason)
     policy = BrowserPolicy(allowed_domains=allowed_domains)
-    session = prov.launch(policy, on_event=on_event)
+    session = _on_browser_thread(
+        prov.launch, policy, on_event=on_event)
     with _lock:
         _sessions[session.session_id] = session
     return {

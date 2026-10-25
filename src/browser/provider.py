@@ -31,6 +31,32 @@ from browser.policy import BrowserPolicy, PolicyViolation
 #: مجلد جلسات المتصفح — رمل التنزيلات والأدلة.
 BROWSER_RUNTIME_DIR = Path("runtime") / "browser"
 
+#: (AES-LIVE-FACTORY-E2E-001 المرحلة 6ط) خيط المتصفح الوحيد: Playwright
+#: Sync API يرفض العمل داخل حلقة asyncio ("use the Async API"), وخطوات
+#: سير العمل قد تُنفَّذ في سياق async (مثبت حياً: مشروع 16 — المرحلة
+#: الأولى نجحت من خيط متزامن والثانية فشلت كل أدواتها فوراً). كل
+#: لمسة sync_playwright تمر عبر هذا الخيط الوحيد فيثبت انتماء
+#: الجلسة لخيط واحد أياً كان سياق المستدعي.
+import concurrent.futures as _cf
+
+_BROWSER_ACTOR = _cf.ThreadPoolExecutor(
+    max_workers=1, thread_name_prefix="aes-browser-actor")
+
+
+def _on_browser_thread(fn, *args, **kwargs):
+    """تنفيذ دالة متصفح على خيط الممثل الوحيد — بلا مهلة إضافية
+    (المهل تحكمها سياسة الجلسة نفسها)."""
+    return _BROWSER_ACTOR.submit(fn, *args, **kwargs).result()
+
+
+def browser_threaded(fn):
+    """زخرفة: طريقة جلسة المتصفح تُنفَّذ كاملة على خيط الممثل."""
+    def wrapper(*args, **kwargs):
+        return _on_browser_thread(fn, *args, **kwargs)
+    wrapper.__name__ = getattr(fn, "__name__", "browser_op")
+    wrapper.__doc__ = fn.__doc__
+    return wrapper
+
 #: وسيط تشغيل Chromium في الحاويات (بلا user namespaces للـSandbox
 #: الداخلي) — معلن لا مخفي: العزل هنا حدود عملية+مهل+سياق، وعامل
 #: متصفح بعيد هو مسار العزل الأقوى (§15 عقد العامل البعيد).
@@ -98,6 +124,7 @@ class BrowserSession:
                 )
             return self._pages[-1]
 
+    @browser_threaded
     def new_page(self) -> dict:
         """فتح صفحة جديدة — تحت سقف السياسة."""
         with self._lock:
@@ -119,6 +146,7 @@ class BrowserSession:
         self._emit("session.page_opened", {"pages": len(self._pages)})
         return {"session_id": self.session_id, "pages": len(self._pages)}
 
+    @browser_threaded
     def close_page(self) -> dict:
         with self._lock:
             if not self._pages:
@@ -134,6 +162,7 @@ class BrowserSession:
     # العمليات (§13)
     # ------------------------------------------------------------------ #
 
+    @browser_threaded
     def navigate(self, url: str) -> dict:
         host = self.policy.check_url(url)
         self._emit("navigate", {"url": url, "host": host})
@@ -150,12 +179,14 @@ class BrowserSession:
         self._emit("page.loaded", result)
         return result
 
+    @browser_threaded
     def click(self, selector: str) -> dict:
         self._emit("click", {"selector": selector})
         self.page.click(selector,
                         timeout=self.policy.action_timeout_s * 1000)
         return {"selector": selector, "clicked": True}
 
+    @browser_threaded
     def type(self, selector: str, text: str) -> dict:
         self._emit("type", {"selector": selector,
                             "text_len": len(text)})
@@ -163,16 +194,19 @@ class BrowserSession:
                        timeout=self.policy.action_timeout_s * 1000)
         return {"selector": selector, "typed_chars": len(str(text))}
 
+    @browser_threaded
     def scroll(self, pixels: int = 600) -> dict:
         self.page.mouse.wheel(0, int(pixels))
         self._emit("session.scrolled", {"pixels": int(pixels)})
         return {"scrolled_px": int(pixels)}
 
+    @browser_threaded
     def wait(self, seconds: float = 1.0) -> dict:
         seconds = max(0.0, min(float(seconds), self.policy.load_timeout_s))
         self.page.wait_for_timeout(int(seconds * 1000))
         return {"waited_s": seconds}
 
+    @browser_threaded
     def screenshot(self, name: str = "") -> dict:
         artifacts = self._artifacts_dir()
         filename = (name or f"shot-{uuid.uuid4().hex[:8]}") + ".png"
@@ -187,6 +221,7 @@ class BrowserSession:
         self._emit("screenshot", result)
         return result
 
+    @browser_threaded
     def extract_text(self) -> dict:
         text = self.page.inner_text("body", timeout=(
             self.policy.action_timeout_s * 1000
@@ -200,6 +235,7 @@ class BrowserSession:
         self._emit("extract", {**result, "kind_detail": "text"})
         return result
 
+    @browser_threaded
     def extract_links(self, limit: int = 50) -> dict:
         links = self.page.eval_on_selector_all(
             "a[href]",
@@ -214,6 +250,7 @@ class BrowserSession:
         self._emit("extract", {**result, "kind_detail": "links"})
         return result
 
+    @browser_threaded
     def download(self, url: str) -> dict:
         self.policy.check_url(url)
         self._emit("download.started", {"url": url})
@@ -239,6 +276,7 @@ class BrowserSession:
         self._emit("download", result)
         return result
 
+    @browser_threaded
     def upload(self, selector: str, path: str) -> dict:
         self.policy.check_upload_path(path)
         self.page.set_input_files(
@@ -249,10 +287,12 @@ class BrowserSession:
                                         "file": str(path)})
         return {"selector": selector, "uploaded": str(path)}
 
+    @browser_threaded
     def back(self) -> dict:
         self.page.go_back(timeout=self.policy.nav_timeout_s * 1000)
         return {"url": self.page.url, "navigated": "back"}
 
+    @browser_threaded
     def forward(self) -> dict:
         self.page.go_forward(timeout=self.policy.nav_timeout_s * 1000)
         return {"url": self.page.url, "navigated": "forward"}
@@ -266,6 +306,7 @@ class BrowserSession:
         root.mkdir(parents=True, exist_ok=True)
         return root
 
+    @browser_threaded
     def close(self) -> dict:
         with self._lock:
             if self._closed:

@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
@@ -33,6 +34,36 @@ DEFAULT_MAX_DOWNLOAD_MB = 50
 
 #: المضيفون المحجوبون دائمًا ما لم يُعلن العكس صراحة (internal).
 _PRIVATE_HOST_HINTS = ("localhost", "0.0.0.0", "metadata.google.internal")
+
+
+#: (AES-LIVE-FACTORY-E2E-001 المرحلة 4ب) استثناء معلن ومحدود حصرًا
+#: لتطبيق المصنع نفسه على الحلقة الراجعة: عندما يُفعّل المالك
+#: AES_BROWSER_ALLOW_LOCAL_APP=<port> يُسمح للمتصفح بفتح
+#: localhost/127.0.0.1 على ذلك المنفذ وحده (المنفذ الذي يعمل عليه
+#: تطبيق المصنع صاحب الجلسة) — للتحقق الحي من المعاينة التي يبنيها.
+#: كل ما عدا ذلك من شبكات خاصة/حلقية يبقى محجوبًا كما هو، والقيمة
+#: الفارغة/الغائبة = لا استثناء إطلاقًا (السلوك الأصلي كاملًا).
+def _local_app_exception() -> str:
+    raw = os.environ.get("AES_BROWSER_ALLOW_LOCAL_APP", "")
+    raw = str(raw).strip().strip(":/")
+    return raw if raw.isdigit() else ""
+
+
+def _url_in_local_app_exception(url: str) -> bool:
+    port = _local_app_exception()
+    if not port:
+        return False
+    parsed = urlparse(str(url or ""))
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").strip().lower()
+    if host not in ("127.0.0.1", "localhost"):
+        return False
+    try:
+        url_port = parsed.port
+    except ValueError:
+        return False
+    return url_port is not None and str(url_port) == port
 
 
 def _ip_is_private(host: str) -> bool:
@@ -92,6 +123,10 @@ class BrowserPolicy:
                     f"نطاق خارج القائمة المسموحة: {host}"
                 )
         if self.block_private_networks:
+            # (AES-LIVE-FACTORY-E2E-001 المرحلة 4ب) الاستثناء المعلن
+            # وحده يسبق الحجب: تطبيق المصنع نفسه على منفذه المفعّل.
+            if _url_in_local_app_exception(str(url or "")):
+                return host
             if host in _PRIVATE_HOST_HINTS or _ip_is_private(host):
                 raise PolicyViolation(
                     f"الوصول إلى شبكة خاصة/حلقية محجوب: {host}"

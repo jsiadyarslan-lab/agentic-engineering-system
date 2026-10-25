@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from roles.live import RoleSystemFault, ThinkerLive, VerifierLive
@@ -84,3 +86,41 @@ def test_verifier_live_gets_mechanical_facts(tmp_path):
     # الحقائق الميكانيكية وصلت النموذج في نفس الطلب
     assert "report.pdf" in payload_holder["last_user"]
     assert '"exists": true' in payload_holder["last_user"]
+
+
+def test_verifier_live_content_preview_mechanical(tmp_path):
+    """(AES-LIVE-FACTORY-E2E-001 المرحلة 6) محتوى نصي صغير ← معاينة
+    كاملة تصل المحقق؛ ملف ضخم أو غير نصي ← بلا معاينة (حد معلن)."""
+    from roles.verifier import VerifierRequest
+
+    small = tmp_path / "index.html"
+    small.write_text(
+        "<!doctype html><html dir='rtl'><header></header>"
+        "<nav></nav><ul></ul></html>", encoding="utf-8")
+    big = tmp_path / "big.js"
+    big.write_text("x" * 250_000, encoding="utf-8")
+    binary = tmp_path / "shot.png"
+    binary.write_bytes(b"\x89PNG" + b"0" * 100)
+
+    captured = {}
+
+    class CaptureRouter(FakeRouter):
+        def chat_live(self, messages, **_kwargs):
+            captured["payload"] = json.loads(messages[-1].content)
+            raise AssertionError("stop-here")
+
+    verifier = VerifierLive(CaptureRouter([]))
+    request = VerifierRequest(
+        task_acceptance_criteria=["index.html يحتوي header وnav"],
+        artifacts=[str(small), str(big), str(binary)],
+        evidence_refs=["sha256:abc:index.html"],
+    )
+    try:
+        verifier.run(request)
+    except AssertionError:
+        pass
+    files = captured["payload"]["facts"]["files"]
+    assert "content_full" in files["index.html"]
+    assert "<header>" in files["index.html"]["content_full"]
+    assert "content_full" not in files["big.js"]
+    assert "content_full" not in files["shot.png"]

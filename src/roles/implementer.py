@@ -41,6 +41,12 @@ class ImplementerRequest(BaseModel):
     tools_available: list[str] = Field(default_factory=list)
     sandbox_root: str = ""
     previous_attempts: list[str] = Field(default_factory=list)
+    #: (AES-LIVE-FACTORY-E2E-001 المرحلة 6ز) هدف الخطوة الكامل كما وصل
+    #: الدورة — مهمة المفكر صياغته المختصرة قد تسقط أسماء الملفات،
+    #: والهدف الأصلي مصدر الحقيقة للتسليم (مثبت حياً: مشروع 14 بُني
+    #: فيه ملف واحد فقط من حلقة المنفذ والباقي ارتجال النموذج في
+    #: verify بروابط مختلَقة).
+    context_goal: str = ""
 
 
 class ImplementerResult(BaseModel):

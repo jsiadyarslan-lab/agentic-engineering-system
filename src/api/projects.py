@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import json
 import threading
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
@@ -1012,6 +1013,439 @@ def project_artifacts(project_id: int) -> dict:
     artifacts.sort(key=lambda a: str(a.get("created_at") or ""),
                    reverse=True)
     return {"artifacts": artifacts}
+
+
+@router.get("/{project_id}/evidence/{evidence_id}/files/{name}/content")
+def project_evidence_file_content(project_id: int, evidence_id: int,
+                                  name: str, download: int = 0):
+    """محتوى ملف مخرج من سجل دليل معتمد (AES-ORACLE-UI-RUNTIME-002 §4).
+
+    عقد الوصول الفعلي:
+    - الملف يُحل من سجل الدليل المعتمد حصرًا: الاسم يجب أن يكون
+      مفتاحًا في evidence.files — لا مسار يرسله المتصفح أبدًا.
+    - المخرج ينتمي للمشروع المطلوب وإلا 404 (لا كشف معلومات).
+    - اسم مسطح فقط: لا / ولا \\ ولا .. — لا تجاوز مجلد عمل.
+    - التحقق الميكانيكي: sha256 للملف الفعلي يجب أن يطابق سجل
+      الدليل — تعارض البصمة = 409 لا محتوى مُختلق.
+    - ملف مفقود من التخزين = 404 صادق — لا رابط نجاح وهمي.
+    - لا مسار داخلي مطلق في أي استجابة؛ الترويسات صحيحة:
+      inline للمعاينة (PDF/صور/نص) و attachment عند ?download=1.
+    - فتح الملف أو تنزيله لا يغيّر سجل الأدلة ولا بصمته.
+    """
+    _project_or_404(project_id)
+    if (not name or name in (".", "..") or "/" in name or "\\" in name
+            or "\x00" in name):
+        raise HTTPException(status_code=400, detail="اسم ملف غير صالح")
+    evidence = service.get_evidence(_sessions(), evidence_id)
+    if evidence is None or evidence.get("project_id") != int(project_id):
+        raise HTTPException(
+            status_code=404,
+            detail="لا دليل بهذا المعرف في هذا المشروع")
+    files = evidence.get("files") or {}
+    meta = files.get(name)
+    if meta is None:
+        raise HTTPException(
+            status_code=404,
+            detail="الملف ليس في سجل الدليل المعتمد — ما لم يُثبت لا يُعرض")
+    from workflow.engine import PROJECTS_DIR
+    workspace = PROJECTS_DIR / str(project_id) / "steps" \
+        / str(evidence.get("step_id"))
+    workspace = workspace.resolve()
+    target = (workspace / name).resolve()
+    if workspace not in target.parents and target != workspace:
+        raise HTTPException(
+            status_code=400, detail="مسار خارج نطاق مجلد العمل")
+    if not target.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="الملف مفقود من التخزين الفعلي — السجل موجود والملف لا")
+    import hashlib as _hashlib
+    digest = _hashlib.sha256(target.read_bytes()).hexdigest()
+    expected = (meta or {}).get("sha256", "")
+    if expected and digest != str(expected):
+        raise HTTPException(
+            status_code=409,
+            detail="البصمة لا تطابق سجل الدليل — المحتوى تغيّر بعد الاعتماد")
+    import mimetypes as _mimetypes
+    from urllib.parse import quote as _quote
+    media, _ = _mimetypes.guess_type(name)
+    media = media or "application/octet-stream"
+    ascii_name = name.encode("ascii", "replace").decode("ascii") \
+        .replace('"', "'")
+    disp_kind = "attachment" if download else "inline"
+    disposition = (
+        f"{disp_kind}; filename=\"{ascii_name}\"; "
+        f"filename*=UTF-8''{_quote(name)}"
+    )
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        target, media_type=media,
+        headers={"Content-Disposition": disposition,
+                 "X-Content-Type-Options": "nosniff",
+                 "X-Evidence-Sha256": digest})
+
+
+# --------------------------------------------------------------------------- #
+# (AES-LIVE-FACTORY-E2E-001 المرحلة 4) مساحة المشاهدة الحية
+#
+# عقد الوصول الموحد للموقع قيد البناء ولقطات متصفح الوكيل وملفات
+# مساحة العمل — كلها من ملفات المشروع الحقيقية حصرًا:
+# - الجذر الوحيد: runtime/projects/{id}/steps/* (جذر الخطوة، لا _ws).
+# - لا مسار يرسله المتصفح يُقبل قبل تطهيره: لا .. ولا مطلق ولا \x00.
+# - الاحتواء ميكانيكي بعد resolve() — خروج عن الجذر = رفض.
+# - 404 صادق لما لا وجود له، مع السبب.
+# - MIME صحيح + charset=utf-8 للنصوص (عربي RTL) + nosniff.
+# - الملفات تُخدَّم بلا تعديل ولا تُمس سجلات الأدلة ولا بصماتها.
+# --------------------------------------------------------------------------- #
+
+#: أنواع محتوى المعاينة (المرحلة 4أ) — نصوص عربية بلا خلط ترميز.
+_PREVIEW_MIME = {
+    "html": "text/html; charset=utf-8",
+    "htm": "text/html; charset=utf-8",
+    "css": "text/css; charset=utf-8",
+    "js": "text/javascript; charset=utf-8",
+    "mjs": "text/javascript; charset=utf-8",
+    "json": "application/json; charset=utf-8",
+    "txt": "text/plain; charset=utf-8",
+    "md": "text/plain; charset=utf-8",
+    "svg": "image/svg+xml",
+    "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+    "webp": "image/webp", "gif": "image/gif", "ico": "image/x-icon",
+    "woff": "font/woff", "woff2": "font/woff2",
+}
+
+#: أدلة البنية الداخلية التي لا تُخدَّم في المعاينة (رمل الركيزة والنسخ).
+_HIDDEN_DIRS = {"_ws", "_versions"}
+
+
+def _steps_root(project_id: int) -> Path:
+    from workflow.engine import PROJECTS_DIR
+
+    return (PROJECTS_DIR / str(int(project_id)) / "steps").resolve()
+
+
+def _clean_rel(file_path: str, *, allow_versions: bool = False) -> str | None:
+    """تطهير مسار نسبي — يرفض الخروج المطلق/العبور قبل أي لمسة قرص.
+
+    allow_versions يسمح بالجذر _versions/ حصرًا (ملفات النسخ
+    السابقة لعرض الفروق) — ولا يسمح برمل الركيزة _ws أبدًا.
+    """
+    cleaned = str(file_path or "").strip().replace("\\", "/")
+    if not cleaned or cleaned.startswith("/"):
+        return None
+    parts = [p for p in cleaned.split("/") if p not in ("", ".")]
+    if any(p == ".." for p in parts) or any("\x00" in p for p in parts):
+        return None
+    hidden = [i for i, p in enumerate(parts) if p in _HIDDEN_DIRS]
+    if not hidden:
+        return "/".join(parts) if parts else None
+    if (allow_versions and len(hidden) == 1 and hidden[0] == 0
+            and parts[0] == "_versions"):
+        return "/".join(parts)
+    return None
+
+
+def _iter_step_dirs(project_id: int):
+    """مجلدات خطوات المشروع — الأحدث أولًا (معرّف رقمي رتيب)."""
+    root = _steps_root(project_id)
+    if not root.is_dir():
+        return []
+    try:
+        ids = sorted(
+            (int(p.name) for p in root.iterdir()
+             if p.is_dir() and p.name.isdigit()),
+            reverse=True,
+        )
+    except (OSError, ValueError):
+        return []
+    return [root / str(i) for i in ids]
+
+
+def _preview_media(name: str) -> str:
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    return _PREVIEW_MIME.get(ext, "application/octet-stream")
+
+
+def _serve_project_file(target: Path, media: str):
+    from fastapi.responses import FileResponse
+
+    return FileResponse(
+        target, media_type=media,
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.get("/{project_id}/preview")
+def project_preview_meta(project_id: int) -> dict:
+    """حالة المعاينة (المرحلة 4أ) — من أي خطوة تُخدَّم الصفحة وما ملفاتها.
+
+    available تعني حرفيًا: توجد index.html في مساحة خطوة فعلية
+    للمشروع — لا وعد بواجهة لم تُبن بعد.
+    """
+    _project_or_404(project_id)
+    serving_step = None
+    files: list[dict] = []
+    for step_dir in _iter_step_dirs(project_id):
+        if (step_dir / "index.html").is_file():
+            serving_step = int(step_dir.name)
+            for path in sorted(step_dir.rglob("*")):
+                if not path.is_file():
+                    continue
+                rel = path.relative_to(step_dir).as_posix()
+                if any(part in _HIDDEN_DIRS
+                       for part in rel.split("/")[:-1]):
+                    continue
+                stat = path.stat()
+                files.append({
+                    "path": rel, "bytes": stat.st_size,
+                    "mtime": stat.st_mtime,
+                })
+            break
+    return {
+        "available": serving_step is not None,
+        "step_id": serving_step,
+        "files": files,
+        "entry": f"/api/projects/{int(project_id)}/preview/index.html",
+        "reason": "" if serving_step is not None else
+        "لا توجد index.html في مساحة عمل المشروع بعد",
+    }
+
+
+@router.get("/{project_id}/preview/{file_path:path}")
+def project_preview_file(project_id: int, file_path: str):
+    """تقديم ملف من الموقع قيد البناء (المرحلة 4أ) — من مساحة المشروع.
+
+    الحل: أحدث مجلد خطوة يحتوي المسار المطلوب حرفيًا — فالموقع
+    المبني عبر خطوات متتالية يُخدَّم من أحدث نسخة لكل ملف.
+    """
+    _project_or_404(project_id)
+    rel = _clean_rel(file_path)
+    if rel is None:
+        raise HTTPException(
+            status_code=400,
+            detail="مسار معاينة غير صالح — لا عبور خارج مساحة المشروع")
+    for step_dir in _iter_step_dirs(project_id):
+        candidate = (step_dir / rel).resolve()
+        if step_dir != candidate and step_dir not in candidate.parents:
+            continue  # احتواء ميكانيكي لكل خطوة على حدة
+        if candidate.is_file():
+            return _serve_project_file(candidate, _preview_media(candidate.name))
+    raise HTTPException(
+        status_code=404,
+        detail=f"الملف غير موجود في مساحة عمل المشروع: {rel}")
+
+
+@router.get("/{project_id}/workspace-files")
+def project_workspace_files(project_id: int) -> dict:
+    """ملفات مساحة العمل (المرحلة 4ج+4د) — الملف والوكيل والنسخ.
+
+    كل ملف حقيقي في مساحات خطوات المشروع (بلا رمل الركيزة) مع
+    إسناد الدور من سجل التنفيذات وعدد نسخ الفروق المحفوظة.
+    """
+    _project_or_404(project_id)
+    step_roles: dict[int, str] = {}
+    try:
+        with _sessions()() as session:
+            from sqlalchemy import select as _select
+
+            from workflow.models import Execution as _Execution
+
+            rows = session.execute(
+                _select(_Execution.step_id, _Execution.agent_role)
+                .order_by(_Execution.id.desc())
+            ).all()
+            rows = [
+                {"step_id": r[0], "agent_role": r[1]} for r in rows
+            ]
+            for row in rows:
+                try:
+                    sid = int(row["step_id"])
+                except (TypeError, ValueError):
+                    continue
+                if sid not in step_roles and row["agent_role"]:
+                    step_roles[sid] = str(row["agent_role"])
+    except Exception:  # noqa: BLE001 — الإسناد لا يمنع القائمة
+        step_roles = {}
+    files: list[dict] = []
+    steps: list[dict] = []
+    for step_dir in _iter_step_dirs(project_id):
+        count = 0
+        for path in sorted(step_dir.rglob("*")):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(step_dir).as_posix()
+            parts = rel.split("/")
+            if any(part in _HIDDEN_DIRS for part in parts[:-1]):
+                continue
+            if parts[0] in _HIDDEN_DIRS:
+                continue
+            stat = path.stat()
+            count += 1
+            files.append({
+                "path": rel,
+                "step_id": int(step_dir.name),
+                "agent_role": step_roles.get(int(step_dir.name), ""),
+                "bytes": stat.st_size,
+                "mtime": stat.st_mtime,
+            })
+        steps.append({
+            "step_id": int(step_dir.name),
+            "agent_role": step_roles.get(int(step_dir.name), ""),
+            "files": count,
+        })
+    # نسخ الفروق: عدّها من _versions لكل ملف أصلي
+    versions: dict[str, int] = {}
+    for step_dir in _iter_step_dirs(project_id):
+        vdir = step_dir / "_versions"
+        if not vdir.is_dir():
+            continue
+        for path in vdir.rglob("*.v[0-9]*"):
+            rel = path.relative_to(vdir).as_posix()
+            base = rel.rsplit(".v", 1)[0]
+            key = f"{step_dir.name}/{base}"
+            versions[key] = versions.get(key, 0) + 1
+    for entry in files:
+        key = f"{entry['step_id']}/{entry['path']}"
+        entry["versions"] = versions.get(key, 0)
+    files.sort(key=lambda f: (-f["mtime"], f["path"]))
+    return {"files": files, "steps": steps,
+            "total": len(files)}
+
+
+@router.get("/{project_id}/workspace-file")
+def project_workspace_file(project_id: int, step_id: int, path: str):
+    """محتوى ملف من مساحة خطوة بعينها (المرحلة 4د) — للفحص والفروق.
+
+    يشمل ملفات _versions (نسخة سابقة لمقارنة الفروق) بذات عقد
+    التطهير والاحتواء — لا مسارات مطلقة ولا خروج عن المشروع.
+    """
+    _project_or_404(project_id)
+    rel = _clean_rel(path, allow_versions=True)
+    if rel is None:
+        raise HTTPException(
+            status_code=400, detail="مسار غير صالح — عبور مرفوض")
+    root = _steps_root(project_id)
+    target = (root / str(int(step_id)) / rel).resolve()
+    if root not in target.parents:
+        raise HTTPException(
+            status_code=400, detail="مسار خارج نطاق مساحة المشروع")
+    if not target.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail=f"الملف غير موجود: steps/{step_id}/{rel}")
+    return _serve_project_file(target, _preview_media(target.name))
+
+
+#: أحداث متصفح الوكيل الدائمة التي تبنيها لوحة المتصفح (المرحلة 4ب).
+_BROWSER_PANEL_KINDS = (
+    "BROWSER_SCREENSHOT", "BROWSER_NAVIGATE", "BROWSER_PAGE_LOADED",
+    "BROWSER_CLICK", "BROWSER_TYPE", "BROWSER_EXTRACT",
+    "BROWSER_DOWNLOAD", "BROWSER_SESSION_CREATED",
+    "BROWSER_SESSION_CLOSED", "BROWSER_SESSION_INTERRUPTED",
+    "BROWSER_FAILURE",
+)
+
+
+@router.get("/{project_id}/browser-activity")
+def project_browser_activity(project_id: int, limit: int = 200) -> dict:
+    """نشاط متصفح الوكيل (المرحلة 4ب) — من الأحداث الدائمة حصرًا.
+
+    اللقطات هنا روابط إلى تقديم الصورة عبر حدثها الأصلي — لا
+    تُخدَّم لقطة إلا إذا كان حدثها في سجل هذا المشروع ومسارها
+    داخل رمل runtime/browser الفعلي وبصمتها مطابقة.
+    """
+    _project_or_404(project_id)
+    events = service.list_events(
+        _sessions(), project_id, limit=min(max(int(limit), 1), 500))
+    screenshots: list[dict] = []
+    timeline: list[dict] = []
+    for event in reversed(events):
+        kind = str(event.get("kind") or "")
+        if kind not in _BROWSER_PANEL_KINDS:
+            continue
+        payload = event.get("payload") or {}
+        detail = payload.get("detail") or {}
+        entry = {
+            "id": event.get("id"),
+            "kind": kind,
+            "at": event.get("created_at"),
+            "step_id": payload.get("step_id"),
+            "url": str(payload.get("url") or detail.get("url") or "")[:300],
+            "summary": str(payload.get("summary") or "")[:200],
+        }
+        timeline.append(entry)
+        if kind == "BROWSER_SCREENSHOT":
+            entry["image_url"] = (f"/api/projects/{int(project_id)}"
+                                  f"/browser-screenshots/{event.get('id')}")
+            entry["bytes"] = int(detail.get("bytes") or 0)
+            entry["sha256"] = str(detail.get("sha256") or "")[:64]
+            screenshots.append(entry)
+    screenshots.reverse()
+    timeline.reverse()
+    return {"screenshots": screenshots, "timeline": timeline,
+            "count": len(timeline)}
+
+
+@router.get("/{project_id}/browser-screenshots/{event_id}")
+def project_browser_screenshot(project_id: int, event_id: int):
+    """تقديم لقطة متصفح حقيقية (المرحلة 4ب) — من حدثها الدائم.
+
+    العقد: الحدث من سجل هذا المشروع، الملف داخل runtime/browser
+    بعد resolve، وبصمة sha256 للملف الفعلي تطابق سجل الحدث —
+    أي تعارض = 409 لا صورة مختلقة.
+    """
+    _project_or_404(project_id)
+    events = service.list_events(_sessions(), project_id, limit=500)
+    target_event = next(
+        (e for e in events
+         if e.get("id") == int(event_id)
+         and str(e.get("kind")) == "BROWSER_SCREENSHOT"),
+        None,
+    )
+    if target_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail="لا حدث لقطة بهذا المعرف في هذا المشروع")
+    detail = (target_event.get("payload") or {}).get("detail") or {}
+    raw_path = str(detail.get("file") or "")
+    if not raw_path:
+        raise HTTPException(
+            status_code=404, detail="الحدث لا يحمل مسار اللقطة")
+    from pathlib import Path as _P
+
+    candidate = _P(raw_path)
+    if not candidate.is_absolute():
+        candidate = (_P.cwd() / candidate)
+    candidate = candidate.resolve()
+    browser_root = (_P.cwd() / "runtime" / "browser").resolve()
+    if browser_root not in candidate.parents:
+        raise HTTPException(
+            status_code=400, detail="مسار اللقطة خارج رمل المتصفح")
+    if not candidate.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="ملف اللقطة مفقود من التخزين — الحدث موجود والملف لا")
+    import hashlib as _hashlib
+
+    digest = _hashlib.sha256(candidate.read_bytes()).hexdigest()
+    expected = str(detail.get("sha256") or "")
+    if expected and digest != expected:
+        raise HTTPException(
+            status_code=409,
+            detail="بصمة اللقطة لا تطابق سجل الحدث — المحتوى تغيّر")
+    from fastapi.responses import FileResponse
+
+    return FileResponse(
+        candidate, media_type="image/png",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Content-Type-Options": "nosniff",
+            "X-Screenshot-Sha256": digest,
+        },
+    )
 
 
 class PauseIn(BaseModel):

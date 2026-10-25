@@ -1270,3 +1270,14 @@ body.live-disconnected .substrate-dot {
   .pl-plan-modal-head { flex-wrap: wrap; gap: 6px; }
 }
 
+
+/* (AES-ORACLE-UI-RUNTIME-002 §4) أزرار فتح/تنزيل المخرجات + نافذة معاينة نصية */
+.wf-artifact-actions { display: flex; gap: 6px; margin-inline-start: auto; align-items: center; flex-shrink: 0; }
+.wf-artifact-act { border: 1px solid rgba(128,128,140,.45); background: transparent; color: inherit; border-radius: 6px; padding: 2px 10px; cursor: pointer; font-size: 12px; }
+.wf-artifact-act:hover { background: rgba(127,127,140,.16); }
+.wf-evidence-files { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+.ae-file-preview-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 90; display: flex; align-items: center; justify-content: center; }
+.ae-file-preview { background: #16161d; color: #e8e8ee; border: 1px solid rgba(128,128,140,.45); border-radius: 10px; width: min(860px, 92vw); max-height: 82vh; display: flex; flex-direction: column; }
+.ae-file-preview-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid rgba(128,128,140,.35); font-weight: 600; }
+.ae-file-preview-close { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; }
+.ae-file-preview-body { margin: 0; padding: 14px; overflow: auto; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
