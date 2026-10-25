@@ -1,0 +1,153 @@
+# AES-UI-PREMIUM-REDESIGN-008 — Static checks (reproducible commands + outputs)
+# date(UTC): 2026-10-25T14:58:16Z
+# commit: 56e42ba460356b326a0fdd9da01f9c840a24bd11
+
+## 1) Commits ahead of main (design candidate = 56e42ba)
+56e42ba AES-UI-PREMIUM-REDESIGN-007: معالجة ملاحظات المراجعة المستقلة (N-1..N-6)
+d380078 AES-UI-PREMIUM-REDESIGN-007: إعادة تأسيس النظام البصري الكامل — توحيد 3 لوحات في نظام واحد
+
+## 2) Changed files vs main (matches owner's GitHub verification: 14 files, all under src/ui/)
+M	src/ui/app-shell.css
+M	src/ui/app.js
+M	src/ui/chat-stream.js
+M	src/ui/control-center.css
+M	src/ui/factory-control.css
+M	src/ui/factory-control.js
+M	src/ui/harness.css
+M	src/ui/index.html
+M	src/ui/live.css
+M	src/ui/project-live.css
+M	src/ui/projects.css
+M	src/ui/styles.css
+M	src/ui/task-cards.js
+M	src/ui/theme.css
+count: 14
+files outside src/ui/: 0
+
+## 3) styles.css — the sanctioned limit, the contract, and 3 counting conventions
+--- the contract (tests/contracts/test_thinness.py):
+
+
+def test_styles_css_under_1200_lines():
+    """الأمر 005: ملف التنسيقات له سقفه — التصميم كثيف القيمة لا منتفخ."""
+    assert _count_lines("src/ui/styles.css") < 1200
+
+--- counting methods on the same file at this commit:
+splitlines() [the test method _count_lines]: 1000
+split(chr(10)) [GitHub web UI display convention]: 1001
+1000 src/ui/styles.css
+=> limit < 1200 (splitlines). Result: 1000 by the test method; 1001 as displayed by GitHub (same file, trailing-newline counting). Compliant with ~17% headroom.
+
+## 4) N-2: literal z-index values in UI CSS, comments stripped (expect zero)
+RESULT: 0 literal z-index values (tokens only = PASS)
+
+## 5) S-02: leftover light-palette rgba(15,23,42,...) in declarations, comments stripped (expect zero)
+RESULT: 0 in declarations (the only textual match in the repo is a CSS comment in control-center.css documenting the removal itself)
+
+## 6) #fff / #ffffff in declarations, comments stripped — classified
+1085:  color: #fff;
+  ^ in src/ui/app-shell.css
+RESULT: exactly 1 — app-shell.css .eb-btn { color: #fff } ON background color-mix(var(--danger) 82%, black).
+        This is the N-6 remediation itself (white emergency-button text on a deliberately darkened danger surface).
+        computed N-6 contrast: #fff on #b8594e = 4.59:1 (AA >= 4.5:1 for 12px/600 text: PASS)
+
+## 7) S-10/N-6: --font-mono declared once in theme.css, consumed across files
+83:  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
+usages per file:
+src/ui/app-shell.css:9
+src/ui/control-center.css:1
+src/ui/factory-control.css:1
+src/ui/live.css:5
+src/ui/project-live.css:3
+src/ui/projects.css:3
+src/ui/styles.css:3
+src/ui/theme.css:3
+
+## 8) Version contract at this commit
+asset references ?v=4.0.0 in index.html: 27
+theme.css linked in index.html: 1
+APP_VERSION: 22:APP_VERSION = "4.0.0"
+pyproject version: version = "4.0.0"
+
+## 9) theme.css — the single token source
+327 src/ui/theme.css
+
+## 10) ALL remaining hex color literals in declarations (complete inventory, comments stripped)
+src/ui/theme.css:5:  --bg: #0D1014;            
+src/ui/theme.css:6:  --bg-sidebar: #10141A;    
+src/ui/theme.css:7:  --bg-raised: #141920;     
+src/ui/theme.css:8:  --bg-elevated: #1B222A;   
+src/ui/theme.css:9:  --bg-input: #161C24;      
+src/ui/theme.css:10:  --bg-hover: #1F2731;      
+src/ui/theme.css:12:  --bubble-user: #1E2630;
+src/ui/theme.css:16:  --border: #2A333D;
+src/ui/theme.css:17:  --border-soft: #202932;
+src/ui/theme.css:18:  --border-strong: #3A4550;
+src/ui/theme.css:21:  --text: #F0F3F6;
+src/ui/theme.css:22:  --text-mid: #A6B0BC;
+src/ui/theme.css:23:  --text-dim: #939EA9;
+src/ui/theme.css:24:  --text-faint: #84909C;
+src/ui/theme.css:25:  --text-disabled: #5C6670;  
+src/ui/theme.css:28:  --accent: #D4AC55;
+src/ui/theme.css:29:  --accent-strong: #E2BE6A;
+src/ui/theme.css:33:  --accent-ink: #171307;    
+src/ui/theme.css:36:  --accent-agent: #58A6FF;
+src/ui/theme.css:41:  --ok: #5CB87A;
+src/ui/theme.css:46:  --danger: #E06C5F;
+src/ui/theme.css:51:  --warn: #D9A03F;
+src/ui/theme.css:56:  --info: #5B9BD5;
+src/ui/theme.css:62:  --role-thinker: #D98BA8;
+src/ui/theme.css:63:  --role-implementer: #B8A3F0;
+src/ui/theme.css:174:  background: #2C3640;
+src/ui/theme.css:178:::-webkit-scrollbar-thumb:hover { background: #3A4550; }
+src/ui/app-shell.css:105:  background: #0B0E12;
+src/ui/app-shell.css:1085:  color: #fff;
+src/ui/factory-control.css:16:  --acc-ink: #04101c;
+src/ui/factory-control.css:18:  --acc-hi: #bcd9ff;
+src/ui/factory-control.css:43:  background: #2C3640;
+src/ui/factory-control.css:47:#factory-view ::-webkit-scrollbar-thumb:hover { background: #3A4550; }
+src/ui/factory-control.css:693:  color: #9ecbff;
+=> theme.css: 27 = the declared token system (by design).
+=> app-shell.css: #0B0E12 = .md-pre code-block surface (deliberately darker than --bg, documented design decision); #fff = N-6 (see §6).
+=> factory-control.css: 5 scoped literals = the documented 003 reference exceptions (--acc-ink/--acc-hi accents, scrollbar pair, #9ecbff code color inside factory scope only).
+=> everything else: 0.
+
+## 11) N-1 fix present: .tech BiDi isolation rule in theme.css
+308:.tech, .md-code, code, pre {
+.tech, .md-code, code, pre {
+  font-family: var(--font-mono);
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+.kbd {
+  display: inline-block;
+
+## 12) JS syntax check on modified JS files
+src/ui/app.js: OK
+src/ui/chat-stream.js: OK
+src/ui/factory-control.js: OK
+src/ui/task-cards.js: OK
+
+## 13) The four documented functional bug fixes present in code
+--- BUG-01 (_obj declared, chat-stream.js):
+167:      // (007 BUG-01) كان _obj غير معلن — ReferenceError تحت "use strict"
+--- BUG-02 (renderEvent wrap accumulation fixed, factory-control.js):
+623:  function renderEventRow(ev) {
+646:        html += renderEventRow(ev);
+715:    // Listen for events via the global renderEvent
+716:    // (007 BUG-02) كان الأصل يُلتقط من Hub.renderEvent المُغلَّف نفسه عند
+--- BUG-03 (sidebar state syncs on viewport change via matchMedia, app.js):
+652:  var sidebarMq = window.matchMedia("(max-width: 900px)");
+653:  if (sidebarMq.matches) {
+656:  // (007 BUG-03) كان الطي يُقرر مرة عند التحميل فقط — تغيير حجم النافذة
+666:  if (sidebarMq.addEventListener) {
+--- BUG-04 (empty conversation honest hint, app.js):
+552:    var loadingCard = el("div", "history-loading", "جارٍ تحميل الرسائل…");
+576:        // (007 BUG-04) محادثة موجودة بلا رسائل مرئية كانت تعرض لوحة
+579:          var emptyNote = el("div", "history-loading",
+
+## 14) Worktree state at evidence-collection time
+?? docs/evidence/UI007_evidence/
+(untracked docs/evidence/UI007_evidence/ only — no tracked file modified)

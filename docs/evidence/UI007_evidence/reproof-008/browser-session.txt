@@ -1,0 +1,101 @@
+# AES-UI-PREMIUM-REDESIGN-008 — Live browser re-proof session
+# date(UTC): 2026-10-25T14:58:50Z
+# commit: 56e42ba460356b326a0fdd9da01f9c840a24bd11
+# runtime: uvicorn 127.0.0.1:8071, isolated DB runtime/ui-008-reproof.db
+# seed: scripts/seed_ui_007.py (real SQLAlchemy models) + 2 projects via POST /api/projects
+# browser: agent-browser (Chromium) — single continuous session
+
+seed: done (5 conversations, 6 messages) → /home/z/my-project/ui007/runtime/ui-008-reproof.db
+seed: done
+health: {"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-namespace-substrate","isolation":"lin
+projects seeded: 2
+
+== [R1] welcome (empty state) @1440 ==
+MEASURE|welcome-1440|"{\"vp\":[1440,900],\"docW\":1440,\"hOverflow\":false,\"sidebarW\":264,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+suggestion cards/titles/descs: 2/2/2
+shot: welcome-1440
+
+== [R2] chat-1440 — the single before-shot lacking an after counterpart in 007 (re-captured here) ==
+bubbles/md-table/md-code: 4/1/1
+MEASURE|chat-1440|"{\"vp\":[1440,900],\"docW\":1440,\"hOverflow\":false,\"sidebarW\":264,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+shot: chat-1440
+
+== [R3] N-1 re-verification: pv-meta direction + code isolation (settings → providers) ==
+pv-meta direction/font: "rtl | \"IBM Plex Sans Arabic\", \""
+pv-meta code dir attr: "ltr"
+pv-meta sample: "\"المعرف: nvidia · النوع: nvidia · المصادقة: bearer\""
+settings buttons count: 76
+shot: settings-providers-1440
+
+== [R4] N-5 re-verification: composer/messages/bubble edge alignment ==
+MEASURE|alignment|"{\"msgLeft\":128,\"msgRight\":1048,\"compLeft\":146,\"compRight\":1030,\"bubbleLeft\":146,\"bubbleRight\":1030}"
+
+== [R5] N-3 re-verification: factory tabs — first render without active; active underline gold ==
+factory bg computed: "rgb(13, 16, 20)"
+first-render active fc-tabs: 0
+fc-tab base: "none"
+factory stats: "[\"متصل\",\"2\",\"0\",\"0\"]"
+active tab underline color: "rgb(212, 172, 85)"
+active tab text color: "rgb(240, 243, 246)"
+shot: factory-mission-view-1440
+
+== [R6] N-4 re-verification: unified dot semantics ==
+mission dots (rendered): "[]"
+tokens: accent-agent / ok / warn / danger = "#58A6FF / #5CB87A / #D9A03F / #E06C5F"
+
+== [R7] N-6 re-verification: honest no-provider error + eb-btn computed colors ==
+sys-card.error count: 1
+error human text: "none"
+eb-btn count: 0
+eb-btn computed: "not-rendered-in-this-state"
+shot: chat-error-no-provider-1440
+
+== [R8] horizontal overflow at all 6 target viewports (fresh loads) ==
+MEASURE|viewport-1920|"{\"vp\":[1920,1080],\"docW\":1920,\"hOverflow\":false,\"sidebarW\":264,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+MEASURE|viewport-1440|"{\"vp\":[1440,900],\"docW\":1440,\"hOverflow\":false,\"sidebarW\":264,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+MEASURE|viewport-1280|"{\"vp\":[1280,800],\"docW\":1280,\"hOverflow\":false,\"sidebarW\":264,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+MEASURE|viewport-768|"{\"vp\":[768,1024],\"docW\":768,\"hOverflow\":false,\"sidebarW\":0,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"28px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":true}"
+MEASURE|viewport-390|"{\"vp\":[390,844],\"docW\":390,\"hOverflow\":false,\"sidebarW\":0,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"22px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":false}"
+MEASURE|viewport-360|"{\"vp\":[360,800],\"docW\":360,\"hOverflow\":false,\"sidebarW\":0,\"chatHeadH\":56,\"composerH\":113,\"welcomeH1\":\"22px\",\"placeholderColor\":\"rgb(147, 158, 169)\",\"navItemFont\":\"13px\",\"textDim\":\"#939EA9\",\"textFaint\":\"#84909C\",\"accentAgent\":\"#58A6FF\",\"zModal\":\"70\",\"fontMono\":\"\\\"IBM Plex Mono\\\", ui-monospace, SFM\",\"docDir\":\"rtl\",\"fontArabic700\":true,\"fontMonoLoaded\":false}"
+shot: tablet-chat-768
+shot: mobile-chat-390
+shot: mobile-chat-360
+
+== [R9] BUG-04 re-verification: existing-but-empty conversation shows honest guidance ==
+empty-note text: "\"جارٍ تحميل الرسائل…\""
+shot: chat-empty-conv-1440
+
+== [R10] BUG-03 re-verification: sidebar sync across 900px breakpoint without reload ==
+fresh@1440: "open(GOOD)"
+shrunk→390 no-reload: "collapsed(GOOD)"
+grown→1440 no-reload: "re-opened(GOOD)"
+
+== [R11] runs & archive surfaces render ==
+runs-view display: "flex"
+archive-view display: "flex"
+
+== [R12] project view tabs render with real data ==
+project tabs: "[\"المحادثة\",\"النظرة العامة\",\"سير العمل\",\"الأدلة\",\"المخرجات\",\"التاريخ\"]"
+shot: project-evidence-1440
+
+== [R13] whole-session console output and page errors (expect empty) ==
+--- console:
+--- errors:
+
+== [R14] static wiring appendix (tokens) ==
+src/ui/factory-control.css:19: * «حيوية وكيل» المسماة (--accent-agent) لا لوحة موازية. */
+src/ui/factory-control.css:34:  --acc: var(--accent-agent);
+src/ui/factory-control.css:36:  --acc-soft: var(--accent-agent-soft);
+src/ui/factory-control.css:93:  border: 1px solid var(--accent-agent-border);
+src/ui/factory-control.css:290:  border-color: var(--accent-agent-border);
+src/ui/factory-control.css:382:  box-shadow: 0 0 0 3px var(--accent-agent-soft);
+src/ui/factory-control.css:612:  border-color: var(--accent-agent-border);
+src/ui/theme.css:50:  --accent-agent: #58A6FF;
+src/ui/theme.css:51:  --accent-agent-soft: rgba(88, 166, 255, 0.12);
+src/ui/theme.css:52:  --accent-agent-border: rgba(88, 166, 255, 0.38);
+src/ui/theme.css:231:.status-dot.live { background: var(--accent-agent); }
+src/ui/theme.css:268:.chip.agent  { background: var(--accent-agent-soft); color: var(--accent-agent); border-color: var(--accent-agent-border); }
+src/ui/theme.css:142:  --z-modal: 70;
+src/ui/project-live.css:281:  z-index: var(--z-modal);  /* (007 N-2) آخر قيمة حرفية في النظام */
+
+== session end ==
