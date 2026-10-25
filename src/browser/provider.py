@@ -379,8 +379,11 @@ class PlaywrightBrowserProvider:
             except OSError:
                 continue
             for cand in candidates:
+                # تخطيطا التثبيت: x64 = chrome-linux/ ، arm64 = chrome-linux-arm64/
                 for exe in (cand / "chrome-linux" / "chrome",
-                            cand / "chrome-linux" / "headless_shell"):
+                            cand / "chrome-linux-arm64" / "chrome",
+                            cand / "chrome-linux" / "headless_shell",
+                            cand / "chrome-linux-arm64" / "headless_shell"):
                     if exe.is_file():
                         return exe
         return None

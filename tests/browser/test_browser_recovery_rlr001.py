@@ -190,3 +190,15 @@ def test_headless_variants_are_ignored(monkeypatch, tmp_path):
     monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(root))
     found = prov_mod.PlaywrightBrowserProvider()._chromium_direct_path()
     assert found is not None and "chromium_headless_shell" not in str(found)
+
+
+def test_arm64_layout_is_found(monkeypatch, tmp_path):
+    import browser.provider as prov_mod
+
+    root = tmp_path / "pw-browsers"
+    exe_dir = root / "chromium-1248" / "chrome-linux-arm64"
+    exe_dir.mkdir(parents=True)
+    (exe_dir / "chrome").write_bytes(b"x")
+    monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(root))
+    found = prov_mod.PlaywrightBrowserProvider()._chromium_direct_path()
+    assert found is not None and "chrome-linux-arm64" in str(found)
