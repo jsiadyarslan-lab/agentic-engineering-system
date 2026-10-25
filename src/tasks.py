@@ -261,6 +261,21 @@ def run_task(
         return _hard_stop(goal, str(fault), started, target, on_event,
                           tool_records=ctx.tool_records)
     except Exception as error:  # noqa: BLE001 — فشل صريح موثق
+        from router.model_router import ProviderCallError
+
+        if isinstance(error, ProviderCallError) and \
+                getattr(error, "is_transient", False):
+            # (RLR-001 §1) عطل مزود عابر لا يتحول إلى حكم دورة زائف:
+            # يُرفع مصنّفًا ليقرأه المحرك — بوابة مزود عابرة قابلة
+            # للاستئناف بدل ESCALATED_TO_HUMAN العام.
+            _emit(on_event, {
+                "kind": "role.system_fault",
+                "role": "coordinator",
+                "text": f"عطل مزود عابر: {error}",
+            })
+            _persist_tool_invocations(sessions, cycle_id or "",
+                                      ctx.tool_records)
+            raise
         _emit(on_event, {
             "kind": "role.system_fault",
             "role": "coordinator",
