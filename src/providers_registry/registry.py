@@ -27,6 +27,7 @@ from urllib.parse import urlparse
 from sqlalchemy import select
 
 from persistence.models import Event
+from router.provider_response import classify_network_error  # RLR-001 §1
 from providers_registry.models import (
     API_STYLES,
     AUTH_TYPES,
@@ -860,9 +861,14 @@ def _probe_one(sessions, cfg: ProviderConfiguration, provider: ProviderRecord, *
             )
         return finish(state, reason, http_status=int(error.code), body=body,
                       endpoint=models_url, problem=problem)
-    except Exception as error:  # noqa: BLE001 — خطأ شبكة واحد صريح
-        return finish("NETWORK_ERROR", f"فشل الاتصال: {error}",
-                      endpoint=models_url, problem="network")
+    except Exception as error:  # noqa: BLE001 — خطأ شبكة واحد صريح مصنّف
+        # (RLR-001 §1) التصنيف الدقيق داخل حالة NETWORK_ERROR القائمة:
+        # السبب + error_class مقروء آليًا (رفض اتصال ≠ DNS ≠ مهلة)
+        classified = classify_network_error(error, models_url)
+        return finish("NETWORK_ERROR",
+                      f"[{classified.error_class}] فشل الاتصال: {error}",
+                      endpoint=models_url, problem="network",
+                      extra={"error_class": classified.error_class})
 
     # 4) نجاح /models — تحقق النموذج ميكانيكيًا إن أمكن (§12)
     model_ids: list[str] = []
@@ -923,9 +929,12 @@ def _probe_chat_fallback(
                       extra={"models_endpoint_status": 404,
                              "models_body_excerpt": models_body[:120]})
     except Exception as error:  # noqa: BLE001
-        return finish("NETWORK_ERROR", f"فشل الاتصال بمسار الاستدعاء: {error}",
+        classified = classify_network_error(error, chat_url)
+        return finish("NETWORK_ERROR",
+                      f"[{classified.error_class}] فشل الاتصال بمسار الاستدعاء: {error}",
                       endpoint=chat_url, problem="network",
-                      extra={"models_endpoint_status": 404})
+                      extra={"error_class": classified.error_class,
+                             "models_endpoint_status": 404})
 
 
 def _resolve_config_file_auth(config_file: str) -> tuple[str, dict] | None:
