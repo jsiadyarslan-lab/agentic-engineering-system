@@ -16,3 +16,12 @@ shot: chat-error-no-provider-1440 (refreshed)
 --- console (expect empty):
 --- errors (expect empty):
 == done ==
+
+== [X3] reviewer-finding fix: name-matched after counterpart for baseline mobile-welcome-390 ==
+# date(UTC): 2026-10-25T16:01:46Z
+# state: fresh load at 390x844 (sidebar auto-collapsed) — same visual state as baseline/mobile-welcome-390 (empty DB, fresh load @390) and as after/mobile-chat-390 (populated DB, fresh load @390)
+MEASURE|mobile-welcome-390|"{\"vp\":[390,844],\"docW\":390,\"hOverflow\":false,\"sidebarW\":0,\"welcomeH1\":\"22px\",\"suggestions\":2,\"sidebarCollapsed\":true}"
+shot: mobile-welcome-390 (name-matched counterpart added)
+--- console:
+--- errors:
+== done ==

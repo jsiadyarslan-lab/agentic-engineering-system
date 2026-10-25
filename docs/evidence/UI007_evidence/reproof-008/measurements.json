@@ -1,8 +1,8 @@
 {
   "meta": {
     "task": "AES-UI-PREMIUM-REDESIGN-008 — final evidence package",
-    "candidate_commit": "56e42ba460356b326a0fdd9da01f9c840a24bd11",
-    "collected_utc": "2026-10-25T15:04:18Z",
+    "candidate_commit": "f720d7f632b656b0fc6d1fc506faba5bff2daa1b",
+    "collected_utc": "2026-10-25T16:04:22Z",
     "method": "live Chromium session (agent-browser) against uvicorn at the candidate commit, isolated seeded DB (scripts/seed_ui_007.py + 2 projects via API); raw log: browser-session.txt + browser-session-extra.txt"
   },
   "viewport_measurements": {
@@ -191,6 +191,18 @@
       "compRight": 1030,
       "bubbleLeft": 146,
       "bubbleRight": 1030
+    },
+    "mobile-welcome-390": {
+      "vp": [
+        390,
+        844
+      ],
+      "docW": 390,
+      "hOverflow": false,
+      "sidebarW": 0,
+      "welcomeH1": "22px",
+      "suggestions": 2,
+      "sidebarCollapsed": true
     }
   },
   "contrast_claims_remeasured": {
@@ -270,7 +282,7 @@
     }
   },
   "honest_states": {
-    "no_provider_error_card": null,
+    "no_provider_error_card": "\\\"⚠ تعذر إكمال الطلبالسبب: المزود 'nvidia' غير متاح للربط الحي — المتاح: ['zai_internal']. احفظ مفتاح المزود من الإعدادات أو اختر مزودًا متاحًاالحالة: C\\\"",
     "factory_stats_real_data": "[\\\"متصل\\\",\\\"2\\\",\\\"0\\\",\\\"0\\\"]",
     "project_tabs": "[\\\"المحادثة\\\",\\\"النظرة العامة\\\",\\\"سير العمل\\\",\\\"الأدلة\\\",\\\"المخرجات\\\",\\\"التاريخ\\\"]"
   },

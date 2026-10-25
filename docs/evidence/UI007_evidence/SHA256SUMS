@@ -1,4 +1,4 @@
-73bd5b01e99f2cabb72f067ad5dc2127aa3a6dcaecda20d18dd8b7a1b08b9143  ./README.md
+5186e95cf1bb0dc7bd97c5f6ccccdb8e55fee8d09334766acbd1c2260d14d964  ./README.md
 0c4352df252f8fcca6e46e2d0a6a9dacbfeee33787bf141a545264660fc142f3  ./after/after chat-long-ar-1440-full.png
 7282020f81207c84a0986e0a98aca5a963cf40e3dbba947beaa8e5694edb1606  ./after/archive-1440.png
 822ee406ddc0d971eed9a57edd9ad188503607c590bcc10501126c5ac010a1ff  ./after/chat-1280.png
@@ -90,8 +90,8 @@ c68e28ed6a8a5b7adf089daaa0dcc7f721f481d13b5d15c8a13b9d6fc8c84dfa  ./baseline/tab
 c097fbcc7e9000b37cd2c1e85caab04fd5ae88865de5353675728c75aef5c22d  ./baseline/tablet-factory-768.png
 6bbca1b9b43cc0f5f5b02963220c4fa7fadec10ffbf7a63191d96117714f1e22  ./baseline/task-settings-1440.png
 23b6020667cd736f2c54cdd469674bfc5a053c50f225ad4e4985e704b446efb4  ./baseline/welcome-1440.png
-79998a1e65ae15e81eb657b3bb289da580771c180ae4878656d53d3f32e1814a  ./notes-N1-N6-evidence.md
-2f2d422bb635e1034c830422fcccd0f1e73eb292b48405430d576a247e8a8cb1  ./remaining-constraints.md
+65c5fc5e2cd0ffc6677495a60ed3ca3d5b6efb491996e812eb82b03a13422d3b  ./notes-N1-N6-evidence.md
+5d89562942c93618b9c9754b351cf14e0a79c7b22fedce6bccf3c10f7632d26e  ./remaining-constraints.md
 0de4f689e3b220803dc6aedc1751a0f7c056a9c98301701c8e25523505006422  ./reports/01-forensic-audit.md
 ac2a72da435cf85cc145abe5c266294422dbeb2e84a1bb99976507758d769c5d  ./reports/02-competitive-matrix.md
 e6c938380d7f02bd5cd995295b48a1f2b1db6b2e515f8b1e88f2df4ac80644ef  ./reports/03-design-system.md
@@ -100,16 +100,18 @@ e6c938380d7f02bd5cd995295b48a1f2b1db6b2e515f8b1e88f2df4ac80644ef  ./reports/03-d
 8cd7ce441f67399e1ae89568a817370f241c57de1cf00a47891d4e7a2f90abf6  ./reports/06-independent-review.md
 1da116679642a2690463d54cb299210ed8024b8d770ed73f5ba124ab694d4ed4  ./reports/07-verdict.md
 0aa9f474c6c6be37349631d1ef693218dbfdad75abfc0503ae32896a70cfc021  ./reproof-008/api-tests.txt
-3c1681ad38d63d9d9b5c62f79af25512cc8494a25669f15d5a5cf8decd577bf0  ./reproof-008/browser-session-extra.txt
+3bf5f9bc12122b7e36b1fbf4dd8aca60fd908c44598bd19ba91dd02c5d473ae5  ./reproof-008/browser-session-extra.txt
 9ba09965fcfffb96fdf0bee0729aa7ed531480b40fc7892d0610fee5172d7fa3  ./reproof-008/browser-session.txt
 fcec923260011f4b52248b9e465ea0bf2c6323b4a6926daf62543b8f700acc17  ./reproof-008/contract-tests.txt
-1fce87285e1fb6ad9818c4584b5ded0bf4db4cbd3acc2434328da94b7a8862d2  ./reproof-008/measurements.json
+7bbd948e8fbb6ec2c8cfd559f6878b88b5d04cd712fb14dabaffd407ce53a324  ./reproof-008/independent-review-008R1.md
+7a6dfd104508215e868d27812e6adc9b1dd52440d995ca33d3bab05d639253c9  ./reproof-008/measurements.json
 f082c0124c2056f33200a54f96fc98c7d8974b9bab9ed49afab94ad63641a728  ./reproof-008/shots/chat-1440.png
 17d17ba1ce80cffd1b581a32faeeabdd74b74310828928356bd46fbb89a5f869  ./reproof-008/shots/chat-empty-conv-1440.png
 7b76e43c7b59c1232f40d9586535b34cb421822e062368b086c71c2825328749  ./reproof-008/shots/chat-error-no-provider-1440.png
 bfa8624a57e17e7383a0b03c2624563190f4fd6661dde6a0cbb9b4cdc79d667f  ./reproof-008/shots/factory-mission-view-1440.png
 656e834ddf6093564a665fac9c493be811b236108212303d18c4425f42fac7c4  ./reproof-008/shots/mobile-chat-360.png
 b4febccef73ea4cf5a8e09d09b5077531a0f0914c9e61559ef1bf6e77924469e  ./reproof-008/shots/mobile-chat-390.png
+cbf79ebf901ed01db757211ebe12b15e50dd22fac1df17373bd4d905ccd46493  ./reproof-008/shots/mobile-welcome-390.png
 bd41e9b2ce4b3c5c81464d3d063380d4b2b30b6f9686131b44c73b7d95f18003  ./reproof-008/shots/project-evidence-1440.png
 143d59c8c66c570b09058b64f740d06b87239de89e8c91cbe44ef4124e7dc65d  ./reproof-008/shots/settings-providers-1440.png
 c34ebbc6c2dd20aa126592b74119db38d47279f7a52ddb99a965620fb82e601c  ./reproof-008/shots/tablet-chat-768.png
@@ -118,6 +120,7 @@ c34ebbc6c2dd20aa126592b74119db38d47279f7a52ddb99a965620fb82e601c  ./reproof-008/
 d2e85b523ef19c6e9103b2ed4e39224a634bca94a63224314d1fde7ff4c5fb36  ./scripts/after_007.sh
 ba853e64c5155a7fdd3140fbc8d324663a86e7963d475026306ab7b81de2d3ed  ./scripts/assemble_measurements_008.py
 3f8b1e325aad40388884fac3b88c62fc4916053864dce83e62b0ee48608bf540  ./scripts/baseline_007.sh
+43ff3c7cbae94c13e81ff5a468cc961fbc673b90f23a89e2ee9c7373aacf7772  ./scripts/capture_welcome390_008.sh
 b05d63565948caaebfb95711f0b96a2d5739dea78002e1a45ae207a344730310  ./scripts/dbg_007.sh
 3953621286c2954755e2990094f501bbddb44fc3c6277efae4e1ac46a1a896e4  ./scripts/probe_007.sh
 3c940f34bd0fd883b5cdbd07160c8745b3732fbfc1ef7ff7692343c522d0aeae  ./scripts/recap_chat_007.sh
