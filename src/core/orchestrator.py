@@ -566,7 +566,7 @@ class Orchestrator:
                     stopping("before_task:" + task.id)
                     outcome = self._run_task_attempts(
                         emitter, task=task, root=root, round_no=round_no,
-                        stopping=stopping,
+                        stopping=stopping, goal=ctx.goal,
                     )
                     outcomes = [
                         o for o in outcomes if o.task_id != outcome.task_id
@@ -687,6 +687,7 @@ class Orchestrator:
         root: Path,
         round_no: int,
         stopping: Callable[[str], None],
+        goal: str = "",
     ) -> TaskOutcome:
         outcome = TaskOutcome(task_id=task.id)
         previous: list[str] = []
@@ -700,6 +701,7 @@ class Orchestrator:
                     tools_available=["python"],
                     sandbox_root=str(root),
                     previous_attempts=list(previous),
+                    context_goal=goal,
                 )
             )
             duration = int((time.monotonic() - t0) * 1000)
