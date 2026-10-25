@@ -22,11 +22,47 @@ from roles.tools import ToolFailure
 _SESSION_KEY = "_browser_session"
 
 
+def _session_dead(session) -> bool:
+    """كشف الموت بالإيجاب حصرًا (AES-RLR-001 §4d) — لا قتل زائف:
+
+    - ``_closed=True`` صراحة (جلسة أُغلقت فعلًا) → ميتة.
+    - متصفح حقيقي يجيب ``is_connected() is False`` → ميتة.
+    - كل ما عدا ذلك (مقلدات بلا سمات، غياب المتصفح، خطأ فحص) →
+      ليس برهان موت: تُعاد كما هي ويفشل استخدامها اللاحق فشلًا
+      صادقًا إن كانت ميتة حقًا — لا استبدال صامت لما لم يثبت موته.
+    """
+    if getattr(session, "_closed", False) is True:
+        return True
+    browser = getattr(session, "_browser", None)
+    if browser is None:
+        return False
+    try:
+        connected = browser.is_connected()
+    except Exception:  # noqa: BLE001 — تعذر الفحص ليس برهان موت
+        return False
+    return connected is False
+
+
 def _session_of(ctx) -> Any:
-    """جلسة المتصفح للسياق — تُفتح كسولة عند أول استخدام."""
+    """جلسة المتصفح للسياق — تُفتح كسولة عند أول استخدام.
+
+    (AES-RLR-001 §4d) الجلسة المخزنة التي ثبت موتها تُغلق محاولةً
+    صامتة وتُفتح جلسة جديدة — لا حلقات فشل 4ms بعد استئناف الدورة،
+    ولا ابتياع جلسات لم يثبت موتها. الفتح الجديد نفسه قد يفشل
+    بـProviderNotReady الصادق إن تعذر الإطلاق — يُرفع كما هو.
+    """
     session = getattr(ctx, _SESSION_KEY, None)
     if session is not None:
-        return session
+        if not _session_dead(session):
+            return session
+        try:
+            browser_service.close_session(session.session_id)
+        except Exception:  # noqa: BLE001 — تنظيف ميت لا يكسر
+            pass
+        try:
+            delattr(ctx, _SESSION_KEY)
+        except (AttributeError, TypeError):
+            pass
     opened = browser_service.open_session(on_event=_emitter_of(ctx))
     session = browser_service.get_session(opened["session_id"])
     try:

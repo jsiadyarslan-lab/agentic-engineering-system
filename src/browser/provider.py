@@ -350,6 +350,41 @@ class PlaywrightBrowserProvider:
     def name(self) -> str:
         return "playwright-chromium"
 
+    def _chromium_direct_path(self):
+        """مسار Chromium من قرص القراءة حصرًا — بلا تشغيل تعريف
+        (AES-RLR-001 §4d): الفحص القديم كان يشغّل عملية تعريف كاملة
+        (node) في كل إطلاق جلسة — على خادم محمّل تفشل العملية
+        («تعذر فحص Chromium») فيموت الإطلاق اللاحق فورًا (فشل 4ms
+        الموثق بعد الاستئناف). وجود الملف التنفيذي ثابت عبر عمر
+        العملية — قرصٌ كافٍ وصادق، وإن غاب المسار نُجري الفحص
+        الكامل القديم كاحتياط."""
+        import os as _os
+
+        roots = []
+        env_root = str(_os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "")
+                       ).strip()
+        if env_root:
+            roots.append(Path(env_root).expanduser())
+        roots.append(Path.home() / ".cache" / "ms-playwright")
+        for root in roots:
+            if not root.is_dir():
+                continue
+            try:
+                candidates = sorted(
+                    (p for p in root.glob("chromium-*")
+                     if p.is_dir()
+                     and "headless" not in p.name.lower()),
+                    key=lambda p: p.name, reverse=True,
+                )
+            except OSError:
+                continue
+            for cand in candidates:
+                for exe in (cand / "chrome-linux" / "chrome",
+                            cand / "chrome-linux" / "headless_shell"):
+                    if exe.is_file():
+                        return exe
+        return None
+
     def available(self) -> tuple[bool, str]:
         try:
             from playwright.sync_api import sync_playwright
@@ -358,6 +393,9 @@ class PlaywrightBrowserProvider:
                 f"مكتبة Playwright غير مثبتة ({error}) — ثبّت الحزمة "
                 "الاختيارية: pip install '.[browser]'"
             )
+        direct = self._chromium_direct_path()
+        if direct is not None:
+            return True, f"Playwright + Chromium جاهز ({direct})"
         try:
             with sync_playwright() as playwright:
                 path = playwright.chromium.executable_path
