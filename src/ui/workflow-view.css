@@ -1,0 +1,118 @@
+
+/* ================= (RLR-001 §3) مساحة التنفيذ الحية ================= */
+
+.wf-live-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+/* تعديل عرض كل لوح — مقبض تحجيم أصلي على اللوح الأيسر (سطح المكتب) */
+.wf-live-log-pane {
+  resize: horizontal;
+  overflow: auto;
+  min-width: 320px;
+  max-width: 100%;
+}
+
+.wf-live-browser-pane { min-width: 300px; }
+
+.wf-live-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wf-live-conn {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ok, #2e7d32);
+  color: var(--ok, #2e7d32);
+  white-space: nowrap;
+}
+
+.wf-live-conn.off {
+  border-color: var(--warn, #b26a00);
+  color: var(--warn, #b26a00);
+  background: rgba(178, 106, 0, 0.08);
+}
+
+.wf-live-state {
+  font-size: 13px;
+  opacity: 0.9;
+  margin: 6px 0 8px;
+  border-inline-start: 3px solid var(--accent, #4a7dff);
+  padding-inline-start: 8px;
+}
+
+.wf-live-term { min-height: 320px; max-height: 62vh; }
+
+.wf-term-class {
+  font-size: 11px;
+  font-family: monospace;
+  opacity: 0.85;
+  border: 1px dashed currentColor;
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-inline-start: 6px;
+}
+
+.wf-live-transient { background: rgba(178, 106, 0, 0.10); }
+
+.wf-live-mirror-tag {
+  font-size: 11px;
+  opacity: 0.75;
+  border: 1px dotted currentColor;
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+.wf-live-strip {
+  font-size: 12.5px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.08);
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.wf-live-shot {
+  border: 1px solid rgba(127, 127, 127, 0.25);
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.wf-live-shot .wf-shot-img {
+  max-width: 100%;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto;
+}
+
+.wf-live-mini-head {
+  font-size: 12px;
+  opacity: 0.8;
+  margin: 4px 0 6px;
+}
+
+.wf-live-mini .wf-preview-frame { min-height: 240px; height: 34vh; }
+
+/* الهاتف: ترتيب عمودي مريح بلا تمرير أفقي */
+@media (max-width: 900px) {
+  .wf-live-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wf-live-log-pane {
+    resize: none;
+    min-width: 0;
+    max-width: none;
+  }
+  .wf-live-term { max-height: 48vh; }
+}

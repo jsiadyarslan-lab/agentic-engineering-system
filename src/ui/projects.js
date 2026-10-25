@@ -742,6 +742,25 @@
       wv.renderWorkflowTab(body, state.runtime);
     } else if (tab === "overview") {
       wv.renderOverviewTab(body, state.runtime, state.snapshot);
+    } else if (tab === "preview" || tab === "browser"
+               || tab === "terminal" || tab === "live") {
+      // (AES-LIVE-FACTORY-E2E-001 المرحلة 4) مساحة المشاهدة الحية —
+      // تُبنى عند الفتح ثم تُغذي بنفسها (fetch داخلها)؛ النبضة
+      // لا تعيد بناء الإطار فلا تومض المعاينة ولا يُفقد تمرير الطرفية.
+      if (body.getAttribute("data-rendered") !==
+          tab + ":" + state.projectId) {
+        body.setAttribute("data-rendered", tab + ":" + state.projectId);
+        if (tab === "preview") {
+          wv.renderPreviewTab(body, state.projectId);
+        } else if (tab === "browser") {
+          wv.renderBrowserTab(body, state.projectId);
+        } else if (tab === "live") {
+          // (RLR-001 §3) مساحة التنفيذ الحية — لوحان متزامنان
+          wv.renderLiveWorkspaceTab(body, state.projectId);
+        } else {
+          wv.renderTerminalTab(body, state.projectId);
+        }
+      }
     } else if (body.getAttribute("data-rendered") !==
                tab + ":" + state.projectId) {
       // تبويبات القراءة (الأدلة/المخرجات/التاريخ) تُبنى مرة عند الفتح
