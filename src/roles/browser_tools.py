@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 from browser import service as browser_service
+from browser.policy import PolicyViolation
 from browser.provider import ProviderNotReady
 from roles.tools import ToolFailure
 
@@ -73,7 +74,19 @@ def browser_navigate(url: str, ctx) -> dict:
         result = session.navigate(url)
         ctx.fetched_urls = list(getattr(ctx, "fetched_urls", [])) + [url]
         return {"ok": True, **result}
+    except PolicyViolation:
+        raise  # رفض سياسة ليس عطل جلسة — لا استرداد ولا إهدار جلسة
     except Exception as error:  # noqa: BLE001 — استرداد جلسة ثم صدق
+        stale = getattr(ctx, _SESSION_KEY, None)
+        try:
+            if stale is not None and hasattr(browser_service, "close_session"):
+                browser_service.close_session(stale)
+        except Exception:  # noqa: BLE001 — التسريب أقل شراً من العطال
+            pass
+        try:
+            setattr(ctx, _SESSION_KEY, None)
+        except (AttributeError, TypeError):
+            pass
         try:
             fresh = _open_fresh_session(ctx)
             if not getattr(fresh, "_pages", None):
