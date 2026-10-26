@@ -660,6 +660,24 @@ class LiveImplementer(LiveRoleBase):
             )
             if verify_notes:
                 stdout += " — ملاحظات: " + "; ".join(verify_notes)[:200]
+
+            # (RLR-001 §4d-10) تنظيف الجلسة بعد التحقق — الجلسة المفتوحة
+            # تُبقي حلقة playwright حية على خيط الممثل الوحيد فتفشل
+            # كل إطلاق لاحق ("inside the asyncio loop"). إغلاق معلن
+            # على نفس الخيط ثم محو المفتاح من السياق.
+            try:
+                session = getattr(ctx, "_browser_session", None)
+                if session is not None:
+                    from browser import service as _bsvc
+                    from browser.provider import _on_browser_thread
+                    _on_browser_thread(session.close)
+            except Exception:  # noqa: BLE001 — التنظيف لا يكسر النتيجة
+                pass
+            try:
+                delattr(ctx, "_browser_session")
+            except (AttributeError, TypeError):
+                pass
+
             return _Result(
                 status=_Status.EXECUTED,
                 artifacts=artifacts,
