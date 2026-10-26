@@ -204,16 +204,57 @@ def build_search_query(message: str, *, limit: int = 180) -> str:
     return distilled[:limit]
 
 
+#: (RLR-005) كلمات الساعة/التاريخ الصرفة + أدوات الاستفهام المرافقة
+#: لها فقط — إن لم يبقَ بعد التقطير سواها فالسؤال سؤال ساعة صِرف.
+_CLOCK_TOKENS = frozenset(normalize_arabic(word) for word in (
+    "اليوم", "التاريخ", "الساعة", "الوقت", "الآن", "الان",
+    "تاريخ", "ساعة", "وقت", "يوم", "كم", "متى", "اي", "أي",
+    "ما", "نحن", "فيه", "هو", "هي",
+    "today", "todays", "date", "time", "now", "day", "what", "whats",
+))
+
+
+def is_clock_question(message: str) -> bool:
+    """(RLR-005) هل السؤال سؤال تاريخ/وقت صِرف يجيب عنه نظام الساعة؟
+
+    الدافع الموثق (2026-10-26): «ما هو اليوم؟» يُقطَّر إلى «اليوم»
+    فأعاد البحث 8 نتائج ويكيبيديا عن كلمة «يوم» («يوم»، «قناة
+    اليوم»، «اليوم الوطني السعودي»، «خيل (جنس)»…) — لا واحدة منها
+    تحمل التاريخ الحالي. محركات البحث لا تجيب «تاريخ اليوم» عن
+    كلمة «اليوم»؛ ساعة النظام هي المصدر الموثوق لهذا الصنف،
+    وسياقها يُحقن في مسار المحادثة (routes: ساعة النظام الآن…).
+
+    التمييز الصادق: أسئلة مثل «أخبار اليوم» أو «أسعار الذهب اليوم»
+    تبقي كلماتها الدلالية بعد التقطير (أخبار/أسعار/الذهب) فلا
+    تُعد سؤال ساعة — الويب يبقى مسارها الصحيح. كذلك أي رسالة تحمل
+    رابط URL لا تُعد سؤال ساعة (الجلب معلومات حية فعلًا).
+    """
+    distilled = build_search_query(message)
+    if not distilled:
+        return False
+    tokens = [t for t in distilled.split() if t]
+    return bool(tokens) and all(t in _CLOCK_TOKENS for t in tokens)
+
+
 def decide_web_mode(message: str, *, setting: str = "auto") -> dict:
     """قرار الويب الكامل (§26) — {search, fetch_urls, reason}.
 
     setting: "auto" (كاشف النية) | "on" (صريح) | "off" (صريح).
+
+    (RLR-005) سؤال الساعة/التاريخ الصِرف يُوجَّه إلى ساعة النظام
+    حصرًا — حتى مع web=on: البحث عن «اليوم» ضجيج موثق لا يحمل
+    التاريخ، وإجابة الساعة أدق وأسرع. السبب معلن في reason وليس
+    حكمًا صامتًا، والرابط إن وُجد يُجلب كالمعتاد (معلومة حية).
     """
     setting = (setting or "auto").lower()
     if setting == "off":
         return {"search": False, "fetch_urls": [],
                 "reason": "off_explicit", "markers": []}
     urls = extract_urls(message)
+    if not urls and is_clock_question(message):
+        return {"search": False, "fetch_urls": [],
+                "reason": "clock_question",
+                "markers": ["سؤال تاريخ/وقت — يجيب عنه نظام الساعة"]}
     if setting == "on":
         return {"search": True, "fetch_urls": urls,
                 "reason": "on_explicit", "markers": ["explicit_on"]}
