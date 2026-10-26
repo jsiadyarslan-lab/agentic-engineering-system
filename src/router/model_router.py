@@ -481,11 +481,49 @@ class ModelRouter:
                 f"{self._max_rate_waits} انتظارات"
             )
         started = time.monotonic()
-        try:
-            text = stream_completion(
-                dict(specs[pid]), chosen_model, messages,
-                on_delta=on_delta, on_reasoning=on_reasoning,
+        # (RLR-001 §1c) مسار البث كان بلا تبريد ولا فتحة تزامن — 429
+        # يمر فورًا فيموت المنفّذ بينما المسار الكامل مبرّد كاملًا.
+        # نفس حماية chat(): فتحة تزامن ← note_429 ← حلقة تبريد.
+        streamed_any = {"v": False}
+
+        def _guarded_delta(piece: str) -> None:
+            streamed_any["v"] = True
+            if on_delta is not None:
+                on_delta(piece)
+
+        def _stream_once() -> str:
+            ok2, _w = self._limiter.acquire_slot(
+                pid, timeout=self._slot_timeout
             )
+            if not ok2:
+                raise ProviderCallError(
+                    f"انتهت مهلة انتظار فتحة التزامن لمزود {pid}",
+                    is_timeout=True,
+                )
+            try:
+                return stream_completion(
+                    dict(specs[pid]), chosen_model, messages,
+                    on_delta=_guarded_delta, on_reasoning=on_reasoning,
+                )
+            finally:
+                self._limiter.release_slot(pid)
+
+        def _cooled_stream() -> str:
+            try:
+                return _stream_once()
+            except Exception as exc:  # noqa: BLE001 — تغذية المحدد فقط
+                if getattr(exc, "is_throttle", False):
+                    self._limiter.note_429(pid)
+                    if streamed_any["v"]:
+                        # اختناق منتصف البث — إعادة قد تكرر القطع
+                        # المرسلة؛ فشل صادق لا تكرار زائف.
+                        raise ProviderCallError(
+                            str(exc), is_server_error=True
+                        ) from exc
+                raise
+
+        try:
+            text = self._cooling.execute_with_cooling(_cooled_stream)
         except ProviderCallError:
             raise
         except Exception as error:  # noqa: BLE001 — فشل صريح لا صامت
