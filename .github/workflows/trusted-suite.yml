@@ -18,6 +18,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install bubblewrap (isolation substrate for the runner)
+        # AES-ORACLE-LIVE-REPAIR-001 §4: ركيزة العزل على العدّاء — بدونها
+        # يمنع المصنع fail-closed الدورات الحية (8 فشل موثقة في التشغيل الأول).
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap
+          bwrap --version
+
       - name: Install project + test extras
         run: |
           python -m pip install --upgrade pip
@@ -27,7 +35,12 @@ jobs:
         # المجموعة الموثوقة: الجاهزية + النواة + مسار API الحي + تراجعات
         # AES-EXP-03. لا تشمل أجيال المهام القديمة (e3/e4/e6) — تحتاج
         # ركيزة عزل (bwrap) وتُعالج في خطة الإصلاح المعتمدة (AES-EXP-04).
+        # AES-ORACLE-LIVE-REPAIR-001 §4: shell bash = -eo pipefail —
+        # لا يمكن لـ tail إخفاء رمز فشل pytest بعد اليوم؛ الحكم المعروض
+        # يطابق نتيجة الاختبارات الفعلية أو لا يعرض شيئاً.
+        shell: bash
         run: |
+          set -o pipefail
           pytest tests/readiness tests/core tests/api \
             --timeout=150 -q --no-header \
             -p no:cacheprovider 2>&1 | tail -40
