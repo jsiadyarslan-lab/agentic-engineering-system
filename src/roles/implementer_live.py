@@ -108,7 +108,13 @@ def _deliverable_names(task_payload: dict) -> list[str]:
     for text in texts:
         for match in _FILENAME_RE.findall(text):
             clean = match.lstrip("./").strip()
-            if not clean or clean.lower().endswith(_REPORT_SUFFIXES):
+            if not clean:
+                continue
+            # (RLR-001 §4d-8) README.md تسليم وثائقي مصرّح به اسمه
+            # حرفيًا — يُبنى كملف لا يُختزل في مسار التقارير. بقية
+            # md/txt تبقى مسار تقارير كما هو.
+            if clean.lower().endswith(_REPORT_SUFFIXES) \
+                    and not clean.lower().startswith("readme"):
                 continue
             if "/" in clean or clean.startswith("."):
                 continue
@@ -118,7 +124,10 @@ def _deliverable_names(task_payload: dict) -> list[str]:
         # البسيط وحده لا يلتقطها (lookbehind يمنع ما يسبقه /).
         for match in _PATH_TOKEN_RE.findall(text):
             clean = _safe_rel(match)
-            if not clean or clean.lower().endswith(_REPORT_SUFFIXES):
+            if not clean:
+                continue
+            if clean.lower().endswith(_REPORT_SUFFIXES) \
+                    and not clean.lower().startswith("readme"):
                 continue
             ext = clean.rsplit(".", 1)[-1].lower() if "." in clean else ""
             if ext in _BUILD_EXTS and clean not in names:
