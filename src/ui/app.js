@@ -549,15 +549,20 @@
         (c.conversation_id === state.conversationId ? " active" : "");
       var updated = new Date(c.updated_at);
       var when = updated >= today ? "اليوم" : "سابقًا";
-      // (AES-UI-PREMIUM-REDESIGN-001) أيقونة SVG موحدة بدل الرموز التعبيرية
-      var icon = c.mode === "task"
-        ? '<span class="icon sm"><svg><use href="#i-task"/></svg></span>'
-        : '<span class="icon sm"><svg><use href="#i-chat"/></svg></span>';
+      /* (014-المرحلة 3) عنصر جلسة ثنائي السطر — التدرج الثنائي الذي يجعل
+         القائمة قابلة للمسح: عنوان 13px/500 أساسي فوق سطر بيانات 11px
+         muted (نقطة حالة 6px دلالية + الزمن) — كأسلوب Devin */
+      var modeLabel = c.mode === "task" ? "مهمة" : (c.mode === "project" ? "مشروع" : "محادثة");
+      var dotCls = c.mode === "task" ? "live" : (c.mode === "project" ? "on" : "");
       item.innerHTML =
-        icon +
-        '<span class="conv-text">' + esc(c.title) + "</span>" +
-        '<span class="conv-when">' + when + "</span>";
-      item.title = c.title + " — " + when;
+        '<span class="conv-text">' +
+        '<span class="conv-title">' + esc(c.title) + "</span>" +
+        '<span class="conv-meta">' +
+        '<span class="status-dot sm ' + dotCls + '"></span>' +
+        "<span>" + modeLabel + "</span>" +
+        '<span class="conv-when">' + when + "</span>" +
+        "</span></span>";
+      item.title = c.title + " — " + modeLabel + " — " + when;
       item.addEventListener("click", function () { openConversation(c); });
       conversationsEl.appendChild(item);
     });

@@ -276,6 +276,7 @@ body {
   flex: none;
   display: inline-block;
 }
+.status-dot.sm { width: 6px; height: 6px; }  /* (014) نقطة جلسات الشريط */
 .status-dot.on { background: var(--ok); }
 .status-dot.off { background: var(--warn); }
 .status-dot.err { background: var(--danger); }
