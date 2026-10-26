@@ -48,18 +48,16 @@ def _on_browser_thread(fn, *args, **kwargs):
     """تنفيذ دالة متصفح على خيط الممثل الوحيد — بلا مهلة إضافية
     (المهل تحكمها سياسة الجلسة نفسها).
 
-    (RLR-001 §4d-7) السياق يُعزل عن المستدعي: ThreadPoolExecutor
-    ينسخ contextvars المستدعي — ومن داخل مهمة asyncio ينسخ معها
-    أثر sniffio/asyncio فيرفض Playwright Sync العمل ("inside the
-    asyncio loop") رغم أن الخيط الممثل بلا حلقة. سياق نظيف التُقط
-    عند الاستيراد (بلا أي حلقة) يُستنسخ لكل تنفيذ فيقطع التسرب.
+    (RLR-001 §4d-7) السياق يُعزل عن المستدعي: الممثل ينسخ contextvars
+    المستدعي — ومن داخل مهمة asyncio ينسخ معها أثر sniffio/asyncio
+    فيرفض Playwright Sync العمل ("inside the asyncio loop") رغم أن
+    الخيط الممثل بلا حلقة. الحل: سياق فارغ يُنشأ على خيط الممثل
+    نفسه (بلا أي متغيرات موروثة) تُنفَّذ داخله الدالة.
     """
-    return _CLEAN_CONTEXT.run(fn, *args, **kwargs)
+    def _isolated():
+        return _cv.Context().run(fn, *args, **kwargs)
 
-
-#: سياق نظيف بلا أثر async — يُلتقط لحظة الاستيراد (بداية العملية:
-#: لا حلقة، لا sniffio) ويُستخدم كجذر لعزل كل استدعاءات الممثل.
-_CLEAN_CONTEXT = _cv.copy_context()
+    return _BROWSER_ACTOR.submit(_isolated).result()
 
 
 def browser_threaded(fn):
