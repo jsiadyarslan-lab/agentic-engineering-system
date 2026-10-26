@@ -29,18 +29,19 @@ def test_plus_button_and_menu_present():
 
 
 def test_send_button_visually_right_of_input_in_rtl():
-    """الإرسال يمين صندوق الإدخال بصريًا (RTL): أول عنصر في الـDOM.
-
-    في صف RTL أول عنصر flex يُرسم عند الحافة اليمنى — لذا زر الإرسال
-    يجب أن يسبق الـtextarea في الـDOM (والـ＋ بعدها = يسار بصريًا).
+    """(014-المرحلة 1) صينية الأوامر عمودية (خطة 7.1): الإدخال أعلى الصينية،
+    وصف الأدوات أسفله، والإرسال آخر عنصر في الصف — نهاية الصف = يسار
+    بصريًا في RTL (مرآة النمط المعياري ChatGPT/Devin: أدوات بداية، إرسال نهاية).
+    كان العقد القديم يفترض صندوقًا أفقيًا (إرسال أول DOM يمينًا) — أُعيد
+    التأسيس مع إعادة تصميم المرحلة الأولى.
     """
-    inner = HTML.split('class="composer-inner"')[1].split("</div>")[0]
-    send_pos = inner.index('id="send"')
-    input_pos = inner.index('id="input"')
-    plus_pos = inner.index('id="plus"')
-    assert send_pos < input_pos < plus_pos, (
-        "الترتيب يجب أن يكون: إرسال ثم الإدخال ثم ＋ (إرسال يمينًا، ＋ يسارًا)"
-    )
+    comp = HTML.split('class="composer"')[1].split("</main>")[0]
+    input_pos = comp.index('id="input"')
+    bar_pos = comp.index('class="composer-bar"')
+    plus_pos = comp.index('id="plus"')
+    send_pos = comp.index('id="send"')
+    assert input_pos < bar_pos, "الإدخال يجب أن يعلو صف الأدوات داخل الصينية"
+    assert plus_pos < send_pos, "الإرسال في نهاية صف الأدوات (بعد +) — يسارًا بصريًا في RTL"
 
 
 def test_enter_sends_shift_enter_newline():

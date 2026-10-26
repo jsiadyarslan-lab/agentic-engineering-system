@@ -52,7 +52,7 @@ def test_t1_canonical_token_values_locked():
         "--fs-h2: 19px",
         "--fs-h3: 16px",
         "--sidebar-width: 260px",
-        "--chat-width: 760px",
+        "--chat-width: 720px",
         "--elev-1: 0 8px 24px rgba(0, 0, 0, 0.35)",
         "--focus-ring: 0 0 0 3px rgba(88, 166, 255, 0.25)",
         "--ease: ease-out",

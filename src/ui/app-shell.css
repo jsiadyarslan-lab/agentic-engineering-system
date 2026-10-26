@@ -17,13 +17,14 @@
 
 .messages {
   width: 100%;
-  max-width: var(--chat-width);  /* §3 (014): عمود المحتوى 760px عبر التوكن */
+  max-width: var(--chat-width);  /* §3 (014): محور موحد 720px مع صينية الأوامر */
   margin: 0 auto;
   padding: 18px 18px 30px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
+  /* (014) بلا flex:1 — شاشة البطلة تتوسط بـ margin:auto فوقها،
+     والمحادثة الطبيعية غير متأثرة (chat-scroll يمرر المحتوى الطبيعي) */
 }
 
 .bubble {

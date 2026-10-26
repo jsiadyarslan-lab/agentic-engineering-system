@@ -182,25 +182,19 @@
 
       <div class="chat-scroll" id="chat-scroll">
 
-        <!-- شاشة البداية (007): بطل مُهيكل — بطاقة اقتراح بعنوان ووصف -->
-        <section class="welcome" id="welcome">
+        <!-- شاشة البطلة (014-المرحلة 1): بطل + حبوب مضغوطة — صندوق الأوامر صينية مثبتة بالأسفل -->
+      <section class="welcome" id="welcome">
           <div class="welcome-mark icon lg"><svg><use href="#i-logo"/></svg></div>
           <h1>كيف أساعدك اليوم؟</h1>
           <p class="tagline">اكتب رسالة للمحادثة المباشرة، أو ابدأ مهمة كاملة ليعمل فريق الوكلاء على هدفك بخطوات وأدلة مرئية.</p>
           <div class="suggestions">
             <button class="suggestion" data-mode="chat">
               <span class="icon sm"><svg><use href="#i-chat"/></svg></span>
-              <span class="suggestion-text">
-                <span class="suggestion-title">محادثة سريعة</span>
-                <span class="suggestion-desc">نموذج واحد يجيب فورًا داخل هذه النافذة</span>
-              </span>
+              <span class="suggestion-title">محادثة سريعة</span>
             </button>
             <button class="suggestion" data-mode="task">
               <span class="icon sm"><svg><use href="#i-task"/></svg></span>
-              <span class="suggestion-text">
-                <span class="suggestion-title">مهمة كاملة</span>
-                <span class="suggestion-desc">تخطيط وتنفيذ وتحقق وتحكيم بإثبات لكل خطوة</span>
-              </span>
+              <span class="suggestion-title">مهمة كاملة</span>
             </button>
           </div>
         </section>
@@ -282,44 +276,46 @@
         <div class="task-settings-body" id="task-settings-body" hidden></div>
       </div>
 
-      <!-- صندوق الإرسال -->
+      <!-- صندوق الأوامر (014-المرحلة 1): صينية مثبتة بالحافة — صف أدوات سفلي داخلها -->
       <div class="composer">
         <div class="composer-inner">
-          <button id="send" title="إرسال" aria-label="إرسال" disabled>
-            <span class="icon"><svg><use href="#i-send"/></svg></span>
-          </button>
-          <textarea id="input" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالتك"></textarea>
-          <div class="plus-wrap">
-            <button id="plus" title="اختر النمط: محادثة أو مهمة" aria-label="اختيار النمط">
-              <span class="icon"><svg><use href="#i-plus"/></svg></span>
-            </button>
-            <div class="plus-menu" id="plus-menu" hidden>
-              <button class="plus-option" data-mode="chat">
-                <span class="icon sm"><svg><use href="#i-chat"/></svg></span>
-                <span>محادثة</span>
+          <textarea id="input" rows="1" placeholder="اكتب أمرك للوكيل…" aria-label="رسالتك"></textarea>
+          <div class="composer-bar">
+            <div class="plus-wrap">
+              <button id="plus" title="اختر النمط: محادثة أو مهمة" aria-label="اختيار النمط">
+                <span class="icon"><svg><use href="#i-plus"/></svg></span>
               </button>
-              <button class="plus-option" data-mode="task">
-                <span class="icon sm"><svg><use href="#i-task"/></svg></span>
-                <span>مهمة</span>
-              </button>
-              <button class="plus-option" data-mode="project">
-                <span class="icon sm"><svg><use href="#i-project"/></svg></span>
-                <span>مشروع</span>
-              </button>
+              <div class="plus-menu" id="plus-menu" hidden>
+                <button class="plus-option" data-mode="chat">
+                  <span class="icon sm"><svg><use href="#i-chat"/></svg></span>
+                  <span>محادثة</span>
+                </button>
+                <button class="plus-option" data-mode="task">
+                  <span class="icon sm"><svg><use href="#i-task"/></svg></span>
+                  <span>مهمة</span>
+                </button>
+                <button class="plus-option" data-mode="project">
+                  <span class="icon sm"><svg><use href="#i-project"/></svg></span>
+                  <span>مشروع</span>
+                </button>
+              </div>
             </div>
+            <button id="web-toggle" class="web-toggle auto" title="البحث في الويب: تلقائي — يتغير لكشف نية الرسالة">
+              <span class="icon"><svg><use href="#i-web"/></svg></span>
+            </button>
+            <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر الإضافة">محادثة</span>
+            <span class="composer-hint" id="composer-hint" hidden></span>
+            <button id="stop-run" class="stop-btn" hidden title="إيقاف فوري آمن — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة">
+              <span class="icon sm"><svg><use href="#i-stop"/></svg></span>
+              <span>إيقاف</span>
+            </button>
+            <button id="send" title="إرسال" aria-label="إرسال" disabled>
+              <span class="icon"><svg><use href="#i-send"/></svg></span>
+            </button>
           </div>
-          <button id="web-toggle" class="web-toggle auto" title="البحث في الويب: تلقائي — يتغير لكشف نية الرسالة">
-            <span class="icon"><svg><use href="#i-web"/></svg></span>
-          </button>
         </div>
         <div class="composer-foot">
-          <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر الإضافة">محادثة</span>
-          <span class="composer-hint" id="composer-hint" hidden></span>
           <span class="composer-shortcut">Enter للإرسال · Shift+Enter لسطر جديد</span>
-          <button id="stop-run" class="stop-btn" hidden title="إيقاف فوري آمن — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة">
-            <span class="icon sm"><svg><use href="#i-stop"/></svg></span>
-            <span>إيقاف</span>
-          </button>
         </div>
       </div>
     </main>
