@@ -519,36 +519,39 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 }
 
 .bubble.user {
-  align-self: flex-end;           /* التصميم: رسالة المالك على الجهة المقابلة */
+  align-self: flex-start;          /* (014) يمين في RTL — بطاقة مرفوعة محاذاة البداية */
   background: var(--bubble-user);
   border: 1px solid var(--border-strong);
-  border-end-end-radius: 4px;
+  min-width: 96px;                 /* (014) لا تنهار «؟» إلى حبة يتيمة بلا سياق */
+  max-width: min(78%, 560px);
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);   /* الترويسة داخل البطاقة */
+  border-end-start-radius: 4px;    /* (014) ذيل البطاقة من جهة المحاذاة */
 }
+.bubble.user .msg-who { color: var(--text-muted); font-weight: 500; }
+.bubble.user .msg-head { margin-bottom: var(--sp-1); }
 
 .bubble.assistant {
   align-self: stretch;
   background: none;
   border: none;
+  padding: 0;
   border-radius: 0;
 }
 
 .bubble-body {
-  padding: var(--sp-3) var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);   /* (014) حشوة بطاقة المستخدم 16/20 (خطة 7.2) */
   white-space: pre-wrap;
   word-break: break-word;
   font-size: var(--fs-15);
+  line-height: var(--lh-body);
 }
 
 .bubble.assistant .bubble-body { padding: 0; }
 
 .bubble-foot {
-  padding: var(--sp-1) var(--sp-4) var(--sp-2);
+  padding: var(--sp-1) 0 0;
   font-size: var(--fs-11);
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  direction: ltr;
-  unicode-bidi: isolate;
-  text-align: left;
+  color: var(--text-muted);
 }
 
 .bubble.assistant .bubble-foot { padding: var(--sp-1) 0 0; }

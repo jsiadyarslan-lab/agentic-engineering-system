@@ -65,7 +65,7 @@
       '<span class="meta-prov" dir="ltr">' + Hub.esc(this.provider) + "</span>" +
       '<span class="meta-model" dir="ltr">' + Hub.esc(this.model) + "</span>" +
       (streaming
-        ? '<span class="meta-stream">streaming</span>'
+        ? '<span class="meta-stream"><span class="status-dot live pulse"></span>يعمل الآن</span>'
         : "");
   };
 

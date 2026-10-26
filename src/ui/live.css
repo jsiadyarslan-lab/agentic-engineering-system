@@ -46,8 +46,10 @@
 }
 .meta-prov { font-weight: 600; }
 .meta-stream {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--accent);
-  animation: md-blink 1.4s steps(2) infinite;
 }
 
 /* ---------- بطاقة تنفيذ المحادثة (013.7 §P18) — شارات دلالية موحدة ---------- */

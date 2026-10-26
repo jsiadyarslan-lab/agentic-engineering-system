@@ -32,6 +32,24 @@
   min-width: 0;              /* لا انكماش عشوائي داخل flex */
 }
 
+/* (014-المرحلة 2) ترويسة مجموعة الرسائل: مرسل + زمن — الطبقة الأولى
+   في بنية الرسالة ثنائية الطبقات (خطة 7.2). تحل «عناصر اليتامى». */
+.msg-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+.msg-who { font-size: var(--fs-12); font-weight: 600; color: var(--text-secondary); }
+.msg-when {
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 .bubble .bubble-body {
   width: 100%;
   line-height: 1.85;
@@ -51,7 +69,7 @@
 /* (007) طباعة Markdown القانونية — المرجع الوحيد (كانت نسختان متباينتان).
    markdown.js يصدر h2/h3/h4 بفئة md-h وفئات md-p/md-list/md-quote/md-hr —
    تُنصّ هنا صراحة فلا تعتمد على تصادف أسماء العناصر. */
-.md-body { line-height: 1.85; }
+.md-body { line-height: var(--lh-body); }
 .md-body h1, .md-body h2, .md-body h3, .md-body .md-h {
   margin: 20px 0 var(--sp-2);
   line-height: 1.5;
@@ -108,12 +126,50 @@
 .md-body tbody tr:hover td { background: var(--bg-raised); }
 
 /* الكود: خلفية أغمق من السطح وعزل LTR (theme.css: .md-code) */
-.md-body .md-pre {
+/* (014-المرحلة 2) كتلة كود برأس ملف: اللغة + زر نسخ (خطة 7.2) */
+.md-codeblock {
   margin: var(--sp-3) 0;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-m);
-  background: #0B0E12;
+  background: var(--bg-canvas);
+  overflow: hidden;
+}
+.md-code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-1) var(--sp-3);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+}
+.md-code-lang {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.md-copy {
+  font-size: var(--fs-11);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-s);
+  padding: 2px var(--sp-2);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.md-copy:hover { color: var(--accent); border-color: var(--accent-border); }
+.md-copy.copied { color: var(--ok); border-color: var(--ok-border); }
+
+.md-body .md-pre {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: 0 0 var(--radius-m) var(--radius-m);
+  background: var(--bg-canvas);      /* (014) جسم الكود على قاعدة اللوحة */
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: var(--fs-13);
@@ -386,6 +442,18 @@
 
 /* ---------- بطاقات نظامية رفيعة ---------- */
 
+/* (014-المرحلة 2) شارة الحكم الصادقة: قيمة mono 11px — غامقة حمراء عند الفشل */
+.verdict {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+  font-size: var(--fs-11);
+  font-weight: 600;
+  color: var(--text-muted);
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.verdict.fail { color: var(--danger); font-weight: 700; }
+
 .sys-card {
   align-self: center;
   max-width: 92%;
@@ -410,6 +478,7 @@
 
 .sys-card.error {
   border-color: var(--danger-border);
+  border-inline-start: 3px solid var(--danger);   /* (014) حد جانبي أحمر من جهة البداية */
   background: var(--danger-soft);
   color: var(--text);
 }

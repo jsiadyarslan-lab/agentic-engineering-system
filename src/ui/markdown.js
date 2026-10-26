@@ -43,7 +43,8 @@
       var line = lines[i];
 
       // سور كود — مفتوح أثناء البث يُغلق مؤقتًا (لا وميض كسير §4)
-      if (/^\s*```/.test(line)) {
+      var fence = line.match(/^\s*```(\S*)/);
+      if (fence) {
         closeList();
         var codeLines = [];
         i++;
@@ -53,9 +54,17 @@
           codeLines.push(lines[i]);
           i++;
         }
-        html.push('<pre class="md-pre" dir="ltr"><code>' +
+        /* (014-المرحلة 2) كتلة كود برأس ملف: اللغة + زر نسخ — جسم 13px
+           mono على bg-canvas (خطة 7.2) */
+        var lang = fence[1] || "code";
+        html.push('<figure class="md-codeblock" dir="ltr">' +
+          '<figcaption class="md-code-head"><span class="md-code-lang">' +
+          esc(lang) + '</span>' +
+          '<button class="md-copy" type="button" title="نسخ الكود">نسخ</button>' +
+          "</figcaption>" +
+          '<pre class="md-pre"><code>' +
           esc(codeLines.join("\n")) +
-          (closed ? "" : "▌") + "</code></pre>");
+          (closed ? "" : "▌") + "</code></pre></figure>");
         continue;
       }
 

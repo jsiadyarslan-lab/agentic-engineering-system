@@ -284,9 +284,17 @@
     box.appendChild(el("div", "he-title", "⚠ تعذر إكمال الطلب"));
     var d = event.details || {};
     var reason = event.text || "";
-    box.appendChild(el("div", "he-row", "السبب: " + reason));
+    /* (014-المرحلة 2) ثنائية تسمية/قيمة: التسمية عربية ثانوية، والقيمة
+       التقنية (استثناءات/رموز) mono LTR معزولة — لا تنساب كنثر */
+    var rowReason = el("div", "he-row");
+    rowReason.appendChild(el("span", "he-label", "السبب:"));
+    rowReason.appendChild(el("span", "he-val", reason));
+    box.appendChild(rowReason);
     if (event.code || d.code) {
-      box.appendChild(el("div", "he-row", "الحالة: " + (event.code || d.code)));
+      var rowCode = el("div", "he-row");
+      rowCode.appendChild(el("span", "he-label", "الحالة:"));
+      rowCode.appendChild(el("span", "he-val", String(event.code || d.code)));
+      box.appendChild(rowCode);
     }
     box.appendChild(el("div", "he-row",
       "الإجراء: لن يُعتبر الطلب ناجحًا — أعد المحاولة أو راجع الإعدادات."));
@@ -343,10 +351,64 @@
     onLiveContent();
   }
 
+  /* (014-المرحلة 2) نسخ كتل الكود: تفويض واحد ينجو من إعادة بناء innerHTML
+     أثناء البث — زر .md-copy داخل رأس الكتلة ينسخ جسمها */
+  messagesEl.addEventListener("click", function (ev) {
+    var btn = ev.target.closest ? ev.target.closest(".md-copy") : null;
+    if (!btn) return;
+    var fig = btn.closest(".md-codeblock");
+    var codeEl = fig && fig.querySelector("pre code");
+    if (!codeEl) return;
+    var text = codeEl.textContent;
+    var done = function () {
+      btn.classList.add("copied");
+      btn.setAttribute("data-done", "تم النسخ");
+      setTimeout(function () {
+        btn.classList.remove("copied");
+        btn.removeAttribute("data-done");
+      }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      done();
+    }
+  });
+
   // ---------- الرسائل ----------
-  function addUserMessage(text) {
+  /* (014-المرحلة 2) ساعة رسالة: HH:MM بأرقام لاتينية داخل عزل LTR أحادي */
+  function fmtClock(iso) {
+    var d = iso ? new Date(iso) : new Date();
+    if (isNaN(d.getTime())) return "";
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mm = String(d.getMinutes()).padStart(2, "0");
+    return hh + ":" + mm;
+  }
+
+  /* (014-المرحلة 2) ترويسة مجموعة رسائل: مرسل 12px/600 + زمن 11px mono —
+     ترويسة ثنائية الطبقة تحل «عناصر اليتامى» (رسائل ؟ بلا سياق) وتفصل
+     طباعيًا بين المتحدثين كما في Devin. */
+  function msgHead(who, iso) {
+    var head = document.createElement("div");
+    head.className = "msg-head";
+    var w = document.createElement("span");
+    w.className = "msg-who";
+    w.textContent = who;
+    head.appendChild(w);
+    var clock = fmtClock(iso);
+    if (clock) {
+      var t = document.createElement("span");
+      t.className = "msg-when";
+      t.textContent = clock;
+      head.appendChild(t);
+    }
+    return head;
+  }
+
+  function addUserMessage(text, when) {
     var wrap = document.createElement("div");
     wrap.className = "bubble user";
+    wrap.appendChild(msgHead("أنت", when || null));
     var body = document.createElement("div");
     body.className = "bubble-body";
     body.dir = "auto";   // (010 §4) الاتجاه من المحتوى: عربي RTL / إنجليزي LTR
@@ -356,9 +418,10 @@
     scrollDown();
   }
 
-  function addAssistantBubble() {
+  function addAssistantBubble(when) {
     var wrap = document.createElement("div");
     wrap.className = "bubble assistant";
+    wrap.appendChild(msgHead("المساعد", when || null));
     var body = document.createElement("div");
     body.className = "bubble-body md-body";
     body.dir = "auto";   // (010 §4) الجملة العربية تبدأ يمينًا — والكود/الجداول LTR داخل العارض
@@ -374,18 +437,23 @@
 
   function addHistoryMessage(message) {
     if (message.role === "user") {
-      addUserMessage(message.content);
+      addUserMessage(message.content, message.created_at);
       return;
     }
     if (message.role === "assistant") {
-      var bubble = addAssistantBubble();
+      var bubble = addAssistantBubble(message.created_at);
       if (window.MD) {
         bubble.body.innerHTML = window.MD.render(message.content);
       } else {
         bubble.body.textContent = message.content;
       }
+      /* (014-المرحلة 2) الحكم شارة صادقة: قيمة أحادية 11px — غامقة حمراء
+         بأيقونة عند الفشل بدل نص رمادي ضائع */
       if (message.state_badge) {
-        bubble.foot.textContent = "الحكم: " + message.state_badge;
+        var badge = String(message.state_badge);
+        var v = el("span", "verdict" + (/FAIL|ERROR|BLOCKED/i.test(badge) ? " fail" : ""), badge);
+        bubble.foot.appendChild(document.createTextNode("الحكم: "));
+        bubble.foot.appendChild(v);
       }
       return;
     }
