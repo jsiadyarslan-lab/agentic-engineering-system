@@ -428,7 +428,8 @@ class LiveImplementer(LiveRoleBase):
             # (RLR-001 §4d-9) محتوى الملفات السابقة — معايير الاتساق
             # (نفس footer/nav، مسارات نسبية مطابقة) لا تُستوفى بأسماء
             # فقط؛ النموذج يرى النص المكتوب فعلاً فيطابق حرفيًا.
-            "existing_files_content": self._existing_contents(done, root),
+            "existing_files_content": self._existing_contents(
+                done, Path(getattr(ctx, "grant_root", "."))),
             "note": "أعد محتوى هذا الملف وحده نصاً خاماً كاملاً: بلا "
                     "أسوار كود، بلا عنوان، بلا أي شرح قبله أو بعده. "
                     "الملفات السابقة مكتوبة فعلاً — طابق عناصرها "
