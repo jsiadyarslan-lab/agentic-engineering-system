@@ -425,9 +425,15 @@ class LiveImplementer(LiveRoleBase):
             "file": name,
             "files_done": done,
             "task": task_payload,
+            # (RLR-001 §4d-9) محتوى الملفات السابقة — معايير الاتساق
+            # (نفس footer/nav، مسارات نسبية مطابقة) لا تُستوفى بأسماء
+            # فقط؛ النموذج يرى النص المكتوب فعلاً فيطابق حرفيًا.
+            "existing_files_content": self._existing_contents(done, root),
             "note": "أعد محتوى هذا الملف وحده نصاً خاماً كاملاً: بلا "
                     "أسوار كود، بلا عنوان، بلا أي شرح قبله أو بعده. "
-                    "الملفات السابقة مكتوبة فعلاً — لا تعدها.",
+                    "الملفات السابقة مكتوبة فعلاً — طابق عناصرها "
+                    "المشتركة (header/nav/footer) ومساراتها النسبية "
+                    "حرفياً كما هي في existing_files_content. لا تعدها.",
         }
         messages = [
             ChatMessage(
@@ -474,6 +480,27 @@ class LiveImplementer(LiveRoleBase):
         raise RoleSystemFault(
             self.ROLE, f"بناء {name} فشل بعد إعادة واحدة: {last_error}"
         )
+
+    def _existing_contents(self, done: list[str], root: Path) -> dict:
+        """محتوى الملفات السابقة المكتوبة فعلاً — سقف 6KB لكل ملف
+        و24KB كليًا (RLR-001 §4d-9) كي يطابق النموذج العناصر
+        المشتركة (header/nav/footer) والمسارات النسبية حرفيًا."""
+        out: dict[str, str] = {}
+        budget = 24_000
+        for rel in done[-4:]:
+            try:
+                text = (root / rel).read_text(encoding="utf-8",
+                                              errors="replace")
+            except OSError:
+                continue
+            clip = text[: min(6_000, max(budget, 0))]
+            if not clip:
+                continue
+            out[rel] = clip
+            budget -= len(clip)
+            if budget <= 0:
+                break
+        return out
 
     def _preview_entry(self, root) -> str:
         """رابط معاينة هذا المشروع مشتقاً من مساحة العمل الفعلية.
