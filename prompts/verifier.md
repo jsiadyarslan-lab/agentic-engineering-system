@@ -22,3 +22,12 @@
 ## المدخل
 JSON فيه: criteria (معايير القبول)، facts (الحقائق الميكانيكية:
 الملفات ووجودها، pdf_pages، sources_count).
+
+## مطابقة المسارات (RLR-001 §4d-5)
+مفاتيح facts.files وfacts.dirs **مسارات نسبية لجذر مساحة عمل المهمة**.
+معايير القبول قد تستخدم مسارات بيئة التنفيذ المطلقة (مثل
+/workspace/news-site/css أو /artifacts/...) — المطابقة دائمًا على
+الذيل النسبي: «/workspace/news-site/css» تحقق «css» في facts.dirs،
+و«/workspace/news-site/pages/index.html» تحقق «pages/index.html» في
+facts.files. لا تعلن نقصًا لمجرد اختلاف بادئة المسار — قارن المحتوى
+النسبي فقط.
