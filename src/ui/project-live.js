@@ -873,6 +873,20 @@
    * + [التفاصيل] [إيقاف التنفيذ] — الإيقاف الصريح وحده يوقف (§19). */
   function renderExecutionCard(state, actions) {
     var job = state.job;
+    /* (fix-015) التنفيذ الحالي يُشتق بأمان من اللقطة: كان «execution»
+     * متغيرًا غير معرف (ReferenceError يكسر عرض صفحة المشروع الحية
+     * كاملة) — الآن: مطابقة job.current_execution_id في قائمة
+     * executions (الأحدث أولًا)، وإلا أحدث تنفيذ، وإلا كائن فارغ
+     * فتسقط الصفوف الاختيارية بهدوء بدل انهيار البطاقة. */
+    var execution = (function (list, wanted) {
+      list = Array.isArray(list) ? list : [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] && wanted != null && list[i].id === wanted) {
+          return list[i];
+        }
+      }
+      return list[0] || {};
+    })(state.executions, job && job.current_execution_id);
     var wrap = msgRow("assistant");
     var card = el("div", "pl-card pl-exec live");
 
