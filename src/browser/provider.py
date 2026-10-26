@@ -38,6 +38,7 @@ BROWSER_RUNTIME_DIR = Path("runtime") / "browser"
 #: لمسة sync_playwright تمر عبر هذا الخيط الوحيد فيثبت انتماء
 #: الجلسة لخيط واحد أياً كان سياق المستدعي.
 import concurrent.futures as _cf
+import contextvars as _cv
 
 _BROWSER_ACTOR = _cf.ThreadPoolExecutor(
     max_workers=1, thread_name_prefix="aes-browser-actor")
@@ -45,8 +46,20 @@ _BROWSER_ACTOR = _cf.ThreadPoolExecutor(
 
 def _on_browser_thread(fn, *args, **kwargs):
     """تنفيذ دالة متصفح على خيط الممثل الوحيد — بلا مهلة إضافية
-    (المهل تحكمها سياسة الجلسة نفسها)."""
-    return _BROWSER_ACTOR.submit(fn, *args, **kwargs).result()
+    (المهل تحكمها سياسة الجلسة نفسها).
+
+    (RLR-001 §4d-7) السياق يُعزل عن المستدعي: ThreadPoolExecutor
+    ينسخ contextvars المستدعي — ومن داخل مهمة asyncio ينسخ معها
+    أثر sniffio/asyncio فيرفض Playwright Sync العمل ("inside the
+    asyncio loop") رغم أن الخيط الممثل بلا حلقة. سياق نظيف التُقط
+    عند الاستيراد (بلا أي حلقة) يُستنسخ لكل تنفيذ فيقطع التسرب.
+    """
+    return _CLEAN_CONTEXT.run(fn, *args, **kwargs)
+
+
+#: سياق نظيف بلا أثر async — يُلتقط لحظة الاستيراد (بداية العملية:
+#: لا حلقة، لا sniffio) ويُستخدم كجذر لعزل كل استدعاءات الممثل.
+_CLEAN_CONTEXT = _cv.copy_context()
 
 
 def browser_threaded(fn):
