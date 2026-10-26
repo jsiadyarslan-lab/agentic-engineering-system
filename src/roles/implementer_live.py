@@ -48,7 +48,14 @@ _PDF_HINT = re.compile(r"\.pdf\b", re.IGNORECASE)
 #: تفعّل النمط — مسار التقارير الأصلي يبقى كما هو حرفياً.
 _FILENAME_RE = re.compile(
     r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_][A-Za-z0-9_.-]*"
-    r"\.(?:html|htm|css|js|mjs|svg|py|ts))(?![A-Za-z0-9.-])"
+    r"\.(?:html|htm|css|js|mjs|json|svg|py|ts))(?![A-Za-z0-9.-])"
+)
+
+#: (RLR-001 §4d) مسارات مجلدات مصرّح بها في نص المهمة — مثل
+#: "pages/، assets/css/، scripts/" — تُنشأ فعلياً بملفات .keep
+#: كي تكون أدلة وجود المجلدات بصمات حقيقية لا نص الشرح.
+_DIR_RE = re.compile(
+    r"(?<![A-Za-z0-9_./-])((?:[A-Za-z0-9_][A-Za-z0-9_.-]*/)+)"
 )
 _REPORT_SUFFIXES = (".md", ".txt")
 
@@ -123,6 +130,30 @@ def _mentions_browser_verification(task_payload: dict) -> bool:
         + [str(task_payload.get("context_goal") or "")]
     )
     return "browser_" in text
+
+
+def _declared_dirs(task_payload: dict) -> list[str]:
+    """مسارات المجلدات المصرّح بها في نص المهمة (RLR-001 §4d).
+
+    تعود بغير فارغة فقط حين تصرّح المهمة بمجلدات صريحة مثل
+    "pages/، assets/css/" — تُنشأ لاحقاً بملفات .keep حقيقية عبر
+    write_file في الركيزة، فتصير أدلة «المجلدات موجودة» بصمات
+    موثقة لا اجتهاد نصي.
+    """
+    texts = [str(task_payload.get("description") or "")]
+    texts += [str(c) for c in task_payload.get("acceptance_criteria") or []]
+    texts.append(str(task_payload.get("context_goal") or ""))
+    dirs: list[str] = []
+    for text in texts:
+        for match in _DIR_RE.findall(text):
+            clean = match.strip("/").strip()
+            if not clean or clean.startswith(".") or ".." in clean:
+                continue
+            if clean.endswith(".keep"):
+                continue
+            if clean not in dirs and len(clean) < 120:
+                dirs.append(clean)
+    return dirs[:12]
 
 
 def _sources_section(markdown: str) -> str:
@@ -465,7 +496,9 @@ class LiveImplementer(LiveRoleBase):
             return []
 
     def _run_build_mode(self, request, task_payload: dict, ctx,
-                        root: Path, build_names: list[str]) -> "ImplementerResult":
+                        root: Path, build_names: list[str],
+                        build_dirs: list[str] | None = None
+                        ) -> "ImplementerResult":
         """نمط البناء (AES-LIVE-FACTORY-E2E-001 المرحلة 6).
 
         استدعاء واحد لكل ملف (قصير تحت عتبة نبضة الوظيفة) ← كتابة
@@ -482,6 +515,20 @@ class LiveImplementer(LiveRoleBase):
         evidence_refs: list[str] = []
         try:
             done: list[str] = []
+            # (RLR-001 §4d) المجلدات المصرّح بها أولاً — .keep في كل
+            # مجلد عبر write_file (الركيزة تنشئ الأب تلقائياً) بأدلة
+            # بصمة حقيقية لشرط «المجلدات موجودة».
+            for dir_path in (build_dirs or []):
+                self._stop_requested(ctx, "implementer.build_dir")
+                keep = f"{dir_path}/.keep"
+                run_tool(
+                    "write_file",
+                    {"path": keep, "content": ""},
+                    ctx,
+                )
+                written = root / keep
+                artifacts.append(str(written))
+                evidence_refs.append(f"sha256:{_sha16(written)}:{keep}")
             for name in build_names:
                 self._stop_requested(ctx, "implementer.build_file")
                 item = self._build_one_file(task_payload, name, done)
@@ -527,9 +574,11 @@ class LiveImplementer(LiveRoleBase):
                         f"فشل {tool}: {str(error)[:120]}")
 
             stdout = (
-                f"بنيت {len(done)} ملفاً (المصرح بها: "
-                f"{', '.join(build_names)}) ونفذت "
-                f"{len(verify)} أداة تحقق"
+                f"بنيت {len(done)} ملفاً و{len(build_dirs or [])} مجلداً "
+                f"(المصرّح بها: {', '.join(build_names)}"
+                + (f"؛ مجلدات: {', '.join(build_dirs or [])}"
+                   if build_dirs else "")
+                + f") ونفذت {len(verify)} أداة تحقق"
             )
             if verify_notes:
                 stdout += " — ملاحظات: " + "; ".join(verify_notes)[:200]
@@ -592,9 +641,12 @@ class LiveImplementer(LiveRoleBase):
             # المتصفح من verify كأدلة مرفقة. مسار التقارير الأصلي
             # (لا ملفات صريحة) لا يمس هذا الفرع إطلاقًا.
             build_names = _deliverable_names(task_payload)
-            if build_names or _mentions_browser_verification(task_payload):
+            build_dirs = _declared_dirs(task_payload)
+            if build_names or build_dirs or \
+                    _mentions_browser_verification(task_payload):
                 return self._run_build_mode(
                     request, task_payload, ctx, root, build_names,
+                    build_dirs=build_dirs,
                 )
 
             # (1) خطة الأدوات ← تنفيذها بتعافٍ مصنَّف (إضافة 008 §8-§12):
