@@ -1318,6 +1318,28 @@ class ProjectEngine:
                                     or event.get("file")
                                     or "")[:200],
                 })
+            elif kind in ("task_execution", "task_verification"):
+                # (RLR-001 §1) نتيجة الدور الدورية تُخلَّد دائمًا — كانت
+                # تذهب للبث الحي وحده فيبتلع سبب الفشل الحقيقي (stderr/
+                # missing_evidence) وتبقى الرسالة العامة وحدها في السجل.
+                details = event.get("details") or {}
+                self._emit(
+                    project_id,
+                    "TASK_EXECUTION" if kind == "task_execution"
+                    else "TASK_VERIFICATION",
+                    {
+                        "step_id": step["id"],
+                        "execution_id": execution_id,
+                        "role": event.get("role", "implementer"),
+                        "status": str(details.get("status")
+                                      or details.get("verdict") or "")[:40],
+                        "summary": str(event.get("text") or "")[:220],
+                        "stderr": str(details.get("stderr") or "")[:400],
+                        "missing": list(
+                            details.get("missing_evidence") or [])[:4],
+                        "duration_ms": event.get("duration_ms", 0),
+                    },
+                )
             else:
                 cycle_role = _CYCLE_ROLE_KINDS.get(kind)
                 if cycle_role and cycle_role not in cycle_roles_seen:
