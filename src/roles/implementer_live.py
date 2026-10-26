@@ -411,7 +411,8 @@ class LiveImplementer(LiveRoleBase):
     # ------------------------------------------------------------------ #
 
     def _build_one_file(self, task_payload: dict, name: str,
-                        done: list[str]) -> dict:
+                        done: list[str],
+                        root: Path | None = None) -> dict:
         """استدعاء LLM واحد لملف واحد — محتوى نص خام لا JSON.
 
         (المرحلة 6و) محتوى الكود داخل JSON أثبت فشله متكرراً (style.css:
@@ -429,7 +430,7 @@ class LiveImplementer(LiveRoleBase):
             # (نفس footer/nav، مسارات نسبية مطابقة) لا تُستوفى بأسماء
             # فقط؛ النموذج يرى النص المكتوب فعلاً فيطابق حرفيًا.
             "existing_files_content": self._existing_contents(
-                done, Path(getattr(ctx, "grant_root", "."))),
+                done, root) if root is not None else {},
             "note": "أعد محتوى هذا الملف وحده نصاً خاماً كاملاً: بلا "
                     "أسوار كود، بلا عنوان، بلا أي شرح قبله أو بعده. "
                     "الملفات السابقة مكتوبة فعلاً — طابق عناصرها "
@@ -608,7 +609,7 @@ class LiveImplementer(LiveRoleBase):
                 evidence_refs.append(f"sha256:{_sha16(written)}:{keep}")
             for name in build_names:
                 self._stop_requested(ctx, "implementer.build_file")
-                item = self._build_one_file(task_payload, name, done)
+                item = self._build_one_file(task_payload, name, done, root=root)
                 path = str(item["path"]).strip()
                 run_tool(
                     "write_file",
