@@ -57,6 +57,24 @@ _FILENAME_RE = re.compile(
 _DIR_RE = re.compile(
     r"(?<![A-Za-z0-9_./-])((?:[A-Za-z0-9_][A-Za-z0-9_.-]*/)+)"
 )
+
+#: (RLR-001 §4d-2) رموز مسارات كاملة — ملفات بمجلداتها
+#: (src/styles/base.css) ومجلدات بلا شرطة نهائية (src/pages, ...)
+#: — علة خطوة 218: المنتقي الأول يمنع ما يسبقه / فلا يرى الملف
+#: المساريّ ولا المجلد المفصول بفاصلة.
+_PATH_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9_./-])((?:[A-Za-z0-9_][A-Za-z0-9_.-]*/)+"
+    r"[A-Za-z0-9_][A-Za-z0-9_.-]*)"
+)
+_BUILD_EXTS = ("html", "htm", "css", "js", "mjs", "json", "svg", "py", "ts")
+
+
+def _safe_rel(p: str) -> str:
+    """تطبيع مسار نسبي آمن داخل المنحة — None عند أي هروب."""
+    p = p.strip().strip("/")
+    if not p or p.startswith(".") or ".." in p or "\\" in p or len(p) > 200:
+        return ""
+    return p
 _REPORT_SUFFIXES = (".md", ".txt")
 
 _BUILD_SYSTEM_PROMPT = """أنت المنفذ البنّاء في نظام هندسي عربي ذاتي.
@@ -95,6 +113,15 @@ def _deliverable_names(task_payload: dict) -> list[str]:
             if "/" in clean or clean.startswith("."):
                 continue
             if clean not in names:
+                names.append(clean)
+        # (§4d-2) ملفات بمسارات كاملة: src/styles/base.css — الاسم
+        # البسيط وحده لا يلتقطها (lookbehind يمنع ما يسبقه /).
+        for match in _PATH_TOKEN_RE.findall(text):
+            clean = _safe_rel(match)
+            if not clean or clean.lower().endswith(_REPORT_SUFFIXES):
+                continue
+            ext = clean.rsplit(".", 1)[-1].lower() if "." in clean else ""
+            if ext in _BUILD_EXTS and clean not in names:
                 names.append(clean)
     return names[:10]
 
@@ -144,15 +171,28 @@ def _declared_dirs(task_payload: dict) -> list[str]:
     texts += [str(c) for c in task_payload.get("acceptance_criteria") or []]
     texts.append(str(task_payload.get("context_goal") or ""))
     dirs: list[str] = []
+
+    def _add(candidate: str) -> None:
+        clean = _safe_rel(candidate)
+        if clean and clean not in dirs and len(dirs) < 12:
+            dirs.append(clean)
+
     for text in texts:
+        # (1) مجلدات بشرطة نهائية: pages/، assets/css/
         for match in _DIR_RE.findall(text):
-            clean = match.strip("/").strip()
-            if not clean or clean.startswith(".") or ".." in clean:
+            _add(match)
+        # (2) رموز مسارات: src/pages (مجلد بفاصلة) أو والد ملف مساري
+        for match in _PATH_TOKEN_RE.findall(text):
+            clean = _safe_rel(match)
+            if not clean or clean.endswith(".keep"):
                 continue
-            if clean.endswith(".keep"):
-                continue
-            if clean not in dirs and len(clean) < 120:
-                dirs.append(clean)
+            leaf = clean.rsplit("/", 1)[-1]
+            if "." in leaf:
+                parent = clean.rsplit("/", 1)[0]
+                if parent:
+                    _add(parent)
+            else:
+                _add(clean)
     return dirs[:12]
 
 

@@ -41,6 +41,23 @@ def test_report_only_task_stays_report_path():
     assert _declared_dirs(payload) == []
 
 
+def test_step218_comma_dirs_and_pathed_files():
+    """علة خطوة 218: مجلدات بفواصل بلا شرطة نهائية + ملف بمسار كامل."""
+    payload = {
+        "description": "إنشاء هيكل المجلدات وقاعدة CSS للثيم الداكن",
+        "acceptance_criteria": [
+            "المجلدات src/pages, src/styles, src/assets, src/components موجودة",
+            "src/styles/base.css يحدد :root مع متغيرات ألوان داكنة",
+        ],
+        "context_goal": "",
+    }
+    names = _deliverable_names(payload)
+    assert "src/styles/base.css" in names, names
+    dirs = _declared_dirs(payload)
+    for d in ("src/pages", "src/styles", "src/assets", "src/components"):
+        assert d in dirs, (d, dirs)
+
+
 def test_traversal_rejected():
     """مسارات الهروب تُرفض صراحة."""
     payload = {
@@ -50,3 +67,7 @@ def test_traversal_rejected():
     }
     dirs = _declared_dirs(payload)
     assert all(".." not in d for d in dirs), dirs
+    names = _deliverable_names({"description": "../x/../../evil.css",
+                                "acceptance_criteria": [],
+                                "context_goal": ""})
+    assert all(".." not in n for n in names), names
