@@ -23,6 +23,7 @@ from pathlib import Path
 #: واحداً فحُسبت المرحلة ناقصة كذباً — مشروع 17)، مع إضافة امتدادات
 #: الويب css/js/mjs التي كانت غائبة فلا تُفحص ملفات المواقع إطلاقاً.
 _FILE_TOKEN = re.compile(
+    r"(?:[A-Za-z0-9_][A-Za-z0-9_.\-]*/)*"
     r"[A-Za-z0-9_][A-Za-z0-9_.\-]*"
     r"\.(?:md|pdf|json|txt|csv|py|html|htm|xml|log|yml|yaml|toml|"
     r"svg|png|css|js|mjs)"
@@ -30,8 +31,20 @@ _FILE_TOKEN = re.compile(
 
 
 def _criterion_files(criterion: str) -> list[str]:
-    """الملفات المذكورة حرفيًا في المعيار — القابل للفحص الميكانيكي."""
+    """الملفات المذكورة حرفيًا في المعيار — القابل للفحص الميكانيكي.
+
+    (RLR-001 §4d-4) المسارات الكاملة تُستخرج كما هي (css/main.css)
+    — كان النمط يتوقف عند الشرطة فيُستخرج main.css وحده فلا يطابق
+    مفاتيح الأدلة النسبية أبدًا.
+    """
     return _FILE_TOKEN.findall(criterion)
+
+
+def _file_in_evidence(name: str, files: dict) -> bool:
+    """مطابقة مرنة: مفتاح مطابق كاملاً أو ينتهي بالاسم (مسار/أساس)."""
+    if name in files:
+        return True
+    return any(key == name or key.endswith("/" + name) for key in files)
 
 
 def _check_criterion(criterion: str, evidence: dict) -> bool:
@@ -44,7 +57,7 @@ def _check_criterion(criterion: str, evidence: dict) -> bool:
     mentioned = _criterion_files(criterion)
     if not mentioned:
         return False
-    return all(name in files for name in mentioned)
+    return all(_file_in_evidence(name, files) for name in mentioned)
 
 
 def _criterion_mechanical(criterion: str, evidence: dict) -> bool:

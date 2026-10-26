@@ -1930,17 +1930,26 @@ def _git_head() -> str:
 
 
 def _files_with_sha(workspace: str) -> dict:
-    """ملفات مساحة العمل وsha256 — الأدلة الميكانيكية للتنفيذ."""
+    """ملفات مساحة العمل وsha256 — الأدلة الميكانيكية للتنفيذ.
+
+    (RLR-001 §4d-4) مسح تكراري بمفاتيح مسارات نسبية — كان المسح
+    العلوّي وحده يُخفي كل تسليم مساري (css/main.css، src/styles/base.css)
+    ف يحكم المدقق الميكانيكي بالفقد زوراً رغم وجود الملف وبصمته.
+    """
     root = Path(workspace)
     if not root.is_dir():
         return {}
     out = {}
-    for path in sorted(root.iterdir()):
-        if path.is_file() and path.name != "evidence.json":
-            out[path.name] = {
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "bytes": path.stat().st_size,
-            }
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if rel == "evidence.json" or rel.startswith("_versions/"):
+            continue
+        out[rel] = {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "bytes": path.stat().st_size,
+        }
     return out
 
 
