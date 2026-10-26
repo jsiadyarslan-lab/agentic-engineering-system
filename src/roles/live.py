@@ -185,9 +185,29 @@ class VerifierLive(LiveRoleBase):
     facts_builder: Any = None
 
     def run(self, request: VerifierRequest) -> VerifierResult:
-        facts: dict[str, Any] = {"files": {}}
-        for reference in request.artifacts:
-            path = Path(reference)
+        # (RLR-001 §4d-3) الحقائق بمسارات نسبية لا أسماء أساسية — كان
+        # css/.keep وjs/.keep وassets/.keep ينهارون كلهم في المفتاح
+        # ".keep" (وstyles.css يطغى على css/styles.css) فيحكم النموذج
+        # بصدق على حقائق فاسدة: «مجلد غير موثق في facts.files».
+        import os as _os
+
+        resolved = [
+            str(Path(r).resolve()) for r in request.artifacts if r
+        ]
+        common = ""
+        try:
+            common = _os.path.commonpath(resolved) if resolved else ""
+        except ValueError:  # مسارات غير متجانسة (أقراص مختلفة)
+            common = ""
+        facts: dict[str, Any] = {"files": {}, "dirs": []}
+        dirs_seen: set[str] = set()
+        for reference, rp in zip(request.artifacts, resolved):
+            path = Path(rp)
+            rel = (
+                _os.path.relpath(rp, common)
+                if common and rp.startswith(common)
+                else path.name
+            )
             entry: dict[str, Any] = {
                 "exists": path.is_file(),
                 "sha256_head": (
@@ -214,7 +234,21 @@ class VerifierLive(LiveRoleBase):
                         )[:16000]
                 except OSError:
                     pass
-            facts["files"][path.name] = entry
+            facts["files"][rel] = entry
+            # (§4d-3) مجلدات الأدلة نفسها حقائق معلنة — شرط «المجلدات
+            # موجودة» يُحكم على قائمة حقيقية لا اجتهاد.
+            parent_rel = (
+                _os.path.relpath(str(path.parent), common)
+                if common and str(path.parent).startswith(common)
+                else ""
+            )
+            while parent_rel and parent_rel != ".":
+                if parent_rel not in dirs_seen:
+                    dirs_seen.add(parent_rel)
+                    facts["dirs"].append(parent_rel)
+                parent_rel = _os.path.dirname(parent_rel)
+        if facts["dirs"]:
+            facts["dirs"] = sorted(facts["dirs"])
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))
