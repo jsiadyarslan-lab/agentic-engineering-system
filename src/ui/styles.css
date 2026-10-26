@@ -19,7 +19,7 @@ html, body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--fs-15);
-  line-height: 1.75;
+  line-height: var(--lh-body);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -121,7 +121,6 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 .brand-name {
   font-weight: 600;
   font-size: var(--fs-14);
-  letter-spacing: 0.2px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -237,7 +236,6 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   color: var(--text-dim);
   font-size: var(--fs-13);
   font-weight: 500;
-  letter-spacing: 0.01em;
   text-align: start;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -455,9 +453,9 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 }
 
 .welcome h1 {
-  font-size: var(--fs-28);
+  font-size: var(--fs-display);
   font-weight: 700;
-  letter-spacing: 0.2px;
+  line-height: var(--lh-display);
   margin-bottom: var(--sp-2);
 }
 

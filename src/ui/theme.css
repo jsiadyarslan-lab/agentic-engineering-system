@@ -1,138 +1,150 @@
 /* ==========================================================================
-   AES-UI-PREMIUM-REDESIGN-007 — نظام التصميم الموحد (إعادة تأسيس)
-   Premium Engineering Workspace — مصدر الحقيقة الوحيد للرموز البصرية.
+   AES-UI-REDESIGN-014 — المرحلة صفر: نظام التوكنات المعياري (إعادة تأسيس)
 
-   يُحمَّل أولاً قبل كل ملفات CSS. يعرّف:
-     1) رموز كاملة: ألوان/خطوط/مقياس طباعي/مسافات/أنصاف/ظلال/طبقات z/حركة.
-     2) أرضية تباين AA مضمونة رقميًا (007: النصوص كلها ≥4.5:1 على أضعف سطح).
-     3) مفردات المكوّنات الأساسية: زر/حبة حالة/حالة فراغ/عزل BiDi تقني.
-   الأسماء القديمة (--muted/--fg/--line/…) تبقى أسماء مستعارة فلا fallbacks متضاربة.
-   الخط: IBM Plex Sans Arabic محلي (صفر موارد خارجية).
+   مصدر الحقيقة الوحيد للقيم البصرية — مطابق حرفيًا لجدول التوكنات الملزم
+   في خطة AES-013 (القسم 7.0). كل شاشة تُبنى لاحقًا تشتق من هنا فقط،
+   والعقود الآلية (test_ui_tokens_014.py) تقفل هذه القيم بالقياس.
+
+   القاعدتان الملزمتان:
+     G7 — تباعد الأحرف صفري على كل نص عربي بلا استثناء؛ التقنين حكر
+          على السياقات اللاتينية الصريحة (mono/uppercase/ltr).
+     G3 — كل قيمة رقمية تقنية بخط IBM Plex Mono 13px بأرقام جدولية.
+
+   الأسماء القديمة (--muted/--fg/--line/--panel…) كلها أسماء مستعارة
+   فلا fallbacks متضاربة — تُصان حتى تُنقى مصادرها في المراحل 1-5.
    ========================================================================== */
 
 :root {
-  /* ---------- الطبقات اللونية (فحمي هادئ مزرق) ---------- */
-  --bg: #0b0e14;            /* الخلفية العامة */
-  --bg-sidebar: #0f141d;    /* الشريط الجانبي */
-  --bg-raised: #121826;     /* أسطح العمل الأساسية */
-  --bg-elevated: #171e2c;   /* الأسطح المرتفعة والقوائم */
-  --bg-input: #0b0e14;      /* حقول الإدخال */
-  --bg-hover: #141b28;      /* حالة التحويم الهادئة */
+  /* ---------- الأسطح — أربع طبقـات بفروق إضاءة مقيسة (G2: ≥3% بين كل طبقتين،
+     والشريط ≥4% عن اللوحة وفق ملاحظة الاستخدام في الجدول نفسه)
+     ملاحظة حسم 014: قيم جدول 7.0 الحرفية (#10141B/#161B24/#1D2430) تعطي
+     فروقًا 2.94% فقط — تناقض داخلي في الخطة؛ حُسمت البوابة المقيسة على
+     القيمة الحرفية بانحراف ≤ درجة لكل قناة:
+     canvas 5.5% · sidebar 9.6% (Δ4.1) · raised 12.9% (Δ3.3) · hover 16.7% (Δ3.7) ---------- */
+  --bg-canvas: #0A0D12;      /* الخلفية العامة — الدرجة الأعمق */
+  --bg-sidebar: #12171F;     /* الشريط الجانبي — انفصال ≥4% إضاءة عن اللوحة */
+  --bg-raised: #191E29;      /* المكونات المرفوعة: صندوق الكتابة، البطاقات، النوافذ */
+  --bg-hover: #212834;       /* حالة التحويم لكل العناصر التفاعلية (الطبقة العليا) */
 
-  --bubble-user: #171e2c;
-  --bubble-assistant: transparent;
+  --bg-input: #0A0D12;       /* حقول الإدخال — على قاعدة اللوحة */
+  --bg-elevated: #212834;    /* (اسم قديم) القوائم والشارات — الطبقة العليا نفسها */
+  --bubble-user: #191E29;    /* بطاقة رسالة المستخدم = سطح مرفوع */
+  --bubble-assistant: transparent; /* المساعد نص مسطح كأسلوب Devin */
 
-  /* ---------- الحدود ---------- */
-  --border: #222a38;
-  --border-soft: #1b2231;
-  --border-strong: #2b3547;
+  /* ---------- الحدود — قيمتان فقط ---------- */
+  --border-subtle: rgba(255, 255, 255, 0.07);  /* الحدود الخاملة الموحدة */
+  --border-strong: rgba(255, 255, 255, 0.13);  /* حدود صناديق الإدخال */
 
-  /* ---------- النصوص — سُلّم تباين مقيس (007) ----------
-     text 17.1:1 · mid 8.7:1 · dim 7.0:1 · faint 5.8:1 على --bg
-     وكلها ≥4.9:1 على أضعف سطح elevated — لا فشل AA في أي نص محتوى. */
-  --text: #e9edf5;
-  --text-mid: #9aa4b4;
-  --text-dim: #75808f;
-  --text-faint: #707b8d;
-  --text-disabled: #4c5568;  /* للعناصر المعطلة فقط (معفاة من AA) */
+  /* ---------- النصوص — ثلاثة أدوار (تباين AA مقيسًا على أضعف سطح)
+     primary 17.9:1 · secondary 10.6:1 · muted 5.3:1 على canvas ---------- */
+  --text-primary: #F5F7FA;   /* العناوين وقيم البطل */
+  --text-secondary: #B8C0CC; /* نص الرسائل والوصف */
+  --text-muted: #7D8794;     /* الأزمنة والتسميات الدقيقة فقط */
 
-  /* ---------- التمييز: ذهبي هادئ واحد ---------- */
-  --accent: #58a6ff;
-  --accent-strong: #7db8ff;
+  /* ---------- التمييز التشغيلي: أزرق واحد بأربع وظائف حصرًا ----------
+     زر الإرسال + الحالة النشطة + الروابط + حلقة التركيز. زخرفة متناثرة = ممنوع. */
+  --accent: #58A6FF;
+  --accent-strong: #7DB8FF;                    /* حالة hover للعنصر الأزرق */
   --accent-soft: rgba(88, 166, 255, 0.12);
   --accent-softer: rgba(88, 166, 255, 0.06);
   --accent-border: rgba(88, 166, 255, 0.32);
-  --accent-ink: #04101c;    /* نص فوق خلفية ذهبية صلبة */
+  --accent-ink: #06101D;                       /* نص/أيقونة فوق الأزرق الصلب */
 
-  /* ---------- تمييز الوكيل/النظام (007) ----------
-     أزرق مرجع المصنع 003 يصبح دلالة «حيوية وكيل» داخل النظام الواحد،
-     لا لوحة موازية: شارات LIVE ونبض النشاط فقط. */
-  --accent-agent: var(--accent);
+  --accent-agent: var(--accent);               /* «حيوية وكيل» = نفس الأزرق التشغيلي */
   --accent-agent-soft: var(--accent-soft);
   --accent-agent-border: var(--accent-border);
 
-  /* ---------- الحالات الدلالية (مفهومة بالنص والرمز لا باللون وحده) ---------- */
-  --ok: #43cf90;
-  --ok-soft: rgba(67, 207, 144, 0.10);
-  --ok-border: rgba(67, 207, 144, 0.30);
-  --ok-chip: rgba(67, 207, 144, 0.14);
+  /* ---------- الحالات الدلالية (نقاط وشارات حصرًا — مفهومة بالنص والرمز) ---------- */
+  --ok: #3FB68B;
+  --ok-soft: rgba(63, 182, 139, 0.10);
+  --ok-border: rgba(63, 182, 139, 0.30);
+  --ok-chip: rgba(63, 182, 139, 0.14);
 
-  --danger: #f06969;
-  --danger-soft: rgba(240, 105, 105, 0.06);
-  --danger-border: rgba(240, 105, 105, 0.32);
-  --danger-chip: rgba(240, 105, 105, 0.10);
+  --danger: #E5574B;   /* = err */
+  --danger-soft: rgba(229, 87, 75, 0.07);
+  --danger-border: rgba(229, 87, 75, 0.32);
+  --danger-chip: rgba(229, 87, 75, 0.11);
 
-  --warn: #ff9e64;
-  --warn-soft: rgba(255, 158, 100, 0.08);
-  --warn-border: rgba(255, 158, 100, 0.35);
-  --warn-chip: rgba(255, 158, 100, 0.14);
+  --warn: #E5A54B;     /* كهرماني تحذيري حصرًا — يحظر على القيم الممتازة */
+  --warn-soft: rgba(229, 165, 75, 0.09);
+  --warn-border: rgba(229, 165, 75, 0.35);
+  --warn-chip: rgba(229, 165, 75, 0.14);
 
-  --info: #6aa6ff;
-  --info-soft: rgba(106, 166, 255, 0.10);
-  --info-border: rgba(106, 166, 255, 0.36);
-  --info-chip: rgba(106, 166, 255, 0.14);
+  --info: #58A6FF;     /* معلوماتي = الأزرق التشغيلي نفسه */
+  --info-soft: rgba(88, 166, 255, 0.10);
+  --info-border: rgba(88, 166, 255, 0.36);
+  --info-chip: rgba(88, 166, 255, 0.14);
 
-  /* ---------- أدوار المصنع — ألوان هوية داخل النظام الواحد (007) ---------- */
+  /* ---------- أدوار المصنع — ألوان هوية داخل النظام الواحد ---------- */
   --role-thinker: #D98BA8;
   --role-implementer: #B8A3F0;
   --role-arbiter: var(--warn);
 
-  /* ---------- الخطوط (007: كانت خمس مداخل mono متنافرة) ---------- */
+  /* ---------- الخطوط ---------- */
   --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI",
                Tahoma, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
                Consolas, monospace;
 
-  /* ---------- المقياس الطباعي (007: هرمية منضبطة 11→28) ----------
-     11: وسم علوي صغير فقط · 12: وصف/طوابع زمنية · 13: تنقل وثانوي
-     15: جسم · 17: عنوان بطاقة · 19: رأس قسم · 22/28: الترحيب. */
-  --fs-11: 11px;
-  --fs-12: 12px;
-  --fs-13: 13px;
-  --fs-14: 14px;
-  --fs-15: 15px;
-  --fs-17: 17px;
-  --fs-19: 19px;
-  --fs-22: 22px;
-  --fs-28: 28px;
+  /* ---------- المقياس الطباعي المعياري (014) ----------
+     display 40/700/1.15 · h1 24 · h2 19 · h3 16 · body 15/1.6 · mono 13.
+     درجة العرض جديدة كليًا: قبلها كان أكبر نص في المنتج 28px بلا هيمنة. */
+  --fs-display: 40px;
+  --lh-display: 1.15;
+  --lh-body: 1.6;
+  --fs-h1: 24px;
+  --fs-h2: 19px;
+  --fs-h3: 16px;
 
-  /* ---------- المقياس (شبكة 4px) ---------- */
+  /* سلم موروث (يُصان للتوافق — يشير لأقرب درجة معيارية) */
+  --fs-11: 11px;   /* وسم علوي صغير */
+  --fs-12: 12px;   /* وصف/طوابع زمنية/تسميات التجميع */
+  --fs-13: 13px;   /* تنقل وثانوي + كل النص الأحادي */
+  --fs-14: 14px;
+  --fs-15: 15px;   /* الجسم */
+  --fs-17: var(--fs-h3);  /* (موروث) عنوان بطاقة → h3 */
+  --fs-19: var(--fs-h2);  /* (موروث) رأس قسم → h2 */
+  --fs-22: var(--fs-h1);  /* (موروث) ترحيب الجوال → h1 */
+  --fs-28: var(--fs-display); /* (موروث) عنوان البطل → display */
+
+  /* ---------- التباعد — شبكة 4px صارمة (قيم شاذة مثل 9/10/18 ممنوعة) ---------- */
   --sp-1: 4px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;
-  --sp-5: 20px;
+  --sp-5: 20px;    /* (موروث على الشبكة) */
   --sp-6: 24px;
   --sp-8: 32px;
-  --sp-10: 40px;
+  --sp-10: 40px;   /* (موروث على الشبكة) */
+  --sp-12: 48px;
+  --sp-16: 64px;
 
-  /* ---------- الأنصاف والزوايا ---------- */
-  --radius-s: 8px;
-  --radius-m: 12px;
-  --radius-l: 16px;
-  --radius-pill: 999px;
+  /* ---------- الأنصاف — ثلاث قيم فقط (لا قيمة رابعة) ---------- */
+  --radius-s: 8px;      /* تفاعلي */
+  --radius-m: 12px;     /* حاويات */
+  --radius-l: 12px;     /* (موروث) — كان 16؛ انضبط على الحاويات */
+  --radius-pill: 999px; /* شارات-حبوب فقط */
 
-  /* ---------- الظلال (خفيفة — مساحة عمل لا معرض) ---------- */
-  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.32);
-  --shadow-2: 0 10px 34px rgba(0, 0, 0, 0.42);
-  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+  /* ---------- الظلال — حالتا رفع + ظل النافذة فقط ---------- */
+  --elev-1: 0 8px 24px rgba(0, 0, 0, 0.35);           /* الرفع الناعم الموحد */
+  --focus-ring: 0 0 0 3px rgba(88, 166, 255, 0.25);   /* حلقة التركيز الملزمة */
+  --shadow-1: var(--elev-1);                          /* (موروث) */
+  --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.45);         /* (موروث) رفع أعمق */
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
 
   /* ---------- الأبعاد ---------- */
-  --chat-width: 780px;      /* (007) عمود المحتوى — متطابق مع عقد 920px في app-shell.css */
-  --sidebar-width: 292px;
+  --chat-width: 760px;       /* عمود المحتوى (الخطة: 720-760) */
+  --sidebar-width: 260px;    /* (014) كان 292 — مضغوط لمركز معلومات Devin */
   --drawer-width: 440px;
   --header-h: 56px;
 
-  /* ---------- الحركة ---------- */
-  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --dur-fast: 0.14s;
-  --dur: 0.22s;
-  --dur-slow: 0.32s;
+  /* ---------- الحركة — 150ms ease-out موحدة؛ 200ms للوحات المنزلقة ---------- */
+  --ease: ease-out;
+  --dur-fast: 0.15s;
+  --dur: 0.15s;
+  --dur-slow: 0.2s;
 
-  /* ---------- الطبقات z — سلّم واحد (007: كان مخططين متداخلين) ----------
-     content 30 · raised 40 (قوائم منبثقة داخل سطح) · sidebar 50 ·
-     sticky 55 (أزرار عائمة) · drawer 61 + لوحه 62 · modal 70 ·
-     popover 71 (فوق المودال كمنتقي نماذج) · boundary 300. */
+  /* ---------- الطبقات z — سلّم واحد ---------- */
   --z-content: 30;
   --z-raised: 40;
   --z-sidebar: 50;
@@ -144,17 +156,28 @@
   --z-boundary: 300;
 
   /* ==========================================================================
-     الأسماء القديمة — مستعارة إلى النظام (تُصان حتى تُنقى مصادرها).
+     الأسماء القديمة — مستعارة إلى النظام المعياري (تُصان حتى تُنقى مصادرها).
      ========================================================================== */
+  --bg: var(--bg-canvas);
   --panel: var(--bg-raised);
   --panel-2: var(--bg-elevated);
-  --ink: var(--text);
-  --ink-2: var(--text-mid);
-  --line: var(--border-soft);
-  --muted: var(--text-dim);
-  --fg: var(--text);
+  --ink: var(--text-primary);
+  --ink-2: var(--text-secondary);
+  --line: var(--border-subtle);
+  --muted: var(--text-muted);
+  --fg: var(--text-primary);
   --card: var(--bg-raised);
   --card-2: var(--bg-elevated);
+
+  --border: var(--border-subtle);
+  --border-soft: var(--border-subtle);
+  /* --border-strong يُعرَّف أعلاه بالقيمة المعيارية */
+
+  --text: var(--text-primary);
+  --text-mid: var(--text-secondary);
+  --text-dim: var(--text-muted);
+  --text-faint: var(--text-muted);
+  --text-disabled: #5A6472;  /* للعناصر المعطلة فقط (معفاة من AA) */
 
   --ok-strong: var(--ok);
   --ok-bg: var(--ok-chip);
@@ -166,6 +189,33 @@
   --info-bg: var(--info-chip);
 }
 
+/* ==========================================================================
+   القواعد الأساسية المقيسة (G1/G3/G7)
+   ========================================================================== */
+
+/* G7 — العربية بلا تباعد أحادٍ إطلاقًا. الحارس الأخير: كل عنصر داخل سياق
+   العربية يُصفَّر تباعده، والسياقات اللاتينية الصريحة (mono/ltr/uppercase)
+   معفاة لأنها تعلن اتجاهها بنفسها داخل index.html أو ملفاتها. */
+html[lang="ar"] body { letter-spacing: 0; }
+
+/* الجسم: 15px / سطر 1.6 مع أرقام جدولية (خطة 7.0) */
+html, body {
+  font-feature-settings: "tnum" 1;
+}
+body {
+  line-height: var(--lh-body);
+}
+
+/* G3 — كل قيمة تقنية/قياس/زمن/كود: أحادي المسافة 13px بأرقام جدولية */
+.tech, .md-code, code, pre, .kbd {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+.tech, code, .md-code { font-size: var(--fs-13); }
+
 /* ---------- احترام تقليل الحركة ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -176,27 +226,28 @@
   }
 }
 
-/* ---------- التركيز المرئي الموحد (لوحة المفاتيح) ---------- */
+/* ---------- التركيز: حد الأكسنت + الحلقة الملزمة rgba(88,166,255,.25) ---------- */
 :focus-visible {
-  outline: 2px solid var(--info);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+  box-shadow: var(--focus-ring);
   border-radius: var(--radius-s);
 }
 
 ::selection {
   background: rgba(88, 166, 255, 0.28);
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 /* ---------- شريط التمرير الموحد ---------- */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #242c3b;
+  background: #2A3342;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--bg);
+  border: 2px solid var(--bg-canvas);
 }
-::-webkit-scrollbar-thumb:hover { background: #2b3547; }
+::-webkit-scrollbar-thumb:hover { background: #39445A; }
 
 /* ---------- الأيقونات الوظيفية الموحدة (SVG داخل .icon) ---------- */
 .icon {
@@ -221,7 +272,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--text-faint);
+  background: var(--text-muted);
   flex: none;
   display: inline-block;
 }
@@ -231,13 +282,10 @@
 .status-dot.live { background: var(--accent-agent); }
 
 /* ==========================================================================
-   مفردات المكوّنات الأساسية (007) — القواعد الهندسية الموحدة.
-   كل عائلات الأزرار/الحبوب/الفراغ في بقية الملفات تُبنى من نفس هذه
-   القيم فتتوحد بالبناء دون كسر أسماء الفئات التي تعتمدها الاختبارات.
+   مفردات المكوّنات الأساسية — القيم المرجعية الموحدة.
    ========================================================================== */
 
-/* ---------- الزر الموحد: قيم مرجعية تستهلكها عائلات الأزرار ----------
-   (الارتفاع 34px · الصغير 28px · نصف القطر 8px — نفس القيم في كل سطح) */
+/* الزر الموحد: 34px · الصغير 28px · نصف قطر 8px */
 :root {
   --btn-h: 34px;
   --btn-h-sm: 28px;
@@ -245,7 +293,7 @@
   --btn-font: var(--fs-13);
 }
 
-/* ---------- حبة الحالة الموحدة: 11px/600 على 20px بلون دلالي ---------- */
+/* حبة الحالة الموحدة: 11px/600 — بلا تباعد أحادٍ (G7: تحمل نصًا عربيًا) */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -255,10 +303,10 @@
   border-radius: var(--radius-pill);
   font-size: var(--fs-11);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;            /* G7 — كانت 0.02em تشق العربية */
   background: var(--bg-elevated);
-  color: var(--text-mid);
-  border: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
 .chip.ok     { background: var(--ok-chip);     color: var(--ok);     border-color: var(--ok-border); }
@@ -267,7 +315,7 @@
 .chip.info   { background: var(--info-chip);   color: var(--info);   border-color: var(--info-border); }
 .chip.agent  { background: var(--accent-agent-soft); color: var(--accent-agent); border-color: var(--accent-agent-border); }
 
-/* ---------- حالة الفراغ الموحدة: علامة + عنوان + إرشاد + فعل اختياري ---------- */
+/* حالة الفراغ الموحدة: علامة + عنوان + إرشاد + فعل اختياري */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -276,52 +324,44 @@
   gap: var(--sp-2);
   padding: var(--sp-8) var(--sp-6);
   text-align: center;
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 .empty-state .empty-mark {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-m);
-  border: 1px solid var(--border-soft);
-  background: var(--bg-raised);
+  border: 1px dashed var(--border-subtle);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-faint);
+  color: var(--text-muted);
   margin-bottom: var(--sp-1);
 }
 .empty-state .empty-title {
   font-size: var(--fs-15);
   font-weight: 600;
-  color: var(--text-mid);
+  color: var(--text-secondary);
 }
 .empty-state .empty-hint {
   font-size: var(--fs-13);
-  color: var(--text-dim);
+  color: var(--text-muted);
   max-width: 44ch;
-  line-height: 1.6;
+  line-height: var(--lh-body);
 }
 
-/* ---------- عزل السلاسل التقنية داخل النص العربي (007: BiDi) ----------
-   المسارات ورموز الحالة وأسماء المزودين تُعرض LTR معزولة بخط mono،
-   فلا تقفز علامات الترقيم ولا تنقلب الأقواس. */
-.tech, .md-code, code, pre {
-  font-family: var(--font-mono);
-  direction: ltr;
-  unicode-bidi: isolate;
-  text-align: left;
-}
+/* عزل السلاسل التقنية داخل النص العربي (BiDi) — معرف أعلاه مع G3 */
 
 .kbd {
   display: inline-block;
   padding: 1px var(--sp-1);
   border-radius: var(--radius-s);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-bottom-width: 2px;
   background: var(--bg-elevated);
   font-family: var(--font-mono);
   font-size: var(--fs-11);
-  color: var(--text-mid);
+  color: var(--text-secondary);
   direction: ltr;
   unicode-bidi: isolate;
 }

@@ -50,7 +50,6 @@ body.mode-project .project-view {
   font-size: var(--fs-12);
   color: var(--muted);
   font-weight: 600;
-  letter-spacing: 0.4px;
 }
 
 .projects-list {

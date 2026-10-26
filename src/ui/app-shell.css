@@ -17,7 +17,7 @@
 
 .messages {
   width: 100%;
-  max-width: 780px;          /* §3 (012): عمود التصميم 780px */
+  max-width: var(--chat-width);  /* §3 (014): عمود المحتوى 760px عبر التوكن */
   margin: 0 auto;
   padding: 18px 18px 30px;
   display: flex;
