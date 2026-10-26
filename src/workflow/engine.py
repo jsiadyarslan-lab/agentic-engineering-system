@@ -664,17 +664,60 @@ class ProjectEngine:
         return outcome
 
     def _last_failure_context(self, project_id: int) -> dict:
-        """سياق الفشل الأخير — يُمرر للمخطط كي تراه الخطة v الجديدة."""
+        """سياق الفشل الأخير — يُمرر للمخطط كي تراه الخطة v الجديدة.
+
+        (RLR-001 §4d-6) سياق المخطط يضم قائمة نقص المُتحقّق الأخيرة —
+        كان يرى «الدورة لم تكتمل أدلةً» العامة فيعيد نفس المعايير
+        غير القابلة للحكم (تنفيذ أوامر/مجلدات نظام) فتدور الحلقة
+        عمياء. الآن يرى النقص الحرفي فيكتب معايير قابلة للحكم من
+        ملفات مكتوبة ومحتواها.
+        """
         executions = service.list_executions(self._sessions, project_id)
         failed = [e for e in executions if e["status"] == "FAILED"]
         if not failed:
             return {}
         last = failed[0]
-        return {
+        context = {
             "reason": "فشل تنفيذ متكرر استنفد المحاولات",
             "last_error": last["error"][:500],
             "step_objective": self._step_objective(last["step_id"]),
         }
+        verifier_missing = self._latest_verifier_missing(project_id)
+        if verifier_missing:
+            context["verifier_missing"] = verifier_missing
+            context["criteria_contract"] = (
+                "اكتب معايير قبول قابلة للحكم من ملفات مكتوبة ومحتواها "
+                "حصرًا (وجود ملف بمساره النسبي، محتوى نصي محدد) — "
+                "لا تطلب تنفيذ أوامر (npm install/playwright run) ولا "
+                "مجلدات نظام تولَّد بأدوات خارجية (node_modules) ولا "
+                "لقطات متصفح ضمن معايير البناء"
+            )
+        return context
+
+    def _latest_verifier_missing(self, project_id: int) -> list:
+        """قائمة نقص آخر TASK_VERIFICATION — من الأحداث الدائمة."""
+        try:
+            rows = service.list_events(
+                self._sessions, project_id, limit=60
+            ) if hasattr(service, "list_events") else []
+        except Exception:  # noqa: BLE001 — السياق الإضافي اختياري
+            rows = []
+        for row in reversed(rows if isinstance(rows, list) else []):
+            kind = str(row.get("kind", "")) if isinstance(row, dict) else ""
+            if kind != "TASK_VERIFICATION":
+                continue
+            payload = row.get("payload") if isinstance(row, dict) else None
+            if isinstance(payload, str):
+                try:
+                    import json as _json
+                    payload = _json.loads(payload)
+                except Exception:  # noqa: BLE001
+                    payload = None
+            if isinstance(payload, dict):
+                missing = payload.get("missing") or []
+                if missing:
+                    return [str(m)[:160] for m in missing][:4]
+        return []
 
     def _step_objective(self, step_id: int) -> str:
         step = service.get_step(self._sessions, step_id)
