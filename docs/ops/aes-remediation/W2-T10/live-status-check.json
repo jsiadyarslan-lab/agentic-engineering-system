@@ -1,0 +1,50 @@
+{
+  "services": {
+    "out": "active\nactive\nactive\ninactive\ninactive",
+    "err": ""
+  },
+  "health_loopback": {
+    "out": "200",
+    "err": ""
+  },
+  "prod_commit": {
+    "out": "036db8911 fix(ui+api): W2-T10 — التصعيد يُعلن ولا يُدفن: runs/active يشمل ESCALATED (إعادة إنتاج الدفن موثقة) + بانر ثابت فوق كل شيء (z-critical) من الإقلاع + شريط طوارئ موصول بـ stop/resume القائمة + حلقات خط المراحل",
+    "err": ""
+  },
+  "prod_tree_clean": {
+    "out": "?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\nEND",
+    "err": ""
+  },
+  "asset_version": {
+    "out": "",
+    "err": ""
+  },
+  "listeners": {
+    "out": "0.0.0.0:80\n127.0.0.1:8010\n[::]:80",
+    "err": ""
+  },
+  "readiness_api": {
+    "out": "{\"capabilities\":[{\"capability_id\":\"llm\",\"name\":\"نماذج LLM (الأدوار)\",\"description\":\"مزود/تكوين/نموذج مربوط بكل دور — مسبار جاهزية المزود\",\"category\":\"LLM\",\"required\":true,\"readiness_status\":\"STALE\",\"stored_status\":\"READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-26T23:20:50.012739\",\"last_success_at\":\"2026-10-26T23:20:50.012745\",\"last_failure_at\":null,\"failure_class\":\"\",\"failure_stage\":\"\",\"failure_reason\":\"نجاح حي مسجل قبل 20436ث — خارج نافذة الصلاحية (600ث)؛ لا جاهزية بلا دليل حديث\",\"probe_latency_ms\":5,\"ttl_seconds\":600,\"expires_at\":null,\"details\":{\"roles\":{\"thinker\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true},\"reviewer\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true},\"implementer\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true},\"verifier\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true},\"arbiter\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true},\"chat\":{\"provider\":\"nvidia\",\"model\":\"nvidia/nemotron-3-ultra-550b-a55b\",\"resolvable\":true}},\"reason\":\"6/6 دور بمزود قابل للحل\",\"evidence",
+    "err": ""
+  },
+  "http80_egress": {
+    "out": "000 rc=28 t=4.602036 rc_nonzero",
+    "err": ""
+  },
+  "https443_egress": {
+    "out": "200 t=0.025481",
+    "err": ""
+  },
+  "mem": {
+    "out": "total        used        free      shared  buff/cache   available\nMem:           5.5Gi       992Mi       2.0Gi        79Mi       2.8Gi       4.5Gi\n 21:42:11 up 5 days, 22:01,  0 users,  load average: 0.13, 0.07, 0.02",
+    "err": ""
+  },
+  "journal_err": {
+    "out": "-- No entries --\nEND",
+    "err": ""
+  },
+  "backup_unit": {
+    "out": "Wed 2026-10-28 03:30:00 GMT 5h 47min left -                           -           aes-backup.timer                                 aes-backup.service",
+    "err": ""
+  }
+}

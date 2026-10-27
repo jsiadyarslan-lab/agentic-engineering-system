@@ -1,0 +1,279 @@
+{
+  "audit_id": "W2-T10-AUDIT",
+  "auditor": "وكيل تدقيق مستقل (general-purpose) — الأدلة كلها جمعها بنفسه عبر SSH قراءة فقط",
+  "task": "تدقيق مستقل قراءة-فقط لتغييرات W2-T10 المنشورة على الإنتاج 92.5.14.150 + إعادة التحقق من استرداد الالتزام اليتيم 036db8911 ودفعه إلى GitHub",
+  "started_utc": "2026-10-27T22:01:11.898928+00:00",
+  "finished_utc": "2026-10-27T22:01:26.756023+00:00",
+  "production": {
+    "host": "92.5.14.150",
+    "expected_head": "036db8911",
+    "deployed_at_claim": "2026-10-27 16:50:58 GMT"
+  },
+  "script_md5": "9747006ca0997cb784f152eda697f02b",
+  "script_path": "/home/z/my-project/scripts/w2t10_audit_check.py",
+  "summary": {
+    "total_checks": 21,
+    "passed": 21,
+    "failed": 0,
+    "verdict": "PASS"
+  },
+  "session_discipline": {
+    "production_writes": 0,
+    "production_commands": "قراءة فقط: git rev-parse/status/show-read, sha256sum, curl GET إلى loopback (health/static//api runs/active/readiness), systemctl is-active/show-read, journalctl read, ls",
+    "post_endpoints": 0,
+    "git_ops_on_production": "قراءة فقط — لا push/commit/reset",
+    "git_push_on_production": false,
+    "local_repo_writes": "git fetch origin فقط (تحديث مرجع تتبع محلي — لا يمس الإنتاج)",
+    "node_note": "node --check غير مطلوب على الخادم — نُفذ محليًا (rc=0) وهو أقوى من الفحص التقريبي المطلوب"
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A-production-health",
+      "name": "/health على loopback:8010 = 200",
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8010/health",
+      "actual_output": "200",
+      "expected": "200",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A2",
+      "group": "A-production-health",
+      "name": "agentic + nginx + firewalld كلها active",
+      "command": "systemctl is-active agentic nginx firewalld",
+      "actual_output": "active / active / active",
+      "expected": "active / active / active",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A3",
+      "group": "A-production-health",
+      "name": "journalctl -u agentic آخر 60د -p err: لا مدخلات جديدة",
+      "command": "journalctl -u agentic --since '-60 min' -p err --no-pager | cat",
+      "actual_output": "-- No entries --",
+      "expected": "صفر أسطر خطأ فعلية (placeholder «-- No entries --» لا يُعد خطأً)",
+      "verdict": "PASS",
+      "note": "أسطر فعلية بعد إقصاء placeholder: 0"
+    },
+    {
+      "id": "A3b",
+      "group": "A-production-health",
+      "name": "journalctl -u agentic منذ نافذة النشر المعلنة (16:50 GMT) -p err: لا مدخلات خطأ",
+      "command": "journalctl -u agentic --since '2026-10-27 16:50:00' -p err --no-pager | cat",
+      "actual_output": "-- No entries --",
+      "expected": "صفر أسطر خطأ فعلية منذ النشر (توثيق أقوى من نافذة 60د)",
+      "verdict": "PASS",
+      "note": "أسطر فعلية: 0"
+    },
+    {
+      "id": "A4",
+      "group": "A-production-health",
+      "name": "رأس الإنتاج = 036db8911 والشجرة بلا ملفات متتبعة معدلة (untracked مقبول)",
+      "command": "git -C /opt/agentic-engineering-system rev-parse --short=9 HEAD ; git -C /opt/agentic-engineering-system status --short --untracked-files=no",
+      "actual_output": "{\"head\": \"036db8911\", \"tracked_dirty_lines\": 0, \"status_short_head15\": \"?? runtime/browser/\\n?? runtime/projects/\\n?? scripts/ops/nightly_backup.sh\\n?? scripts/ops/nightly_backup.sh.pre-w1t04\\n?? src/agentic_engineering_system.egg-info/\"}",
+      "expected": "{\"head\": \"036db8911\", \"tracked_dirty_lines\": 0}",
+      "verdict": "PASS",
+      "note": "untracked مثل runtime/ مقبول وفق عتبة الفحص"
+    },
+    {
+      "id": "B1",
+      "group": "B-recovery-push",
+      "name": "sha256sum للملفات الخمسة على الخادم (مجموعة كاملة)",
+      "command": "cd /opt/agentic-engineering-system && sha256sum src/api/projects.py src/ui/control-center.js src/ui/project-live.css src/ui/project-live.js src/ui/theme.css",
+      "actual_output": "a280c8b0a0242a2d3e8827422459e5191cc1630bb05d9272744c5b19c483e6b9  src/api/projects.py\n61f76a33488eb87ef96acbeddd881f595c39f2a5f5686d718c73c6d3f809271d  src/ui/control-center.js\nf09cc127d30bab49545cdf9c8bc83b6d63c786bc912263448a1cafe099794b63  src/ui/project-live.css\n29db67565ccf7690f41437bcc5f4d43f1bd37953c96580e19340e5848b74d836  src/ui/project-live.js\n020c8995e85d2a535457ed903eb7b7434c6d303f3a5a8d1dc9d6f824fe1629f2  src/ui/theme.css",
+      "expected": "5 أسطر بصمات sha256 كاملة",
+      "verdict": "PASS",
+      "note": "عدد الملفات الموقعة: 5"
+    },
+    {
+      "id": "B2",
+      "group": "B-recovery-push",
+      "name": "تطابق بايتي 5/5: sha256(الإنتاج) == sha256(git show 036db8911 محليًا)",
+      "command": "git -C /home/z/my-project/repo show 036db8911:<file> | sha256sum  (لكل ملف)",
+      "actual_output": "{\"src/api/projects.py\": {\"prod\": \"a280c8b0a0242a2d3e8827422459e5191cc1630bb05d9272744c5b19c483e6b9\", \"local\": \"a280c8b0a0242a2d3e8827422459e5191cc1630bb05d9272744c5b19c483e6b9\", \"match\": true}, \"src/ui/control-center.js\": {\"prod\": \"61f76a33488eb87ef96acbeddd881f595c39f2a5f5686d718c73c6d3f809271d\", \"local\": \"61f76a33488eb87ef96acbeddd881f595c39f2a5f5686d718c73c6d3f809271d\", \"match\": true}, \"src/ui/project-live.css\": {\"prod\": \"f09cc127d30bab49545cdf9c8bc83b6d63c786bc912263448a1cafe099794b63\", \"local\": \"f09cc127d30bab49545cdf9c8bc83b6d63c786bc912263448a1cafe099794b63\", \"match\": true}, \"src/ui/project-live.js\": {\"prod\": \"29db67565ccf7690f41437bcc5f4d43f1bd37953c96580e19340e5848b74d836\", \"local\": \"29db67565ccf7690f41437bcc5f4d43f1bd37953c96580e19340e5848b74d836\", \"match\": true}, \"src/ui/theme.css\": {\"prod\": \"020c8995e85d2a535457ed903eb7b7434c6d303f3a5a8d1dc9d6f824fe1629f2\", \"local\": \"020c8995e85d2a535457ed903eb7b7434c6d303f3a5a8d1dc9d6f824fe1629f2\", \"match\": true}}",
+      "expected": "5/5 match=true (بصمات sha256 كاملة في الحقل أعلاه)",
+      "verdict": "PASS",
+      "note": "المتطابق: 5/5"
+    },
+    {
+      "id": "B3",
+      "group": "B-recovery-push",
+      "name": "origin/main على GitHub عند 036db8911 والالتزام فوق ab065c06c خطيًا (التزام واحد بينهما)",
+      "command": "git -C /home/z/my-project/repo fetch origin ; git rev-parse --short=9 origin/main ; git merge-base --is-ancestor ab065c06c origin/main ; git log --oneline ab065c06c..origin/main",
+      "actual_output": "{\"fetch_rc\": 0, \"fetch_stderr\": \"\", \"origin_main\": \"036db8911\", \"ab065c06c_is_ancestor\": true, \"commits_between\": [\"036db89 fix(ui+api): W2-T10 — التصعيد يُعلن ولا يُدفن: runs/active يشمل ESCALATED (إعادة إنتاج الدفن موثقة) + بانر ثابت فوق كل شيء (z-critical) من الإقلاع + شريط طوارئ موصول بـ stop/resume القائمة + حلقات خط المراحل\"]}",
+      "expected": "{\"fetch_rc\": 0, \"origin_main\": \"036db8911\", \"ab065c06c_is_ancestor\": true, \"commits_between\": [\"036db89 … (التزام W2-T10 وحده)\"]}",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B3b",
+      "group": "B-recovery-push",
+      "name": "الأب المباشر للالتزام 036db8911 = ab065c06c (بالتجزئة الكاملة)",
+      "command": "git -C /home/z/my-project/repo log --format='%P' -1 036db8911 ; git rev-parse ab065c06c",
+      "actual_output": "ab065c06ccd7dcd6da240183ae433dd3a56bf8de",
+      "expected": "ab065c06ccd7dcd6da240183ae433dd3a56bf8de",
+      "verdict": "PASS",
+      "note": "التجزئة الكاملة: ab065c06ccd7dcd6da240183ae433dd3a56bf8de"
+    },
+    {
+      "id": "B4",
+      "group": "B-recovery-push",
+      "name": "/tmp/w2t10-recovery.bundle غير موجود على الخادم (أزيلت)",
+      "command": "ls -la /tmp/w2t10-recovery.bundle 2>&1; echo RC=$?",
+      "actual_output": "ls: cannot access '/tmp/w2t10-recovery.bundle': No such file or directory\nRC=2",
+      "expected": "No such file or directory",
+      "verdict": "PASS",
+      "note": "نسخة الأدلة المحلية download/aes-remediation/W2-T10/w2t10-recovery.bundle باقية محليًا — لا تمس هذا الفحص"
+    },
+    {
+      "id": "C1",
+      "group": "C-code-review",
+      "name": "projects.py: الدِف يضيف ESCALATED إلى runs/active — tuple الاستبعاد الفعلي (\"VERIFIED\", \"COMPLETED\", \"STOPPED\") صحيح ووارد حرفيًا في الكود",
+      "command": "git show 036db8911:src/api/projects.py (منطقة active_runs) + git diff ab065c06c..036db8911 -- src/api/projects.py",
+      "actual_output": "{\"exclusion_tuple\": [\"VERIFIED\", \"COMPLETED\", \"STOPPED\"], \"ESCALATED_in_exclusion\": false, \"diff_removed_ESCALATED_from_tuple\": true, \"diff_added_clean_tuple\": true, \"secondary_DRAFT_filter_present\": true, \"run_item_includes_status\": true}",
+      "expected": "{\"exclusion_tuple\": [\"VERIFIED\", \"COMPLETED\", \"STOPPED\"], \"ESCALATED_in_exclusion\": false, \"diff_removed_ESCALATED_from_tuple\": true, \"diff_added_clean_tuple\": true, \"secondary_DRAFT_filter_present\": true, \"run_item_includes_status\": true}",
+      "verdict": "PASS",
+      "note": "المنطق: مشروع ESCALATED ليس VERIFIED/COMPLETED/STOPPED فيدخل active_project_ids، وحالته ليست DRAFT/AWAITING فيعبر الفلتر الثانوي ويظهر في runs/active بحالته — الفلتر السابق كان يدفنه تحت الأخضر الناجح (عيب التقرير)"
+    },
+    {
+      "id": "C2",
+      "group": "C-code-review",
+      "name": "project-live.js: بانر التصعيد يُبنى من الإقلاع (renderRuns عند التحميل + ترتيب السكربتات) وشريط الطوارئ موصول بstop/resume القائمة (نفس Hub.fetchJSON ونفس نقطتي API)",
+      "command": "git show 036db8911:src/ui/{project-live.js,control-center.js,index.html,app.js} + src/api/projects.py — بحث عن التعريفات والمسارات",
+      "actual_output": "{\"window_PlEscalation_exported\": true, \"renderRuns_defined_and_boot_fetch\": true, \"cc_calls_replace_x2\": true, \"cc_guards_if_window_PlEscalation\": true, \"script_order_project_live_before_control_center\": true, \"banner_filters_ESCALATED_status\": true, \"banner_role_alert\": true, \"emergency_bar_stop_endpoint\": true, \"emergency_bar_resume_endpoint\": true, \"stop_endpoint_total_uses_menu_plus_bar\": true, \"resume_endpoint_total_uses_menu_plus_bar\": true, \"Hub_fetchJSON_defined_in_app_js\": true, \"stop_endpoint_in_api\": true, \"resume_endpoint_in_api\": true}",
+      "expected": "كل القيم true",
+      "verdict": "PASS",
+      "note": "renderRuns() يجلب runs/active عند إقلاع الصفحة ويستدعي PlEscalation.replace(runs)؛ project-live.js يُحمّل قبل control-center.js في index.html فالتوفر مضمون ومحروس بif (window.PlEscalation). نقطتا stop/resume نفساهما في بطاقة التنفيذ وبطاقة الحجب القائمتين (الاستدعاءان الآخران للنقاط نفسها) — والنقطتان معرفتان فعلاً في projects.py"
+    },
+    {
+      "id": "C3",
+      "group": "C-code-review",
+      "name": "project-live.css (كاملًا عند 036db8911): صفر hex/rgba خام — كل الألوان عبر var(--…)",
+      "command": "git show 036db8911:src/ui/project-live.css | عدّ #[0-9a-f]{3,8} و rgba?( و var(--",
+      "actual_output": "{\"hex_count\": 0, \"rgba_count\": 0, \"var_token_uses\": 341, \"transparent_keyword_count\": 14, \"new_rule_classes_found\": 9}",
+      "expected": "{\"hex_count\": 0, \"rgba_count\": 0, \"new_rule_classes_found\": 9}",
+      "verdict": "PASS",
+      "note": "شرط W2-T07 (صفر ألوان خام خارج theme.css) محفوظ في الإضافات الجديدة — كلمة transparent الوحيدة في keyframes النبض ليست قيمة hex/rgba (كلمة CSS قياسية)"
+    },
+    {
+      "id": "C4",
+      "group": "C-code-review",
+      "name": "theme.css: السطر المضاف توكن واحد فقط (--z-critical) واسمه مستخدم فعلاً في project-live.css",
+      "command": "git diff ab065c06c..036db8911 -- src/ui/theme.css ; git show 036db8911:src/ui/project-live.css | grep -c 'var(--z-critical)'",
+      "actual_output": "{\"added_lines\": [\"+  --z-critical: 80;   /* (W2-T10) بانر التصعيد — فوق كل شيء إلا حدود الأخطاء */\"], \"removed_lines\": 0, \"token\": \"--z-critical\", \"value\": \"80\", \"uses_in_project_live_css\": 1}",
+      "expected": "{\"added_lines\": [\"+  --z-critical: 80; …\"], \"removed_lines\": 0, \"token\": \"--z-critical\", \"uses_in_project_live_css\": \">=1\"}",
+      "verdict": "PASS",
+      "note": "var(--z-critical) مستخدم 1 مرة في z-index البانر الثابت (فوق كل شيء)"
+    },
+    {
+      "id": "C5",
+      "group": "C-code-review",
+      "name": "سلامة صياغة JS: توازن الأقواس المعقوفة في الملفين + node --check rc=0 (أقوى من الفحص التقريبي المطلوب)",
+      "command": "python عدّ { } ( ) في الملفين + node --check src/ui/{project-live.js,control-center.js}",
+      "actual_output": "{\"src/ui/project-live.js\": {\"braces_open_close\": [360, 360], \"braces_balanced\": true, \"parens_open_close\": [1211, 1229], \"parens_note\": \"الفرق من أقواس داخل نصوص/تعليقات — node --check هو المرجع\", \"node_check_rc\": 0, \"node_check_stderr\": \"\"}, \"src/ui/control-center.js\": {\"braces_open_close\": [69, 69], \"braces_balanced\": true, \"parens_open_close\": [275, 275], \"parens_note\": \"الفرق من أقواس داخل نصوص/تعليقات — node --check هو المرجع\", \"node_check_rc\": 0, \"node_check_stderr\": \"\"}}",
+      "expected": "braces متوازنة + node --check rc=0 للملفين",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D1",
+      "group": "D-live-service",
+      "name": "الأصل الجديد يُخدم حيًا: project-live.css يحوي z-critical/escalation/emergency",
+      "command": "curl -s http://127.0.0.1:8010/static/project-live.css | grep -c 'z-critical\\|escalation\\|emergency'",
+      "actual_output": "7",
+      "expected": "> 0",
+      "verdict": "PASS",
+      "note": "grep -c يعيد عدد الأسطر المطابقة (بديل \\| في BRE لأمر التكليف)"
+    },
+    {
+      "id": "D2",
+      "group": "D-live-service",
+      "name": "إصدار الأصول في HTML يعكس الالتزام (?v=036db891) — آلية _ASSET_VERSION (git rev-parse --short=8 HEAD عند إقلاع العملية) + تتابع الإعادة تشغيل في journal",
+      "command": "curl -s http://127.0.0.1:8010/ | grep -oP '\\?v=[a-f0-9]+' | head -1  ; journalctl -u agentic --no-pager --since '2026-10-27 16:50:00' --until '2026-10-27 16:52:00' | grep -E 'Stopping|Started|Uvicorn running' | head -6",
+      "actual_output": "{\"asset_version_in_html\": \"?v=036db891\", \"journal_restart_sequence\": [\"Oct 27 16:50:58 instance-20261022-0115 systemd[1]: Stopping Agentic Engineering System (uvicorn)...\", \"Oct 27 16:50:58 instance-20261022-0115 systemd[1]: Started Agentic Engineering System (uvicorn).\", \"Oct 27 16:50:59 instance-20261022-0115 python[586001]: INFO:     Started server process [586001]\", \"Oct 27 16:50:59 instance-20261022-0115 python[586001]: INFO:     Uvicorn running on http://127.0.0.1:8010 (Press CTRL+C to quit)\"]}",
+      "expected": "{\"asset_version_in_html\": \"?v=036db891\"}",
+      "verdict": "PASS",
+      "note": "قيمة ?v المستخرجة: '036db891' — المتوقعة short=8 من 036db8911؛ سطر logger «asset version» لا يظهر في journal (مسجل التطبيق يسلك مسارًا آخر) — ?v= المخدوم هو الدليل المباشر"
+    },
+    {
+      "id": "D3",
+      "group": "D-live-service",
+      "name": "GET /api/projects/runs/active = 200 JSON سليم بمفتاح runs (قائمة)",
+      "command": "curl -s -w '\\n@@HTTPCODE:%{http_code}' http://127.0.0.1:8010/api/projects/runs/active",
+      "actual_output": "{\"http_code\": \"200\", \"json_valid_with_runs\": true, \"runs_brief\": [{\"project_id\": 2, \"status\": \"BLOCKED\", \"name\": \"صمم موقع اخباري متكامل باللغة الانكليزية يغطي اخبار العالم ب\"}, {\"project_id\": 1, \"status\": \"BLOCKED\", \"name\": \"صمم مشروع osint\"}]}",
+      "expected": "{\"http_code\": \"200\", \"json_valid_with_runs\": true}",
+      "verdict": "PASS",
+      "note": "طلب GET واحد بلا أي ملف وسيط على الخادم — توثيق فقط لحالة القائمة الحية"
+    },
+    {
+      "id": "D4",
+      "group": "D-live-service",
+      "name": "GET /api/environment/readiness (توثيق فقط): حالة llm و network_http",
+      "command": "curl -s http://127.0.0.1:8010/api/environment/readiness",
+      "actual_output": "{\"llm\": {\"readiness_status\": \"STALE\", \"stored_status\": \"READY\", \"last_success_at\": \"2026-10-26T23:20:50.012745\"}, \"network_http\": {\"readiness_status\": \"NOT_READY\", \"stored_status\": \"NOT_READY\", \"last_success_at\": \"2026-10-26T21:26:59.666479\"}}",
+      "expected": "تسجيل حالتي llm و network_http (توثيق فقط — لا عتبة نجاح/فشل)",
+      "verdict": "PASS",
+      "note": "قراءة GET فقط: لا مسّ للحالة المخزنة (POST probe يغيرها — محظور في التكليف)؛ STALE = خارج نافذة صلاحية المسبار وليس فشلًا — تحديثه يتطلب POST probe محظور"
+    },
+    {
+      "id": "D5",
+      "group": "D-live-service",
+      "name": "زمن آخر إقلاع للخدمة agentic (توثيق مقابل النشر المعلن 2026-10-27 16:50:58 GMT)",
+      "command": "systemctl show agentic -p ActiveEnterTimestamp --value",
+      "actual_output": "Tue 2026-10-27 16:50:58 GMT",
+      "expected": "توثيق فقط",
+      "verdict": "PASS",
+      "note": "النشر المعلن 2026-10-27 16:50:58 GMT — يُقارن بالقيمة المسجلة"
+    },
+    {
+      "id": "D6",
+      "group": "D-live-service",
+      "name": "سجل nginx (قراءة فقط): عملاء حقيقيون يجلبون أصول ؟v=036db891 عبر الجدار",
+      "command": "sudo -n tail -3000 /var/log/nginx/access.log | grep -c 'v=036db891'",
+      "actual_output": "{\"count_last3000\": \"37\", \"first_hit\": \"2.215.157.88 - vis [27/Oct/2026:21:38:04 +0000] \\\"GET /static/fonts/fonts.css?v=036db891 HTTP/1.1\\\" 200 5830 \\\"http://92.5.14.150/\\\" \\\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWeb\"}",
+      "expected": "> 0",
+      "verdict": "PASS",
+      "note": "دليل مستقل أن الأصول الجديدة تصل للمستخدم النهائي عبر nginx لا فقط على loopback"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "title": "فجوة R8: لا إدخال worklog لتنفيذ W2-T10 الأصلي",
+      "detail": "الجلسة المنفذة ماتت قبل تسجيل worklog — إدخال التدقيق هذا (W2-T10-AUDIT) يسجل الجانب المستقل فقط؛ يبقى على المنفذ/الأب سد رواية التنفيذ عند تحديث البطاقة والمزامنة (نفس معاملة W1-T03-S34 وF4 في W2-T07)",
+      "blocking": false
+    },
+    {
+      "id": "F2",
+      "title": "ادعاء «إعادة إنتاج الدفن موثقة» بلا دليل باقٍ",
+      "detail": "رسالة الالتزام تدعي توثيق إعادة إنتاج الدفن، لكن download/aes-remediation/W2-T10/ لا يحوي إلا recovery-verify.json وw2t10-recovery.bundle — لا اختبار تصعيد مصطنع ولا لقطات ولا VLM (خطوة البطاقة 4). منطق الكود مثبت مستقلاً في C1/C2 والخدمة حية في D1-D3، لكن يوصى بإعادة خطوة القبول البصرية أو توثيق قرار المالك بقبول التحقق الكودي عند تحديث البطاقة",
+      "blocking": false
+    },
+    {
+      "id": "F3",
+      "title": "نطاق الملفات: البطاقة 3 والالتزام 5",
+      "detail": "بطاقة W2-T10 ذكرت project-live.js/css + control-center.js؛ الالتزام يلمس 5 ملفات (+projects.py وtheme.css). التوسيع مبرر جوهريًا: إصلاح الدفن نفسه في تصفية runs/active الخلفية وتوكن z-critical — يستحق التوثيق كانحراف نطاق عند تحديث البطاقة",
+      "blocking": false
+    },
+    {
+      "id": "F4",
+      "title": "لوحة الحالة §1 لا تزال تعرض W2-T10 «لم تبدأ»",
+      "detail": "متوقع ووفق التكليف: تحديث البطاقة ولوحة الحالة مسؤولية المنفذ بعد توقيع التدقيق",
+      "blocking": false
+    },
+    {
+      "id": "F5",
+      "title": "سطر logger «asset version (011)» غائب عن journal",
+      "detail": "مسجل التطبيق يسلك مسارًا آخر — الدليل المباشر على الإصدار هو ?v=036db891 المخدوم في HTML (D2) وتتابع الإعادة تشغيل في journal نفسه",
+      "blocking": false
+    },
+    {
+      "id": "F6",
+      "title": "مطابقة زمن النشر حرفيًا + اتساق أدلة الاسترداد",
+      "detail": "ActiveEnterTimestamp = Tue 2026-10-27 16:50:58 GMT يطابق النشر المعلن حرفيًا (D5)، وبادئات بصمات recovery-verify.json (المنفذ) تتطابق مع بصماتي الكاملة المستقلة (B1/B2) — رواية الاسترداد متسقة مع الأدلة المستقلة",
+      "blocking": false
+    }
+  ]
+}

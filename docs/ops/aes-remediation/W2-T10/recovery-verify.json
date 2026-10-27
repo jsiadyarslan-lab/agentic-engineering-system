@@ -1,0 +1,40 @@
+{
+  "pre_gate": {
+    "health": "200",
+    "commit": "036db8911"
+  },
+  "prod_commit_recovered": "036db8911",
+  "byte_exact": true,
+  "files": {
+    "src/api/projects.py": {
+      "prod": "a280c8b0a0242a2d",
+      "local": "a280c8b0a0242a2d",
+      "match": true
+    },
+    "src/ui/control-center.js": {
+      "prod": "61f76a33488eb87e",
+      "local": "61f76a33488eb87e",
+      "match": true
+    },
+    "src/ui/project-live.css": {
+      "prod": "f09cc127d30bab49",
+      "local": "f09cc127d30bab49",
+      "match": true
+    },
+    "src/ui/project-live.js": {
+      "prod": "29db67565ccf7690",
+      "local": "29db67565ccf7690",
+      "match": true
+    },
+    "src/ui/theme.css": {
+      "prod": "020c8995e85d2a53",
+      "local": "020c8995e85d2a53",
+      "match": true
+    }
+  },
+  "post_gate": {
+    "health": "200",
+    "commit": "036db8911",
+    "bundle_removed": true
+  }
+}
