@@ -1,0 +1,80 @@
+{
+  "_meta": {
+    "mode": "steps 2-3 verification after owner OCI egress rule",
+    "timestamp_utc": "2026-10-27T23:23:20Z"
+  },
+  "http_example": "200 rc=0 t=0.007628",
+  "http_httpbin": "200 rc=0 t=0.239944",
+  "http_iana": "200 rc=0 t=0.293055",
+  "tcp80_raw": "rc=0",
+  "https_google": "000 rc=28 t=7.970182",
+  "https_iana": "000 rc=28 t=6.102854",
+  "dns_check": "104.20.23.154   STREAM example.com\n104.20.23.154   DGRAM",
+  "health_pre_probe": "200",
+  "readiness_before": {
+    "web_search": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-26T23:32:52.268635",
+      "failure": "مسبار المزود(ات) Bing، Wikipedia انتهت صلاحيته — أعد الفحص لتحديث الجاهزية"
+    },
+    "web_fetch": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-26T23:20:52.756668",
+      "failure": ""
+    },
+    "network_dns": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-27T21:38:11.032957",
+      "failure": ""
+    },
+    "network_https": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-27T21:38:11.076871",
+      "failure": ""
+    },
+    "network_http": {
+      "stored": "NOT_READY",
+      "readiness": "NOT_READY",
+      "last_success": "2026-10-26T21:26:59.666479",
+      "failure": "تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachabl"
+    }
+  },
+  "probe_network_http": "{\"capability_id\":\"network_http\",\"name\":\"اتصال HTTP مباشر\",\"description\":\"HTTP GET مباشر (منفذ 80) — منفصل عن HTTPS (010 §23)\",\"category\":\"NETWORK\",\"required\":false,\"readiness_status\":\"READY\",\"stored_status\":\"READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-27T23:23:42.277131\",\"last_success_at\":\"2026-10-27T23:23:42.277136\",\"last_failure_at\":\"2026-10-26T23:21:08.818309\",\"failure_class\":\"\",\"failure_stage\":\"\",\"failure_reason\":\"\",\"probe_latency_ms\":11,\"ttl_seconds\":120,\"expires_at\":\"2026-10-27T23:25:42.275874\",\"details\":{\"url\":\"http://example.com\",\"http_status\":200,\"reason\":\"HTTP 200 · 577 بايت\"}}",
+  "readiness_after": {
+    "web_search": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-26T23:32:52.268635",
+      "failure": "مسبار المزود(ات) Bing، Wikipedia انتهت صلاحيته — أعد الفحص لتحديث الجاهزية"
+    },
+    "web_fetch": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-26T23:20:52.756668",
+      "failure": ""
+    },
+    "network_dns": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-27T21:38:11.032957",
+      "failure": ""
+    },
+    "network_https": {
+      "stored": "READY",
+      "readiness": "STALE",
+      "last_success": "2026-10-27T21:38:11.076871",
+      "failure": ""
+    },
+    "network_http": {
+      "stored": "READY",
+      "readiness": "READY",
+      "last_success": "2026-10-27T23:23:42.277136",
+      "failure": ""
+    }
+  },
+  "health_post_probe": "200"
+}

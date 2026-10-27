@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "mode": "REGRESSION documentation: 443 blocked after owner rule edit",
+    "timestamp_utc": "2026-10-27T23:25:30Z"
+  },
+  "https_example": "000 rc=28 t=4.603853",
+  "https_nvidia": "000 rc=28 t=4.502552",
+  "http_example": "200 rc=0 t=0.009098",
+  "health": "200",
+  "probe_network_https": "{\"capability_id\":\"network_https\",\"name\":\"اتصال HTTPS\",\"description\":\"اتصال TLS حقيقي لمصدر موثوق\",\"category\":\"NETWORK\",\"required\":true,\"readiness_status\":\"NOT_READY\",\"stored_status\":\"NOT_READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-27T23:25:59.036708\",\"last_success_at\":\"2026-10-27T21:38:11.076871\",\"last_failure_at\":\"2026-10-27T23:25:59.036713\",\"failure_class\":\"NETWORK_FAILURE\",\"failure_stage\":\"TOOL_EXECUTION\",\"failure_reason\":\"تعذر الوصول إلى https://example.com: <urlopen error [Errno 101] Network is unreachable>\",\"probe_latency_ms\":16015,\"ttl_seconds\":120,\"expires_at\":null,\"details\":{\"url\":\"https://example.com\",\"reason\":\"تعذر الوصول إلى https://example.com: <urlope",
+  "health_post": "200"
+}
