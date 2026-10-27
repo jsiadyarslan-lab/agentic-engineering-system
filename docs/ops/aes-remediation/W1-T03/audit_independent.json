@@ -1,0 +1,194 @@
+{
+  "task": "W1-T03 (خطوات 0-2 فقط — الخطوتان 3-4 خطوة مالك)",
+  "auditor": "W1-T03-AUDIT (وكيل تدقيق مستقل — general-purpose)",
+  "ts": "2026-10-27 02:28:20 UTC",
+  "scope": "مسار المراقبة السري /healthz-<TOKEN> في nginx + فتح منفذ 80 في firewalld — قراءة فقط على الإنتاج، طلبات GET فقط",
+  "verdict": "PASS",
+  "passed": 28,
+  "total": 28,
+  "signature": "W1-T03-AUDIT · 2026-10-27 · PASS · 28 إثباتًا مستقلًا",
+  "checks": [
+    {
+      "id": "A1",
+      "desc": "كتلة location = /healthz-<TOKEN> موجودة (مرة واحدة) داخل كتلة server قبل قوسها الختامي",
+      "pass": true,
+      "evidence": "server@line3 healthz@line29 server_close@line34 line='    location = /healthz-<TOKEN> {'"
+    },
+    {
+      "id": "A2",
+      "desc": "محتوى الكتلة: allow all + auth_basic off + proxy_pass 127.0.0.1:8010/health فقط — ولا تظهر هذه التوجيهات في أي مكان آخر من الملف",
+      "pass": true,
+      "evidence": "inner=['allow all;', 'auth_basic off;', 'proxy_pass http://127.0.0.1:8010/health;'] | counts: allow_all=1 auth_basic_off=1 pp_health=1"
+    },
+    {
+      "id": "A3",
+      "desc": "بنية سليمة: أقواس متوازنة ({} == {}) + listen 80 default_server + server_name _",
+      "pass": true,
+      "evidence": "braces 3/3 | listen80=yes"
+    },
+    {
+      "id": "A4",
+      "desc": "قواعد server-level كما هي: allow المالك + allow loopback + deny all + auth_basic + auth_basic_user_file",
+      "pass": true,
+      "evidence": "allow 2.215.157.88; | allow 127.0.0.1;   # AES-ORACLE-LIVE-REPAIR-001: loopback full-path tests (auth still required)   # owner IP (evidence: AES-EXP-02) | deny  all; | auth_basic            \"AES VIS preview (AES-ORACLE-VIS-001)\"; | auth_basic_user_file  /etc/nginx/.htpasswd_vis; | auth_basic off;"
+    },
+    {
+      "id": "A5",
+      "desc": "كتلة location / الأصلية مطابقة بايتيًا للنسخة الاحتياطية وفيها proxy_buffering off (قناة SSE)",
+      "pass": true,
+      "evidence": "identical=True | proxy_buffering_off=yes | block_lines=12"
+    },
+    {
+      "id": "A6",
+      "desc": "نسخة احتياطية موجودة (/home/opc/agentic.conf.pre-w1t03) بصمة 68af55cd… مطابقة لما وثّقه المنفذ، والحالي بعد حذف كتلة healthz == النسخة الاحتياطية بايتيًا (الفرق الوحيد = الكتلة المضافة)",
+      "pass": true,
+      "evidence": "exists=True (['Oct', '27', '02:07', '/home/opc/agentic.conf.pre-w1t03']) | backup_sha=68af55cd11b019c1… | sha_match_executor=True | sha_match_fetched=True | current_minus_block==backup: True"
+    },
+    {
+      "id": "A7",
+      "desc": "sudo -n nginx -t ناجح بمخرجات فعلية ('syntax is ok' + 'test is successful')",
+      "pass": true,
+      "evidence": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok / nginx: configuration file /etc/nginx/nginx.conf test is successful"
+    },
+    {
+      "id": "A8",
+      "desc": "من الخادم (loopback عبر nginx): /healthz-<TOKEN> = 200 والجسم JSON فيه \"status\":\"ok\"",
+      "pass": true,
+      "evidence": "code=200 body_head='{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-sys'"
+    },
+    {
+      "id": "A9",
+      "desc": "loopback: http://127.0.0.1/ = 401 (allowlist + Basic Auth كما هما)",
+      "pass": true,
+      "evidence": "code=401"
+    },
+    {
+      "id": "A10",
+      "desc": "loopback توكن خاطئ: رد محدد مرفوض (401/403/404) وموثق — ليس 200 أبدًا",
+      "pass": true,
+      "evidence": "code=401 (مفسر في الملاحظات)"
+    },
+    {
+      "id": "A11",
+      "desc": "التطبيق مباشرة: http://127.0.0.1:8010/health = 200",
+      "pass": true,
+      "evidence": "code=200"
+    },
+    {
+      "id": "B1",
+      "desc": "systemctl is-active firewalld = active",
+      "pass": true,
+      "evidence": "out='active'"
+    },
+    {
+      "id": "B2",
+      "desc": "firewalld: ports = 80/tcp فقط، في runtime وpermanent معًا (مفتوح للعالم بعد reload — nginx هو الحارس)",
+      "pass": true,
+      "evidence": "runtime='80/tcp' permanent='80/tcp'"
+    },
+    {
+      "id": "B3",
+      "desc": "firewalld: services = dhcpv6-client ssh فقط (SSH عبر الخدمة القياسية، لا خدمة http مفتوحة)",
+      "pass": true,
+      "evidence": "'dhcpv6-client ssh'"
+    },
+    {
+      "id": "B12",
+      "desc": "قواعد rich: قاعدتا المالك فقط (80/8011) في runtime وpermanent — صفر قواعد جديدة أو واسعة من W1-T03",
+      "pass": true,
+      "evidence": "rules=['rule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"80\" protocol=\"tcp\" accept', 'rule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"8011\" protocol=\"tcp\" accept'] | permanent_identical=True"
+    },
+    {
+      "id": "B4",
+      "desc": "خارجي: http://92.5.14.150/ = 403 (كل ما عدا السر مرفوض)",
+      "pass": true,
+      "evidence": "code=403 body='<html>\\r\\n<head><title>403 Forbidden</title></head>\\r\\n<body>\\r\\n<'"
+    },
+    {
+      "id": "B5",
+      "desc": "خارجي: http://92.5.14.150/api/projects = 403",
+      "pass": true,
+      "evidence": "code=403"
+    },
+    {
+      "id": "B6",
+      "desc": "خارجي: /healthz-<توكن خاطئ 32 صفرًا> = 403 (لا قابلية خمن — المسار السري لا يكشف نفسه)",
+      "pass": true,
+      "evidence": "code=403"
+    },
+    {
+      "id": "B7",
+      "desc": "خارجي: /healthz-<التوكن الصحيح من ملف المالك> = 200 والجسم JSON فيه \"status\":\"ok\"",
+      "pass": true,
+      "evidence": "code=200 body_head='{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-sys'"
+    },
+    {
+      "id": "B8",
+      "desc": "طلبات التدقيق مصدرها IP خارجي فعلي (ليس 2.215.157.88 المالك ولا الخادم)",
+      "pass": true,
+      "evidence": "egress_ip=47.57.242.119 != owner(2.215.157.88) != server(92.5.14.150)"
+    },
+    {
+      "id": "B10",
+      "desc": "سجل nginx منذ 02:00 (وقت النشر): صفر أسطر error/crit/emerg",
+      "pass": true,
+      "evidence": "matched_lines=0"
+    },
+    {
+      "id": "B11",
+      "desc": "systemctl is-active agentic.service nginx firewalld = active×3",
+      "pass": true,
+      "evidence": "out=['active', 'active', 'active']"
+    },
+    {
+      "id": "C1",
+      "desc": "سكربت w1t03_monitor_deploy.py: نسخة احتياطية قبل الاستبدال → nginx -t قبل reload → تراجع تلقائي مجهز",
+      "pass": true,
+      "evidence": "backup@3059 < replace@3223 < nginx -t@3375 < reload@3463 | rollback=True | abort_guards=True"
+    },
+    {
+      "id": "C2",
+      "desc": "توليد التوكن secrets.token_hex(16) + chmod 0600 + تقنيع <TOKEN> قبل الطباعة وقبل ملفات الأدلة",
+      "pass": true,
+      "evidence": "token_hex=yes 0600=yes print_mask=yes evidence_mask=yes"
+    },
+    {
+      "id": "C3",
+      "desc": "ملفات الأدلة مطابقة: firewalld_results.json خارجيًا {healthz 200, root 403, api 403, fake 403} + verdict_external=PASS؛ وresults.json داخليًا PASS مع توثيق صادق لفشل no-route قبل إصلاح firewalld",
+      "pass": true,
+      "evidence": "firewalld_ext={'healthz_ext': 200, 'root_ext': 403, 'api_ext': 403, 'fake_token_ext': 403} verdict=PASS | deploy: local=PASS external=FAIL (no-route قبل الفتح — صادق)"
+    },
+    {
+      "id": "C4",
+      "desc": "owner-token.txt: صلاحيات 0600 + محتوى 32 حرفًا hex + البادئة 5e140aa0 (كما أُعلن)",
+      "pass": true,
+      "evidence": "mode=0o600 hex32=yes prefix=5e140aa0"
+    },
+    {
+      "id": "C5",
+      "desc": "التوكن الكامل غير موجود في أي ملف آخر على القرص (أدلة/سكربتات/tool-results/المستودع) — البادئة فقط مسموحة",
+      "pass": true,
+      "evidence": "leak_hits=NONE"
+    },
+    {
+      "id": "C6",
+      "desc": "المستودع main نظيف (git status فارغ) وowner-token/W1-T03 غير مدرجين فيه (docs/ops/aes-remediation بلا W1-T03 وscripts/ops بلا w1t03 — المزامنة لم تحدث بعد كما هو متوقع)",
+      "pass": true,
+      "evidence": "porcelain_lines=0 | head=d18cebb | docs_ops=['W1-T01', 'W1-T02'] | w1t03_in_scripts_ops=NONE"
+    }
+  ],
+  "notes": [
+    "تحذير nginx '[warn] conflicting server name \"_\"' في مخرجات nginx -t — لا مثال سابق في journal منذ 2026-10-26 — لكن الرقعة لم تُضف أي كتلة server (location داخل server قائم) فالتعارض لا يمكن أن يكون من W1-T03؛ تعريفات server_name _: /etc/nginx/conf.d/agentic.conf.pre-vis-001.bak:3:    server_name _;; /etc/nginx/conf.d/agentic.conf.pre-repair-001.bak:6:    server_name _;; /etc/nginx/conf.d/agentic.conf.bak-005:6:    server_name _;; /etc/nginx/conf.d/agentic.conf:6:    server_name _; — تحذير Warning لا Error ولا يمنع نجاح الفحص (سابق للرقعة).",
+    "سلوك loopback مع توكن خاطئ: /healthz-ffffffff… = 401 — التفسير: المسار لا يطابق location = الدقيق فيقع في location / حيث تسري auth_basic على مستوى server (تحدٍّ 401 قبل الوكالة للتطبيق). هذا سلوك loopback الداخلي وليس اختبار الخمن الخارجي — دليل عدم القابلية للخمن هو 403 الخارجي في B6.",
+    "rich rules الباقية (وكانت قائمة قبل التغيير): قاعدتا المالك 2.215.157.88 على 80 و8011 — قاعدة 80 صارت زائدة عن الحاجة بعد فتح 80/tcp على مستوى المنطقة (لا ضرر: تكرار سماح لمصدر واحد)، وقاعدة 8011 خاصة بخدمة مجمّدة أرشيفت في W1-T01 (لا مستمع عليها). لا قواعد جديدة أُضيفت، ولا قاعدة تمنح وصولًا واسعًا لأي مصدر آخر — وهذا يؤكد رواية المنفذ عن اكتشاف rich rule قبل الفتح.",
+    "منفذ 22 من خارجي: open (خدمة ssh القياسية — الوصول يتطلب المفتاح الخاص) — توثيق فقط لا يُحسب فشلًا (خدمة ssh قياسية عبر firewalld services، والمصادقة بالمفتاح الخاص).",
+    "مستمعو المنافذ: LISTEN 0      2048       127.0.0.1:8010       0.0.0.0:*    users:((\"python\",pid=530999,fd= | LISTEN 0      511          0.0.0.0:80         0.0.0.0:*    users:((\"nginx\",pid=536538,fd=6 | LISTEN 0      511             [::]:80            [::]:*    users:((\"nginx\",pid=536538,fd=7",
+    "ملاحظة نظافة: w1t03_firewalld_open.py يطبع أمر curl بالتوكن الكامل إلى وحدة التحكم العابرة (run() بلا تقنيع) لكن لا يكتبه في أي ملف أدلة (JSON يخزن token_prefix فقط) — وفحص C5 أثبت أن لا أثر له على القرص. تحسين مقترح مستقبلًا: تقنيع موحد. كذلك مخرجات BEFORE في السكربت نفسه (list-all قبل التغيير) طُبعت ولم تُحفظ في ملف أدلة — الحالة قبل موثقة تجريبيًا بدل ذلك: no-route خارجي في results.json + وصول المالك الموثق في سجل nginx."
+  ],
+  "firewalld_list_all_runtime": "public (active)\n  target: default\n  icmp-block-inversion: no\n  interfaces: enp0s6\n  sources: \n  services: dhcpv6-client ssh\n  ports: 80/tcp\n  protocols: \n  forward: yes\n  masquerade: no\n  forward-ports: \n  source-ports: \n  icmp-blocks: \n  rich rules: \n\trule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"80\" protocol=\"tcp\" accept\n\trule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"8011\" protocol=\"tcp\" accept\n",
+  "firewalld_list_all_permanent": "public\n  target: default\n  icmp-block-inversion: no\n  interfaces: \n  sources: \n  services: dhcpv6-client ssh\n  ports: 80/tcp\n  protocols: \n  forward: yes\n  masquerade: no\n  forward-ports: \n  source-ports: \n  icmp-blocks: \n  rich rules: \n\trule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"8011\" protocol=\"tcp\" accept\n\trule family=\"ipv4\" source address=\"2.215.157.88\" port port=\"80\" protocol=\"tcp\" accept\n",
+  "current_conf_sha256": "4c960baf816dcb3af98e72b55828b5a299323735b885c6ab6abcd0956131cfe5",
+  "backup_conf_sha256": "68af55cd11b019c193beadc4d97012cbee8103a6740c770ed5426cce9a0b8474",
+  "conf_current_masked": "# AES-ORACLE-VIS-001: dedicated preview path -> 127.0.0.1:8011 ONLY.\n# Production (8010) is intentionally NOT proxied from port 80 anymore.\n# Defenses: source-IP allowlist (owner) + Basic Auth. TLS remains deferred (documented gap).\nserver {\n    listen 80 default_server;\n    server_name _;\n\n    allow 2.215.157.88;\n    allow 127.0.0.1;   # AES-ORACLE-LIVE-REPAIR-001: loopback full-path tests (auth still required)   # owner IP (evidence: AES-EXP-02)\n    deny  all;\n\n    auth_basic            \"AES VIS preview (AES-ORACLE-VIS-001)\";\n    auth_basic_user_file  /etc/nginx/.htpasswd_vis;\n\n    location / {\n        proxy_pass http://127.0.0.1:8010;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        # SSE: no buffering, single worker behind this proxy\n        proxy_buffering off;\n        proxy_cache off;\n        proxy_read_timeout 3600s;\n        proxy_send_timeout 3600s;\n    }\n    # W1-T03 (2026-10-27): secret external monitoring path — 32-hex token.\n    # Bypasses IP allowlist + Basic Auth by design; proxies ONLY /health\n    # liveness (no app data). Rollback: restore agentic.conf.pre-w1t03.\n    location = /healthz-<TOKEN> {\n        allow all;\n        auth_basic off;\n        proxy_pass http://127.0.0.1:8010/health;\n    }\n}\n",
+  "egress_ip": "47.57.242.119"
+}

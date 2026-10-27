@@ -1,0 +1,27 @@
+{
+  "ts": "20261027-020719",
+  "local": {
+    "healthz": "200",
+    "wall_401": "401",
+    "app_health": "200",
+    "services": "active\nactive",
+    "healthz_body_head": "{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-system: durable-project"
+  },
+  "external": {
+    "healthz_ext": {
+      "error": "<urlopen error [Errno 113] No route to host>"
+    },
+    "root_ext": {
+      "error": "<urlopen error [Errno 113] No route to host>"
+    },
+    "other_path_ext": {
+      "error": "<urlopen error [Errno 113] No route to host>"
+    }
+  },
+  "token_prefix": "5e140aa0",
+  "token_saved": "/home/z/my-project/download/aes-remediation/W1-T03/owner-token.txt",
+  "verdict_local": "PASS",
+  "verdict_external": "FAIL",
+  "rollback": "sudo -n cp /home/opc/agentic.conf.pre-w1t03 /etc/nginx/conf.d/agentic.conf && sudo -n nginx -t && sudo -n systemctl reload nginx",
+  "owner_step_pending": "خطوة 3 (بطاقة W1-T03): حساب UptimeRobot/BetterStack + فاحص HTTP 60ث على http://92.5.14.150/healthz-<TOKEN> + تنبيه بريد عند فشلين — تتطلب بريد المالك"
+}

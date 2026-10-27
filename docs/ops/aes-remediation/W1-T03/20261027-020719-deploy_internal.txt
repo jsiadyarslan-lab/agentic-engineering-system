@@ -1,0 +1,49 @@
+$ sudo -n cat /etc/nginx/conf.d/agentic.conf
+# AES-ORACLE-VIS-001: dedicated preview path -> 127.0.0.1:8011 ONLY.
+# Production (8010) is intentionally NOT proxied from port 80 anymore.
+# Defenses: source-IP allowlist (owner) + Basic Auth. TLS remains deferred (documented gap).
+server {
+    listen 80 default_server;
+    server_name _;
+
+    allow 2.215.157.88;
+    allow 127.0.0.1;   # AES-ORACLE-LIVE-REPAIR-001: loopback full-path tests (auth still required)   # owner IP (evidence: AES-EXP-02)
+    deny  all;
+
+    auth_basic            "AES VIS preview (AES-ORACLE-VIS-001)";
+    auth_basic_user_file  /etc/nginx/.htpasswd_vis;
+
+    location / {
+        proxy_pass http://127.0.0.1:8010;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded
+[rc=0]
+$ sudo -n cp /etc/nginx/conf.d/agentic.conf /home/opc/agentic.conf.pre-w1t03 && sudo -n sha256sum /home/opc/agentic.conf.pre-w1t03
+68af55cd11b019c193beadc4d97012cbee8103a6740c770ed5426cce9a0b8474  /home/opc/agentic.conf.pre-w1t03
+[rc=0]
+$ sudo -n cp /home/opc/agentic.conf.new /etc/nginx/conf.d/agentic.conf && sudo -n restorecon -v /etc/nginx/conf.d/agentic.conf 2>/dev/null; sudo -n ngin
+nginx: [warn] conflicting server name "_" on 0.0.0.0:80, ignored
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+[rc=0]
+$ sudo -n systemctl reload nginx && echo RELOAD_OK
+RELOAD_OK
+[rc=0]
+$ curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1/healthz-<TOKEN>
+200
+[rc=0]
+$ curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1/
+401
+[rc=0]
+$ curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health
+200
+[rc=0]
+$ systemctl is-active nginx agentic.service
+active
+active
+[rc=0]
+$ curl -s --max-time 8 http://127.0.0.1/healthz-<TOKEN> | head -c 120
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-project
+[rc=0]

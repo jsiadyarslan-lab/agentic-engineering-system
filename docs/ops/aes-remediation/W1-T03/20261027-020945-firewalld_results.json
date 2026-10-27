@@ -1,0 +1,23 @@
+{
+  "ts": "20261027-020945",
+  "discovery": "firewalld rich rule قصر دخول 80 على 2.215.157.88 فقط — مخالف لافتراض بطاقة W1-T03 (المراقب الخارجي يصل nginx)؛ الفتح يستعيد التصميم المعتمد والحماية الفعلية تبقى allowlist nginx + Basic Auth",
+  "change": "firewall-cmd --permanent --add-port=80/tcp + reload",
+  "rollback": "sudo -n firewall-cmd --permanent --remove-port=80/tcp && sudo -n firewall-cmd --reload",
+  "external": {
+    "healthz_ext": {
+      "code": 200,
+      "body_head": "{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-sys"
+    },
+    "root_ext": {
+      "code": 403
+    },
+    "api_ext": {
+      "code": 403
+    },
+    "fake_token_ext": {
+      "code": 403
+    }
+  },
+  "verdict_external": "PASS",
+  "token_prefix": "5e140aa0"
+}
