@@ -1,8 +1,0 @@
-{
-  "phase": "F14_CANCELLATION",
-  "timestamp": 1790890718.983524,
-  "data": {
-    "cancel_processed": true,
-    "mission_state": "MissionState.CANCELLED"
-  }
-}

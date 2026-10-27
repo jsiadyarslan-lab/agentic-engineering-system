@@ -1,0 +1,70 @@
+INFO:     Started server process [3597]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8022 (Press CTRL+C to quit)
+INFO:     127.0.0.1:48856 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48860 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48868 - "POST /api/projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:48872 - "GET /?s=1792984602 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/fonts/fonts.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/theme.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/styles.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/projects.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /static/harness.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/live.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/app-shell.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/project-live.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/control-center.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/factory-control.css?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/markdown.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/app.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/chat-stream.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/task-cards.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /static/model-picker.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/error-boundary.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/settings.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/environment.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/research-ui.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/execution-env.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/harness.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /static/live-events.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/project-live.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/workflow-view.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/control-center.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/projects.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/factory-control.js?v=002cf4a0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/fonts/plex-arabic-400-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /static/fonts/plex-arabic-600-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/fonts/plex-mono-500-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/fonts/plex-arabic-500-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/fonts/plex-arabic-700-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /static/fonts/plex-mono-400-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /static/fonts/plex-arabic-600-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /static/fonts/plex-arabic-400-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /static/fonts/plex-arabic-500-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /static/fonts/plex-arabic-700-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48912 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48872 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:48886 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /?s=1792984602&m=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48884 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /?s=1792984602&f=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48886 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48920 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48882 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48898 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3597]

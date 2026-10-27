@@ -1,0 +1,327 @@
+/* ==========================================================================
+   AES-UI-PREMIUM-REDESIGN-007 — نظام التصميم الموحد (إعادة تأسيس)
+   Premium Engineering Workspace — مصدر الحقيقة الوحيد للرموز البصرية.
+
+   يُحمَّل أولاً قبل كل ملفات CSS. يعرّف:
+     1) رموز كاملة: ألوان/خطوط/مقياس طباعي/مسافات/أنصاف/ظلال/طبقات z/حركة.
+     2) أرضية تباين AA مضمونة رقميًا (007: النصوص كلها ≥4.5:1 على أضعف سطح).
+     3) مفردات المكوّنات الأساسية: زر/حبة حالة/حالة فراغ/عزل BiDi تقني.
+   الأسماء القديمة (--muted/--fg/--line/…) تبقى أسماء مستعارة فلا fallbacks متضاربة.
+   الخط: IBM Plex Sans Arabic محلي (صفر موارد خارجية).
+   ========================================================================== */
+
+:root {
+  /* ---------- الطبقات اللونية (فحمي هادئ مزرق) ---------- */
+  --bg: #0b0e14;            /* الخلفية العامة */
+  --bg-sidebar: #0f141d;    /* الشريط الجانبي */
+  --bg-raised: #121826;     /* أسطح العمل الأساسية */
+  --bg-elevated: #171e2c;   /* الأسطح المرتفعة والقوائم */
+  --bg-input: #0b0e14;      /* حقول الإدخال */
+  --bg-hover: #141b28;      /* حالة التحويم الهادئة */
+
+  --bubble-user: #171e2c;
+  --bubble-assistant: transparent;
+
+  /* ---------- الحدود ---------- */
+  --border: #222a38;
+  --border-soft: #1b2231;
+  --border-strong: #2b3547;
+
+  /* ---------- النصوص — سُلّم تباين مقيس (007) ----------
+     text 17.1:1 · mid 8.7:1 · dim 7.0:1 · faint 5.8:1 على --bg
+     وكلها ≥4.9:1 على أضعف سطح elevated — لا فشل AA في أي نص محتوى. */
+  --text: #e9edf5;
+  --text-mid: #9aa4b4;
+  --text-dim: #75808f;
+  --text-faint: #707b8d;
+  --text-disabled: #4c5568;  /* للعناصر المعطلة فقط (معفاة من AA) */
+
+  /* ---------- التمييز: ذهبي هادئ واحد ---------- */
+  --accent: #58a6ff;
+  --accent-strong: #7db8ff;
+  --accent-soft: rgba(88, 166, 255, 0.12);
+  --accent-softer: rgba(88, 166, 255, 0.06);
+  --accent-border: rgba(88, 166, 255, 0.32);
+  --accent-ink: #04101c;    /* نص فوق خلفية ذهبية صلبة */
+
+  /* ---------- تمييز الوكيل/النظام (007) ----------
+     أزرق مرجع المصنع 003 يصبح دلالة «حيوية وكيل» داخل النظام الواحد،
+     لا لوحة موازية: شارات LIVE ونبض النشاط فقط. */
+  --accent-agent: var(--accent);
+  --accent-agent-soft: var(--accent-soft);
+  --accent-agent-border: var(--accent-border);
+
+  /* ---------- الحالات الدلالية (مفهومة بالنص والرمز لا باللون وحده) ---------- */
+  --ok: #43cf90;
+  --ok-soft: rgba(67, 207, 144, 0.10);
+  --ok-border: rgba(67, 207, 144, 0.30);
+  --ok-chip: rgba(67, 207, 144, 0.14);
+
+  --danger: #f06969;
+  --danger-soft: rgba(240, 105, 105, 0.06);
+  --danger-border: rgba(240, 105, 105, 0.32);
+  --danger-chip: rgba(240, 105, 105, 0.10);
+
+  --warn: #ff9e64;
+  --warn-soft: rgba(255, 158, 100, 0.08);
+  --warn-border: rgba(255, 158, 100, 0.35);
+  --warn-chip: rgba(255, 158, 100, 0.14);
+
+  --info: #6aa6ff;
+  --info-soft: rgba(106, 166, 255, 0.10);
+  --info-border: rgba(106, 166, 255, 0.36);
+  --info-chip: rgba(106, 166, 255, 0.14);
+
+  /* ---------- أدوار المصنع — ألوان هوية داخل النظام الواحد (007) ---------- */
+  --role-thinker: #D98BA8;
+  --role-implementer: #B8A3F0;
+  --role-arbiter: var(--warn);
+
+  /* ---------- الخطوط (007: كانت خمس مداخل mono متنافرة) ---------- */
+  --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI",
+               Tahoma, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo,
+               Consolas, monospace;
+
+  /* ---------- المقياس الطباعي (007: هرمية منضبطة 11→28) ----------
+     11: وسم علوي صغير فقط · 12: وصف/طوابع زمنية · 13: تنقل وثانوي
+     15: جسم · 17: عنوان بطاقة · 19: رأس قسم · 22/28: الترحيب. */
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-15: 15px;
+  --fs-17: 17px;
+  --fs-19: 19px;
+  --fs-22: 22px;
+  --fs-28: 28px;
+
+  /* ---------- المقياس (شبكة 4px) ---------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+
+  /* ---------- الأنصاف والزوايا ---------- */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --radius-pill: 999px;
+
+  /* ---------- الظلال (خفيفة — مساحة عمل لا معرض) ---------- */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-2: 0 10px 34px rgba(0, 0, 0, 0.42);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.35);
+
+  /* ---------- الأبعاد ---------- */
+  --chat-width: 780px;      /* (007) عمود المحتوى — متطابق مع عقد 920px في app-shell.css */
+  --sidebar-width: 292px;
+  --drawer-width: 440px;
+  --header-h: 56px;
+
+  /* ---------- الحركة ---------- */
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-fast: 0.14s;
+  --dur: 0.22s;
+  --dur-slow: 0.32s;
+
+  /* ---------- الطبقات z — سلّم واحد (007: كان مخططين متداخلين) ----------
+     content 30 · raised 40 (قوائم منبثقة داخل سطح) · sidebar 50 ·
+     sticky 55 (أزرار عائمة) · drawer 61 + لوحه 62 · modal 70 ·
+     popover 71 (فوق المودال كمنتقي نماذج) · boundary 300. */
+  --z-content: 30;
+  --z-raised: 40;
+  --z-sidebar: 50;
+  --z-sticky: 55;
+  --z-drawer: 61;
+  --z-drawer-panel: 62;
+  --z-modal: 70;
+  --z-popover: 71;
+  --z-boundary: 300;
+
+  /* ==========================================================================
+     الأسماء القديمة — مستعارة إلى النظام (تُصان حتى تُنقى مصادرها).
+     ========================================================================== */
+  --panel: var(--bg-raised);
+  --panel-2: var(--bg-elevated);
+  --ink: var(--text);
+  --ink-2: var(--text-mid);
+  --line: var(--border-soft);
+  --muted: var(--text-dim);
+  --fg: var(--text);
+  --card: var(--bg-raised);
+  --card-2: var(--bg-elevated);
+
+  --ok-strong: var(--ok);
+  --ok-bg: var(--ok-chip);
+  --danger-strong: var(--danger);
+  --danger-bg: var(--danger-chip);
+  --warn-strong: var(--warn);
+  --warn-bg: var(--warn-chip);
+  --info-strong: var(--info);
+  --info-bg: var(--info-chip);
+}
+
+/* ---------- احترام تقليل الحركة ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- التركيز المرئي الموحد (لوحة المفاتيح) ---------- */
+:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+  border-radius: var(--radius-s);
+}
+
+::selection {
+  background: rgba(88, 166, 255, 0.28);
+  color: var(--text);
+}
+
+/* ---------- شريط التمرير الموحد ---------- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #242c3b;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: #2b3547; }
+
+/* ---------- الأيقونات الوظيفية الموحدة (SVG داخل .icon) ---------- */
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.icon.sm { width: 15px; height: 15px; }
+.icon.lg { width: 22px; height: 22px; }
+
+/* شارة حالة صغيرة — نقطة + نص، مفهومة بلا لون */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex: none;
+  display: inline-block;
+}
+.status-dot.on { background: var(--ok); }
+.status-dot.off { background: var(--warn); }
+.status-dot.err { background: var(--danger); }
+.status-dot.live { background: var(--accent-agent); }
+
+/* ==========================================================================
+   مفردات المكوّنات الأساسية (007) — القواعد الهندسية الموحدة.
+   كل عائلات الأزرار/الحبوب/الفراغ في بقية الملفات تُبنى من نفس هذه
+   القيم فتتوحد بالبناء دون كسر أسماء الفئات التي تعتمدها الاختبارات.
+   ========================================================================== */
+
+/* ---------- الزر الموحد: قيم مرجعية تستهلكها عائلات الأزرار ----------
+   (الارتفاع 34px · الصغير 28px · نصف القطر 8px — نفس القيم في كل سطح) */
+:root {
+  --btn-h: 34px;
+  --btn-h-sm: 28px;
+  --btn-radius: 8px;
+  --btn-font: var(--fs-13);
+}
+
+/* ---------- حبة الحالة الموحدة: 11px/600 على 20px بلون دلالي ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  height: 20px;
+  padding: 0 var(--sp-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--bg-elevated);
+  color: var(--text-mid);
+  border: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+.chip.ok     { background: var(--ok-chip);     color: var(--ok);     border-color: var(--ok-border); }
+.chip.danger { background: var(--danger-chip); color: var(--danger); border-color: var(--danger-border); }
+.chip.warn   { background: var(--warn-chip);   color: var(--warn);   border-color: var(--warn-border); }
+.chip.info   { background: var(--info-chip);   color: var(--info);   border-color: var(--info-border); }
+.chip.agent  { background: var(--accent-agent-soft); color: var(--accent-agent); border-color: var(--accent-agent-border); }
+
+/* ---------- حالة الفراغ الموحدة: علامة + عنوان + إرشاد + فعل اختياري ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-6);
+  text-align: center;
+  color: var(--text-dim);
+}
+.empty-state .empty-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-m);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  margin-bottom: var(--sp-1);
+}
+.empty-state .empty-title {
+  font-size: var(--fs-15);
+  font-weight: 600;
+  color: var(--text-mid);
+}
+.empty-state .empty-hint {
+  font-size: var(--fs-13);
+  color: var(--text-dim);
+  max-width: 44ch;
+  line-height: 1.6;
+}
+
+/* ---------- عزل السلاسل التقنية داخل النص العربي (007: BiDi) ----------
+   المسارات ورموز الحالة وأسماء المزودين تُعرض LTR معزولة بخط mono،
+   فلا تقفز علامات الترقيم ولا تنقلب الأقواس. */
+.tech, .md-code, code, pre {
+  font-family: var(--font-mono);
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px var(--sp-1);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  background: var(--bg-elevated);
+  font-family: var(--font-mono);
+  font-size: var(--fs-11);
+  color: var(--text-mid);
+  direction: ltr;
+  unicode-bidi: isolate;
+}

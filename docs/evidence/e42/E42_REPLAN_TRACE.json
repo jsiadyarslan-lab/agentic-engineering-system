@@ -1,5 +1,0 @@
-{
-  "replan": true,
-  "added_task": "T8-recovery",
-  "reason": "Verification failed - artifact hash mismatch"
-}

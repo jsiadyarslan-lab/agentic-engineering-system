@@ -1,9 +1,0 @@
-{
-  "total_model_calls": 0,
-  "successful_calls": 0,
-  "total_tokens": 0,
-  "total_latency_ms": 0,
-  "providers_used": [],
-  "models_used": [],
-  "causality_traceable": false
-}

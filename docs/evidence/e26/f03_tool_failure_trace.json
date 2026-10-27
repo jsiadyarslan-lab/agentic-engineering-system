@@ -1,9 +1,0 @@
-{
-  "phase": "F03_TOOL_FAILURE",
-  "timestamp": 1790890718.8146944,
-  "data": {
-    "task_success": false,
-    "task_error": "1 validation error for TaskFailedEvent\nerror\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.",
-    "mission_success": false
-  }
-}

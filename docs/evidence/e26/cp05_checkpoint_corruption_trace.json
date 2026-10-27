@@ -1,7 +1,0 @@
-{
-  "phase": "CP05_CHECKPOINT_CORRUPTION",
-  "timestamp": 1790890850.095594,
-  "data": {
-    "bad_checkpoint_rejected": true
-  }
-}

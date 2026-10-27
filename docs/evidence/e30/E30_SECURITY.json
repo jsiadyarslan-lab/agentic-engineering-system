@@ -1,7 +1,0 @@
-{
-  "no_network_in_sandbox": true,
-  "filesystem_scoped": true,
-  "no_hardcoded_secrets": true,
-  "sandbox_boundary_enforced": true,
-  "destructive_actions_audited": true
-}

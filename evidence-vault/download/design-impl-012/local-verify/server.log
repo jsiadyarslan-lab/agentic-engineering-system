@@ -1,0 +1,44 @@
+INFO:     Started server process [3196]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8021 (Press CTRL+C to quit)
+INFO:     127.0.0.1:59306 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59312 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59318 - "POST /api/projects HTTP/1.1" 201 Created
+INFO:     127.0.0.1:59326 - "GET /?s=1792970511 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59366 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /api/mission/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/harness/roles HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /api/execution/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /api/models/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34572 - "GET /api/research/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34572 - "GET /api/execution/host-truth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/execution/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/conversations/3/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/cycle/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/chat/active?conversation_id=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /?m=1792970511 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34572 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /api/conversations/3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59326 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34572 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /api/conversations/3/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /api/cycle/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59336 - "GET /api/chat/active?conversation_id=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34564 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3196]

@@ -1,0 +1,33 @@
+====================================================================== 
+STAGE nginx (approved procedure: 8011 -> 8010)
+ ======================================================================
+$ grep -n proxy_pass /etc/nginx/conf.d/agentic.conf
+16:        proxy_pass http://127.0.0.1:8010;
+[rc=0]
+
+$ sudo -n sed -i 's|proxy_pass http://127.0.0.1:8011;|proxy_pass http://127.0.0.1:8010;|' /etc/nginx/conf.d/agentic.conf && echo SED_DONE
+SED_DONE
+[rc=0]
+
+$ grep -n proxy_pass /etc/nginx/conf.d/agentic.conf
+16:        proxy_pass http://127.0.0.1:8010;
+[rc=0]
+
+$ sudo -n nginx -t 2>&1
+nginx: [warn] conflicting server name "_" on 0.0.0.0:80, ignored
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+[rc=0]
+
+$ sudo -n systemctl reload nginx && echo RELOAD_OK
+RELOAD_OK
+[rc=0]
+
+$ curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1/ ; echo ' <- via nginx:80 (401=auth active, nginx serving)'
+401 <- via nginx:80 (401=auth active, nginx serving)
+[rc=0]
+
+$ curl -s --max-time 5 http://127.0.0.1:8010/health | head -c 200
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"loc
+[rc=0]
+

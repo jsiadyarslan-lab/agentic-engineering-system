@@ -1,0 +1,45 @@
+====================================================================== 
+STAGE deploy (ff-only)
+ ======================================================================
+$ cd /opt/agentic-engineering-system && git fetch /home/opc/deploy-010-4568ed5.bundle refs/remotes/origin/main 2>&1 | tail -2
+From /home/opc/deploy-010-4568ed5.bundle
+ * remote-tracking branch origin/main -> FETCH_HEAD
+[rc=0]
+
+$ cd /opt/agentic-engineering-system && git rev-parse FETCH_HEAD
+4568ed5dcba44c6bbb112107830b9a2eb1ab5a9f
+[rc=0]
+
+$ cd /opt/agentic-engineering-system && git merge --ff-only FETCH_HEAD 2>&1 | tail -2
+create mode 100644 docs/evidence/UI007_evidence/sources-annex.md
+ create mode 100644 docs/evidence/UI007_evidence/test-summary.md
+[rc=0]
+
+$ git -C /opt/agentic-engineering-system rev-parse HEAD
+4568ed5dcba44c6bbb112107830b9a2eb1ab5a9f
+[rc=0]
+
+>>> production tree now at the tested commit 4568ed5dcba4 <<<
+
+$ cd /opt/agentic-engineering-system && ./.venv/bin/python -c "import api.routes as r; from core.config import APP_VERSION; print('IMPORT_OK APP_VERSION
+IMPORT_OK APP_VERSION=4.0.0
+[rc=0]
+
+$ git -C /opt/agentic-engineering-system status --porcelain --untracked-files=no | wc -l
+0
+[rc=0]
+
+$ sudo -n systemctl restart agentic.service && sleep 4 && systemctl is-active agentic.service
+active
+[rc=0]
+
+$ curl -s --max-time 8 http://127.0.0.1:8010/health | head -c 300
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+seccomp","note":"معزولة على هذا الم
+[rc=0]
+
+$ git -C {APP} rev-parse HEAD
+[stderr] fatal: cannot change to '{APP}': No such file or directory
+[rc=128]
+
+[evidence] /home/z/my-project/download/oracle-deploy-010/20261025-192206-deploy.txt
+

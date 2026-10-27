@@ -1,0 +1,1 @@
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+seccomp","note":"معزولة على هذا المضيف (ركيزة مختارة بقدرات مثبتة فعليًا)"}}

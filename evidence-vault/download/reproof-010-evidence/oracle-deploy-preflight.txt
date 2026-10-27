@@ -1,0 +1,34 @@
+====================================================================== 
+STAGE preflight (READ-ONLY)
+ ======================================================================
+$ git -C /opt/agentic-engineering-system rev-parse HEAD
+b38dbafcf4160df469132d9e415ac931aad1a258
+[rc=0]
+
+$ git -C /opt/agentic-engineering-system status --porcelain --untracked-files=no
+[rc=0]
+
+$ git -C /opt/agentic-engineering-system status --porcelain
+?? src/agentic_engineering_system.egg-info/
+[rc=0]
+
+untracked (informational, non-blocking): ?? src/agentic_engineering_system.egg-info/
+$ systemctl is-active agentic.service
+active
+[rc=0]
+
+$ curl -s --max-time 5 http://127.0.0.1:8010/health | head -c 250
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+
+[rc=0]
+
+$ systemctl is-active agentic-vis.service; ps -o pid,etime,%cpu,args -p $(pgrep -f 'uvicorn.*8011' | head -1) 2>/dev/null | tail -1
+activating
+ 403348       00:00  0.0 bash -c systemctl is-active agentic-vis.service; ps -o pid,etime,%cpu,args -p $(pgrep -f 'uvicorn.*8011' | head -1) 2>/dev/null | tail -1
+[rc=0]
+
+$ grep proxy_pass /etc/nginx/conf.d/agentic.conf
+proxy_pass http://127.0.0.1:8010;
+[rc=0]
+
+[evidence] /home/z/my-project/download/oracle-deploy-010/20261025-192053-preflight.txt
+

@@ -1,0 +1,17 @@
+{
+ "mechanism": "bubblewrap",
+ "machine": "x86_64",
+ "real_uid": 1001,
+ "bwrap_present": true,
+ "bwrap_path": "/home/z/my-project/reproof-010/bwrap-root/usr/bin/bwrap",
+ "bwrap_version": "0.9.0",
+ "max_user_namespaces": 462,
+ "userns_enabled": true,
+ "seccomp_deny_syscalls": 29,
+ "audit_arch": "0xc00000b7",
+ "launch_probe": "FAILED: bwrap probe exited 139: ",
+ "supported": false,
+ "reason": "إطلاق bwrap الفعلي فشل: bwrap probe exited 139: ",
+ "probed_at": 1792950465.0834327,
+ "note": "x86_64 sandbox: bwrap itself + loopback work, but project seccomp filter is AUDIT_ARCH_AARCH64-only by design (fail-closed on arch mismatch) — host is NOT substrate-compatible without code changes (forbidden). Qualified host = Oracle aarch64."
+}

@@ -1,8 +1,0 @@
-{
-  "test": "unknown_tool",
-  "tool_name": "nonexistent_tool",
-  "expected_failure": true,
-  "actual_result": "FAIL",
-  "error_type": "ValueError",
-  "error_message": "Unknown tool: nonexistent_tool"
-}

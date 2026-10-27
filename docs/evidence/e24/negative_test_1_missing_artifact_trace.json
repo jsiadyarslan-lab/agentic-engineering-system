@@ -1,9 +1,0 @@
-{
-  "phase": "NEGATIVE_TEST_1_MISSING_ARTIFACT",
-  "timestamp": 1790884733.8675392,
-  "data": {
-    "resume_success": true,
-    "artifact_accessible_after_delete": false,
-    "expected": "artifact should not be accessible"
-  }
-}

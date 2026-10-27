@@ -1,0 +1,888 @@
+..............................................FFFF.FF......F............ [ 27%]
+.......................................FF............................... [ 54%]
+..........F...............................F..FF..................FF....F [ 81%]
+F...............................................                         [100%]
+=================================== FAILURES ===================================
+__________________________ test_stop_during_execution __________________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_stop_during_execution0')
+
+    def test_stop_during_execution(tmp_path):
+        implementer = _SlowCounting(
+            __import__("roles.implementer", fromlist=["Implementer"]).Implementer(),
+            delay=1.2,
+        )
+        orchestrator = build_mock_orchestrator({RoleType.IMPLEMENTER: implementer})
+        box, thread, events = _run_in_thread(
+            orchestrator, workspace_root=tmp_path, cycle_id="stop-exec-1"
+        )
+        # انتظر إثبات T1 (محاولتها الثانية) ثم اطلق أثناء نوم محاولة T2 الأولى
+>       assert _wait_for(
+            lambda: any(
+                e["kind"] == "task_verification"
+                and e["details"].get("task_id") == "T1"
+                and e["details"].get("verdict") == "evidenced"
+                for e in events
+            )
+        )
+E       assert False
+E        +  where False = _wait_for(<function test_stop_during_execution.<locals>.<lambda> at 0xffffa82b6a20>)
+
+tests/core/test_cycle_stop.py:155: AssertionError
+________________________ test_stop_during_verification _________________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_stop_during_verification0')
+
+    def test_stop_during_verification(tmp_path):
+        verifier = _SlowCounting(
+            __import__("roles.verifier", fromlist=["Verifier"]).Verifier(), delay=1.5
+        )
+        orchestrator = build_mock_orchestrator({RoleType.VERIFIER: verifier})
+        box, thread, events = _run_in_thread(
+            orchestrator, workspace_root=tmp_path, cycle_id="stop-verify-1"
+        )
+        # انتظر تنفيذ T1 (تحقق T1 نائم الآن) ثم اطلب الإيقاف
+        assert _wait_for(
+            lambda: any(
+                e["kind"] == "task_execution" and e["details"].get("task_id") == "T1"
+                for e in events
+            )
+        )
+        time.sleep(0.3)  # داخل نوم تحقق T1
+>       assert orchestrator.request_stop("stop-verify-1", by="owner")["accepted"]
+E       assert False
+
+tests/core/test_cycle_stop.py:212: AssertionError
+_____________ test_stop_request_rejected_for_finished_and_unknown ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_stop_request_rejected_for0')
+
+    def test_stop_request_rejected_for_finished_and_unknown(tmp_path):
+        orchestrator = build_mock_orchestrator()
+        result = orchestrator.run_cycle(
+            "دورة كاملة حتى النهاية", workspace_root=tmp_path
+        )
+>       assert result.final_state is PlanState.EVIDENCED
+E       AssertionError: assert <PlanState.FAILED: 'FAILED'> is <PlanState.EVIDENCED: 'EVIDENCED'>
+E        +  where <PlanState.FAILED: 'FAILED'> = CycleResult(goal='دورة كاملة حتى النهاية', cycle_id='cycle-620baf1054cd', final_state=<PlanState.FAILED: 'FAILED'>, su... APPROVED (by reviewer)', 'APPROVED → EXECUTING (by system)', 'EXECUTING → FAILED (by implementer)']), resumed_from='').final_state
+E        +  and   <PlanState.EVIDENCED: 'EVIDENCED'> = PlanState.EVIDENCED
+
+tests/core/test_cycle_stop.py:240: AssertionError
+________________ test_cycle_status_reports_running_and_receipt _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_cycle_status_reports_runn0')
+
+    def test_cycle_status_reports_running_and_receipt(tmp_path):
+        orchestrator = build_mock_orchestrator()
+        result = orchestrator.run_cycle("دورة للحالة", workspace_root=tmp_path)
+        status = orchestrator.cycle_status(result.cycle_id)
+>       assert status == {
+            "cycle_id": result.cycle_id,
+            "state": "EVIDENCED",
+            "running": False,
+            "stop_requested": False,
+            "stop_receipt": None,
+        }
+E       AssertionError: assert {'cycle_id': ...': False, ...} == {'cycle_id': ...': False, ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'state': 'FAILED'} != {'state': 'EVIDENCED'}
+E         Use -v to get more diff
+
+tests/core/test_cycle_stop.py:255: AssertionError
+________ test_resume_with_signed_plan_skips_think_review_and_evidenced _________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_resume_with_signed_plan_s0')
+
+    def test_resume_with_signed_plan_skips_think_review_and_evidenced(tmp_path):
+>       result, snapshot, roles, stopped_orchestrator = _stop_cycle_mid_execution(
+            tmp_path, "stop-res-1"
+        )
+
+tests/core/test_cycle_stop.py:326: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_resume_with_signed_plan_s0')
+cycle_id = 'stop-res-1'
+
+    def _stop_cycle_mid_execution(tmp_path, cycle_id):
+        """إيقاف دورة أثناء T2 — يعيد (النتيجة، اللقطة، عدّادات الأدوار)."""
+        roles = {
+            RoleType.THINKER: _SlowCounting(
+                __import__("roles.thinker", fromlist=["Thinker"]).Thinker()
+            ),
+            RoleType.REVIEWER: _SlowCounting(
+                __import__("roles.reviewer", fromlist=["Reviewer"]).Reviewer()
+            ),
+            RoleType.IMPLEMENTER: _SlowCounting(
+                __import__("roles.implementer", fromlist=["Implementer"]).Implementer(),
+                delay=1.2,
+            ),
+            RoleType.VERIFIER: _SlowCounting(
+                __import__("roles.verifier", fromlist=["Verifier"]).Verifier()
+            ),
+        }
+        orchestrator = build_mock_orchestrator(roles)
+        box, thread, events = _run_in_thread(
+            orchestrator, workspace_root=tmp_path, cycle_id=cycle_id
+        )
+>       assert _wait_for(
+            lambda: any(
+                e["kind"] == "task_verification"
+                and e["details"].get("task_id") == "T1"
+                and e["details"].get("verdict") == "evidenced"
+                for e in events
+            )
+        )
+E       assert False
+E        +  where False = _wait_for(<function _stop_cycle_mid_execution.<locals>.<lambda> at 0xffffa8321a80>)
+
+tests/core/test_cycle_stop.py:308: AssertionError
+__________________ test_resume_without_plan_restarts_thinking __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_resume_without_plan_resta0')
+
+    def test_resume_without_plan_restarts_thinking(tmp_path):
+        thinker = _SlowCounting(
+            __import__("roles.thinker", fromlist=["Thinker"]).Thinker(), delay=1.5
+        )
+        orchestrator = build_mock_orchestrator({RoleType.THINKER: thinker})
+        box, thread, events = _run_in_thread(
+            orchestrator, workspace_root=tmp_path, cycle_id="stop-rt-1"
+        )
+        assert _wait_for(lambda: _cycle_id_of(events) is not None)
+        orchestrator.request_stop("stop-rt-1", by="owner")
+        thread.join(timeout=15)
+        snapshot = json.loads(
+            (tmp_path / "stop_snapshot.json").read_text(encoding="utf-8")
+        )
+        assert snapshot["plan_signed"] is False
+    
+        fresh = build_mock_orchestrator()
+        resumed = fresh.run_cycle(
+            "هدف استئناف بلا خطة",
+            workspace_root=tmp_path,
+            cycle_id="resume-rt-1",
+            resume_from=snapshot,
+        )
+>       assert resumed.final_state is PlanState.EVIDENCED
+E       AssertionError: assert <PlanState.FAILED: 'FAILED'> is <PlanState.EVIDENCED: 'EVIDENCED'>
+E        +  where <PlanState.FAILED: 'FAILED'> = CycleResult(goal='هدف استئناف بلا خطة', cycle_id='resume-rt-1', final_state=<PlanState.FAILED: 'FAILED'>, sub_verdict=... (by reviewer)', 'APPROVED → EXECUTING (by system)', 'EXECUTING → FAILED (by implementer)']), resumed_from='stop-rt-1').final_state
+E        +  and   <PlanState.EVIDENCED: 'EVIDENCED'> = PlanState.EVIDENCED
+
+tests/core/test_cycle_stop.py:391: AssertionError
+_______________________ test_cycle_status_finished_shape _______________________
+
+client = <starlette.testclient.TestClient object at 0xffffa820d850>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0xffffa9b0a9c0>}
+
+    def test_cycle_status_finished_shape(client, live_task_env):
+        """حالة مهمة منجزة عبر المسار الحي — الشكل الكامل بعد الانتهاء."""
+        _events, cycle_id = _run_task_to_completion(client)
+        resp = client.get(f"/api/cycle/status/{cycle_id}")
+        assert resp.status_code == 200
+        body = resp.json()
+>       assert body["state"] == "EVIDENCED"
+E       AssertionError: assert 'FAILED' == 'EVIDENCED'
+E         
+E         - EVIDENCED
+E         + FAILED
+
+/home/opc/aes-reproof-010/repo/tests/core/test_stop_api.py:208: AssertionError
+____________________ test_pause_and_resume_same_durable_job ____________________
+
+control_env = {'client': <starlette.testclient.TestClient object at 0xffffa06db890>, 'sessions': sessionmaker(class_='Session', bind...tmp/pytest-of-opc/pytest-166/test_pause_and_resume_same_dur0/projects-api.db), autoflush=True, expire_on_commit=False)}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffa05d6240>
+
+    def test_pause_and_resume_same_durable_job(control_env, monkeypatch):
+        """(§13) PAUSE ← PAUSED ← RESUME: نفس الوظيفة الدائمة بلا نسخ."""
+        client = control_env["client"]
+        pid = _plan_project(client)   # خطة تنتظر الاعتماد — لم يُطلق شيء بعد
+    
+        # منفذ بطيء حتمي: يدخل الخطوة وينتظر الإيقاف المؤقت قبل الإكمال.
+        # (الترقيع قبل الاعتماد: الاعتماد نفسه يطلق الحلقة خلفيًا 013 §3
+        # فتصل خطوته إلى المنفذ البطيء — لا حاجة لـrun/stream الحاجز)
+        import hashlib
+    
+        entered = threading.Event()
+        release = threading.Event()
+    
+        def slow_run_task(goal, *, router, role_config=None, workspace=None,
+                          on_event=None, cycle_id=None, stop_controller=None,
+                          resume_from=None, **_kw):
+            from tasks import TaskResult
+    
+            entered.set()
+            release.wait(timeout=20)
+            root = Path(workspace)
+            root.mkdir(parents=True, exist_ok=True)
+            output = root / "deliverable.md"
+            output.write_text(f"# مخرج\n\n{goal}\n", encoding="utf-8")
+            evidence_path = root / "evidence.json"
+            evidence_path.write_text("{}", encoding="utf-8")
+            return TaskResult(
+                verdict="PASS", reason="تم", goal=goal,
+                cycle_id=cycle_id or "", final_state="EVIDENCED",
+                workspace=str(root), files=["deliverable.md"], tool_calls=[],
+                evidence_path=str(evidence_path),
+                evidence_sha256=hashlib.sha256(
+                    evidence_path.read_bytes()).hexdigest(),
+                duration_ms=5, state_history=["EVIDENCED"],
+            )
+    
+        import tasks as tasks_mod
+    
+        monkeypatch.setattr(tasks_mod, "run_task", slow_run_task)
+    
+        # الاعتماد يطلق الحلقة خلفيًا — الخطوة الأولى تدخل المنفذ البطيء
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200, approved.text
+>       assert entered.wait(timeout=20), "الحلقة لم تدخل الخطوة"
+E       AssertionError: الحلقة لم تدخل الخطوة
+E       assert False
+E        +  where False = wait(timeout=20)
+E        +    where wait = <threading.Event at 0xffffa065bc80: unset>.wait
+
+/home/opc/aes-reproof-010/repo/tests/api/test_control_actions_0134.py:116: AssertionError
+_____________ test_final_stop_is_durable_and_preserves_everything ______________
+
+control_env = {'client': <starlette.testclient.TestClient object at 0xffffa042cef0>, 'sessions': sessionmaker(class_='Session', bind...tmp/pytest-of-opc/pytest-166/test_final_stop_is_durable_and0/projects-api.db), autoflush=True, expire_on_commit=False)}
+
+    def test_final_stop_is_durable_and_preserves_everything(control_env):
+        """(§12) final=true: STOPPED دائمة + الأحداث والأدلة باقية."""
+        client = control_env["client"]
+        pid = _approved_project(client)
+    
+        client.post(f"/api/projects/{pid}/run/stream?after=0")
+        stopped = client.post(f"/api/projects/{pid}/stop", json={
+            "reason": "إيقاف نهائي من الاختبار", "final": True,
+        })
+        assert stopped.status_code == 200, stopped.text
+    
+>       runtime = _wait_status(client, pid, {"STOPPED", "PAUSED",
+                                             "COMPLETED", "WAITING_GATE"})
+
+/home/opc/aes-reproof-010/repo/tests/api/test_control_actions_0134.py:153: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <starlette.testclient.TestClient object at 0xffffa042cef0>, pid = 1
+statuses = {'COMPLETED', 'PAUSED', 'STOPPED', 'WAITING_GATE'}, timeout = 25.0
+
+    def _wait_status(client, pid, statuses, timeout=25.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            runtime = client.get(f"/api/projects/{pid}/runtime").json()
+            if runtime.get("status") in statuses:
+                return runtime
+            time.sleep(0.1)
+>       raise AssertionError(
+            f"لم تصل الحالة إلى {statuses} — آخر: {runtime.get('status')} "
+            f"({runtime.get('last_error', '')[:150]})"
+        )
+E       AssertionError: لم تصل الحالة إلى {'COMPLETED', 'WAITING_GATE', 'STOPPED', 'PAUSED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)
+
+/home/opc/aes-reproof-010/repo/tests/api/test_control_actions_0134.py:62: AssertionError
+__________ test_preflight_blocked_run_terminates_and_releases_runner ___________
+
+client = <starlette.testclient.TestClient object at 0xffffa39f3b30>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-opc/pytest-166/test_preflight_blocked...e_on_commit=False), 'runs': [], 'tmp_path': PosixPath('/tmp/pytest-of-opc/pytest-166/test_preflight_blocked_run_ter0')}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff732d5040>
+
+    def test_preflight_blocked_run_terminates_and_releases_runner(
+        client, project_env, monkeypatch
+    ):
+        """(§6) مهمة محجوبة بالفحص المسبق تنتهي بحد معلن ويُحرَّر الخيط.
+    
+        محرك بلا حقن مسبارات + AES_PROBE_TIMEOUT_S قصيرة = حجب صادق؛
+        حد إعادة الفحص ينهي الوظيفة بفشل مسمّى بدل حلقة مفتوحة. المهمة
+        التالية (بحقن الـfixture القياسي) تكتمل — دليل تحرر الخيط.
+    
+        (AES-EXP-04) السقف مضبوط للاختبار (30ث عبر AES_PREFLIGHT_
+        BLOCKED_LIMIT_S — العقد نفسه، قيمة أضيق للحتمية): بالسقف
+        الافتراضي 120ث كانت مرحلة الحجب وحدها + التحقق تتجاوز مهلة
+        الاختبار الكلية (150ث) على شبكة سوداء المسبارات (كل نبضة
+        تنتظر مهلة اتصال كاملة) فيفشل الاختبار زمنيًا لا عقديًا.
+        """
+        from api import projects as projects_mod
+        from tests.api.planning_wait import wait_for_plan
+        from workflow import runner as wf_runner
+    
+        sessions = project_env["sessions"]
+        real_factory = projects_mod._test_engine_factory
+        monkeypatch.setenv("AES_PREFLIGHT_BLOCKED_LIMIT_S", "30")
+    
+        def no_injection_factory(on_event=None, **_kw):
+            engine = real_factory(on_event=on_event)
+            engine._probe_injections = None  # المسبارات الحقيقية حصرًا
+            return engine
+    
+        monkeypatch.setattr(
+            projects_mod, "_test_engine_factory", no_injection_factory
+        )
+        created = client.post("/api/projects", json={
+            "name": "محجوبة شبكيًا", "objective": "هدف اختبار الحجب المحدود",
+        })
+        pid = created.json()["id"]
+        client.post(f"/api/projects/{pid}/plan/generate")
+        wait_for_plan(client, pid)
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200
+    
+        # الحجب الصادق يصل ثم الوظيفة تنتهي بالسقف الزمني الحائط
+        # المضبوط أعلاه — لا انتظار مفتوح ولا احتجاز دائم للخيط الوحيد
+        # (نافذة التحقق = السقف + أبطأ نبضة مسبارات + هامش)
+        deadline = time.monotonic() + 100.0
+        released = False
+        while time.monotonic() < deadline:
+            if wf_runner.active_run(sessions) is None:
+                released = True
+                break
+            time.sleep(0.2)
+        assert released, (
+            "خيط الحلقات ما زال محتجزًا بالمهمة المحجوبة — حد إعادة الفحص "
+            "لم يعمل"
+        )
+        blocked_seen = client.get(f"/api/projects/{pid}").json()
+        assert blocked_seen.get("status") in ("BLOCKED", "FAILED"), (
+            f"حالة المشروع المحجوب غير صادقة: {blocked_seen.get('status')}"
+        )
+    
+        # الخيط المحرر: مهمة تالية بالحقن القياسي تكتمل
+        monkeypatch.setattr(projects_mod, "_test_engine_factory", real_factory)
+        created2 = client.post("/api/projects", json={
+            "name": "تلي المحجوبة", "objective": "هدف ينجح بعد تحرر الخيط",
+        })
+        pid2 = created2.json()["id"]
+        client.post(f"/api/projects/{pid2}/plan/generate")
+        wait_for_plan(client, pid2)
+        approved2 = client.post(f"/api/projects/{pid2}/plan/approve",
+                                json={"approved": True})
+        assert approved2.status_code == 200
+        deadline = time.monotonic() + 120.0
+        final_status = ""
+        while time.monotonic() < deadline:
+            detail = client.get(f"/api/projects/{pid2}").json()
+            final_status = str(detail.get("status", ""))
+            if final_status in ("COMPLETED", "VERIFIED"):
+                break
+            if wf_runner.active_run(sessions) is None and final_status in (
+                "FAILED", "BLOCKED"
+            ):
+                break
+            time.sleep(0.3)
+>       assert final_status in ("COMPLETED", "VERIFIED"), (
+            f"المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا "
+            f"(الحالة: {final_status})"
+        )
+E       AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)
+E       assert 'BLOCKED' in ('COMPLETED', 'VERIFIED')
+
+/home/opc/aes-reproof-010/repo/tests/api/test_executor_no_starvation.py:168: AssertionError
+______________________ test_run_stream_completes_project _______________________
+
+client = <starlette.testclient.TestClient object at 0xffff6917ee40>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-opc/pytest-166/test_run_stream_comple...e_on_commit=False), 'runs': [], 'tmp_path': PosixPath('/tmp/pytest-of-opc/pytest-166/test_run_stream_completes_proj0')}
+
+    def test_run_stream_completes_project(client, project_env):
+        """تشغيل الحلقة عبر SSE حتى المرشح — ثم تحقق المالك."""
+        pid = _create_and_approve(client)
+        with client.stream(
+            "POST", f"/api/projects/{pid}/run/stream"
+        ) as response:
+            assert response.status_code == 200
+            kinds = []
+            for line in response.iter_lines():
+                if line.startswith("data: "):
+                    import json
+    
+                    event = json.loads(line[6:])
+                    kinds.append(event["kind"])
+        assert "run.start" in kinds
+>       assert "PHASE_STARTED" in kinds
+E       AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]
+
+/home/opc/aes-reproof-010/repo/tests/api/test_projects_api.py:243: AssertionError
+______________________ test_recovery_listing_after_pause _______________________
+
+client = <starlette.testclient.TestClient object at 0xffff759a8d70>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-opc/pytest-166/test_recovery_listing_...e_on_commit=False), 'runs': [], 'tmp_path': PosixPath('/tmp/pytest-of-opc/pytest-166/test_recovery_listing_after_pa0')}
+
+    def test_recovery_listing_after_pause(client, project_env):
+        """قائمة المشاريع تعرض تقييم الاسترداد للمشاريع غير النهائية (§19).
+    
+        ننشئ مشروعًا بسياسة COMPATIBLE_LOCAL (تنفذ على Windows)، نعتمد الخطة
+        فيطلق التنفيذ تلقائيًا، ثم ننتظر أن يدخل RUNNING ونوقفه مؤقتًا
+        فورًا — في هذه اللحظة يجب أن يظهر في recovery مع checkpoint.
+        """
+        # إنشاء مشروع بسياسة توافق محلي (تنفذ على Windows)
+        created = client.post("/api/projects", json={
+            "name": "مشروع استرداد", "objective": "هدف للاختبار",
+            "execution_policy": "COMPATIBLE_LOCAL",
+        })
+        assert created.status_code == 201, created.text
+        pid = created.json()["id"]
+        # توليد واعتماد الخطة (الاعتماد يطلق الحلقة تلقائيًا 013.5)
+        plan, _detail = generate_plan_and_wait(client, pid)
+        assert plan.status_code == 200, plan.text
+        approved = client.post(f"/api/projects/{pid}/plan/approve",
+                               json={"approved": True})
+        assert approved.status_code == 200, approved.text
+        print(f"APPROVE: {approved.json()}", flush=True)
+        # انتظار أن يدخل المشروع في RUNNING (تنفيذ فعلي)
+        import time as _time
+        deadline = _time.monotonic() + 30.0
+        while True:
+            state = client.get(f"/api/projects/{pid}/state").json()
+            rt_state = state.get("environment", {}).get("runtime_state", {})
+            print(f"POLL: status={state.get('status')}, rt={rt_state.get('state')}, coh={rt_state.get('coherent')}", flush=True)
+            if rt_state.get("state") == "RUNNING":
+                break
+            if _time.monotonic() > deadline:
+>               raise AssertionError("المشروع لم يدخل RUNNING خلال المهلة")
+E               AssertionError: المشروع لم يدخل RUNNING خلال المهلة
+
+/home/opc/aes-reproof-010/repo/tests/api/test_projects_api.py:320: AssertionError
+----------------------------- Captured stdout call -----------------------------
+APPROVE: {'id': 1, 'name': 'مشروع استرداد', 'objective': 'هدف للاختبار', 'status': 'READY', 'created_at': '2026-10-25T18:27:42.384998', 'updated_at': '2026-10-25T18:27:42.571571', 'current_plan_id': 1, 'current_phase_id': None, 'current_step_id': None, 'stop_requested': False, 'completion_state': '', 'last_error': '', 'execution_policy': 'COMPATIBLE_LOCAL', 'archived_at': None, 'original_id': None, 'launch': {'launched': True, 'reason': 'launched', 'project_id': 1, 'job_id': None, 'correlation_id': '8708d4860fb4'}}
+POLL: status=READY, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (UNKNOWN)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=READY, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+POLL: status=BLOCKED, rt=DISCOVERING, coh={'kind': 'PREPARING', 'label': '⏳ تجهيز بيئة التنفيذ', 'detail': 'بيئات مسجلة تحتاج تجهيزًا/تحققًا: local-linux (NOT_READY)', 'progress': 0, 'step': 'DISCOVERING', 'step_label': 'جرد المضيف والركائز المتاحة'}
+__________________________ test_sub_resources_exposed __________________________
+
+client = <starlette.testclient.TestClient object at 0xffff6451bce0>
+project_env = {'sessions': sessionmaker(class_='Session', bind=Engine(sqlite:////tmp/pytest-of-opc/pytest-166/test_sub_resources_exp...xpire_on_commit=False), 'runs': [], 'tmp_path': PosixPath('/tmp/pytest-of-opc/pytest-166/test_sub_resources_exposed0')}
+
+    def test_sub_resources_exposed(client, project_env):
+        """الموارد الفرعية: مراحل/خطوات/تنفيذات/أدلة/تدقيق/أحداث (§18)."""
+        pid = _create_and_approve(client)
+        with client.stream("POST", f"/api/projects/{pid}/run/stream") as response:
+            for _line in response.iter_lines():
+                pass
+        assert client.get(f"/api/projects/{pid}/phases").json()["phases"]
+        steps = client.get(f"/api/projects/{pid}/steps").json()["steps"]
+>       assert steps and steps[0]["status"] == "COMPLETED"
+E       AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + PENDING)
+
+/home/opc/aes-reproof-010/repo/tests/api/test_projects_api.py:358: AssertionError
+__________________ test_manager_builds_and_executes_for_real ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_manager_builds_and_execut0')
+
+    def test_manager_builds_and_executes_for_real(tmp_path):
+        """بناء manager بالصور الافتراضية + طلب تنفيذ حقيقي يكتمل."""
+        from substrate.limits import E1_LIMITS_DEFAULTS
+        from substrate.sandbox import NetworkMode, SandboxRequest, SandboxTermination
+    
+        images = default_sandbox_images()
+        assert images, "على مضيف ركيزة مثبتة يجب أن توجد صورة افتراضية واحدة+"
+        for name, image in images.items():
+            # §11: كل صورة باسم ومفسّر مطلق وأسماء مستعارة وجذور صالحة
+            assert image.name == name
+            assert image.interpreter.startswith("/")
+            assert image.entrypoint_aliases
+            assert all(r.startswith("/") for r in image.read_only_roots)
+    
+        git = sandbox_git_image()
+        assert git.interpreter == "/usr/bin/git"
+    
+        manager = make_sandbox_manager(images={**images, "git": git})
+        assert manager is not None
+        image_name = next(iter(images))
+        request = SandboxRequest(
+            sandbox_id="order006-integration-1",
+            image=image_name,
+            command=("python", "-c", "print('inside-substrate-ok')"),
+            limits=E1_LIMITS_DEFAULTS,
+            env_names=frozenset({"PATH"}),
+            network=NetworkMode.NONE,
+            workspace_root=str(tmp_path / "ws"),
+            artifacts_dir=str(tmp_path / "art"),
+        )
+        outcome = manager.execute(request)
+>       assert outcome.outcome.value == "EXECUTED"
+E       AssertionError: assert 'FAILED' == 'EXECUTED'
+E         
+E         - EXECUTED
+E         + FAILED
+
+tests/api/test_sandbox_integration.py:65: AssertionError
+________________ test_write_file_tool_executes_inside_substrate ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-opc/pytest-166/test_write_file_tool_executes_0')
+
+    def test_write_file_tool_executes_inside_substrate(tmp_path):
+        """مسار الأدوات: write_file يعمل داخل الركيزة — الملف يُكتب فعلًا."""
+        from roles.tools import ToolContext, write_file
+    
+        ctx = ToolContext(grant_root=tmp_path)
+>       result = write_file(ctx, "evidence_note.txt", "محتوى مكتوب داخل الركيزة")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/api/test_sandbox_integration.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ctx = <roles.tools.ToolContext object at 0xffff63435cd0>
+path = 'evidence_note.txt', content = 'محتوى مكتوب داخل الركيزة'
+
+    def write_file(ctx: ToolContext, path: str, content: str) -> str:
+        """كتابة ملف داخل المجلد الممنوح فقط — داخل الركيزة (§3.1)."""
+        target = _bounded_path(ctx.grant_root, path)
+        workspace = ctx.grant_root / "_ws"
+        artifacts = ctx.grant_root
+        workspace.mkdir(parents=True, exist_ok=True)
+        code = (
+            "import json\n"
+            f"payload = json.loads({json.dumps({'path': path, 'content': content}, ensure_ascii=False)!r})\n"
+            "import pathlib\n"
+            "target = pathlib.Path('/artifacts') / payload['path']\n"
+            "target.parent.mkdir(parents=True, exist_ok=True)\n"
+            "target.write_text(payload['content'], encoding='utf-8')\n"
+            "print('wrote', len(payload['content']), 'chars to', payload['path'])\n"
+        )
+        exit_code, stdout, stderr = _run_in_substrate(ctx, code, workspace, artifacts)
+        if exit_code != 0:
+>           raise _substrate_failure("write_file", path, stderr)
+E           roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: adapter reported failed execution (FAILED_TO_START)
+
+src/roles/tools.py:210: ToolFailure
+____________ test_task_live_cycle_passes_and_persists_conversation _____________
+
+client = <starlette.testclient.TestClient object at 0xffff62a7bb30>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0xffffa819dc40>, 'sessions': sessionmaker(class_='Session', bind=Eng...////tmp/pytest-of-opc/pytest-166/test_task_live_cycle_passes_an0/api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_live_cycle_passes_and_persists_conversation(client, api_env):
+        """مهمة كاملة عبر المسار الحي: دورة PASS + محادثة مرتبطة (§14)."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "اكتب تقريرًا قصيرًا عن موضوع المهمة",
+        })
+        assert resp.status_code == 200, resp.text[:400]
+        events = sse_events(resp)
+        kinds = [e["kind"] for e in events]
+    
+        assert "task.conversation" in kinds
+        assert "task_done" in kinds
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+/home/opc/aes-reproof-010/repo/tests/api/test_task_live.py:37: AssertionError
+___________ test_task_each_role_receives_its_own_provider_and_model ____________
+
+client = <starlette.testclient.TestClient object at 0xffff60fefa40>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0xffff5c272120>, 'sessions': sessionmaker(class_='Session', bind=Eng...////tmp/pytest-of-opc/pytest-166/test_task_each_role_receives_i0/api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_each_role_receives_its_own_provider_and_model(client, api_env):
+        """§3+§4: كل دور يستلم اختياره المستقل — لا دور يرث مزود دور آخر."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "مهمة توجيه الأدوار",
+            "roles": {
+                "thinker": {"provider": "nvidia", "model": "model-thinker-x"},
+                "reviewer": {"provider": "zai-test", "model": "model-reviewer-y"},
+                "verifier": {"provider": "openrouter-test",
+                             "model": "model-verifier-z"},
+            },
+        })
+        assert resp.status_code == 200
+        events = sse_events(resp)
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+/home/opc/aes-reproof-010/repo/tests/api/test_task_live.py:78: AssertionError
+=============================== warnings summary ===============================
+../venv/lib64/python3.12/site-packages/fastapi/testclient.py:1
+  /home/opc/aes-reproof-010/venv/lib64/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+src/api/routes.py:2165
+  /home/opc/aes-reproof-010/repo/src/api/routes.py:2165: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../venv/lib64/python3.12/site-packages/fastapi/applications.py:4723
+  /home/opc/aes-reproof-010/venv/lib64/python3.12/site-packages/fastapi/applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/core/test_stop_mission.py:23: التحقق من صفحات PDF يتطلب pypdf
+FAILED tests/core/test_cycle_stop.py::test_stop_during_execution - assert False
+FAILED tests/core/test_cycle_stop.py::test_stop_during_verification - assert ...
+FAILED tests/core/test_cycle_stop.py::test_stop_request_rejected_for_finished_and_unknown
+FAILED tests/core/test_cycle_stop.py::test_cycle_status_reports_running_and_receipt
+FAILED tests/core/test_cycle_stop.py::test_resume_with_signed_plan_skips_think_review_and_evidenced
+FAILED tests/core/test_cycle_stop.py::test_resume_without_plan_restarts_thinking
+FAILED tests/core/test_stop_api.py::test_cycle_status_finished_shape - Assert...
+FAILED tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job
+FAILED tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything
+FAILED tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner
+FAILED tests/api/test_projects_api.py::test_run_stream_completes_project - As...
+FAILED tests/api/test_projects_api.py::test_recovery_listing_after_pause - As...
+FAILED tests/api/test_projects_api.py::test_sub_resources_exposed - Assertion...
+FAILED tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real
+FAILED tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate
+FAILED tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation
+FAILED tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model
+17 failed, 247 passed, 1 skipped, 3 warnings in 2072.72s (0:34:32)

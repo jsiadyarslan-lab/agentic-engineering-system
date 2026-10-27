@@ -1,0 +1,4 @@
+deployed=4568ed5dcba44c6bbb112107830b9a2eb1ab5a9f
+previous=b38dbafcf4160df469132d9e415ac931aad1a258
+import_ok=true
+service_restarted=true

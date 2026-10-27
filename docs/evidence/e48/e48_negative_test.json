@@ -1,9 +1,0 @@
-{
-  "test": "retry_vs_replan_distinction",
-  "transient_failure_kind": "TASK_EXECUTION_FAILURE",
-  "transient_failure_recovery": "RETRY",
-  "plan_invalidation_kind": "PLAN_DEVIATION",
-  "plan_invalidation_recovery": "REPLAN",
-  "distinction_proven": true,
-  "evidence": "FailureRecord.kind determines response: PLAN_DEVIATION \u2192 REPLAN, TASK_EXECUTION_FAILURE \u2192 RETRY"
-}

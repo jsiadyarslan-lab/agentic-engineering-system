@@ -1,0 +1,87 @@
+AES-UI-PREMIUM-REDESIGN-006 diagnosis
+host=92.5.14.150 user=opc
+
+----- host identity -----
+instance-20261022-0115
+ 02:30:22 up 3 days,  2:49,  0 users,  load average: 0.00, 0.02, 0.00
+Sun Oct 25 02:30:22 AM UTC 2026
+Linux instance-20261022-0115 6.12.0-207.111.5.1.el9uek.aarch64 #2 SMP Thu Oct  1 11:59:31 PDT 2026 aarch64 aarch64 aarch64 GNU/Linux
+
+----- listening ports -----
+LISTEN 0      2048       127.0.0.1:8010       0.0.0.0:*    users:(("python",pid=89333,fd=14)) 
+LISTEN 0      2048       127.0.0.1:8011       0.0.0.0:*    users:(("python",pid=285506,fd=14))
+LISTEN 0      511          0.0.0.0:80         0.0.0.0:*                                       
+LISTEN 0      511             [::]:80            [::]:*
+
+----- web processes -----
+opc        89333  0.1  2.0 944220 117280 ?       Ssl  Oct23   3:12 /opt/agentic-engineering-system/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 --workers 1
+root       89425  0.0  0.0  15996  4056 ?        Ss   Oct23   0:00 nginx: master process /usr/sbin/nginx
+nginx     267151  0.0  0.0  16000  4424 ?        S    Oct24   0:07 nginx: worker process
+opc       285055  0.0  1.7 637508 100900 ?       Sl   Oct24   0:14 .venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8021 --workers 1
+opc       285506  0.8  2.4 976868 141748 ?       Ssl  Oct24   2:06 /opt/aes-vis/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8011 --workers 1
+
+----- systemd units -----
+aes-shim.service                                      loaded active running AES local OpenAI-compatible shim (no egress host) - VIS-001
+  agentic.service                                       loaded active running Agentic Engineering System (uvicorn)
+  nginx.service                                         loaded active running The nginx HTTP and reverse proxy server
+
+----- user services -----
+(none matching)
+
+----- nginx configs -----
+agentic.conf
+agentic.conf.pre-repair-001.bak
+agentic.conf.pre-vis-001.bak
+/etc/nginx/conf.d/agentic.conf:    listen 80 default_server;
+/etc/nginx/conf.d/agentic.conf:        proxy_pass http://127.0.0.1:8011;
+/etc/nginx/conf.d/agentic.conf.pre-vis-001.bak:    listen 80 default_server;
+/etc/nginx/conf.d/agentic.conf.pre-vis-001.bak:        proxy_pass http://127.0.0.1:8010;
+/etc/nginx/conf.d/agentic.conf.pre-repair-001.bak:    listen 80 default_server;
+/etc/nginx/conf.d/agentic.conf.pre-repair-001.bak:        proxy_pass http://127.0.0.1:8011;
+
+----- uvicorn cwd -----
+pid 89333 cwd: /opt/agentic-engineering-system cmd: /opt/agentic-engineering-system/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 --workers 1 
+pid 285055 cwd: /opt/aes-vis cmd: .venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8021 --workers 1 
+pid 285506 cwd: /opt/aes-vis cmd: /opt/aes-vis/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8011 --workers 1 
+pid 314545 cwd: /home/opc cmd: bash -c for p in $(pgrep -f 'uvicorn' 2>/dev/null); do echo "pid $p cwd: $(readlink /proc/$p/cwd 2>/dev/null) cmd: $(tr '\0' ' ' < /proc/$p/cmdline 2>/dev/null 
+pid 314576 cwd:  cmd:
+[stderr] bash: line 1: /proc/314576/cmdline: No such file or directory
+
+----- candidate app dirs -----
+/home/opc/aes-exp03-work
+/home/opc/aes_local_shim.py
+/home/opc/aes_shim_setup.sh
+/home/opc/aes_vis_deploy.sh
+/home/opc/aes_vis_network.sh
+/home/opc/aes_vis_relocate.sh
+/opt/aes-shim
+/opt/aes-vis
+/opt/aes-vis-backups
+(no candidate dirs)
+
+----- git state of candidates -----
+== /home/opc/aes-exp03-work ==
+c9f3cdfdde2f8dd6abd6d8de9246b3cf97e98072
+?? "C:\\Users\\jaber\\Documents\\GitHub\\agentic-engineering-system\\E6\\evidence/"
+?? runtime/function_matrix.txt
+?? runtime/projects/
+origin	https://github.com/jsiadyarslan-lab/agentic-engineering-system.git (fetch)
+origin	https://github.com/jsiadyarslan-lab/agentic-engineering-system.git (push)
+(none)
+
+----- recent service logs -----
+Oct 25 02:28:52 instance-20261022-0115 systemd-logind[1500]: Session 3898 logged out. Waiting for processes to exit.
+Oct 25 02:28:52 instance-20261022-0115 systemd[1]: session-3898.scope: Deactivated successfully.
+Oct 25 02:28:52 instance-20261022-0115 systemd-logind[1500]: Removed session 3898.
+Oct 25 02:28:54 instance-20261022-0115 sshd-session[314295]: Accepted publickey for opc from 47.57.232.232 port 48178 ssh2: RSA SHA256:92f2JGc3ZrdTV34LxIVy9kfffwnJQOVv2sS1pbppHEM
+Oct 25 02:28:54 instance-20261022-0115 systemd-logind[1500]: New session 3899 of user opc.
+Oct 25 02:28:54 instance-20261022-0115 systemd[1]: Started Session 3899 of User opc.
+Oct 25 02:28:54 instance-20261022-0115 sshd-session[314295]: pam_unix(sshd:session): session opened for user opc(uid=1000) by opc(uid=0)
+Oct 25 02:28:55 instance-20261022-0115 sudo[314330]:      opc : PWD=/home/opc ; USER=root ; COMMAND=/bin/env https_proxy=http://127.0.0.1:18500 http_proxy=http://127.0.0.1:18500 dnf -y --setopt=timeout=60 install nss atk at-spi2-atk cups-libs libdrm libXcomposite libXdamage libXrandr mesa-libgbm pango alsa-lib libxkbcommon
+Oct 25 02:28:55 instance-20261022-0115 sudo[314330]: pam_unix(sudo:session): session opened for user root(uid=0) by opc(uid=1000)
+Oct 25 02:29:37 instance-20261022-0115 sshd-session[314334]: Connection closed by authenticating user root 2.57.122.150 port 49146 [preauth]
+Oct 25 02:29:41 instance-20261022-0115 python[285506]: INFO:     2.215.157.88:0 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+Oct 25 02:30:21 instance-20261022-0115 sshd-session[314340]: Accepted publickey for opc from 47.57.232.232 port 48878 ssh2: RSA SHA256:92f2JGc3ZrdTV34LxIVy9kfffwnJQOVv2sS1pbppHEM
+Oct 25 02:30:21 instance-20261022-0115 systemd-logind[1500]: New session 3900 of user opc.
+Oct 25 02:30:21 instance-20261022-0115 systemd[1]: Started Session 3900 of User opc.
+Oct 25 02:30:21 instance-20261022-0115 sshd-session[314340]: pam_unix(sshd:session): session opened for user opc(uid=1000) by opc(uid=0)

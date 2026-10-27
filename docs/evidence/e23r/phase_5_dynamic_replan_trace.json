@@ -1,9 +1,0 @@
-{
-  "phase": "PHASE_5_DYNAMIC_REPLAN",
-  "timestamp": 1790883025.2153141,
-  "data": {
-    "replan_success": true,
-    "total_tasks_after": 7,
-    "graph_version": 1
-  }
-}

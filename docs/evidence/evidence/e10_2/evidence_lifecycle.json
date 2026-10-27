@@ -1,8 +1,0 @@
-{
-  "global_artifacts": 3,
-  "global_evidence": 0,
-  "reference_integrity": "VERIFIED",
-  "deletion_policy": "NOT_IMPLEMENTED",
-  "cross_engine_isolation": "VERIFIED",
-  "purge_policy": "NOT_IMPLEMENTED"
-}

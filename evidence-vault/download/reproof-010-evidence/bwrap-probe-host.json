@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+NameError: name 'supported' is not defined. Did you mean: 'sorted'?
+{
+ "mechanism": "bubblewrap",
+ "machine": "aarch64",
+ "real_uid": 1000,
+ "bwrap_present": true,
+ "bwrap_path": "/usr/bin/bwrap",
+ "bwrap_version": "0.6.3",
+ "max_user_namespaces": 22226,
+ "userns_enabled": true,
+ "seccomp_deny_syscalls": 29,
+ "audit_arch": "0xc00000b7",
+ "launch_probe": "OK",
+ "supported": true,
+ "probed_at": 1792950984.476729
+}

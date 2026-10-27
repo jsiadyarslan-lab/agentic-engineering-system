@@ -1,6 +1,0 @@
-PHASE 0.5: RUST PORT (Weeks 3-4) — Target: 100%
-
-| Status | ID | Title | Dependencies | Owner | Acceptance Criteria | Files |
-|--------|-----|-------|--------------|-------|---------------------|-------|
-| ⏳ | **0.5.1** | Port Linux Substrate to Rust (crates/substrate-linux) | 0.1.1 | Backend | cargo test -p substrate-linux passes | crates/substrate-linux/ |
-| ⏳ | **0.5.2** | Port Windows Substrate (Job Objects + Silos) | 0.1.2 | Backend | cargo test -p substrate-windows passes | crates/substrat

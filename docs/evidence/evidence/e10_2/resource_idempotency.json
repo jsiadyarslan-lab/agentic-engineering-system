@@ -1,6 +1,0 @@
-{
-  "mission_idempotent": true,
-  "task_idempotent": true,
-  "final_mission_count": 0,
-  "final_task_count": 0
-}

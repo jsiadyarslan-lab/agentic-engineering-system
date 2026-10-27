@@ -1,9 +1,0 @@
-{
-  "test_id": "T07",
-  "name": "Multi-consumer release",
-  "passed": true,
-  "evidence": {
-    "note": "Verified in T03"
-  },
-  "error": null
-}

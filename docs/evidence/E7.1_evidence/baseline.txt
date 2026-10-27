@@ -1,8 +1,0 @@
-E7.1 Baseline
-=============
-Date: 2026-09-29
-Parent Commit: b8e3e92393985b4f19b3d5a350eeecedf8d68489 (E7)
-Commit: e60d68274b4c00040fc85df6df3172249d5e0bab (E7.1)
-Branch: main
-Status: Clean working tree for E7.1 files
-LOCAL == REMOTE: YES

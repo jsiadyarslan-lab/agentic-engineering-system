@@ -1,9 +1,0 @@
-{
-  "phase": "EV04_NO_DUPLICATE_EVENTS",
-  "timestamp": 1790891404.670715,
-  "data": {
-    "state_changes_count": 11,
-    "unique_transitions": 11,
-    "duplicates_found": false
-  }
-}

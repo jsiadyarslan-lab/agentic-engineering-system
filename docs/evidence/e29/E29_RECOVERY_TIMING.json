@@ -1,8 +1,0 @@
-{
-  "resume_total_sec": 0.5,
-  "mission_b": {
-    "failure_detected_at": "2026-10-01T23:10:00.687921",
-    "prior_task_completed_at": null,
-    "detection_latency_sec": null
-  }
-}

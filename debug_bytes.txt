@@ -1,3 +1,0 @@
-Position 4047: U+1F4CB ('📋')
-Position 4082: U+2014 ('—')
-Position 4255: U+23F3 ('⏳')

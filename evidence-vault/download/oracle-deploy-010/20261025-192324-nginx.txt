@@ -1,0 +1,1 @@
+proxy_pass switched 8011->8010, nginx -t OK, reloaded. backup: agentic.conf.bak-010

@@ -1,0 +1,72 @@
+INFO:     Started server process [3637]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8022 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58272 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /?p=1792970581 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/fonts/fonts.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/theme.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/styles.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /static/projects.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/harness.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/live.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/app-shell.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/project-live.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/control-center.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/app.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/markdown.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /static/factory-control.css?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/chat-stream.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/task-cards.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/model-picker.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/error-boundary.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/settings.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /static/environment.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/research-ui.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/execution-env.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/harness.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/live-events.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/project-live.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /static/workflow-view.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/control-center.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/projects.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/factory-control.js?v=947e6e55 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/fonts/plex-arabic-400-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/fonts/plex-mono-400-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/fonts/plex-arabic-500-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/fonts/plex-arabic-600-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /static/fonts/plex-arabic-600-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58288 - "GET /static/fonts/plex-mono-500-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /static/fonts/plex-arabic-700-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /static/fonts/plex-arabic-400-arabic.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /static/fonts/plex-arabic-700-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /static/fonts/plex-arabic-500-latin.woff2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /api/conversations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58322 - "GET /api/projects/events/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58328 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /api/environment/readiness HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /api/mission/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/harness/roles HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/conversations/3/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/cycle/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/chat/active?conversation_id=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58302 - "GET /api/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58318 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /api/execution/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/models/config HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45586 - "GET /api/research/providers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45586 - "GET /api/execution/environments HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/execution/host-truth HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/projects/archived/list HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58328 - "GET /api/projects/runs/active HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3637]

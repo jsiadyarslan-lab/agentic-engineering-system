@@ -1,0 +1,31 @@
+### 1. fresh isolated dir (fail if exists — never overwrite)
+$ test ! -e /home/opc/aes-reproof-010 && mkdir -p /home/opc/aes-reproof-010 && echo DIR_CREATED || echo DIR_ALREADY_EXISTS
+DIR_CREATED
+[rc=0]
+
+### 2. SFTP transfer: bundle + wheels
+bundle transferred (6.9s)
+35 wheels transferred (37.6s total)
+$ ls -la /home/opc/aes-reproof-010 && du -sh /home/opc/aes-reproof-010/wheels
+total 13844
+drwxr-xr-x. 3 opc opc       46 Oct 25 17:54 .
+drwx------. 8 opc opc     4096 Oct 25 17:54 ..
+-rw-r--r--. 1 opc opc 14164225 Oct 25 17:54 aes-4568ed5.bundle
+drwxr-xr-x. 2 opc opc     4096 Oct 25 17:55 wheels
+19M	/home/opc/aes-reproof-010/wheels
+[rc=0]
+
+### 3. clone from bundle + verify exact commit
+$ cd /home/opc/aes-reproof-010 && git clone aes-4568ed5.bundle repo 2>&1 | tail -2
+hint: Disable this message with "git config set advice.defaultBranchName false"
+warning: remote HEAD refers to nonexistent ref, unable to checkout
+[rc=0]
+
+$ cd /home/opc/aes-reproof-010/repo && git rev-parse HEAD && test "$(git rev-parse HEAD)" = "4568ed5dcba44c6bbb112107830b9a2eb1ab5a9f" && echo HEAD_MATCHES_4568ed
+HEAD
+[stderr] fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+[rc=128]
+
+!!! FAILED (rc=128) — aborting

@@ -1,0 +1,1 @@
+document via public path WITH auth: 200 (must be 200)

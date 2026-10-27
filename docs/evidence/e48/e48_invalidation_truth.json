@@ -1,7 +1,0 @@
-{
-  "trigger_event_id": "fail-c30c602df0be",
-  "plan_version_before": "v1",
-  "discovery": "requires_prerequisite_X",
-  "invalidated_task_key": "B",
-  "reason": "Task B requires prerequisite X not in original plan. Original plan assumed B could process A's output directly."
-}

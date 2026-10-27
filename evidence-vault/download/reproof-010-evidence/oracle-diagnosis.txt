@@ -1,0 +1,84 @@
+[host-key] ssh-ed25519 md5=903419d8a7a6e25281f839ddc724c75a
+
+===== identity =====
+uid=1000(opc) gid=1000(opc) groups=1000(opc),4(adm),190(systemd-journal) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+Linux instance-20261022-0115 6.12.0-207.111.5.1.el9uek.aarch64 #2 SMP Thu Oct  1 11:59:31 PDT 2026 aarch64 aarch64 aarch64 GNU/Linux
+NAME="Oracle Linux Server"
+VERSION="9.8"
+
+===== selinux =====
+Enforcing
+
+===== bwrap =====
+/usr/bin/bwrap
+bubblewrap 0.6.3
+
+===== bwrap_loopback_probe =====
+BWRAP_HOST_PROBE_OK
+bwrap_probe_exit=0
+
+===== python =====
+Python 3.9.25
+/usr/bin/python3.12
+/opt/agentic-engineering-system/.venv/bin/python
+/opt/agentic-engineering-system/.venv/bin/python3
+/opt/agentic-engineering-system/.venv/bin/python3.12
+
+===== service =====
+active
+ExecMainPID=316287
+User=opc
+ActiveState=active
+
+===== health_local_8010 =====
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+seccomp","note":"معزولة على هذا المضيف (ركيزة مختارة بقدرات مثبتة فعليًا)"}}
+
+===== nginx =====
+active
+        proxy_pass http://127.0.0.1:8011;
+
+===== prod_repo_state =====
+b38dbafcf4160df469132d9e415ac931aad1a258
+?? src/agentic_engineering_system.egg-info/
+PROD_TREE_CHECK_DONE
+
+===== disk =====
+Filesystem                  Size  Used Avail Use% Mounted on
+/dev/mapper/ocivolume-root   30G   12G   19G  38% /
+/dev/mapper/ocivolume-root   30G   12G   19G  38% /
+
+===== mem =====
+total        used        free      shared  buff/cache   available
+Mem:           5.5Gi       1.0Gi       596Mi        66Mi       4.1Gi       4.5Gi
+1
+
+===== pypi_reach =====
+
+===== github_reach =====
+
+===== home_contents =====
+aes-exp03-work
+aes_local_shim.py
+aes_shim_setup.sh
+aes_vis_deploy.sh
+aes_vis_network.sh
+aes_vis_relocate.sh
+exp04-baseline
+pre-005-prod-20261025-0245.bundle
+pre-005-runtime-20261025-0245.tar.gz
+release-005.bundle
+run_harness2.sh
+run_target8_b6.sh
+run_target8.sh
+runtime
+run_trusted_final.sh
+run_wA.sh
+run_wave1.sh
+run_wB2.sh
+run_wB.sh
+run_wf_b6.sh
+
+===== cpu_arch =====
+Architecture:                            aarch64
+Model name:                              Neoverse-N1
+

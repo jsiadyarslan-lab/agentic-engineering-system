@@ -1,0 +1,105 @@
+...........................................................F............ [ 27%]
+........................................................................ [ 54%]
+.......................................................................F [ 81%]
+F...............................................                         [100%]
+=================================== FAILURES ===================================
+_______________________ test_cycle_status_finished_shape _______________________
+
+client = <starlette.testclient.TestClient object at 0xffff9ad1e180>
+live_task_env = {'router': <tests.core.test_stop_api.ScriptedRouter object at 0xffff9ab6caa0>}
+
+    def test_cycle_status_finished_shape(client, live_task_env):
+        """حالة مهمة منجزة عبر المسار الحي — الشكل الكامل بعد الانتهاء."""
+        _events, cycle_id = _run_task_to_completion(client)
+        resp = client.get(f"/api/cycle/status/{cycle_id}")
+        assert resp.status_code == 200
+        body = resp.json()
+>       assert body["state"] == "EVIDENCED"
+E       AssertionError: assert 'FAILED' == 'EVIDENCED'
+E         
+E         - EVIDENCED
+E         + FAILED
+
+/home/opc/aes-reproof-010/repo/tests/core/test_stop_api.py:208: AssertionError
+____________ test_task_live_cycle_passes_and_persists_conversation _____________
+
+client = <starlette.testclient.TestClient object at 0xffff4cb1f020>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0xffff9a78d130>, 'sessions': sessionmaker(class_='Session', bind=Eng...////tmp/pytest-of-opc/pytest-176/test_task_live_cycle_passes_an0/api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_live_cycle_passes_and_persists_conversation(client, api_env):
+        """مهمة كاملة عبر المسار الحي: دورة PASS + محادثة مرتبطة (§14)."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "اكتب تقريرًا قصيرًا عن موضوع المهمة",
+        })
+        assert resp.status_code == 200, resp.text[:400]
+        events = sse_events(resp)
+        kinds = [e["kind"] for e in events]
+    
+        assert "task.conversation" in kinds
+        assert "task_done" in kinds
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+/home/opc/aes-reproof-010/repo/tests/api/test_task_live.py:37: AssertionError
+___________ test_task_each_role_receives_its_own_provider_and_model ____________
+
+client = <starlette.testclient.TestClient object at 0xffff77388350>
+api_env = {'router': <conftest.ScriptedLiveRouter object at 0xffff775f5cd0>, 'sessions': sessionmaker(class_='Session', bind=Eng...////tmp/pytest-of-opc/pytest-176/test_task_each_role_receives_i0/api-test.db), autoflush=True, expire_on_commit=False)}
+
+    def test_task_each_role_receives_its_own_provider_and_model(client, api_env):
+        """§3+§4: كل دور يستلم اختياره المستقل — لا دور يرث مزود دور آخر."""
+        resp = client.post("/api/cycle/stream", json={
+            "goal": "مهمة توجيه الأدوار",
+            "roles": {
+                "thinker": {"provider": "nvidia", "model": "model-thinker-x"},
+                "reviewer": {"provider": "zai-test", "model": "model-reviewer-y"},
+                "verifier": {"provider": "openrouter-test",
+                             "model": "model-verifier-z"},
+            },
+        })
+        assert resp.status_code == 200
+        events = sse_events(resp)
+        done = next(e for e in events if e["kind"] == "task_done")
+>       assert done["verdict"] == "PASS", done["details"]["verdict_reasons"]
+E       AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً']
+E       assert 'HARD STOP' == 'PASS'
+E         
+E         - PASS
+E         + HARD STOP
+
+/home/opc/aes-reproof-010/repo/tests/api/test_task_live.py:78: AssertionError
+=============================== warnings summary ===============================
+../venv/lib64/python3.12/site-packages/fastapi/testclient.py:1
+  /home/opc/aes-reproof-010/venv/lib64/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+src/api/routes.py:2165
+  /home/opc/aes-reproof-010/repo/src/api/routes.py:2165: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../venv/lib64/python3.12/site-packages/fastapi/applications.py:4723
+  /home/opc/aes-reproof-010/venv/lib64/python3.12/site-packages/fastapi/applications.py:4723: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/core/test_stop_mission.py:23: التحقق من صفحات PDF يتطلب pypdf
+FAILED tests/core/test_stop_api.py::test_cycle_status_finished_shape - Assert...
+FAILED tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation
+FAILED tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model
+3 failed, 261 passed, 1 skipped, 3 warnings in 742.57s (0:12:22)

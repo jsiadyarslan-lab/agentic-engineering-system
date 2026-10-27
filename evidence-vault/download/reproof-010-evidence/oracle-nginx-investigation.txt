@@ -1,0 +1,74 @@
+===== agentic_conf_full =====
+# AES-ORACLE-VIS-001: dedicated preview path -> 127.0.0.1:8011 ONLY.
+# Production (8010) is intentionally NOT proxied from port 80 anymore.
+# Defenses: source-IP allowlist (owner) + Basic Auth. TLS remains deferred (documented gap).
+server {
+    listen 80 default_server;
+    server_name _;
+
+    allow 2.215.157.88;
+    allow 127.0.0.1;   # AES-ORACLE-LIVE-REPAIR-001: loopback full-path tests (auth still required)   # owner IP (evidence: AES-EXP-02)
+    deny  all;
+
+    auth_basic            "AES VIS preview (AES-ORACLE-VIS-001)";
+    auth_basic_user_file  /etc/nginx/.htpasswd_vis;
+
+    location / {
+        proxy_pass http://127.0.0.1:8011;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # SSE: no buffering, single worker behind this proxy
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}
+
+===== conf_backups =====
+-rw-r--r--. 1 root root 1024 Oct 25 15:21 agentic.conf
+-rw-r--r--. 1 root root 1024 Oct 24 16:11 agentic.conf.bak-005
+-rw-r--r--. 1 root root 1024 Oct 25 15:21 agentic.conf.pre-lfB
+-rw-r--r--. 1 root root  924 Oct 24 16:11 agentic.conf.pre-repair-001.bak
+-rw-r--r--. 1 root root  598 Oct 23 01:28 agentic.conf.pre-vis-001.bak
+
+===== conf_mtime =====
+2026-10-25 15:21:46.057155426 +0000 /etc/nginx/conf.d/agentic.conf
+2026-10-24 16:11:34.781292266 +0000 /etc/nginx/conf.d/agentic.conf.bak-005
+
+===== diff_bak =====
+
+===== listening_ports =====
+LISTEN 0      2048       127.0.0.1:8010       0.0.0.0:*    users:(("python",pid=316287,fd=14))
+LISTEN 0      2048       127.0.0.1:8011       0.0.0.0:*    users:(("python",pid=380578,fd=14))
+LISTEN 0      511          0.0.0.0:80         0.0.0.0:*                                       
+LISTEN 0      511             [::]:80            [::]:*
+
+===== health_8011_preview =====
+{"status":"ok","app":"Agentic Engineering System","version":"3.8.0","build":"4cbc270 live-factory-e2e-001-m 2026-10-25","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+seccomp","note":"معزولة على هذا المضيف (ركيزة مختارة بقدرات م�
+
+===== health_8010_prod =====
+{"status":"ok","app":"Agentic Engineering System","version":"4.0.0","phase":"agentic-engineering-system: durable-projects+autonomous-loop+provider-management","substrate":{"available":true,"kind":"local-bwrap-substrate","isolation":"linux-namespaces+seccomp","note":"معزولة على هذا المضيف (ركيزة مختارة بقدرات مثبتة فعليًا)"}}
+
+===== preview_repo =====
+c9f3cdfdde2f8dd6abd6d8de9246b3cf97e98072
+c9f3cdf AES-EXP-04 batch8: legacy tree full green — real-substrate bridge + honest test instrumentation
+9b924ae AES-EXP-04 batch7: executor handoff + chat-research total budget — trusted suite 265/265
+ M prompts/verifier.md
+ D runtime/_after_0135.txt
+ D runtime/_after_p1.txt
+
+===== preview_service =====
+aes-shim.service                   loaded active running AES local OpenAI-compatible shim (no egress host) - VIS-001
+  agentic-vis.service                loaded active running Agentic Engineering System - VIS preview (c9f3cdf) on 8011
+  agentic.service                    loaded active running Agentic Engineering System (uvicorn)
+opc       316287  0.1  1.8 859220 104056 ?       Ssl  02:40   1:05 /opt/agentic-engineering-system/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 --workers 1
+opc       380578  7.7  2.5 1005252 147768 ?      Ssl  17:33   1:19 /opt/aes-vis/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8011 --workers 1
+
+===== nginx_access_tail =====
+
+===== prod_app_since =====
+ActiveEnterTimestamp=Sun 2026-10-25 02:40:59 GMT
+
