@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "mode": "W1-T05 final verification: BOTH egress rules live (80+443)",
+    "timestamp_utc": "2026-10-27T23:28:45Z"
+  },
+  "http_example": "200 rc=0 t=0.010571",
+  "https_example": "200 rc=0 t=0.022459",
+  "https_nvidia": "404 rc=0 t=0.064654",
+  "https_github": "200 rc=0 t=0.016828",
+  "health_pre": "200",
+  "probe_network_https": {
+    "capability_id": "network_https",
+    "readiness_status": "READY",
+    "stored_status": "READY",
+    "last_success_at": "2026-10-27T23:28:48.936749",
+    "probe_latency_ms": 18,
+    "failure_reason": ""
+  },
+  "probe_network_http": {
+    "capability_id": "network_http",
+    "readiness_status": "READY",
+    "stored_status": "READY",
+    "last_success_at": "2026-10-27T23:28:49.588938",
+    "probe_latency_ms": 12,
+    "failure_reason": ""
+  },
+  "probe_llm": {
+    "capability_id": "llm",
+    "readiness_status": "READY",
+    "stored_status": "READY",
+    "last_success_at": "2026-10-27T23:28:50.111324",
+    "probe_latency_ms": 4,
+    "failure_reason": ""
+  },
+  "health_post": "200",
+  "readiness_all": {
+    "llm": [
+      "READY",
+      "READY"
+    ],
+    "model_inference": [
+      "READY",
+      "STALE"
+    ],
+    "web_search": [
+      "READY",
+      "STALE"
+    ],
+    "web_fetch": [
+      "READY",
+      "STALE"
+    ],
+    "network_dns": [
+      "READY",
+      "STALE"
+    ],
+    "network_https": [
+      "READY",
+      "READY"
+    ],
+    "network_http": [
+      "READY",
+      "READY"
+    ],
+    "sandbox": [
+      "READY",
+      "READY"
+    ],
+    "filesystem": [
+      "READY",
+      "READY"
+    ],
+    "git": [
+      "READY",
+      "STALE"
+    ],
+    "repository": [
+      "READY",
+      "STALE"
+    ],
+    "shell": [
+      "READY",
+      "READY"
+    ],
+    "package_management": [
+      "UNAVAILABLE",
+      "UNAVAILABLE"
+    ],
+    "testing": [
+      "UNAVAILABLE",
+      "UNAVAILABLE"
+    ],
+    "build": [
+      "READY",
+      "STALE"
+    ],
+    "persistence": [
+      "READY",
+      "READY"
+    ],
+    "artifacts": [
+      "READY",
+      "STALE"
+    ],
+    "observability": [
+      "READY",
+      "READY"
+    ],
+    "browser": [
+      "READY",
+      "READY"
+    ]
+  }
+}

@@ -1,0 +1,434 @@
+{
+  "_meta": {
+    "task": "W1-T05-S23-AUDIT — independent audit of W1-T05 steps 2-3 (owner egress rule 80 + probes -> READY) including the documented 443 regression window",
+    "agent": "W1-T05-S23-AUDIT (independent audit agent, general-purpose)",
+    "timestamp": "2026-10-27 23:38:59 UTC",
+    "audit_start_utc": "2026-10-27T23:38:59.721113+00:00",
+    "mode": "READ-ONLY on the server with EXACTLY ONE authorized exception: a single POST /api/environment/probe for network_https (the designed step-3 mechanism — updates the app's stored readiness state only). Probe-once guard file audit_s23_probe_once.json mechanically enforces at-most-once across script runs. No restart/stop, no git writes, no file writes on the server.",
+    "dry_run": false,
+    "probe_source": "performed NOW (single authorized POST, guard file written immediately)",
+    "server": "opc@92.5.14.150",
+    "script": "/home/z/my-project/scripts/w1t05_s23_audit_check.py",
+    "script_md5": "476dcd36ea8d9949f70b48795f149f6d",
+    "server_utc_at_audit": "Tue Oct 27 11:39:13 PM UTC 2026",
+    "production_head_last_commit": "036db8911 2026-10-27 16:49:54 +0000 fix(ui+api): W2-T10 — التصعيد يُعلن ولا يُدفن: runs/active يشمل ESCALATED (إعادة إنتاج الدفن موثقة) + بانر ثابت فوق كل شيء (z-critical) من الإقلاع + شريط طوارئ موصول بـ stop/resume القائمة + حلقات خط المراحل"
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A: egress now",
+      "desc": "curl http://example.com -> 200 / RC=0 within <2s",
+      "cmd": "curl -w '%{http_code}@@%{time_total}@@%{errormsg}' --max-time 8 http://example.com",
+      "output": "200@@0.007889@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=200 time_total=0.007889s rc=0 err=''"
+    },
+    {
+      "id": "A2",
+      "group": "A: egress now",
+      "desc": "curl http://httpbin.org/get (2nd http target) -> 200 / RC=0",
+      "cmd": "curl ... http://httpbin.org/get",
+      "output": "200@@0.221138@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=200 time_total=0.221138s rc=0 err=''"
+    },
+    {
+      "id": "A3",
+      "group": "A: egress now",
+      "desc": "curl https://example.com (TCP/443 restored) -> 200 / RC=0 <2s",
+      "cmd": "curl ... https://example.com",
+      "output": "200@@0.029147@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=200 time_total=0.029147s rc=0 err=''"
+    },
+    {
+      "id": "A4",
+      "group": "A: egress now",
+      "desc": "curl https://api.github.com -> 200 / RC=0",
+      "cmd": "curl ... https://api.github.com",
+      "output": "200@@0.051893@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=200 time_total=0.051893s rc=0 err=''"
+    },
+    {
+      "id": "A5",
+      "group": "A: egress now",
+      "desc": "curl https://integrate.api.nvidia.com -> any HTTP reply with RC=0 (TLS alive, NOT RC=28)",
+      "cmd": "curl ... https://integrate.api.nvidia.com",
+      "output": "404@@0.065768@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=404 time_total=0.065768s rc=0 err='' (404/401 acceptable; the requirement is a live connection, not a timeout)"
+    },
+    {
+      "id": "A6",
+      "group": "A: egress now",
+      "desc": "raw TCP (bash /dev/tcp, curl-independent): example.com:80 rc=0 AND :443 rc=0",
+      "cmd": "timeout 6 bash -c 'echo > /dev/tcp/example.com/80' 2>&1; echo '@@RC80='$?; timeout 6 bash -c 'echo > /dev/tcp/example.com/443' 2>&1; echo '@@RC443='$?",
+      "output": "@@RC80=0\n@@RC443=0",
+      "verdict": "PASS",
+      "evidence": "output='@@RC80=0 | @@RC443=0' — both egress ports open"
+    },
+    {
+      "id": "A7",
+      "group": "A: egress now",
+      "desc": "DNS: getent ahostsv4 example.com returns IPv4 addresses (RC=0)",
+      "cmd": "getent ahostsv4 example.com | head -3; getent ahostsv4 example.com > /dev/null 2>&1; echo '@@GETENT_RC='$?",
+      "output": "172.66.147.243  STREAM example.com\n172.66.147.243  DGRAM  \n172.66.147.243  RAW    \n@@GETENT_RC=0",
+      "verdict": "PASS",
+      "evidence": "getent ahostsv4 RC=0 with IPv4 addresses -> DNS fine (failure would be at connect stage, not name resolution)"
+    },
+    {
+      "id": "B1",
+      "group": "B: R6 health",
+      "desc": "/health from loopback -> 200",
+      "cmd": "curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health",
+      "output": "200",
+      "verdict": "PASS",
+      "evidence": "http_code=200"
+    },
+    {
+      "id": "B2",
+      "group": "B: R6 health",
+      "desc": "systemctl is-active agentic nginx firewalld -> active x3",
+      "cmd": "systemctl is-active agentic nginx firewalld",
+      "output": "active\nactive\nactive",
+      "verdict": "PASS",
+      "evidence": "is-active output='active+active+active'"
+    },
+    {
+      "id": "B3",
+      "group": "B: R6 health",
+      "desc": "journalctl -u agentic --since '-45 min' -p err -> no entries",
+      "cmd": "journalctl -u agentic --since '-45 min' -p err --no-pager",
+      "output": "-- No entries --",
+      "verdict": "PASS",
+      "evidence": "output='-- No entries --' (window covers the whole regression 23:23-23:28 GMT session: no app errors)"
+    },
+    {
+      "id": "B4",
+      "group": "B: R6 health",
+      "desc": "production HEAD == 036db8911 (pure infra task: zero code change)",
+      "cmd": "cd /opt/agentic-engineering-system && git rev-parse --short=9 HEAD",
+      "output": "036db8911",
+      "verdict": "PASS",
+      "evidence": "HEAD(9)='036db8911' expected='036db8911'"
+    },
+    {
+      "id": "C1",
+      "group": "C: readiness stored",
+      "desc": "network_http stored=READY (readiness NOT 'NOT_READY') with last_success_at inside executor session window 23:23-23:29 GMT",
+      "cmd": "curl -s --max-time 10 http://127.0.0.1:8010/api/environment/readiness",
+      "output": "{\"stored\": \"READY\", \"readiness\": \"STALE\", \"last_success_at\": \"2026-10-27T23:28:49.588938\", \"last_probe_at\": \"2026-10-27T23:28:49.588934\"}",
+      "verdict": "PASS",
+      "evidence": "stored=READY readiness=STALE last_success_at=2026-10-27T23:28:49.588938 (STALE freshness is expected — probe TTL=120s — but the stored verdict must be READY from the executor's 23:28 probe)"
+    },
+    {
+      "id": "C2",
+      "group": "C: readiness stored",
+      "desc": "network_https stored=READY with last_success_at in window",
+      "cmd": "curl -s --max-time 10 http://127.0.0.1:8010/api/environment/readiness",
+      "output": "{\"stored\": \"READY\", \"readiness\": \"STALE\", \"last_success_at\": \"2026-10-27T23:28:48.936749\", \"last_probe_at\": \"2026-10-27T23:28:48.936744\"}",
+      "verdict": "PASS",
+      "evidence": "stored=READY readiness=STALE last_success_at=2026-10-27T23:28:48.936749"
+    },
+    {
+      "id": "C3",
+      "group": "C: readiness stored",
+      "desc": "llm stored=READY with last_success_at in window",
+      "cmd": "curl -s --max-time 10 http://127.0.0.1:8010/api/environment/readiness",
+      "output": "{\"stored\": \"READY\", \"readiness\": \"STALE\", \"last_success_at\": \"2026-10-27T23:28:50.111324\", \"last_probe_at\": \"2026-10-27T23:28:50.111320\"}",
+      "verdict": "PASS",
+      "evidence": "stored=READY readiness=STALE last_success_at=2026-10-27T23:28:50.111324 (model connected to its provider after 443 restoration)"
+    },
+    {
+      "id": "D1",
+      "group": "D: one confirmatory probe",
+      "desc": "POST /api/environment/probe {network_https} ONCE -> READY with last_probe_at from MY moment",
+      "cmd": "curl -s --max-time 30 -X POST http://127.0.0.1:8010/api/environment/probe -H 'Content-Type: application/json' --data '{\"capability_id\": \"network_https\"}' -w '\\n@@HTTPCODE=%{http_code}@@TIME=%{time_total}' ; echo '@@CURLRC='$?",
+      "output": "{\"capability_id\":\"network_https\",\"name\":\"اتصال HTTPS\",\"description\":\"اتصال TLS حقيقي لمصدر موثوق\",\"category\":\"NETWORK\",\"required\":true,\"readiness_status\":\"READY\",\"stored_status\":\"READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-27T23:39:10.168817\",\"last_success_at\":\"2026-10-27T23:39:10.168821\",\"last_failure_at\":\"2026-10-27T23:25:59.036713\",\"failure_class\":\"\",\"failure_stage\":\"\",\"failure_reason\":\"\",\"probe_latency_ms\":17,\"ttl_seconds\":120,\"expires_at\":\"2026-10-27T23:41:10.167639\",\"details\":{\"url\":\"https://example.com\",\"http_status\":200,\"content_type\":\"text/html; charset=utf-8\",\"reason\":\"HTTP 200 · 577 بايت مقروءة\"}}\n@@HTTPCODE=200@@TIME=0.029212@@CURLRC=0",
+      "verdict": "PASS",
+      "evidence": "http=200 curl_rc=0 readiness_status=READY stored_status=READY last_probe_at=2026-10-27T23:39:10.168817 probe_latency_ms=17 failure_reason='' | post-probe GET readiness: network_https=READY/READY (source: performed NOW (single authorized POST, guard file written immediately))"
+    },
+    {
+      "id": "D2",
+      "group": "D: one confirmatory probe",
+      "desc": "R6 after the probe: /health still 200",
+      "cmd": "curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health",
+      "output": "200",
+      "verdict": "PASS",
+      "evidence": "http_code=200 (no service impact)"
+    },
+    {
+      "id": "F1",
+      "group": "F: no other change",
+      "desc": "git status --porcelain on production: zero tracked modifications (untracked runtime/ acceptable)",
+      "cmd": "cd /opt/agentic-engineering-system && git status --porcelain",
+      "output": "?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\n?? scripts/ops/nightly_backup.sh.pre-w1t04\n?? src/agentic_engineering_system.egg-info/",
+      "verdict": "PASS",
+      "evidence": "tracked modifications: 0 [] | untracked (acceptable): ['runtime/browser/', 'runtime/projects/', 'scripts/ops/nightly_backup.sh', 'scripts/ops/nightly_backup.sh.pre-w1t04', 'src/agentic_engineering_system.egg-info/']"
+    },
+    {
+      "id": "F2",
+      "group": "F: no other change",
+      "desc": "agentic service NOT restarted during/after the session (ActiveEnterTimestamp predates 23:00 GMT)",
+      "cmd": "systemctl show agentic -p ActiveEnterTimestamp",
+      "output": "ActiveEnterTimestamp=Tue 2026-10-27 16:50:58 GMT",
+      "verdict": "PASS",
+      "evidence": "ActiveEnterTimestamp='Tue 2026-10-27 16:50:58 GMT' — expected the W2-T10 deploy start 2026-10-27 16:50:58 GMT (infra task must not touch the service); parsed=2026-10-27 16:50:58 <= 2026-10-27 22:00"
+    },
+    {
+      "id": "E1",
+      "group": "E: evidence consistency",
+      "desc": "20261028-steps23.json: purposeful _meta + 3x http 200/rc=0 + tcp80 rc=0 + https 000/RC=28 (regression visible at 23:23) + probe network_http READY 11ms + health 200 pre/post + readiness before NOT_READY(Errno 101) -> after READY",
+      "cmd": "(local read)",
+      "output": "{'mode': 'steps 2-3 verification after owner OCI egress rule', 'ts': '2026-10-27T23:23:20Z', 'http': ['200 rc=0 t=0.007628', '200 rc=0 t=0.239944', '200 rc=0 t=0.293055'], 'https': ['000 rc=28 t=7.970182', '000 rc=28 t=6.102854'], 'tcp80': 'rc=0', 'health': ['200', '200']}",
+      "verdict": "PASS",
+      "evidence": "_meta.mode='steps 2-3 verification after owner OCI egress rule' ts=2026-10-27T23:23:20Z; http=['200 rc=0 t=0.007628', '200 rc=0 t=0.239944', '200 rc=0 t=0.293055']; https=['000 rc=28 t=7.970182', '000 rc=28 t=6.102854']; probe_network_http READY/11ms last_success 2026-10-27T23:23:42.277136; readiness_before network_http=NOT_READY/NOT_READY failure='تعذر HTTP المباشر إلى http://example.com: <urlopen error [Er' -> after READY/READY"
+    },
+    {
+      "id": "E2",
+      "group": "E: evidence consistency",
+      "desc": "20261028-regression443.json: _meta documents the regression + https 000/RC=28 (example & nvidia) while http 200/RC=0 (80 alive — discriminator) + honest probe network_https NOT_READY (NETWORK_FAILURE/Errno 101, old last_success kept) + health 200x2",
+      "cmd": "(local read)",
+      "output": "{'mode': 'REGRESSION documentation: 443 blocked after owner rule edit', 'ts': '2026-10-27T23:25:30Z', 'https_example': '000 rc=28 t=4.603853', 'https_nvidia': '000 rc=28 t=4.502552', 'http_example': '200 rc=0 t=0.009098'}",
+      "verdict": "PASS",
+      "evidence": "_meta.mode='REGRESSION documentation: 443 blocked after owner rule edit' ts=2026-10-27T23:25:30Z; https=000 rc=28 t=4.603853 / 000 rc=28 t=4.502552; http=200 rc=0 t=0.009098; probe network_https NOT_READY/NOT_READY last_probe 2026-10-27T23:25:59 last_success kept at 21:38:11 (honest)"
+    },
+    {
+      "id": "E3",
+      "group": "E: evidence consistency",
+      "desc": "20261028-final-bothports.json: _meta documents BOTH ports live + http/https example 200 + github 200 + nvidia 404/RC=0 (TLS alive) + probes network_https READY/18ms, network_http READY/12ms, llm READY/4ms + health 200 pre/post + readiness_all with ZERO 'NOT_READY'",
+      "cmd": "(local read)",
+      "output": "{'mode': 'W1-T05 final verification: BOTH egress rules live (80+443)', 'ts': '2026-10-27T23:28:45Z', 'http_example': '200 rc=0 t=0.010571', 'https_example': '200 rc=0 t=0.022459', 'https_github': '200 rc=0 t=0.016828', 'https_nvidia': '404 rc=0 t=0.064654', 'readiness_not_ready_count': 0}",
+      "verdict": "PASS",
+      "evidence": "_meta.mode='W1-T05 final verification: BOTH egress rules live (80+443)' ts=2026-10-27T23:28:45Z; curls: 200 rc=0 t=0.010571 / 200 rc=0 t=0.022459 / 200 rc=0 t=0.016828 / 404 rc=0 t=0.064654; probes: https READY/18ms http READY/12ms llm READY/4ms (last_success 23:28:48.936749 / 23:28:49.588938 / 23:28:50.111324); readiness_all: 19 capabilities, NOT_READY count=0"
+    },
+    {
+      "id": "E4",
+      "group": "E: evidence consistency",
+      "desc": "linear story reconstructible from the 3 files alone: block -> 80 opened & 443 closed (~23:23) -> regression documented with honest NOT_READY probe (~23:25:30) -> both restored (~23:28:45)",
+      "cmd": "(local composite)",
+      "output": "{'phase0_pre_state': 'steps23.readiness_before.network_http = NOT_READY (Errno 101) -> the original port-80 block is documented inside the files', 'phase1_80open_443closed': 'steps23 (2026-10-27T23:23:20Z): http 200 x3 + tcp80 rc=0 + https 000/RC=28 x2', 'phase2_regression_documented': 'regression443 (2026-10-27T23:25:30Z): https 000/RC=28 + http 200 + probe network_https NOT_READY (honest negative recording)', 'phase3_both_restored': 'final (2026-10-27T23:28:45Z): http+https 200 + github 200 + nvidia 404/RC=0 + 3 probes READY + zero NOT_READY'}",
+      "verdict": "PASS",
+      "evidence": "chronology 2026-10-27T23:23:20Z < 2026-10-27T23:25:30Z < 2026-10-27T23:28:45Z verified; documented 443-regression window lasts 325s (~5m25s) matching the claimed ~23:23->~23:28 GMT; each phase's  discriminating values verified inside its own file (see E1/E2/E3)"
+    },
+    {
+      "id": "E5",
+      "group": "E: evidence consistency",
+      "desc": "my live egress measurements agree with final-bothports.json (200/200/200 + nvidia live RC=0)",
+      "cmd": "(live A1/A3/A4/A5 vs local file)",
+      "output": "{'mine': ['200/rc0', '200/rc0', '200/rc0', '404/rc0'], 'file': ['200 rc=0 t=0.010571', '200 rc=0 t=0.022459', '200 rc=0 t=0.016828', '404 rc=0 t=0.064654']}",
+      "verdict": "PASS",
+      "evidence": "mine: example-http=200/RC=0 example-https=200/RC=0 github=200/RC=0 nvidia=404/RC=0 vs file 200/200/200/404 all rc=0"
+    },
+    {
+      "id": "C4",
+      "group": "C: readiness stored",
+      "desc": "server last_success_at == final-bothports probe values EXACTLY (all 3 capabilities) — file not fabricated, no later probe overwrote the executor's state",
+      "cmd": "(server GET vs local file)",
+      "output": "{'network_http': ['2026-10-27T23:28:49.588938', '2026-10-27T23:28:49.588938'], 'network_https': ['2026-10-27T23:28:48.936749', '2026-10-27T23:28:48.936749'], 'llm': ['2026-10-27T23:28:50.111324', '2026-10-27T23:28:50.111324']}",
+      "verdict": "PASS",
+      "evidence": "network_http server=2026-10-27T23:28:49.588938 file=2026-10-27T23:28:49.588938 | network_https server=2026-10-27T23:28:48.936749 file=2026-10-27T23:28:48.936749 | llm server=2026-10-27T23:28:50.111324 file=2026-10-27T23:28:50.111324"
+    },
+    {
+      "id": "C5",
+      "group": "C: readiness stored",
+      "desc": "FULL live readiness scan: zero capabilities in NOT_READY (executor's 'صفر NOT_READY في readiness الكلي' verified live)",
+      "cmd": "curl -s --max-time 10 http://127.0.0.1:8010/api/environment/readiness",
+      "output": "{'not_ready_now': [], 'counts': {'total': 19, 'stored_ready': 17, 'stored_not_ready': 0}}",
+      "verdict": "PASS",
+      "evidence": "NOT_READY capabilities: [] of 19 total (STALE = freshness expiry of stored-READY, UNAVAILABLE = optional caps — neither is NOT_READY)"
+    }
+  ],
+  "claims_vs_audit": [
+    {
+      "claim": "network_http = READY / 12ms (probe)",
+      "finding": "live stored=READY/STALE last_success_at=2026-10-27T23:28:49.588938 (byte-identical to the file's probe record); http egress live: 200/RC=0 in 0.007889s; raw TCP80 rc=0",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "network_https = READY / 18ms (probe after 443 restoration)",
+      "finding": "stored=READY/STALE last_success_at=2026-10-27T23:28:48.936749 == file value; AND my own single POST probe returned READY with last_probe_at from my moment; live https egress: example=200/RC=0 (0.029147s), github=200/RC=0, raw TCP443 rc=0",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "llm = READY / 4ms (model connected to NVIDIA provider)",
+      "finding": "live stored=READY/STALE last_success_at=2026-10-27T23:28:50.111324 (byte-identical to file); nvidia endpoint live: HTTP 404/RC=0 in 0.065768s (TLS session OK)",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "http example=200/10ms · https example=200/22ms · GitHub=200/17ms · integrate.api.nvidia.com TLS healthy (404 on root)",
+      "finding": "my measurements: http example 200/RC=0/0.007889s · https example 200/RC=0/0.029147s · github 200/RC=0/0.051893s · nvidia 404/RC=0/0.065768s — all RC=0, connection live on both ports",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "/health = 200 before AND after; R6 intact",
+      "finding": "/health live: 200 (B1) and 200 after my probe (D2); services active x3; journal err last 45min = no entries; HEAD=036db8911",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "صفر NOT_READY في readiness الكلي (final snapshot)",
+      "finding": "live full scan: 0 capabilities in NOT_READY of 19; final file readiness_all: 0 NOT_READY entries of 19 caps",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "regression window: 443 closed ~23:23 -> both restored ~23:28 (documented honestly)",
+      "finding": "three files chronologically ordered 2026-10-27T23:23:20Z < 2026-10-27T23:25:30Z < 2026-10-27T23:28:45Z; steps23 shows https 000/RC=28 WHILE http 200 (80 open, 443 closed); regression443 records probe network_https NOT_READY (NETWORK_FAILURE/Errno 101) while http 200; final shows both 200 + READY — window duration 325s",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "no other state changed on the server (pure infrastructure task)",
+      "finding": "git status --porcelain: 0 tracked modifications ([]); untracked only: ['runtime/browser/', 'runtime/projects/', 'scripts/ops/nightly_backup.sh', 'scripts/ops/nightly_backup.sh.pre-w1t04', 'src/agentic_engineering_system.egg-info/']; HEAD=036db8911; agentic ActiveEnterTimestamp='Tue 2026-10-27 16:50:58 GMT' (no restart during the session)",
+      "verdict": "CONFIRMED"
+    }
+  ],
+  "counts": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0
+  },
+  "non_blocking_notes": [
+    "TRACKER card W1-T05 status line already names 'W1-T05-S23-AUDIT' as signer of steps 2-3 while the mandate was for the executor to fill the audit field AFTER this signature — premature status wording only, the التدقيق field itself correctly still holds only the S01 entry (my signature line to be added by the executor per the mandate).",
+    "worklog.md has NO entry for the final both-ports verification (20261028-final-bothports.json, 23:28:45Z): the last W1-T05-S23 entry ends at the regression discovery — executor should append the resolution entry (same pattern as F1 in W2-T10).",
+    "regression443.json's probe_network_https is a string truncated at 800 chars (executor's o[:800]) — all decisive substrings (NOT_READY x2, NETWORK_FAILURE, Errno 101, both timestamps) survive before the cut; documentation gap only.",
+    "readiness semantics: network_* readiness shows STALE at audit time because probe TTL=120s expired ~7 minutes after the executor's 23:28 probes — stored verdicts stay READY (verified); llm shows READY (its freshness/TTL semantics differ). NOT the executor's claim window — his 'zero NOT_READY' was true at 23:28 AND remains true live at audit time."
+  ],
+  "context": {
+    "server_utc": "Tue Oct 27 11:39:13 PM UTC 2026",
+    "curl_version": "curl 7.76.1 (aarch64-redhat-linux-gnu) libcurl/7.76.1 OpenSSL/3.5.8 zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.1 (+libidn2/2.3.0) libssh/0.10.4/openssl/zlib nghttp2/1.43.0",
+    "production_last_commit": "036db8911 2026-10-27 16:49:54 +0000 fix(ui+api): W2-T10 — التصعيد يُعلن ولا يُدفن: runs/active يشمل ESCALATED (إعادة إنتاج الدفن موثقة) + بانر ثابت فوق كل شيء (z-critical) من الإقلاع + شريط طوارئ موصول بـ stop/resume القائمة + حلقات خط المراحل",
+    "git_untracked": [
+      "runtime/browser/",
+      "runtime/projects/",
+      "scripts/ops/nightly_backup.sh",
+      "scripts/ops/nightly_backup.sh.pre-w1t04",
+      "src/agentic_engineering_system.egg-info/"
+    ],
+    "full_readiness_snapshot_at_audit": {
+      "llm": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:28:50.111324",
+        "last_probe_at": "2026-10-27T23:28:50.111320"
+      },
+      "model_inference": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:20:51.059757",
+        "last_probe_at": "2026-10-26T23:20:51.059752"
+      },
+      "web_search": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:32:52.268635",
+        "last_probe_at": "2026-10-26T23:32:52.268630"
+      },
+      "web_fetch": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:20:52.756668",
+        "last_probe_at": "2026-10-26T23:20:52.756663"
+      },
+      "network_dns": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:24:45.920220",
+        "last_probe_at": "2026-10-27T23:24:45.920216"
+      },
+      "network_https": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:28:48.936749",
+        "last_probe_at": "2026-10-27T23:28:48.936744"
+      },
+      "network_http": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:28:49.588938",
+        "last_probe_at": "2026-10-27T23:28:49.588934"
+      },
+      "sandbox": {
+        "stored": "READY",
+        "readiness": "READY",
+        "last_success_at": "2026-10-26T23:21:08.910235",
+        "last_probe_at": "2026-10-26T23:21:08.910230"
+      },
+      "filesystem": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:24:45.977978",
+        "last_probe_at": "2026-10-27T23:24:45.977974"
+      },
+      "git": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:21:08.954609",
+        "last_probe_at": "2026-10-26T23:21:08.954604"
+      },
+      "repository": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:21:08.967759",
+        "last_probe_at": "2026-10-26T23:21:08.967755"
+      },
+      "shell": {
+        "stored": "READY",
+        "readiness": "READY",
+        "last_success_at": "2026-10-27T23:24:45.973613",
+        "last_probe_at": "2026-10-27T23:24:45.973609"
+      },
+      "package_management": {
+        "stored": "UNAVAILABLE",
+        "readiness": "UNAVAILABLE",
+        "last_success_at": null,
+        "last_probe_at": "2026-10-26T23:21:08.989044"
+      },
+      "testing": {
+        "stored": "UNAVAILABLE",
+        "readiness": "UNAVAILABLE",
+        "last_success_at": null,
+        "last_probe_at": "2026-10-26T23:21:09.022664"
+      },
+      "build": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:21:09.035059",
+        "last_probe_at": "2026-10-26T23:21:09.035055"
+      },
+      "persistence": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-27T23:24:45.988314",
+        "last_probe_at": "2026-10-27T23:24:45.988310"
+      },
+      "artifacts": {
+        "stored": "READY",
+        "readiness": "STALE",
+        "last_success_at": "2026-10-26T23:21:09.066067",
+        "last_probe_at": "2026-10-26T23:21:09.066063"
+      },
+      "observability": {
+        "stored": "READY",
+        "readiness": "READY",
+        "last_success_at": "2026-10-26T23:21:09.076401",
+        "last_probe_at": "2026-10-26T23:21:09.076397"
+      },
+      "browser": {
+        "stored": "READY",
+        "readiness": "READY",
+        "last_success_at": "2026-10-26T23:21:11.303248",
+        "last_probe_at": "2026-10-26T23:21:11.303242"
+      }
+    },
+    "probe_once_guard": {
+      "file": "/home/z/my-project/download/aes-remediation/W1-T05/audit_s23_probe_once.json",
+      "record": {
+        "performed_at_utc": "2026-10-27T23:39:10.268410+00:00",
+        "cmd": "curl -s --max-time 30 -X POST http://127.0.0.1:8010/api/environment/probe -H 'Content-Type: application/json' --data '{\"capability_id\": \"network_https\"}' -w '\\n@@HTTPCODE=%{http_code}@@TIME=%{time_total}' ; echo '@@CURLRC='$?",
+        "stdout": "{\"capability_id\":\"network_https\",\"name\":\"اتصال HTTPS\",\"description\":\"اتصال TLS حقيقي لمصدر موثوق\",\"category\":\"NETWORK\",\"required\":true,\"readiness_status\":\"READY\",\"stored_status\":\"READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-27T23:39:10.168817\",\"last_success_at\":\"2026-10-27T23:39:10.168821\",\"last_failure_at\":\"2026-10-27T23:25:59.036713\",\"failure_class\":\"\",\"failure_stage\":\"\",\"failure_reason\":\"\",\"probe_latency_ms\":17,\"ttl_seconds\":120,\"expires_at\":\"2026-10-27T23:41:10.167639\",\"details\":{\"url\":\"https://example.com\",\"http_status\":200,\"content_type\":\"text/html; charset=utf-8\",\"reason\":\"HTTP 200 · 577 بايت مقروءة\"}}\n@@HTTPCODE=200@@TIME=0.029212@@CURLRC=0",
+        "stderr": ""
+      }
+    }
+  },
+  "final_verdict": "PASS"
+}

@@ -1,0 +1,6 @@
+{
+  "performed_at_utc": "2026-10-27T23:39:10.268410+00:00",
+  "cmd": "curl -s --max-time 30 -X POST http://127.0.0.1:8010/api/environment/probe -H 'Content-Type: application/json' --data '{\"capability_id\": \"network_https\"}' -w '\\n@@HTTPCODE=%{http_code}@@TIME=%{time_total}' ; echo '@@CURLRC='$?",
+  "stdout": "{\"capability_id\":\"network_https\",\"name\":\"اتصال HTTPS\",\"description\":\"اتصال TLS حقيقي لمصدر موثوق\",\"category\":\"NETWORK\",\"required\":true,\"readiness_status\":\"READY\",\"stored_status\":\"READY\",\"provider_id\":\"\",\"configuration_id\":\"\",\"last_probe_at\":\"2026-10-27T23:39:10.168817\",\"last_success_at\":\"2026-10-27T23:39:10.168821\",\"last_failure_at\":\"2026-10-27T23:25:59.036713\",\"failure_class\":\"\",\"failure_stage\":\"\",\"failure_reason\":\"\",\"probe_latency_ms\":17,\"ttl_seconds\":120,\"expires_at\":\"2026-10-27T23:41:10.167639\",\"details\":{\"url\":\"https://example.com\",\"http_status\":200,\"content_type\":\"text/html; charset=utf-8\",\"reason\":\"HTTP 200 · 577 بايت مقروءة\"}}\n@@HTTPCODE=200@@TIME=0.029212@@CURLRC=0",
+  "stderr": ""
+}
