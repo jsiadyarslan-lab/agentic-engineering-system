@@ -229,8 +229,26 @@
         updateBadge(runs.length);
         if (state.view === "runs") refreshRunCards(runs);
         updateProjectDots(runs);
+        syncRunPolling(runs);   // (W1-T02) الدورة مشروطة بالنشاط الفعلي
       }
-    }, function () { /* الشبكة انقطعت — الدورة القادمة تعيد */ });
+    }, function () { /* الشبكة انقطعت — إيقاظ الأمان/الأحداث يعيد */ });
+  }
+
+  /* (W1-T02) قتل الاستطلاع الأعمى: دورة 5ث تعمل فقط ما دام يوجد
+   * تشغيل يتقدم فعليًا (●: RUNNING/PLANNING/REVISING أو تخطيط نشط)
+   * وتتوقف وحدها بانتهاء الأخير. الانتظار (موافقة/حجب/إيقاف مؤقت)
+   * يعتمد الأحداث — لا دورة أبدية فوق مشروع ينتظر قرار المالك أيامًا. */
+  function syncRunPolling(runs) {
+    var live = runs.some(function (r) {
+      return r.planning_active || ["RUNNING", "REVISING", "PLANNING"]
+        .indexOf(r.status || "") !== -1;
+    });
+    if (live && !state.pollTimer) {
+      state.pollTimer = setInterval(pollActiveRuns, 5000);
+    } else if (!live && state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
   }
 
   function refreshRunCards(runs) {
@@ -282,9 +300,38 @@
     showView("chat");
   });
 
-  // أول تحميل + دور كل 5ث — مؤشر التشغيل حي بلا refresh (§32)
+  /* (W1-T02) نبضة تحميل أولى واحدة — ثم صفر طلبات في الخمول:
+   * الأحداث عبر البث الحي (SSE) هي المُوقظ (run.start/run.done/
+   * تخطيط/تحضير...)، والدورة 5ث لا تعمل إلا مع تقدم فعلي (أعلاه). */
   pollActiveRuns();
-  state.pollTimer = setInterval(pollActiveRuns, 5000);
+
+  /* إيقاظ الأحداث: أي حدث مشروع عبر البث يجدد اللقطة بعد debounce
+   * قصير — الحقيقة من الخادم لحظة التغير، لا من مؤقّت أعمى. */
+  function wakeFromEvents() {
+    var t = null;
+    return function () {
+      if (t) clearTimeout(t);
+      t = setTimeout(function () {
+        t = null;
+        pollActiveRuns();
+      }, 400);
+    };
+  }
+  if (window.LiveEvents) {
+    LiveEvents.onEvent(wakeFromEvents());
+  }
+
+  /* شبكة أمان عند انقطاع البث فقط (لا في الخمول السليم): نبضة كل 60ث
+   * ما دام الاتصال مقطوعًا — يعود البث فتتوقف وحدها. تجدد أيضًا لقطة
+   * المشروع المفتوح إن كنا في وضع مشروع. */
+  setInterval(function () {
+    if (window.LiveEvents && LiveEvents.isConnected()) return;
+    pollActiveRuns();
+    if (document.body.classList.contains("mode-project") &&
+        window.HubProjects && HubProjects.fetchRuntime) {
+      HubProjects.fetchRuntime();
+    }
+  }, 60000);
 
   window.ControlCenter = {
     showView: showView,

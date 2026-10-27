@@ -366,10 +366,15 @@
         list.closest(".pl-card").hidden = false;
       }
     }
-    // تغيّر المشهد (بوابة/حالة/وظيفة) ← مصالحة خفيفة مضبوطة
+    // تغيّر المشهد (بوابة/حالة/وظيفة) ← مصالحة خفيفة مضبوطة +
+    // (W1-T02) تجديد اللقطة القانونية (الرأس والأزرار) معها — من
+    // الأحداث لا من مؤقّت أعمى؛ ذاك المصدر نفسه يشغّل الدورة عند اللزوم
     if (window.ProjectLive && ProjectLive.isSceneChange(kind)) {
       if (reconcileTimer) clearTimeout(reconcileTimer);
-      reconcileTimer = setTimeout(reconcile, 250);
+      reconcileTimer = setTimeout(function () {
+        reconcile();
+        fetchRuntime();
+      }, 250);
     }
     loadProjectsThrottled();
   }
@@ -499,12 +504,31 @@
 
   function startRuntimePolling() {
     stopRuntimePolling();
+    // (W1-T02) نبضة أولى واحدة — لا دورة عمياء بعدها؛
+    // syncRuntimePolling (داخل fetchRuntime) يشغّل الدورة فقط
+    // عندما تقول اللقطة إن المشروع يتقدم فعليًا.
     fetchRuntime();
-    state.runtimeTimer = setInterval(fetchRuntime, 3000);
   }
 
   function stopRuntimePolling() {
     if (state.runtimeTimer) {
+      clearInterval(state.runtimeTimer);
+      state.runtimeTimer = null;
+    }
+  }
+
+  /* (W1-T02) دورة 3ث مشروطة: تعمل فقط واللقطة القانونية تقول إن
+   * المشروع يتقدم (RUNNING/PLANNING/REVISING أو تخطيط خلفي نشط)
+   * وتتوقف وحدها عند الخمول. الانتظار (موافقة/حجب/إيقاف مؤقت)
+   * يعتمد الأحداث — لا دورة أبدية فوق مشروع ينتظر قرارًا أيامًا. */
+  function syncRuntimePolling(runtime) {
+    if (!runtime) return;
+    var active = ["RUNNING", "PLANNING", "REVISING"]
+      .indexOf(runtime.status || "") !== -1 ||
+      (runtime.planning && runtime.planning.active);
+    if (active && !state.runtimeTimer) {
+      state.runtimeTimer = setInterval(fetchRuntime, 3000);
+    } else if (!active && state.runtimeTimer) {
       clearInterval(state.runtimeTimer);
       state.runtimeTimer = null;
     }
@@ -519,6 +543,7 @@
         var previousPlanning = (state.runtime || {}).planning || {};
         var nextPlanning = out.j.planning || {};
         state.runtime = out.j;
+        syncRuntimePolling(out.j);   // (W1-T02) الدورة مشروطة بالتقدم
         updateHeader(out.j);
         renderActiveTabContent();
         if (window.ControlCenter) ControlCenter.refreshRuns();

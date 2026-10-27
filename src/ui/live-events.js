@@ -9,7 +9,8 @@
   "use strict";
 
   var STATE = { last_id: 0, source: null, backoff: 400, timer: null,
-                handlers: [], healthTimer: null, connectedAt: 0 };
+                handlers: [], healthTimer: null, connectedAt: 0,
+                connected: false };  // (W1-T02) هل البث متصل فعلًا؟
 
   function lastEventId() { return STATE.last_id; }
 
@@ -47,6 +48,7 @@
     STATE.source.onopen = function () {
       STATE.backoff = 400;
       STATE.connectedAt = Date.now();
+      STATE.connected = true;
       document.body.classList.remove("live-disconnected");
     };
     STATE.source.onmessage = function (message) {
@@ -65,6 +67,7 @@
   }
 
   function detach() {
+    STATE.connected = false;
     if (STATE.source) {
       STATE.source.close();
       STATE.source = null;
@@ -102,6 +105,7 @@
     onEvent: onEvent,
     lastEventId: lastEventId,
     reconcile: reconcile,
+    isConnected: function () { return STATE.connected; },  // (W1-T02)
   };
 
   connect();
