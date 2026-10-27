@@ -1,0 +1,151 @@
+{
+  "audit_id": "W1-T03-S34-AUDIT-R",
+  "recheck_of": "W1-T03-S34-AUDIT (initial FAIL 17/21 — single blocking: token in owner-notification.txt)",
+  "timestamp_utc": "2026-10-27 04:41:27 UTC",
+  "scope": "narrow re-audit of the executor's remediation of the 4 findings (all local; zero production changes; one external GET probe)",
+  "token_policy": "full token masked as <TOKEN> everywhere; only prefix 5e140aa0 disclosed",
+  "checks": [
+    {
+      "id": "r1_token_leak_worktree",
+      "desc": "full token absent from every file in the tree except owner-token.txt",
+      "expected": "0 matches",
+      "actual": "0 match(es): []",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "r2_notification_masked",
+      "desc": "notification: Checked URL masked, prefix only, email body intact",
+      "expected": "all flags true",
+      "actual": "{'no_full_token': True, 'checked_url_masked': True, 'prefix_documented': True, 'masking_note_present': True, 'email_body_intact': True}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "r3_token_file_mode",
+      "desc": "owner-token.txt mode",
+      "expected": "600",
+      "actual": "600",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "r4_worklog_last_entry",
+      "desc": "last worklog entry is W1-T03-S34 covering steps 3-4 + remediation (R8 gap closed)",
+      "expected": "all flags true",
+      "actual": "{'last_entry_is_s34': True, 'covers_steps_3_4': True, 'documents_remediation': True, 'discloses_initial_fail': True, 'my_audit_entry_precedes': True}",
+      "pass": true,
+      "blocking": false
+    },
+    {
+      "id": "r5_post_correction_consistent",
+      "desc": "post_audit_correction matches the independent audit findings (fleet/13 IPs/PTR/304s/200-405/env IPs)",
+      "expected": "all flags true",
+      "actual": "{'present': True, 'uptimerobot_fleet': True, 'count_16_polls_13_ips': True, 'ptr_pattern': True, 'region_europe': True, 'median_304s': True, 'get_200_head_405': True, 'env_ips_identified': True, '88_99_is_real_checker': True, 'none_owner_server_loopback': True}",
+      "pass": true,
+      "blocking": false
+    },
+    {
+      "id": "r6_raw_data_intact",
+      "desc": "raw measurements in monitor-live.json left intact (correction appended, not rewritten)",
+      "expected": "all flags true (no full token in samples; counts/samples/timestamps byte-counts unchanged)",
+      "actual": "{'verdict_pass': True, 'count_18': True, 'ext_200_403_403': True, 'services_active': True, 'health_200': True, 'samples_still_masked': True, 'raw_checks_unchanged': True}",
+      "pass": true,
+      "blocking": false
+    },
+    {
+      "id": "r6b_spot_lines_verbatim",
+      "desc": "known original sample lines still present verbatim (raw data not rewritten)",
+      "expected": "all 3 spot samples present in parsed list",
+      "actual": "present=True (list size=15)",
+      "pass": true,
+      "blocking": false
+    },
+    {
+      "id": "r7_tracker_card",
+      "desc": "card: correction in step 4 + exec log; status awaiting S34 audit; steps 0-4 [x]; first signature intact",
+      "expected": "all flags true",
+      "actual": "{'status_awaiting_s34': True, 'steps_0_4_all_x': True, 'step4_correction': True, 'step4_masking_note': True, 'execlog_remediation': True, 'first_audit_signature_intact': True, 'board_row_awaiting': True, 'header_awaiting': True}",
+      "pass": true,
+      "blocking": false
+    },
+    {
+      "id": "r8_live_secret_200",
+      "desc": "live GET /healthz-<TOKEN> from this env (UA W1-T03-S34-AUDIT-R)",
+      "expected": "200 + status ok",
+      "actual": "200 | '{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-sys'",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "r9_hex32_strictness",
+      "desc": "no 32-hex equal to the token in any W1-T03 evidence file; all 32-hex classified",
+      "expected": "0 token matches; others classified (fake test values / known sha-style fragments)",
+      "actual": "{'token_matches': [], 'classified': {'fake_test_values': ['audit_s34_independent.json:00000000000000000000000000000000', '20261027-monitor-live.json:00000000000000000000000000000000', '20261027-monitor-live.json:ffffffffffffffffffffffffffffffff', 'audit_s34_recheck.json:00000000000000000000000000000000', 'audit_s34_recheck.json:ffffffffffffffffffffffffffffffff']}}",
+      "pass": true,
+      "blocking": true,
+      "note": "fake test values = the all-zeros / all-f tokens used deliberately in wrong-token probes; 'other' entries are sha256-style fragments in archived evidence, not the secret"
+    },
+    {
+      "id": "r10_git_containment",
+      "desc": "token exists in git history ONLY as owner-token.txt (designated secret file, env-local snapshot repo); no evidence file ever contained it; corrected files untracked & never committed; no remote -> never pushed",
+      "expected": "all flags true",
+      "actual": "{'token_only_in_owner_token_file': True, 'no_evidence_file_ever_had_token': True, 'corrected_files_untracked': True, 'corrected_files_never_committed': True, 'no_remote': True, 'never_pushed': True}",
+      "pass": true,
+      "blocking": false,
+      "note": "IMPORTANT for the parent before ANY R9 push: this environment's auto-snapshot repo (HEAD 0bb4341, no remote, never pushed) tracks owner-token.txt. The R9 sync to GitHub MUST explicitly exclude owner-token.txt (per card: 'لا يدخل المستودع أبداً')."
+    }
+  ],
+  "summary": {
+    "total_checks": 11,
+    "passed": 11,
+    "blocking_failures": [],
+    "nonblocking_failures": [],
+    "verdict": "PASS"
+  },
+  "remediation_items_verified": {
+    "1_blocking_token_masking": {
+      "no_full_token": true,
+      "checked_url_masked": true,
+      "prefix_documented": true,
+      "masking_note_present": true,
+      "email_body_intact": true
+    },
+    "2_token_file_mode": "600",
+    "3_worklog_entry": {
+      "last_entry_is_s34": true,
+      "covers_steps_3_4": true,
+      "documents_remediation": true,
+      "discloses_initial_fail": true,
+      "my_audit_entry_precedes": true
+    },
+    "4_attribution_correction": {
+      "monitor_live_post_correction": {
+        "present": true,
+        "uptimerobot_fleet": true,
+        "count_16_polls_13_ips": true,
+        "ptr_pattern": true,
+        "region_europe": true,
+        "median_304s": true,
+        "get_200_head_405": true,
+        "env_ips_identified": true,
+        "88_99_is_real_checker": true,
+        "none_owner_server_loopback": true
+      },
+      "tracker_card": {
+        "status_awaiting_s34": true,
+        "steps_0_4_all_x": true,
+        "step4_correction": true,
+        "step4_masking_note": true,
+        "execlog_remediation": true,
+        "first_audit_signature_intact": true,
+        "board_row_awaiting": true,
+        "header_awaiting": true
+      }
+    }
+  },
+  "observations": [
+    "owner-notification.txt's supplementary section (## التحقق المستقل المكمل) still quotes the ORIGINAL (pre-correction) attribution wording — the authoritative correction lives in monitor-live.json's post_audit_correction and the TRACKER card; recommend a one-line pointer be added at next sync (non-blocking).",
+    "owner-token.txt is tracked in this environment's auto-snapshot git repo (introduced in local commit only; no remote configured; never pushed). The R9 push MUST exclude it explicitly — reinforced in the audit note."
+  ]
+}

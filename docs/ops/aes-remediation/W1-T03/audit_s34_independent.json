@@ -1,0 +1,472 @@
+{
+  "audit_id": "W1-T03-S34-AUDIT",
+  "timestamp_utc": "2026-10-27 04:29:23 UTC",
+  "server_clock": "2026-10-27 04:25:49 UTC",
+  "scope": "W1-T03 steps 3-4 (owner monitoring step + executor verification/documentation step)",
+  "token_policy": "full token masked as <TOKEN> everywhere; only prefix 5e140aa0 disclosed",
+  "checks": [
+    {
+      "id": "ext_secret_200",
+      "desc": "GET /healthz-<TOKEN> from this env (not owner, not server)",
+      "expected": "200 + JSON with status=ok",
+      "actual": "200 | body~{\"status\": \"ok\", \"app\": \"Agentic Engineering System\", \"version\": \"4.0.0\"}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "ext_root_403",
+      "desc": "GET / from this env",
+      "expected": "403",
+      "actual": "403 | '<html>\\r\\n<head><title>403 Forbidden</title></head>\\r\\n<body>\\r\\n<'",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "ext_wrongtoken_403",
+      "desc": "GET /healthz-<32 zero hex> from this env",
+      "expected": "403",
+      "actual": "403 | '<html>\\r\\n<head><title>403 Forbidden</title></head>\\r\\n<body>\\r\\n<'",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "my_probes_external",
+      "desc": "this audit's probes originate from an IP that is not owner/server/loopback",
+      "expected": "probe IP not in {owner, server, 127.0.0.1}",
+      "actual": "['47.57.232.232', '8.212.10.159']",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_polls_external",
+      "desc": "provider-UA requests hit /healthz-<TOKEN> from IPs that are NOT owner/server/loopback/execution-env",
+      "expected": ">=1 external provider IP, disjoint from owner/server/127.0.0.1/env",
+      "actual": "14 polls from 12 IPs: ['128.140.106.114', '157.90.155.240', '167.235.143.113', '168.119.123.75', '168.119.96.239', '18.192.166.72', '18.193.252.127', '3.77.67.4', '3.79.134.69', '49.13.134.145', '49.13.24.81', '88.99.80.227']",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_get_200",
+      "desc": "ALL provider GET polls on the secret returned 200",
+      "expected": "every GET = 200 (>=1 GET)",
+      "actual": "GETs=7, statuses=[200]; HEADs=7, statuses={405: 7}",
+      "pass": true,
+      "blocking": true,
+      "note": "provider alternates HEAD then GET ~13-15s later per cycle (HEAD -> 405 because the app /health answers GET only; provider falls back to GET -> 200 and reports monitor UP per its own notification)"
+    },
+    {
+      "id": "monitor_interval_regular",
+      "desc": "consecutive poll cycles show a regular periodic cadence",
+      "expected": ">=2 cycle gaps, median within 240-420s, spread <=120s",
+      "actual": "cycle gaps(s)=[304.0, 304.0, 303.0, 305.0, 304.0, 305.0] median=304.0",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_ongoing_after_executor",
+      "desc": "provider polls continued AFTER executor's verify timestamp 04:02:27",
+      "expected": ">=1 provider poll with ts > 04:02:27",
+      "actual": "8 polls: ['04:07:28 128.140.106.114', '04:07:42 49.13.134.145', '04:12:47 18.192.166.72', '04:13:01 167.235.143.113', '04:18:05 49.13.24.81', '04:18:19 18.192.166.72', '04:23:24 168.119.123.75', '04:23:38 168.119.96.239']",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_live_second_read",
+      "desc": "a NEW provider poll appeared after my first log read (polling alive NOW)",
+      "expected": ">=1 new provider poll in second read",
+      "actual": "new polls: ['04:28:42 3.79.134.69 HEAD 405', '04:28:55 128.140.41.193 GET 200']",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_freshness",
+      "desc": "newest provider poll is within the last ~6 minutes",
+      "expected": "age <= 360s",
+      "actual": "newest=04:28:55 age=27s",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "count_vs_executor",
+      "desc": "healthz count in last 1000 lines now vs executor's 18 (pattern is what matters)",
+      "expected": "count>0 with provider polls present in the window (number may shift with time)",
+      "actual": "mine now=21 (executor=18 at 04:02:27); provider-UA polls inside my last-1000 window=12",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "services_active",
+      "desc": "agentic, nginx, firewalld all active",
+      "expected": "3x active",
+      "actual": "['active', 'active', 'active']",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "app_health_direct_200",
+      "desc": "direct 8010/health status",
+      "expected": "200",
+      "actual": "200",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "notification_content",
+      "desc": "owner notification archive matches the claimed provider email",
+      "expected": "exists + URL with token prefix 5e140aa0 + Resolved 2026-10-27 03:51:08 + Region Europe + monitor 92.5.14.150 + 'up again'",
+      "actual": "{'exists': True, 'url_prefix': True, 'resolved_at': True, 'region_europe': True, 'monitor_name': True, 'up_again': True}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_live_consistent",
+      "desc": "20261027-monitor-live.json fields consistent with executor's claims",
+      "expected": "verdict=PASS + ext 200/403/403 + 3xactive + health 200 + count 18 + source ips",
+      "actual": "{'verdict_pass': True, 'secret_200': True, 'secret_body_ok': True, 'root_403': True, 'wrongtoken_403': True, 'services_3_active': True, 'app_health_200': True, 'count_18': True, 'source_ips_present': True}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "monitor_ip_attribution",
+      "desc": "IPs the executor attributed to the external monitor actually belong to the external monitor provider",
+      "expected": "all claimed monitor IPs show provider UA (UptimeRobot)",
+      "actual": "claimed=['88.99.80.227', '47.57.232.232', '8.212.10.159', '47.57.242.119']; real provider IPs (UA UptimeRobot)=['128.140.106.114', '157.90.155.240', '167.235.143.113', '168.119.123.75', '168.119.96.239', '18.192.166.72', '18.193.252.127', '3.77.67.4', '3.79.134.69', '49.13.134.145', '49.13.24.81', '88.99.80.227']; misattributed (execution-env egress)=['47.57.232.232', '8.212.10.159', '47.57.242.119']; evidence lines: ['47.57.242.119 @ 02:09:54 GET /healthz-<TOKEN> -> 200 UA=Python-urllib/3.13', '47.57.232.232 @ 02:09:55 GET /healthz-00000000000000000000000000000000 -> 403 UA=Python-urllib/3.13', '8.212.10.159 @ 02:24:04 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)', '47.57.232.232 @ 02:24:04 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)', '47.57.242.119 @ 02:28:02 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)', '47.57.242.119 @ 02:28:03 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)', '8.212.10.159 @ 02:28:33 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)', '47.57.232.232 @ 02:28:33 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)', '8.212.10.159 @ 04:00:51 GET /healthz-<TOKEN> -> 200 UA=curl/8.14.1', '47.57.232.232 @ 04:00:52 GET /healthz-00000000000000000000000000000000 -> 403 UA=curl/8.14.1', '8.212.10.159 @ 04:02:33 GET /healthz-<TOKEN> -> 200 UA=Python-urllib/3.12', '47.57.232.232 @ 04:02:34 GET /healthz-00000000000000000000000000000000 -> 403 UA=Python-urllib/3.12', '47.57.232.232 @ 04:18:03 GET /healthz-<TOKEN> -> 200 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)', '8.212.10.159 @ 04:18:04 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)', '47.57.232.232 @ 04:25:46 GET /healthz-<TOKEN> -> 200 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)', '8.212.10.159 @ 04:25:47 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)']",
+      "pass": false,
+      "blocking": false,
+      "note": "core claim unaffected: the provider DOES poll the secret (UptimeRobot UA). The 3 misattributed IPs are this execution environment's egress (they carry W1-T03-AUDIT/curl UAs; 47.57.242.119 is documented in the first audit's log as ITS OWN IP). Documentation accuracy issue only."
+    },
+    {
+      "id": "verify_script_readonly",
+      "desc": "scripts/w1t03_monitor_verify.py is read-only on production (line-by-line review)",
+      "expected": "all SSH segments read-only (tail/grep/awk/sort/uniq/head/tr/systemctl is-active/curl), zero mutating commands or redirects in SSH strings, GET-only external probes, single exec_command wrapper",
+      "actual": "{'ssh_commands': ['sudo -n tail -n 1000 /var/log/nginx/access.log | grep -c healthz || true', \"sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | awk '{print $1}' | sort | uniq -c | sort -rn | head -10\", 'sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | tail -15', 'sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | grep -v ', 'sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | grep -v ', 'systemctl is-active agentic nginx firewalld', \"curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health\"], 'non_whitelisted_segments': [], 'mutation_hits_in_source': [], 'mutation_hits_in_ssh_commands': [], 'get_only_external': True, 'exec_command_occurrences': 1, 'local_writes': 'only OUT_JSON evidence file locally (allowed)'}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "token_leak_scan",
+      "desc": "full token absent from every file in the tree except owner-token.txt (evidence files must show prefix 5e140aa0 only)",
+      "expected": "0 files containing the full token",
+      "actual": "1 file(s): ['download/aes-remediation/W1-T03/20261027-owner-notification.txt']",
+      "pass": false,
+      "blocking": true,
+      "note": "BLOCKING security-discipline violation: the archived owner notification contains the full 32-hex token in its 'Checked URL' line. The file is currently untracked in git (no commit touches it, and this environment's git has no remote configured), but per R9 it is destined for docs/ops/… sync + GitHub push — the token must be masked there first (prefix 5e140aa0… only, like all other evidence)."
+    },
+    {
+      "id": "token_file_mode_0600",
+      "desc": "owner-token.txt still mode 0600",
+      "expected": "600",
+      "actual": "755",
+      "pass": false,
+      "blocking": false,
+      "note": "local hygiene regression only (content byte-identical to git HEAD per numstat=0\t0\tdownload/aes-remediation/W1-T03/owner-token.txt; file unpushed — no remote here). Recommend chmod 600 before any sync. Does not affect production or the secret's effectiveness."
+    },
+    {
+      "id": "tracker_consistency",
+      "desc": "W1-T03 card shows 'منجزة — بانتظار التدقيق (الخطوات 3-4)', steps 0-4 all [x], board+header consistent, steps 0-2 audit signed",
+      "expected": "all consistency flags true",
+      "actual": "{'card_status_awaiting_audit_s34': True, 'steps_0_4_all_checked': True, 'board_row_s34': True, 'header_line': True, 'first_audit_signed': True}",
+      "pass": true,
+      "blocking": true
+    },
+    {
+      "id": "worklog_entry_s34",
+      "desc": "worklog contains an execution entry for steps 3-4 (R8)",
+      "expected": "entry with Task ID W1-T03 covering steps 3-4 execution",
+      "actual": "last task IDs in worklog: ['W1-T02-AUDIT', 'W1-T03', 'W1-T03-AUDIT']",
+      "pass": false,
+      "blocking": false,
+      "note": "process gap (R8): the steps 3-4 execution is documented in the TRACKER card (سجل التنفيذ) but no worklog entry was appended by the executor. The audit appends its own entry; executor should backfill."
+    }
+  ],
+  "summary": {
+    "total_checks": 21,
+    "passed": 17,
+    "blocking_failures": [
+      "token_leak_scan"
+    ],
+    "nonblocking_failures": [
+      "monitor_ip_attribution",
+      "token_file_mode_0600",
+      "worklog_entry_s34"
+    ],
+    "verdict": "FAIL"
+  },
+  "monitor_evidence": {
+    "provider_polls_window": [
+      {
+        "ts": "2026-10-27 03:51:34",
+        "ip": "168.119.123.75",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-nbg2.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 03:51:48",
+        "ip": "3.77.67.4",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fra1.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 03:56:52",
+        "ip": "3.79.134.69",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fra5.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 03:57:07",
+        "ip": "88.99.80.227",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fsn6.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:02:11",
+        "ip": "157.90.155.240",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fsn4.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:02:25",
+        "ip": "18.193.252.127",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fra4.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:07:28",
+        "ip": "128.140.106.114",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-nbg3.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:07:42",
+        "ip": "49.13.134.145",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fsn2.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:12:47",
+        "ip": "18.192.166.72",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fra3.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:13:01",
+        "ip": "167.235.143.113",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-nbg4.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:18:05",
+        "ip": "49.13.24.81",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fsn8.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:18:19",
+        "ip": "18.192.166.72",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fra3.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:23:24",
+        "ip": "168.119.123.75",
+        "method": "HEAD",
+        "path": "/healthz-<TOKEN>",
+        "status": 405,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-nbg2.uptimerobot.com"
+      },
+      {
+        "ts": "2026-10-27 04:23:38",
+        "ip": "168.119.96.239",
+        "method": "GET",
+        "path": "/healthz-<TOKEN>",
+        "status": 200,
+        "ua": "Mozilla/5.0+(compatible; UptimeRobot/2.0; http://www.uptimerobot.com/)",
+        "ptr": "checker-fsn1.uptimerobot.com"
+      }
+    ],
+    "provider_ips": [
+      "128.140.106.114",
+      "157.90.155.240",
+      "167.235.143.113",
+      "168.119.123.75",
+      "168.119.96.239",
+      "18.192.166.72",
+      "18.193.252.127",
+      "3.77.67.4",
+      "3.79.134.69",
+      "49.13.134.145",
+      "49.13.24.81",
+      "88.99.80.227"
+    ],
+    "provider_ptr_records": {
+      "128.140.106.114": "checker-nbg3.uptimerobot.com",
+      "157.90.155.240": "checker-fsn4.uptimerobot.com",
+      "167.235.143.113": "checker-nbg4.uptimerobot.com",
+      "168.119.123.75": "checker-nbg2.uptimerobot.com",
+      "168.119.96.239": "checker-fsn1.uptimerobot.com",
+      "18.192.166.72": "checker-fra3.uptimerobot.com",
+      "18.193.252.127": "checker-fra4.uptimerobot.com",
+      "3.77.67.4": "checker-fra1.uptimerobot.com",
+      "3.79.134.69": "checker-fra5.uptimerobot.com",
+      "49.13.134.145": "checker-fsn2.uptimerobot.com",
+      "49.13.24.81": "checker-fsn8.uptimerobot.com",
+      "88.99.80.227": "checker-fsn6.uptimerobot.com"
+    },
+    "cycle_gaps_seconds": [
+      304.0,
+      304.0,
+      303.0,
+      305.0,
+      304.0,
+      305.0
+    ],
+    "median_cycle_gap_seconds": 304.0,
+    "get_statuses": [
+      200
+    ],
+    "head_statuses": {
+      "405": 7
+    },
+    "polls_after_executor_window_0402_27": [
+      "04:07:28",
+      "04:07:42",
+      "04:12:47",
+      "04:13:01",
+      "04:18:05",
+      "04:18:19",
+      "04:23:24",
+      "04:23:38"
+    ],
+    "env_tooling_ips_excluded": [
+      "47.57.232.232",
+      "47.57.242.119",
+      "8.212.10.159"
+    ],
+    "this_audit_probe_ips": [
+      "47.57.232.232",
+      "8.212.10.159"
+    ],
+    "count_healthz_last1000_now_vs_executor": {
+      "mine_now": "21",
+      "executor_at_0402_27": "18"
+    }
+  },
+  "executor_evidence_review": {
+    "notification_file": "download/aes-remediation/W1-T03/20261027-owner-notification.txt",
+    "notification_content_flags": {
+      "exists": true,
+      "url_prefix": true,
+      "resolved_at": true,
+      "region_europe": true,
+      "monitor_name": true,
+      "up_again": true
+    },
+    "monitor_live_flags": {
+      "verdict_pass": true,
+      "secret_200": true,
+      "secret_body_ok": true,
+      "root_403": true,
+      "wrongtoken_403": true,
+      "services_3_active": true,
+      "app_health_200": true,
+      "count_18": true,
+      "source_ips_present": true
+    },
+    "verify_script_ssh_commands": [
+      "sudo -n tail -n 1000 /var/log/nginx/access.log | grep -c healthz || true",
+      "sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | awk '{print $1}' | sort | uniq -c | sort -rn | head -10",
+      "sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | tail -15",
+      "sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | grep -v ",
+      "sudo -n tail -n 2000 /var/log/nginx/access.log | grep healthz | grep -v ",
+      "systemctl is-active agentic nginx firewalld",
+      "curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health"
+    ],
+    "claimed_monitor_ips": [
+      "88.99.80.227",
+      "47.57.232.232",
+      "8.212.10.159",
+      "47.57.242.119"
+    ],
+    "misattributed_to_env": [
+      "47.57.232.232",
+      "8.212.10.159",
+      "47.57.242.119"
+    ],
+    "env_ip_evidence_lines": [
+      "47.57.242.119 @ 02:09:54 GET /healthz-<TOKEN> -> 200 UA=Python-urllib/3.13",
+      "47.57.232.232 @ 02:09:55 GET /healthz-00000000000000000000000000000000 -> 403 UA=Python-urllib/3.13",
+      "8.212.10.159 @ 02:24:04 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "47.57.232.232 @ 02:24:04 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "47.57.242.119 @ 02:28:02 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "47.57.242.119 @ 02:28:03 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "8.212.10.159 @ 02:28:33 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "47.57.232.232 @ 02:28:33 GET /healthz-<TOKEN> -> 200 UA=W1-T03-AUDIT/1.0 (independent audit)",
+      "8.212.10.159 @ 04:00:51 GET /healthz-<TOKEN> -> 200 UA=curl/8.14.1",
+      "47.57.232.232 @ 04:00:52 GET /healthz-00000000000000000000000000000000 -> 403 UA=curl/8.14.1",
+      "8.212.10.159 @ 04:02:33 GET /healthz-<TOKEN> -> 200 UA=Python-urllib/3.12",
+      "47.57.232.232 @ 04:02:34 GET /healthz-00000000000000000000000000000000 -> 403 UA=Python-urllib/3.12",
+      "47.57.232.232 @ 04:18:03 GET /healthz-<TOKEN> -> 200 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)",
+      "8.212.10.159 @ 04:18:04 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)",
+      "47.57.232.232 @ 04:25:46 GET /healthz-<TOKEN> -> 200 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)",
+      "8.212.10.159 @ 04:25:47 GET /healthz-00000000000000000000000000000000 -> 403 UA=W1-T03-S34-AUDIT/1.0 (independent audit of steps 3-4)"
+    ]
+  },
+  "token_leak": {
+    "scan_root": "/home/z/my-project",
+    "excluded": "download/aes-remediation/W1-T03/owner-token.txt",
+    "matches": [
+      "download/aes-remediation/W1-T03/20261027-owner-notification.txt"
+    ],
+    "containment": {
+      "notif_git_status": "?? download/aes-remediation/W1-T03/20261027-owner-notification.txt",
+      "notif_commits": "(none)",
+      "remotes": "(no remote configured in this environment)"
+    },
+    "token_file_mode": "755"
+  },
+  "production": {
+    "services": [
+      "active",
+      "active",
+      "active"
+    ],
+    "app_health_direct_8010": "200"
+  }
+}
