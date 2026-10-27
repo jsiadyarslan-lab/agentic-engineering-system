@@ -1,0 +1,117 @@
+{
+  "pairs": {
+    "control-center": {
+      "diff_pixels": 357,
+      "pct": 0.0275,
+      "max_channel_delta": 6,
+      "bbox": "(1406,17,1427,38)",
+      "verdict": "REVIEW"
+    },
+    "control-center-mobile": {
+      "diff_pixels": 0,
+      "pct": 0.0,
+      "max_channel_delta": 0,
+      "bbox": "None",
+      "verdict": "NO_REGRESSION"
+    },
+    "factory": {
+      "diff_pixels": 374,
+      "pct": 0.0289,
+      "max_channel_delta": 11,
+      "bbox": "(838,17,1427,38)",
+      "verdict": "REVIEW"
+    },
+    "project-2": {
+      "diff_pixels": 2191,
+      "pct": 0.1691,
+      "max_channel_delta": 6,
+      "bbox": "(318,17,1427,855)",
+      "verdict": "REVIEW"
+    },
+    "project-2-mobile": {
+      "diff_pixels": 1839,
+      "pct": 0.5587,
+      "max_channel_delta": 4,
+      "bbox": "(34,280,355,344)",
+      "verdict": "REVIEW"
+    },
+    "settings-drawer": {
+      "diff_pixels": 509,
+      "pct": 0.0393,
+      "max_channel_delta": 2,
+      "bbox": "(1396,8,1436,45)",
+      "verdict": "REVIEW"
+    }
+  },
+  "control": {
+    "control-center": {
+      "diff_pixels": 0,
+      "pct": 0.0,
+      "max_channel_delta": 0,
+      "bbox": "None"
+    },
+    "control-center-mobile": {
+      "diff_pixels": 0,
+      "pct": 0.0,
+      "max_channel_delta": 0,
+      "bbox": "None"
+    },
+    "factory": {
+      "diff_pixels": 17,
+      "pct": 0.0013,
+      "max_channel_delta": 11,
+      "bbox": "(838,20,841,33)"
+    },
+    "project-2": {
+      "diff_pixels": 0,
+      "pct": 0.0,
+      "max_channel_delta": 0,
+      "bbox": "None"
+    },
+    "project-2-mobile": {
+      "diff_pixels": 30,
+      "pct": 0.0091,
+      "max_channel_delta": 1,
+      "bbox": "(34,280,355,291)"
+    },
+    "settings-drawer": {
+      "diff_pixels": 0,
+      "pct": 0.0,
+      "max_channel_delta": 0,
+      "bbox": "None"
+    }
+  },
+  "js_errors": {
+    "control-center": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    },
+    "control-center-mobile": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    },
+    "factory": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    },
+    "project-2": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    },
+    "project-2-mobile": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    },
+    "settings-drawer": {
+      "before": [],
+      "after": [],
+      "ctrl": []
+    }
+  },
+  "task": "W2-T07 step4 — deterministic visual comparison with noise floor"
+}

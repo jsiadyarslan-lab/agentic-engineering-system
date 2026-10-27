@@ -1,0 +1,14 @@
+{
+  "task": "W2-T07 step4 prep — fetch production backup DB for local visual verification",
+  "mode": "READ-ONLY on server (SFTP read of archive backup file, not live DB)",
+  "remote": "/opt/aes-backups/db/nightly-20261027.db",
+  "remote_size": 8040448,
+  "local_size": 8040448,
+  "size_match": true,
+  "md5": "bbde75fdf7b9367f4c3d0bb8e0674cfa",
+  "integrity": "ok",
+  "tables": 24,
+  "projects": 2,
+  "conversations": 13,
+  "messages": 91
+}

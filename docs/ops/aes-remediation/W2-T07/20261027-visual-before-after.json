@@ -1,0 +1,84 @@
+{
+  "task": "W2-T07 step4 — visual before/after (atomic local run)",
+  "before": {
+    "tree": "/home/z/my-project/w2t07-before",
+    "commit": "677b94d",
+    "port": 8013
+  },
+  "after": {
+    "tree": "/home/z/my-project/repo",
+    "commit": "HEAD (color sweep 0994d26 applied)",
+    "port": 8014
+  },
+  "db": "nightly-20261027.db (production backup copy, local only)",
+  "shots": {
+    "before": {
+      "control-center": {
+        "file": "before-control-center.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/"
+      },
+      "control-center-mobile": {
+        "file": "before-control-center-mobile.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/"
+      },
+      "factory": {
+        "file": "before-factory.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/#/factory"
+      },
+      "project-2": {
+        "file": "before-project-2.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/#/project/2"
+      },
+      "project-2-mobile": {
+        "file": "before-project-2-mobile.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/#/project/2"
+      },
+      "settings-drawer": {
+        "file": "before-settings-drawer.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8013/"
+      }
+    },
+    "after": {
+      "control-center": {
+        "file": "after-control-center.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/"
+      },
+      "control-center-mobile": {
+        "file": "after-control-center-mobile.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/"
+      },
+      "factory": {
+        "file": "after-factory.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/#/factory"
+      },
+      "project-2": {
+        "file": "after-project-2.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/#/project/2"
+      },
+      "project-2-mobile": {
+        "file": "after-project-2-mobile.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/#/project/2"
+      },
+      "settings-drawer": {
+        "file": "after-settings-drawer.png",
+        "js_errors": [],
+        "url": "http://127.0.0.1:8014/"
+      }
+    }
+  },
+  "js_error_totals": {
+    "before": 0,
+    "after": 0
+  }
+}

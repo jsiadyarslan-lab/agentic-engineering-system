@@ -1,0 +1,59 @@
+{
+  "task": "W2-T07 step4 — pixel diff before/after",
+  "pairs": {
+    "control-center": {
+      "size": "1440x900",
+      "size_match": true,
+      "diff_bbox": "(1406, 17, 1428, 39)",
+      "diff_pixels": 359,
+      "diff_pixels_pct": 0.0277,
+      "max_channel_delta": 6,
+      "verdict": "CHECK"
+    },
+    "control-center-mobile": {
+      "size": "390x844",
+      "size_match": true,
+      "diff_bbox": "None",
+      "diff_pixels": 0,
+      "diff_pixels_pct": 0.0,
+      "max_channel_delta": 0,
+      "verdict": "IDENTICAL"
+    },
+    "factory": {
+      "size": "1440x900",
+      "size_match": true,
+      "diff_bbox": "(838, 17, 1428, 41)",
+      "diff_pixels": 399,
+      "diff_pixels_pct": 0.0308,
+      "max_channel_delta": 23,
+      "verdict": "CHECK"
+    },
+    "project-2": {
+      "size": "1440x900",
+      "size_match": true,
+      "diff_bbox": "(330, 17, 1428, 856)",
+      "diff_pixels": 2185,
+      "diff_pixels_pct": 0.1686,
+      "max_channel_delta": 6,
+      "verdict": "CHECK"
+    },
+    "project-2-mobile": {
+      "size": "390x844",
+      "size_match": true,
+      "diff_bbox": "(53, 322, 137, 345)",
+      "diff_pixels": 1809,
+      "diff_pixels_pct": 0.5496,
+      "max_channel_delta": 4,
+      "verdict": "IMPERCEPTIBLE"
+    },
+    "settings-drawer": {
+      "size": "1440x900",
+      "size_match": true,
+      "diff_bbox": "(1396, 8, 1437, 46)",
+      "diff_pixels": 498,
+      "diff_pixels_pct": 0.0384,
+      "max_channel_delta": 2,
+      "verdict": "IMPERCEPTIBLE"
+    }
+  }
+}

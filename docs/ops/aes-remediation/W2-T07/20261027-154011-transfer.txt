@@ -1,0 +1,3 @@
+bundle=d23a96984debb30a740ce60baf38881f6d4adedd
+bundle verify OK
+sftp OK

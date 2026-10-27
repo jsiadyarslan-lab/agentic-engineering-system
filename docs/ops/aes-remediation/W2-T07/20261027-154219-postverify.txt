@@ -1,0 +1,7 @@
+target=d23a96984debb30a740ce60baf38881f6d4adedd
+health_200=True
+asset_version_bumped=True
+new_tokens_served=True
+zero_raw_colors_prod=False
+no_new_journal_errors=False
+nginx_wall_intact=True

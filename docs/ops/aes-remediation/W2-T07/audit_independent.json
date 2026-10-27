@@ -1,0 +1,400 @@
+{
+  "task": "W2-T07-AUDIT — تدقيق مستقل كامل لمهمة W2-T07 (الخطوات 1-5: المسح + العقد + البصري + النشر)",
+  "agent": "W2-T07-AUDIT (general-purpose audit agent)",
+  "date": "2026-10-27",
+  "mode": "SSH قراءة فقط على الإنتاج (92.5.14.150) + فحوص محلية (اختبارات/مقارنة/قياس) + مسباران سلبيان مؤقتان نُظّفا فورًا",
+  "script_md5": "fd2e0819225e534046a2b59f3242458e",
+  "summary": {
+    "total": 35,
+    "passed": 35,
+    "failed": 0,
+    "findings": 5,
+    "blocking_findings": 0
+  },
+  "final_verdict": "PASS",
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A-production",
+      "name": "رأس الإنتاج = d23a96984deb… بالضبط",
+      "command": "git -C /opt/agentic-engineering-system rev-parse HEAD",
+      "actual_output": "d23a96984debb30a740ce60baf38881f6d4adedd",
+      "expected": "d23a96984debb30a740ce60baf38881f6d4adedd",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A2",
+      "group": "A-production",
+      "name": "شجرة الإنتاج نظيفة (0 تعديلات متتبعة)",
+      "command": "git -C /opt/agentic-engineering-system status --porcelain --untracked-files=no",
+      "actual_output": "(0 أسطر)",
+      "expected": "0 أسطر",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A3",
+      "group": "A-production",
+      "name": "/health على 8010 = 200",
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8010/health",
+      "actual_output": "200",
+      "expected": "200",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A4",
+      "group": "A-production",
+      "name": "agentic + nginx نشطتان",
+      "command": "systemctl is-active agentic nginx",
+      "actual_output": "active / active",
+      "expected": "active / active",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A5",
+      "group": "A-production",
+      "name": "journalctl -u agentic آخر 30د -p err: صفر أسطر خطأ فعلية",
+      "command": "journalctl -u agentic --since '-30 min' -p err --no-pager | cat",
+      "actual_output": "-- No entries --",
+      "expected": "صفر أسطر فعلية (placeholder «-- No entries --» لا يُعد خطأً)",
+      "verdict": "PASS",
+      "note": "أسطر فعلية بعد إقصاء placeholder: 0"
+    },
+    {
+      "id": "A6",
+      "group": "A-production",
+      "name": "journalctl -u agentic منذ 15:30 (نافذة النشر) -p err: صفر أخطاء فعلية",
+      "command": "journalctl -u agentic --since '2026-10-27 15:30' -p err --no-pager | cat",
+      "actual_output": "-- No entries --",
+      "expected": "صفر أسطر فعلية",
+      "verdict": "PASS",
+      "note": "أسطر فعلية: 0"
+    },
+    {
+      "id": "A8",
+      "group": "A-production",
+      "name": "مسح hex على شجرة الإنتاج (بدلالات rg الحرفية عبر python3 هناك) = 0",
+      "command": "ssh: /usr/bin/python3 - <<scan (rglob *.css عدا theme.css/fonts، regex '#[0-9a-fA-F]{3,8}\\b' سطرًا سطرًا)",
+      "actual_output": "FILES 8 app-shell.css,control-center.css,factory-control.css,harness.css,live.css,project-live.css,projects.css,styles.css\nHEX 0 []\nRGB 0 []\nCONTROL 27",
+      "expected": "FILES=8 · HEX=0 · RGB=0 · CONTROL>0 (تحقق إيجابي أن الفحص يقرأ محتوى فعليًا)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A8b",
+      "group": "A-production",
+      "name": "مسح rgba على شجرة الإنتاج (regex '\\brgba?\\(\\s*[0-9]') = 0",
+      "command": "نفس الفحص أعلاه (قيمة RGB)",
+      "actual_output": "RGB=0",
+      "expected": "0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A9",
+      "group": "A-production",
+      "name": "تحقق متقاطع بمحرك ثانٍ (GNU grep -E بكلمة حدودية) hex=0 و rgba=0",
+      "command": "grep -rEn --include='*.css' '#[0-9a-fA-F]{3,8}\\b' src/ui/ | grep -v fonts | grep -v theme.css | wc -l  (ورديفه rgba)",
+      "actual_output": "selftest(يجب 1: يلتقط #fff ولا يلتقط #factory-view)=1 · hex=0 · rgba=0",
+      "expected": "selftest=1 · hex=0 · rgba=0",
+      "verdict": "PASS",
+      "note": "بدون \b يلتقط grep محددات ID مثل #factory-view (27 سطرًا) — الحد الكلمةي جوهري لمطابقة دلالة rg."
+    },
+    {
+      "id": "A10",
+      "group": "A-production",
+      "name": "/static/theme.css الحي يخدم التوكنات السبعة الجديدة/المطلوبة",
+      "command": "curl -s http://127.0.0.1:8010/static/theme.css | grep -- '--<token>:'",
+      "actual_output": "المخدوم من 7: 7/7 · كلها حاضرة",
+      "expected": "7/7",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A11",
+      "group": "A-production",
+      "name": "التوكنات الـ13 الجديدة كلها مخدومة حية + العدد الكلي 136",
+      "command": "curl -s http://127.0.0.1:8010/static/theme.css (عدّ regex '^--\\w[\\w-]*\\s*:' + أسماء الـ13)",
+      "actual_output": "من 13: 13/13 · عدد التوكنات المخدومة=136",
+      "expected": "13/13 و 136",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A12",
+      "group": "A-production",
+      "name": "إصدار الأصول في / : control-center.js?v=d23a9698",
+      "command": "curl -s http://127.0.0.1:8010/ | grep -oE 'control-center.js\\?v=[0-9a-f]+'",
+      "actual_output": "control-center.js?v=d23a9698",
+      "expected": "control-center.js?v=d23a9698",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A13",
+      "group": "A-production",
+      "name": "nginx المحلي / = 401 (الجدار سليم)",
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/",
+      "actual_output": "401",
+      "expected": "401",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A14",
+      "group": "A-production",
+      "name": "الخدمات الأربع (agentic/nginx/firewalld/aes-backup.timer) نشطة",
+      "command": "systemctl is-active agentic nginx firewalld aes-backup.timer",
+      "actual_output": "active / active / active / active",
+      "expected": "active ×4",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A15",
+      "group": "A-production",
+      "name": "النسخ الاحتياطية قبل النشر موجودة (bundle + runtime tar)",
+      "command": "ls -la /home/opc/pre-w2t07-*.bundle /home/opc/pre-w2t07-*.tar.gz",
+      "actual_output": "-rw-r--r--. 1 opc  opc  20382419 Oct 27 15:40 /home/opc/pre-w2t07-repo-backup-20261027-154024.bundle\n-rw-r--r--. 1 root root  2129846 Oct 27 15:40 /home/opc/pre-w2t07-runtime-20261027-154024.tar.gz",
+      "expected": "الملفان المذكوران في خطة التراجع بحجمين > 0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A16",
+      "group": "A-production",
+      "name": "nightly-20261027.db لا تزال في /opt/aes-backups/db/",
+      "command": "ls -la /opt/aes-backups/db/nightly-20261027.db",
+      "actual_output": "-rw-r--r--. 1 opc opc 8040448 Oct 27 04:48 /opt/aes-backups/db/nightly-20261027.db",
+      "expected": "الملف موجود بحجم 8040448",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A17",
+      "group": "A-production",
+      "name": "تطابق theme.css: إنتاج = مستودع محلي = المخدوم (md5 واحد)",
+      "command": "md5sum على الملفين + curl | md5sum",
+      "actual_output": "prod=182efce73458f645a710f8620d632bc5 · served=182efce73458f645a710f8620d632bc5 · local=182efce73458f645a710f8620d632bc5",
+      "expected": "الثلاثة متطابقة (182efce…)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A18",
+      "group": "A-production",
+      "name": "سلسلة git للإنتاج (d23a969→0994d26→677b94d) و 9e2ace5 سلف لـ HEAD",
+      "command": "git log --oneline -3 + git merge-base --is-ancestor 9e2ace5 HEAD && echo ANCESTOR_OK",
+      "actual_output": "d23a96984 ops(governance): W2-T07 خطوات 1-3 موثقة ومزامنة (TRACKER + worklog) — المسح حتى الصفر مدفوع (0994d26) والبصري وحدة تالية\n0994d2654 fix(ui): W2-T07 — مسح الألوان الناجية حتى الصفر: 31 سطر hex/rgba خارج النظام → 13 توكن نظام جديد + 19 توكن قائم\n677b94d78 ops(governance): W1-T05 خطوات 0-1 موقَّعة (تدقيق مستقل PASS 27/27) — إثبات حجب خروج 80 + مواصفة قاعدة الخروج للمالك | ANCESTOR_OK",
+      "expected": "السلسلة كما هو متوقع و ANCESTOR_OK",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B1",
+      "group": "B-commit",
+      "name": "0994d26: النطاق CSS/UI + اختبار العقد فقط — +133/−35 — صفر JS",
+      "command": "git show --stat 0994d26",
+      "actual_output": "files=9 +133/−35 · ملفات=9 · JS=0",
+      "expected": "9 ملفات (7 CSS معدّلة + اختباران جديدان) · +133/−35 · صفر JS",
+      "verdict": "PASS",
+      "note": "بطاقة TRACKER قالت «7 ملفات» — الدقيق: 7 ملفات CSS معدّلة + ملفا اختبار جديدان = 9 في stat؛ النطاق سليم تمامًا."
+    },
+    {
+      "id": "B2",
+      "group": "B-commit",
+      "name": "theme.css في 0994d26: 123→136 توكناً + الأسماء الـ13 الجديدة",
+      "command": "git show 0994d26^:src/ui/theme.css && git show 0994d26:src/ui/theme.css (عدّ regex التوكنات)",
+      "actual_output": "قبل=123 · بعد=136 · من أسماء الـ13: 13/13",
+      "expected": "123→136 (13 جديدًا) و13/13 حاضرة",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B3",
+      "group": "B-commit",
+      "name": "harness.js لم يُلمس في 0994d26 (عدّ=0) وآخر لمسة سابقة للمهمة",
+      "command": "git show 0994d26 --stat | grep -c harness  ||  git log --oneline -3 -- src/ui/harness.js",
+      "actual_output": "grep -c harness = 0 · آخر اللمسات: c3fb940 feat(order012): طبقة الـEngineering Harness — وظيفة دائمة + منسق حتمي + إسقاطات",
+      "expected": "0 وسجل يبدأ بـ c3fb940 (سابق للمهمة)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B4",
+      "group": "B-commit",
+      "name": "harness.js:122,170 يحملان hex خام سابقين للمهمة (خارج نطاق أمر البطاقة CSS)",
+      "command": "sed -n '122p;170p' src/ui/harness.js",
+      "actual_output": "122: html += '<div class=\"pj-job-role\" style=\"color:#f87171\">' + · 170: html += '<div class=\"pj-chain-note\" style=\"color:#34d399\">' +",
+      "expected": "السطران موجودان كما وُثّقا (#f87171/#34d399) — ملاحظة موثقة لا فشل بوابة",
+      "verdict": "PASS",
+      "note": "رصيد متبقٍ خارج نطاق البطاقة (CSS-only) — مقترح إغلاقهما في W2-T11/W3-T13 كما وثّق المنفذ."
+    },
+    {
+      "id": "B5",
+      "group": "B-commit",
+      "name": "كل أسطر الرقعة في الـ6 ملفات المسحوحة لونية أو تعليقات (جراحية)",
+      "command": "مقارنة نسختي 0994d26^/0994d26 لكل ملف (difflib) مع تتبع حالة التعليقات /*…*/ وتصنيف كل سطر متغير",
+      "actual_output": "أسطر متغيرة=70 · غير لونية/غير تعليقية=0",
+      "expected": "0 أسطر خارج نطاق الألوان (الباقي داخل تعليقات أو تعريفات لونية)",
+      "verdict": "PASS",
+      "note": "الأسطر غير اللونية الظاهرة كلها داخل تعليقات /*…*/ توثيقية — ومنها سطر تنقية ذكر قيمة حرفية من تعليق تاريخي."
+    },
+    {
+      "id": "C1",
+      "group": "C-contract",
+      "name": "العقد: pytest tests/ui/test_design_tokens.py = 17 passed",
+      "command": "cd /home/z/my-project/repo && /home/z/.venv/bin/python -m pytest tests/ui/test_design_tokens.py -q",
+      "actual_output": "17 passed in 0.09s",
+      "expected": "17 passed",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C2",
+      "group": "C-contract",
+      "name": "كود العقد: يفحص كل سطر (تعليقات ضمنًا) ويمنع تراجع التوكنات <136",
+      "command": "قراءة tests/ui/test_design_tokens.py وتحليله سطرًا سطرًا",
+      "actual_output": "HEX_RE=True · RGB_FN_RE=True · مسح كل الأسطر بلا إقصاء تعليقات=True · أرضية 136=True · نطاق (css عدا theme/fonts)=True",
+      "expected": "كل الخصائص قائمة",
+      "verdict": "PASS",
+      "note": "الفحص يسري على النص الكامل للملف — أي hex/rgba حتى داخل تعليق CSS يُرفض؛ يُثبت عمليًا بالمسبارين C3/C4."
+    },
+    {
+      "id": "C3",
+      "group": "C-contract",
+      "name": "مسبار سلبي: hex خام في ملف CSS جديد يُفشل العقد فعلاً",
+      "command": "echo 'x { color: #123456 }' > src/ui/fake-probe.css ثم pytest -q",
+      "actual_output": "1 failed, 18 passed in 0.12s (rc=1)",
+      "expected": "فشل الاختبار مع ذكر fake-probe",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C3b",
+      "group": "C-contract",
+      "name": "تنظيف أثر المسبار 1: git status --porcelain فارغ",
+      "command": "rm src/ui/fake-probe.css && git status --porcelain",
+      "actual_output": "(فارغ — 0 تعديلات)",
+      "expected": "فارغ",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C4",
+      "group": "C-contract",
+      "name": "مسبار سلبي: rgba داخل تعليق فقط يُفشل العقد (حتى التعليقات ممنوعة)",
+      "command": "echo '/* rgba(9, 8, 7, 0.5) */' > src/ui/fake-probe.css ثم pytest -q",
+      "actual_output": "1 failed, 18 passed in 0.11s (rc=1)",
+      "expected": "فشل الاختبار مع ذكر fake-probe",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C4b",
+      "group": "C-contract",
+      "name": "تنظيف أثر المسبار 2: git status --porcelain فارغ",
+      "command": "rm src/ui/fake-probe.css && git status --porcelain",
+      "actual_output": "(فارغ — 0 تعديلات)",
+      "expected": "فارغ",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D1",
+      "group": "D-visual",
+      "name": "12 لقطة det (6 أزواج قبل/بعد) موجودة وأحجامها > 0",
+      "command": "ls screens/det-{before,after}-*.png",
+      "actual_output": "الموجود منها: 12/12",
+      "expected": "12/12",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D2",
+      "group": "D-visual",
+      "name": "ملفات VLM الستة كلها تنهي بـ NO_DIFFERENCE",
+      "command": "قراءة screens/vlm/*.json (choices[0].message.content)",
+      "actual_output": "{\"control-center\": \"NO_DIFFERENCE\", \"control-center-mobile\": \"NO_DIFFERENCE\", \"factory\": \"NO_DIFFERENCE\", \"project-2\": \"NO_DIFFERENCE\", \"project-2-mobile\": \"NO_DIFFERENCE\", \"settings-drawer\": \"NO_DIFFERENCE\"}",
+      "expected": "NO_DIFFERENCE ×6",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D3",
+      "group": "D-visual",
+      "name": "إعادة قياس الفرق البكسلي مستقلاً (PIL/NumPy): تطابق حرفي مع الموثق",
+      "command": "PIL ImageChops.difference + numpy count_nonzero(any channel) + max — على الأزواج الستة",
+      "actual_output": "قياسي: {\"control-center\": [357, 6], \"control-center-mobile\": [0, 0], \"factory\": [374, 11], \"project-2\": [2191, 6], \"project-2-mobile\": [1839, 4], \"settings-drawer\": [509, 2]} · الموثق: {\"control-center\": [357, 6], \"control-center-mobile\": [0, 0], \"factory\": [374, 11], \"project-2\": [2191, 6], \"project-2-mobile\": [1839, 4], \"settings-drawer\": [509, 2]}",
+      "expected": "control-center 357/δ6 · project-2 2191/δ6 · control-center-mobile 0/δ0 (والثلاثة الباقية أيضًا)",
+      "verdict": "PASS",
+      "note": "الأزواج الثلاثة المطلوبة متطابقة حرفيًا=نعم · الأزواج الستة كلها متطابقة=True"
+    },
+    {
+      "id": "D4",
+      "group": "D-visual",
+      "name": "20261027-db-fetch.json + تحققي المستقل من الملف: md5/حجم/سلامة/صفوف",
+      "command": "md5sum + sqlite3 (ro): integrity_check + COUNT projects/conversations/messages",
+      "actual_output": "md5=bbde75fdf7b9367f4c3d0bb8e0674cfa · size=8040448 · integrity=ok · counts={'projects': 2, 'conversations': 13, 'messages': 91}",
+      "expected": "md5=bbde75fd… · 8040448 · ok · 2/13/91 (مطابقة تمرين W1-T04)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D5",
+      "group": "D-visual",
+      "name": "ملفات النشر الخمسة متسقة روايةً ومترابطة بقياساتي الحية",
+      "command": "قراءة preflight/transfer/deploy/postverify/postverify-corrected + الربط بفحوص A1/A12/A15",
+      "actual_output": "preflight(قبل=9e2ace5+نظيف+200)=True · transfer(bundle d23a969+verify+sftp)=True · deploy(deployed=d23a969/previous=9e2ace5/import_ok/restarted)=True · corrected(6/6+0/0+النسخ)=True · الأصل الموثق للحادث موجود=True",
+      "expected": "كل الشروط قائمة والمطابقة الحية: رأس الإنتاج الآن=d23a969 (A1) و ?v=d23a9698 (A12) والنسخ موجودة (A15)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D6",
+      "group": "D-visual",
+      "name": "شجرة «قبل» البصرية (w2t07-before @677b94d) مطابقة لـ src/ في 9e2ace5",
+      "command": "git -C w2t07-before rev-parse HEAD && git diff --stat 9e2ace5 677b94d -- src/",
+      "actual_output": "HEAD=677b94d78826 · diff src/ بين 9e2ace5 و677b94d: (فارغ — تطابق تام)",
+      "expected": "677b94d وفرق src/ فارغ (فروق الالتزامات الحاكمة مستندات فقط)",
+      "verdict": "PASS",
+      "note": ""
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "title": "rg غير مثبت على الإنتاج — الأمر الحرفي للبطاقة يعطي «0» زائفًا هناك",
+      "detail": "الأمر الحرفي (hex): stdout='0' + stderr='bash: line 1: rg: command not found'. الأمر الحرفي (rgba): stdout='0' + stderr='bash: line 1: rg: command not found'. بمعنى: لو حُسب stdout وحده لانخدعنا بـ«0» بغضّ النظر عن محتوى الملفات — نفس درس W1-T01 (التقييم بالأسطر الفعلية). جوهر البوابة أُعيد التحقق منه مباشرة على شجرة الإنتاج بمحركين مستقلين (فحص A8/A9) وكلاهما 0/0 — فالمعيار محقق فعلاً على الإنتاج.",
+      "blocking": false
+    },
+    {
+      "id": "F2",
+      "title": "عدد الملفات في البطاقة «7 ملفات» مقابل stat الفعلي 9",
+      "detail": "7 ملفات CSS معدّلة + tests/ui/__init__.py (فارغ) + tests/ui/test_design_tokens.py (جديد) = 9 في stat؛ +133/−35 مطابقة بالضبط. النطاق سليم (صفر JS) — سهو توثيقي فقط.",
+      "blocking": false
+    },
+    {
+      "id": "F3",
+      "title": "زوج factory: دلتا القناة العظمى 11/255 لا ≤6 كما في صياغة ملخص البطاقة",
+      "detail": "الموثق في visual-deterministic.json: factory diff=374 δ=11 — لكن أرضية الضجيج (زوج التحكم بنفس النسخة) للمصنع نفسه δ=11 في المنطقة (838,20,841,33) نفسها => الفرق من الضجيج لا من الرقعة. الصياغة الإجمالية «بدلتا قناة ≤6/255» غير دقيقة لهذا الزوج؛ الحكم البصري (NO_DIFFERENCE من VLM + ضمن الضجيج) سليم.",
+      "blocking": false
+    },
+    {
+      "id": "F4",
+      "title": "لا إدخال worklog لتنفيذ الخطوتين 4-5 (البصري + النشر) — فجوة R8",
+      "detail": "worklog آخر إدخال W2-T07-S123 (خطوات 1-3) بينما الخطوتان 4-5 موثقتان تفصيليًا في بطاقة TRACKER والأدلة كاملة في download/aes-remediation/W2-T07/. يوصى بسد الفجوة عند أول مزامنة (نفس معاملة W1-T03-S34).",
+      "blocking": false
+    },
+    {
+      "id": "F5",
+      "title": "تسمية التوكن السابع في أمر الفحص «--border-strong» توكن قائم سابق لا من الـ13 الجديدة",
+      "detail": "--border-strong (rgba(255,255,255,0.13)) موجود منذ إعادة تصميم 014 ويُخدم حيًا؛ التوكن الجديد ذو الدور الحدّي هو --accent-border-strong (وكلاهما مخدوم — فحص A10/A11). لا أثر على أي بوابة.",
+      "blocking": false
+    }
+  ],
+  "verdict_rationale": "كل فحوص المجموعات A-D ناجحة بأدلة جمعها المدقق بنفسه: الإنتاج على d23a969 بشجرة نظيفة وخدمات صحية وصفر أخطاء journal فعلية؛ صفر hex/rgba في CSS الإنتاج خارج theme.css (تحقق مباشر على شجرة الإنتاج بمحركين مستقلين: python regex بدلالات rg الحرفية + GNU grep بحدّ كلمةي، مع شاهد تحكم إيجابي)؛ التوكنات السبعة والـ13 مخدومة حية و ?v=d23a9698 والجدار 401؛ الالتزام 0994d26 محصور في CSS/UI+الاختبار (+133/−35، صفر JS، 123→136)؛ العقد 17/17 ويرفض hex في تعريف وrgba حتى في تعليق (مسباران سلبيان فعليان) ويحرس أرضية 136؛ البصري: قياسي البكسلي المستقل مطابق حرفيًا للموثق (357/δ6، 2191/δ6، 0/0) وVLM NO_DIFFERENCE×6 والقاعدة bbde75fd… 2/13/91؛ رواية النشر (9e2ace5→d23a969 ff-only) مثبتة بسلسلة git والسلف والنسخ الاحتياطية."
+}
