@@ -234,6 +234,91 @@
 .fc-stat-value.bad { color: var(--err); }
 .fc-stat-value.warn { color: var(--warn); }
 
+/* ---------- 5b) (W2-T09) إنقاذ المصنع: البث فوق الطية ----------
+ * بطاقة البث أولًا في DOM، الإجراء الأساسي في رأسها، والإحصاءات
+ * ضُغطت من بطاقة 2×2 بلاطات إلى شريط أفقي واحد؛ وصفوف القوائم
+ * تأخذ ثقلًا بصريًا بالأولوية (نشط=حيوية الوكيل، فاشل=خطر، الباقي
+ * هادئ) — كل المواد من توكنات theme.css حصرًا (عقد W2-T07 يحرس). */
+.fc-live-card > h3 { padding-inline-end: 10px; }
+.fc-live-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fc-head-btn {
+  margin-inline-start: auto;
+  flex: none;
+  padding: 5px 12px;
+  font-size: var(--fs-12);
+}
+.fc-statbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 22px;
+  padding: 11px 16px;
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+}
+.fc-stat-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+.fc-statbar-label {
+  font-size: var(--fs-12);
+  color: var(--dim);
+}
+.fc-statbar-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+}
+.fc-statbar-value.ok { color: var(--ok); }
+.fc-statbar-value.bad { color: var(--err); }
+.fc-statbar-refresh {
+  margin-inline-start: auto;
+  flex: none;
+  padding: 4px 11px;
+  font-size: var(--fs-12);
+  background: var(--s2);
+}
+
+/* ثقل الأولوية للصفوف — حجم/لون بلا قيم خام */
+.fc-row-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--acc);
+  animation: fc-pulse 1.4s infinite;
+  flex: none;
+}
+.fc-run-row.prio-live,
+.fc-mission-row.prio-live {
+  background: var(--acc-soft);
+  border-inline-start: 3px solid var(--acc);
+  color: var(--text);
+}
+.fc-run-row.prio-live .fc-run-id,
+.fc-mission-row.prio-live .fc-mission-id { font-weight: 600; }
+.fc-run-row.prio-live .fc-run-mission,
+.fc-mission-row.prio-live .fc-mission-title { color: var(--mut); }
+.fc-run-row.prio-fail,
+.fc-mission-row.prio-fail {
+  background: var(--danger-soft);
+  border-inline-start: 3px solid var(--err);
+  color: var(--text);
+}
+.fc-run-row.prio-live:hover,
+.fc-mission-row.prio-live:hover,
+.fc-run-row.prio-fail:hover,
+.fc-mission-row.prio-fail:hover { background: var(--bg-hover); }
+
 /* ---------- 6) الوسوم — .tag المرجعي (أحادي العرض) ---------- */
 .fc-run-status,
 .fc-mission-status {
@@ -879,7 +964,12 @@
   .factory-overview,
   .factory-create-mission,
   .factory-mission-view,
-  .factory-run-view { padding: 18px 14px 36px; }
+  .factory-run-view { padding: 14px 12px 32px; }
   .fc-mission-tabs { padding: 0 2px; }
   .fc-tab { padding: 9px 10px; font-size: 12.5px; }
+  /* (W2-T09) الشريط يلتف سطرين مضغوطين والتحديث يظهر آخر السطر — البث يبقى فوق الطية */
+  .fc-statbar { gap: 5px 14px; padding: 9px 12px; border-radius: var(--r-m); }
+  .fc-statbar-value { font-size: 13px; }
+  .fc-statbar-refresh { margin-inline-start: 0; padding: 4px 9px; }
+  .fc-head-btn { padding: 4px 10px; }
 }

@@ -109,66 +109,62 @@
   }
 
   // ---------- Overview Panel ----------
+  // (W2-T09) ترتيب جديد: البث الحي أولًا فوق الطية، ثم شريط إحصاءات أفقي
+  // مضغوط واحد (بدل بطاقة 2×2 بلاطات)، ثم المهام — والإجراء السريع
+  // الأساسي (مهمة جديدة) صعد إلى رأس بطاقة البث نفسه.
+  function runPriority(run) {
+    if (run.status === "RUNNING") return 0;
+    if (run.status === "FAILED") return 1;
+    return 2;
+  }
+  function missionPriority(mission) {
+    var st = mission.state || mission.status || "";
+    if (["EXECUTING", "PLANNING", "ANALYZING", "DESIGNING", "REVIEWING", "VERIFYING", "RECEIVED"].indexOf(st) >= 0) return 0;
+    if (st === "FAILED") return 1;
+    return 2;
+  }
   function renderOverview() {
     var html = '<div class="factory-overview">';
 
-    // System Status Card
-    html += '<div class="fc-card fc-system-card">';
-    html += '<h3>نظام المصنع</h3>';
-    html += '<div class="fc-grid-2">';
-    html += '<div class="fc-stat">';
-    html += '<span class="fc-stat-label">حالة الاتصال</span>';
-    html += '<span class="fc-stat-value ' + (state.systemConnected ? "ok" : "bad") + '">' +
-      (state.systemConnected ? "متصل" : "منقطع") + "</span>";
-    html += '</div>';
-    html += '<div class="fc-stat">';
-    html += '<span class="fc-stat-label">المهام الكلية</span>';
-    html += '<span class="fc-stat-value">' + state.missions.length + "</span>";
-    html += '</div>';
-    html += '<div class="fc-stat">';
-    html += '<span class="fc-stat-label">التشغيلات النشطة</span>';
-    html += '<span class="fc-stat-value">' + state.runs.filter(function (r) { return r.status === "RUNNING"; }).length + "</span>";
-    html += '</div>';
-    html += '<div class="fc-stat">';
-    html += '<span class="fc-stat-label">الوكلاء المتاحون</span>';
-    html += '<span class="fc-stat-value">' + state.agents.filter(function (a) { return a.status === "AVAILABLE"; }).length + "</span>";
-    html += '</div>';
-    html += '</div>';
-    html += '</div>';
-
-    // Quick Actions
-    html += '<div class="fc-card">';
-    html += '<h3>إجراءات سريعة</h3>';
-    html += '<div class="fc-actions">';
-    html += '<button class="btn primary" id="fc-new-mission">+ مهمة جديدة</button>';
-    html += '<button class="btn" id="fc-refresh-missions">تحديث المهام</button>';
-    html += '<button class="btn" id="fc-refresh-runs">تحديث التشغيلات</button>';
-    html += '<button class="btn" id="fc-refresh-agents">تحديث الوكلاء</button>';
-    html += '</div>';
-    html += '</div>';
-
-    // Active Runs Summary
-    html += '<div class="fc-card">';
-    html += '<h3>التشغيلات الحديثة</h3>';
+    // (W2-T09) البث الحي أولًا — فوق الطية في 1440 و390 على السواء
+    html += '<div class="fc-card fc-live-card">';
+    html += '<h3><span class="fc-live-title">البث الحي · التشغيلات</span>';
+    html += '<button class="btn primary fc-head-btn" id="fc-new-mission">+ مهمة جديدة</button>';
+    html += '</h3>';
     if (state.runs.length === 0) {
-      html += '<div class="fc-empty">لا توجد تشغيلات — ابدأ مهمة جديدة</div>';
+      html += '<div class="fc-empty">لا توجد تشغيلات قائمة — أطلق مهمة جديدة والبث يظهر هنا أولًا</div>';
     } else {
       html += '<div class="fc-runs-list">';
-      state.runs.slice(0, 10).forEach(function (run) {
+      state.runs.slice().sort(function (a, b) { return runPriority(a) - runPriority(b); }).slice(0, 10).forEach(function (run) {
         html += renderRunSummary(run);
       });
       html += '</div>';
     }
     html += '</div>';
 
-    // Active Missions Summary
+    // (W2-T09) شريط إحصاءات أفقي واحد بدل بطاقة 2×2 — الحالة والعدادات وتحديث الكل في سطر
+    html += '<div class="fc-statbar" role="group" aria-label="حالة المصنع" id="fc-statbar">';
+    html += '<span class="fc-stat-inline"><span class="fc-statbar-label">الاتصال</span>';
+    html += '<span class="fc-statbar-value ' + (state.systemConnected ? "ok" : "bad") + '">' +
+      (state.systemConnected ? "متصل" : "منقطع") + "</span></span>";
+    html += '<span class="fc-stat-inline"><span class="fc-statbar-label">المهام</span>';
+    html += '<span class="fc-statbar-value">' + state.missions.length + "</span></span>";
+    html += '<span class="fc-stat-inline"><span class="fc-statbar-label">تشغيل نشط</span>';
+    html += '<span class="fc-statbar-value ' + (state.runs.filter(function (r) { return r.status === "RUNNING"; }).length ? "ok" : "") + '">' +
+      state.runs.filter(function (r) { return r.status === "RUNNING"; }).length + "</span></span>";
+    html += '<span class="fc-stat-inline"><span class="fc-statbar-label">وكلاء جاهزون</span>';
+    html += '<span class="fc-statbar-value">' + state.agents.filter(function (a) { return a.status === "AVAILABLE"; }).length + "</span></span>";
+    html += '<button class="btn fc-statbar-refresh" id="fc-refresh-all" title="تحديث المهام والتشغيلات والوكلاء معًا">تحديث الكل</button>';
+    html += '</div>';
+
+    // المهام — بثقل أولوية الصفوف نفسه
     html += '<div class="fc-card">';
     html += '<h3>المهام الحديثة</h3>';
     if (state.missions.length === 0) {
       html += '<div class="fc-empty">لا توجد مهام</div>';
     } else {
       html += '<div class="fc-missions-list">';
-      state.missions.slice(0, 10).forEach(function (mission) {
+      state.missions.slice().sort(function (a, b) { return missionPriority(a) - missionPriority(b); }).slice(0, 10).forEach(function (mission) {
         html += renderMissionSummary(mission);
       });
       html += '</div>';
@@ -191,7 +187,11 @@
       "STOPPED": "متوقف",
       "PAUSED": "موقوف",
     }[run.status] || run.status;
-    return '<div class="fc-run-row" data-run-id="' + esc(run.run_id) + '">' +
+    // (W2-T09) ثقل بصري بالأولوية: نشط = حيوية الوكيل، فاشل = خطر، الباقي هادئ
+    var prio = run.status === "RUNNING" ? " prio-live" : (run.status === "FAILED" ? " prio-fail" : "");
+    var liveDot = run.status === "RUNNING" ? '<span class="fc-row-live-dot" aria-hidden="true"></span>' : "";
+    return '<div class="fc-run-row' + prio + '" data-run-id="' + esc(run.run_id) + '">' +
+      liveDot +
       '<div class="fc-run-info">' +
       '<span class="fc-run-id">' + esc(run.run_id) + '</span>' +
       '<span class="fc-run-mission">مهمة: ' + esc(run.mission_id || "—") + '</span>' +
@@ -221,7 +221,10 @@
       "STOPPED": "متوقفة",
       "ARCHIVED": "مؤرشفة",
     }[state] || state || "غير محدد";
-    return '<div class="fc-mission-row" data-mission-id="' + esc(mission.mission_id || mission.id || "—") + '">' +
+    var prio = missionPriority(mission) === 0 ? " prio-live" : (state === "FAILED" ? " prio-fail" : "");
+    var liveDot = missionPriority(mission) === 0 ? '<span class="fc-row-live-dot" aria-hidden="true"></span>' : "";
+    return '<div class="fc-mission-row' + prio + '" data-mission-id="' + esc(mission.mission_id || mission.id || "—") + '">' +
+      liveDot +
       '<div class="fc-mission-info">' +
       '<span class="fc-mission-id">' + esc(mission.mission_id || mission.id || "—") + '</span>' +
       '<span class="fc-mission-title">' + esc(mission.user_request || mission.name || mission.objective || "بدون عنوان") + '</span>' +
@@ -235,6 +238,7 @@
       state.mode = "create-mission";
       renderFactory();
     });
+    $("fc-refresh-all")?.addEventListener("click", loadOverviewData);
     $("fc-refresh-missions")?.addEventListener("click", loadMissions);
     $("fc-refresh-runs")?.addEventListener("click", loadRuns);
     $("fc-refresh-agents")?.addEventListener("click", loadAgents);
