@@ -111,6 +111,12 @@
       var runs = out.j.runs || [];
       state.runs = runs;
       updateBadge(runs.length);
+      /* (W2-T10) التصعيد يُعلن ولا يُدفن: أي مصعّد في التشغيلات
+       * النشطة يصعد للبانر الثابت فوق كل شيء (بعد إصلاح استبعاده
+       * من runs/active في الواجهة الخلفية). */
+      if (window.PlEscalation) {
+        window.PlEscalation.replace(runs);
+      }
       if (!runs.length) {
         body.appendChild(el("div", "cc-empty",
           "لا تشغيلات نشطة الآن — أنشئ مشروعًا أو شغّل خطة معتمدة"));
@@ -230,6 +236,12 @@
         if (state.view === "runs") refreshRunCards(runs);
         updateProjectDots(runs);
         syncRunPolling(runs);   // (W1-T02) الدورة مشروطة بالنشاط الفعلي
+        /* (W2-T10) البانر العام: يعمل من الإقلاع (هذا الاستدعاء) مهما
+         * كانت الشاشة الحالية — المصعّد يُعلن في كل الواجهات لا في
+         * عرض «التشغيلات» وحده. */
+        if (window.PlEscalation) {
+          window.PlEscalation.replace(runs);
+        }
       }
     }, function () { /* الشبكة انقطعت — إيقاظ الأمان/الأحداث يعيد */ });
   }

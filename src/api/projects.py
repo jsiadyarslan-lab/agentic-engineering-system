@@ -572,9 +572,12 @@ def active_runs() -> dict:
     from workflow.snapshot import runtime_snapshot
 
     projects = service.list_projects(_sessions())
+    # (W2-T10) التصعيد ليس حالة نهائية تُنسى: مشروع ESCALATED ينتظر قرار
+    # المالك — إخفاؤه من مؤشر التشغيلات النشطة كان يدفنه تحت الأخضر
+    # الناجح (عيب التقرير)؛ يبقى ظاهرًا هنا حتى يعالجه المالك.
     active_project_ids = [p["id"] for p in projects
                           if p["status"] not in
-                          ("VERIFIED", "COMPLETED", "STOPPED", "ESCALATED")]
+                          ("VERIFIED", "COMPLETED", "STOPPED")]
     runs: list[dict] = []
     for pid in active_project_ids:
         try:

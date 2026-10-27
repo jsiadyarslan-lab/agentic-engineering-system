@@ -64,6 +64,145 @@
     return { row: row, flow: flow };
   }
 
+  /* (W2-T10) بانر التصعيد الثابت — أعلى الصفحة، فوق كل شيء.
+   * المصعّد يُعلن ولا يُدفن: أي مشروع ESCALATED يظهر هنا مهما كانت
+   * الشاشة الحالية (مركز التحكم/المحادثة/صفحة مشروع آخر) — مصدراه:
+   * مشهد المشروع (ضمان فوري) وقائمة التشغيلات النشطة في مركز التحكم
+   * (المصدر الكامل بعد إصلاح استبعاد المصعّد من runs/active). */
+  var EscalationBanner = (function () {
+    var node = null;
+    function ensure() {
+      if (node && document.body.contains(node)) return node;
+      node = el("div", "pl-escalation-banner");
+      node.setAttribute("role", "alert");
+      document.body.appendChild(node);
+      return node;
+    }
+    function render(items) {
+      if (!items.length) {
+        if (node) node.remove();
+        node = null;
+        return;
+      }
+      var box = ensure();
+      box.textContent = "";
+      var icon = el("span", "pl-esc-icon", "⚠");
+      box.appendChild(icon);
+      var text = el("span", "pl-esc-text",
+        items.length === 1
+          ? "تصعيد ينتظر قرارك: " + (items[0].name || "مشروع")
+            + " (#" + items[0].project_id + ")"
+          : "تصعيد ينتظر قرارك في " + items.length + " مشاريع");
+      box.appendChild(text);
+      items.slice(0, 3).forEach(function (it) {
+        var open = el("button", "pl-esc-open",
+          items.length === 1 ? "فتح المشروع" : "#" + it.project_id);
+        open.addEventListener("click", function () {
+          location.hash = "#/project/" + it.project_id;
+        });
+        box.appendChild(open);
+      });
+    }
+    return {
+      /* مركز التحكم: اللقطة الكاملة من runs/active — تبني الحالة من الصفر */
+      replace: function (items) {
+        var list = (items || []).filter(function (i) {
+          return i && i.status === "ESCALATED";
+        });
+        var state = {};
+        list.forEach(function (i) { state[i.project_id] = i; });
+        window.PlEscalationState = state;
+        render(list);
+      },
+      /* مشهد المشروع: المصدر الرسمي لحالة هذا المشروع تحديدًا */
+      ensure: function (item) {
+        var current = (window.PlEscalationState || {});
+        if (item && item.status === "ESCALATED") {
+          current[item.project_id] = item;
+        } else if (item) {
+          delete current[item.project_id];
+        }
+        window.PlEscalationState = current;
+        var list = [];
+        for (var k in current) if (current[k]) list.push(current[k]);
+        render(list);
+      },
+      clearFor: function (projectId) {
+        var current = (window.PlEscalationState || {});
+        delete current[projectId];
+        window.PlEscalationState = current;
+        var list = [];
+        for (var k in current) if (current[k]) list.push(current[k]);
+        render(list);
+      },
+    };
+  })();
+
+  /* (W2-T10) شريط الطوارئ — صفحة المشروع: الحالة الحالية بأزرار
+   * الإيقاف/الاستئناف الحقيقية موصولة بالـ API القائمة
+   * (POST /api/projects/{id}/stop بـ final:false + POST /api/projects/{id}/resume).
+   * الأحداث (PROJECT_PAUSED/PROJECT_RESUMED/PROJECT_STOPPED) في REFRESH_KINDS
+   * تحدّث المشهد تلقائيًا عبر SSE بعد أمر المالك. */
+  function renderEmergencyBar(state) {
+    var bar = el("div", "pl-emergency-bar");
+    var chip = el("span", "pl-er-chip " + statusClass(state.status),
+      STATUS_LABELS[state.status] || state.status);
+    bar.appendChild(chip);
+    bar.appendChild(el("span", "pl-er-label", "شريط الطوارئ"));
+
+    var active = ["RUNNING", "REVISING", "PLANNING", "ESCALATED"]
+      .indexOf(state.status) !== -1;
+    if (active) {
+      var stopBtn = el("button", "pl-btn pl-er-stop", "■ إيقاف آمن");
+      stopBtn.addEventListener("click", function () {
+        stopBtn.disabled = true;
+        stopBtn.textContent = "…جارٍ الإيقاف";
+        Hub.fetchJSON("/api/projects/" + state.id + "/stop", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reason: "شريط الطوارئ من الواجهة (W2-T10)", final: false,
+          }),
+        }).then(function (out) {
+          if (!out.ok) {
+            stopBtn.disabled = false;
+            stopBtn.textContent = "■ إيقاف آمن";
+          }
+        }, function () {
+          stopBtn.disabled = false;
+          stopBtn.textContent = "■ إيقاف آمن";
+        });
+      });
+      bar.appendChild(stopBtn);
+    }
+
+    var job = state.job || {};
+    var resumable = ["BLOCKED", "PAUSED", "STOPPED", "ESCALATED"]
+      .indexOf(state.status) !== -1
+      || ["INTERRUPTED", "PAUSED", "STOPPED"].indexOf(job.status) !== -1;
+    if (resumable) {
+      var resumeBtn = el("button", "pl-btn primary pl-er-resume",
+                         "▶ استئناف");
+      resumeBtn.addEventListener("click", function () {
+        resumeBtn.disabled = true;
+        resumeBtn.textContent = "…جارٍ الاستئناف";
+        Hub.fetchJSON("/api/projects/" + state.id + "/resume",
+                      { method: "POST" })
+            .then(function (out) {
+              if (!out.ok) {
+                resumeBtn.disabled = false;
+                resumeBtn.textContent = "▶ استئناف";
+              }
+            }, function () {
+              resumeBtn.disabled = false;
+              resumeBtn.textContent = "▶ استئناف";
+            });
+      });
+      bar.appendChild(resumeBtn);
+    }
+    return bar;
+  }
+
   /* البطاقة الأم: المشروع + تدفق المستخدم الماكرو (013.2 §8) */
   function renderProjectCard(state) {
     var wrap = msgRow("assistant");
@@ -1602,7 +1741,30 @@
 
     // بطاقة المشروع (§10): الحالة الحية + خط المراحل — كل مؤشر
     // مرتبط بحالة حقيقية من اللقطة والأحداث
-    container.appendChild(renderProjectCard(state).row);
+    var projectCard = renderProjectCard(state);
+    container.appendChild(projectCard.row);
+
+    // (W2-T10) شريط الطوارئ بعد بطاقة المشروع مباشرة: الحالة +
+    // إيقاف/استئناف حقيقيان — والتصعيد يُعلن في البانر الثابت أيضًا.
+    var jobStatus = (state.job || {}).status;
+    var emergencyStates = ["RUNNING", "REVISING", "PLANNING", "PAUSED",
+                           "BLOCKED", "ESCALATED", "STOPPED"];
+    if (emergencyStates.indexOf(state.status) !== -1
+        || ["INTERRUPTED", "PAUSED", "STOPPED"].indexOf(jobStatus) !== -1) {
+      container.appendChild(renderEmergencyBar(state));
+    }
+    if (state.status === "ESCALATED") {
+      var escGate = (state.gates || []).filter(function (g) {
+        return (g.kind || "").indexOf("ESCALATION") !== -1
+          && g.status === "PENDING";
+      })[0];
+      EscalationBanner.ensure({
+        project_id: state.id, name: state.name, status: "ESCALATED",
+        reason: escGate ? (escGate.reason || escGate.title || "") : "",
+      });
+    } else {
+      EscalationBanner.clearFor(state.id);
+    }
 
     if (state.plan) {
       var planCard = renderPlanCard(state.plan, state);
@@ -1721,4 +1883,8 @@
     msgRow: msgRow,
     el: el,
   };
+
+  /* (W2-T10) بانر التصعيد متاح لكل الوحدات — مركز التحكم يستدعي
+   * replace() بعد كل تحديث للتشغيلات النشطة ليُعلن كل مصعّد. */
+  window.PlEscalation = EscalationBanner;
 })();
