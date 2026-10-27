@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "LAYOUT_OK\nالواجهة تظهر بشكل سليم مع وجود بطاقة \"البث الحي · التشغيلات\" في الأعلى، يليها شريط إحصاءات أفقي مضغوط، ثم بطاقة المهام، دون أي تداخل أو عناصر مقصوصة.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793117889,
+  "id": "20261028001807377ea54975364590",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261028001807377ea54975364590",
+  "usage": {
+    "completion_tokens": 71,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 1885,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 1956
+  }
+}

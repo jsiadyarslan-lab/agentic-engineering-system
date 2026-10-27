@@ -1,0 +1,131 @@
+{
+  "pairs": {
+    "desktop": {
+      "before": {
+        "file": "before-factory.png",
+        "js_errors": [],
+        "measure": {
+          "viewport_h": 900,
+          "live_card": {
+            "top": 464,
+            "height": 117
+          },
+          "statbar": null,
+          "old_system_card": {
+            "top": 79,
+            "height": 241
+          },
+          "runs_list": null,
+          "first_card_in_body": {
+            "top": 79,
+            "height": 241
+          },
+          "empty_tiles": [
+            {
+              "top": 145,
+              "label": "حالة الاتصال"
+            },
+            {
+              "top": 145,
+              "label": "المهام الكلية"
+            },
+            {
+              "top": 230,
+              "label": "التشغيلات النشطة"
+            },
+            {
+              "top": 230,
+              "label": "الوكلاء المتاحون"
+            }
+          ]
+        }
+      },
+      "after": {
+        "file": "after-factory.png",
+        "js_errors": [],
+        "measure": {
+          "viewport_h": 900,
+          "live_card": {
+            "top": 79,
+            "height": 130
+          },
+          "statbar": {
+            "top": 229,
+            "height": 61
+          },
+          "old_system_card": null,
+          "runs_list": null,
+          "first_card_in_body": {
+            "top": 79,
+            "height": 130
+          },
+          "empty_tiles": []
+        }
+      }
+    },
+    "mobile": {
+      "before": {
+        "file": "before-factory-mobile.png",
+        "js_errors": [],
+        "measure": {
+          "viewport_h": 844,
+          "live_card": {
+            "top": 672,
+            "height": 117
+          },
+          "statbar": null,
+          "old_system_card": {
+            "top": 71,
+            "height": 412
+          },
+          "runs_list": null,
+          "first_card_in_body": {
+            "top": 71,
+            "height": 412
+          },
+          "empty_tiles": [
+            {
+              "top": 137,
+              "label": "حالة الاتصال"
+            },
+            {
+              "top": 222,
+              "label": "المهام الكلية"
+            },
+            {
+              "top": 307,
+              "label": "التشغيلات النشطة"
+            },
+            {
+              "top": 393,
+              "label": "الوكلاء المتاحون"
+            }
+          ]
+        }
+      },
+      "after": {
+        "file": "after-factory-mobile.png",
+        "js_errors": [],
+        "measure": {
+          "viewport_h": 844,
+          "live_card": {
+            "top": 67,
+            "height": 130
+          },
+          "statbar": {
+            "top": 217,
+            "height": 83
+          },
+          "old_system_card": null,
+          "runs_list": null,
+          "first_card_in_body": {
+            "top": 67,
+            "height": 130
+          },
+          "empty_tiles": []
+        }
+      }
+    }
+  },
+  "task": "W2-T09 — live stream above the fold: before/after with objective position measurement"
+}

@@ -1,0 +1,328 @@
+{
+  "task": "W2-T09-AUDIT — تدقيق مستقل كامل لمهمة W2-T09 (البث فوق الطية + شريط إحصاءات + ثقل أولوية + النشر)",
+  "agent": "W2-T09-AUDIT (general-purpose audit agent)",
+  "date": "2026-10-27",
+  "mode": "SSH قراءة فقط على الإنتاج (92.5.14.150) + فحوص محلية (اختبارات/قياس PIL على اللقطات القائمة/مراجعة الالتزام)",
+  "script_md5": "ec030074d2dac78b37636793fb79cb48",
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0,
+    "findings": 3,
+    "blocking_findings": 0
+  },
+  "final_verdict": "PASS",
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A-production",
+      "name": "رأس الإنتاج = eaef5fd01a96e5… بالضبط",
+      "command": "git -C /opt/agentic-engineering-system rev-parse HEAD",
+      "actual_output": "eaef5fd01a96e56c323dbf25db9ba530be102474",
+      "expected": "eaef5fd01a96e56c323dbf25db9ba530be102474",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A2",
+      "group": "A-production",
+      "name": "شجرة الإنتاج نظيفة (0 تعديلات متتبعة)",
+      "command": "git -C /opt/agentic-engineering-system status --porcelain --untracked-files=no",
+      "actual_output": "(0 أسطر)",
+      "expected": "0 أسطر",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A3",
+      "group": "A-production",
+      "name": "/health على 8010 = 200",
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8010/health",
+      "actual_output": "200",
+      "expected": "200",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A4",
+      "group": "A-production",
+      "name": "agentic + nginx نشطتان",
+      "command": "systemctl is-active agentic nginx",
+      "actual_output": "active / active",
+      "expected": "active / active",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A5",
+      "group": "A-production",
+      "name": "journalctl -u agentic آخر 30د -p err: صفر أسطر خطأ فعلية",
+      "command": "journalctl -u agentic --since '-30 min' -p err --no-pager | cat",
+      "actual_output": "-- No entries --",
+      "expected": "صفر أسطر فعلية (placeholder «-- No entries --» لا يُعد خطأً)",
+      "verdict": "PASS",
+      "note": "أسطر فعلية بعد إقصاء placeholder: 0"
+    },
+    {
+      "id": "A6",
+      "group": "A-production",
+      "name": "factory-control.js الحي يخدم العلامات الخمس الجديدة",
+      "command": "curl -s http://127.0.0.1:8010/static/factory-control.js | عدّ التكرارات",
+      "actual_output": "{\"fc-statbar\": 11, \"prio-live\": 2, \"fc-row-live-dot\": 2, \"fc-refresh-all\": 2, \"id=\\\"fc-new-mission\\\"\": 1}",
+      "expected": "كل قيمة > 0",
+      "verdict": "PASS",
+      "note": "حجم JS المخدوم: 37539 بايت"
+    },
+    {
+      "id": "A7",
+      "group": "A-production",
+      "name": "factory-control.css الحي يخدم العلامات الخمس الجديدة",
+      "command": "curl -s http://127.0.0.1:8010/static/factory-control.css | عدّ التكرارات",
+      "actual_output": "{\".fc-statbar\": 9, \".prio-live\": 8, \".prio-fail\": 4, \".fc-head-btn\": 2, \".fc-row-live-dot\": 1}",
+      "expected": "كل قيمة > 0",
+      "verdict": "PASS",
+      "note": "حجم CSS المخدوم: 23560 بايت"
+    },
+    {
+      "id": "A8",
+      "group": "A-production",
+      "name": "العلامات القديمة زالت من JS الحي (fc-system-card=0 والأزرار الثلاثة id=…=0)",
+      "command": "نفس JS المخدوم أعلاه | عدّ 'fc-system-card' و'id=\"fc-refresh-(missions|runs|agents)\"'",
+      "actual_output": "{\"fc-system-card\": 0, \"id=\\\"fc-refresh-missions\\\"\": 0, \"id=\\\"fc-refresh-runs\\\"\": 0, \"id=\\\"fc-refresh-agents\\\"\": 0}",
+      "expected": "كل القيم = 0",
+      "verdict": "PASS",
+      "note": "السلك الدفاعي ؟. بلا id= (لا يُرسم زر) مقبول وموثق في البطاقة."
+    },
+    {
+      "id": "A9",
+      "group": "A-production",
+      "name": "إصدار الأصول في / : factory-control.js?v=eaef5fd0",
+      "command": "curl -s http://127.0.0.1:8010/ | grep -oE 'factory-control.js\\?v=[0-9a-f]+'",
+      "actual_output": "factory-control.js?v=eaef5fd0",
+      "expected": "factory-control.js?v=eaef5fd0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A10",
+      "group": "A-production",
+      "name": "nginx المحلي / = 401 (الجدار سليم)",
+      "command": "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:80/",
+      "actual_output": "401",
+      "expected": "401",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A11",
+      "group": "A-production",
+      "name": "عقد التوكنات على شجرة الإنتاج: صفر hex/rgba في CSS خارج theme.css (بمحرك عمل فعلًا)",
+      "command": "ssh: /usr/bin/python3 - <<scan (rglob *.css عدا theme.css/fonts، '#[0-9a-fA-F]{3,8}\\b' و'\\brgba?\\(\\s*[0-9]')",
+      "actual_output": "python3 -V='Python 3.9.25' · FILES=8 · HEX=0 · RGB=0 · CONTROL=27",
+      "expected": "المحرك متوفر وعمل · FILES>0 · HEX=0 · RGB=0 · CONTROL>0 (شاهد تحكم إيجابي)",
+      "verdict": "PASS",
+      "note": "stderr: (فارغ) · الملفات الممسوحة: 8 app-shell.css,control-center.css,factory-control.css,harness.css,live.css,project-live.css,projects.css,styles.css"
+    },
+    {
+      "id": "A12",
+      "group": "A-production",
+      "name": "النسخ الاحتياطية قبل النشر موجودة (pre-w2t09 bundle + runtime tar)",
+      "command": "ls -la /home/opc/pre-w2t09-*.bundle /home/opc/pre-w2t09-runtime-*.tar.gz",
+      "actual_output": "-rw-r--r--. 1 opc  opc  20641168 Oct 27 16:19 /home/opc/pre-w2t09-repo-backup-20261027-161927.bundle\n-rw-r--r--. 1 root root  2159268 Oct 27 16:19 /home/opc/pre-w2t09-runtime-20261027-161927.tar.gz",
+      "expected": "bundle واحد على الأقل + runtime tar واحد على الأقل بأحجام > 0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "A13",
+      "group": "A-production",
+      "name": "سلسلة git للإنتاج (eaef5fd→9238fd2→d23a969) و d23a969 سلف لـ HEAD",
+      "command": "git log --oneline -3 + git merge-base --is-ancestor d23a969… HEAD && echo ANCESTOR_OK",
+      "actual_output": "eaef5fd01 fix(ui): W2-T09 — إنقاذ المصنع: البث الحي فوق الطية (464←79px سطح مكتب، 672←67px جوال) + شريط إحصاءات أفقي مضغوط + ثقل أولوية الصفوف (نشط/فاشل) بلا لون خام\n9238fd2eb ops(governance): W2-T07 مكتملة وموقَّعة — تدقيق مستقل PASS 35/35: التحقق البصري (بكسل حتمي+أرضية ضجيج+VLM×6) والنشر d23a969 ببوابات R6\nd23a96984 ops(governance): W2-T07 خطوات 1-3 موثقة ومزامنة (TRACKER + worklog) — المسح حتى الصفر مدفوع (0994d26) والبصري وحدة تالية | ANCESTOR_OK",
+      "expected": "السلسلة كما هو متوقع و ANCESTOR_OK",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "E1",
+      "group": "E-health",
+      "name": "firewalld و aes-backup.timer لا يزالان active",
+      "command": "systemctl is-active firewalld aes-backup.timer",
+      "actual_output": "active / active",
+      "expected": "active / active",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "E2",
+      "group": "E-health",
+      "name": "nightly-20261027.db لا تزال في /opt/aes-backups/db/ (8040448)",
+      "command": "ls -la /opt/aes-backups/db/nightly-20261027.db",
+      "actual_output": "-rw-r--r--. 1 opc opc 8040448 Oct 27 04:48 /opt/aes-backups/db/nightly-20261027.db",
+      "expected": "الملف موجود بحجم 8040448",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "E3",
+      "group": "E-health",
+      "name": "الرقعة لم تحذف أنماطًا ما زالت مستخدمة: .fc-stat/.fc-grid-2 معرفة (محليًا وحية) و fc-grid-2 مستخدمة في JS الحي",
+      "command": "git show eaef5fd:…css + curl …/factory-control.css + curl …/factory-control.js",
+      "actual_output": "تعريف محلي: grid-2/stat/stat-value.bad=True · تعريف حي: grid-2/stat=True · استخدام fc-grid-2 في JS الحي (renderMissionOverview)=True",
+      "expected": "الثلاثة True — تبويبات المهمة الأخرى سليمة",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B1",
+      "group": "B-commit",
+      "name": "eaef5fd: ملفان فقط (factory-control.js/css) +139/−45 — لا مساس بأي شيء آخر",
+      "command": "git show --stat eaef5fd",
+      "actual_output": "files=2 · +139/−45 · ['src/ui/factory-control.css', 'src/ui/factory-control.js']",
+      "expected": "2 · +139/−45 · js+css فقط",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B2",
+      "group": "B-commit",
+      "name": "الترتيب الجديد منفذ في الكود: بطاقة البث أولًا (زر «+ مهمة جديدة» داخل رأسها) ثم fc-statbar ثم المهام",
+      "command": "git show eaef5fd:src/ui/factory-control.js | عزل renderOverview وفهرسة العلامات",
+      "actual_output": "idx: live=181 title=243 new-mission-btn=327 statbar=930 refresh-all=2068 missions=2273 · أول '<div class=\"fc-card' في الجسم = 161 (fc-live-card)",
+      "expected": "البطاقة الأولى = fc-live-card ورأسها يحمل الزر، ثم statbar ثم المهام، وكل الفهارس صاعدة",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B3",
+      "group": "B-commit",
+      "name": "ترتيب مستقر بالأولوية (runPriority/missionPriority) + صفوف prio-live/prio-fail في المُلخّصين",
+      "command": "git show eaef5fd:src/ui/factory-control.js | grep الدوال والاستدعاءات",
+      "actual_output": "runPriority=True missionPriority=True runs_sorted=True missions_sorted=True prio_rows=True",
+      "expected": "كلها True (sort بعد slice => لا طفرة للحالة، وsort في ES2019+ مستقر)",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B4",
+      "group": "B-commit",
+      "name": "لا منطق آخر مُغيّر: 15 دالة محمية متطابقة بايتًا بايتًا، وصفر ممنوعات في الأسطر المتغيرة، وكل hunks داخل 100–250",
+      "command": "git show eaef5fd^:…js مقابل eaef5fd:…js (عزل أجسام الدوال) + رؤوس hunks + grep الأسطر ±",
+      "actual_output": "متغيرة من المحمية: لا شيء · غائبة: لا شيء · ممنوعات في ±: 0 · نطاق hunks الجديد: 109–244",
+      "expected": "المتغيرة=∅ · الغائبة=∅ · الممنوعات=0 · النطاق داخل منطقة renderOverview/renderRun( Mission )Summary/wireOverviewButtons",
+      "verdict": "PASS",
+      "note": "الدوال المتغيرة المقصودة: renderOverview/renderRunSummary/renderMissionSummary/wireOverviewButtons (+إضافة runPriority/missionPriority)."
+    },
+    {
+      "id": "B5",
+      "group": "B-commit",
+      "name": "صفر قيم لون خام في أسطر الإضافة بالـdiff (خارج theme.css)",
+      "command": "git show eaef5fd | grep -E '^\\+.*#[0-9a-fA-F]{6}|^\\+.*rgba?\\(' | grep -v 'theme.css' | wc -l",
+      "actual_output": "0",
+      "expected": "0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "B6",
+      "group": "B-commit",
+      "name": "القواعد الجديدة الخمس معرفة في CSS عند eaef5fd",
+      "command": "git show eaef5fd:src/ui/factory-control.css | عدّ المحددات",
+      "actual_output": "{\".fc-statbar\": 9, \".prio-live\": 8, \".prio-fail\": 4, \".fc-head-btn\": 2, \".fc-row-live-dot\": 1}",
+      "expected": "كل قيمة > 0",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C1",
+      "group": "C-tests",
+      "name": "عقد التوكنات: pytest tests/ui/test_design_tokens.py = 17 passed",
+      "command": "cd repo && /home/z/.venv/bin/python -m pytest tests/ui/test_design_tokens.py -q",
+      "actual_output": "................. [100%] 17 passed in 0.09s",
+      "expected": "17 passed",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "C2",
+      "group": "C-tests",
+      "name": "node --check src/ui/factory-control.js يمر بلا أخطاء",
+      "command": "cd repo && node --check src/ui/factory-control.js",
+      "actual_output": "rc=0 · stderr=(فارغ)",
+      "expected": "rc=0 و stderr فارغ",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D1",
+      "group": "D-visual",
+      "name": "أرقام 20261027-visual-fold.json مطابقة للموثق في البطاقة",
+      "command": "قراءة JSON + مطابقة 11 قيمة",
+      "actual_output": "{\"desktop_live_before_464\": true, \"desktop_live_after_79\": true, \"mobile_live_before_672\": true, \"mobile_live_after_67\": true, \"statbar_after_desktop_229_61\": true, \"statbar_after_mobile_217_83\": true, \"empty_tiles_before_4_desktop\": true, \"empty_tiles_before_4_mobile\": true, \"empty_tiles_after_empty_both\": true, \"old_system_card_before_only\": true, \"zero_js_errors_x4\": true}",
+      "expected": "كل القيم True",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D2",
+      "group": "D-visual",
+      "name": "إعادة قياس سطح المكتب بـPIL: البث 464→79 (أول بطاقة، والزر داخل رأسها)، بلاطات 2×2→لا شيء، statbar ~229",
+      "command": "PIL: تنميط صفوف s2(#212834)/s1(#191E29)/أكسنت(#58A6FF) في before/after-factory.png",
+      "actual_output": "قبل: حزم s2=[(80, 48), (146, 71), (231, 71), (341, 48), (391, 17), (413, 13), (465, 48), (602, 47)] · زر primary=(390, 426) | بعد: أول حزمة=(80, 61) · زر داخل الرأس=(92, 128) · بلاطات قبل=2 بعد=0 · statbar(s1)≈230",
+      "expected": "قبل: بث≈464 وبلاطتان (2×2=4) وزر primary في «إجراءات سريعة» ~390؛ بعد: أول بطاقة≈79 وزر primary داخل رأسها وstatbar≈229",
+      "verdict": "PASS",
+      "note": "تقدير يدوي من حزم الألوان — الاتجاه والقرب هما المعيار (±~15px)."
+    },
+    {
+      "id": "D3",
+      "group": "D-visual",
+      "name": "إعادة قياس الجوال 390 بـPIL: البث 672→67 (أول بطاقة)، 4 بلاطات→لا شيء، statbar ~217",
+      "command": "PIL: نفس التنميط في before/after-factory-mobile.png",
+      "actual_output": "قبل: حزم s2=[(72, 48), (138, 71), (223, 71), (308, 72), (394, 71), (504, 48), (599, 20), (621, 13), (673, 47)] | بعد: أول حزمة=(68, 61) · زر داخل الرأس=(80, 116) · بلاطات قبل=4 بعد=0 · statbar(s1)≈218",
+      "expected": "قبل: بث≈672 وأربع بلاطات (عمودية)؛ بعد: أول بطاقة≈67 وزر primary داخل رأسها وstatbar≈217",
+      "verdict": "PASS",
+      "note": "تقدير يدوي من حزم الألوان — الاتجاه والقرب هما المعيار (±~15px)."
+    },
+    {
+      "id": "D4",
+      "group": "D-visual",
+      "name": "أحكام VLM: after-desktop=LAYOUT_OK · after-mobile=LAYOUT_OK · before-desktop=CONFIRMED",
+      "command": "قراءة screens/vlm/*.json (choices[0].message.content)",
+      "actual_output": "{\"after_desktop\": \"LAYOUT_OK\\nالواجهة تظهر بشكل سليم مع وجود بطاقة \\\"البث الحي · التشغيلات\\\" في الأعلى، يليها شر\", \"after_mobile\": \"**LAYOUT_OK**\\n1) **نعم**، بطاقة \\\"البث الحي\\\" (التي تحتوي على زر \\\"+ بث جديد\\\") هي أول محتوى م\", \"before_desktop\": \"CONFIRMED\"}",
+      "expected": "LAYOUT_OK / LAYOUT_OK / CONFIRMED",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "id": "D5",
+      "group": "D-visual",
+      "name": "أدلة النشر متسقة ومترابطة بقياساتي الحية (رأس قبل/بعد، asset، 8/8، والحادث موثق)",
+      "command": "قراءة preflight/deploy/postverify(نهائي+حادث) + الربط بفحوص A1/A9/A6-A8",
+      "actual_output": "preflight(قبل=d23a969+نظيف+200+fc-statbar=0)=True · deploy(eaef5fd/سابق d23a969/import_ok/restarted)=True · postverify النهائي 162055 (8/8 True)=True · ملف الحادث 161927 (old_markers_gone=False موثقًا)=True",
+      "expected": "كلها قائمة، والربط الحي: رأس الإنتاج=eaef5fd (A1) و ?v=eaef5fd0 (A9) والعلامات مخدومة/القديمة زالت (A6-A8)",
+      "verdict": "PASS",
+      "note": ""
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "title": "انحراف بكسلي ≤2px بين قياسي اليدوي (PIL من PNG) وأتمتة Playwright الموثقة",
+      "detail": "قياسي المستقل: بث بعد ≈80 سطح مكتب / ≈68 جوال (الموثق 79/67) · قبل ≈465/673 (الموثق 464/672) · statbar ≈230/218 (الموثق 229/217). الاتجاه والقرب مؤكدان تمامًا؛ الفرق من تصيير الخط/حافة الحدّ عند أخذ أول صف من الحزمة — ضمن التفاوت المعلن في أمر التدقيق (المهم الاتجاه والقرب).",
+      "blocking": false
+    },
+    {
+      "id": "F2",
+      "title": "نص حكم VLM للجوال يُسمّي العناصر بأسماء لا تطابق نصوص الواجهة الحرفية",
+      "detail": "نموذج الرؤية وصف الزر بـ«+ بث جديد» (الفعلي «+ مهمة جديدة») والزر بـ«تصفية الكل» (الفعلي «تحديث الكل») وقائمة بـ«الحسابات المحظورة» (الفعلي المهام) — إعادة صياغة من النموذج لا تطابق حرفيًا. الحكم البنيوي (بطاقة البث أول محتوى، الشريط ملتف سطرين بلا تداخل، لا قص/تمرير أفقي في 390px) متسق مع قياسي المستقل وLAYOUT_OK معتبرة.",
+      "blocking": false
+    },
+    {
+      "id": "F3",
+      "title": "الرصيد غير المستخدم: تعريف .fc-stat ما زال في CSS لكن JS لم يعد يُصدر class=\"fc-stat\"",
+      "detail": "بعد الرقعة صار المُصدر fc-stat-inline/fc-statbar-* فقط؛ تعريف .fc-stat القديم بقي (لا يحذفه أمر البطاقة — وهو المطلوب: لم تُحذف أنماط قد يستخدمها آخرون). fc-grid-2 ما زال مستخدمًا فعليًا في renderMissionOverview (فحص E3). مقترح: تنظيف .fc-stat الميت في W3-T16 (تنظيف المستودع) لا الآن.",
+      "blocking": false
+    }
+  ],
+  "verdict_rationale": "كل فحوص المجموعات A-E ناجحة بأدلة جمعها المدقق بنفسه: الإنتاج على eaef5fd بشجرة نظيفة وصحة 200 وخدمات نشطة وصفر أخطاء journal فعلية؛ العلامات الخمس الجديدة (JS وCSS) تُخدم حية والقديمة زالت فعلًا (fc-system-card=0 والأزرار الثلاثة id==0)؛ ?v=eaef5fd0 والجدار 401؛ عقد التوكنات على شجرة الإنتاج صفر hex/rgba خارج theme.css بمحرك python3 موثق عمله (FILES>0 + CONTROL>0)؛ النسخ الاحتياطية pre-w2t09 موجودة وسلسلة ff-only مثبتة (d23a969 سلف). الالتزام eaef5fd محصور في ملفين +139/−45 والترتيب الجديد (بث أولًا برأس يحمل «+ مهمة جديدة» ثم fc-statbar ثم المهام) منفذ في الكود مع ترتيب مستقر بالأولوية (runPriority/missionPriority بعد slice) و15 دالة محمية متطابقة بايتًا بايتًا وصفر لون خام في الإضافات. الاختبارات 17/17 وnode --check يمر. البصري: أرقام visual-fold.json مطابقة، وقياسي المستقل بـPIL من اللقطات القائمة أكد الاتجاه والقرب (سطح مكتب 464→79 والجوال 672→67، والزر primary صار داخل رأس أول بطاقة، والبلاطات 2×2/4 زالت وحلّها statbar ~229/~217)، وVLM LAYOUT_OK×2 + CONFIRMED، وأدلة النشر متسقة 8/8 مع الحادث المفسر موثقًا. firewalld/aes-backup/النسخة الليلية سليمة، و.fc-stat/.fc-grid-2 ما زالت معرفة ومستخدمة (تبويبات المهمة)."
+}
