@@ -2,7 +2,7 @@
  * ==========================================================================
  * AES-UI-PREMIUM-REDESIGN-003 أسس المفردات البنائية؛ و007 أعاد
  * تأسيس موادها من نظام theme.css الموحد — scoped بالكامل داخل #factory-view:
- *   • الرموز اللونية نفسها (--bg #0b0e14 … --acc #58a6ff) دون تعديل.
+ *   • الرموز اللونية نفسها (--bg…--acc — توكنات theme.css) دون تعديل.
  *   • الخط: IBM Plex Sans Arabic + IBM Plex Mono (مضمنان محلياً).
  *   • الأنصاف 8/12/16، الظل، شريط التمرير، التحديد، التركيز — كما في المرجع.
  *   • البطاقات برؤوس card-h، التبويبات بخط سفلي، الوسوم أحادية العرض،
@@ -15,7 +15,7 @@
  * القرار الموثق: مفردات 003 البنائية تبقى (بطاقات برؤوس card-h،
  * تبويبات بخط سفلي، وسوم أحادية، notice بحافة داخلية، نقاط نابضة)
  * لكن موادها من theme.css وحدها — فينتهي كون المصنع جزيرة لوحة
- * ثانية: الأسطح فحمية النظام، والأزرق #58A6FF يبقى بصفته دلالة
+ * ثانية: الأسطح فحمية النظام، والأزرق التشغيلي يبقى بصفته دلالة
  * «حيوية وكيل» المسماة (--accent-agent) لا لوحة موازية. */
 #factory-view {
   /* الأسطح/النصوص/الحالات ذات الأسماء العالمية (--bg/--text/--ok/…) لا
@@ -32,9 +32,9 @@
   --err: var(--danger);
   /* تمييز الوكيل/الحيوية — الرمز الدلالي النظامي */
   --acc: var(--accent-agent);
-  --acc-ink: #04101c;
+  --acc-ink: var(--accent-ink);   /* (W2-T07) أقرب توكن نظام */
   --acc-soft: var(--accent-agent-soft);
-  --acc-hi: #bcd9ff;
+  --acc-hi: var(--accent-hi);     /* (W2-T07) توكن نظام جديد بنفس القيمة */
   /* الهندسة من النظام: أنصاف ومسافات وخط وظل موحدة */
   --r-s: 8px;
   --r-m: var(--radius-m);
@@ -49,7 +49,7 @@
 }
 
 #factory-view ::selection {
-  background: rgba(88, 166, 255, 0.28);
+  background: var(--accent-selection);   /* (W2-T07) توكن جديد بنفس القيمة */
   color: var(--text);
 }
 #factory-view :focus-visible {
@@ -59,11 +59,11 @@
 }
 #factory-view ::-webkit-scrollbar { width: 9px; height: 9px; }
 #factory-view ::-webkit-scrollbar-thumb {
-  background: #2C3640;
+  background: var(--scrollbar-thumb);   /* (W2-T07) توكن نظام بنفس القيمة المرجعية */
   border-radius: 99px;
   border: 2px solid var(--bg);
 }
-#factory-view ::-webkit-scrollbar-thumb:hover { background: #3A4550; }
+#factory-view ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }  /* (W2-T07) توكن نظام بنفس القيمة المرجعية */
 #factory-view ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- 2) رأس الغرفة — موحد مع رؤوس cc-head (007) ---------- */
@@ -700,7 +700,7 @@
   color: var(--dim);
 }
 
-/* ---------- 16) الكتل البرمجية — لون كود المرجع #9ecbff ---------- */
+/* ---------- 16) الكتل البرمجية — لون كود المرجع (توكن --code-text) ---------- */
 .fc-json,
 .fc-json-small {
   background: var(--bg);
@@ -709,7 +709,7 @@
   padding: 10px 12px;
   font-size: 11px;
   line-height: 1.7;
-  color: #9ecbff;
+  color: var(--code-text);   /* (W2-T07) كان لون المرجع حرفياً — توكن جديد بنفس القيمة */
   overflow: auto;
   max-height: 240px;
   font-family: var(--mono);
@@ -855,7 +855,7 @@
 
 /* ---------- 19) الحركات المرجعية ---------- */
 @keyframes fc-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.35); }
+  0% { box-shadow: 0 0 0 0 var(--accent-pulse); }   /* (W2-T07) توكن جديد */
   70% { box-shadow: 0 0 0 7px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }

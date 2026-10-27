@@ -75,6 +75,23 @@
   --info-border: rgba(88, 166, 255, 0.36);
   --info-chip: rgba(88, 166, 255, 0.14);
 
+  /* ---------- امتدادات W2-T07 — أدوار ظهرت في مسح الألوان الناجية ----------
+     القيم من الملفات الأصلية حرفياً (توثيق المصدر في التعليق)؛ لا لون خام
+     خارج هذا الملف إطلاقاً — العقد tests/ui/test_design_tokens.py يحرس ذلك. */
+  --accent-selection: rgba(88, 166, 255, 0.28);      /* تحديد النص (factory ::selection) */
+  --accent-pulse: rgba(88, 166, 255, 0.35);         /* نقطة انطلاق نبض «الوكيل حي» (fc-pulse/ring-pulse) */
+  --accent-hi: #BCD9FF;                             /* نص أكسنت فاتح — تسميات/قيم مبرزة (factory --acc-hi) */
+  --accent-border-strong: rgba(88, 166, 255, 0.55); /* حد التركيز للأكسنت (بحث جانبي/مُنشئ) */
+  --accent-soft-strong: rgba(88, 166, 255, 0.17);   /* غسل hover للأزرار الأولية */
+  --code-text: #9ECBFF;                             /* نص كتل الكود (factory code) */
+  --code-well: rgba(0, 0, 0, 0.25);                 /* بئر كود خفيف (env-ws-tech pre) */
+  --code-well-strong: rgba(0, 0, 0, 0.35);          /* بئر كتل الكود في البث الحي */
+  --scrim: rgba(5, 7, 10, 0.5);                     /* قناع النوافذ (modal-backdrop) */
+  --scrim-deep: rgba(5, 8, 13, 0.62);               /* قناع الأدراج/الطبقات العميقة (drawer-backdrop) */
+  --danger-scrim: rgba(24, 11, 9, 0.96);            /* خلفية شريط الطوارئ الحدودي */
+  --scrollbar-thumb: #2C3640;                       /* إبهام شريط التمرير (عرض المصنع) */
+  --scrollbar-thumb-hover: #3A4550;                 /* حالق الإبهام */
+
   /* ---------- أدوار المصنع — ألوان هوية داخل النظام الواحد ---------- */
   --role-thinker: #D98BA8;
   --role-implementer: #B8A3F0;

@@ -298,7 +298,7 @@
 }
 
 @keyframes ring-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.35); }
+  0% { box-shadow: 0 0 0 0 var(--accent-pulse); }   /* (W2-T07) توكن نظام */
   70% { box-shadow: 0 0 0 7px transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
@@ -993,7 +993,7 @@
 .env-ws-tech pre {
   font-size: var(--fs-12);
   color: var(--muted);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--code-well);   /* (W2-T07) توكن جديد بنفس القيمة */
   border-radius: var(--radius-s);
   padding: var(--sp-2) 10px;
   font-family: var(--font-mono);
@@ -1190,7 +1190,7 @@
   bottom: 0;
   inset-inline: 0;
   z-index: var(--z-boundary);
-  background: rgba(24, 11, 9, 0.96);
+  background: var(--danger-scrim);   /* (W2-T07) توكن جديد بنفس القيمة */
   border-top: 1px solid var(--danger);
   padding: 10px var(--sp-4) var(--sp-3);
   max-height: 40vh;
@@ -1213,7 +1213,7 @@
 .eb-btn {
   /* (007 N-6) خلفية أغمق قليلًا من الدلالي ليبلغ نص الطوارئ الأبيض ~4:1 */
   background: color-mix(in srgb, var(--danger) 82%, black);
-  color: #fff;
+  color: var(--text-primary);   /* (W2-T07) توكن النص الأولي (تباين مكافئ على هذا السطح) */
   border: none;
   border-radius: var(--btn-radius);
   padding: 6px var(--sp-3);

@@ -42,10 +42,10 @@
   color: var(--text-mid);
   white-space: nowrap;
 }
-.pl-head-status.live { color: var(--ok); border-color: rgba(127,185,138,.35); }
-.pl-head-status.ok { color: var(--ok); border-color: rgba(127,185,138,.35); }
+.pl-head-status.live { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) أخضر المريمية الناجي → توكن النظام */
+.pl-head-status.ok { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) أخضر المريمية الناجي → توكن النظام */
 .pl-head-status.gold { color: var(--accent); border-color: var(--accent-border); }
-.pl-head-status.warn { color: var(--accent); border-color: rgba(217,178,95,.35); }
+.pl-head-status.warn { color: var(--accent); border-color: var(--warn-border); }   /* (W2-T07) ذهب الملوحة الناجي → توكن النظام */
 .pl-head-status.danger { color: var(--danger); border-color: var(--danger-border); }
 
 .pl-scroll {
@@ -132,7 +132,7 @@
 .pl-status.ok { color: var(--ok); background: var(--ok-soft); }
 .pl-status.gold { color: var(--accent); background: var(--accent-soft); }
 .pl-status.live { color: var(--ok); background: var(--ok-soft); }
-.pl-status.warn { color: var(--accent); background: rgba(217,178,95,.08); }
+.pl-status.warn { color: var(--accent); background: var(--warn-soft); }   /* (W2-T07) --warn-soft (.09) */
 .pl-status.danger { color: var(--danger); background: var(--danger-soft); }
 .pl-status.dim { color: var(--text-dim); background: var(--bg-raised); }
 
@@ -204,13 +204,13 @@
   color: var(--text-mid);
 }
 .pl-feedback.loading { color: var(--accent); border-color: var(--accent-border); }
-.pl-feedback.ok { color: var(--ok); border-color: rgba(127,185,138,.3); }
+.pl-feedback.ok { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) ألفا مطابقة */
 .pl-feedback.err { color: var(--danger); border-color: var(--danger-border); }
 .pl-feedback-detail { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
 /* ---------- بطاقة الحجب (§27) ---------- */
 
-.pl-blocked { border-color: rgba(217,178,95,.4); }
+.pl-blocked { border-color: var(--warn-border); }   /* (W2-T07) --warn-border (.35) */
 .pl-blocked .pl-title { color: var(--accent); }
 .pl-progress {
   font-size: 13px; color: var(--text-mid);
@@ -240,7 +240,7 @@
 /* ---------- التحقق النهائي (§51) ---------- */
 
 .pl-verify { border-color: var(--accent-border); }
-.pl-verify.done { border-color: rgba(127,185,138,.4); }
+.pl-verify.done { border-color: var(--ok-border); }   /* (W2-T07) --ok-border (.30) */
 .pl-verify.done .pl-title { color: var(--ok); }
 
 /* ---------- التفاصيل التقنية المطوية (§9+§29) ---------- */
@@ -276,7 +276,7 @@
 
 .pl-plan-modal {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.6);
+  background: var(--scrim-deep);   /* (W2-T07) --scrim-deep (.62) */
   display: flex; align-items: center; justify-content: center;
   z-index: var(--z-modal);  /* (007 N-2) آخر قيمة حرفية في النظام */
   padding: 20px;
@@ -396,7 +396,7 @@ body.live-disconnected .substrate-dot {
 
 .pl-env.ready .pl-title { color: var(--ok); }
 .pl-env.notready .pl-title { color: var(--accent); }
-.pl-env.notready { border-color: rgba(217,178,95,.35); }
+.pl-env.notready { border-color: var(--warn-border); }   /* (W2-T07) ألفا مطابقة */
 
 .pl-env-rows {
   display: flex;
@@ -615,7 +615,7 @@ body.live-disconnected .substrate-dot {
    013.5 §N — تفاصيل الخطة: أقسام مسماة قابلة للطي على الثيم الداكن.
 
    عطل التباين مُصلح من الجذر: كانت أسطح الخطة تُبنى فاتحة بلا رمز
-   (`var(--panel, #fff)` في control-center.css) بينما النص بلا لون
+   (`--panel` بلا قيمة احتياطية سليمة في control-center.css آنذاك) بينما النص بلا لون
    معلن يرث نص الثيم الفاتح (`--text` من styles.css) — أبيض على أبيض.
    هنا: كل سطح داكن معلن، وكل نص بلون صريح، وRTL من المستند نفسه
    (بلا `direction` قسري إلا حيث يجب)، ومقاييس مضغوطة + إفصاح تدريجي.
@@ -959,7 +959,7 @@ body.live-disconnected .substrate-dot {
   padding: 2px 10px;
   white-space: nowrap;
 }
-.pl-phase-state.ok { color: var(--ok); border-color: rgba(127,185,138,.4); }
+.pl-phase-state.ok { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) --ok-border (.30) */
 .pl-phase-state.live { color: var(--accent); border-color: var(--accent-border); }
 
 .pl-phase-sub {

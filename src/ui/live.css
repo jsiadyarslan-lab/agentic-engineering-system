@@ -163,7 +163,7 @@
   direction: ltr;
   unicode-bidi: isolate;
   text-align: left;
-  background: rgba(0, 0, 0, .35);
+  background: var(--code-well-strong);   /* (W2-T07) توكن جديد بنفس القيمة */
   border-radius: var(--radius-s);
   padding: 10px;
   font-family: var(--font-mono);
@@ -263,7 +263,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-drawer);
-  background: rgba(0, 0, 0, .45);
+  background: var(--scrim);   /* (W2-T07) --scrim (.5) — غير مُدرَك على قناع مموّه */
 }
 
 /* ---------- HARD STOP المنظّم (§24) ---------- */
