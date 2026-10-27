@@ -1,0 +1,50 @@
+== [0] auth wall ==
+no-auth: 401
+auth:    200
+== [1] desktop 1440 cold load ==
+shot: 01-welcome-1440
+shot: 01-welcome-1440-full
+== [2] design tokens (live computed) ==
+"{\"root\":{\"accent\":\"#58A6FF\",\"bg\":\"#0A0D12\",\"text1\":\"#F5F7FA\"},\"body\":{\"font-family\":\"\\\"IBM Plex Sans Arabic\\\", \\\"Noto Sans Arabic\\\", \\\"Segoe UI\\\", Tahoma, system-ui, sans-serif\",\"font-size\":\"15px\",\"line-height\":\"24px\",\"background-color\":\"rgb(10, 13, 18)\",\"color\":\"rgb(245, 247, 250)\",\"direction\":\"rtl\"},\"sidebar\":{\"width\":\"260px\",\"background-color\":\"rgb(18, 23, 31)\",\"border-right\":\"0px none rgb(245, 247, 250)\"},\"composer\":{\"height\":\"183.594px\",\"background-color\":\"rgba(0, 0, 0, 0)\",\"border-radius\":\"0px\",\"border\":\"0px none rgb(245, 247, 250)\",\"padding\":\"8px 18px 16px\"},\"brand\":{\"font-size\":\"14px\",\"font-weight\":\"600\",\"letter-spacing\":\"normal\",\"color\":\"rgb(245, 247, 250)\"},\"firstButton\":{\"background-color\":\"rgba(0, 0, 0, 0)\",\"color\":\"rgb(125, 135, 148)\",\"border-radius\":\"8px\",\"font-size\":\"13.3333px\",\"padding\":\"0px\",\"border\":\"0px none rgb(125, 135, 148)\"},\"heading\":{\"font-size\":\"12px\",\"font-weight\":\"500\",\"line-height\":\"19.2px\",\"letter-spacing\":\"normal\",\"color\":\"rgb(184, 192, 204)\"},\"navItems\":[\"المحادثات\",\"التشغيلات\\n          2\",\"مصنع الوكلاء\",\"الأرشيف\"],\"title\":\"Agentic Engineering System\",\"viewport\":{\"w\":1440,\"h\":900}}"
+== [3] fonts truth ==
+"{\"fontsLoaded\":[\"IBM Plex Sans Arabic 400\",\"IBM Plex Sans Arabic 400\",\"IBM Plex Sans Arabic 500\",\"IBM Plex Sans Arabic 500\",\"IBM Plex Sans Arabic 600\",\"IBM Plex Sans Arabic 600\",\"IBM Plex Sans Arabic 700\",\"IBM Plex Sans Arabic 700\",\"IBM Plex Mono 400\",\"IBM Plex Mono 500\"],\"plexArabic\":true}"
+== [4] console + errors (welcome) ==
+== [5] polling evidence: 65s in chat view, count requests ==
+requests during 65s idle chat view:
+13
+     14 /api/projects/runs/active
+      1 /api/projects/events/stream
+      1 /api/projects
+      1 /api/environment/readiness
+      1 /api/conversations
+== [6] conversation view ==
+shot: 02-conversation-1440
+shot: 02-conversation-1440-full
+== [7] factory view ==
+shot: 03-factory-1440
+shot: 03-factory-1440-full
+== [8] runs + archive views ==
+shot: 04-runs-1440
+shot: 05-archive-1440
+== [9] settings drawer: 4 tabs ==
+shot: 06-settings-general
+shot: 07-settings-providers
+shot: 08-settings-tools
+shot: 09-settings-execution
+== [10] project live view #/project/1 (OSINT) ==
+shot: 10-project1-1440
+shot: 10-project1-1440-full
+== [11] project tabs: overview + workflow + evidence ==
+shot: 11-project1-overview
+shot: 12-project1-workflow
+shot: 13-project1-evidence
+== [12] mobile 390: welcome + conversation + project ==
+shot: 14-welcome-390
+"{\"sw\":390,\"cw\":390,\"collapsed\":true}"
+shot: 15-conversation-390
+shot: 16-project1-390
+"{\"sw\":390,\"cw\":390}"
+== [13] final: total network requests this session ==
+0
+0
+== AUDIT-001 capture session done ==
