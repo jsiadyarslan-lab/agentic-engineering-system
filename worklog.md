@@ -1051,3 +1051,21 @@ Stage Summary:
 - إجابة شكوى المالك موثقة بالأدلة: المصنع حي (متصل الآن يراقب تشغيلاً)، التغييرات البصرية منشورة (W2-T09/T10)، والعائقان الحقيقيان بيد المالك: قاعدة خروج TCP 80 (W1-T05 خطوة 2 — OWNER-SPEC.md) + بوابتا PLAN_REVISION_APPROVAL للمشروعين.
 - الأدلة: download/aes-remediation/W2-T10/{recovery-verify.json,audit_independent.json} + download/aes-remediation/{live-status-check.json,w2t10-recovery-inspect.json} + scripts/{live_status_check,w2t10_inspect,w2t10_recover,w2t10_audit_check}.py.
 - التالي: W2-T11 (حزمة إمكانية الوصول) أول مهمة غير محجوبة (W1-T05 بانتظار المالك، T06/T08/T13/T14 مؤجلة D1/D2/D3).
+
+---
+Task ID: OWNER-FORENSICS-001
+Agent: Main Agent (المنفذ — تشخيص شكوى المالك الثلاثية بالأدلة)
+Task: المالك: «أعطيت موافقتي خمسين مرة لكن بنيته وآلية عمله غلط» + «عدّلت جدار أوراكل كما قلت فأين المشكلة؟» + «التصميم البصري خرا» — تشخيص مستقل قراءة-فقط لكل ادعاء.
+
+Work Log:
+- (scripts/owner_complaint_forensics.py) ثلاثة أهداف http + TCP خام: كلها 000/RC=28 (مهلة) و443 سليم 200 — **قاعدة المالك لم تدخل حيز التنفيذ**.
+- (scripts/egress_packet_diagnosis.py) **الدليل القاطع**: tcpdump يثبت أن SYN إلى 93.184.216.34:80 يخرج فعلاً من enp0s6 (Out 22:17:52.154 + إعادتان) ولا يعود أي SYN-ACK — الحجب في طبقة VCN حصراً؛ الجدار المحلي بريء (OUTPUT policy ACCEPT، firewalld بلا قيود صادرة، nftables OUTPUT نظيف)؛ شهادة 443 لم تحكم (العنوان القديم ميت) لكن https://example.com=200 حكم.
+- معرفات الشبكة (metadata): subnet 10.0.0.0/24، region eu-frankfurt-1، VNIC ocid1.vnic…qt4q، **لا NSG على الـVNIC** → البوابة الوحيدة هي Security List التابعة لـsubnet 10.0.0.0/24 — قائمة المالك ذهبت لقائمة/اتجاه/حقل خاطئ (الأرجح: Ingress بدل Egress، أو Security List لـsubnet آخر، أو مربع Stateless مؤشّر، أو 80 في Source Port، أو لم يُحفظ).
+- حلقة البوابة: سجل nginx يوثّق 7+ بوابات مفتوحة وموافَق عليها في 24 ساعة (gates 3,5,8,10,13,15,17 كلها POST 200 OK من IP المالك) — **موافقاته تصل وتُستهلك كلها**؛ الجذر في engine.py:1487: استنفاد المحاولات يفتح PLAN_REVISION_APPROVAL أياً كان سبب الفشل — والسبب هنا بيئي (network_http NOT_READY معروف في readiness API) فكل خطة جديدة تفشل بنفس العائق وتفتح بوابة جديدة. عيب بنية أكده المالك ووثّقته الأدلة.
+- التصميم البصري: حكم المالك الصريح قُبل بلا دفاع — ما نُفّذ (T07/T09/T10) إصلاح عيوب لا هوية بصرية؛ أُنشئت W2-T19 (مؤجلة D4 بانتظار مرجع المالك).
+- أُنشئت بطاقتا W1-T06 (بوابة عائق بيئي) وW2-T19 (هوية بصرية) في TRACKER + هذا السجل — ثم المزامنة والدفع (R9).
+
+Stage Summary:
+- المشروع ليس معطلاً: البوابة معلقة على (1) قاعدة خروج OCI لم تطبّق — الدليل على مستوى الحزمة، (2) عيب بنية في تصنيف الفشل (W1-T06)، (3) حكم مالك بصري (W2-T19/D4).
+- أدلة الشكوى: owner-complaint-forensics.json + egress-packet-diagnosis.json (مع SYN الخام والزمن الحرفي) + سجل البوابات.
+- التالي: المالك يصحّح القاعدة في Security List الـsubnet 10.0.0.0/24 (Egress/Stateful/TCP/0.0.0.0/0/Dest 80) → أكمل W1-T05 خطوة 3 (probe→READY + تدقيق) → ثم W1-T06؛ وبالتوازي مرجعه البصري لـW2-T19.
