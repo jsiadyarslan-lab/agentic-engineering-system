@@ -809,3 +809,51 @@ Stage Summary:
 - ملاحظتان غير حاجبتان للأب: (1) فقرة «التحقق المستقل المكمل» في ملف الإشعار ما تزال تحمل صياغة الإسناد القديم — يوصى بسطر إحالة إلى post_audit_correction عند أول مزامنة؛ (2) owner-token.txt ملتزم في مستودع البيئة المحلي (snapshot تلقائي بلا remote) — يجب استثناؤه صراحة من أي مزامنة/دفع R9.
 - الأدلة: download/aes-remediation/W1-T03/audit_s34_recheck.json + scripts/w1t03_s34_audit_recheck.py.
 - التالي: المزامنة والدفع (R9 — مع استثناء owner-token.txt الصريح) ثم W1-T04 (نسخة ليلية مؤتمتة للقاعدة).
+
+---
+Task ID: W1-T04
+Agent: Main Agent (المنفذ — النسخ الاحتياطي الليلي المؤتمت + الاحتفاظ + تمرين الاسترجاع)
+Task: W1-T04 — نشر النسخ الليلي المؤتمت للقاعدة (03:30 + Persistent) مع الاحتفاظ 7 أيام وتمرين استرجاع موثق
+
+Work Log:
+- (R1) قرأت TRACKER.md وبطاقة W1-T04 قبل العمل. preflight قراءة فقط (scripts/w1t04_preflight.py → download/aes-remediation/W1-T04/20261027-preflight.json): القاعدة /opt/agentic-engineering-system/runtime/agent_hub_v2.db (8,040,448 بايت)، python3 9.25 بـsqlite3.backup API سليم، venv التطبيق قابل للاستخدام من opc، 18G متاحة، sudo -n يعمل، الوحدتان غير موجودتين بعد، بوابة R6 قبل: /health 200 والخدمات الثلاث نشطة.
+- النشر (scripts/w1t04_deploy.py — نشر عبر base64 لضمان التطابق البايتي، بوابات مقفلة قبل/بعد كل تغيير إنتاجي):
+  - خطوة 0: /opt/aes-backups/{db,logs} (opc:opc) + السكربت /opt/agentic-engineering-system/scripts/ops/nightly_backup.sh (root:opc 750): نسخ آمن sqlite3.connect(src).backup(dst) عبر venv التطبيق، فحص integrity_check داخلي، حذف الجزئي عند فشل، تخطي إن وُجدت نسخة اليوم، سجل تشغيل، وسياسة الاحتفاظ find -mtime +7 -delete.
+  - خطوة 1: aes-backup.service (Type=oneshot, User=opc) + aes-backup.timer (OnCalendar=*-*-* 03:30:00, Persistent=true) + daemon-reload + enable --now.
+  - خطوة 2: تشغيل يدوي RC=0 → nightly-20261027.db بحجم المصدر بالضبط (8,040,448) + فحص سلامة خارجي مستقل ok/24 جدولاً.
+  - خطوة 3: اختبار الاحتفاظ بطُعم (nightly-20261019.db بتاريخ 2026-10-18): حُذف بالأمر نفسه وبقيت نسخة اليوم.
+  - خطوة 4: تمرين الاسترجاع → RESTORE-DRILL.md: تطابق تام بالمقارنة الجدولية (integrity ok · 24 جدولاً · projects=2 · conversations=13 · messages=91) + إجراء الاسترجاع الكارثي الكامل موثق للمالك + تنظيف /tmp.
+  - خطوة 5: list-timers يظهر الموعد القادم Wed 2026-10-28 03:30:00 GMT.
+- **حادث موثق (شفافية كاملة):** المحاولة الأولى فشلت ببوابة manual_backup_file — systemd 203/EXEC Permission denied: السكربت كان root:root 750 فلا صلاحية لمستخدم الخدمة opc. كشف الحادث خللاً ثانياً في سكربت النشر (بوابة الفشل غير موصولة بالتراجع التلقائي — RuntimeError لم يكن ملتقطاً). أُصلح الاثنان (root:opc 750 + بوابة script_opc_rx جديدة + توصيل try/except→rollback) وأعيد التنفيذ كاملاً: 18/18 بوابة PASS. الإنتاج لم يتأثر لحظة (فشل 203 لا يمس القاعدة الحية؛ لا كتابة حدثت قبل البوابات).
+- بوابة R6 بعد: /health 200 · الخدمات الأربع نشطة (agentic/nginx/firewalld/aes-backup.timer) · journalctl -u agentic -p err آخر 10 دقائق = «No entries».
+- حدّثت بطاقة W1-T04 (خطوات 0-5 [x] + الحادث + خطة تراجع موسعة) ولوحة الحالة §1 → «منجزة — بانتظار التدقيق».
+
+Stage Summary:
+- النسخ الاحتياطي الليلي المؤتمت قائم ومثبت: مؤقت مجدول 03:30 Persistent، تشغيل يدوي ناجح بفحص سلامة مزدوج (داخلي + خارجي مستقل)، الاحتفاظ مختبر بطُعم فعلي، والاسترجاع مُثبت بتمرين موثق بمقارنة جدولية تامة — بوابة قبول البطاقة الأربع مكتملة.
+- 18 بوابة نشر كلها PASS؛ حادث الصلاحيات 203/EXEC موثق بالتفصيل وأُصلح في مكانه مع تعزيز السكربت (بوابة جديدة تمنع التكرار + تراجع موصول فعلاً).
+- الأدلة: download/aes-remediation/W1-T04/ (20261027-preflight.json، 20261027-deploy.json [18 بوابة]، RESTORE-DRILL.md) + scripts/w1t04_{preflight,deploy}.py.
+- التالي: التدقيق المستقل W1-T04-AUDIT ثم المزامنة والدفع (R9) ثم W1-T05.
+---
+Task ID: W1-T04-AUDIT
+Agent: Audit Agent (وكيل تدقيق مستقل — general-purpose)
+Task: تدقيق مستقل لمهمة W1-T04 (النسخ الاحتياطي الليلي المؤتمت 03:30 + Persistent + الاحتفاظ 7 أيام + تمرين الاسترجاع) على إنتاج 92.5.14.150 — SSH قراءة فقط طوال الجلسة مع الاستثناءين المسموحين حصراً: (أ) تمرين استرجاعي خاص بي في /tmp/w1t04-audit-drill.db ثم حذفه، (ب) طُعم احتفاظ خاص بي nightly-20201010.db بتاريخ 2020-10-10 عبر أمر الحذف نفسه ثم التحقق من نظافة الحالة؛ كل الأدلة جمعتها بنفسي بلا أي اعتماد على تقرير المنفذ.
+
+Work Log:
+- (R1) قرأت TRACKER.md كاملاً (القواعد R1–R9 + لوحة الحالة §1 + بطاقة W1-T04 §2 بما فيها الحادث الموثق 203/EXEC) وآخر إدخالين من worklog.md (W1-T03-S34-AUDIT-R ثم W1-T04).
+- كتبت سكربت التدقيق الخاص scripts/w1t04_audit_check.py (49 فحصاً؛ paramiko بـlook_for_keys=False/allow_agent=False؛ sudo -n للقراءات الجذرية فقط؛ التقييم بأسطر المخرجات الفعلية لا رموز الخروج) ونتائجه الكاملة — بما فيها نص السكربت كاملاً (md5 b5d46cb9bff89ccc262ece4c78dc868b، 49 سطراً/1424 بايت) — في download/aes-remediation/W1-T04/audit_independent.json: **49/49 من الجولة الأولى الصادقة**.
+- (أ) الوحدتان — 10/10: aes-backup.service بالضبط Type=oneshot + User=opc + Group=opc + ExecStart=/opt/agentic-engineering-system/scripts/ops/nightly_backup.sh (cat + show متطابقان) · aes-backup.timer بالضبط OnCalendar=*-*-* 03:30:00 + Persistent=true · is-enabled=enabled + is-active=active · list-timers: الموعد القادم Wed 2026-10-28 03:30:00 GMT (LAST='-' — طبيعي: المؤقت أُنشئ 04:46 بعد مرور 03:30 اليوم) · رابط /etc/systemd/system/timers.target.wants/aes-backup.timer → الوحدة قائم.
+- (ب) السكربت — 10/10: sudo -n stat = root opc 750 (معالجة حادث 203/EXEC) + test -r/-x من opc = OPC_RX_OK · مراجعة سطراً سطراً: SRC=runtime/agent_hub_v2.db وDEST_DIR=/opt/aes-backups/db وLOG_DIR=/opt/aes-backups/logs سليمة · النسخ آمن فعلاً sqlite3.connect(src) ثم con.backup(dcon) عبر venv التطبيق (لا أي أمر cp خام) · integrity_check داخلي على الناتج · عند rc≠0: rm -f "$DEST" (الملف الجزئي وحده داخل /opt/aes-backups) + exit · تخطي نسخة اليوم (os.path.exists → SKIP) · الاحتفاظ find "$DEST_DIR" -name 'nightly-*.db' -mtime +7 -print -delete · سجل append بكامل المخرجات · صفر أوامر خطرة (لا systemctl/sudo/mkfs/dd/shutdown/reboot، لا كتابة على المصدر أو الرنتايم).
+- (ج) النسخة الناتجة — 5/5: ls يؤكد nightly-20261027.db (opc opc 644) بحجم 8,040,448 = حجم المصدر بالبايت تماماً (وmtime المصدر 04:22:22 أقدم من النسخة 04:48:53 — المصدر لم يتغير بعد النسخ) · سجل backup-20261027.log فيه «integrity_check: ok» و«size=8040448» وترويسة التشغيل pid=547663.
+- (د) فحصي الخارجي المستقل (الاستثناء أ) — 7/7: cp إلى /tmp/w1t04-audit-drill.db → بـ/usr/bin/python3 (وضع ro): PRAGMA integrity_check=ok · الجداول 24 (ولو احتُسبت sqlite_* لبقيت 24 — لا sqlite_sequence) · projects=2 · conversations=13 · messages=91 · الحجم 8040448 — مطابقة حرفية لأرقام RESTORE-DRILL.md وdeploy.json (rowcounts_before وintegrity_external) → حذف ملف /tmp وتأكد زواله.
+- (هـ) طُعم الاحتفاظ الخاص بي (الاستثناء ب) — 5/5: الحالة قبل = nightly-20261027.db وحدها → أنشأت nightly-20201010.db بtouch -d '2020-10-10 03:30:00' (ملفي أنا) → أمر الحذف نفسه حرفياً (find /opt/aes-backups/db -name 'nightly-*.db' -mtime +7 -print -delete) طبع وحذف الطُعم القديم وحده → DECOY_GONE + TODAY_KEPT → الدليل عاد لحالته قبل الاختبار تماماً (before=after=[nightly-20261027.db]).
+- (و) صحة الإنتاج R6 — 5/5: /health من loopback = 200 · agentic/nginx/firewalld/aes-backup.timer كلها active · journalctl -u agentic --since '-30 min' -p err = «-- No entries --» · journal الوحدة يوثق الحادثين معاً: 04:46:42 «Failed to execute … Permission denied → status=203/EXEC» (الحادث الموثق حقيقي كما رواه المنفذ) ثم 04:48:53 «Deactivated successfully + Finished» (التشغيل اليدوي RC=0).
+- (ز) سلامة أدلة المنفذ — 5/5: 20261027-deploy.json: 18 بوابة كلها ok=true وverdict=PASS وأرقامه (2/13/91 · ok/24 جداول · opc opc 644 8040448 · nightly-20261027.db) = قياساتي أنا · 20261027-preflight.json متسق (8040448/200/الوحدتان غير موجودتين قبلاً/وضع READ-ONLY) · RESTORE-DRILL.md أرقامه الجدولية = قياساتي حرفياً · فحص صرامة إضافي: venv التطبيق (/opt/agentic-engineering-system/.venv/bin/python) قابل للتنفيذ من opc ويعمل (Python 3.12.15).
+- انضباط الجلسة: صفر كتابة على الإنتاج عدا الاستثناءين المسموحين، ونظافة نهائية مؤكدة (AUDIT_TRACES_CLEAN: لا /tmp/w1t04-audit-drill.db ولا طُعم — الدليل كما تركه المنفذ)، لا مساس بالقاعدة الحية، لا إيقاف/إعادة تشغيل أي خدمة، لا تعديل السكربت/الوحدات، لا أي git/push.
+- حدّثت في TRACKER.md حصراً: خانة «التدقيق الإلزامي» في بطاقة W1-T04 ([x] + سطر المدقق + التوقيع) وحالة المهمة → «مكتملة ✓ (موقَّعة)» في البطاقة ولوحة §1 وسطر الترويسة (آخر مهمة مكتملة ✓ = W1-T04). لا شيء آخر مُمسّ.
+
+Stage Summary:
+- **الحكم: PASS — 49/49 فحصاً مستقلاً ناجحاً. التوقيع: W1-T04-AUDIT · 2026-10-27 · PASS · بصمة: 49 إثباتاً مستقلاً.**
+- كل ادعاءات المنفذ السبع مثبتة بأدلتي أنا: الوحدتان حرفياً كما وُصفتا (03:30 + Persistent + enabled/active + الموعد القادم 2026-10-28 03:30 GMT) · السكربت root:opc 750 بنسخ SQLite آمن (backup API لا cp خام) مع فحص سلامة داخلي وحذف جزئي واحتفاظ وسجل · النسخة = المصدر بايتاً ببايت (8,040,448) · تمرين الاسترجاع أرقامه حقيقية (integrity ok · 24 جدولاً · 2/13/91) · حادث 203/EXEC ظاهر في journal ثم نجاح موثق · R6 بعدها سليم (200 + 4 خدمات نشطة + صفر أخطاء).
+- ملاحظتان غير حاجبتين: (1) أول تشغيل تلقائي للمؤقت غداً 2026-10-28 03:30 GMT (LAST='-' لأن إنشاءه كان بعد مرور 03:30 اليوم) — يوصى الأب/المالك بالتحقق صباحاً من ظهور nightly-20261028.db وسجلها؛ (2) بطاقة TRACKER ذكرت «25 جدولاً» في سجل التنفيذ بينما قياسي المستقل 24 (preflight نفسه يسرد 24 اسماً — سهو توثيقي لا يمس بوابة القبول).
+- الأدلة: download/aes-remediation/W1-T04/audit_independent.json + scripts/w1t04_audit_check.py.
+- التالي: المزامنة والدفع (R9 — مسؤولية الأب، مع استثناء owner-token.txt من W1-T03) ثم W1-T05 (فتح المنفذ 80 صادراً في VCN).

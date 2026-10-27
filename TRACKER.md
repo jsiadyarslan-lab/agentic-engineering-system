@@ -1,7 +1,7 @@
 # ملف تتبع تنفيذ إصلاح AES — AES-REMEDIATION-TRACKER
 
 > **المصدر المعتمد:** تقرير AES-AUDIT-001 (download/AES-AUDIT-001-Comprehensive-Audit-Report.docx) — 18 بندًا في 3 موجات.
-> **أُنشئ:** 2026-10-27 · **آخر تحديث:** 2026-10-27 · **آخر مهمة مكتملة ✓:** W1-T03 (2026-10-27، توقيع W1-T03-AUDIT للخطوات 0-2 + W1-T03-S34-AUDIT-R للخطوتين 3-4) — مكتملة ✓ (موقَّعة)
+> **أُنشئ:** 2026-10-27 · **آخر تحديث:** 2026-10-27 · **آخر مهمة مكتملة ✓:** W1-T04 (2026-10-27، توقيع W1-T04-AUDIT) — مكتملة ✓ (موقَّعة)
 > **قاعدة التحديث:** المنفذ الحالي لكل مهمة ملزم بتحديث بطاقتها ولوحة الحالة في نفس جلسة تنفيذه.
 
 ---
@@ -30,7 +30,7 @@
 | W1-T01 | تجميد خدمتي agentic-vis (8011) و aes-shim (8099) مع الأرشفة | 1 | ساعة | مكتملة ✓ (موقَّعة) |
 | W1-T02 | قتل الاستطلاع الأعمى (5ث/3ث) والاكتفاء بـ SSE | 1 | ساعتان | مكتملة ✓ (موقَّعة) |
 | W1-T03 | مراقبة خارجية مجانية على /health + تنبيه | 1 | ساعة | مكتملة ✓ (موقَّعة) |
-| W1-T04 | نسخة ليلية مؤتمتة للقاعدة + احتفاظ 7 أيام + تمرين استرجاع | 1 | ساعتان | لم تبدأ |
+| W1-T04 | نسخة ليلية مؤتمتة للقاعدة + احتفاظ 7 أيام + تمرين استرجاع | 1 | ساعتان | مكتملة ✓ (موقَّعة) |
 | W1-T05 | فتح المنفذ 80 صادرًا في VCN | 1 | دقائق | لم تبدأ |
 | W2-T06 | TLS مجاني + إعادة توجيه 443 + قفل بديل لقائمة IP | 2 | يوم | مؤجلة (D1) |
 | W2-T07 | مسح الألوان الناجية (31 hex + 47 rgba → توكنات) + عقد آلي | 2 | 3 أيام | لم تبدأ |
@@ -135,21 +135,21 @@
   - **التوقيع الثاني:** W1-T03-S34-AUDIT-R · 2026-10-27 · PASS · بصمة: 11/11 فحص إعادة تدقيق (الأدلة: download/aes-remediation/W1-T03/audit_s34_recheck.json + audit_s34_independent.json + scripts/w1t03_s34_audit_check.py + scripts/w1t03_s34_audit_recheck.py)
 
 ### W1-T04 · نسخة ليلية مؤتمتة للقاعدة + احتفاظ 7 أيام + تمرين استرجاع موثق
-- **الحالة:** لم تبدأ · **البند:** 4/18 · **العيب الذي يغلقه:** 14+ نسخة يدوية مبعثرة في /home/opc بلا أتمتة ولا اختبار استرجاع.
+- **الحالة:** مكتملة ✓ (موقَّعة) · **البند:** 4/18 · **العيب الذي يغلقه:** 14+ نسخة يدوية مبعثرة في /home/opc بلا أتمتة ولا اختبار استرجاع.
 - **بوابة القبول:** `aes-backup.timer` مجدول (03:30 يوميًا + Persistent=true) · تشغيل يدوي وحده ينتج نسخة سليمة (`PRAGMA integrity_check` = ok) · الاحتفاظ يمسح ما تجاوز 7 أيام · تمرين استرجاع موثق في `RESTORE-DRILL.md` مع جداول محسوبة.
 - **الخطوات:**
-  - [ ] خطوة 0 — إنشاء السكربت `/opt/agentic-engineering-system/scripts/ops/nightly_backup.sh` (نسخة sqlite آمنة عبر بايثون venv: `sqlite3.connect(src).backup(dst)` — لا نسخ ملف خام لقاعدة حية) إلى `/opt/aes-backups/db/nightly-YYYYMMDD.db` + سجل تشغيل.
-  - [ ] خطوة 1 — وحدتا systemd: `/etc/systemd/system/aes-backup.service` (Type=oneshot, User=opc) + `aes-backup.timer` (OnCalendar=`*-*-* 03:30:00`, Persistent=true) ثم `systemctl daemon-reload && systemctl enable --now aes-backup.timer`.
-  - [ ] خطوة 2 — تشغيل يدوي: `sudo -n systemctl start aes-backup.service` والتحقق من الملف الناتج + `integrity_check`.
-  - [ ] خطوة 3 — سياسة الاحتفاظ داخل السكربت: `find /opt/aes-backups/db -name 'nightly-*.db' -mtime +7 -delete`.
-  - [ ] خطوة 4 — تمرين الاسترجاع: نسخ آخر نسخة إلى `/tmp/restore-drill.db`، فتحها، `integrity_check` + `SELECT COUNT(*)` من جدولين رئيسيين، توثيق النتائج في `download/aes-remediation/W1-T04/RESTORE-DRILL.md`.
-  - [ ] خطوة 5 — تحقق: `systemctl list-timers | grep aes-backup` يظهر الموعد القادم.
-- **خطة التراجع:** `sudo -n systemctl disable --now aes-backup.timer && sudo -n rm /etc/systemd/system/aes-backup.{service,timer} && sudo -n systemctl daemon-reload`.
-- **سجل التنفيذ:** _يملؤه المنفذ_
+  - [x] خطوة 0 — السكربت `/opt/agentic-engineering-system/scripts/ops/nightly_backup.sh` نُشر (root:opc ‏750): نسخة sqlite آمنة عبر بايثون (`/opt/agentic-engineering-system/.venv/bin/python` — مُتحقق قابل للاستخدام من opc) بـ`sqlite3.connect(src).backup(dst)` مع فحص `integrity_check` داخلي وحذف الملف الجزئي عند فشل + تخطي إعادة النسخ إن وُجدت نسخة اليوم + سجل تشغيل في `/opt/aes-backups/logs/backup-YYYYMMDD.log`.
+  - [x] خطوة 1 — وحدتا systemd نُشرتا: `/etc/systemd/system/aes-backup.service` (Type=oneshot, User=opc) + `aes-backup.timer` (OnCalendar=`*-*-* 03:30:00`, Persistent=true) + daemon-reload + `enable --now` (رابط timers.target.wants أُنشئ).
+  - [x] خطوة 2 — تشغيل يدوي: `systemctl start aes-backup.service` → RC=0 والملف `/opt/aes-backups/db/nightly-20261027.db` (8,040,448 بايت = حجم المصدر بالضبط) وفحص سلامة خارجي مستقل: ok + ‏24 جدولاً.
+  - [x] خطوة 3 — سياسة الاحتفاظ داخل السكربت (`find /opt/aes-backups/db -name 'nightly-*.db' -mtime +7 -print -delete`) **مُختبرة بطُعم**: ملف `nightly-20261019.db` بتاريخ 2026-10-18 أُنشئ ثم حُذف بالأمر نفسه وبقيت نسخة اليوم — البوابة مقفلة.
+  - [x] خطوة 4 — تمرين الاسترجاع مُوثق في `download/aes-remediation/W1-T04/RESTORE-DRILL.md`: نسخة إلى `/tmp/restore-drill.db` → `integrity_check` ‏ok + مقارنة محسوبة بالمصدر (projects=2/conversations=13/messages=91/24 جدولاً — تطابق تام) + إجراء الاسترجاع الكارثي الكامل موثق للمالك + تنظيف /tmp.
+  - [x] خطوة 5 — `systemctl list-timers`: الموعد القادم Wed 2026-10-28 03:30:00 GMT (22 ساعة) + المؤقت active.
+- **خطة التراجع:** `sudo -n systemctl disable --now aes-backup.timer && sudo -n rm /etc/systemd/system/aes-backup.{service,timer} && sudo -n systemctl daemon-reload` (+ حذف السكربت و`/opt/aes-backups`) — مجربة منطقياً؛ لم تلزم (انظر الحادث الموثق أدناه: أُصلح في مكانه دون تراجع).
+- **سجل التنفيذ (2026-10-27):** preflight قراءة فقط (w1t04_preflight.py): القاعدة `/opt/agentic-engineering-system/runtime/agent_hub_v2.db` ‏(8,040,448 بايت، 24 جدولاً — صُحح من 25 سهواً توثيقياً بطلب تدقيق W1-T04-AUDIT)، python3 9.25 بـsqlite3.backup API، venv التطبيق قابل للاستخدام من opc، 18G متاحة، sudo -n يعمل، الوحدتان غير موجودتين، /health ‏200 والخدمات الثلاث نشطة (بوابة R6 قبل). النشر (w1t04_deploy.py — 18 بوابة كلها PASS): الأدلة في `20261027-deploy.json`. **حادث موثق (شفافية):** المحاولة الأولى فشلت في بوابة «manual_backup_file» بخطأ systemd ‏`203/EXEC Permission denied` — السكربب كان root:root ‏750 فلا صلاحية قراءة/تنفيذ لمستخدم الخدمة opc؛ وكشف الحادث أيضاً خللاً في سكربت النشر نفسه (بوابة الفشل لم تكن موصولة بالتراجع التلقائي) — أُصلح الاثنان: صلاحية السكربت → root:opc ‏750 + بوابة `script_opc_rx` جديدة تمنع التكرار + توصيل try/except → rollback، ثم أعيد التنفيذ كاملاً من الصفر بنجاح 18/18. بوابة R6 بعد: /health ‏200، الخدمات الأربع (agentic/nginx/firewalld/aes-backup.timer) نشطة، `journalctl -u agentic --since '-10 min' -p err` = «No entries». المرة الأولى أُثبتت أيضاً سلامة الانضباط: لم يكتب شيء قبل البوابات ولم يتأثر الإنتاج لحظة واحدة (فشل 203 لا يمس القاعدة الحية أصلاً).
 - **التدقيق الإلزامي (R4/R5):**
-  - [ ] أُطلق وكيل التدقيق المستقل: ____________
-  - **المدقق:** ____________ · **النتيجة:** ____________
-  - **التوقيع:** ____________ *(التقرير يُرفض بدونه)*
+  - [x] أُطلق وكيل التدقيق المستقل: W1-T04-AUDIT (2026-10-27)
+  - **المدقق:** وكيل تدقيق مستقل (general-purpose) · **النتيجة:** PASS — 49/49 فحصاً مستقلاً ناجحاً (SSH قراءة فقط + استثناءان مسموحان حصراً: تمرين استرجاع خاص في /tmp + طُعم احتفاظ خاص بتاريخ 2020-10-10، ونُظِّفت آثارهما وتأكد أن الإنتاج عاد لحالته): الوحدتان كما ادُّعي حرفياً (aes-backup.service: Type=oneshot + User=opc + ExecStart=/opt/agentic-engineering-system/scripts/ops/nightly_backup.sh · aes-backup.timer: OnCalendar=*-*-* 03:30:00 + Persistent=true · enabled + active · الموعد القادم Wed 2026-10-28 03:30:00 GMT · رابط timers.target.wants قائم) · السكربت root:opc 750 (md5 b5d46cb9…، 49 سطراً) مراجَع سطراً سطراً: نسخ آمن sqlite3.connect(src).backup(dst) عبر venv التطبيق بلا أي cp خام + integrity_check داخلي + حذف الجزئي rm -f "$DEST" عند الفشل + تخطي نسخة اليوم + find -mtime +7 -print -delete + سجل تشغيل، وصفر أوامر خطرة (لا systemctl/sudo، rm على $DEST فقط، لا كتابة على المصدر) · النسخة nightly-20261027.db = المصدر بالبايت (8,040,448 = 8,040,448 وmtime المصدر 04:22 أقدم من النسخة 04:48) بمالكية opc opc 644 · فحص المدقق الخارجي المستقل على نسخة /tmp خاصة به: integrity ok · 24 جدولاً · projects=2 · conversations=13 · messages=91 (= أرقام RESTORE-DRILL.md و20261027-deploy.json حرفياً) ثم حذف ملفه · طُعم الاحتفاظ الخاص به: أمر الحذف نفسه حذف nightly-20201010.db القديم وحده وأبقى نسخة اليوم والدليل عاد لحالته قبل الاختبار تماماً · journal يوثق الحادثين معاً: 203/EXEC Permission denied @04:46:42 ثم Finished + Deactivated successfully @04:48:53 (الحادث المعالج حقيقي كما وُثّق) · بوابة R6 بعد: /health 200 والخدمات الأربع نشطة و«-- No entries --» لأخطاء agentic آخر 30 دقيقة · 18 بوابة في 20261027-deploy.json كلها ok وverdict=PASS وpreflight متسق (8040448/200/الوحدتان غير موجودتين قبلاً/قراءة فقط) · venv التطبيق يعمل من opc فعلاً (Python 3.12.15). **ملاحظتان غير حاجبتين:** (1) المؤقت لم يُطلق تلقائياً بعد (LAST='-' — أُنشئ اليوم بعد مرور 03:30): أول تشغيل تلقائي غداً 2026-10-28 03:30 GMT — يوصى الأب/المالك بالتحقق صباحاً من وجود nightly-20261028.db وسجلها؛ (2) سجل التنفيذ أعلاه ذكر «25 جدولاً» في preflight بينما القياس المستقل 24 (سهو توثيقي — preflight نفسه يسرد 24 اسماً وكل أدلة القبول تقول 24).
+  - **التوقيع:** W1-T04-AUDIT · 2026-10-27 · PASS · بصمة: 49 إثباتاً مستقلاً (الأدلة: download/aes-remediation/W1-T04/audit_independent.json + scripts/w1t04_audit_check.py)
 
 ### W1-T05 · فتح المنفذ 80 صادرًا في VCN (تكملة قاعدة 443 القائمة)
 - **الحالة:** لم تبدأ · **البند:** 5/18 · **العيب الذي يغلقه:** قدرة `network_http` معطلة بلا مبرر — قاعدة الخروج تغطي TCP 443 فقط.

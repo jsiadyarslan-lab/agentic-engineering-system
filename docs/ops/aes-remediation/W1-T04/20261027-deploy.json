@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-10-27 04:48:40 UTC",
+  "gates": {
+    "health_before": {
+      "ok": true,
+      "detail": "/health=200"
+    },
+    "services_before": {
+      "ok": true,
+      "detail": "active active active"
+    },
+    "db_readable_by_opc": {
+      "ok": true,
+      "detail": "READABLE"
+    },
+    "dirs_created": {
+      "ok": true,
+      "detail": "DIRS_OK"
+    },
+    "script_installed": {
+      "ok": true,
+      "detail": "SCRIPT_OK"
+    },
+    "script_opc_rx": {
+      "ok": true,
+      "detail": "OPC_RX_OK"
+    },
+    "unit_aes-backup.service": {
+      "ok": true,
+      "detail": "UNIT_AES-BACKUP_OK"
+    },
+    "unit_aes-backup.timer": {
+      "ok": true,
+      "detail": "UNIT_AES-BACKUP_OK"
+    },
+    "daemon_reload": {
+      "ok": true,
+      "detail": "RELOAD_OK"
+    },
+    "timer_enabled": {
+      "ok": true,
+      "detail": "ENABLE_OK"
+    },
+    "manual_backup_file": {
+      "ok": true,
+      "detail": "FILE_OK"
+    },
+    "integrity_external": {
+      "ok": true,
+      "detail": "ok\ntables: 24"
+    },
+    "decoy_created": {
+      "ok": true,
+      "detail": "DECOY_OK"
+    },
+    "retention_deletes_old_keeps_new": {
+      "ok": true,
+      "detail": "/opt/aes-backups/db/nightly-20261019.db\n---\nnightly-20261027.db"
+    },
+    "restore_drill": {
+      "ok": true,
+      "detail": "integrity: ok"
+    },
+    "timer_scheduled": {
+      "ok": true,
+      "detail": "NEXT                        LEFT     LAST PASSED UNIT             ACTIVATES\nWed 2026-10-28 03:30:00 GMT 22h left -    -      aes-backup.timer aes-backup.service\n\n1 timers listed."
+    },
+    "health_after": {
+      "ok": true,
+      "detail": "/health=200"
+    },
+    "services_after": {
+      "ok": true,
+      "detail": "active active active"
+    }
+  },
+  "steps": {
+    "db_stat": "opc opc 644 8040448",
+    "python_choice": "/opt/agentic-engineering-system/.venv/bin/python",
+    "rowcounts_before": "projects=2;conversations=13;messages=91",
+    "script_head": "#!/bin/bash\n# AES nightly backup — safe SQLite online backup (W1-T04)\n# Managed by aes-backup.service/timer. Rollback: see TRACKER W1-T04.",
+    "manual_run": "RC=0",
+    "backup_listing": "total 7852\ndrwxr-xr-x. 2 opc opc      33 Oct 27 04:48 .\ndrwxr-xr-x. 4 opc opc      28 Oct 27 04:46 ..\n-rw-r--r--. 1 opc opc 8040448 Oct 27 04:48 nightly-20261027.db\n---\n=== aes-backup started 2026-10-27T04:48:53+00:00 pid=547663 ===\nintegrity_check: ok\n=== done 2026-10-27T04:48:53+00:00 size=8040448 ===",
+    "integrity_external": "ok\ntables: 24",
+    "retention_test": "/opt/aes-backups/db/nightly-20261019.db\n---\nnightly-20261027.db",
+    "restore_drill": "integrity: ok",
+    "restore_drill_cleanup": "DRILL_CLEANED",
+    "list_timers": "NEXT                        LEFT     LAST PASSED UNIT             ACTIVATES\nWed 2026-10-28 03:30:00 GMT 22h left -    -      aes-backup.timer aes-backup.service\n\n1 timers listed.",
+    "journal_err_after": "-- No entries --",
+    "final_services": "active active active active"
+  },
+  "rollback": null,
+  "verdict": "PASS"
+}

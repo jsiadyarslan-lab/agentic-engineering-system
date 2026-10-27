@@ -1,0 +1,21 @@
+{
+  "unit_agentic": "# /etc/systemd/system/agentic.service\n[Unit]\nDescription=Agentic Engineering System (uvicorn)\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=opc\nWorkingDirectory=/opt/agentic-engineering-system\nEnvironmentFile=-/opt/agentic-engineering-system/.env\nExecStart=/opt/agentic-engineering-system/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 --workers 1\nRestart=always\nRestartSec=5\n\n[Install]\nWantedBy=multi-user.target",
+  "db_files": "8040448 /opt/agentic-engineering-system/runtime/agent_hub_v2.db",
+  "python3": "Python 3.9.25\n/usr/bin/python3",
+  "python3_sqlite_backup_api": "sqlite3.backup API OK",
+  "venv": "/opt/agentic-engineering-system/.venv\n-",
+  "disk": "Filesystem                  Size  Used Avail Use% Mounted\n/dev/mapper/ocivolume-root   30G   13G   18G  41% /\n/dev/mapper/ocivolume-root   30G   13G   18G  41% /",
+  "manual_backups": "2026-10-25 233472 /home/opc/runtime/agent_hub_v2.db\n2026-10-25 727581 /home/opc/pre-005-runtime-20261025-0245.tar.gz\n2026-10-25 729654 /home/opc/pre-010-runtime-20261025-192131.tar.gz\n2026-10-25 730386 /home/opc/pre-011-runtime-20261025-203855.tar.gz\n2026-10-25 731430 /home/opc/pre-012-runtime-20261025-232656.tar.gz\n2026-10-26 733595 /home/opc/pre-014-runtime-20261026-032020.tar.gz\n2026-10-26 733623 /home/opc/pre-014-runtime-20261026-034112.tar.gz\n2026-10-26 733623 /home/opc/pre-014-runtime-20261026-035559.tar.gz\n2026-10-26 733623 /home/opc/pre-014-runtime-20261026-040245.tar.gz\n2026-10-27 1853511 /home/opc/pre-w1t02-runtime-20261027-013422.tar.gz",
+  "aes_backups_dir": "ls: cannot access '/opt/aes-backups': No such file or directory\n-",
+  "sudo_n": "SUDO_OK",
+  "aes_backup_units": "Unit aes-backup.service could not be found.\nUnit aes-backup.timer could not be found.",
+  "db_primary_path": "/opt/agentic-engineering-system/runtime/agent_hub_v2.db",
+  "db_tables": "['audit_records', 'capability_records', 'checkpoint_records', 'conversations', 'engineering_jobs', 'events', 'evidence_records', 'execution_environments', 'executions', 'messages', 'owner_gates', 'phases', 'planning_sessions', 'plans', 'project_events', 'projects', 'provider_configurations', 'providers', 'research_providers', 'retry_records', 'role_provider_mappings', 'runtime_state_records', 'steps', 'tool_invocations']",
+  "db_rowcounts": "",
+  "health_before": "200",
+  "services_before": "active\nactive\nactive",
+  "_meta": {
+    "timestamp": "2026-10-27 04:44:48 UTC",
+    "mode": "READ-ONLY preflight"
+  }
+}
