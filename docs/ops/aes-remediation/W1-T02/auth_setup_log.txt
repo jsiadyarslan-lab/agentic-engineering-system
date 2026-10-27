@@ -1,0 +1,12 @@
+$ sudo -n stat -c 'inode=%i size=%s' /etc/nginx/.htpasswd_vis && sudo -n sha256sum /etc/nginx/.htpasswd_vis && s
+inode=18497589 size=42
+038af1fb2c7f835103b7dd55660b5fec2395491ee9b17ec7a1e85acf9d8c036c  /etc/nginx/.htpasswd_vis
+1 /etc/nginx/.htpasswd_vis
+[rc=0]
+$ sudo -n sh -c "printf 'w1t02a:' >> /etc/nginx/.htpasswd_vis && openssl passwd -apr1 'W1T02-<REDACTED-TEMP-PW>' | sud
+APPEND_OK
+[rc=0]
+$ curl -s -o /dev/null -w '%{http_code}' --max-time 8 -u 'w1t02a:W1T02-<REDACTED-TEMP-PW>' http://127.0.0.1/ ; echo ' 
+200 <- expect 200
+[rc=0]
+[creds saved locally ONLY: /tmp/w1t02_creds.txt]

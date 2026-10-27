@@ -1,0 +1,382 @@
+{
+  "audit": "W1-T02-AUDIT",
+  "agent": "independent audit agent (general-purpose)",
+  "date": "2026-10-27",
+  "server_time_at_audit": "2026-10-27 02:00:00 +0000",
+  "verdict": "PASS",
+  "passed": 33,
+  "total": 33,
+  "signature": "W1-T02-AUDIT · 2026-10-27 · PASS · 33 إثباتًا مستقلًا",
+  "local_main": "9e2ace5b3acb0983cebff1a9e658507903273511",
+  "production_head": "9e2ace5b3acb0983cebff1a9e658507903273511",
+  "checks": [
+    {
+      "id": "A1",
+      "desc": "HEAD الإنتاج == main المحلي",
+      "pass": true,
+      "evidence": "prod=9e2ace5b3acb0983cebff1a9e658507903273511 local_main=9e2ace5b3acb0983cebff1a9e658507903273511"
+    },
+    {
+      "id": "A2",
+      "desc": "شجرة الإنتاج نظيفة (لا انحراف عن الالتزام)",
+      "pass": true,
+      "evidence": "porcelain_lines=0"
+    },
+    {
+      "id": "A3",
+      "desc": "الرموز الجديدة موجودة في الملفات الثلاثة المنشورة",
+      "pass": true,
+      "evidence": "control-center.syncRunPolling=2 projects.syncRuntimePolling=3 live-events.isConnected=1"
+    },
+    {
+      "id": "A4",
+      "desc": "لا استطلاع أعمى متبقٍ: setInterval(pollActiveRuns/fetchRuntime) داخل sync المشروطة فقط",
+      "pass": true,
+      "evidence": "cc: setInterval@247 inside sync([241])=True | proj: setInterval@530 inside sync([524])=True"
+    },
+    {
+      "id": "A5",
+      "desc": "تطابق بايتي: الملفات الثلاثة المنشورة == git show main:<file>",
+      "pass": true,
+      "evidence": "{\"src/ui/control-center.js\": {\"prod\": \"eaffc3e3ec3a3d5cb1a1e9a78a9ef8f4a28eb56693e06027162bc05c0e4b68a0\", \"local_main\": \"eaffc3e3ec3a3d5cb1a1e9a78a9ef8f4a28eb56693e06027162bc05c0e4b68a0\", \"match\": true}, \"src/ui/projects.js\": {\"prod\": \"cfeb7d074ed63e3227366dd03e4c62608bd1d798bf93e8ed74236e32ba99dfcf\", \"local_main\": \"cfeb7d074ed63e3227366dd03e4c62608bd1d798bf93e8ed74236e32ba99dfcf\", \"match\": true}, \"src/ui/live-events.js\": {\"prod\": \"c4d18a7e075df8fb0cf498b693737dc6f14a381f201729fee8e7ac95a2240854\", \"local_main\": \"c4d18a7e075df8fb0cf498b693737dc6f14a381f201729fee8e7ac95a2240854\", \"match\": true}}"
+    },
+    {
+      "id": "A6",
+      "desc": "agentic.service و nginx نشطان + /health 200 JSON status ok",
+      "pass": true,
+      "evidence": "is-active=['active', 'active'] health={\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-system: durable-project"
+    },
+    {
+      "id": "A7",
+      "desc": "الصفحة الحية تخدم control-center.js?v=9e2ace5b",
+      "pass": true,
+      "evidence": "served='control-center.js?v=9e2ace5b'"
+    },
+    {
+      "id": "A8",
+      "desc": "htpasswd سليم: sha256 مطابق + سطر واحد + vis فقط + httpd_config_t + root:nginx 640",
+      "pass": true,
+      "evidence": "sha=038af1fb2c7f8351… lines=1 users='vis' ls=-rw-r-----. 1 root nginx unconfined_u:object_r:httpd_config_t:s0 42 Oct 27 01:41 /etc/nginx/.htpasswd_vis"
+    },
+    {
+      "id": "A9",
+      "desc": "لا أخطاء/traceback جديدة في journal agentic منذ 01:30 (عدا أسماء ملفات static)",
+      "pass": true,
+      "evidence": "lines=0 tail=''"
+    },
+    {
+      "id": "B1",
+      "desc": "لا دورة استطلاع دورية مستمرة (5ث/3ث) في سجل nginx بعد النشر من أي عميل جديد",
+      "pass": true,
+      "evidence": "sustained_found={'2.215.157.88|runs/active': {'5s': 6, '3s': 0}} loopback_counts=3 owner_counts=32"
+    },
+    {
+      "id": "B2",
+      "desc": "طلبات 127.0.0.1 (جلسة قياس المنفذ عبر النفق) = تحميل أولي معدود ثم صمت",
+      "pass": true,
+      "evidence": "runs/active count=3 gaps=[0, 72] runtime count=1"
+    },
+    {
+      "id": "B3",
+      "desc": "مصدر المالك 2.215.157.88 موثّق (عميل قديم لم يُعد التحميل = متوقع وغير حاجب)",
+      "pass": true,
+      "evidence": "{\"owner_runs/active_count\": 32, \"owner_runtime_count\": 0, \"owner_gaps\": [5, 5, 5, 5, 5, 5, 59, 60, 60, 60, 60, 60, 62, 58, 60, 60, 61, 59, 60, 60, 61, 59, 60, 60, 60, 60, 60, 60, 67, 53, 60], \"asset_versions_seen\": {\"127.0.0.1\": [\"9e2ace5b\"]}}"
+    },
+    {
+      "id": "B4",
+      "desc": "اتصال events/stream حي/موجود في السجل (محاولات 200 ناجحة)",
+      "pass": true,
+      "evidence": "stream_total=4 stream_200=3 last_200=01:41:31 ips=['127.0.0.1', '2.215.157.88']"
+    },
+    {
+      "id": "C1",
+      "desc": "الالتزام 9e2ace5: رقعة 3 ملفات UI (+83/−7)",
+      "pass": true,
+      "evidence": "stat=3 files changed, 83 insertions(+), 7 deletions(-)"
+    },
+    {
+      "id": "C2",
+      "desc": "node --check يمرّ على الملفات الثلاثة من المستودع المحلي",
+      "pass": true,
+      "evidence": "control-center.js: rc=0; projects.js: rc=0; live-events.js: rc=0"
+    },
+    {
+      "id": "C3",
+      "desc": "منطق الرقعة سليم: تعليق الدورتين على تقدم فعلي + إيقاظ أحداث + شبكة أمان مقيدة",
+      "pass": true,
+      "evidence": "{\"cc_gating\": true, \"cc_single_pulse\": true, \"cc_no_blind_interval_at_load\": true, \"cc_event_wakeup_400\": true, \"cc_safety_gated\": true, \"pj_gating\": true, \"pj_single_pulse\": true, \"pj_fetch_from_events\": true, \"le_connected_flag\": true, \"le_isconnected_api\": true}"
+    },
+    {
+      "id": "C4",
+      "desc": "لا كسر للواجهات العامة (refreshRuns / fetchRuntime / exitProjectMode→stopRuntimePolling)",
+      "pass": true,
+      "evidence": "{\"window.ControlCenter.refreshRuns\": true, \"window.HubProjects.fetchRuntime\": true, \"HubProjects.exitProjectMode exported\": true, \"exitProjectMode→stopRuntimePolling\": true}"
+    },
+    {
+      "id": "D1",
+      "desc": "gate_summary.txt: cc_idle poll=0 + proj_idle poll=0 + sse متصل + js_errors=0",
+      "pass": true,
+      "evidence": "asset_version: v=9e2ace5b | cc_idle_65s_new_requests_total: 0 | cc_idle_65s_poll_requests: 0 | proj_idle_65s_new_requests_total: 0 | proj_idle_65s_poll_requests: 0 | sse_final: \"{\\\"sse_connected\\\":true,\\\"last_event_id\\\":846}\" | js_errors_final: 0"
+    },
+    {
+      "id": "D2",
+      "desc": "net-cc-new-requests.txt و net-proj-new-requests.txt فارغان فعلًا (wc -l = 0)",
+      "pass": true,
+      "evidence": "cc_lines=0 proj_lines=0"
+    },
+    {
+      "id": "D3",
+      "desc": "إعادة الفحص: net-before == net-after بايتيًا للنافذتين (لا طلبات جديدة)",
+      "pass": true,
+      "evidence": "cc_identical=True proj_identical=True"
+    },
+    {
+      "id": "D4",
+      "desc": "sse_state_final.txt: connected:true + last_event_id رقم",
+      "pass": true,
+      "evidence": "content='\"{\\\\\"sse_connected\\\\\":true,\\\\\"last_event_id\\\\\":846}\"' last_event_id=846"
+    },
+    {
+      "id": "D5",
+      "desc": "errors_final.txt و errors_cc.txt فارغان",
+      "pass": true,
+      "evidence": "lines=0"
+    },
+    {
+      "id": "D6",
+      "desc": "auth_setup/cleanup: sha256 قبل = بعد (038af1fb…) + سطر واحد + vis فقط",
+      "pass": true,
+      "evidence": "setup_has_sha=True cleanup_has_sha=True"
+    },
+    {
+      "id": "D7",
+      "desc": "w1t02_live_measure.sh: نافذتا 65ث حقيقيتان (sleep 65 ×2) + قياس الطلبات الجديدة بdiff/grep '^>'",
+      "pass": true,
+      "evidence": "sleep65_count=2 diff_new_lines_logic=True"
+    },
+    {
+      "id": "D8",
+      "desc": "لقطة idle-final-1440.png موجودة وتوقيع PNG سليم",
+      "pass": true,
+      "evidence": "magic_ok=True size=105560"
+    },
+    {
+      "id": "A10",
+      "desc": "الانتقال إلى 9e2ace5 كان ff-only من 0f2d9c6 (reflog: Fast-forward)",
+      "pass": true,
+      "evidence": "9e2ace5b HEAD@{0}: merge 9e2ace5b3acb0983cebff1a9e658507903273511: Fast-forward || 0f2d9c6b HEAD@{1}: pull --ff-only: Fast-forward"
+    },
+    {
+      "id": "E1",
+      "desc": "جدار Basic Auth قائم على nginx العام (401 بلا بيانات) عبر 127.0.0.1:80",
+      "pass": true,
+      "evidence": "no_auth_code=401"
+    },
+    {
+      "id": "E2",
+      "desc": "etag الصفحة ui9e2ace5b + cache-control: no-cache (التحميل التالي يأخذ الرقعة)",
+      "pass": true,
+      "evidence": "etag: \"ui9e2ace5b\" | cache-control: no-cache"
+    },
+    {
+      "id": "E3",
+      "desc": "لا run متقدم حاليًا (خمول حقيقي: صفر استطلاع من العميل الجديد هو السلوك القانوني)",
+      "pass": true,
+      "evidence": "active_statuses=none"
+    },
+    {
+      "id": "E4",
+      "desc": "مسبار SSE مستقل (3ث): 200 + stream.start + أحداث فعلية",
+      "pass": true,
+      "evidence": "data: {\"kind\": \"stream.start\", \"last_id\": 0}\n\nid: 1\ndata: {\"id\": 1, \"project_id\": 1, \"kind\": \"PROJECT_CREATED\", \"payload"
+    },
+    {
+      "id": "B5",
+      "desc": "رصد: نافذة إعادة التشغيل موثقة من journal (ملاحظة جوهرية غير حاجبة)",
+      "pass": true,
+      "evidence": "Oct 27 01:34:37 instance-20261022-0115 systemd[1]: Stopping Agentic Engineering System (uvicorn)...\nOct 27 01:36:07 instance-20261022-0115 systemd[1]: agentic.service: State 'stop-sigterm' timed out. Killing.\nOct 27 01:36:07 instance-20261022-0115 systemd[1]: agentic.service: Killing process 518861 (python) with signal SIGKILL.\nOct 27 01:36:07 instance-20261022-0115 systemd[1]: Started Agentic Eng"
+    },
+    {
+      "id": "B6",
+      "desc": "اتصال TCP حي الآن من 2.215.157.88 إلى :80 (قناة SSE للمتصفح القديم — البث يعمل)",
+      "pass": true,
+      "evidence": "owner_established=2"
+    },
+    {
+      "id": "B7",
+      "desc": "بعد لحظة حياة الكود الجديد (01:36:08): صفر دورات 5ث/3ث من أي مصدر — المالك القديم بخوارزمية 60ث خلفية فقط",
+      "pass": true,
+      "evidence": "sustained=none detail={'127.0.0.1|runs/active': {'count': 3, 'gaps': [0, 72], '5s_streak': 0, '3s_streak': 0}, '127.0.0.1|runtime': {'count': 1, 'gaps': [], '5s_streak': 0, '3s_streak': 0}, '2.215.157.88|runs/active': {'count': 24, 'gaps': [60, 60, 60, 60, 62, 58, 60, 60, 61, 59, 60, 60, 61, 59, 60, 60, 60, 60, 60, 60, 67, 53, 60], '5s_streak': 0, '3s_streak': 0}}"
+    }
+  ],
+  "nginx_analysis": {
+    "total_log_lines": 819,
+    "parsed": 819,
+    "poll_requests_total_in_tail": 335,
+    "poll_after_deploy": 36,
+    "groups": {
+      "127.0.0.1|runs/active": {
+        "count": 3,
+        "first": "01:39:11",
+        "last": "01:40:23",
+        "gaps": [
+          0,
+          72
+        ],
+        "sustained_5s_streak": 0,
+        "sustained_3s_streak": 0
+      },
+      "127.0.0.1|runtime": {
+        "count": 1,
+        "first": "01:40:22",
+        "last": "01:40:22",
+        "gaps": [],
+        "sustained_5s_streak": 0,
+        "sustained_3s_streak": 0
+      },
+      "2.215.157.88|runs/active": {
+        "count": 32,
+        "first": "01:34:02",
+        "last": "01:59:31",
+        "gaps": [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          59,
+          60,
+          60,
+          60,
+          60,
+          60,
+          62,
+          58,
+          60,
+          60,
+          61,
+          59,
+          60,
+          60,
+          61,
+          59,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          67,
+          53,
+          60
+        ],
+        "sustained_5s_streak": 6,
+        "sustained_3s_streak": 0
+      }
+    },
+    "post_new_code_live_013608": {
+      "127.0.0.1|runs/active": {
+        "count": 3,
+        "gaps": [
+          0,
+          72
+        ],
+        "5s_streak": 0,
+        "3s_streak": 0
+      },
+      "127.0.0.1|runtime": {
+        "count": 1,
+        "gaps": [],
+        "5s_streak": 0,
+        "3s_streak": 0
+      },
+      "2.215.157.88|runs/active": {
+        "count": 24,
+        "gaps": [
+          60,
+          60,
+          60,
+          60,
+          62,
+          58,
+          60,
+          60,
+          61,
+          59,
+          60,
+          60,
+          61,
+          59,
+          60,
+          60,
+          60,
+          60,
+          60,
+          60,
+          67,
+          53,
+          60
+        ],
+        "5s_streak": 0,
+        "3s_streak": 0
+      }
+    }
+  },
+  "owner_client_note": {
+    "owner_runs/active_count": 32,
+    "owner_runtime_count": 0,
+    "owner_gaps": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      59,
+      60,
+      60,
+      60,
+      60,
+      60,
+      62,
+      58,
+      60,
+      60,
+      61,
+      59,
+      60,
+      60,
+      61,
+      59,
+      60,
+      60,
+      60,
+      60,
+      60,
+      60,
+      67,
+      53,
+      60
+    ],
+    "asset_versions_seen": {
+      "127.0.0.1": [
+        "9e2ace5b"
+      ]
+    }
+  },
+  "restart_window_note": {
+    "sigterm": "01:34:37",
+    "started": "01:36:07",
+    "ready": "01:36:08",
+    "stop_sigterm_timeout_killed": true,
+    "note": "نافذة رفض اتصالات جديدة ~90ث (SIGTERM 01:34:37 → جاهز 01:36:08) بسبب إغلاق مهذب ينتظر SSE المالك المفتوح حتى TimeoutStopSec=90 → SIGKILL؛ 502×2 لعميل المالك القديم (01:35:31، 01:36:07) تعافى تلقائيًا 01:36:08 — خاصية نمط النشر 014 المعتمد (موثقة كعيب قائم في W3-T17 «نشر بلا نافذة 502»)؛ ادعاء المنفذ «~4ث/بلا انقطاع» غير دقيق زمنيًا لكنه لا يمس بوابة قبول W1-T02 ولا سلامة النشر"
+  },
+  "notes": [
+    "قيّم هذا التدقيق بأسطر المخرجات الفعلية (درس W1-T01) لا برموز الخروج فقط.",
+    "ملاحظة جوهرية غير حاجبة: نافذة إعادة التشغيل الفعلية كانت ~91ث (SIGTERM 01:34:37 → جاهز 01:36:08) لا «~4ث» كما في سجل المنفذ — رفض اتصالات جديدة ~90ث مع 502×2 لعميل المالك (تعافى تلقائيًا 01:36:08). السبب: uvicorn ينتظر اتصال SSE المفتوح للمالك حتى TimeoutStopSec=90 → SIGKILL — خاصية نمط النشر 014 المعتمد نفسه (العيب القائم الموثق في W3-T17 «نشر بلا نافذة 502»). لا تمس بوابة قبول W1-T02 ولا سلامة النشر؛ يلزم تصحيح الرواية في السجلات مستقبلًا.",
+    "مصدر المالك 2.215.157.88: عميل متصفح قديم لم يُعد تحميل الصفحة بعد النشر (لا GET / ولا control-center.js?v= جديد من IP المالك في السجل؛ HTML بـ304 قبل النشر) — استطلاعه المتبقي ~60ث (خنق تبويب خلفي للدورة 5ث القديمة) متوقع وغير حاجب: etag الصفحة الآن ui9e2ace5b + cache-control: no-cache فالتحميل التالي يأخذ الرقعة.",
+    "اتصال SSE يعمل: مسبار مستقل 200 + stream.start + أحداث فعلية، وعميل المالك لديه اتصال established حي على :80 منذ 01:36:08، وجلسة قياس المنفذ (127.0.0.1 عبر النفق) رأت last_event_id يتقدم 842→846.",
+    "طلبات 127.0.0.1 بعد النشر = 4 طلبات تحميل أولي فعلًا (2×runs/active عند تحميل الصفحة 01:39:11 + runtime وruns/active عند فتح المشروع 01:40:22-23) ثم صمت تام — مطابق لتصميم الرقعة (نبضة أولى + استيقاظ بالأحداث)."
+  ]
+}

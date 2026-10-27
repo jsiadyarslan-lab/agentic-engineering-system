@@ -1,0 +1,21 @@
+$ sudo -n awk -F: '{print $1}' /etc/nginx/.htpasswd_vis
+vis
+w1t02a
+[rc=0]
+$ sudo -n sh -c "grep -v '^w1t02a:' /etc/nginx/.htpasswd_vis > /tmp/htpasswd_w1t02.strip && cat /tmp/htpasswd_w1
+STRIP_OK
+[rc=0]
+$ sudo -n restorecon -v /etc/nginx/.htpasswd_vis
+
+[rc=0]
+$ sudo -n chown root:nginx /etc/nginx/.htpasswd_vis && sudo -n chmod 640 /etc/nginx/.htpasswd_vis
+
+[rc=0]
+$ sudo -n ls -laZ /etc/nginx/.htpasswd_vis
+-rw-r-----. 1 root nginx unconfined_u:object_r:httpd_config_t:s0 42 Oct 27 01:41 /etc/nginx/.htpasswd_vis
+[rc=0]
+$ sudo -n sha256sum /etc/nginx/.htpasswd_vis && sudo -n wc -l /etc/nginx/.htpasswd_vis && sudo -n awk -F: '{prin
+038af1fb2c7f835103b7dd55660b5fec2395491ee9b17ec7a1e85acf9d8c036c  /etc/nginx/.htpasswd_vis
+1 /etc/nginx/.htpasswd_vis
+vis
+[rc=0]

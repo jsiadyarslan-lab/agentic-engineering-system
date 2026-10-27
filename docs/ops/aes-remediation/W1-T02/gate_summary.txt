@@ -1,0 +1,7 @@
+asset_version: v=9e2ace5b
+cc_idle_65s_new_requests_total: 0
+cc_idle_65s_poll_requests: 0
+proj_idle_65s_new_requests_total: 0
+proj_idle_65s_poll_requests: 0
+sse_final: "{\"sse_connected\":true,\"last_event_id\":846}"
+js_errors_final: 0
