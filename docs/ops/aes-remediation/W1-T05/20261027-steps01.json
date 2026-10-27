@@ -1,0 +1,14 @@
+{
+  "http80_example_com": "000 6.102967 Failed to connect to example.com port 80: Connection timed outRC=28",
+  "https443_example_com": "200 0.024618 RC=0",
+  "http80_neverssl_com": "000 4.249005 Failed to connect to neverssl.com port 80: Connection timed outRC=28",
+  "oci_cli": "---\nbash: line 1: oci: command not found",
+  "firewalld_zone": "public (active)\n  target: default\n  icmp-block-inversion: no\n  interfaces: enp0s6\n  sources: \n  services: dhcpv6-client ssh\n  ports: 80/tcp\n  protocols: \n  forward: yes\n  masquerade: no\n  forward-ports: \n  source-ports:",
+  "readiness_now": "[{\"capability_id\": \"llm\", \"name\": \"نماذج LLM (الأدوار)\", \"description\": \"مزود/تكوين/نموذج مربوط بكل دور — مسبار جاهزية المزود\", \"category\": \"LLM\", \"required\": true, \"readiness_status\": \"STALE\", \"stored_status\": \"READY\", \"provider_id\": \"\", \"configuration_id\": \"\", \"last_probe_at\": \"2026-10-26T23:20:50.012739\", \"last_success_at\": \"2026-10-26T23:20:50.012745\", \"last_failure_at\": null, \"failure_class\": \"\", \"failure_stage\": \"\", \"failure_reason\": \"نجاح حي مسجل قبل 9988ث — خارج نافذة الصلاحية (600ث)؛ لا جاهزية بلا دليل حديث\", \"probe_latency_ms\": 5, \"ttl_seconds\": 600, \"expires_at\": null, \"details\": {\"",
+  "services": "active\nactive\nactive",
+  "health": "200",
+  "_meta": {
+    "timestamp": "2026-10-27 05:07:22 UTC",
+    "mode": "READ-ONLY steps 0-1"
+  }
+}

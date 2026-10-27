@@ -857,3 +857,45 @@ Stage Summary:
 - ملاحظتان غير حاجبتين: (1) أول تشغيل تلقائي للمؤقت غداً 2026-10-28 03:30 GMT (LAST='-' لأن إنشاءه كان بعد مرور 03:30 اليوم) — يوصى الأب/المالك بالتحقق صباحاً من ظهور nightly-20261028.db وسجلها؛ (2) بطاقة TRACKER ذكرت «25 جدولاً» في سجل التنفيذ بينما قياسي المستقل 24 (preflight نفسه يسرد 24 اسماً — سهو توثيقي لا يمس بوابة القبول).
 - الأدلة: download/aes-remediation/W1-T04/audit_independent.json + scripts/w1t04_audit_check.py.
 - التالي: المزامنة والدفع (R9 — مسؤولية الأب، مع استثناء owner-token.txt من W1-T03) ثم W1-T05 (فتح المنفذ 80 صادراً في VCN).
+
+---
+Task ID: W1-T05-S01
+Agent: Main Agent (المنفذ — إثبات حجب الخروج 80 + مواصفة المالك)
+Task: W1-T05 خطوات 0-1 — إثبات حجب المنفذ 80 الصادر قراءة-فقط + تجهيز مواصفة قاعدة الخروج للمالك (الخطوة 2 خطوة مالك في Oracle Console)
+
+Work Log:
+- (R1) قرأت TRACKER.md وبطاقة W1-T05 قبل العمل. حددت من الكود واجهة الجاهزية الفعلية: POST /api/environment/probe (src/api/environment.py) والقدرة network_http بمسبار probe_http_get إلى http://example.com (src/readiness/probes.py:32,201).
+- خطوة 0 (scripts/w1t05_steps01.py → download/aes-remediation/W1-T05/20261027-steps01.json — قراءة فقط): http://example.com = 000/Connection timed out (6.1ث، RC=28) وhttp://neverssl.com/ بالمثل (هدف ثانٍ مستقل)، بينما https://example.com = 200 في 0.025ث لنفس المضيف — الفرق المنفذ وحده → الحجب في خروج VCN حصراً (لا DNS ولا firewalld محلي ولا تطبيق). مسبار المصنع نفسه: network_http = NOT_READY (Errno 101 Network is unreachable، آخر فحص 2026-10-26T23:21) — بينما network_dns/network_https جاهزتان (STALE فقط).
+- خطوة 1: ~/.oci غائب وoci غير مثبت → المواصفة جُهزت للمالك في OWNER-SPEC.md: Egress rule (Stateless=لا · Destination 0.0.0.0/0 · TCP · Destination Port Range 80) على نفس Security List حاملة قاعدة 443، بجدول حقول كامل + خطوات ما بعد الإضافة + التراجع.
+- حدّثت بطاقة W1-T05 (خطوات 0-1 [x] + سجل التنفيذ) ولوحة الحالة §1 → «قيد التنفيذ — بانتظار خطوة المالك (خطوة 2)».
+
+Stage Summary:
+- الإثبات قاطع ومزدوج المصدر (curl من الخادم + مسبار المصنع الداخلي): منفذ 80 محجوب للخروج و443 يعمل — والخادم بلا أداة إدارة VCN فالقاعدة بيد المالك فقط.
+- المواصفة جاهزة بنفس نمط RLR-003 (النمط الذي نفذه المالك سابقاً بنجاح).
+- الأدلة: download/aes-remediation/W1-T05/ (20261027-steps01.json + OWNER-SPEC.md) + scripts/w1t05_steps01.py.
+- التالي: تدقيق مستقل W1-T05-S01-AUDIT ثم المزامنة والدفع (R9) ثم الانتقال إلى W2-T07 (أول مهمة غير محجوبة في الموجة الثانية — مسح الألوان إلى التوكنات).
+
+---
+Task ID: W1-T05-S01-AUDIT
+Agent: Audit Agent (وكيل تدقيق مستقل — general-purpose)
+Task: تدقيق مستقل للخطوتين 0-1 من W1-T05 (إثبات حجب المنفذ 80 الصادر + مواصفة قاعدة الخروج للمالك) على إنتاج 92.5.14.150 — قراءة فقط بالكامل (صفر كتابة على الخادم، لا POST probe، لا git)، ونطاقه حصراً الخطوتان 0-1 (الخطوة 2 خطوة مالك لم تحدث بعد). كل الأدلة جمعتها بنفسي بلا أي اعتماد على تقرير المنفذ.
+
+Work Log:
+- (R1) قرأت TRACKER.md كاملاً (القواعد R1–R9 + لوحة الحالة §1 + بطاقة W1-T05 §2) وآخر إدخال من worklog.md (W1-T05-S01) قبل أي عمل.
+- كتبت سكربت التدقيق الخاص scripts/w1t05_s01_audit_check.py (27 فحصاً في 6 مجموعات A/B/C/D/E/F؛ paramiko بـlook_for_keys=False/allow_agent=False؛ التقييم بأسطر المخرجات الفعلية لا رموز خروج عملياتي) ونتائجه الكاملة في download/aes-remediation/W1-T05/audit_s01_independent.json (script_md5=9eb148403bf2b0bc4607d1fc9cfe262e).
+- الجولة 1: 26/27 — الفشل الوحيد (A7) كان خطأ منطق تقييم عندي أنا: regex يقبل عناوين IPv4 فقط بينما أعاد getent عناوين IPv6 أولاً (DNS يعمل فعلاً). أصلحت منطق التقييم (قبول v4+v6 + getent ahostsv4) وأعدت الجولة كاملة من الصفر: **27/27 PASS**. الجولتان كلتاهما قراءة-فقط ولا علاقة للإنتاج بالأمر.
+- (أ) إعادة إنتاج الحجب بمقاييسي — 7/7: `http://example.com` = **000 · 6.102363ث · RC=28 · «Failed to connect to example.com port 80: Connection timed out»** · `https://example.com` = **200 · 0.023938ث · RC=0** لنفس المضيف · `http://neverssl.com` = 000 · 4.208ث · RC=28 · `http://httpbin.org` = 000 · 7.969ث · RC=28 (هدف ثالث) · إثبات TCP خام مستقل عن curl بـbash /dev/tcp: المنفذ 443 يفتح (TCP443_OPEN) والمنفذ 80 يسقط بمهلة (TCP80_BLOCKED_RC=124) · DNS يحل (getent RC=0 بعناوين IPv6+IPv4) → الفشل في مرحلة الاتصال حصراً وليس DNS ولا تطبيقاً.
+- (ب) قدرة المصنع — 3/3: GET /api/environment/readiness (قراءة فقط): network_http stored_status=NOT_READY وreadiness_status=NOT_READY وfailure_reason=«تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachable>» (آخر فحص 2026-10-26T23:21:08 — يطابق ما رواه المنفذ) بينما network_dns وnetwork_https stored_status=READY (STALE نضجاً فقط).
+- (ج) مسار الإدارة — 2/2: `which oci` فارغ (WHICH_RC=1) + «bash: line 1: oci: command not found» · `ls ~/.oci` = «No such file or directory» (LS_RC=2) → لا مسار تقني لإضافة القاعدة من الخادم (مواصفة المالك هي الطريق الوحيد).
+- (د) سلامة أدلة المنفذ — 6/6: 20261027-steps01.json صالح بكل المفاتيح و_meta.mode=«READ-ONLY steps 0-1» (timestamp 2026-10-27 05:07:22 UTC) · قيم curl الثلاث فيه = قياساتي أنا: http80 000/6.102967ث/RC=28 (قياسي 000/6.102363ث/RC=28) وhttps 200/0.024618ث/RC=0 (قياسي 200/0.023938ث/RC=0) وneverssl 000/4.249ث/RC=28 (قياسي 000/4.208ث/RC=28) — نفس الرموز والمهل تقريباً حرفياً · oci_cli=«command not found» مثل قياسي · services=active×3 وhealth=200 مثل قياسي الحي الآن.
+- (هـ) مواصفة المالك — 6/6: OWNER-SPEC.md = Egress حصراً («Add Egress Rules» موجودة وكلمة Ingress غائبة كلياً من الملف كله) · Stateless=«مكتفٍ بالحالة (غير محدد/مقصوص)» · Destination CIDR=0.0.0.0/0 · IP Protocol=TCP · Destination Port Range=80 (وSource Port Range=(اتركه فارغًا/All)) · «نفس Security List التي تحوي قاعدة خروج TCP 443 القائمة» + قسم «بعد الإضافة» (curl→200 + POST probe→READY + تدقيق وتوقيع) + قسم «التراجع» — لا خطأ واحد يضلل المالك.
+- (و) صحة عامة R6 — 3/3: /health من loopback = 200 · agentic/nginx/firewalld كلها active · journalctl -u agentic آخر 30 دقيقة -p err = «-- No entries --».
+- انضباط الجلسة: صفر كتابة على الخادم (كل الأوامر curl إلى أهداف خارجية للقراءة/getent/which/ls/systemctl is-active/journalctl/sudo -n firewall-cmd --list-all — قراءة صرفة)؛ لم أستدعِ POST /api/environment/probe لأنه يغيّر حالة الجاهزية المخزنة (هو من خطوة 3 بعد إضافة القاعدة)؛ لا git/push؛ لا مساس بأي ملف أو خدمة أو قاعدة.
+
+Stage Summary:
+- **الحكم: PASS — 27/27 فحصاً مستقلاً ناجحاً (الجولة الثانية بعد إصلاح منطق تقييم A7 عندي؛ الجولة الأولى 26/27 بذات الفحوص عدا خطأ التقييم ذاك). التوقيع: W1-T05-S01-AUDIT · 2026-10-27 · PASS · بصمة: 27 إثباتاً مستقلاً.**
+- ادعاءات المنفذ الخمس كلها مؤكدة بأدلتي أنا: حجب 80 الصادر مثبت بثلاثة أهداف http مستقلة + تباين 443 لنفس المضيف + إثبات TCP خام بلا curl + DNS سليم → الحجب في خروج VCN حصراً · network_http=NOT_READY/Errno 101 من الـAPI مباشرة وdns/https READY · oci و~/.oci غائبان · المواصفة مطابقة للبطاقة حقلاً حقلاً وبلا أي تضليل · أدلة المنفذ متسقة مع قياساتي وموسومة READ-ONLY.
+- ملاحظتان غير حاجبتين: (1) حقل readiness_now في 20261027-steps01.json مبتور عند 600 حرف (يعرض بند llm فقط) فلا يحوي هو نفسه سجل network_http NOT_READY/Errno 101 — الادعاء صحيح (أكده المدقق مباشرة من الـAPI) وOWNER-SPEC.md تذكر القيم، لكن الملف الخام ناقص التوثيق لهذا البند تحديداً؛ (2) network_http last_success_at=2026-10-26T21:26:59 (نجح مرة قبل نافذة الفحص) — يتسق مع حجب بيئي للمنفذ لا خلل منطق تطبيق.
+- حدّثت في TRACKER.md حصراً خانة «التدقيق الإلزامي» في بطاقة W1-T05 ([x] + سطر المدقق + التوقيع). الحالة بقيت «قيد التنفيذ — بانتظار خطوة المالك (خطوة 2)» دون أي تغيير — لا تكتمل المهمة إلا بعد خطوة المالك والخطوة 3 وتدقيهما. لا شيء آخر مُمسّ (لا لوحة حالة، لا ترويسة، لا بطاقات أخرى).
+- الأدلة: download/aes-remediation/W1-T05/audit_s01_independent.json + scripts/w1t05_s01_audit_check.py (md5 9eb148403bf2b0bc4607d1fc9cfe262e).
+- التالي: خطوة المالك (2) — إضافة قاعدة الخروج TCP 80 من Oracle Console وفق OWNER-SPEC.md (دقيقتان)، ثم خطوة 3 (curl ناجح + POST probe → READY) وتدقيهما المستقل بإذن الله.

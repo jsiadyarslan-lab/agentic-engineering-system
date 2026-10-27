@@ -1,0 +1,326 @@
+{
+  "_meta": {
+    "task": "W1-T05-S01-AUDIT (independent audit of W1-T05 steps 0-1; step 2 is owner action, not yet performed)",
+    "agent": "W1-T05-S01-AUDIT (independent audit agent, general-purpose)",
+    "timestamp": "2026-10-27 05:16:48 UTC",
+    "mode": "READ-ONLY (zero writes on the server; no POST probe; no git)",
+    "server": "opc@92.5.14.150",
+    "script": "/home/z/my-project/scripts/w1t05_s01_audit_check.py",
+    "script_md5": "9eb148403bf2b0bc4607d1fc9cfe262e"
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A: reproduce block",
+      "desc": "curl http://example.com/ (TCP/80) from server -> 000 timeout RC=28",
+      "cmd": "curl -w '%{http_code}@@%{time_total}@@%{errormsg}' --max-time 8 http://example.com/",
+      "output": "000@@6.102363@@Failed to connect to example.com port 80: Connection timed out@@RC=28",
+      "verdict": "PASS",
+      "evidence": "http_code=000 time_total=6.102363s rc=28 err='Failed to connect to example.com port 80: Connection timed out'"
+    },
+    {
+      "id": "A2",
+      "group": "A: reproduce block",
+      "desc": "curl https://example.com/ (TCP/443) same host -> 200 fast RC=0",
+      "cmd": "curl ... https://example.com/",
+      "output": "200@@0.023938@@@@RC=0",
+      "verdict": "PASS",
+      "evidence": "http_code=200 time_total=0.023938s rc=0 (same host as A1: only the port differs)"
+    },
+    {
+      "id": "A3",
+      "group": "A: reproduce block",
+      "desc": "curl http://neverssl.com/ (2nd target, TCP/80) -> 000 RC=28",
+      "cmd": "curl ... http://neverssl.com/",
+      "output": "000@@4.208098@@Failed to connect to neverssl.com port 80: Connection timed out@@RC=28",
+      "verdict": "PASS",
+      "evidence": "http_code=000 time_total=4.208098s rc=28 err='Failed to connect to neverssl.com port 80: Connection timed out'"
+    },
+    {
+      "id": "A4",
+      "group": "A: reproduce block",
+      "desc": "curl http://httpbin.org/ (3rd target, TCP/80) -> 000 RC=28",
+      "cmd": "curl ... http://httpbin.org/",
+      "output": "000@@7.969077@@Failed to connect to httpbin.org port 80: Connection timed out@@RC=28",
+      "verdict": "PASS",
+      "evidence": "http_code=000 time_total=7.969077s rc=28 err='Failed to connect to httpbin.org port 80: Connection timed out'"
+    },
+    {
+      "id": "A5",
+      "group": "A: reproduce block",
+      "desc": "raw TCP connect example.com:443 (bash /dev/tcp) -> opens",
+      "cmd": "timeout 6 bash -c '</dev/tcp/example.com/443' && echo TCP443_OPEN || echo TCP444_FAIL_RC=$?",
+      "output": "TCP443_OPEN",
+      "verdict": "PASS",
+      "evidence": "output='TCP443_OPEN' (curl-independent proof 443 egress works)"
+    },
+    {
+      "id": "A6",
+      "group": "A: reproduce block",
+      "desc": "raw TCP connect example.com:80 (bash /dev/tcp) -> blocked",
+      "cmd": "timeout 6 bash -c '</dev/tcp/example.com/80' && echo TCP80_OPEN || echo TCP80_BLOCKED_RC=$?",
+      "output": "TCP80_BLOCKED_RC=124",
+      "verdict": "PASS",
+      "evidence": "output='TCP80_BLOCKED_RC=124' (dropped packets -> timeout 124)"
+    },
+    {
+      "id": "A7",
+      "group": "A: reproduce block",
+      "desc": "DNS resolution of example.com works (failure is connect-stage)",
+      "cmd": "getent hosts example.com | head -2; getent ahostsv4 example.com | head -1; echo GETENT_RC=$?",
+      "output": "2606:4700:10::ac42:93f3 example.com\n2606:4700:10::6814:179a example.com\n172.66.147.243  STREAM example.com\nGETENT_RC=0",
+      "verdict": "PASS",
+      "evidence": "getent RC=0 with addresses returned ('2606:4700:10::ac42:93f3 example.com' + IPv4 via ahostsv4) -> DNS fine, TCP/80 connect fails"
+    },
+    {
+      "id": "B1",
+      "group": "B: factory readiness",
+      "desc": "GET /api/environment/readiness: network_http stored_status=NOT_READY",
+      "cmd": "curl -s --max-time 10 http://127.0.0.1:8010/api/environment/readiness",
+      "output": "{\"capability_id\": \"network_http\", \"readiness_status\": \"NOT_READY\", \"stored_status\": \"NOT_READY\", \"last_probe_at\": \"2026-10-26T23:21:08.818304\"}",
+      "verdict": "PASS",
+      "evidence": "network_http readiness_status=NOT_READY stored_status=NOT_READY last_probe_at=2026-10-26T23:21:08.818304"
+    },
+    {
+      "id": "B2",
+      "group": "B: factory readiness",
+      "desc": "network_http failure_reason mentions Errno 101 / network unreachable",
+      "cmd": "(parsed from same GET)",
+      "output": "تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachable>",
+      "verdict": "PASS",
+      "evidence": "failure_reason='تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachable>'"
+    },
+    {
+      "id": "B3",
+      "group": "B: factory readiness",
+      "desc": "network_dns + network_https stored_status=READY (only STALE freshness)",
+      "cmd": "(parsed from same GET)",
+      "output": "{\"network_dns\": {\"stored_status\": \"READY\", \"readiness_status\": \"STALE\"}, \"network_https\": {\"stored_status\": \"READY\", \"readiness_status\": \"STALE\"}}",
+      "verdict": "PASS",
+      "evidence": "dns stored=READY (STALE) · https stored=READY (STALE)"
+    },
+    {
+      "id": "C1",
+      "group": "C: mgmt path",
+      "desc": "oci CLI not installed ('command not found')",
+      "cmd": "R=$(which oci 2>/dev/null); echo \"WHICH=[$R] WHICH_RC=$?\"; oci --version 2>&1 | head -1",
+      "output": "WHICH=[] WHICH_RC=1\nbash: line 1: oci: command not found",
+      "verdict": "PASS",
+      "evidence": "output='WHICH=[] WHICH_RC=1 | bash: line 1: oci: command not found'"
+    },
+    {
+      "id": "C2",
+      "group": "C: mgmt path",
+      "desc": "~/.oci config dir absent",
+      "cmd": "ls -la ~/.oci 2>&1; echo LS_RC=$?",
+      "output": "ls: cannot access '/home/opc/.oci': No such file or directory\nLS_RC=2",
+      "verdict": "PASS",
+      "evidence": "output='ls: cannot access '/home/opc/.oci': No such file or directory | LS_RC=2' -> no OCI API path from the server"
+    },
+    {
+      "id": "F1",
+      "group": "F: health (R6)",
+      "desc": "/health from loopback -> 200",
+      "cmd": "curl -s -o /dev/null -w '%{http_code}' --max-time 8 http://127.0.0.1:8010/health",
+      "output": "200",
+      "verdict": "PASS",
+      "evidence": "http_code=200"
+    },
+    {
+      "id": "F2",
+      "group": "F: health (R6)",
+      "desc": "services agentic/nginx/firewalld all active",
+      "cmd": "systemctl is-active agentic nginx firewalld",
+      "output": "active\nactive\nactive",
+      "verdict": "PASS",
+      "evidence": "is-active output='active+active+active'"
+    },
+    {
+      "id": "F3",
+      "group": "F: health (R6)",
+      "desc": "no new agentic errors in journal (last 30 min)",
+      "cmd": "journalctl -u agentic --since '-30 min' -p err --no-pager | tail -3",
+      "output": "-- No entries --",
+      "verdict": "PASS",
+      "evidence": "journal err output='-- No entries --'"
+    },
+    {
+      "id": "D1",
+      "group": "D: evidence integrity",
+      "desc": "20261027-steps01.json valid, all keys present, _meta READ-ONLY",
+      "cmd": "(local read)",
+      "output": "{\"timestamp\": \"2026-10-27 05:07:22 UTC\", \"mode\": \"READ-ONLY steps 0-1\"}",
+      "verdict": "PASS",
+      "evidence": "_meta.mode='READ-ONLY steps 0-1' timestamp=2026-10-27 05:07:22 UTC"
+    },
+    {
+      "id": "D2",
+      "group": "D: evidence integrity",
+      "desc": "steps01 http80_example_com == my measurement (000/timeout/RC=28)",
+      "cmd": "(local read)",
+      "output": "000 6.102967 Failed to connect to example.com port 80: Connection timed outRC=28",
+      "verdict": "PASS",
+      "evidence": "executor='000 6.102967 Failed to connect to example.com port 80: Connection timed outRC=28' vs mine: 000/6.102363s/RC=28 — same verdict, both timeouts (exec 000s, mine 6.102363s — approx match)"
+    },
+    {
+      "id": "D3",
+      "group": "D: evidence integrity",
+      "desc": "steps01 https443_example_com == my measurement (200/RC=0)",
+      "cmd": "(local read)",
+      "output": "200 0.024618 RC=0",
+      "verdict": "PASS",
+      "evidence": "executor='200 0.024618 RC=0' vs mine: 200/0.023938s/RC=0 — same host fast on 443 both times"
+    },
+    {
+      "id": "D4",
+      "group": "D: evidence integrity",
+      "desc": "steps01 http80_neverssl_com == my measurement (000/RC=28)",
+      "cmd": "(local read)",
+      "output": "000 4.249005 Failed to connect to neverssl.com port 80: Connection timed outRC=28",
+      "verdict": "PASS",
+      "evidence": "executor='000 4.249005 Failed to connect to neverssl.com port 80: Connection timed outRC=28' vs mine: 000/RC=28"
+    },
+    {
+      "id": "D5",
+      "group": "D: evidence integrity",
+      "desc": "steps01 oci_cli == my measurement (command not found)",
+      "cmd": "(local read)",
+      "output": "---\nbash: line 1: oci: command not found",
+      "verdict": "PASS",
+      "evidence": "executor='--- | bash: line 1: oci: command not found' matches my C1 finding"
+    },
+    {
+      "id": "D6",
+      "group": "D: evidence integrity",
+      "desc": "steps01 services/health == my measurements (active x3 / 200)",
+      "cmd": "(local read)",
+      "output": "services='active+active+active' health='200'",
+      "verdict": "PASS",
+      "evidence": "executor recorded active x3 + health 200; my live re-check agrees (F1/F2)"
+    },
+    {
+      "id": "E1",
+      "group": "E: owner spec",
+      "desc": "spec is an EGRESS rule (word 'Ingress' absent entirely)",
+      "cmd": "(local read)",
+      "output": "Add Egress Rules present: True; 'ingress' occurrences: 0",
+      "verdict": "PASS",
+      "evidence": "'Add Egress Rules' in spec=True; ingress count=0"
+    },
+    {
+      "id": "E2",
+      "group": "E: owner spec",
+      "desc": "Stateless = unchecked (stateful rule) as the card requires",
+      "cmd": "(local read)",
+      "output": [
+        "| Stateless | **مكتفٍ بالحالة (Stateless = غير محدد/مقصوص)** |"
+      ],
+      "verdict": "PASS",
+      "evidence": "spec: 'مكتفٍ بالحالة (Stateless = غير محدد/مقصوص)' -> stateful, matching card 'Stateless=لا'"
+    },
+    {
+      "id": "E3",
+      "group": "E: owner spec",
+      "desc": "Destination CIDR = 0.0.0.0/0",
+      "cmd": "(local read)",
+      "output": [
+        "| Destination CIDR | **0.0.0.0/0** |"
+      ],
+      "verdict": "PASS",
+      "evidence": "field table shows 0.0.0.0/0"
+    },
+    {
+      "id": "E4",
+      "group": "E: owner spec",
+      "desc": "IP Protocol = TCP",
+      "cmd": "(local read)",
+      "output": [
+        "| IP Protocol | **TCP** |"
+      ],
+      "verdict": "PASS",
+      "evidence": "field table shows TCP"
+    },
+    {
+      "id": "E5",
+      "group": "E: owner spec",
+      "desc": "Destination Port Range = 80 (source port left All/empty)",
+      "cmd": "(local read)",
+      "output": [
+        "| Source Port Range | (اتركه فارغًا/All) |",
+        "| Destination Port Range | **80** |"
+      ],
+      "verdict": "PASS",
+      "evidence": "port 80 is the DESTINATION port of the egress rule; Source Port Range = (اتركه فارغًا/All)"
+    },
+    {
+      "id": "E6",
+      "group": "E: owner spec",
+      "desc": "same Security List carrying the 443 rule + post-add steps + rollback",
+      "cmd": "(local read)",
+      "output": "same-SL mention + post-add + rollback sections",
+      "verdict": "PASS",
+      "evidence": "spec: 'نفس Security List التي تحوي قاعدة خروج TCP 443 القائمة' + 'بعد الإضافة' + 'التراجع'"
+    }
+  ],
+  "claims_vs_audit": [
+    {
+      "claim": "curl http://example.com/ fails 000/RC=28 connection timeout while https://example.com/ = 200 fast (same host)",
+      "finding": "my own probes: http80=000/6.102363s/RC=28 ('Failed to connect to example.com port 80: Connection timed out'); https443=200/0.023938s/RC=0; raw TCP /dev/tcp: 443 OPEN, 80 blocked (timeout 124); httpbin.org also 000/RC=28",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "factory network_http = NOT_READY (Errno 101 Network is unreachable) while network_dns + network_https READY",
+      "finding": "network_http stored/readiness=NOT_READY/NOT_READY, failure_reason='تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachable>', last_probe_at=2026-10-26T23:21:08.818304; dns/https stored=READY",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "oci CLI not installed and ~/.oci absent -> no technical path from the server",
+      "finding": "which oci: 'WHICH=[] WHICH_RC=1 | bash: line 1: oci: command not found'; ~/.oci: 'ls: cannot access '/home/opc/.oci': No such file or directory | LS_RC=2'",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "OWNER-SPEC.md matches the card: Egress / Stateless=لا / 0.0.0.0/0 / TCP / Destination Port 80 / same Security List as 443",
+      "finding": "E1-E6 all verified on the actual file (Egress-only wording, 'ingress' absent, stateful, 0.0.0.0/0, TCP, dest port 80, same-SL-as-443, post-add + rollback)",
+      "verdict": "CONFIRMED"
+    },
+    {
+      "claim": "20261027-steps01.json consistent with my measurements and READ-ONLY",
+      "finding": "D1-D6 verified: same HTTP codes/RCs/timeouts for all three targets, oci absent, services x3 active, health 200, _meta mode 'READ-ONLY steps 0-1'",
+      "verdict": "CONFIRMED"
+    }
+  ],
+  "counts": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0
+  },
+  "non_blocking_notes": [
+    "steps01.json 'readiness_now' is a truncated 600-char string showing only the 'llm' item — it does NOT itself contain the network_http NOT_READY/Errno-101 record; the claim is TRUE (independently confirmed via GET /api/environment/readiness: stored NOT_READY, Errno 101, last_probe_at=2026-10-26T23:21:08.818304) and OWNER-SPEC.md cites the values, but the raw evidence file under-documents this specific item (documentation gap only).",
+    "network_http last_success_at=2026-10-26T21:26:59 — it succeeded once earlier (before the probe window), consistent with an environment-level egress block rather than app logic."
+  ],
+  "context": {
+    "firewalld_zone": "public (active)\n  target: default\n  icmp-block-inversion: no\n  interfaces: enp0s6\n  sources: \n  services: dhcpv6-client ssh\n  ports: 80/tcp\n  protocols: \n  forward: yes\n  masquerade: no\n  forward-ports: \n  source-ports:",
+    "curl_version": "curl 7.76.1 (aarch64-redhat-linux-gnu) libcurl/7.76.1 OpenSSL/3.5.8 zlib/1.2.11 brotli/1.0.9 libidn2/2.3.0 libpsl/0.21.1 (+libidn2/2.3.0) libssh/0.10.4/openssl/zlib nghttp2/1.43.0",
+    "readiness_raw_network_items": {
+      "network_dns": {
+        "stored_status": "READY",
+        "readiness_status": "STALE",
+        "failure_reason": "",
+        "last_probe_at": "2026-10-27T04:20:51.537704"
+      },
+      "network_https": {
+        "stored_status": "READY",
+        "readiness_status": "STALE",
+        "failure_reason": "",
+        "last_probe_at": "2026-10-27T04:20:51.574858"
+      },
+      "network_http": {
+        "stored_status": "NOT_READY",
+        "readiness_status": "NOT_READY",
+        "failure_reason": "تعذر HTTP المباشر إلى http://example.com: <urlopen error [Errno 101] Network is unreachable>",
+        "last_probe_at": "2026-10-26T23:21:08.818304"
+      }
+    }
+  },
+  "final_verdict": "PASS"
+}
