@@ -192,10 +192,16 @@ def result_relevance(query: str, result: dict) -> dict:
     #: نتيجة واحدة — مستحيل حتى على صفحة نتائج ممتازة). البار الصادق
     #: المكافئ: 3 رموز فعلية في النتيجة نفسها وأحدها مميّز — يمنع
     #: تمرير نتائج عمياء ويفتح الاستعلامات الطويلة.
+    #:
+    #: (W2-T20 2026-10-28) الاستعلامات القصيرة والمرادفات: تطابق 60%
+    #: حرفيًا يخفي صلة حقيقية عند المرادفات (وصولية/النفاذ) — نتيجة
+    #: برمزين فعليين أحدهما مميّز (wcag+وصولية في «دليل WCAG الشامل
+    #: للوصولية») صلة مثبتة. حرس التلفيق يبقى: رمز واحد في النتيجة
+    #: (صفحة علامة تجارية/تطابق اسم أجنبي) = ضعيف كما كان.
     if len(tokens) > 5:
         strong = len(hit) >= 3 and bool(specific)
     else:
-        strong = ratio >= 0.6 and bool(specific)
+        strong = (ratio >= 0.6 or len(hit) >= 2) and bool(specific)
     return {"tokens": tokens, "hit": hit, "ratio": round(ratio, 3),
             "specific": specific, "discriminating": [
                 t for t in tokens if t not in _GENERIC_TOKENS],

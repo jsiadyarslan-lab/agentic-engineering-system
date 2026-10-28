@@ -272,13 +272,15 @@ def test_search_uses_first_ready_provider(sessions, monkeypatch):
         sessions, _provider_id(sessions, "search_searx"),
         config={"base_url": "https://searx.test"}, enabled=True,
     )
-    # DDG وBing معطلان → searx جاهز (بمسبار مضبوط) → البحث يخدم منه
-    service.configure_provider(
-        sessions, _provider_id(sessions, "search_ddg"), enabled=False,
-    )
-    service.configure_provider(
-        sessions, _provider_id(sessions, "search_bing"), enabled=False,
-    )
+    # DDG وBing وWikipedia وAPI معطلون → searx جاهز (بمسبار مضبوط)
+    # → البحث يخدم منه. (W2-T20) تعطيل كل المزودين الشبكيين الحقيقيين
+    # يجعل الاختبار حتميًا — وإلا كان DDG الحقيقي يخدم أحيانًا من IP
+    # الجهاز فيفشل الاختبار عشوائيًا.
+    for kind in ("search_ddg", "search_bing", "search_wikipedia",
+                 "search_api"):
+        service.configure_provider(
+            sessions, _provider_id(sessions, kind), enabled=False,
+        )
     searx = rp.SearxJsonSearchProvider(base_url="https://searx.test")
 
     class SeamedProvider:
@@ -506,3 +508,49 @@ def test_searx_language_follows_query_script(monkeypatch):
     results_en = provider.search("news website page structure")
     assert "language=en" in captured["url"], captured["url"]
     assert results_en, "نتيجة إنجليزية ذات صلة يجب أن تمر"
+
+
+# ------------------------------------------------------------------ #
+# (W2-T20) الاستعلامات القصيرة × المرادفات — رمزان فعليان أحدهما مميّز
+# ------------------------------------------------------------------ #
+
+def test_short_query_two_real_hits_with_specific_is_strong():
+    """(W2-T20) «دليل WCAG 2.1 الشامل للوصولية الويب» لاستعلام
+    «متطلبات وصولية موقع أخبار WCAG 2.1 AA» — رمزان فعليان
+    (wcag+وصولية) أحدهما مميّز = صلة مثبتة رغم المرادفات
+    (النفاذ/وصولية) التي تُخفّض التطابق الحرفي عن 60%.
+    """
+    query = "متطلبات وصولية موقع أخبار WCAG 2.1 AA"
+    result = {
+        "title": "دليل WCAG 2.1 الشامل للوصولية الويب | Kyady",
+        "url": "https://example.com/wcag-ar-guide",
+        "snippet": "مبادئ النفاذ إلى محتوى الويب WCAG 2.1 level AA",
+    }
+    report = rp.result_relevance(query, result)
+    assert len(report["tokens"]) == 5
+    assert len(report["hit"]) == 2
+    assert "wcag" in report["specific"]
+    assert report["strong"] is True
+
+
+def test_short_query_single_token_hit_still_weak():
+    """(W2-T20) حرس التلفيق سليم: رمز واحد في النتيجة (صفحة علامة
+    تجارية أو تطابق اسم أجنبي عرضي) يبقى ضعيفًا كما كان."""
+    # «كلاود فلير» تطابق كلاود فقط في استعلام «أحدث نماذج كلاود»
+    report = rp.result_relevance(
+        "أحدث نماذج كلاود",
+        {"title": "كلاود فلير شبكة توصيل محتوى",
+         "url": "https://example.com/cdn",
+         "snippet": "شبكة كلاود فلير"})
+    assert report["hit"] == ["كلاود"]
+    assert report["strong"] is False
+
+    # صفحة علامة تجارية لاستعلام ثنائي الرموز — العنوان عربي يحوي
+    # «رياكت» فقط بلا حوسبة/كمومية (الاسم الأجنبي المكتوب بالعربية)
+    report2 = rp.result_relevance(
+        "رياكت حوسبة كمومية",
+        {"title": "مكتبة رياكت لواجهات الويب",
+         "url": "https://example.com/react-ar",
+         "snippet": "تعليمات مكتبة رياكت"})
+    assert report2["hit"] == ["رياكت"]
+    assert report2["strong"] is False
