@@ -364,3 +364,94 @@ def test_search_failure_details_every_provider(sessions, monkeypatch):
     assert caught.value.reason == rp.SEARCH_NOT_READY
     assert caught.value.details["attempts"], "لا تفصيل محاولات"
     assert len(caught.value.details["attempts"]) >= 2
+
+
+# ------------------------------------------------------------------ #
+# (W2-T20) بوابة الصلة × الاستعلامات الطويلة — البار القابل للتحقيق
+# ------------------------------------------------------------------ #
+
+#: الاستعلام الفاشل الحقيقي من قاعدة الإنتاج (tool_invocations #207)
+LONG_QUERY = (
+    "news website page structure homepage world politics business "
+    "technology sports entertainment article detail search results "
+    "best practices"
+)
+
+
+def test_long_query_single_result_bar_is_achievable():
+    """(W2-T20) استعلام 17 رمزًا: نتيجة فيها 3 رموز فعلية = قوية.
+
+    العتبة القديمة كانت تطلب 60% (10 رموز) في نتيجة واحدة — مستحيلة
+    رياضيًا على عناوين/مقتطفات قصيرة، فكانت الاستعلامات الطبيعية
+    الطويلة تُرفض كلها حتى من محرك ممتاز.
+    """
+    result = {
+        "title": "News Website Page Structure Best Practices",
+        "url": "https://example.com/news-structure",
+        "snippet": "homepage sections: world, politics, business, technology",
+    }
+    report = rp.result_relevance(LONG_QUERY, result)
+    tokens = report["tokens"]
+    assert len(tokens) > 5, "الاستعلام يجب أن يبقى طويلًا"
+    assert len(report["hit"]) >= 3
+    assert report["specific"], "أحدها مميّز (غير عام)"
+    assert report["strong"] is True
+
+
+def test_long_query_required_coverage_capped():
+    """(W2-T20) المطلوب المجموعي لاستعلام طويل مسقف عند 4 رموز."""
+    report = rp.relevance_report(LONG_QUERY, [])
+    assert report["required"] <= 4
+    assert report["required"] >= 2, "لا ينهار إلى 1 — يبقى بوابة"
+
+
+def test_short_query_thresholds_unchanged():
+    """(W2-T20) الاستعلامات القصيرة تبقى على العتبة الصارمة 60%."""
+    query = "أحدث نماذج كلاود"
+    result = {
+        "title": "كلاود فلير شبكة توصيل محتوى",
+        "url": "https://example.com/cdn",
+        "snippet": "شبكة كلاود",
+    }
+    report = rp.result_relevance(query, result)
+    assert report["ratio"] < 0.6
+    assert report["strong"] is False, "نتيجة اسمية تُرفض كما كانت"
+    required = rp.relevance_report(query, [])["required"]
+    assert required == max(2, int(len(report["tokens"]) * 0.6 + 0.5))
+
+
+def test_require_relevant_passes_realistic_long_query_results():
+    """(W2-T20) صفحة نتائج واقعية لاستعلام طويل تمر — لا تُرفض جملة.
+
+    كل نتيجة تحوي 3-4 رموز فعلية (كما ترد فعلاً من محرك حقيقي)،
+    والتغطية المجموعية فوق السقف — البوابة تمرر القوية فقط.
+    """
+    results = [
+        {"title": "News Website Page Structure — homepage and sections",
+         "url": "https://example.com/a",
+         "snippet": "world politics business technology sports entertainment"},
+        {"title": "Best practices for news article detail pages",
+         "url": "https://example.org/b",
+         "snippet": "search results layout and structure for news websites"},
+        {"title": "Responsive news site: politics and sports sections",
+         "url": "https://example.net/c",
+         "snippet": "article page structure with related results"},
+    ]
+    kept = rp.require_relevant("searx", LONG_QUERY, results)
+    assert kept, "النتائج الواقعية يجب أن تمر البوابة"
+    assert all(r["url"].startswith("http") for r in kept)
+
+
+def test_require_relevant_still_rejects_blind_long_query_results():
+    """(W2-T20) البوابة ما زالت صادقة: نتائج لا تخص الاستعلام تُرفض."""
+    irrelevant = [
+        {"title": "أنواع ما في اللغة العربية",
+         "url": "https://example.com/grammar",
+         "snippet": "قواعد النحو والصرف"},
+        {"title": "Telekom tariffs 2026",
+         "url": "https://example.com/telekom",
+         "snippet": "mobile contracts"},
+    ]
+    with pytest.raises(rp.ProviderNotReady) as caught:
+        rp.require_relevant("searx", LONG_QUERY, irrelevant)
+    assert caught.value.reason == rp.SEARCH_RESULTS_IRRELEVANT

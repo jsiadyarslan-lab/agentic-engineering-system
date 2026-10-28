@@ -182,7 +182,17 @@ def result_relevance(query: str, result: dict) -> dict:
     #: إنترنت الأشياء ونتيجة عن دار الإفتاء، وهو التلفيق نفسه. النسبة
     #: المجموعية تُسقطها (‏1/3) وتُبقي الصلة الحقيقية (‏رياكت، حوسبة
     #: كمومية، Claude).
-    strong = ratio >= 0.6 and bool(specific)
+    #:
+    #: (W2-T20 2026-10-28) الاستعلامات الطويلة الطبيعية (>5 رموز):
+    #: عتبة 60% في نتيجة واحدة غير قابلة للتحقيق رياضيًا — العناوين
+    #: والمقتطفات قصيرة بطبيعتها (استعلام 17 رمزًا يطلب 10 منها في
+    #: نتيجة واحدة — مستحيل حتى على صفحة نتائج ممتازة). البار الصادق
+    #: المكافئ: 3 رموز فعلية في النتيجة نفسها وأحدها مميّز — يمنع
+    #: تمرير نتائج عمياء ويفتح الاستعلامات الطويلة.
+    if len(tokens) > 5:
+        strong = len(hit) >= 3 and bool(specific)
+    else:
+        strong = ratio >= 0.6 and bool(specific)
     return {"tokens": tokens, "hit": hit, "ratio": round(ratio, 3),
             "specific": specific, "discriminating": [
                 t for t in tokens if t not in _GENERIC_TOKENS],
@@ -224,8 +234,15 @@ def relevance_report(query: str, results: list[dict]) -> dict:
     #: العتبة: أغلب الرموز الدلالية يجب أن تظهر فعلًا في النتائج.
     #: رمز واحد في استعلام متعدد الرموز = نتيجة اسمية (brand homepage)
     #: لا بحث — وهي بالضبط ما يجب رفضه.
+    #:
+    #: (W2-T20 2026-10-28) سقف للعتبة عند الاستعلامات الطويلة: 60% من
+    #: 17 رمزًا = 10 رموز مجموعية — غير قابل للتحقيق على أي صفحة
+    #: نتائج حقيقية (العناوين قصيرة). السقف 4 رموز مميزة + نتيجة قوية
+    #: واحدة (بنفسها تطلب 3 رموز فعلية) يبقى بوابة صادقة ضد التلفيق.
     required = 1 if len(tokens) == 1 else max(
         2, int(len(tokens) * 0.6 + 0.5))
+    if len(tokens) > 5:
+        required = min(required, 4)
     return {
         "tokens": tokens,
         "covered": covered,
