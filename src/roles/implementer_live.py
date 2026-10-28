@@ -31,7 +31,7 @@ from roles.implementer import (
     ImplementerStatus,
 )
 from core.stop_controller import CycleStopSignal
-from roles import build_commands, build_files
+from roles import build_commands, build_files, tool_plan
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
 from roles.recovery import run_with_recovery
 from roles.tool_failures import ToolError, ToolFailure
@@ -95,42 +95,16 @@ class LiveImplementer(LiveRoleBase):
     _STRIP_ARG_CHARS = "`'\""  # أسوار الكود وعلامات الاقتباس المحيطة
 
     def _parse_tool_lines(self, text: str) -> list[dict]:
-        calls: list[dict] = []
-        for raw_line in text.strip().splitlines():
-            line = raw_line.strip().lstrip("-*•0123456789. ").strip()
-            if not line or "|" not in line:
-                continue
-            name, _, arg = line.partition("|")
-            name = name.strip()
-            arg = arg.strip().strip(self._STRIP_ARG_CHARS)
-            if not arg:
-                raise ValueError(f"سطر أداة غير صالح: {raw_line[:80]}")
-            if name in self._LINE_TOOLS:
-                calls.append(
-                    {"tool": name, "args": {self._LINE_TOOLS[name]: arg}}
-                )
-            elif name in self._KV_LINE_TOOLS:
-                parts = arg.split()
-                primary = parts[0]
-                args = {self._KV_LINE_TOOLS[name]: primary}
-                for token in parts[1:]:
-                    if "=" not in token:
-                        raise ValueError(
-                            f"جزء بلا مفتاح=قيمة في سطر {name}: {token[:40]}"
-                        )
-                    key, _, val = token.partition("=")
-                    if key not in self._KV_ALLOWED_KEYS[name]:
-                        raise ValueError(
-                            f"مفتاح غير مسموح {key} لأداة {name} "
-                            f"(المسموح: {sorted(self._KV_ALLOWED_KEYS[name])})"
-                        )
-                    args[key] = val
-                calls.append({"tool": name, "args": args})
-            else:
-                raise ValueError(f"سطر أداة غير صالح: {raw_line[:80]}")
-        if not calls:
-            raise ValueError("لا أسطر استدعاء صالحة في الرد")
-        return calls
+        # (W2-T25) التحليل انتقل إلى roles/tool_plan.py (عقد الرقة):
+        # متسامح بثلاثة تنويعات صادقة — أسطر الأنابيب، ثم بعد نزع
+        # الأسوار الخارجية، ثم مصفوفة JSON بالأدوات المعروفة.
+        return tool_plan.parse_tool_calls(
+            text,
+            line_tools=self._LINE_TOOLS,
+            kv_line_tools=self._KV_LINE_TOOLS,
+            kv_allowed_keys=self._KV_ALLOWED_KEYS,
+            strip_arg_chars=self._STRIP_ARG_CHARS,
+        )
 
     def _plan_tool_calls(self, task_payload: dict) -> list[dict]:
         from sources import suggest_sources

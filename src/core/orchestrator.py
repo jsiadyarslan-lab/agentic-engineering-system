@@ -737,16 +737,10 @@ class Orchestrator:
             )
             if implementation.status is not ImplementerStatus.EXECUTED:
                 outcome.execution_failed = True
-                # (W2-T25) فشل المنفذ بلا كتلة منظمة (RoleSystemFault
-                # مثلًا: صيغة الملفات/الخطة) — كتلة صادقة من رسالته
-                # الحرفية كي لا تُبتلع التفاصيل في «لم تكتمل أدلةً».
                 outcome.failure = implementation.failure or {
-                    "class": "ROLE_SYSTEM_FAULT",
-                    "stage": "IMPLEMENTATION",
-                    "reason": "IMPLEMENTER_FAULT",
-                    "tool": "implementer",
-                    "detail": (implementation.stderr_truncated or "")[:300],
-                    "retryable": True,
+                    "class": "ROLE_SYSTEM_FAULT", "stage": "IMPLEMENTATION",
+                    "reason": "IMPLEMENTER_FAULT", "tool": "implementer",
+                    "detail": (implementation.stderr_truncated or "")[:300], "retryable": True,
                 }
                 previous.append(
                     f"محاولة {attempt}: فشل تنفيذي — "
