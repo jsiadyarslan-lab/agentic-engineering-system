@@ -35,6 +35,7 @@ from pathlib import Path
 _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+install", re.IGNORECASE), "npm install"),
     (re.compile(r"npm\s+ci\b", re.IGNORECASE), "npm ci"),
+    (re.compile(r"npm\s+run\s+lint\b", re.IGNORECASE), "npm run lint"),
     (re.compile(r"npm\s+run\s+build", re.IGNORECASE), "npm run build"),
     (re.compile(r"npm\s+run\s+preview", re.IGNORECASE), "npm run preview"),
     (re.compile(r"node\s+--version", re.IGNORECASE), "node --version"),
@@ -46,14 +47,16 @@ _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"package-lock\.json", re.IGNORECASE), "npm install"),
     (re.compile(r"\bdist/", re.IGNORECASE), "npm run build"),
 )
-#: ترتيب التبعية — install يسبق build يسبق preview.
+#: ترتيب التبعية — install يسبق lint/build يسبق preview.
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
-    "npm install": 1, "npm run build": 2, "npm run preview": 3,
+    "npm install": 1, "npm run lint": 2, "npm run build": 3,
+    "npm run preview": 4,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
-    "npm install": 600, "npm run build": 600, "npm run preview": 90,
+    "npm install": 600, "npm run lint": 300, "npm run build": 600,
+    "npm run preview": 90,
 }
 
 #: ملفات تُنسخ من الخطوات السابقة (المصدرية — صغيرة بالطبع).

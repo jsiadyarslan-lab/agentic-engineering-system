@@ -470,3 +470,27 @@ def test_build_commands_under_340_lines():
     """عقد رقة W2-T24: وحدة الطور تحت 340 سطرًا (منطق مستخرج كاملًا)."""
     path = Path(build_commands.__file__)
     assert len(path.read_text(encoding="utf-8").splitlines()) < 340
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) npm run lint — خطط المصنع تشترطه حرفيًا في المعايير
+# ------------------------------------------------------------------ #
+
+STEP144_CRITERIA = [
+    "`npm install` completes without errors (exit code 0)",
+    "`npm run lint` runs ESLint and reports 0 errors, 0 warnings",
+    "No peer dependency warnings that block installation",
+]
+
+
+def test_required_build_commands_step144_lint():
+    """معايير 144 الحقيقية → install ثم lint (كان lint لا يُستخرج
+    فلا يُنفَّذ ويصدق المنفذ: «لم يُنفّذ — لا دليل» ويرفض التحقق)."""
+    commands = build_commands.required_build_commands(STEP144_CRITERIA)
+    assert commands == ["npm install", "npm run lint"]
+
+
+def test_lint_command_whitelisted():
+    """الأمر في قائمة الإغلاق — يمر التنفيذ الموحد لا يرفضه."""
+    from roles.build_tool import BUILD_COMMAND_WHITELIST
+    assert "npm run lint" in BUILD_COMMAND_WHITELIST

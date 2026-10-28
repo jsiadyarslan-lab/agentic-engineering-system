@@ -20,10 +20,14 @@ from pathlib import Path
 from roles.tool_failures import ToolFailure
 
 #: أوامر البناء المسموحة حصرًا — قائمة مغلقة (لا تفسير ولا مسارات).
+#: (W2-T25) npm run lint — خطط المصنع (v6/v7) تشترطه حرفيًا في المعايير
+#: ("`npm run lint` runs ESLint... ") وقائمة الإغلاق لم تكن تعرفه فلم
+#: يُستخرج ولم يُنفّذ والتزم المنفذ بالصدق («لم يُنفّذ — لا دليل») فرفض
+#: التحقق بحق. أمر محدود بطبيعته (ESLint يخرج بنفسه) بسقف مهلة 300ث.
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node --version", "npm --version",
     "npm install", "npm ci",
-    "npm run build", "npm run preview",
+    "npm run build", "npm run preview", "npm run lint",
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
