@@ -56,6 +56,7 @@
 
       var head = el("div", "cap-head");
       var dot = el("span", "cap-dot " + cap.readiness_status);
+      dot.setAttribute("aria-hidden", "true");
       head.appendChild(dot);
       head.appendChild(el("span", "cap-name", cap.name));
       head.appendChild(el("span", "cap-cat", cap.category));

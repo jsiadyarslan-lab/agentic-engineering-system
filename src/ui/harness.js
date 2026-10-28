@@ -119,7 +119,7 @@
         esc(ACTOR_LABEL[job.current_role] || job.current_role) + "</b></div>";
     }
     if (job.last_error) {
-      html += '<div class="pj-job-role" style="color:#f87171">' +
+      html += '<div class="pj-job-role" style="color:var(--danger-hi)">' +
         esc(job.last_error.slice(0, 200)) + "</div>";
     }
     html += "</div>";
@@ -167,7 +167,7 @@
         esc(waiting.waiting_reason || "توقف بأمان — عالج سببه ثم استأنف") +
         "</div>";
     } else if (job && job.status === "COMPLETED") {
-      html += '<div class="pj-chain-note" style="color:#34d399">' +
+      html += '<div class="pj-chain-note" style="color:var(--ok)">' +
         "اكتمل المسار كاملًا — تحقق المالك VERIFIED</div>";
     }
     html += "</div>";

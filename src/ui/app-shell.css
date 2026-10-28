@@ -647,7 +647,6 @@
   border-radius: var(--radius-s);
   font-size: var(--fs-13);
   padding: 7px 10px;
-  outline: none;
   max-width: 100%;
 }
 
@@ -711,7 +710,6 @@
   border-radius: var(--radius-s);
   padding: 8px 11px;
   font-size: var(--fs-13);
-  outline: none;
 }
 
 .pv-input:focus { border-color: var(--border-strong); }
@@ -803,7 +801,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
   padding: 7px 10px;
-  outline: none;
   color: var(--text-mid);
 }
 

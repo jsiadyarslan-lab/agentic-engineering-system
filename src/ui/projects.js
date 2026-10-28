@@ -58,13 +58,28 @@
       item.className = "pj-item" +
         (p.id === state.projectId ? " active" : "");
       item.setAttribute("data-project-id", String(p.id));
-      var status = document.createElement("span");
-      status.className = "pj-dot " + dotClass(p.status);
-      status.title = STATUS_LABELS[p.status] || p.status;
+      /* (W2-T11) النقطة الدلالية لا تنفصل عن نصها: صفّان كنمط الجلسات —
+         الاسم فوق، والنقطة + نص الحالة تحته. النقطة aria-hidden (النص يحمل
+         المعنى)، والنص يقرأه قارئ الشاشة بدل العنوان المنفرد. */
+      var text = document.createElement("span");
+      text.className = "pj-text";
       var name = document.createElement("span");
       name.className = "pj-name";
       name.textContent = p.name;
-      item.appendChild(status); item.appendChild(name);
+      text.appendChild(name);
+      var meta = document.createElement("span");
+      meta.className = "pj-meta";
+      var status = document.createElement("span");
+      status.className = "pj-dot " + dotClass(p.status);
+      status.title = STATUS_LABELS[p.status] || p.status;
+      status.setAttribute("aria-hidden", "true");
+      meta.appendChild(status);
+      var statusText = document.createElement("span");
+      statusText.className = "pj-status";
+      statusText.textContent = STATUS_LABELS[p.status] || p.status;
+      meta.appendChild(statusText);
+      text.appendChild(meta);
+      item.appendChild(text);
       item.addEventListener("click", function () {
         openProject(p.id);
       });

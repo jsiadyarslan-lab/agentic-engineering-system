@@ -321,7 +321,7 @@
   padding: 8px 10px;
   font-size: var(--fs-13);
 }
-.mp-search:focus { outline: none; border-color: var(--border-strong); }
+.mp-search:focus { border-color: var(--border-strong); }  /* (W2-T11) لا كتم outline — الحلقة الموحدة تتكفل */
 .mp-count { font-size: var(--fs-11); opacity: .7; white-space: nowrap; }
 .mp-list {
   max-height: 264px;

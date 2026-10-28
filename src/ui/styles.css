@@ -210,7 +210,6 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-s);
   font-size: var(--fs-13);
-  outline: none;
   color: var(--text);
   transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 }
@@ -737,7 +736,6 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 #input {
   background: none;
   border: none;
-  outline: none;
   resize: none;
   font-size: var(--fs-15);
   line-height: var(--lh-body);

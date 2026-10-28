@@ -53,7 +53,7 @@
     this.status.hidden = false;
     this.status.innerHTML =
       '<span class="status-dot' + (key === "generating" ? " pulse" : "") +
-      '"></span><span>' + Hub.esc(label) + "</span>";
+      '" aria-hidden="true"></span><span>' + Hub.esc(label) + "</span>";
     Hub.onLiveContent();
   };
 
@@ -65,7 +65,7 @@
       '<span class="meta-prov" dir="ltr">' + Hub.esc(this.provider) + "</span>" +
       '<span class="meta-model" dir="ltr">' + Hub.esc(this.model) + "</span>" +
       (streaming
-        ? '<span class="meta-stream"><span class="status-dot live pulse"></span>يعمل الآن</span>'
+        ? '<span class="meta-stream"><span class="status-dot live pulse" aria-hidden="true"></span>يعمل الآن</span>'
         : "");
   };
 

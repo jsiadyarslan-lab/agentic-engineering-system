@@ -558,7 +558,7 @@
         '<span class="conv-text">' +
         '<span class="conv-title">' + esc(c.title) + "</span>" +
         '<span class="conv-meta">' +
-        '<span class="status-dot sm ' + dotCls + '"></span>' +
+        '<span class="status-dot sm ' + dotCls + '" aria-hidden="true"></span>' +
         "<span>" + modeLabel + "</span>" +
         '<span class="conv-when">' + when + "</span>" +
         "</span></span>";

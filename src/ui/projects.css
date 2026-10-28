@@ -84,6 +84,28 @@ body.mode-project .project-view {
   white-space: nowrap;
 }
 
+/* (W2-T11) نص الحالة بجوار نقطة المشروع — المعنى لا يسكن اللون وحده */
+.pj-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.pj-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-11);
+  color: var(--text-muted);      /* (W2-T11) الدرجة المرفوعة — AA على أضعف سطح */
+  line-height: 1.5;
+}
+.pj-status {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .pj-empty, .pj-ev-empty {
   color: var(--muted);
   font-size: var(--fs-12);

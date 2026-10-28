@@ -134,6 +134,7 @@
       window.WorkflowView.STATUS_LABELS) || {};
     var dot = el("span", "cc-run-dot " + runDotClass(run));
     dot.textContent = runDot(run);
+    dot.setAttribute("aria-hidden", "true");
     card.appendChild(dot);
     var text = el("div", "cc-run-text");
     text.appendChild(el("div", "cc-run-title", run.name || "مشروع"));
@@ -288,6 +289,7 @@
       }
       if (!existing) {
         existing = el("span", "proj-run-dot");
+        existing.setAttribute("aria-hidden", "true");
         item.insertBefore(existing, item.firstChild);
       }
       existing.textContent = runDot(run);

@@ -36,10 +36,11 @@
   --border-strong: rgba(255, 255, 255, 0.13);  /* حدود صناديق الإدخال */
 
   /* ---------- النصوص — ثلاثة أدوار (تباين AA مقيسًا على أضعف سطح)
-     primary 17.9:1 · secondary 10.6:1 · muted 5.3:1 على canvas ---------- */
+     W2-T11: رُفع muted من ‎#7D8794‎ (كان 4.07:1 على elevated/hover — دون AA)
+     إلى ‎#89939E‎: canvas 6.2 · sidebar 5.8 · raised 5.4 · hover/elevated 4.7 ---------- */
   --text-primary: #F5F7FA;   /* العناوين وقيم البطل */
   --text-secondary: #B8C0CC; /* نص الرسائل والوصف */
-  --text-muted: #7D8794;     /* الأزمنة والتسميات الدقيقة فقط */
+  --text-muted: #89939E;     /* الأزمنة والتسميات الدقيقة فقط */
 
   /* ---------- التمييز التشغيلي: أزرق واحد بأربع وظائف حصرًا ----------
      زر الإرسال + الحالة النشطة + الروابط + حلقة التركيز. زخرفة متناثرة = ممنوع. */
@@ -64,6 +65,9 @@
   --danger-soft: rgba(229, 87, 75, 0.07);
   --danger-border: rgba(229, 87, 75, 0.32);
   --danger-chip: rgba(229, 87, 75, 0.11);
+  --danger-hi: #F07F72;  /* (W2-T11) خطر نصّي فاتح — للنص فوق الرقائق/الأسطح
+                            المرفوعة حيث ‎--danger‎ الصلب يخسر AA (3.6:1) —
+                            بنمط ‎--accent-hi‎ ذاته */
 
   --warn: #E5A54B;     /* كهرماني تحذيري حصرًا — يحظر على القيم الممتازة */
   --warn-soft: rgba(229, 165, 75, 0.09);
@@ -154,6 +158,7 @@
   --sidebar-width: 260px;    /* (014) كان 292 — مضغوط لمركز معلومات Devin */
   --drawer-width: 440px;
   --header-h: 56px;
+  --tap: 44px;               /* (W2-T11) حد أهداف اللمس — WCAG 2.5.5 (يعمل تحت pointer:coarse) */
 
   /* ---------- الحركة — 150ms ease-out موحدة؛ 200ms للوحات المنزلقة ---------- */
   --ease: ease-out;
@@ -329,7 +334,8 @@ body {
   white-space: nowrap;
 }
 .chip.ok     { background: var(--ok-chip);     color: var(--ok);     border-color: var(--ok-border); }
-.chip.danger { background: var(--danger-chip); color: var(--danger); border-color: var(--danger-border); }
+/* (W2-T11) نص الخطر على الرقاقة = ‎--danger-hi‎ — الصلب 3.6:1 دون AA */
+.chip.danger { background: var(--danger-chip); color: var(--danger-hi); border-color: var(--danger-border); }
 .chip.warn   { background: var(--warn-chip);   color: var(--warn);   border-color: var(--warn-border); }
 .chip.info   { background: var(--info-chip);   color: var(--info);   border-color: var(--info-border); }
 .chip.agent  { background: var(--accent-agent-soft); color: var(--accent-agent); border-color: var(--accent-agent-border); }
@@ -383,4 +389,44 @@ body {
   color: var(--text-secondary);
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* ==========================================================================
+   (W2-T11) أهداف اللمس — ‎44px‎ تحت المؤشر الخشن فقط (هاتف/لوحي).
+   سطح المكتب (مؤشر دقيق) يحتفظ بكثافته المرئية كما هي؛ لا تأثير إطلاقًا.
+   الروابط داخل نثر الرسائل لا تتأثر (min-height لا ينطبق على الصناديق
+   السطرية) — معفاة أصلًا كأهداف داخل السطر (WCAG 2.5.8 استثناء).
+   ========================================================================== */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  [role="checkbox"],
+  [role="radio"],
+  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .icon-btn,
+  .side-nav-item,
+  .pj-item,
+  .conv-item,
+  .suggestion,
+  .settings-tab,
+  .pl-tab {
+    min-height: var(--tap);
+  }
+
+  /* عناصر الشريط الضيق/الأيقونية: الحد الأدنى في البعدين معًا */
+  .icon-btn,
+  .side-nav-item,
+  .pj-item,
+  .conv-item,
+  .new-chat,
+  #plus,
+  #send,
+  #web-toggle,
+  #sidebar-toggle {
+    min-width: var(--tap);
+  }
 }

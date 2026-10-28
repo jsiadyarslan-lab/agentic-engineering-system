@@ -300,7 +300,9 @@
       item.appendChild(el("span", "pl-flow-label", step.label));
       wrap.appendChild(item);
       if (index < steps.length - 1) {
-        wrap.appendChild(el("span", "pl-flow-arrow", "←"));
+        var arrow = el("span", "pl-flow-arrow", "←");
+        arrow.setAttribute("aria-hidden", "true");
+        wrap.appendChild(arrow);
       }
     });
     return wrap;
@@ -1031,6 +1033,7 @@
 
     var head = el("div", "pl-title");
     var dot = el("span", "pl-exec-dot", "●");
+    dot.setAttribute("aria-hidden", "true");
     head.appendChild(dot);
     head.appendChild(el("span", null, " التنفيذ جارٍ"));
     card.appendChild(head);
