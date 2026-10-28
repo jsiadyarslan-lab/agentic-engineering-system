@@ -127,8 +127,7 @@ def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
                 siblings.append(int(entry.name))
         except ValueError:
             continue
-    # (W2-T25) الأحدث أولًا — أحدث نسخة من كل مصدر تفوز: قياس حي
-    # الخطوة 172: package.json من أقدم خطوة (astro بلا lint) طغى زورًا.
+    # (W2-T25) الأحدث أولًا — أحدث نسخة تفوز (قياس 172: astro القديم طغى زورًا).
     for sibling in sorted(siblings, reverse=True):
         source_dir = project_dir / "steps" / str(sibling)
         for name in _GATHER_FILES:
