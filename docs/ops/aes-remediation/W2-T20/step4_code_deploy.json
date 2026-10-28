@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 4: deploy code fix 2447f4a",
+    "timestamp_utc": "2026-10-28T00:27:36Z"
+  },
+  "health_before": "200",
+  "service_before": "active",
+  "branch_before": "main\n036db8911",
+  "git_pull": {
+    "cmd": "fetch + ff-only merge",
+    "rc": 0,
+    "out": "* branch                main       -> FETCH_HEAD\n   0f2d9c6b3..2447f4aef  main       -> origin/main\n create mode 100644 scripts/ops/w2t10_inspect.py\n create mode 100644 scripts/ops/w2t10_recover.py\n2447f4aef",
+    "err": ""
+  },
+  "fix_present": {
+    "cmd": "fix present",
+    "rc": 0,
+    "out": "192:    if len(tokens) > 5:\n244:    if len(tokens) > 5:\n2447f4aef fix(research): W2-T20 خطوة 0-1 — بوابة الصلة للاستعلامات الطويلة (>5 رموز: بار 3 رموز فعلية/نتيجة + سقف تغطية 4) + 5 اختبارات (23/23) + بطاقة W2-T20 — تمهيد تفعيل SearXNG وSearch API بأمر المالك",
+    "err": ""
+  },
+  "py_compile": {
+    "cmd": "py_compile",
+    "rc": 0,
+    "out": "COMPILE_OK",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart agentic",
+    "rc": 0,
+    "out": "active",
+    "err": ""
+  },
+  "health_after_restart": "200",
+  "journal_errors": {
+    "cmd": "journal errors after restart",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  },
+  "readiness_websearch": {
+    "cmd": "readiness snapshot",
+    "rc": 0,
+    "out": "[{'capability_id': 'llm', 'stored_status': 'READY', 'readiness_status': 'READY'}, {'capability_id': 'web_search', 'stored_status': 'READY', 'readiness_status': 'STALE'}, {'capability_id': 'web_fetch', 'stored_status': 'READY', 'readiness_status': 'STALE'}]",
+    "err": ""
+  },
+  "health_after": "200"
+}

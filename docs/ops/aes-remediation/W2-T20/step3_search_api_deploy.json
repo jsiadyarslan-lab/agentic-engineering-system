@@ -1,0 +1,67 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 3: deploy Search API service",
+    "timestamp_utc": "2026-10-28T00:26:33Z"
+  },
+  "health_before": "200",
+  "upload": {
+    "rc": 0,
+    "out": "SFTP uploaded /tmp/search_api.py"
+  },
+  "useradd": {
+    "cmd": "useradd searchapi",
+    "rc": 0,
+    "out": "CREATED",
+    "err": ""
+  },
+  "install": {
+    "cmd": "install service file",
+    "rc": 0,
+    "out": "INSTALLED\n106 /opt/search-api/search_api.py",
+    "err": ""
+  },
+  "key_len": 48,
+  "env_write": {
+    "cmd": "write env file",
+    "rc": 0,
+    "out": "ENV_WRITTEN",
+    "err": ""
+  },
+  "unit_write": {
+    "cmd": "install unit",
+    "rc": 0,
+    "out": "UNIT_INSTALLED",
+    "err": ""
+  },
+  "start": {
+    "cmd": "start search-api",
+    "rc": 0,
+    "out": "Created symlink /etc/systemd/system/multi-user.target.wants/search-api.service → /etc/systemd/system/search-api.service.\nactive",
+    "err": ""
+  },
+  "healthz": {
+    "cmd": "GET /healthz",
+    "rc": 0,
+    "out": "{\"ok\": true, \"searx\": \"up\"}",
+    "err": ""
+  },
+  "auth_reject": {
+    "cmd": "POST without key (expect 401)",
+    "rc": 0,
+    "out": "401",
+    "err": ""
+  },
+  "auth_ok_207": {
+    "cmd": "POST #207 query with key",
+    "rc": 0,
+    "out": "results: 8\nfirst: News Website Design: Homepage, Article & Category Layouts\nsecond: News & Media Website Information Architecture Template",
+    "err": ""
+  },
+  "auth_ok_arabic": {
+    "cmd": "POST arabic query with key",
+    "rc": 0,
+    "out": "results: 6\nfirst: محمد حسنين هيكل",
+    "err": ""
+  },
+  "health_after": "200"
+}

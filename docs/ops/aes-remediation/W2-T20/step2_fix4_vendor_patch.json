@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2 fix4: vendor patch tracker_patterns",
+    "timestamp_utc": "2026-10-28T00:24:42Z"
+  },
+  "health_before": "200",
+  "vendor_patch": {
+    "cmd": "patch tracker_patterns.py",
+    "rc": 0,
+    "out": "PATCHED",
+    "err": ""
+  },
+  "backup": {
+    "cmd": "backup",
+    "rc": 0,
+    "out": "BACKED_UP",
+    "err": ""
+  },
+  "unit_revert": {
+    "cmd": "revert ExecStart",
+    "rc": 0,
+    "out": "ExecStart=/opt/searxng/searxngenv/bin/gunicorn --bind 127.0.0.1:8888 --workers 2 --threads 4 --timeout 30 --graceful-timeout 10 --access-logfile - --error-logfile - searx.webapp:app",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart searxng",
+    "rc": 0,
+    "out": "active",
+    "err": ""
+  },
+  "json_search_test": {
+    "cmd": "JSON search test (english)",
+    "rc": 0,
+    "out": "HTTP 200 in 0.970102s\nresults: 26\nfirst: What is Python? | Opensource.com\nunresponsive: [['duckduckgo', 'CAPTCHA'], ['google cse', 'unexpected crash']]",
+    "err": ""
+  },
+  "json_search_arabic": {
+    "cmd": "JSON search test (arabic)",
+    "rc": 0,
+    "out": "HTTP 200 in 0.805296s\nresults: 19\nfirst: تصميم موقع إخباري يعزز الانتشار ...",
+    "err": ""
+  },
+  "json_search_long": {
+    "cmd": "JSON search test (long #207 shape)",
+    "rc": 0,
+    "out": "HTTP 200 in 0.865147s\nresults: 20\nfirst: News Website Design: Homepage, Article & Category Layouts\nsecond: News & Media Website Information Architecture Template",
+    "err": ""
+  },
+  "health_after": "200"
+}

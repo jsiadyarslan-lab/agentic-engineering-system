@@ -1,0 +1,465 @@
+{
+  "_meta": {
+    "audit_id": "W2-T20-AUDIT",
+    "agent": "Audit Agent (وكيل تدقيق مستقل — general-purpose)",
+    "task": "تدقيق مستقل قراءة-فقط لمهمة W2-T20 (تفعيل SearXNG وSearch API وإتاحة البحث الحقيقي) على الإنتاج 92.5.14.150",
+    "ts_utc": "2026-10-28T01:05:59Z",
+    "script": "scripts/w2t20_audit_check.py",
+    "script_md5": "ed15c05755841d701943a61e187ff80d",
+    "verdict": "PARTIAL",
+    "passed": 20,
+    "total": 22,
+    "read_only_discipline": "SSH قراءة-فقط؛ POSTs مصرح بها حصراً: /api/research/search (بحث فعلي)، /api/research/providers/4/probe و/5/probe (فقط عند STALE — يحدثان حالة المسبار المخزنة، تصميم التطبيق)، /api/environment/probe لweb_search (فقط عند STALE). لا systemctl restart/stop، لا كتابة git، لا تعديل ملفات، لا تغيير تكوين مزود.",
+    "key_handling": "المفتاح قُرئ عبر sudo -n cat واستُخدم في الذاكرة فقط — مستبعد من كل المخرجات (redact + sha256_first12 كبصمة)."
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "أ",
+      "name": "systemctl is-active ×4 (agentic, nginx, searxng, search-api)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "states": [
+          "active",
+          "active",
+          "active",
+          "active"
+        ],
+        "stderr": ""
+      }
+    },
+    {
+      "id": "A2",
+      "group": "أ",
+      "name": "المستمعان 8888 و8098 على 127.0.0.1 حصراً (لا 0.0.0.0/::)",
+      "pass": true,
+      "evidence": {
+        "listeners": [
+          "LISTEN 0      5          127.0.0.1:8098       0.0.0.0:*    users:((\"python3.12\",pid=620917,fd=3))",
+          "LISTEN 0      2048       127.0.0.1:8888       0.0.0.0:*    users:((\"gunicorn\",pid=619599,fd=3),(\"gunicorn\",pid=619598,fd=3),(\"gunicorn\",pid=619596,fd=3))"
+        ],
+        "note": "حقل Local:Port لكل مستمع يجب أن يبدأ بـ 127.0.0.1 فقط"
+      }
+    },
+    {
+      "id": "A3",
+      "group": "أ",
+      "name": "GET /health على 8010 = HTTP 200",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "body": "{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-system: durable-projects+autonomous-loop+provider-management\",\"substrate\":{\"available\":true,\"kind\":\"local-bwrap-substrate\",\"isolation\":\"linux-namespaces+seccomp\",\"note\":\"معزولة على هذا المضيف (ركيزة مختا"
+      }
+    },
+    {
+      "id": "B1",
+      "group": "ب",
+      "name": "SearXNG JSON API حي: 200 + results غير فارغة",
+      "pass": true,
+      "evidence": {
+        "attempt": 1,
+        "http_code_1st": 200,
+        "results_1st": 31,
+        "first_titles_1st": [
+          "Agentic Engineering: How Swarms of AI Agents Are Redefining Software ...",
+          "What is agentic engineering? - IBM",
+          "What Is Agentic Engineering? The New Discipline of Agentic Software ..."
+        ],
+        "answers_or_infobox": false
+      }
+    },
+    {
+      "id": "C1",
+      "group": "ج",
+      "name": "GET /healthz = 200 وجسمه ok",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "body": "{\"ok\": true, \"searx\": \"up\"}"
+      }
+    },
+    {
+      "id": "C2",
+      "group": "ج",
+      "name": "POST /search بلا مفتاح = 401 (fail-closed)",
+      "pass": true,
+      "evidence": {
+        "http_code": 401,
+        "body": "{\"error\": \"invalid or missing API key\"}"
+      }
+    },
+    {
+      "id": "C3",
+      "group": "ج",
+      "name": "المفتاح مقروء من /etc/search-api/env (48 هكس — لا يُعرض)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "lines_in_file": 3,
+        "key_length": 48,
+        "key_is_48hex": true,
+        "key_sha256_first12": "a5cd4a150655",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "C4",
+      "group": "ج",
+      "name": "POST /search بالمفتاح (X-API-Key) = 200 بنتائج",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "results": 5,
+        "first_titles": [
+          "Welcome to Python.org",
+          "Download Python | Python.org",
+          "Python Tutorial - W3Schools"
+        ],
+        "body_head": "{\"query\": \"python software\", \"results\": [{\"title\": \"Welcome to Python.org\", \"url\": \"https://www.python.org/\", \"snippet\": \"Experienced programmers in any other language can pick up Python very quickly, and beginners find the clean syntax and …\"}, {\"title\": \"Download Python | Python.org\", \"url\": \"http"
+      }
+    },
+    {
+      "id": "D4",
+      "group": "د",
+      "name": "المزود id=4 (SearXNG) مُفعّل وREADY (STALE→مسبار مصرح به)",
+      "pass": true,
+      "evidence": {
+        "id": 4,
+        "found": true,
+        "enabled": true,
+        "effective_status": "STALE",
+        "last_probe_status": "READY",
+        "probe_after_stale": {
+          "http_code": 200,
+          "ready_in_response": true
+        }
+      }
+    },
+    {
+      "id": "D5",
+      "group": "د",
+      "name": "المزود id=5 (Search API) مُفعّل وREADY (STALE→مسبار مصرح به)",
+      "pass": true,
+      "evidence": {
+        "id": 5,
+        "found": true,
+        "enabled": true,
+        "effective_status": "STALE",
+        "last_probe_status": "READY",
+        "probe_after_stale": {
+          "http_code": 200,
+          "ready_in_response": true
+        }
+      }
+    },
+    {
+      "id": "D1",
+      "group": "د",
+      "name": "DDG id=1 معطل بصرياً DISABLED",
+      "pass": true,
+      "evidence": {
+        "found": true,
+        "enabled": false,
+        "effective_status": "DISABLED",
+        "state_reason": "معطل بقرار المالك"
+      }
+    },
+    {
+      "id": "E1",
+      "group": "هـ",
+      "name": "بحث فعلي — الاستعلام الإنجليزي الفاشل سابقاً (#207)",
+      "pass": false,
+      "evidence": {
+        "http_code": 422,
+        "query": "news website page structure homepage world politics business technology sports entertainment article detail search results best practices",
+        "results": 0,
+        "answered_by_provider": null,
+        "first_titles": []
+      }
+    },
+    {
+      "id": "E2",
+      "group": "هـ",
+      "name": "بحث فعلي — الاستعلام العربي (هيكل صفحات موقع أخبار)",
+      "pass": false,
+      "evidence": {
+        "http_code": 422,
+        "query": "هيكل صفحات موقع أخبار الرئيسية العالم السياسة الأعمال التكنولوجيا الرياضة الترفيه",
+        "results": 0,
+        "answered_by_provider": null,
+        "first_titles": []
+      }
+    },
+    {
+      "id": "F1",
+      "group": "و",
+      "name": "git HEAD = be56bf237 (أو أحدث)",
+      "pass": true,
+      "evidence": {
+        "head": "be56bf2372e03837fcea8ef54c8f7386a9bae08a",
+        "log_oneline": [
+          "be56bf237 fix(research): W2-T20 — نتيجة برمزين فعليين أحدهما مميّز = قوية للاستعلامات القصيرة (المرادفات العربية تخفض التطابق الحرفي عن 60%) مع بقاء حرس التلفيق (رمز واحد=ضعيف) — اختباران جديدان + حتمية اختبار الترتيب (26/26 في 1.09ث)",
+          "097c39176 fix(research): W2-T20 — لغة استعلام SearXNG من كتابته (عربي→ar وإلا en) بدل الصلب على en الذي كان يجلب نتائج إنجليزية لاستعلام عربي فترفضها بوابة الصلة بتغطية 0/N — اختبار جديد (24/24)",
+          "2447f4aef fix(research): W2-T20 خطوة 0-1 — بوابة الصلة للاستعلامات الطويلة (>5 رموز: بار 3 رموز فعلية/نتيجة + سقف تغطية 4) + 5 اختبارات (23/23) + بطاقة W2-T20 — تمهيد تفعيل SearXNG وSearch API بأمر المالك",
+          "f7f140d10 ops(governance): W1-T05 مكتملة وموقَّعة — تدقيق مستقل مزدوج S01 27/27 + S23 25/25: المنفذان 80 و443 مفتوحان، network_http/https/llm كلها READY — النموذج متصل بالإنترنت لأول مرة",
+          "898c94cc3 ops(governance): W1-T05 خطوتا 2-3 — 80 مفتوح وnetwork_http READY (مسبار 200/11ms) + توثيق انحدار حرج: المالك عدّل قاعدة 443 بدل إضافة قاعدة — 443 مغلق الآن وNVIDIA API معطلة (خطوة مالك جديدة: 443)",
+          "48c88e041 ops(governance): OWNER-FORENSICS-001 — تشخيص شكوى المالك بالأدلة: SYN يخرج ولا يعود (قاعدة OCI لم تطبق) + حلقة بوابة مراجعة الخطة (7+ بوابات مُستهلكة) — بطاقتان جديدتان W1-T06 وW2-T19"
+        ],
+        "ancestor_check_rc": "n/a (مطابقة مباشرة للبادئة)"
+      }
+    },
+    {
+      "id": "F2",
+      "group": "و",
+      "name": "git status --porcelain: لا ملفات معدلة داخل src/",
+      "pass": true,
+      "evidence": {
+        "porcelain_full": [
+          "?? runtime/browser/",
+          "?? runtime/projects/",
+          "?? scripts/ops/nightly_backup.sh",
+          "?? scripts/ops/nightly_backup.sh.pre-w1t04",
+          "?? src/agentic_engineering_system.egg-info/"
+        ],
+        "src_dirty": []
+      }
+    },
+    {
+      "id": "F3",
+      "group": "و",
+      "name": "رقعة vendor موثقة + نسخة احتياطية .pre-w2t20 في /opt/searxng",
+      "pass": true,
+      "evidence": {
+        "ls_tracker_patterns": [
+          "-rw-r--r--.  1 searxng searxng    7053 Oct 28 00:24 tracker_patterns.py",
+          "-rw-r--r--.  1 root    root       7053 Oct 28 00:24 tracker_patterns.py.pre-w2t20",
+          "52:            # W2-T20 vendor patch 2026-10-28: system SQLite 3.34.1 (< 3.35)"
+        ],
+        "patch_marker_lines": [
+          "52:            # W2-T20 vendor patch 2026-10-28: system SQLite 3.34.1 (< 3.35)"
+        ],
+        "searxng_repo_porcelain": []
+      }
+    },
+    {
+      "id": "F4",
+      "group": "و",
+      "name": "journalctl -u agentic -p err آخر 30 دقيقة = لا أخطاء جديدة",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "error_lines": [],
+        "raw_head": "-- No entries --"
+      }
+    },
+    {
+      "id": "G1",
+      "group": "ز",
+      "name": "قدرة web_search ليست NOT_READY (STALE→مسبار تأكيدي مصرح به → READY)",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "caps_count": 19,
+        "web_search_raw": {
+          "capability_id": "web_search",
+          "readiness_status": "READY",
+          "stored_status": "READY",
+          "last_probe_at": "2026-10-28T00:52:12.358029",
+          "last_success_at": "2026-10-28T00:52:12.358035",
+          "failure_reason": ""
+        }
+      }
+    },
+    {
+      "id": "G2",
+      "group": "ز",
+      "name": "صفر NOT_READY بين القدرات (قبل المهمة: 19 قدرة، صفر NOT_READY)",
+      "pass": true,
+      "evidence": {
+        "caps_count": 19,
+        "not_ready": [],
+        "statuses": [
+          {
+            "cap": "llm",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "model_inference",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "web_search",
+            "readiness_status": "READY"
+          },
+          {
+            "cap": "web_fetch",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "network_dns",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "network_https",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "network_http",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "sandbox",
+            "readiness_status": "READY"
+          },
+          {
+            "cap": "filesystem",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "git",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "repository",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "shell",
+            "readiness_status": "READY"
+          },
+          {
+            "cap": "package_management",
+            "readiness_status": "UNAVAILABLE"
+          },
+          {
+            "cap": "testing",
+            "readiness_status": "UNAVAILABLE"
+          },
+          {
+            "cap": "build",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "persistence",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "artifacts",
+            "readiness_status": "STALE"
+          },
+          {
+            "cap": "observability",
+            "readiness_status": "READY"
+          },
+          {
+            "cap": "browser",
+            "readiness_status": "READY"
+          }
+        ]
+      }
+    },
+    {
+      "id": "H1",
+      "group": "ح",
+      "name": "/etc/search-api/env بصلاحيات 640 root:searchapi",
+      "pass": true,
+      "evidence": {
+        "stat": "root:searchapi 640",
+        "rc": 0
+      }
+    },
+    {
+      "id": "H2",
+      "group": "ح",
+      "name": "المفتاح غير موجود في أي ملف داخل /home/z/my-project/repo",
+      "pass": true,
+      "evidence": {
+        "hits": [],
+        "searched_root": "/home/z/my-project/repo"
+      }
+    },
+    {
+      "id": "H3",
+      "group": "ح",
+      "name": "settings.yml: limiter معطل + public_instance=false + formats يتضمن json",
+      "pass": true,
+      "evidence": {
+        "formats_grep": "10:  formats:\n11-    - html\n12-    - json",
+        "limiter_public_grep": "6:  limiter: false\n7:  public_instance: false",
+        "checks": {
+          "formats_json": true,
+          "limiter_false": true,
+          "public_instance_false": true
+        }
+      }
+    }
+  ],
+  "providers_snapshot": {
+    "http_code": 200,
+    "raw_body_head": "{\"providers\":[{\"id\":1,\"kind\":\"search_ddg\",\"name\":\"DuckDuckGo\",\"config\":{},\"enabled\":false,\"last_probe_status\":\"UNKNOWN\",\"failure_reason\":\"ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا\",\"last_probe_at\":\"2026-10-27T23:53:37.892716\",\"last_probe_detail\":{\"status\":\"NOT_READY\",\"reason\":\"ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا\",\"latency_ms\":177,\"details\":{\"provider\":\"ddg\"}},\"effective_status\":\"DISABLED\",\"configured\":true,\"stale\":false,\"state_reason\":\"معطل بقرار المالك\"},{\"id\":2,\"kind\":\"search_bing\",\"name\":\"Bing\",\"config\":{},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T00:52:11.630476\",\"last_probe_detail\":{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":140,\"details\":{\"provider\":\"bing\",\"results\":2,\"first\":\"Was ist agentische KI? | IBM\"}},\"effective_status\":\"STALE\",\"configured\":true,\"stale\":true,\"state_reason\":\"مسبار ناجح انتهت صلاحيته — أعد الفحص لتحديثها\"},{\"id\":3,\"kind\":\"search_wikipedia\",\"name\":\"Wikipedia\",\"config\":{},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T00:52:12.292217\",\"last_probe_detail\":{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":807,\"details\":{\"provider\":\"wikiped",
+    "all": [
+      {
+        "id": 1,
+        "name": "DuckDuckGo",
+        "enabled": false,
+        "effective_status": "DISABLED",
+        "kind": "search_ddg"
+      },
+      {
+        "id": 2,
+        "name": "Bing",
+        "enabled": true,
+        "effective_status": "STALE",
+        "kind": "search_bing"
+      },
+      {
+        "id": 3,
+        "name": "Wikipedia",
+        "enabled": true,
+        "effective_status": "STALE",
+        "kind": "search_wikipedia"
+      },
+      {
+        "id": 4,
+        "name": "SearXNG",
+        "enabled": true,
+        "effective_status": "STALE",
+        "kind": "search_searx"
+      },
+      {
+        "id": 5,
+        "name": "Search API",
+        "enabled": true,
+        "effective_status": "STALE",
+        "kind": "search_api"
+      }
+    ],
+    "probes_executed": [
+      {
+        "probe": 4,
+        "http_code": 200,
+        "body_head": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":762,\"details\":{\"provider\":\"searx\",\"results\":8,\"first\":\"What is agentic engineering? - IBM\"},\"provider\":{\"id\":4,\"kind\":\"search_searx\",\"name\":\"SearXNG\",\"config\":{\"base_url\":\"http://127.0.0.1:8888\"},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T01:05:49.674185+00:00\",\"last_probe_detail\":{\"status\":\"READY\",\"reason\":"
+      },
+      {
+        "probe": 5,
+        "http_code": 200,
+        "body_head": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":933,\"details\":{\"provider\":\"api\",\"results\":8,\"first\":\"What is agentic engineering? - IBM\"},\"provider\":{\"id\":5,\"kind\":\"search_api\",\"name\":\"Search API\",\"config\":{\"endpoint\":\"http://127.0.0.1:8098/search\",\"style\":\"generic_results\"},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T01:05:51.274048+00:00\",\"last_probe_det"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "id": "N2",
+      "note": "نسخة مفتاح محلية في download/.../W2-T20/.search_api_key.local (خارج repo) — مطابقة للمفتاح: True. يُوصى بحذفها أو استثنائها قبل مزامنة R9 (الأدلة تُزامن إلى docs/ops/ في المستودع) حتى لا يتسرب المفتاح."
+    },
+    {
+      "id": "N3",
+      "note": "لا إدخال Task ID: W2-T20 للمنفذ في worklog.md حتى لحظة التدقيق — سد الرواية مسؤولية المنفذ/الأب عند المزامنة (نفس نمط F1 في W2-T10)."
+    },
+    {
+      "id": "N4",
+      "note": "حالة بطاقة W2-T20 في TRACKER.md تقول «قيد التنفيذ · **البند:** جديد خارج الـ18 الأصلية (يغلق عطل web_search العملي بعد W1-T05).» بينما لوحة الحالة §1 تقول «منجزة — بانتظار التدقيق» — تحديث البطاقة (ومن ثم التوقيع) مسؤولية المنفذ بعد توقيعي."
+    }
+  ]
+}

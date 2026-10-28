@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "task": "W2-T20 leave fresh READY state",
+    "ts": "2026-10-28T00:52:06Z"
+  },
+  "probe_all": "[('DuckDuckGo', 'DISABLED', 'معطل بقرار المالك'), (None, 'READY', ''), (None, 'READY', ''), (None, 'READY', ''), (None, 'READY', '')]",
+  "q199": "HTTP 503 | provider: None | results: 0\ntitles: []",
+  "capability": "web_search: READY / READY | latency_ms: 0",
+  "providers": "[{'name': 'DuckDuckGo', 'enabled': False, 'effective_status': 'DISABLED'}, {'name': 'Bing', 'enabled': True, 'effective_status': 'READY'}, {'name': 'Wikipedia', 'enabled': True, 'effective_status': 'READY'}, {'name': 'SearXNG', 'enabled': True, 'effective_status': 'READY'}, {'name': 'Search API', 'enabled': True, 'effective_status': 'READY'}]",
+  "health": "200"
+}

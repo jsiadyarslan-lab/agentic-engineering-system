@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2 fix2: disable tracker_url_remover",
+    "timestamp_utc": "2026-10-28T00:21:55Z"
+  },
+  "health_before": "200",
+  "settings_patch": {
+    "cmd": "append plugins block",
+    "rc": 0,
+    "out": "request_timeout: 6.0\n  max_request_timeout: 8.0\nplugins:\n  searx.plugins.tracker_url_remover.SXNGPlugin:\n    active: false",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart searxng",
+    "rc": 0,
+    "out": "activating\nNRestarts=45",
+    "err": ""
+  },
+  "json_search_test": {
+    "cmd": "JSON API search test",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000521s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_test.json'",
+    "err": ""
+  },
+  "json_search_arabic": {
+    "cmd": "Arabic JSON search test",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000185s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_ar.json'",
+    "err": ""
+  },
+  "json_search_long": {
+    "cmd": "long query JSON search test",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000183s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_long.json'",
+    "err": ""
+  },
+  "health_after": "200"
+}

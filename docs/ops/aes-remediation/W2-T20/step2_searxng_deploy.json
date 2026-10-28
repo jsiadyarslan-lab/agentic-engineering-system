@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2: deploy SearXNG",
+    "timestamp_utc": "2026-10-28T00:17:24Z"
+  },
+  "health_before": "200",
+  "useradd": {
+    "cmd": "useradd searxng",
+    "rc": 0,
+    "out": "CREATED",
+    "err": ""
+  },
+  "clone": {
+    "cmd": "git clone searxng",
+    "rc": 0,
+    "out": "Cloning into '/opt/searxng'...",
+    "err": ""
+  },
+  "pyproject_python": {
+    "cmd": "requires-python",
+    "rc": 0,
+    "out": "no requires-python",
+    "err": "grep: /opt/searxng/pyproject.toml: No such file or directory"
+  },
+  "venv": {
+    "cmd": "create venv (py3.12)",
+    "rc": 0,
+    "out": "VENV_CREATED",
+    "err": ""
+  },
+  "pip_install": {
+    "cmd": "pip install requirements + uwsgi",
+    "rc": 0,
+    "out": "ERROR: Failed building wheel for uwsgi\nERROR: Could not build wheels for uwsgi, which is required to install pyproject.toml-based projects\n\n[notice] A new release of pip is available: 23.2.1 -> 26.2.2\n[notice] To update, run: python3.12 -m pip install --upgrade pip",
+    "err": ""
+  },
+  "secret_len": 64,
+  "settings_write": {
+    "cmd": "write settings.yml",
+    "rc": 0,
+    "out": "SETTINGS_WRITTEN\n1",
+    "err": ""
+  },
+  "chown": {
+    "cmd": "chown /opt/searxng",
+    "rc": 0,
+    "out": "CHOWNED",
+    "err": ""
+  },
+  "unit_write": {
+    "cmd": "install systemd unit",
+    "rc": 0,
+    "out": "UNIT_INSTALLED",
+    "err": ""
+  },
+  "start": {
+    "cmd": "enable + start searxng",
+    "rc": 3,
+    "out": "Created symlink /etc/systemd/system/multi-user.target.wants/searxng.service → /etc/systemd/system/searxng.service.\nactivating",
+    "err": ""
+  },
+  "json_search_test": {
+    "cmd": "JSON API search test",
+    "rc": 0,
+    "out": "HTTP 000 in 0.004970s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_test.json'",
+    "err": ""
+  },
+  "health_after": "200"
+}

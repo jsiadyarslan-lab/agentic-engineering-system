@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "task": "W2-T20 final verification v3 (read/use only)",
+    "timestamp_utc": "2026-10-28T00:50:34Z"
+  },
+  "health_before": "200",
+  "search_207_en": {
+    "cmd": "#207 english long",
+    "rc": 0,
+    "out": "HTTP 200 | provider: Wikipedia | results: 6\ntitles: ['X (social network)', 'BBC', 'Qatar', 'Progressive Era']\nattempts: ['Bing']",
+    "err": ""
+  },
+  "search_193_ar": {
+    "cmd": "#193 arabic long",
+    "rc": 0,
+    "out": "HTTP 200 | provider: SearXNG | results: 5\ntitles: ['عربي21 - الرئيسية', 'هيكلة صفحات ومواقع الويب - HTML - أكاديمية حس', 'كيفية تخطيط بنية الموقع الإلكتروني: دليل الصف', 'الرئيسية - أخبار المملكة العربية السعودية، ال']\nattempts: ['Bing', 'Wikipedia']",
+    "err": ""
+  },
+  "search_201_ar": {
+    "cmd": "#201 arabic short",
+    "rc": 0,
+    "out": "HTTP 200 | provider: SearXNG | results: 1\ntitles: ['دليل WCAG 2.1 الشامل للوصولية الويب | Kyady']\nattempts: ['Bing', 'Wikipedia']",
+    "err": ""
+  },
+  "search_192_mix": {
+    "cmd": "#192 mixed",
+    "rc": 0,
+    "out": "HTTP 503 | provider: None | results: 0\ntitles: []\nattempts: []",
+    "err": ""
+  },
+  "providers_state": {
+    "cmd": "providers state",
+    "rc": 0,
+    "out": "[{'id': 1, 'name': 'DuckDuckGo', 'enabled': False, 'effective_status': 'DISABLED'}, {'id': 2, 'name': 'Bing', 'enabled': True, 'effective_status': 'STALE'}, {'id': 3, 'name': 'Wikipedia', 'enabled': True, 'effective_status': 'STALE'}, {'id': 4, 'name': 'SearXNG', 'enabled': True, 'effective_status': 'STALE'}, {'id': 5, 'name': 'Search API', 'enabled': True, 'effective_status': 'STALE'}]",
+    "err": ""
+  },
+  "capability": {
+    "cmd": "web_search capability",
+    "rc": 0,
+    "out": "READY STALE",
+    "err": ""
+  },
+  "services": {
+    "cmd": "services",
+    "rc": 0,
+    "out": "active active active active",
+    "err": ""
+  },
+  "journal_err": {
+    "cmd": "journal errors",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  },
+  "health_after": "200"
+}

@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "task": "W2-T20 final verification",
+    "timestamp_utc": "2026-10-28T00:33:54Z"
+  },
+  "health_before": "200",
+  "search_207": {
+    "cmd": "search #207 (english long)",
+    "rc": 0,
+    "out": "provider: Wikipedia | results: 6\ntitles: ['X (social network)', 'BBC', 'Qatar', 'Progressive Era']\nfailed_before: [('Bing', 'ProviderNotReady: bing: 8 نتيجة لكن تغطية الاستعلام 1/17 (ال')]",
+    "err": ""
+  },
+  "search_193": {
+    "cmd": "search #193 (arabic long)",
+    "rc": 0,
+    "out": "provider: None | results: 0\ntitles: []\nfailed_before: []",
+    "err": ""
+  },
+  "search_201": {
+    "cmd": "search #201 (arabic short)",
+    "rc": 0,
+    "out": "provider: None | results: 0\ntitles: []\nfailed_before: []",
+    "err": ""
+  },
+  "search_192": {
+    "cmd": "search #192 (mixed)",
+    "rc": 0,
+    "out": "provider: None | results: 0\ntitles: []\nfailed_before: []",
+    "err": ""
+  },
+  "probe_websearch_cap": {
+    "cmd": "web_search capability probe",
+    "rc": 0,
+    "out": "capability: web_search | readiness: READY | stored: READY | latency: 0\nper_provider: [('DuckDuckGo', 'DISABLED')]",
+    "err": ""
+  },
+  "readiness_final": {
+    "cmd": "readiness final",
+    "rc": 0,
+    "out": "[{'capability_id': 'llm', 'stored_status': 'READY', 'readiness_status': 'READY'}, {'capability_id': 'web_search', 'stored_status': 'READY', 'readiness_status': 'READY'}, {'capability_id': 'web_fetch', 'stored_status': 'READY', 'readiness_status': 'STALE'}]",
+    "err": ""
+  },
+  "engine_comp": {
+    "cmd": "engine composition",
+    "rc": 0,
+    "out": "File \"<string>\", line 1\n    import json,sys;d=json.load(sys.stdin);res={};for r in d.get('results',[]): res[r.get('engine','?')]=res.get(r.get('engine','?'),0)+1;print('total:',len(d.get('results',[])),'by engine:',res);print('unresponsive:',str(d.get('unresponsive_engines',[]))[:200])\n                                                  ^\nSyntaxError: invalid syntax",
+    "err": ""
+  },
+  "health_after": "200"
+}

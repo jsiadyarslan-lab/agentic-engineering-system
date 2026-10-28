@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2 fix3: pysqlite3 shim",
+    "timestamp_utc": "2026-10-28T00:23:10Z"
+  },
+  "health_before": "200",
+  "pip_pysqlite3": {
+    "cmd": "pip install pysqlite3-binary",
+    "rc": 1,
+    "out": "[notice] A new release of pip is available: 23.2.1 -> 26.2.2\n[notice] To update, run: python3.12 -m pip install --upgrade pip",
+    "err": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nModuleNotFoundError: No module named 'pysqlite3'"
+  },
+  "shim_write": {
+    "cmd": "write shim",
+    "rc": 0,
+    "out": "SHIM_WRITTEN",
+    "err": ""
+  },
+  "unit_patch": {
+    "cmd": "patch unit ExecStart",
+    "rc": 0,
+    "out": "ExecStart=/opt/searxng/searxngenv/bin/gunicorn --bind 127.0.0.1:8888 --workers 2 --threads 4 --timeout 30 --graceful-timeout 10 --access-logfile - --error-logfile - pysqlite3_shim:app",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart searxng",
+    "rc": 0,
+    "out": "activating\nNRestarts=2",
+    "err": ""
+  },
+  "json_search_test": {
+    "cmd": "JSON search test (english)",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000543s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_test.json'",
+    "err": ""
+  },
+  "json_search_arabic": {
+    "cmd": "JSON search test (arabic)",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000182s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_ar.json'",
+    "err": ""
+  },
+  "json_search_long": {
+    "cmd": "JSON search test (long #207 shape)",
+    "rc": 0,
+    "out": "HTTP 000 in 0.000185s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_long.json'",
+    "err": ""
+  },
+  "health_after": "200"
+}

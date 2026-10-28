@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2 tune: engine pool",
+    "timestamp_utc": "2026-10-28T00:32:43Z"
+  },
+  "health_before": "200",
+  "engines_patch": {
+    "cmd": "append engines block",
+    "rc": 0,
+    "out": "# duckduckgo: CAPTCHA دائم لهذا المضيف (موثق في مزود التطبيق أيضًا)\n  - name: duckduckgo\n    disabled: true\n  # qwant: access denied لهذا المضيف · yahoo: انهيار غير متوقع\n  - name: qwant\n    disabled: true\n  - name: yahoo\n    disabled: true",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart",
+    "rc": 0,
+    "out": "active",
+    "err": ""
+  },
+  "probe_query_direct": {
+    "cmd": "probe query direct",
+    "rc": 0,
+    "out": "results: 10 by engine: {}\nunresponsive: [['brave', 'too many requests']]",
+    "err": ""
+  },
+  "q207_direct": {
+    "cmd": "#207 query direct",
+    "rc": 0,
+    "out": "results: 10\nfirst: Google News\nunresponsive: [['brave', 'too many requests']]",
+    "err": ""
+  },
+  "reprobe_searx": {
+    "cmd": "re-probe SearXNG provider",
+    "rc": 0,
+    "out": "status: READY | latency: 472 | reason: النقل والتحليل يعملان — عبارة المسبار لم تطابق نتائج ذات صلة (لا يعني عطل المزود)\nresults: None | first:",
+    "err": ""
+  },
+  "reprobe_api": {
+    "cmd": "re-probe Search API provider",
+    "rc": 0,
+    "out": "status: READY | latency: 485 | reason: النقل والتحليل يعملان — عبارة المسبار لم تطابق نتائج ذات صلة (لا يعني عطل المزود)\nresults: None | first:",
+    "err": ""
+  },
+  "providers_final": {
+    "cmd": "providers final",
+    "rc": 0,
+    "out": "[{'id': 1, 'name': 'DuckDuckGo', 'enabled': False, 'effective_status': 'DISABLED'}, {'id': 2, 'name': 'Bing', 'enabled': True, 'effective_status': 'READY'}, {'id': 3, 'name': 'Wikipedia', 'enabled': True, 'effective_status': 'READY'}, {'id': 4, 'name': 'SearXNG', 'enabled': True, 'effective_status': 'READY'}, {'id': 5, 'name': 'Search API', 'enabled': True, 'effective_status': 'READY'}]",
+    "err": ""
+  },
+  "health_after": "200"
+}

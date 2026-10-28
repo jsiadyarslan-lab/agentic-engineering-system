@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "task": "W2-T20 step 2 fix: gunicorn instead of uwsgi",
+    "timestamp_utc": "2026-10-28T00:19:16Z"
+  },
+  "health_before": "200",
+  "stop": {
+    "cmd": "stop searxng",
+    "rc": 0,
+    "out": "inactive",
+    "err": ""
+  },
+  "pip_req": {
+    "cmd": "pip install requirements",
+    "rc": 0,
+    "out": "[notice] A new release of pip is available: 23.2.1 -> 26.2.2\n[notice] To update, run: python3.12 -m pip install --upgrade pip\nRC=0",
+    "err": ""
+  },
+  "pip_gunicorn": {
+    "cmd": "pip install gunicorn",
+    "rc": 0,
+    "out": "[notice] A new release of pip is available: 23.2.1 -> 26.2.2\n[notice] To update, run: python3.12 -m pip install --upgrade pip\nbabel             2.18.0\nFlask             3.1.3\nflask-babel       4.0.0\ngunicorn          26.2.0\nPygments          2.21.0",
+    "err": ""
+  },
+  "unit_update": {
+    "cmd": "update unit -> gunicorn",
+    "rc": 0,
+    "out": "UNIT_UPDATED",
+    "err": ""
+  },
+  "start": {
+    "cmd": "start searxng",
+    "rc": 0,
+    "out": "active",
+    "err": ""
+  },
+  "json_search_test": {
+    "cmd": "JSON API search test",
+    "rc": 0,
+    "out": "HTTP 000 in 0.802164s\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/searx_test.json'",
+    "err": ""
+  },
+  "service_uptime": {
+    "cmd": "uptime",
+    "rc": 0,
+    "out": "MainPID=0 NRestarts=16 ActiveEnterTimestamp=Wed 2026-10-28 00:19:34 GMT",
+    "err": ""
+  },
+  "health_after": "200"
+}

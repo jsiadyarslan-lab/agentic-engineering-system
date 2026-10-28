@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "task": "W2-T20 recon SearXNG + Search API enablement",
+    "timestamp_utc": "2026-10-28T00:08:25Z",
+    "mode": "READ-ONLY"
+  },
+  "health": "200",
+  "mem": "Mem:            5642        1022        1995          86        2907        4619",
+  "disk_root": "/dev/mapper/ocivolume-root   30G   13G   18G  42% /",
+  "cpu_cores": "1",
+  "os": "Oracle Linux Server release 9.8",
+  "docker": "sudo: docker: command not found",
+  "podman": "",
+  "python3": "Python 3.9.25",
+  "pip_uv": "",
+  "prod_providers_code": "1\n1\n4\n036db8911",
+  "prod_git_status": "?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\n?? scripts/ops/nightly_backup.sh.pre-w1t04\n?? src/agentic_engineering_system.egg-info/",
+  "providers": [
+    {
+      "id": 1,
+      "kind": "search_ddg",
+      "name": "DuckDuckGo",
+      "enabled": true,
+      "effective_status": "NOT_READY",
+      "config": {},
+      "reason": "ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) —"
+    },
+    {
+      "id": 2,
+      "kind": "search_bing",
+      "name": "Bing",
+      "enabled": true,
+      "effective_status": "STALE",
+      "config": {},
+      "reason": "مسبار ناجح انتهت صلاحيته — أعد الفحص لتحديثها"
+    },
+    {
+      "id": 3,
+      "kind": "search_wikipedia",
+      "name": "Wikipedia",
+      "enabled": true,
+      "effective_status": "STALE",
+      "config": {},
+      "reason": "مسبار ناجح انتهت صلاحيته — أعد الفحص لتحديثها"
+    },
+    {
+      "id": 4,
+      "kind": "search_searx",
+      "name": "SearXNG",
+      "enabled": false,
+      "effective_status": "DISABLED",
+      "config": {},
+      "reason": "معطل بقرار المالك"
+    },
+    {
+      "id": 5,
+      "kind": "search_api",
+      "name": "Search API",
+      "enabled": false,
+      "effective_status": "DISABLED",
+      "config": {},
+      "reason": "معطل بقرار المالك"
+    }
+  ],
+  "ports": "LISTEN 0      2048       127.0.0.1:8010       0.0.0.0:*    users:((\"python\",pid=586001,fd=14))",
+  "existing_searx": "DONE",
+  "egress": "200 0.030987s",
+  "health_after": "200"
+}
