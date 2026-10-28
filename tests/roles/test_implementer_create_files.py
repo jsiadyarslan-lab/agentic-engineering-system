@@ -318,3 +318,63 @@ def test_run_build_task_with_retry_on_bad_format(tmp_path, monkeypatch):
     result = implementer.run(_build_request(tmp_path, STEP102_CRITERIA))
     assert result.status is ImplementerStatus.EXECUTED
     assert len(router.calls) == 4  # خطة + إنشاء (فاشل) + إنشاء (صالح) + تقرير
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) أسماء تقنية ليست ملفات + ملفات نقطية
+# ------------------------------------------------------------------ #
+
+def test_required_build_files_filters_tech_names():
+    """«Next.js»/«Node.js» أسماء تقنية — لا تُطلب كملفات (الخطوة 130
+    أفشلت تنفيذين كاملين بمطالبة كاذبة بملف اسمه Next.js)."""
+    criteria = [
+        "tsconfig.json with strict TypeScript for Next.js 14",
+        "next.config.js with output export",
+        "Node.js 20 LTS runtime configuration",
+        "Vue.js components compile with Vite",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "Next.js" not in req
+    assert "Node.js" not in req
+    assert "Vue.js" not in req
+    assert "tsconfig.json" in req
+    assert "next.config.js" in req
+
+
+def test_required_build_files_extracts_dotfiles():
+    """.prettierrc/.gitignore تُطلب فعلًا حين تذكرها المعايير."""
+    criteria = [
+        ".prettierrc with singleQuote and trailingComma es5",
+        ".gitignore with node_modules and dist entries",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert ".prettierrc" in req
+    assert ".gitignore" in req
+
+
+def test_parse_created_files_accepts_dotfiles():
+    text = (
+        "### FILE: .prettierrc\n```\n{\n  \"singleQuote\": true,\n"
+        "  \"trailingComma\": \"es5\",\n  \"printWidth\": 80\n}\n"
+        "```\n### FILE: .gitignore\n```\nnode_modules/\ndist/\n"
+        ".next/\n```\n"
+    )
+    files = build_files.parse_created_files(
+        text, [".prettierrc", ".gitignore"])
+    paths = [p for p, _ in files]
+    assert ".prettierrc" in paths and ".gitignore" in paths
+
+
+def test_parse_created_files_still_rejects_disallowed():
+    """امتداد غير مسموح يبقى مرفوضًا — الملفات النقطية استثناء معلن
+    بالاسم الكامل لا فتحة عشوائية."""
+    text = "### FILE: evil.exe\n```\nbinary\n```\n"
+    with pytest.raises(ValueError, match="امتداد غير مسموح"):
+        build_files.parse_created_files(text, [])
+
+
+def test_parse_created_files_rejects_unknown_dotfile():
+    """dotfile خارج القائمة المعلنة يُرفض — لا تمرير أوسع."""
+    text = "### FILE: .secret\n```\nx\n```\n"
+    with pytest.raises(ValueError, match="امتداد غير مسموح"):
+        build_files.parse_created_files(text, [])

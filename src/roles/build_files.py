@@ -33,9 +33,30 @@ from router.model_router import ChatMessage
 #: الوهمي لأن خطط البناء تذكر .astro/.mjs/.ts/.css/... والحد الخلفي
 #: (?!\w) يمنع ابتلاع js لـ json (خطأ ترتيب البدائل الكلاسيكي).
 _BUILD_FILENAME = re.compile(
-    r"[\w@./-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
-    r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py)(?!\w)"
+    r"(?:[\w@./-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
+    r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py|env)"
+    # (W2-T25) ملف نقطي: النقطة بداية الاسم — البديل الثاني يشترط
+    # ألا يسبقها حرف كلمة فلا يبتلع «file.env».
+    r"|(?<![\w@./-])\.(?:gitignore|editorconfig|npmrc|nvmrc"
+    r"|prettierrc|babelrc|eslintrc|browserslistrc|prettierignore"
+    r"|eslintignore))(?!\w)"
 )
+
+#: (W2-T25) أسماء تقنية ليست ملفات — استخراج «Next.js» كملف مطلوب
+#: (قياس حي الخطوة 130: التنفيذان 39/40) جعل التحقق يطالب بملف اسمه
+#: حرفيًا «Next.js» فلا يكتبه النموذج (صحيحًا) وتفشل المحاولتان.
+_BUILD_TECH_NAMES = frozenset({
+    "next.js", "node.js", "vue.js", "nuxt.js", "react.js",
+    "express.js", "svelte.js", "nest.js", "d3.js", "three.js",
+    "chart.js", "socket.io", "prisma.io", "github.io", "vue.cjs",
+})
+
+#: (W2-T25) ملفات نقطية مسموحة — Path().suffix لها فارغ فيُرفض زورًا.
+_CREATE_ALLOWED_DOTFILES = frozenset({
+    ".env", ".gitignore", ".editorconfig", ".npmrc", ".nvmrc",
+    ".prettierrc", ".eslintrc", ".babelrc", ".browserslistrc",
+    ".prettierignore", ".eslintignore",
+})
 #: صيغة رد إنشاء الملفات (نمط missions_textstats المُثبت): ‎### FILE: مسار
 _CREATE_FILE_HEADER = re.compile(r"^###\s+FILE:\s*(\S+)\s*$", re.MULTILINE)
 _CREATE_ALLOWED_EXTS = frozenset({
@@ -74,12 +95,16 @@ def required_build_files(
     required: list[str] = []
     for criterion in acceptance_criteria or []:
         for match in _BUILD_FILENAME.findall(str(criterion)):
-            clean = match.strip("./")
+            # (W2-T25) تنظيف رائد «./» دون أكل نقطة ملف نقطي.
+            clean = match.strip("/")
+            while clean.startswith("./"):
+                clean = clean[2:]
             if (
                 not clean or clean in own or clean in required
                 or clean in _CREATE_GENERATED_NAMES
                 or clean.startswith(_CREATE_GENERATED_PREFIXES)
                 or Path(clean).stem.isdigit()      # «3.mdx» رقم لا ملف
+                or clean.lower() in _BUILD_TECH_NAMES  # «Next.js» تقنية
             ):
                 continue
             required.append(clean)
@@ -100,7 +125,10 @@ def parse_created_files(
     files: list[tuple[str, str]] = []
     seen: set[str] = set()
     for index, match in enumerate(matches):
-        path = match.group(1).strip().lstrip("./")
+        # (W2-T25) تنظيف «./» رائد دون أكل نقطة ملف نقطي.
+        path = match.group(1).strip()
+        while path.startswith("./"):
+            path = path[2:]
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         body = text[match.end():end].strip()
         # تقشير أسوار الكود من الحافتين (يتحمل الأسوار المزدوجة/الخارجية)
@@ -116,7 +144,10 @@ def parse_created_files(
             raise ValueError(f"مسار أطول من {_CREATE_MAX_PATH}: {path[:60]}")
         if path in seen:
             raise ValueError(f"ملف مكرر: {path}")
-        if Path(path).suffix.lower() not in _CREATE_ALLOWED_EXTS:
+        if (
+            Path(path).suffix.lower() not in _CREATE_ALLOWED_EXTS
+            and path.lower() not in _CREATE_ALLOWED_DOTFILES
+        ):
             raise ValueError(f"امتداد غير مسموح: {path[:80]}")
         if not body.strip():
             raise ValueError(f"ملف فارغ: {path[:80]}")
