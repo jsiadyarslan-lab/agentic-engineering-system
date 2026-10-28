@@ -169,6 +169,14 @@ class VerifierLive(LiveRoleBase):
     الحقائق (وجود الملفات، صفحات PDF، عدد المصادر، sha256) تُجمع
     ميكانيكيًا هنا وتُمرَّر للنموذج — حكمه يُبنى على أرقام مثبتة
     لا على نص يدّعي (الصدق قبل الراحة).
+
+    (W2-T25 2026-10-28) مقتطف المحتوى: معايير المفكر كثيرًا ما تفحص
+    **مضمون** الملف («package.json content showing name: news-site»)
+    بينما الحقائق كانت وجودًا وبصمة فقط — فالملف الصحيح موجود على
+    القرص والمراجع لا يراه: يعيد not_evidenced بصدق والمحكَّم ينهي
+    الدورة «ركودًا» بخطوة نُفِّذت صحيحة. الحق الأصدق: مقتطف حقيقي
+    محدود من محتوى الملفات النصية الصغيرة (content_head) — المضمون
+    المثبت نفسه، لا حكم مُعد سلفًا.
     """
 
     PROMPT_NAME = "verifier"
@@ -176,6 +184,29 @@ class VerifierLive(LiveRoleBase):
 
     #: فحوص ميكانيكية إضافية تُدمج في facts إن توفرت الدالة الخارجية.
     facts_builder: Any = None
+
+    #: امتدادات نصية يُقتطف محتواها — البقية (ثنائي/PDF/صور) بوجودها فقط.
+    _TEXT_EXTS: frozenset[str] = frozenset({
+        ".json", ".md", ".txt", ".log", ".csv", ".xml", ".yaml", ".yml",
+        ".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".css", ".html",
+        ".astro", ".toml", ".py", ".mdx", ".sh", ".env", ".cfg",
+    })
+    #: سقف المقتطف وحد حجم الملف المقروء — أمان إحداثي معلن.
+    _CONTENT_HEAD_LIMIT = 1800
+    _CONTENT_FILE_LIMIT = 262_144
+
+    def _content_head(self, path: Path) -> str | None:
+        """مقتطف حقيقي محدود من ملف نصي صغير — أو None."""
+        try:
+            if path.suffix.lower() not in self._TEXT_EXTS:
+                return None
+            if path.stat().st_size > self._CONTENT_FILE_LIMIT:
+                return None
+            raw = path.read_bytes()[: self._CONTENT_HEAD_LIMIT]
+            text = raw.decode("utf-8", "replace").strip()
+            return text or None
+        except OSError:
+            return None
 
     def run(self, request: VerifierRequest) -> VerifierResult:
         facts: dict[str, Any] = {"files": {}}
@@ -191,6 +222,9 @@ class VerifierLive(LiveRoleBase):
                     else None
                 ),
             }
+            head = self._content_head(path)
+            if head is not None:
+                facts["files"][path.name]["content_head"] = head
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))
