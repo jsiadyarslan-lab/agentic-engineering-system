@@ -541,3 +541,23 @@ def test_gather_replaces_dangling_symlink(tmp_path, monkeypatch):
         _P("runtime/projects/3/steps/161"))
     assert "node_modules" in result["linked"]
     assert dangling.exists() and (dangling / ".").is_dir()
+
+
+def test_gather_latest_sibling_wins(tmp_path):
+    """(W2-T25) التراكم الصحيح: أحدث نسخة من المصدر تفوز — قياس حي
+    الخطوة 172: package.json من الخطوة الأقدم (بلا سكربت lint) كان
+    يطغى على نسخة أحدث فأخفق npm run lint بخطأ موروث."""
+    steps = tmp_path / "steps"
+    (steps / "102").mkdir(parents=True)
+    (steps / "102" / "package.json").write_text(
+        '{"name": "old-astro"}', encoding="utf-8")
+    (steps / "171").mkdir(parents=True)
+    (steps / "171" / "package.json").write_text(
+        '{"name": "new-next", "scripts": {"lint": "next lint"}}',
+        encoding="utf-8")
+    (steps / "172").mkdir(parents=True)
+    build_commands.gather_build_prerequisites(steps / "172")
+    gathered_pkg = (steps / "172" / "package.json").read_text(
+        encoding="utf-8")
+    assert "new-next" in gathered_pkg
+    assert "lint" in gathered_pkg
