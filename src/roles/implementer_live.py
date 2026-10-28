@@ -128,8 +128,12 @@ class LiveImplementer(LiveRoleBase):
             ),
         ]
         last_error: Exception | None = None
-        for _attempt in (1, 2):
+        last_text = ""
+        # (W2-T25) ثلاث محاولات بدل اثنتين — تذبذب النموذج في الصيغة
+        # (~30% للاستدعاء الواحد) كان يُسقط الجولة كاملة بإعادة واحدة.
+        for _attempt in (1, 2, 3):
             text = self._live_call(messages)["text"]
+            last_text = text
             try:
                 return self._parse_tool_lines(text)
             except ValueError as error:
@@ -145,7 +149,9 @@ class LiveImplementer(LiveRoleBase):
                     ),
                 ]
         raise RoleSystemFault(
-            self.ROLE, f"خطة الأدوات فشلت بعد إعادة واحدة: {last_error}"
+            self.ROLE,
+            "خطة الأدوات فشلت بعد إعادتين: %s — رأس الرد الأخير: %r"
+            % (last_error, last_text[:120]),
         )
 
     # ------------------------------------------------------------------ #
