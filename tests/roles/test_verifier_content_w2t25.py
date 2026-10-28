@@ -124,3 +124,31 @@ def test_verifier_prompt_mentions_content_head():
     """البرومبت يعلن الحقيقة الجديدة للمراجع (لا يفاجأ بها)."""
     prompt = (REPO / "prompts" / "verifier.md").read_text(encoding="utf-8")
     assert "content_head" in prompt
+
+
+def test_content_head_covers_dotfiles(tmp_path):
+    """.prettierrc/.gitignore نصوص رغم امتدادها الفارغ — معايير
+    «.prettierrc content showing semi: true» تفحص مضمونها حرفيًا
+    (قياس حي التنفيذ 42: الملف الكامل الصحيح على القرص والمراجع
+    أعمى عنه فرفض الدورة كلها)."""
+    dot = _write(tmp_path, ".prettierrc",
+                 '{\n  "semi": true,\n  "singleQuote": true,\n'
+                 '  "tabWidth": 2\n}\n')
+    gi = _write(tmp_path, ".gitignore", "node_modules\n.next\n.turbo\n")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            ".prettierrc content showing semi: true, singleQuote: true",
+            ".gitignore content showing node_modules",
+        ],
+        artifacts=[dot, gi],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    prettier = payload["facts"]["files"][".prettierrc"]
+    gitignore = payload["facts"]["files"][".gitignore"]
+    assert '"semi": true' in prettier["content_head"]
+    assert "node_modules" in gitignore["content_head"]

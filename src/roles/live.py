@@ -198,7 +198,12 @@ class VerifierLive(LiveRoleBase):
     def _content_head(self, path: Path) -> str | None:
         """مقتطف حقيقي محدود من ملف نصي صغير — أو None."""
         try:
-            if path.suffix.lower() not in self._TEXT_EXTS:
+            # (W2-T25) ملف نقطي بلا امتداد (.prettierrc/.gitignore) نصٌّ
+            # بطبيعته — Path().suffix له فارغ فكان يُحجب مضمونه زورًا
+            # والمعايير تفحصه («.prettierrc content showing semi: true»).
+            dotfile_text = path.name.startswith(".") and not path.suffix
+            if (path.suffix.lower() not in self._TEXT_EXTS
+                    and not dotfile_text):
                 return None
             if path.stat().st_size > self._CONTENT_FILE_LIMIT:
                 return None
