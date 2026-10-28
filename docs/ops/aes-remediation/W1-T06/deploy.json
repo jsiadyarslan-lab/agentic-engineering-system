@@ -1,0 +1,67 @@
+{
+  "_meta": {
+    "task": "W1-T06 deploy (fb48857)",
+    "ts": "2026-10-28T04:10:23Z"
+  },
+  "health_before": {
+    "cmd": "health before",
+    "rc": 0,
+    "out": "200",
+    "err": ""
+  },
+  "head_before": {
+    "cmd": "HEAD before",
+    "rc": 0,
+    "out": "fb488572d2ac32b80d15bd8d77cd5c5b4b7a0592",
+    "err": ""
+  },
+  "git_pull": {
+    "cmd": "git ff pull",
+    "rc": 0,
+    "out": "From https://github.com/jsiadyarslan-lab/agentic-engineering-system\n * branch                main       -> FETCH_HEAD\nAlready up to date.",
+    "err": ""
+  },
+  "head_after_pull": {
+    "cmd": "HEAD after pull",
+    "rc": 0,
+    "out": "fb488572d2ac32b80d15bd8d77cd5c5b4b7a0592",
+    "err": ""
+  },
+  "py_compile": {
+    "cmd": "py_compile",
+    "rc": 0,
+    "out": "COMPILE_OK",
+    "err": ""
+  },
+  "restart": {
+    "cmd": "restart",
+    "rc": 0,
+    "out": "RESTART_ISSUED",
+    "err": ""
+  },
+  "health_after_restart": "200 (after 5s)",
+  "services_after": {
+    "cmd": "services after",
+    "rc": 0,
+    "out": "active\nactive\nactive\nactive",
+    "err": ""
+  },
+  "journal_err": {
+    "cmd": "journal errors",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  },
+  "smoke_env_blocker": {
+    "cmd": "smoke env-blocker classification",
+    "rc": 0,
+    "out": "@@J@@\n{\"outcome\": {\"action\": \"blocked\", \"blocked_kind\": \"environment\", \"reason\": \"عائق بيئي: web_search (NOT_READY)\", \"gate_id\": 1}, \"gate_kind\": \"PREFLIGHT_BLOCKED\", \"gate_status\": \"BLOCKED\", \"step_status_after\": \"READY\"}",
+    "err": ""
+  },
+  "web_search_now": {
+    "cmd": "web_search readiness now",
+    "rc": 0,
+    "out": "{\"web_search\": \"STALE\", \"not_ready_count\": 0, \"total\": 19}",
+    "err": ""
+  }
+}
