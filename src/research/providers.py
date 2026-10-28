@@ -27,6 +27,12 @@ import urllib.request
 from typing import Callable, Protocol
 
 MAX_SEARCH_RESULTS = 8
+#: (W2-T25 2026-10-28) سقف نتائج SearXNG المجمّعة — أعلى من سقف المزود
+#: الواحد: التجميع فوق محركات متعددة يملأ المراكز الأولى بفيض نتائج
+#: محرك واحد (mdn مثلاً: 10 صفحات أحادية الموضوع) فيقصّ نتائج محركات
+#: أخرى صلةً أعلى (stackoverflow/github) خارج نافذة الثمانية — القصّ
+#: الأوسع (16) يعيد التنوع لمجال التحليل، وبوابة الصلة لا تتساهل.
+SEARX_AGGREGATE_RESULTS = 16
 #: (AES-EXP-04 §6) مهلات البحث/الجلب — قابلة للضبط بصدق عبر
 #: AES_RESEARCH_TIMEOUT_S: الشبكات المعزولة/بيئات الاختبار تضبطها بدل
 #: انتظار مهلة TCP كاملة لكل مزود داخل خيط المحادثة المشترك.
@@ -909,7 +915,7 @@ class SearxJsonSearchProvider:
                 f"searx: نقل فاشل — {type(error).__name__}: {error}"
             ) from error
         results: list[dict] = []
-        for item in data.get("results", [])[:MAX_SEARCH_RESULTS]:
+        for item in data.get("results", [])[:SEARX_AGGREGATE_RESULTS]:
             title = str(item.get("title", "")).strip()
             link = str(item.get("url", ""))
             if title and link.startswith("http"):

@@ -316,3 +316,55 @@ def test_npm_registry_url_variants():
     assert rp._npm_registry_url("https://www.npmjs.com/~user") is None
     assert rp._npm_registry_url("https://example.com/x") is None
     assert rp._npm_registry_url("not a url") is None
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) سقف التجميع الأوسع — النتيجة القوية خارج الثمانية الأولى
+# ------------------------------------------------------------------ #
+
+def test_searx_aggregate_slice_includes_diverse_engines(monkeypatch):
+    """فيض نتائج محرك واحد (8 صفحات أحادية الموضوع) لا يقصّ النتيجة
+    القوية من محرك آخر عند المرتبة 9+ — سقف التجميع 16 (W2-T25)."""
+    # 9 نتائج mdn أحادية الموضوع (كل واحدة رمز واحد) ثم نتيجة قوية
+    # من stackoverflow تحمل 4 رموز مميزة معًا.
+    items = []
+    for i in range(9):
+        items.append({
+            "title": "mdn topic page number %d react only" % i,
+            "url": "https://developer.mozilla.org/docs/d%d" % i,
+            "content": "single topic react page",
+        })
+    items.append({
+        "title": "npm peer dependencies react package.json guide",
+        "url": "https://stackoverflow.com/questions/12345",
+        "content": "peer dependencies package.json react versions npm",
+    })
+    import json as _json
+    payload = _json.dumps({"results": items}).encode("utf-8")
+    capture = _UrlCapture(payload)
+    monkeypatch.setattr(urllib.request, "urlopen", capture)
+    provider = rp.SearxJsonSearchProvider(base_url="https://searx.test")
+    results = provider.search("React 18.3.0 package.json peer dependencies")
+    titles = [r["title"] for r in results]
+    assert any("stackoverflow" in r["url"] for r in results), titles
+    # النتيجة القوية وحدها تمر (البوابة ترد القوية حصرًا)
+    assert all("peer dependencies" in t for t in titles), titles
+
+
+def test_searx_aggregate_still_rejects_when_no_strong(monkeypatch):
+    """16 نتيجة كلها أحادية الرمز — البوابة ترفض كما هي (لا تساهل
+    مع القصّ الأوسع)."""
+    items = []
+    for i in range(16):
+        items.append({
+            "title": "mdn page %d react basics" % i,
+            "url": "https://developer.mozilla.org/docs/p%d" % i,
+            "content": "react single topic page",
+        })
+    import json as _json
+    payload = _json.dumps({"results": items}).encode("utf-8")
+    capture = _UrlCapture(payload)
+    monkeypatch.setattr(urllib.request, "urlopen", capture)
+    provider = rp.SearxJsonSearchProvider(base_url="https://searx.test")
+    with pytest.raises(rp.ProviderNotReady):
+        provider.search("React 18.3.0 package.json peer dependencies")
