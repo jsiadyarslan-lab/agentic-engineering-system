@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -455,3 +456,53 @@ def test_require_relevant_still_rejects_blind_long_query_results():
     with pytest.raises(rp.ProviderNotReady) as caught:
         rp.require_relevant("searx", LONG_QUERY, irrelevant)
     assert caught.value.reason == rp.SEARCH_RESULTS_IRRELEVANT
+
+
+# ------------------------------------------------------------------ #
+# (W2-T20) لغة استعلام SearXNG من كتابته — عربي → language=ar
+# ------------------------------------------------------------------ #
+
+def test_searx_language_follows_query_script(monkeypatch):
+    """(W2-T20) استعلام عربي → language=ar · إنجليزي → en.
+
+    الصلب على en كان يجلب نتائج إنجليزية لاستعلام عربي فترفضها
+    بوابة الصلة بتغطية 0/N — والاستعلامات الفعلية للنموذج عربية.
+    """
+    captured = {}
+
+    def fake_open(req, timeout=None):
+        captured["url"] = req.full_url
+        is_arabic = "language=ar" in req.full_url
+        payload = {
+            "results": ([{
+                "title": "تصميم موقع إخباري وصولية WCAG",
+                "url": "https://example.org/news-a11y",
+                "content": "متطلبات وصولية موقع أخبار WCAG 2.1",
+            }] if is_arabic else [{
+                "title": "News website page structure best practices",
+                "url": "https://example.com/news-structure",
+                "content": "news website page structure homepage layout",
+            }]),
+        }
+
+        class R:
+            def read(self, _n=-1):
+                return json.dumps(payload).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        return R()
+
+    monkeypatch.setattr(rp.urllib.request, "urlopen", fake_open)
+    provider = rp.SearxJsonSearchProvider(base_url="http://searx.test")
+    results = provider.search("متطلبات وصولية موقع أخبار WCAG")
+    assert "language=ar" in captured["url"], captured["url"]
+    assert results, "نتيجة عربية ذات صلة يجب أن تمر"
+
+    results_en = provider.search("news website page structure")
+    assert "language=en" in captured["url"], captured["url"]
+    assert results_en, "نتيجة إنجليزية ذات صلة يجب أن تمر"

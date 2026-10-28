@@ -138,6 +138,9 @@ _TOKEN_SPLIT = re.compile(
     r"[^0-9a-z_\u0621-\u064a\u0660-\u0669\u066e-\u06d3]+"
 )
 
+#: (W2-T20) كشف لغة الاستعلام من كتابته — حروف عربية في النص = ar.
+_ARABIC_SCRIPT_RE = re.compile(r"[\u0621-\u064a]")
+
 
 #: كلمات عامة شائعة في الأسئلة — وجودها في نتيجة لا يُثبت صلتها.
 #: «أحدث نماذج كلاود» طابق «أحدث نماذج الطائرات المسيرة» بمجموعها فقط،
@@ -761,9 +764,13 @@ class SearxJsonSearchProvider:
             raise ProviderNotReady(
                 "searx: بلا رابط مثيل — عيّن base_url من إعدادات البحث"
             )
+        # (W2-T20) لغة الاستعلام من نصّه: عربي → ar (وإلا en). الصلب
+        # على en كان يجلب نتائج إنجليزية لاستعلام عربي فترفضها بوابة
+        # الصلة بتغطية 0/5 بصدق — والاستعلامات الفعلية للنموذج عربية.
+        language = "ar" if _ARABIC_SCRIPT_RE.search(query) else "en"
         url = (
             f"{self.base_url}/search?q={urllib.parse.quote(query)}"
-            "&format=json&language=en"
+            f"&format=json&language={language}"
         )
         request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
         try:
