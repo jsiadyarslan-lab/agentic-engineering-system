@@ -1095,10 +1095,34 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                     "details": {"conversation_id": conversation_id,
                                 "clock": True},
                 })
+            # (W2-T22) الاستعلام الواعي بسياق المحادثة + إعادة محاولة
+            # المتابعة: «ابحث انت واعطني ملخص» كانت تُقطَّر إلى
+            # «انت و ملخص» فيسأل المحرك عن «أنت» و«ملخص» (دليل conv-15
+            # دور 2 — ويكيبيديا أعادت ملخصات مسلسلات)، و«؟» (دور 3)
+            # لم تطلق بحثًا إطلاقًا فأجاب النموذج من ذاكرة متقادمة أنه
+            # «لا يملك إنترنت مباشر». الرسالة بلا موضوع ترث استعلام
+            # آخر رسالة موضوعية للمستخدم؛ وحثّ المتابعة القصير يعيد
+            # البحث بالموضوع الموروث بدل إجابة متقادمة.
+            user_history = [
+                m.content for m in history
+                if getattr(m, "role", "") == "user"
+            ]
+            contextual_query = chat_research.build_contextual_search_query(
+                body.message, user_history
+            )
+            if (web_decision.get("reason") == "auto_not_needed"
+                    and contextual_query.get("inherited")
+                    and chat_research.is_followup_urge(body.message)):
+                web_decision = {
+                    "search": True,
+                    "fetch_urls": [],
+                    "reason": "followup_retry",
+                    "markers": ["متابعة قصيرة — إعادة بحث بموضوع المحادثة"],
+                }
             # (013.5 §L) الاستعلام المُقطَّر: إرسال الجملة الاستفهامية
             # كما هي كان يجعل المحرك يبحث عن «ما» وحدها ويعيد صفحات
             # إعراب لسؤال عن أحدث نماذج Claude.
-            search_query = chat_research.build_search_query(body.message)
+            search_query = contextual_query["query"]
             web_used: dict = {"search": False, "sources": [],
                               "fetched": 0}
             sources_context = ""
@@ -1112,6 +1136,7 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                         "conversation_id": conversation_id,
                         "query": search_query[:200],
                         "original": body.message[:200],
+                        "inherited": bool(contextual_query.get("inherited")),
                         "fetch_urls": web_decision["fetch_urls"],
                         "reason": web_decision["reason"],
                         "markers": web_decision.get("markers", []),

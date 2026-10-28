@@ -241,3 +241,65 @@ def test_chat_search_budget_bounds_hung_network(client, api_env,
     assert "الميزانية الزمنية الكلية" in unavailable["details"]["error"]
     # المحادثة أكملت من الذاكرة مع الإعلان الصريح (013.5 §L/§30)
     assert "message_completed" in kinds, kinds
+
+
+# ------------------- (W2-T22) المتابعة ترث الموضوع ------------------ #
+
+def test_followup_inherits_topic_and_question_mark_retries(
+        client, api_env, stub_search):
+    """(W2-T22) سيناريو المالك حرفيًا في محادثة واحدة:
+
+    1. «اخبار انتخابات الكنسيت اليوم» ← بحث بموضوعه.
+    2. «ابحث انت واعطني ملخص» ← ترث الموضوع — لا «انت و ملخص»
+       (ويكيبيديا أعادت ملخصات مسلسلات في الحادثة الحقيقية).
+    3. «؟» ← إعادة بحث (followup_retry) بالموضوع الموروث — لا
+       إجابة من ذاكرة متقادمة «لا أملك إنترنت مباشر».
+    """
+    first = _chat(client, "اخبار انتخابات الكنسيت اليوم")
+    kinds1 = [e["kind"] for e in first]
+    assert "research.started" in kinds1, kinds1
+    bind = next(e for e in first if e["kind"] == "conversation.bind")
+    convo_id = bind["details"]["conversation_id"]
+    started1 = next(e for e in first if e["kind"] == "research.started")
+    assert started1["details"]["query"] == "اخبار انتخابات الكنسيت اليوم"
+    assert started1["details"]["inherited"] is False
+
+    # الدور 2 — طلب متابعة بلا موضوع: يرث استعلام الدور 1
+    second = _chat(client, "ابحث انت واعطني ملخص",
+                   conversation_id=convo_id)
+    kinds2 = [e["kind"] for e in second]
+    assert "research.started" in kinds2, kinds2
+    started2 = next(e for e in second if e["kind"] == "research.started")
+    assert started2["details"]["query"] == "اخبار انتخابات الكنسيت اليوم"
+    assert started2["details"]["inherited"] is True
+    assert "انت" not in started2["details"]["query"].split()
+    assert "research.results" in kinds2, kinds2
+
+    # الدور 3 — «؟» وحدها: إعادة بحث بالموضوع الموروث
+    third = _chat(client, "؟", conversation_id=convo_id)
+    kinds3 = [e["kind"] for e in third]
+    assert "research.started" in kinds3, (
+        "«؟» في محادثة ذات موضوع يجب أن تعيد البحث — لا إجابة متقادمة"
+    )
+    started3 = next(e for e in third if e["kind"] == "research.started")
+    assert started3["details"]["reason"] == "followup_retry"
+    assert started3["details"]["query"] == "اخبار انتخابات الكنسيت اليوم"
+    assert started3["details"]["inherited"] is True
+    assert "research.results" in kinds3, kinds3
+    used3 = next(e for e in third if e["kind"] == "research.used")
+    assert used3["details"]["search"] is True
+    done3 = next(e for e in third if e["kind"] == "message_completed")
+    assert done3["details"]["web_used"] is True
+
+
+def test_followup_retry_respects_explicit_web_off(client, api_env,
+                                                  stub_search):
+    """(W2-T22) web=off الصريح يظل محترمًا — المتابعة لا تتجاوزه."""
+    first = _chat(client, "اخبار انتخابات الكنسيت اليوم")
+    bind = next(e for e in first if e["kind"] == "conversation.bind")
+    convo_id = bind["details"]["conversation_id"]
+    events = _chat(client, "؟", conversation_id=convo_id, web="off")
+    kinds = [e["kind"] for e in events]
+    assert "research.started" not in kinds, kinds
+    done = next(e for e in events if e["kind"] == "message_completed")
+    assert done["details"]["web_used"] is False

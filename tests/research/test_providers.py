@@ -554,3 +554,111 @@ def test_short_query_single_token_hit_still_weak():
          "snippet": "تعليمات مكتبة رياكت"})
     assert report2["hit"] == ["رياكت"]
     assert report2["strong"] is False
+
+
+# ------------------------------------------------------------------ #
+# (W2-T22) بوابة الصلة × الأخبار: كلمات عامة + إملاء المالك
+# ------------------------------------------------------------------ #
+
+#: استعلام المالك الحرفي من محادثة 15 (2026-10-28) — بإملائه «الكنسيت».
+OWNER_NEWS_QUERY = "اخبار انتخابات الكنسيت اليوم"
+
+
+def test_homepage_titles_no_longer_pass_news_query():
+    """(W2-T22) «أخبار اليوم» عنوان أي صفحة رئيسية — لا يُثبت صلة
+    استعلام «اخبار انتخابات الكنسيت اليوم».
+
+    الدليل الحي (conv-15 دور 1): صفحتا الجزيرة وسكاي نيوز الرئيسيتان
+    مرّرتا البوابة (hit=اخبار+اليوم، رمزان = «قوي») فتوقف المزود الأول
+    قبل SearXNG بلا نتيجة واحدة عن الانتخابات.
+    """
+    homepages = [
+        {"title": "الجزيرة نت: آخر أخبار اليوم حول العالم",
+         "url": "https://www.aljazeera.net/",
+         "snippet": "تغطية مباشرة"},
+        {"title": "أخبار اليوم | سكاي نيوز عربية",
+         "url": "https://www.skynewsarabia.com/",
+         "snippet": "آخر المستجدات"},
+    ]
+    for result in homepages:
+        report = rp.result_relevance(OWNER_NEWS_QUERY, result)
+        assert report["hit"], "المطابق العام يُرى كما هو — لا يُخفى"
+        assert report["strong"] is False, (
+            "عنوان صفحة رئيسية عام لا يُثبت صلة استعلام انتخابات: "
+            f"{report}"
+        )
+    aggregate = rp.relevance_report(OWNER_NEWS_QUERY, homepages)
+    assert aggregate["relevant"] is False
+
+
+def test_typo_tolerance_recovers_live_election_results():
+    """(W2-T22) إملاء «الكنسيت» (قلب س/ي) لا يسقط نتائج «الكنيست» الحية.
+
+    الدليل الحي (live_diag_gate_typo.py): 5 من 6 نتائج SearXNG الحية
+    كانت «ضعيفة» (hit=انتخابات وحدها) بسبب الإملاء — والتطابق المتسامح
+    (ليفنشتاين ≤2 للرموز المميزة ≥5 حروف) يعيدها قوية.
+    """
+    live_result = {
+        "title": "اللجنة المركزية: 77.7% نسبة التصويت في انتخابات الكنيست",
+        "url": "https://arab48.com/نتائج-انتخابات-الكنيست",
+        "snippet": "نتائج فرز انتخابات الكنيست الـ26 ونسبة التصويت",
+    }
+    report = rp.result_relevance(OWNER_NEWS_QUERY, live_result)
+    assert "الكنسيت" in report["hit"], (
+        f"الإملاء المتسامح يجب أن يطابق الكنسيت↔الكنيست: {report}"
+    )
+    assert report["strong"] is True
+    aggregate = rp.relevance_report(
+        OWNER_NEWS_QUERY,
+        [live_result] + [
+            {"title": "مشاهد من انتخابات الكنيست.. تقارب بلا حسم",
+             "url": "https://example.com/knesset-1",
+             "snippet": "تطورات يوم الانتخابات"},
+        ],
+    )
+    assert aggregate["strong_results"] >= 2
+    assert aggregate["relevant"] is True
+
+
+def test_levenshtein_bounds_and_fuzzy_guards():
+    """(W2-T22) مسافة ليفنشتاين بحدودها — والأشباه العرضية لا تمر."""
+    assert rp._levenshtein_within("الكنسيت", "الكنيست", 2) is True
+    assert rp._levenshtein_within("الكنسيت", "الكنيست", 1) is False
+    # رموز قصيرة لا تُسامَح (كثيرة الأشباه): باريس ≠ برلين
+    assert rp._fuzzy_hit("باريس", {"برلين"}) is False
+    assert rp._fuzzy_hit("رياكت", {"رياكتنا"}) is False  # <5 حروف
+    # الرموز العامة لا تسلك مسار التسامح أصلًا (تُفحص في النتيجة نفسها)
+    report = rp.result_relevance(
+        "france news today",
+        {"title": "News, sport and opinion from the Guardian homepage",
+         "url": "https://www.theguardian.com/",
+         "snippet": "latest updates"},
+    )
+    assert report["hit"] == ["news"]
+    assert report["strong"] is False, "france غائب — الصفحة لا تخص الاستعلام"
+
+
+def test_all_generic_news_query_still_answerable():
+    """(W2-T22) «أخبار اليوم» الصرفة طلب مشروع — الصفحات الإخبارية
+    العامة تجيب عنه (استثناء الاستعلام كله عام)."""
+    report = rp.result_relevance(
+        "اخبار اليوم",
+        {"title": "أخبار اليوم | سكاي نيوز عربية",
+         "url": "https://www.skynewsarabia.com/",
+         "snippet": "آخر المستجدات لحظة بلحظة"},
+    )
+    assert report["strong"] is True, (
+        f"الاستعلام العام كله لا يملك رمزًا نادرًا يميّز: {report}"
+    )
+
+
+def test_fuzzy_does_not_inflate_short_token_queries():
+    """(W2-T22) حرس التلفيق سليم مع التسامح: «رياكت» وحدها يبقون ضعيفًا
+    (حوسبة/كمومية لا تطابق مكتبة/لواجهات/الويب حتى تسامحًا)."""
+    report = rp.result_relevance(
+        "رياكت حوسبة كمومية",
+        {"title": "مكتبة رياكت لواجهات الويب",
+         "url": "https://example.com/react-ar",
+         "snippet": "تعليمات مكتبة رياكت"})
+    assert report["hit"] == ["رياكت"]
+    assert report["strong"] is False

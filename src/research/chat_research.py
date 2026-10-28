@@ -185,6 +185,8 @@ _QUERY_NOISE = (
     "what is", "what are", "tell me", "please", "can you", "could you",
     "search for", "search", "give me", "show me", "find me", "find",
     "explain", "list me", "i want to know", "do you know",
+    # (W2-T22) حثّ المتابعة الإنجليزي — كلمات طلب لا موضوع
+    "try again", "again", "retry", "now",
     # (RLR-005b) قناة/تعليمات إنجليزية
     "on the web", "from the web", "on the internet", "from the internet",
     "in wikipedia", "from wikipedia", "on wikipedia", "with sources",
@@ -206,7 +208,30 @@ _QUERY_STOP = frozenset(normalize_arabic(word) for word in (
     # (RLR-005b) رموز قناة/تعليمات إنجليزية
     "wikipedia", "web", "internet", "sources", "source", "mention",
     "cite",
+    # (W2-T22) ضمائر/وصل/كلمات طلب — «ابحث انت واعطني ملخص» كانت
+    # تُقطَّر إلى «انت و ملخص» فيسأل المحرك عن «أنت» و«ملخص» (دليل
+    # conv-15 دور 2: ويكيبيديا أعاد ملخصات مسلسلات «أنت أطرق بابي»)
+    "انت", "انتي", "انتم", "و", "او", "ملخص", "ملخصات", "خلاصة",
+    "قم", "نفذ",
 ))
+
+
+def _distill_tokens(message: str) -> list[str]:
+    """(W2-T22) التقطير الخام — رموز الرسالة بعد إزالة الصيغ الاستفهامية
+    والكلمات الوظيفية، **بلا** احتياط العودة للنص الأصلي.
+
+    الفرق عن build_search_query: هذه للفحص الموضوعي (هل تحمل الرسالة
+    موضوعًا خاصًا؟) — فالعودة إلى النص الأصلي عند فراغ التقطير كانت
+    تخفي أن الرسالة كلها صيغ طلب بلا موضوع («ابحث انت واعطني ملخص»).
+    """
+    text = re.sub(r"\s+", " ", str(message or "")).strip()
+    if not text:
+        return []
+    folded = normalize_arabic(text)
+    for noise in sorted(_QUERY_NOISE, key=len, reverse=True):
+        folded = folded.replace(normalize_arabic(noise), " ")
+    folded = re.sub(r"[؟?،,.!؛;:]+", " ", folded)
+    return [t for t in folded.split() if t and t not in _QUERY_STOP]
 
 
 def build_search_query(message: str, *, limit: int = 180) -> str:
@@ -220,13 +245,7 @@ def build_search_query(message: str, *, limit: int = 180) -> str:
     text = re.sub(r"\s+", " ", str(message or "")).strip()
     if not text:
         return ""
-    folded = normalize_arabic(text)
-    # الحذف يجري على النص المطبَّع ثم يُعاد البناء من الرموز الباقية
-    for noise in sorted(_QUERY_NOISE, key=len, reverse=True):
-        folded = folded.replace(normalize_arabic(noise), " ")
-    folded = re.sub(r"[؟?،,.!؛;:]+", " ", folded)
-    tokens = [t for t in folded.split() if t and t not in _QUERY_STOP]
-    distilled = " ".join(tokens).strip()
+    distilled = " ".join(_distill_tokens(text)).strip()
     # احتياط: إن فرّغ التقطير الاستعلام نعود للرسالة الأصلية
     if len(distilled) < 3:
         return text[:limit]
@@ -263,6 +282,93 @@ def is_clock_question(message: str) -> bool:
         return False
     tokens = [t for t in distilled.split() if t]
     return bool(tokens) and all(t in _CLOCK_TOKENS for t in tokens)
+
+
+# ------------------------------------------------------------------ #
+# (W2-T22) الاستعلام الواعي بسياق المحادثة + حثّ المتابعة
+# ------------------------------------------------------------------ #
+
+#: عمق النظر في تاريخ المستخدم بحثًا عن موضوع المحادثة — آخر 6 رسائل
+#: تكفي؛ الأقدم من ذلك غالبًا موضوع آخر لا علاقة له بالمتابعة.
+_INHERIT_SCAN_DEPTH = 6
+
+
+def _topical_tokens(tokens: list[str]) -> list[str]:
+    """(W2-T22) رموز موضوعية — غير الكلمات العامة (أخبار/اليوم/…).
+
+    كلمة «أخبار» أو «اليوم» في رسالة لا تجعلها موضوعًا؛ الموضوع ما
+    يحدد ماذا عن («انتخابات الكنسيت») — والمؤشرات العامة وحدها
+    تعني «رسالة طلب/متابعة بلا موضوع» ترث موضوع المحادثة.
+    """
+    from research.providers import _GENERIC_TOKENS
+    return [t for t in (tokens or [])
+            if len(t) >= 2 and t not in _GENERIC_TOKENS]
+
+
+def build_contextual_search_query(message: str, user_history,
+                                  *, limit: int = 180) -> dict:
+    """(W2-T22) استعلام بحث واعٍ بسياق المحادثة.
+
+    الدافع الموثق (conv-15 دور 2): «ابحث انت واعطني ملخص» قُطِّرت
+    إلى «انت و ملخص» — رسالة متابعة أمرية بلا موضوع، فسألنا المحركات
+    عن «أنت» و«ملخص» وأجابت بملخصات مسلسلات بدل أخبار انتخابات
+    الكنيست التي طلبها المستخدم قبلها بدقيقة واحدة. القاعدة:
+
+    - الرسالة التي تحمل موضوعًا (رمز موضوعي واحد على الأقل بعد
+      التقطير) تُستخدم كما هي — حتى لو كانت كلمة واحدة («فرنسا»
+      موضوع جديد مشروع؛ لا ندمج فيه القديم تحكمًا).
+    - الرسالة التي لا تحمل موضوعًا (صفر رموز موضوعية) ترث استعلام
+      آخر رسالة موضوعية للمستخدم في المحادثة نفسها.
+
+    الصدق محفوظ: الوراثة لا تضيف كلمة لم يكتبها المستخدم — كل كلمة
+    في الاستعلام الموروث كتبها هو بنفسه في رسالة سابقة.
+    """
+    current_tokens = _distill_tokens(message)
+    if _topical_tokens(current_tokens):
+        return {"query": build_search_query(message, limit=limit),
+                "inherited": False, "reason": "own_topic"}
+    for previous in reversed(list(user_history or [])[-_INHERIT_SCAN_DEPTH:]):
+        previous_tokens = _distill_tokens(str(previous or ""))
+        if _topical_tokens(previous_tokens):
+            return {"query": build_search_query(str(previous), limit=limit),
+                    "inherited": True, "reason": "inherited_topic"}
+    return {"query": build_search_query(message, limit=limit),
+            "inherited": False, "reason": "no_topic"}
+
+
+#: (W2-T22) كلمات الحثّ/المتابعة — رسالة قصيرة كل رموزها من هذه
+#: المجموعة (أو علامات استفهام وحدها) تعني «حاول الآن مجددًا» في
+#: سياق محادثة ذات موضوع. لا تُطلق البحث من تلقاء نفسها — فقط مع
+#: موضوع موروث من build_contextual_search_query.
+_FOLLOWUP_URGE_WORDS = frozenset(normalize_arabic(word) for word in (
+    "والان", "الان", "الآن", "جرب", "حاول", "اعد", "كرر", "مجددا",
+    "ثانيه", "مره", "ليش", "لماذا", "شنو", "وشو", "ايش", "ايسه",
+    "بعدين", "كمان", "وين", "again", "retry", "now", "why",
+))
+
+
+def is_followup_urge(message: str) -> bool:
+    """(W2-T22) هل الرسالة حثّ متابعة قصير («؟»، «والان»، «جرب الان»)؟
+
+    الدافع الموثق (conv-15 دور 3): «؟» وحدها (02:28:24) لم تطلق
+    بحثًا إطلاقًا (لا research.started — web_used=false) فأجاب النموذج
+    من ذاكرة المتابعة المتقادمة أنه «لا يملك إنترنت مباشر» — وهي
+    بالضبط الرسالة التي شكا منها المالك. رسالة الحثّ القصيرة في
+    محادثة ذات موضوع تُعيد البحث بالموضوع الموروث بدل ذلك.
+
+    الحد الصارم: كل رموز الرسالة (بعد نزع الترقيم) من كلمات الحثّ،
+    وبحد أقصى 4 رموز — الرسالة الفعلية الأطول لا تُعد حثًّا أبدًا.
+    """
+    stripped = re.sub(
+        r"[؟?!.…،,؛:\-–—]+", " ",
+        normalize_arabic(str(message or "")),
+    )
+    tokens = [t for t in stripped.split() if t]
+    if not tokens:
+        return True   # علامة استفهام/تعجب وحدها — «؟»
+    if len(tokens) > 4:
+        return False  # رسالة فعلية لا حثّ مقتضب
+    return all(t in _FOLLOWUP_URGE_WORDS for t in tokens)
 
 
 def decide_web_mode(message: str, *, setting: str = "auto") -> dict:
@@ -419,6 +525,7 @@ def denied_context(reason: str) -> str:
 
 __all__ = [
     "WEB_DENIED_NOTICE",
+    "build_contextual_search_query",
     "build_search_query",
     "build_sources_context",
     "decide_web_mode",
@@ -426,6 +533,7 @@ __all__ = [
     "detect_web_intent",
     "extract_urls",
     "fetch_for_chat",
+    "is_followup_urge",
     "matched_markers",
     "normalize_arabic",
     "search_for_chat",

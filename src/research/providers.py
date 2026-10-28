@@ -145,17 +145,77 @@ _ARABIC_SCRIPT_RE = re.compile(r"[\u0621-\u064a]")
 #: كلمات عامة شائعة في الأسئلة — وجودها في نتيجة لا يُثبت صلتها.
 #: «أحدث نماذج كلاود» طابق «أحدث نماذج الطائرات المسيرة» بمجموعها فقط،
 #: فظهرت نتيجة لا تخصّ السؤال. الرمز النادر وحده يُثبت الصلة.
+#:
+#: (W2-T22 2026-10-28) إضافات الأخبار/المتابعة: «أخبار اليوم» عنوان أي
+#: صفحة رئيسية لإعلامٍ ما — مرّرت بوابة الصلة لاستعلام «اخبار انتخابات
+#: الكنسيت اليوم» فتوقف المزود الأول قبل SearXNG بصفحتين رئيسيتين
+#: لا تحملان نتيجة واحدة (دليل conv-15 دور 1). الكلمات الإخبارية
+#: العامة (اخبار/اليوم/نتائج/مباشر…) لا تُثبت الصلة وحدها؛ الرمز
+#: الموضوعي (انتخابات/الكنسيت…) هو المُثبت.
 _GENERIC_TOKENS = frozenset(fold_text(t) for t in (
     "احدث", "أحدث", "اخر", "آخر", "اصدار", "إصدار", "اصدارات", "إصدارات",
     "نماذج", "نموذج", "جديد", "جديدة", "مقارنة", "افضل", "أفضل", "latest",
     "new", "newest", "models", "model", "version", "versions", "release",
     "released", "compare", "best", "top", "list",
+    # (W2-T22) عام إخباري/متابعة — عناوين الصفحات الرئيسية تحتها
+    "اخبار", "الاخبار", "أخبار", "خبر", "اليوم", "الان", "الآن", "حاليا",
+    "مباشر", "تغطية", "نتيجة", "نتائج", "ملخص", "ملخصات", "انت", "عاجل",
+    "news", "today", "now", "live", "coverage", "summary", "breaking",
 ))
 
 
 def _result_haystack(result: dict) -> str:
     return fold_text(" ".join(str(result.get(key) or "") for key in (
         "title", "url", "snippet", "href")))
+
+
+#: (W2-T22) أدنى طول لرمز يستحق تسامح الإملاء — الرموز القصيرة
+#: (<5) كثيرة الأشباه العرضية فتضخّم التغطية بلا دليل.
+_FUZZY_MIN_LEN = 5
+
+
+def _levenshtein_within(a: str, b: str, cap: int) -> bool:
+    """مسافة ليفنشتاين ≤ cap بخروج مبكر — رموز قصيرة فقط (W2-T22)."""
+    if a == b:
+        return True
+    la, lb = len(a), len(b)
+    if abs(la - lb) > cap:
+        return False
+    if la > lb:
+        a, b, la, lb = b, a, lb, la
+    previous = list(range(lb + 1))
+    for i in range(1, la + 1):
+        current = [i] + [0] * lb
+        best = i
+        for j in range(1, lb + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            current[j] = min(previous[j] + 1, current[j - 1] + 1,
+                             previous[j - 1] + cost)
+            if current[j] < best:
+                best = current[j]
+        if best > cap:
+            return False
+        previous = current
+    return previous[lb] <= cap
+
+
+def _fuzzy_hit(token: str, haystack_tokens) -> bool:
+    """تسامح الإملاء للرموز المميزة الطويلة (W2-T22).
+
+    الدافع الموثق (conv-15): إملاء المالك «الكنسيت» (قلب س/ي) كان يجعل
+    5 من 6 نتائج SearXNG الحية عن انتخابات الكنيست «ضعيفة»
+    (hit=انتخابات وحدها) فيخنق البحث إلى نتيجة واحدة — مستنسخ بكود
+    التطبيق نفسه. رموز ≥7 حروف: مسافة ≤2؛ رموز 5-6: مسافة ≤1.
+    """
+    if len(token) < _FUZZY_MIN_LEN:
+        return False
+    cap = 1 if len(token) <= 6 else 2
+    for candidate in haystack_tokens:
+        if abs(len(candidate) - len(token)) > cap:
+            continue
+        if _levenshtein_within(token, candidate, cap):
+            return True
+    return False
 
 
 def result_relevance(query: str, result: dict) -> dict:
@@ -174,8 +234,30 @@ def result_relevance(query: str, result: dict) -> dict:
                 "strong": True}
     haystack = _result_haystack(result)
     hit = [t for t in tokens if t in haystack]
+    #: (W2-T22) تسامح الإملاء — الكنسيت↔الكنيست: قلب حرفين في إملاء
+    #: المستخدم أسقط نتائج حية قوية إلى «ضعيفة». يُطبق على الرموز
+    #: المميزة (غير العامة) الطويلة حصراً حتى لا تتضخم التغطية بلا
+    #: دليل، والرموز العامة لا تُسامَح أصلًا لأنها لا تُثبت شيئًا.
+    if len(tokens) > len(hit):
+        haystack_tokens: set[str] | None = None
+        for token in tokens:
+            if token in hit or token in _GENERIC_TOKENS:
+                continue
+            if haystack_tokens is None:
+                haystack_tokens = {
+                    part for part in _TOKEN_SPLIT.split(haystack) if part
+                }
+            if _fuzzy_hit(token, haystack_tokens):
+                hit.append(token)
     ratio = len(hit) / len(tokens)
     specific = [t for t in hit if t not in _GENERIC_TOKENS]
+    #: (W2-T22) استعلام كله كلمات عامة («أخبار اليوم»): الطلب نفسه عام
+    #: فلا يوجد رمز نادر يميّز نتيجة عن أخرى — نقبل المطابق العام بدل
+    #: رفض كل شيء؛ طلب «أخبار اليوم» مشروع في ذاته وتجيب عنه الصفحات
+    #: الإخبارية العامة. الاستعلام ذو الرمز الموضوعي الواحد يبقى محكومًا
+    #: بالقاعدة الصارمة أعلاه (حرس التلفيق لا يُمسّ).
+    if tokens and not any(t not in _GENERIC_TOKENS for t in tokens):
+        specific = list(hit)
     #: القاعدة: أغلب رموز الاستعلام **في هذه النتيجة** (لا في مجموع
     #: النتائج)، وأحدها على الأقل رمز مميّز.
     #:
