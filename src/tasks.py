@@ -308,6 +308,33 @@ def run_task(
         step for step in getattr(cycle, "steps", [])
         if getattr(step, "status", "") == "failed"
     ]
+    # (W2-T25) مسار المنسق الحي: نتائج المهام في cycle.tasks — فشل
+    # تنفيذي (execution_failed) يحمل كتلة فشل المنفذ (رسالة
+    # RoleSystemFault الحرفية ضمن «detail»)؛ غياب هذا المسار كان
+    # يبتلع تفاصيل الفشل في «لم تكتمل أدلةً» العامة.
+    if not failed_steps:
+        failed_outcomes = [
+            t for t in getattr(cycle, "tasks", []) or []
+            if getattr(t, "execution_failed", False)
+        ]
+        if failed_outcomes:
+            first_outcome = failed_outcomes[0]
+            failure_block = (
+                getattr(first_outcome, "failure", None)
+                or {
+                    "class": "INSUFFICIENT_EVIDENCE",
+                    "stage": "IMPLEMENTATION",
+                    "reason": "EXECUTION_FAILED",
+                    "tool": "",
+                    "retryable": True,
+                }
+            )
+            failure_block = {
+                **failure_block,
+                "task_id": getattr(first_outcome, "task_id", ""),
+                "attempts": getattr(first_outcome, "attempts", 0),
+            }
+            failed_steps = [first_outcome]
     if failed_steps:
         first = failed_steps[0]
         failure_block = (
