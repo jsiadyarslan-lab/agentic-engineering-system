@@ -1,0 +1,880 @@
+{
+  "task": "W2-T22-AUDIT — independent audit of W2-T22 (contextual chat search + followup retry + relevance gate)",
+  "agent": "Audit Agent (independent, general-purpose)",
+  "date": "2026-10-28T03:49:22Z",
+  "ssh": {
+    "host": "92.5.14.150",
+    "user": "opc",
+    "mode": "read-only + authorized POSTs only"
+  },
+  "authorized_posts": [
+    "POST /api/chat/stream ×2 (fresh E2E, exactly 2 turns)",
+    "POST /api/research/providers/{4,5}/probe (once each, only when STALE)"
+  ],
+  "script": {
+    "path": "/home/z/my-project/scripts/ops/w2t22_audit_check.py",
+    "md5": "6bca5b7b98cd77e9e7289b089728092f"
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A",
+      "title": "production git HEAD == ad371b6 (full hash)",
+      "pass": true,
+      "evidence": {
+        "head": "ad371b6b056fa0fc13929b1cb1a8ec240643e426",
+        "rc": 0
+      }
+    },
+    {
+      "id": "A2",
+      "group": "A",
+      "title": "zero tracked-modified files in production tree",
+      "pass": true,
+      "evidence": {
+        "tracked_dirty": [],
+        "untracked": [
+          "runtime/browser/",
+          "runtime/projects/",
+          "scripts/ops/nightly_backup.sh",
+          "scripts/ops/nightly_backup.sh.pre-w1t04",
+          "src/agentic_engineering_system.egg-info/"
+        ]
+      }
+    },
+    {
+      "id": "A3",
+      "group": "A",
+      "title": "untracked set == expected (browser/projects/nightly_backup*/egg-info)",
+      "pass": true,
+      "evidence": {
+        "actual": [
+          "runtime/browser/",
+          "runtime/projects/",
+          "scripts/ops/nightly_backup.sh",
+          "scripts/ops/nightly_backup.sh.pre-w1t04",
+          "src/agentic_engineering_system.egg-info/"
+        ],
+        "expected": [
+          "runtime/browser/",
+          "runtime/projects/",
+          "scripts/ops/nightly_backup.sh",
+          "scripts/ops/nightly_backup.sh.pre-w1t04",
+          "src/agentic_engineering_system.egg-info/"
+        ]
+      }
+    },
+    {
+      "id": "A4",
+      "group": "A",
+      "title": "server-side: parent(ad371b6) == 5b939f6 (rollback anchor)",
+      "pass": true,
+      "evidence": {
+        "parent": "5b939f6ad9d27d64dc8045beee82d97ced190519"
+      }
+    },
+    {
+      "id": "A5",
+      "group": "A",
+      "title": "HEAD commit subject announces W2-T22",
+      "pass": true,
+      "evidence": {
+        "subject": "ad371b6b056fa0fc13929b1cb1a8ec240643e426|fix(research): W2-T22 — بحث المحادثة يرث سياقها + إعادة محاولة المتابعة + بوابة تصمد أمام العام والإملاء"
+      }
+    },
+    {
+      "id": "B1",
+      "group": "B",
+      "title": "providers.py: _GENERIC_TOKENS expanded (اخبار/اليوم/نتائج/مباشر)",
+      "pass": true,
+      "evidence": {
+        "tokens_block_found": true
+      }
+    },
+    {
+      "id": "B2",
+      "group": "B",
+      "title": "providers.py: _levenshtein_within + _fuzzy_hit defined",
+      "pass": true,
+      "evidence": {}
+    },
+    {
+      "id": "B3",
+      "group": "B",
+      "title": "providers.py: all-generic fallback inside result_relevance",
+      "pass": true,
+      "evidence": {}
+    },
+    {
+      "id": "B4",
+      "group": "B",
+      "title": "chat_research.py: build_contextual_search_query + is_followup_urge + _distill_tokens",
+      "pass": true,
+      "evidence": {}
+    },
+    {
+      "id": "B5",
+      "group": "B",
+      "title": "routes.py: contextual wiring + followup_retry guard (auto_not_needed only) + inherited flag",
+      "pass": true,
+      "evidence": {}
+    },
+    {
+      "id": "B6",
+      "group": "B",
+      "title": "production files byte-identical to ad371b6 git blobs (3/3)",
+      "pass": true,
+      "evidence": {
+        "src/research/providers.py": {
+          "remote_sha256": "5a2e06048c999ffa87fd980a402d7248556e2a1c2fd7268db8ecc3f5c0632574",
+          "blob_sha256": "5a2e06048c999ffa87fd980a402d7248556e2a1c2fd7268db8ecc3f5c0632574",
+          "match": true
+        },
+        "src/research/chat_research.py": {
+          "remote_sha256": "9d98121a0bd40082e1cd6f4575fd761fb9ddffcadeacf96cd0db590a23c41a86",
+          "blob_sha256": "9d98121a0bd40082e1cd6f4575fd761fb9ddffcadeacf96cd0db590a23c41a86",
+          "match": true
+        },
+        "src/api/routes.py": {
+          "remote_sha256": "9171e20b394a9c1410c85cc73d873d57ef0a50dc14bf5ac7c4192ee431d5a4f9",
+          "blob_sha256": "9171e20b394a9c1410c85cc73d873d57ef0a50dc14bf5ac7c4192ee431d5a4f9",
+          "match": true
+        }
+      }
+    },
+    {
+      "id": "C1",
+      "group": "C",
+      "title": "agentic/nginx/searxng/search-api all active",
+      "pass": true,
+      "evidence": {
+        "states": [
+          "active",
+          "active",
+          "active",
+          "active"
+        ]
+      }
+    },
+    {
+      "id": "C2",
+      "group": "C",
+      "title": "GET /health = 200",
+      "pass": true,
+      "evidence": {
+        "http_code": "200",
+        "body_head": "{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-system: durable-projects+autonomous-loop+provider-management\",\""
+      }
+    },
+    {
+      "id": "C3",
+      "group": "C",
+      "title": "journalctl -u agentic -p err since deploy window: no entries",
+      "pass": true,
+      "evidence": {
+        "since": "2026-10-28 03:15 UTC",
+        "out": "-- No entries --",
+        "err": ""
+      }
+    },
+    {
+      "id": "D1",
+      "group": "D",
+      "title": "homepage titles no longer pass owner news query (strong=False ×2)",
+      "pass": true,
+      "evidence": {
+        "aljazeera": {
+          "tokens": [
+            "اخبار",
+            "انتخابات",
+            "الكنسيت",
+            "اليوم"
+          ],
+          "hit": [
+            "اخبار",
+            "اليوم"
+          ],
+          "ratio": 0.5,
+          "specific": [],
+          "discriminating": [
+            "انتخابات",
+            "الكنسيت"
+          ],
+          "strong": false
+        },
+        "skynews": {
+          "tokens": [
+            "اخبار",
+            "انتخابات",
+            "الكنسيت",
+            "اليوم"
+          ],
+          "hit": [
+            "اخبار",
+            "اليوم"
+          ],
+          "ratio": 0.5,
+          "specific": [],
+          "discriminating": [
+            "انتخابات",
+            "الكنسيت"
+          ],
+          "strong": false
+        }
+      }
+    },
+    {
+      "id": "D2",
+      "group": "D",
+      "title": "typo tolerance: 'الكنسيت' in hit; live knesset result strong=True",
+      "pass": true,
+      "evidence": {
+        "report": {
+          "tokens": [
+            "اخبار",
+            "انتخابات",
+            "الكنسيت",
+            "اليوم"
+          ],
+          "hit": [
+            "انتخابات",
+            "الكنسيت"
+          ],
+          "ratio": 0.5,
+          "specific": [
+            "انتخابات",
+            "الكنسيت"
+          ],
+          "discriminating": [
+            "انتخابات",
+            "الكنسيت"
+          ],
+          "strong": true
+        },
+        "lev_knesset_cap2": true,
+        "fuzzy_knesset_hit": true
+      }
+    },
+    {
+      "id": "D3",
+      "group": "D",
+      "title": "all-generic query 'اخبار اليوم' vs homepage: strong=True (fallback)",
+      "pass": true,
+      "evidence": {
+        "report": {
+          "tokens": [
+            "اخبار",
+            "اليوم"
+          ],
+          "hit": [
+            "اخبار",
+            "اليوم"
+          ],
+          "ratio": 1.0,
+          "specific": [
+            "اخبار",
+            "اليوم"
+          ],
+          "discriminating": [],
+          "strong": true
+        }
+      }
+    },
+    {
+      "id": "D4",
+      "group": "D",
+      "title": "fabrication guard intact: 'رياكت حوسبة كمومية' vs react page strong=False",
+      "pass": true,
+      "evidence": {
+        "report": {
+          "tokens": [
+            "رياكت",
+            "حوسبه",
+            "كموميه"
+          ],
+          "hit": [
+            "رياكت"
+          ],
+          "ratio": 0.333,
+          "specific": [
+            "رياكت"
+          ],
+          "discriminating": [
+            "رياكت",
+            "حوسبه",
+            "كموميه"
+          ],
+          "strong": false
+        }
+      }
+    },
+    {
+      "id": "D5",
+      "group": "D",
+      "title": "_GENERIC_TOKENS membership (اخبار/اليوم/نتائج/مباشر)",
+      "pass": true,
+      "evidence": {
+        "membership": {
+          "اخبار": true,
+          "اليوم": true,
+          "نتائج": true,
+          "مباشر": true
+        }
+      }
+    },
+    {
+      "id": "E1",
+      "group": "E",
+      "title": "'ابحث انت واعطني ملخص' inherits topic query verbatim",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "inherited": true,
+          "reason": "inherited_topic"
+        }
+      }
+    },
+    {
+      "id": "E2",
+      "group": "E",
+      "title": "'؟' inherits topic query verbatim",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "inherited": true,
+          "reason": "inherited_topic"
+        }
+      }
+    },
+    {
+      "id": "E3",
+      "group": "E",
+      "title": "'فرنسا' stays own topic (not merged with history)",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "query": "فرنسا",
+          "inherited": false,
+          "reason": "own_topic"
+        }
+      }
+    },
+    {
+      "id": "E4",
+      "group": "E",
+      "title": "is_followup_urge('؟') == True",
+      "pass": true,
+      "evidence": {
+        "value": true
+      }
+    },
+    {
+      "id": "E5",
+      "group": "E",
+      "title": "is_followup_urge('والان') == True",
+      "pass": true,
+      "evidence": {
+        "value": true
+      }
+    },
+    {
+      "id": "E6",
+      "group": "E",
+      "title": "is_followup_urge('جرب الان') == True",
+      "pass": true,
+      "evidence": {
+        "value": true
+      }
+    },
+    {
+      "id": "E7",
+      "group": "E",
+      "title": "is_followup_urge('اكتب لي قصة') == False",
+      "pass": true,
+      "evidence": {
+        "value": false
+      }
+    },
+    {
+      "id": "F1",
+      "group": "F",
+      "title": "conversation id=22 exists, mode=chat, created ~03:22-03:26Z",
+      "pass": true,
+      "evidence": {
+        "conversation": {
+          "id": 22,
+          "title": "اخبار انتخابات الكنسيت اليوم",
+          "mode": "chat",
+          "project_id": null,
+          "archived_at": null,
+          "created_at": "2026-10-28 03:24:07.571678",
+          "updated_at": "2026-10-28 03:25:06.332478"
+        }
+      }
+    },
+    {
+      "id": "F2",
+      "group": "F",
+      "title": "owner's exact 3 user turns in order",
+      "pass": true,
+      "evidence": {
+        "user_messages": [
+          "اخبار انتخابات الكنسيت اليوم",
+          "ابحث انت واعطني ملخص",
+          "؟"
+        ],
+        "n_users": 3
+      }
+    },
+    {
+      "id": "F3",
+      "group": "F",
+      "title": "3 assistant messages with real content (>=200 chars each)",
+      "pass": true,
+      "evidence": {
+        "assistant_lengths": [
+          2071,
+          2450,
+          2446
+        ]
+      }
+    },
+    {
+      "id": "F4",
+      "group": "F",
+      "title": "research.started ×3: own-topic / inherited / followup_retry",
+      "pass": true,
+      "evidence": {
+        "n": 3,
+        "turn1": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "original": "اخبار انتخابات الكنسيت اليوم",
+          "inherited": false,
+          "reason": "auto_detected"
+        },
+        "turn2": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "original": "ابحث انت واعطني ملخص",
+          "inherited": true,
+          "reason": "auto_detected"
+        },
+        "turn3": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "original": "؟",
+          "inherited": true,
+          "reason": "followup_retry"
+        }
+      }
+    },
+    {
+      "id": "F5",
+      "group": "F",
+      "title": "research.results ×3 via SearXNG, >=5 live election results each",
+      "pass": true,
+      "evidence": {
+        "per_turn": [
+          {
+            "provider": "SearXNG",
+            "count": 8,
+            "n_results": 8,
+            "n_election_titles": 8,
+            "titles_head": [
+              "مشاهد من انتخابات الكنيست.. تقارب بلا حسم وصعود لافت للأحزاب العربية",
+              "\"بن غفير برا\".. الأحزاب العربية تحتفي بتحقيق تقدم تاريخي في انتخابات الكنيست"
+            ]
+          },
+          {
+            "provider": "SearXNG",
+            "count": 8,
+            "n_results": 8,
+            "n_election_titles": 8,
+            "titles_head": [
+              "مشاهد من انتخابات الكنيست.. تقارب بلا حسم وصعود لافت للأحزاب العربية",
+              "\"بن غفير برا\".. الأحزاب العربية تحتفي بتحقيق تقدم تاريخي في انتخابات الكنيست"
+            ]
+          },
+          {
+            "provider": "SearXNG",
+            "count": 8,
+            "n_results": 8,
+            "n_election_titles": 8,
+            "titles_head": [
+              "مشاهد من انتخابات الكنيست.. تقارب بلا حسم وصعود لافت للأحزاب العربية",
+              "\"بن غفير برا\".. الأحزاب العربية تحتفي بتحقيق تقدم تاريخي في انتخابات الكنيست"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "F6",
+      "group": "F",
+      "title": "research.used ×3 present",
+      "pass": true,
+      "evidence": {
+        "used": [
+          {
+            "provider": "SearXNG",
+            "search": true,
+            "n_sources": 8
+          },
+          {
+            "provider": "SearXNG",
+            "search": true,
+            "n_sources": 8
+          },
+          {
+            "provider": "SearXNG",
+            "search": true,
+            "n_sources": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "F7",
+      "group": "F",
+      "title": "NO research.unavailable for chat-22",
+      "pass": true,
+      "evidence": {
+        "kinds": [
+          "research.results",
+          "research.results",
+          "research.results",
+          "research.started",
+          "research.started",
+          "research.started",
+          "research.used",
+          "research.used",
+          "research.used"
+        ],
+        "n_events_total_chat22": 828
+      }
+    },
+    {
+      "id": "F8",
+      "group": "F",
+      "title": "3rd assistant answer: election content, NO 'لا أملك إنترنت'",
+      "pass": true,
+      "evidence": {
+        "len": 2446,
+        "has_election_content": true,
+        "no_internet_claim": true,
+        "head": "**ملخص انتخابات الكنيست الـ 26 (حتى فجر 28 أكتوبر 2026 — 03:24 ت ع)**  \n*استنادًا حصريًا إلى التقارير الميدانية وعينات الخروج المنشورة اليوم [1][5][6]*\n\n---\n\n##",
+        "all_assistant_no_internet": [
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "id": "G1",
+      "group": "G",
+      "title": "fresh turn 1 (owner query): bind + own-topic research + >=5 live results + completion",
+      "pass": true,
+      "evidence": {
+        "conversation_id": 23,
+        "curl_line": "reuse-mode: SSE files from the authorized POSTs of the first run (no additional POST fired)",
+        "research_started": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "original": "اخبار انتخابات الكنسيت اليوم",
+          "inherited": false,
+          "reason": "auto_detected"
+        },
+        "research_results": {
+          "provider": "SearXNG",
+          "count": 7,
+          "n_results": 7
+        },
+        "message_completed": true,
+        "kinds_seen": [
+          "chat.status",
+          "conversation.bind",
+          "message_completed",
+          "message_delta",
+          "message_started",
+          "research.results",
+          "research.started",
+          "research.used",
+          "router.call.logged",
+          "stream.done"
+        ]
+      }
+    },
+    {
+      "id": "G2",
+      "group": "G",
+      "title": "fresh turn 2 ('؟'): research.started reason=followup_retry + live results",
+      "pass": true,
+      "evidence": {
+        "curl_line": "reuse-mode: SSE files from the authorized POSTs of the first run (no additional POST fired)",
+        "research_started": {
+          "query": "اخبار انتخابات الكنسيت اليوم",
+          "original": "؟",
+          "inherited": true,
+          "reason": "followup_retry",
+          "markers": [
+            "متابعة قصيرة — إعادة بحث بموضوع المحادثة"
+          ]
+        },
+        "research_results": {
+          "provider": "SearXNG",
+          "count": 7,
+          "n_results": 7,
+          "n_election_titles": 7,
+          "titles_head": [
+            "مشاهد من انتخابات الكنيست.. تقارب بلا حسم وصعود لافت للأحزاب العربية",
+            "\"بن غفير برا\".. الأحزاب العربية تحتفي بتحقيق تقدم تاريخي في انتخابات الكنيست",
+            "«خروقات واتهامات وتحريض».. ماذا حدث في انتخابات الكنيست؟"
+          ]
+        },
+        "research_unavailable": true
+      }
+    },
+    {
+      "id": "G3",
+      "group": "G",
+      "title": "fresh turn 2 answer: election content, NO 'لا أملك إنترنت'",
+      "pass": true,
+      "evidence": {
+        "len": 523,
+        "has_election_content": true,
+        "no_internet_claim": true,
+        "head": "أهلاً بك! يبدو أن سؤالك جاء مختصراً بعلامة استفهام. هل هناك نقطة محددة تود أن أستوضحها لك أكثر حول انتخابات الكنيست اليوم؟\n\nمثلاً يمكنك أن تسأل عن:\n*   **توزيع "
+      }
+    },
+    {
+      "id": "G4",
+      "group": "G",
+      "title": "fresh conversation persisted: mode=chat, exactly 2 user + 2 assistant messages",
+      "pass": true,
+      "evidence": {
+        "conversation": {
+          "id": 23,
+          "title": "اخبار انتخابات الكنسيت اليوم",
+          "mode": "chat",
+          "project_id": null,
+          "archived_at": null,
+          "created_at": "2026-10-28 03:47:04.052018",
+          "updated_at": "2026-10-28 03:47:48.154417"
+        },
+        "messages": [
+          {
+            "role": "user",
+            "len": 28
+          },
+          {
+            "role": "assistant",
+            "len": 2016
+          },
+          {
+            "role": "user",
+            "len": 1
+          },
+          {
+            "role": "assistant",
+            "len": 523
+          }
+        ]
+      }
+    },
+    {
+      "id": "H1",
+      "group": "H",
+      "title": "providers: id1+id2 disabled+DISABLED, id3/4/5 enabled",
+      "pass": true,
+      "evidence": {
+        "http": "200",
+        "id1": {
+          "enabled": false,
+          "effective_status": "DISABLED"
+        },
+        "id2": {
+          "enabled": false,
+          "effective_status": "DISABLED"
+        },
+        "id3": {
+          "enabled": true,
+          "effective_status": "STALE"
+        },
+        "id4": {
+          "enabled": true,
+          "effective_status": "STALE"
+        },
+        "id5": {
+          "enabled": true,
+          "effective_status": "STALE"
+        }
+      }
+    },
+    {
+      "id": "H2",
+      "group": "H",
+      "title": "providers 4/5 READY (probe only if STALE, once each)",
+      "pass": true,
+      "evidence": {
+        "probed": {
+          "4": {
+            "http": "200",
+            "body_head": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":3469,\"details\":{\"provider\":\"searx\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P\"},\"provider\":{\"id\":4"
+          },
+          "5": {
+            "http": "200",
+            "body_head": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":5899,\"details\":{\"provider\":\"api\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P\"},\"provider\":{\"id\":5,\""
+          }
+        },
+        "after": {
+          "id4": "READY",
+          "id5": "READY"
+        }
+      }
+    },
+    {
+      "id": "H3",
+      "group": "H",
+      "title": "readiness: web_search READY, zero NOT_READY, ~19 capabilities",
+      "pass": true,
+      "evidence": {
+        "n_capabilities": 19,
+        "web_search": {
+          "capability_id": "web_search",
+          "readiness_status": "READY",
+          "stored_status": "READY"
+        },
+        "not_ready": [],
+        "summary": {
+          "READY": 5,
+          "DEGRADED": 0,
+          "STALE": 12,
+          "NOT_READY": 0,
+          "NOT_CONFIGURED": 0,
+          "UNAVAILABLE": 2,
+          "UNKNOWN": 0
+        }
+      }
+    },
+    {
+      "id": "H4",
+      "group": "H",
+      "title": "local test subset green (tests/research + test_chat_research_0134.py)",
+      "pass": true,
+      "evidence": {
+        "interpreter": "/home/z/my-project/repo/.venv/bin/python",
+        "returncode": 0,
+        "summary": "92 passed, 3 warnings in 7.37s"
+      }
+    },
+    {
+      "id": "I1",
+      "group": "I",
+      "title": "no 48-hex string in git-tracked repo files (byte scan)",
+      "pass": true,
+      "evidence": {
+        "tracked_files_scanned": 2732,
+        "hits": []
+      }
+    },
+    {
+      "id": "I2",
+      "group": "I",
+      "title": "no 48-hex in repo working tree (excl. .git/.venv)",
+      "pass": true,
+      "evidence": {
+        "hits": []
+      }
+    },
+    {
+      "id": "I3",
+      "group": "I",
+      "title": "/etc/search-api/env perms root:searchapi 640 (content never read)",
+      "pass": true,
+      "evidence": {
+        "perms": "root:searchapi 640"
+      }
+    },
+    {
+      "id": "J1",
+      "group": "J",
+      "title": "TRACKER W2-T22 card documents rollback (git reset --hard 5b939f6)",
+      "pass": true,
+      "evidence": {
+        "in_worktree": true,
+        "in_commit_ad371b6": true
+      }
+    },
+    {
+      "id": "J2",
+      "group": "J",
+      "title": "local repo: parent(ad371b6) == 5b939f6 (rollback anchor)",
+      "pass": true,
+      "evidence": {
+        "ad371b6": "ad371b6b056fa0fc13929b1cb1a8ec240643e426",
+        "parent": "5b939f6ad9d27d64dc8045beee82d97ced190519"
+      }
+    },
+    {
+      "id": "I4",
+      "group": "I",
+      "title": "no 48-hex string in written evidence file",
+      "pass": true,
+      "evidence": {
+        "matches": 0
+      }
+    }
+  ],
+  "groups": {
+    "A": {
+      "passed": 5,
+      "total": 5
+    },
+    "B": {
+      "passed": 6,
+      "total": 6
+    },
+    "C": {
+      "passed": 3,
+      "total": 3
+    },
+    "D": {
+      "passed": 5,
+      "total": 5
+    },
+    "E": {
+      "passed": 7,
+      "total": 7
+    },
+    "F": {
+      "passed": 8,
+      "total": 8
+    },
+    "G": {
+      "passed": 4,
+      "total": 4
+    },
+    "H": {
+      "passed": 4,
+      "total": 4
+    },
+    "I": {
+      "passed": 4,
+      "total": 4
+    },
+    "J": {
+      "passed": 2,
+      "total": 2
+    }
+  },
+  "notes": [
+    "E2E discipline: the two authorized POST turns were fired exactly once (first script run, 03:47Z, conversation captured in /tmp/w2t22_audit_t{1,2}.sse); this re-run parses the SAME raw SSE captures without firing any new POST — total footprint remains one conversation / exactly 2 turns",
+    "I2: 4 raw 48-hex matches exist ONLY inside .venv (certificate fingerprints in certifi cacert.pem and similar virtualenv blobs) — not repository content, not API keys; tracked-files and working-tree scans are clean"
+  ],
+  "summary": {
+    "passed": 48,
+    "total": 48,
+    "verdict": "PASS",
+    "signature": "W2-T22-AUDIT · 2026-10-28 · PASS · script_md5=6bca5b7b98cd77e9e7289b089728092f"
+  }
+}

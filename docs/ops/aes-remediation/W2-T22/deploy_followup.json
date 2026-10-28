@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "task": "W2-T22 deploy followup checks",
+    "ts": "2026-10-28T03:21:12Z"
+  },
+  "py_compile": {
+    "cmd": "py_compile app venv",
+    "rc": 0,
+    "out": "COMPILE_OK",
+    "err": ""
+  },
+  "readiness": {
+    "cmd": "readiness",
+    "rc": 0,
+    "out": "@@J@@\n{\"count\": 19, \"not_ready\": [], \"web_search\": \"STALE\"}",
+    "err": ""
+  },
+  "smoke_new_functions": {
+    "cmd": "smoke",
+    "rc": 0,
+    "out": "@@J@@\n{\"turn2\": {\"query\": \"اخبار انتخابات الكنسيت اليوم\", \"inherited\": true, \"reason\": \"inherited_topic\"}, \"turn3\": {\"query\": \"اخبار انتخابات الكنسيت اليوم\", \"inherited\": true, \"reason\": \"inherited_topic\"}, \"urge_q\": true}",
+    "err": ""
+  },
+  "probe_4": {
+    "cmd": "probe searxng",
+    "rc": 0,
+    "out": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":1903,\"details\":{\"provider\":\"searx\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P\"},\"provider\":{\"id\":4,\"kind\":\"search_searx\",\"name\":\"SearXNG\",\"config\":{\"base_url\":\"http://127.0.0.1:8888\"},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T03:21:16.756824+00:00\",\"last_probe_detail\":{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":1903,\"details\":{\"provider\":\"searx\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P\"",
+    "err": ""
+  },
+  "probe_5": {
+    "cmd": "probe search api",
+    "rc": 0,
+    "out": "{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":1161,\"details\":{\"provider\":\"api\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P\"},\"provider\":{\"id\":5,\"kind\":\"search_api\",\"name\":\"Search API\",\"config\":{\"endpoint\":\"http://127.0.0.1:8098/search\",\"style\":\"generic_results\"},\"enabled\":true,\"last_probe_status\":\"READY\",\"failure_reason\":\"\",\"last_probe_at\":\"2026-10-28T03:21:18.581936+00:00\",\"last_probe_detail\":{\"status\":\"READY\",\"reason\":\"\",\"latency_ms\":1161,\"details\":{\"provider\":\"api\",\"results\":8,\"first\":\"Agentic AI in Software Engineering Course Launch -",
+    "err": ""
+  },
+  "providers_after": {
+    "cmd": "providers after probe",
+    "rc": 0,
+    "out": "{\"providers\":[{\"id\":1,\"kind\":\"search_ddg\",\"name\":\"DuckDuckGo\",\"config\":{},\"enabled\":false,\"last_probe_status\":\"UNKNOWN\",\"failure_reason\":\"ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا\",\"last_probe_at\":\"2026-10-27T23:53:37.892716\",\"last_probe_detail\":{\"status\":\"NOT_READY\",\"reason\":\"ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا\",\"latency_ms\":177,\"details\":{\"provid",
+    "err": ""
+  }
+}

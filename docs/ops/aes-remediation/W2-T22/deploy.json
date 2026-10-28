@@ -1,0 +1,91 @@
+{
+  "_meta": {
+    "task": "W2-T22 deploy (ad371b6)",
+    "ts": "2026-10-28T03:20:21Z"
+  },
+  "health_before": {
+    "cmd": "health before",
+    "rc": 0,
+    "out": "200",
+    "err": ""
+  },
+  "head_before": {
+    "cmd": "HEAD before",
+    "rc": 0,
+    "out": "be56bf2372e03837fcea8ef54c8f7386a9bae08a",
+    "err": ""
+  },
+  "services_before": {
+    "cmd": "services before",
+    "rc": 0,
+    "out": "active\nactive\nactive\nactive",
+    "err": ""
+  },
+  "execstart": {
+    "cmd": "ExecStart",
+    "rc": 0,
+    "out": "WorkingDirectory=/opt/agentic-engineering-system\nExecStart=/opt/agentic-engineering-system/.venv/bin/python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 --workers 1",
+    "err": ""
+  },
+  "git_pull": {
+    "cmd": "git ff pull",
+    "rc": 0,
+    "out": "create mode 100644 scripts/ops/w2t21_audit_check.py\n create mode 100644 scripts/ops/w2t21_chat_e2e.py\n create mode 100644 scripts/ops/w2t21_deploy.py\n create mode 100644 scripts/ops/w2t21_verify_chat.py\n create mode 100644 tests/research/test_contextual_query_w2t22.py",
+    "err": ""
+  },
+  "head_after_pull": {
+    "cmd": "HEAD after pull",
+    "rc": 0,
+    "out": "ad371b6b056fa0fc13929b1cb1a8ec240643e426",
+    "err": ""
+  },
+  "git_status": {
+    "cmd": "git status",
+    "rc": 0,
+    "out": "?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\n?? scripts/ops/nightly_backup.sh.pre-w1t04\n?? src/agentic_engineering_system.egg-info/",
+    "err": ""
+  },
+  "py_compile": {
+    "cmd": "py_compile",
+    "rc": 127,
+    "out": "python=ExecStart=/opt/agentic-engineering-system/.venv/bin/python",
+    "err": "bash: line 1: ExecStart=/opt/agentic-engineering-system/.venv/bin/python: No such file or directory"
+  },
+  "restart": {
+    "cmd": "restart",
+    "rc": 0,
+    "out": "RESTART_ISSUED",
+    "err": ""
+  },
+  "health_after_restart": "200 (after 5s)",
+  "head_final": {
+    "cmd": "HEAD final",
+    "rc": 0,
+    "out": "ad371b6b056fa0fc13929b1cb1a8ec240643e426",
+    "err": ""
+  },
+  "services_after": {
+    "cmd": "services after",
+    "rc": 0,
+    "out": "active\nactive\nactive\nactive",
+    "err": ""
+  },
+  "journal_err": {
+    "cmd": "journal errors",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  },
+  "readiness": {
+    "cmd": "readiness",
+    "rc": 1,
+    "out": "",
+    "err": "File \"<string>\", line 1\n    import json,sys; d=json.load(sys.stdin); caps=d.get('capabilities') or d.get('items') or []; print(json.dumps({'count':len(caps),'not_ready':[c.get('capability_id',c.get('id')) for c in caps if (c.get('readiness_status') or c.get('status'))=='NOT_READY'],'web_search':next((c.get('readiness_status') or c.get('status') for c in caps if 'web_search' in str(c.get('capabilit"
+  },
+  "providers": {
+    "cmd": "providers",
+    "rc": 0,
+    "out": "[{\"id\": 1, \"name\": \"DuckDuckGo\", \"enabled\": false, \"status\": \"DISABLED\"}, {\"id\": 2, \"name\": \"Bing\", \"enabled\": false, \"status\": \"DISABLED\"}, {\"id\": 3, \"name\": \"Wikipedia\", \"enabled\": true, \"status\": \"STALE\"}, {\"id\": 4, \"name\": \"SearXNG\", \"enabled\": true, \"status\": \"STALE\"}, {\"id\": 5, \"name\": \"Search API\", \"enabled\": true, \"status\": \"STALE\"}]",
+    "err": ""
+  }
+}
