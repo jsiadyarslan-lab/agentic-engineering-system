@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "task": "W2-T21 part2 — تحقق بحث التطبيق + E2E محادثة",
+    "timestamp_utc": "2026-10-28T01:47:55Z"
+  },
+  "search_knesset_en": {
+    "cmd": "app: en news",
+    "rc": 0,
+    "out": "provider: Wikipedia | n: 12\ntitles: ['الانتخابات التشريعية الإسرائيلية 2026', 'حكومة إسرائيل السابعة والثلاثون', 'الحرب الفلسطينية الإسرائيلية (2023–الآن)', 'إيتمار بن غفير']\nerror:",
+    "err": ""
+  },
+  "search_knesset_ar": {
+    "cmd": "app: ar news",
+    "rc": 0,
+    "out": "provider: Wikipedia | n: 6\ntitles: ['الانتخابات التشريعية الإسرائيلية 2026', 'كنيست', 'حزب الصمود الإسرائيلي', 'معسكر الدولة (إسرائيل)']\nerror:",
+    "err": ""
+  },
+  "search_207": {
+    "cmd": "app: #207 query",
+    "rc": 0,
+    "out": "provider: Wikipedia | n: 6\ntitles: ['X (social network)', 'BBC', 'Qatar', 'Progressive Era']\nerror:",
+    "err": ""
+  },
+  "search_news_structure_ar": {
+    "cmd": "app: ar news-structure",
+    "rc": 0,
+    "out": "provider: SearXNG | n: 3\ntitles: ['هيكلة صفحات ومواقع الويب - HTML - أكاديمية حسوب', 'كيفية تخطيط بنية الموقع الإلكتروني: دليل الصفحات الأساسية وتقسيم ', 'تصميم الصفحة الرئيسية لموقع إخباري باستخدام Sliders وWidgets']\nerror:",
+    "err": ""
+  },
+  "search_astro": {
+    "cmd": "app: astro (doc expected fail)",
+    "rc": 0,
+    "out": "provider: None | n: 0\ntitles: []\nerror: لا مزود بحث جاهز: Wikipedia: ProviderNotReady: wikipedia: نتائج غير ذات صلة — {\"tokens\": [\"astro\", \"typescript\", \"setup\", \"guide\", \"official\", \"documentation\"], \"covered\": [\"setup\", \"official\", \"astro\"], \"coverage\": 0.5, \"require؛ SearXNG: ProviderNotReady: se",
+    "err": ""
+  },
+  "chat_e2e": {
+    "cmd": "chat E2E web-intent ar",
+    "rc": 0,
+    "out": "File \"<string>\", line 1\n    import sys,re;kinds=[];answer=[];research=None;for line in sys.stdin: line=line.strip(); if not line.startswith('data:'):continue; try:import json;e=json.loads(line[5:].strip()) except Exception:continue; k=e.get('kind','?');kinds.append(k); if k=='research.results':research=e; if k in ('message_delta','message_completed'):  t=(e.get('text') or e.get('delta') or '');  if t:answer.append(t);print('kinds:',kinds[:24]);det=(research or {}).get('details') or (research or {}).get('results') or {};print('research_keys:',list((research or {}).keys()));print('research:',str(research)[:400]);print('ANSWER_HEAD:', ''.join(answer)[:600])\n                                                   ^\nSyntaxError: invalid syntax",
+    "err": ""
+  },
+  "health_after": "200",
+  "journal_err": {
+    "cmd": "journal err",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  }
+}

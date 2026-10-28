@@ -1,0 +1,986 @@
+{
+  "_meta": {
+    "task": "W2-T21-AUDIT — تدقيق مستقل قراءة-فقط لمهمة W2-T21 (استقرار البحث بعد W2-T20: محرك bing news + عزل الحظر الناعم)",
+    "agent": "Audit Agent (وكيل تدقيق مستقل — general-purpose)",
+    "timestamp_utc": "2026-10-28T02:08:01Z",
+    "production_host": "92.5.14.150",
+    "expected_git_head": "be56bf237",
+    "script": "/home/z/my-project/scripts/ops/w2t21_audit_check.py",
+    "script_md5": "816f0e1414bc201bdbcaeae95e00c15a",
+    "discipline": "SSH قراءة-فقط؛ POSTs مصرح بها حصراً: /api/research/search (ثلاثة بحوث فعلية)، /api/research/providers/{4,5}/probe (فقط عند STALE — مرة واحدة لكل منهما). لا restart/stop لأي خدمة، لا كتابة git على الخادم، لا تعديل ملفات، لا إنشاء محادثات، لا POST /api/chat/stream (التحقق من 16/17 بقراءة القاعدة ro). secret_key/مفتاح Search API لم يقرآ ولم يطبعا.",
+    "authorized_posts_performed": {
+      "research_search": [
+        {
+          "qid": "F1",
+          "query": "نتائج الانتخابات الإسرائيلية اليوم",
+          "http_code": 200,
+          "n": 6,
+          "provider": "Wikipedia"
+        },
+        {
+          "qid": "F2",
+          "query": "israel election results exit polls",
+          "http_code": 200,
+          "n": 10,
+          "provider": "Wikipedia"
+        },
+        {
+          "qid": "F3",
+          "query": "news website page structure homepage world politics business technology sports entertainment article detail search results best practices",
+          "http_code": 200,
+          "n": 6,
+          "provider": "Wikipedia"
+        }
+      ],
+      "provider_probes": []
+    },
+    "own_queries": {
+      "C_ar": "آخر تطورات غزة",
+      "C_en": "european union news today",
+      "C_knesset": "knesset election results",
+      "F_ar": "نتائج الانتخابات الإسرائيلية اليوم",
+      "F_en": "israel election results exit polls",
+      "F_207": "news website page structure homepage world politics business technology sports entertainment article detail search results best practices"
+    }
+  },
+  "summary": {
+    "verdict": "PASS",
+    "passed": 31,
+    "total": 31,
+    "groups": {
+      "A": {
+        "pass": 4,
+        "total": 4
+      },
+      "B": {
+        "pass": 3,
+        "total": 3
+      },
+      "C": {
+        "pass": 3,
+        "total": 3
+      },
+      "D": {
+        "pass": 1,
+        "total": 1
+      },
+      "E": {
+        "pass": 5,
+        "total": 5
+      },
+      "F": {
+        "pass": 3,
+        "total": 3
+      },
+      "G": {
+        "pass": 2,
+        "total": 2
+      },
+      "H": {
+        "pass": 4,
+        "total": 4
+      },
+      "I": {
+        "pass": 2,
+        "total": 2
+      },
+      "J": {
+        "pass": 3,
+        "total": 3
+      },
+      "K": {
+        "pass": 1,
+        "total": 1
+      }
+    }
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "group": "A",
+      "name": "الخدمات الأربع active (agentic/nginx/searxng/search-api)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "states": [
+          "active",
+          "active",
+          "active",
+          "active"
+        ],
+        "stderr": ""
+      }
+    },
+    {
+      "id": "A2",
+      "group": "A",
+      "name": "GET /health = 200",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "body_head": "{\"status\":\"ok\",\"app\":\"Agentic Engineering System\",\"version\":\"4.0.0\",\"phase\":\"agentic-engineering-system: durable-projects+autonomous-loop+provider-management\",\"substrate\":{\"available\":true,\"kind\":\"loc"
+      }
+    },
+    {
+      "id": "A3",
+      "group": "A",
+      "name": "git HEAD على الإنتاج = be56bf237 بالضبط (لا كود تغيّر)",
+      "pass": true,
+      "evidence": {
+        "head": "be56bf237",
+        "rc": 0,
+        "stderr": ""
+      }
+    },
+    {
+      "id": "A4",
+      "group": "A",
+      "name": "صفر ملفات متتبعة معدلة داخل src/ (untracked المسبق موافق عليه فقط)",
+      "pass": true,
+      "evidence": {
+        "tracked_changes": [],
+        "src_modified": [],
+        "untracked": [
+          "runtime/browser/",
+          "runtime/projects/",
+          "scripts/ops/nightly_backup.sh",
+          "scripts/ops/nightly_backup.sh.pre-w1t04",
+          "src/agentic_engineering_system.egg-info/"
+        ],
+        "untracked_beyond_preapproved": [
+          "runtime/browser/",
+          "runtime/projects/"
+        ]
+      }
+    },
+    {
+      "id": "B1",
+      "group": "B",
+      "name": "محرك `bing news` موجود بdisabled: false وفئة general (يفحص افتراضياً)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "grep_block": "40:  - name: bing news\n41-    disabled: false\n42-    categories:\n43-      - general\n44-      - news\n45-  # W2-T21: brave — 429 \"Suspended: too many requests\" دائم لهذا المضيف؛\n46-  # إيقافه يوقف ضجيج السجل والطلبات المهدورة (كان يُستعلم كافتراضي غير معرّف)\n47-  - name: brave\n48-    disabled: true",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "B2",
+      "group": "B",
+      "name": "محرك `brave` معطل (disabled: true في آخر إدراج — إيقاف 429 الدائم)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "occurrences": 1,
+        "last_block": "47:  - name: brave\n48-    disabled: true",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "B3",
+      "group": "B",
+      "name": "النسخة الاحتياطية /etc/searxng/settings.yml.pre-w2t21 موجودة",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "stat": "root:root 640 1072 2026-10-28 01:46:47.248336313 +0000",
+        "stderr": ""
+      }
+    },
+    {
+      "id": "C1",
+      "group": "C",
+      "name": "bing news افتراضياً — استعلام عربي خاص بي «آخر تطورات غزة» ≥5 نتائج واقعية",
+      "pass": true,
+      "evidence": {
+        "url": "http://127.0.0.1:8888/search?q=%D8%A2%D8%AE%D8%B1%20%D8%AA%D8%B7%D9%88%D8%B1%D8%A7%D8%AA%20%D8%BA%D8%B2%D8%A9&format=json&language=ar",
+        "http_code": 200,
+        "n_results": 10,
+        "engines": {
+          "bing news": 10
+        },
+        "first_titles": [
+          "وزير الصحة يبحث مستجدات الأنشطة الإنسانية والصحية في غزة والسودان مع ممثل «الصحة العالمية»",
+          "جنوب أفريقيا تطالب إسرائيل أمام محكمة العدل الدولية بالتعليق الفوري لعملياتها العسكرية في غزة ...",
+          "رئيس وزراء قطر: نجاح المرحلة الأولى من اتفاق غزة مسؤولية جماعية لضمان تنفيذه",
+          "عبدالغفار يبحث مع ممثل «الصحة العالمية» الأنشطة الإنسانية في غزة والسودان",
+          "بايدن يبحث مع أمير قطر والرئيس المصري تطورات الوضع في غزة",
+          "مجلس السلام يعرض أمام الكونغرس آخر تطورات خطة ترامب لغزة",
+          "قطر تكشف آخر تطورات مفاوضات إيران وتحمل إسرائيل مسؤولية تعثر اتفاق غزة",
+          "مجلس الأمة يناقش تطورات القضية الفلسطينية بالقاهرة"
+        ],
+        "unresponsive": [],
+        "query_tokens": [
+          "تطورات",
+          "غزة"
+        ],
+        "relevant_titles_of_top6": 6,
+        "relevant_title_samples": [
+          "وزير الصحة يبحث مستجدات الأنشطة الإنسانية والصحية في غزة والسودان مع ممثل «الصحة العالمية»",
+          "جنوب أفريقيا تطالب إسرائيل أمام محكمة العدل الدولية بالتعليق الفوري لعملياتها العسكرية في غزة ...",
+          "رئيس وزراء قطر: نجاح المرحلة الأولى من اتفاق غزة مسؤولية جماعية لضمان تنفيذه",
+          "عبدالغفار يبحث مع ممثل «الصحة العالمية» الأنشطة الإنسانية في غزة والسودان"
+        ],
+        "canned_hits": []
+      }
+    },
+    {
+      "id": "C2",
+      "group": "C",
+      "name": "bing news افتراضياً — استعلام إنجليزي خاص بي «european union news today» ≥5 نتائج واقعية",
+      "pass": true,
+      "evidence": {
+        "url": "http://127.0.0.1:8888/search?q=european%20union%20news%20today&format=json&language=en",
+        "http_code": 200,
+        "n_results": 18,
+        "engines": {
+          "bing news": 8,
+          "bing": 10
+        },
+        "first_titles": [
+          "European Union Awards Top Rights Prize to International Criminal Court Days After Trump Sanctions",
+          "European Investigation Maps Hundreds of Suspected Russian Hybrid Attacks",
+          "European Union plans to hit China with more import curbs in early 2027",
+          "The European Union, PHL deepen cooperation with the launch of EU-PH AI Industry Lab",
+          "European Union - Euronews",
+          "The European Union Sets Limits on Teen Social Media Use. Video Games and AI Chatbots Might Be Next",
+          "News and events - European Union",
+          "Key European defence ministers to discuss Ukraine support in Paris"
+        ],
+        "unresponsive": [],
+        "query_tokens": [
+          "european",
+          "union",
+          "news",
+          "today"
+        ],
+        "relevant_titles_of_top6": 6,
+        "relevant_title_samples": [
+          "European Union Awards Top Rights Prize to International Criminal Court Days After Trump Sanctions",
+          "European Investigation Maps Hundreds of Suspected Russian Hybrid Attacks",
+          "European Union plans to hit China with more import curbs in early 2027",
+          "The European Union, PHL deepen cooperation with the launch of EU-PH AI Industry Lab"
+        ],
+        "canned_hits": []
+      }
+    },
+    {
+      "id": "C3",
+      "group": "C",
+      "name": "bing news افتراضياً — تكرار «knesset election results» ≥5 نتائج واقعية",
+      "pass": true,
+      "evidence": {
+        "url": "http://127.0.0.1:8888/search?q=knesset%20election%20results&format=json&language=en",
+        "http_code": 200,
+        "n_results": 19,
+        "engines": {
+          "bing news": 9,
+          "bing": 10
+        },
+        "first_titles": [
+          "The latest: No clear winner in Israeli election, exit polls suggest, with Netanyahu’s fate uncertain",
+          "Live updates: Official results of Israel's 26th Knesset elections",
+          "Netanyahu loses seats, trails challenger Gadi Eisenkot in Israel election, exit polls show — here’s what happens next",
+          "No clear winner in Israeli election, exit polls say",
+          "74.3% Turnout Highest In 50 Years, No Winner In Sight: Israel Faces Hung Knesset In First Election Since Oct 7 Massacre",
+          "Liberman's Yisrael Beytenu projected to win 7-9 seats in next Knesset, election exit polls predict",
+          "Israeli Exit Polls Indicate No Clear Winner in Pivotal Election",
+          "Israel Election Results 2026 | תוצאות הבחירות לכנסת | Votes26"
+        ],
+        "unresponsive": [],
+        "query_tokens": [
+          "knesset",
+          "election",
+          "results"
+        ],
+        "relevant_titles_of_top6": 6,
+        "relevant_title_samples": [
+          "The latest: No clear winner in Israeli election, exit polls suggest, with Netanyahu’s fate uncertain",
+          "Live updates: Official results of Israel's 26th Knesset elections",
+          "Netanyahu loses seats, trails challenger Gadi Eisenkot in Israel election, exit polls show — here’s what happens next",
+          "No clear winner in Israeli election, exit polls say"
+        ],
+        "canned_hits": []
+      }
+    },
+    {
+      "id": "D1",
+      "group": "D",
+      "name": "صفحة bing المعلبة قابلة لإعادة الإنتاج (عناوين غير ذات صلة بالاستعلام)",
+      "pass": true,
+      "evidence": {
+        "query": "climate conference negotiations",
+        "rc": 0,
+        "html_len": "129051",
+        "n_titles": 10,
+        "titles": [
+          "WEB.DE - kostenlose E-Mail-Adresse, FreeMail & Nachrichten",
+          "WEB.DE Login - ganz einfach",
+          "WEB.DE Club - Login",
+          "Einloggen bei WEB.DE",
+          "News: Aktuelle Nachrichten, Ratgeber, Sport & vieles mehr | WEB.DE",
+          "WEB.DE Produkte Übersicht: Apps, Browser, MailCheck & Co.",
+          "WEB.DE",
+          "WEB.DE Hilfe & Kontakt",
+          "WEB.DE Start - der leichte Einstieg in alles rund um Ihre E-Mails.",
+          "Web.de – Wikipedia"
+        ],
+        "chess_present": false,
+        "relevant_hits": 0,
+        "climate_in_page": "True",
+        "stderr": "",
+        "canned_reproduced": true
+      }
+    },
+    {
+      "id": "E1",
+      "group": "E",
+      "name": "id=1 DuckDuckGo معطل (enabled=false + DISABLED)",
+      "pass": true,
+      "evidence": {
+        "provider": {
+          "id": 1,
+          "kind": "search_ddg",
+          "name": "DuckDuckGo",
+          "config": {},
+          "enabled": false,
+          "last_probe_status": "UNKNOWN",
+          "failure_reason": "ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا",
+          "last_probe_at": "2026-10-27T23:53:37.892716",
+          "last_probe_detail": {
+            "status": "NOT_READY",
+            "reason": "ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا",
+            "latency_ms": 177,
+            "details": {
+              "provider": "ddg"
+            }
+          },
+          "effective_status": "DISABLED",
+          "configured": true,
+          "stale": false,
+          "state_reason": "معطل بقرار المالك"
+        }
+      }
+    },
+    {
+      "id": "E2",
+      "group": "E",
+      "name": "id=2 Bing المباشر معطل بواسطة W2-T21 (enabled=false + DISABLED) — عزل الصفحة المعلبة",
+      "pass": true,
+      "evidence": {
+        "provider": {
+          "id": 2,
+          "kind": "search_bing",
+          "name": "Bing",
+          "config": {},
+          "enabled": false,
+          "last_probe_status": "UNKNOWN",
+          "failure_reason": "",
+          "last_probe_at": "2026-10-28T00:52:11.630476",
+          "last_probe_detail": {
+            "status": "READY",
+            "reason": "",
+            "latency_ms": 140,
+            "details": {
+              "provider": "bing",
+              "results": 2,
+              "first": "Was ist agentische KI? | IBM"
+            }
+          },
+          "effective_status": "DISABLED",
+          "configured": true,
+          "stale": false,
+          "state_reason": "معطل بقرار المالك"
+        }
+      }
+    },
+    {
+      "id": "E3",
+      "group": "E",
+      "name": "id=3 Wikipedia ممكن (enabled=true)",
+      "pass": true,
+      "evidence": {
+        "provider": {
+          "id": 3,
+          "name": "Wikipedia",
+          "enabled": true,
+          "effective_status": "STALE"
+        }
+      }
+    },
+    {
+      "id": "E4",
+      "group": "E",
+      "name": "id=4 SearXNG ممكن + READY (مسبار مصرح به عند STALE فقط)",
+      "pass": true,
+      "evidence": {
+        "provider": {
+          "id": 4,
+          "kind": "search_searx",
+          "name": "SearXNG",
+          "config": {
+            "base_url": "http://127.0.0.1:8888"
+          },
+          "enabled": true,
+          "last_probe_status": "READY",
+          "failure_reason": "",
+          "last_probe_at": "2026-10-28T02:04:34.644286",
+          "last_probe_detail": {
+            "status": "READY",
+            "reason": "",
+            "latency_ms": 784,
+            "details": {
+              "provider": "searx",
+              "results": 8,
+              "first": "Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P"
+            }
+          },
+          "effective_status": "READY",
+          "configured": true,
+          "stale": false,
+          "state_reason": ""
+        },
+        "probed_in_this_audit": false
+      }
+    },
+    {
+      "id": "E5",
+      "group": "E",
+      "name": "id=5 Search API ممكن + READY (مسبار مصرح به عند STALE فقط)",
+      "pass": true,
+      "evidence": {
+        "provider": {
+          "id": 5,
+          "kind": "search_api",
+          "name": "Search API",
+          "config": {
+            "endpoint": "http://127.0.0.1:8098/search",
+            "style": "generic_results"
+          },
+          "enabled": true,
+          "last_probe_status": "READY",
+          "failure_reason": "",
+          "last_probe_at": "2026-10-28T02:04:35.763975",
+          "last_probe_detail": {
+            "status": "READY",
+            "reason": "",
+            "latency_ms": 460,
+            "details": {
+              "provider": "api",
+              "results": 8,
+              "first": "Agentic AI in Software Engineering Course Launch - Interview Kickstart Updates P"
+            }
+          },
+          "effective_status": "READY",
+          "configured": true,
+          "stale": false,
+          "state_reason": ""
+        },
+        "probed_in_this_audit": false
+      }
+    },
+    {
+      "id": "F1",
+      "group": "F",
+      "name": "بحث التطبيق — استعلام خبر عربي خاص بي (نتائج حقيقية ≥3)",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "query": "نتائج الانتخابات الإسرائيلية اليوم",
+        "results": 6,
+        "answered_by_provider": "Wikipedia",
+        "first_titles": [
+          "الانتخابات التشريعية الإسرائيلية 2026",
+          "الانتخابات التشريعية الإسرائيلية 2009",
+          "الانتخابات التشريعية الإسرائيلية 1949",
+          "أبريل 2010",
+          "يونيو 2009",
+          "مارس 2010"
+        ],
+        "canned_hits": [],
+        "error_head": ""
+      }
+    },
+    {
+      "id": "F2",
+      "group": "F",
+      "name": "بحث التطبيق — استعلام خبر إنجليزي خاص بي (نتائج حقيقية ≥3)",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "query": "israel election results exit polls",
+        "results": 10,
+        "answered_by_provider": "Wikipedia",
+        "first_titles": [
+          "حكومة إسرائيل السابعة والثلاثون",
+          "مارين لوبان",
+          "2025",
+          "حركات التصويت الاحتجاجية على الحرب الفلسطينية الإسرائيلية",
+          "Opinion polling for the 2026 Israeli legislative election",
+          "2026 Israeli legislative election"
+        ],
+        "canned_hits": [],
+        "error_head": ""
+      }
+    },
+    {
+      "id": "F3",
+      "group": "F",
+      "name": "بحث التطبيق — الاستعلام الفاشل تاريخياً #207 نصاً (≥3 نتائج)",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "query": "news website page structure homepage world politics business technology sports entertainment article detail search results best practices",
+        "results": 6,
+        "answered_by_provider": "Wikipedia",
+        "first_titles": [
+          "X (social network)",
+          "BBC",
+          "Qatar",
+          "Progressive Era",
+          "Transcendental Meditation movement",
+          "IHeartMedia"
+        ],
+        "canned_hits": [],
+        "error_head": ""
+      }
+    },
+    {
+      "id": "G1",
+      "group": "G",
+      "name": "قدرة web_search stored_status=READY (readiness_status قد تكون STALE بTTL=600ث — موثق طبيعي)",
+      "pass": true,
+      "evidence": {
+        "http_code": 200,
+        "caps_count": 19,
+        "web_search": {
+          "capability_id": "web_search",
+          "readiness_status": "READY",
+          "stored_status": "READY",
+          "last_probe_at": "2026-10-28T00:52:12.358029",
+          "last_success_at": "2026-10-28T00:52:12.358035",
+          "failure_reason": ""
+        }
+      }
+    },
+    {
+      "id": "G2",
+      "group": "G",
+      "name": "صفر قدرات stored_status=NOT_READY",
+      "pass": true,
+      "evidence": {
+        "caps_count": 19,
+        "not_ready_stored": [],
+        "statuses": [
+          {
+            "cap": "llm",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "model_inference",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "web_search",
+            "readiness_status": "READY",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "web_fetch",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "network_dns",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "network_https",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "network_http",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "sandbox",
+            "readiness_status": "READY",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "filesystem",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "git",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "repository",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "shell",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "package_management",
+            "readiness_status": "UNAVAILABLE",
+            "stored_status": "UNAVAILABLE"
+          },
+          {
+            "cap": "testing",
+            "readiness_status": "UNAVAILABLE",
+            "stored_status": "UNAVAILABLE"
+          },
+          {
+            "cap": "build",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "persistence",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "artifacts",
+            "readiness_status": "STALE",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "observability",
+            "readiness_status": "READY",
+            "stored_status": "READY"
+          },
+          {
+            "cap": "browser",
+            "readiness_status": "READY",
+            "stored_status": "READY"
+          }
+        ]
+      }
+    },
+    {
+      "id": "H1",
+      "group": "H",
+      "name": "محادثتا 16/17 موجودتان وسؤال المستخدم = سؤال المالك عن انتخابات الكنيست (17 نصاً حرفياً)",
+      "pass": true,
+      "evidence": {
+        "conversations": [
+          {
+            "id": 16,
+            "title": "ما آخر أخبار انتخابات الكنيست اليوم؟ نتيجة…",
+            "mode": "chat",
+            "created_at": "2026-10-28 01:48:05.744318"
+          },
+          {
+            "id": 17,
+            "title": "ما آخر أخبار انتخابات الكنيست اليوم؟ اذكر نتيجة…",
+            "mode": "chat",
+            "created_at": "2026-10-28 01:49:09.095741"
+          }
+        ],
+        "user_16_head": "ما آخر أخبار انتخابات الكنيست اليوم؟ نتيجة الفرز واستطلاعات الخروج",
+        "user_17_exact_match": true,
+        "user_17_head": "ما آخر أخبار انتخابات الكنيست اليوم؟ اذكر نتيجة الفرز واستطلاعات الخروج"
+      }
+    },
+    {
+      "id": "H2",
+      "group": "H",
+      "name": "رسائل مساعد حية في 16/17 (طول >500 + ذكر الفرز/استطلاعات الخروج + استشهادات [n])",
+      "pass": true,
+      "evidence": {
+        "assistant_messages": [
+          {
+            "id": 116,
+            "conversation_id": 16,
+            "role": "user",
+            "clen": 66,
+            "head400": "ما آخر أخبار انتخابات الكنيست اليوم؟ نتيجة الفرز واستطلاعات الخروج",
+            "markers": {
+              "exit_polls_ar": true,
+              "counting_farz": true,
+              "citation_1": false,
+              "citation_5": false,
+              "any_bracket_citation": false
+            }
+          },
+          {
+            "id": 117,
+            "conversation_id": 16,
+            "role": "assistant",
+            "clen": 3039,
+            "head400": "**الوضع الآن (الأربعاء 28 تشرين الأول 2026، 01:48 بتوقيت UTC):**  \nيوم الاقتراع كان **أمس الثلاثاء 27 تشرين الأول**، وفرز الأصوات جارٍ منذ إغلاق الصناديق. النتائج **غير نهائية** وتحديثات الفرز تتدفق لحظة بلحظة.\n\n---\n\n### 1) عيّنات الخروج / الاستطلاعات الفورية (Exit Polls)\n- **القنوات الإسرائيلية الثلاث (12، 13، 14) + «كان» الرسمية** نشرت عيّنات الخروج ليلة أمس.  \n- **الخط العريض المشترك:** لا كتلة",
+            "markers": {
+              "exit_polls_ar": false,
+              "counting_farz": true,
+              "citation_1": true,
+              "citation_5": false,
+              "any_bracket_citation": true
+            }
+          },
+          {
+            "id": 118,
+            "conversation_id": 17,
+            "role": "user",
+            "clen": 71,
+            "head400": "ما آخر أخبار انتخابات الكنيست اليوم؟ اذكر نتيجة الفرز واستطلاعات الخروج",
+            "markers": {
+              "exit_polls_ar": true,
+              "counting_farz": true,
+              "citation_1": false,
+              "citation_5": false,
+              "any_bracket_citation": false
+            }
+          },
+          {
+            "id": 119,
+            "conversation_id": 17,
+            "role": "assistant",
+            "clen": 1056,
+            "head400": "**ملخص الوضع فجر اليوم (الأربعاء 28 تشرين الأول/أكتوبر 2026 — نحو 01:49 ت‌ع):**\n\n- **يوم الاقتراع كان أمس (الثلاثاء 27 تشرين الأول)**، وبدأت عمليات الفرز فور إقفال الصناديق (الساعة 22:00 بالتوقيت المحلي).  \n- **الفرز لا يزال جاريًا** والنتائج المعروضة حاليًّا **أولية/مؤقتة** وتعتمد على عينات الفرز الأولى، وليست نهائية [1].  \n- **استطلاعات الخروج (Exit polls) التي نُشرت ليل أمس/فجر اليوم** تشير إلى",
+            "markers": {
+              "exit_polls_ar": true,
+              "counting_farz": true,
+              "citation_1": true,
+              "citation_5": true,
+              "any_bracket_citation": true
+            }
+          }
+        ],
+        "conv16_live_answer": {
+          "id": 117,
+          "clen": 3039
+        },
+        "conv17_live_answer": {
+          "id": 119,
+          "clen": 1056,
+          "citations_present": true
+        }
+      }
+    },
+    {
+      "id": "H3",
+      "group": "H",
+      "name": "أحداث research.started + research.results لكلا الدورتين chat-16 وchat-17",
+      "pass": true,
+      "evidence": {
+        "research_events": [
+          {
+            "cycle_id": "chat-16",
+            "kind": "research.started",
+            "created_at": "2026-10-28 01:48:05.776607"
+          },
+          {
+            "cycle_id": "chat-16",
+            "kind": "research.results",
+            "created_at": "2026-10-28 01:48:07.633669"
+          },
+          {
+            "cycle_id": "chat-16",
+            "kind": "research.used",
+            "created_at": "2026-10-28 01:48:29.747876"
+          },
+          {
+            "cycle_id": "chat-17",
+            "kind": "research.started",
+            "created_at": "2026-10-28 01:49:09.119270"
+          },
+          {
+            "cycle_id": "chat-17",
+            "kind": "research.results",
+            "created_at": "2026-10-28 01:49:10.565887"
+          },
+          {
+            "cycle_id": "chat-17",
+            "kind": "research.used",
+            "created_at": "2026-10-28 01:49:27.708752"
+          }
+        ],
+        "kinds_chat16": [
+          "research.results",
+          "research.started",
+          "research.used"
+        ],
+        "kinds_chat17": [
+          "research.results",
+          "research.started",
+          "research.used"
+        ],
+        "db_stderr": ""
+      }
+    },
+    {
+      "id": "H4",
+      "group": "H",
+      "name": "payload لresearch.results: السلسلة أخدمت المحادثة عبر SearXNG بمصادر أخبار حية (≥5 لchat-17)",
+      "pass": true,
+      "evidence": {
+        "chat16": {
+          "cycle_id": "chat-16",
+          "text": "🌐 الويب: 6 نتيجة (SearXNG)",
+          "provider": "SearXNG",
+          "count": 6,
+          "source_titles": [
+            "نتائج انتخابات الكنيست الـ26 | عرب 48",
+            "استطلاعات تشير إلى هزيمة قاسية لائتلاف نتنياهو وتقدم كتلة آيزنكوت",
+            "انتخابات الكنيست اليوم: أين تصوّتون، ما المواصلات المجانية، ومتى تُعلن ...",
+            "انتخابات إسرائيل: 7 سيناريوهات لما بعد إعلان النتائج | أخبار | الجزيرة نت",
+            "انتخابات الكنيست اليوم: أين تصوّتون، ما المواصلات المجانية، ومتى تُعلن ...",
+            "انتخابات الكنيست 2026: أخبار واستطلاعات مباشرة — إذاعة الشمس"
+          ],
+          "source_urls": [
+            "https://www.arab48.com/%D9%86%D8%AA%D8%A7%D8%A6%D8%AC-%D8%A7%D9%84%D8%",
+            "https://www.youm7.com/story/2026/10/28/%D8%A7%D8%B3%D8%AA%D8%B7%D9%84%",
+            "https://sonara.net/%d8%a7%d9%86%d8%aa%d8%ae%d8%a7%d8%a8%d8%a7%d8%aa-%d",
+            "https://www.aljazeera.net/news/2026/10/27/%D8%A7%D9%86%D8%AA%D8%AE%D8%",
+            "https://bldtna.co.il/2026/10/26/%d8%a7%d9%86%d8%aa%d8%ae%d8%a7%d8%a8%d",
+            "https://ashams.com/elections"
+          ]
+        },
+        "chat17": {
+          "cycle_id": "chat-17",
+          "text": "🌐 الويب: 5 نتيجة (SearXNG)",
+          "provider": "SearXNG",
+          "count": 5,
+          "source_titles": [
+            "نتائج انتخابات الكنيست الـ26 | عرب 48",
+            "انتخابات الكنيست اليوم: أين تصوّتون، ما المواصلات المجانية، ومتى تُعلن ...",
+            "انتخابات الكنيست اليوم: أين تصوّتون، ما المواصلات المجانية، ومتى تُعلن ...",
+            "انتخابات الكنيست 2026: أخبار واستطلاعات مباشرة — إذاعة الشمس",
+            "استطلاعات تشير إلى هزيمة قاسية لائتلاف نتنياهو وتقدم كتلة آيزنكوت"
+          ],
+          "source_urls": [
+            "https://www.arab48.com/%D9%86%D8%AA%D8%A7%D8%A6%D8%AC-%D8%A7%D9%84%D8%",
+            "https://sonara.net/%d8%a7%d9%86%d8%aa%d8%ae%d8%a7%d8%a8%d8%a7%d8%aa-%d",
+            "https://bldtna.co.il/2026/10/26/%d8%a7%d9%86%d8%aa%d8%ae%d8%a7%d8%a8%d",
+            "https://ashams.com/elections",
+            "https://www.youm7.com/story/2026/10/28/%D8%A7%D8%B3%D8%AA%D8%B7%D9%84%"
+          ]
+        },
+        "news_like_titles": 11,
+        "canned_source_titles": []
+      }
+    },
+    {
+      "id": "K1",
+      "group": "K",
+      "name": "journalctl (agentic+searxng، -45 دقيقة، مستوى err): لا أخطاء جديدة",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "raw_head": "-- No entries --",
+        "n_err_lines": 0,
+        "err_lines": []
+      }
+    },
+    {
+      "id": "J3",
+      "group": "J",
+      "name": "/etc/search-api/env بصلاحيات 640 root:searchapi (بلا طباعة المحتوى)",
+      "pass": true,
+      "evidence": {
+        "rc": 0,
+        "stat": "root:searchapi 640"
+      }
+    },
+    {
+      "id": "I1",
+      "group": "I",
+      "name": "ملفات أدلة W2-T21 موجودة غير فارغة (deploy/verify/chat_e2e)",
+      "pass": true,
+      "evidence": {
+        "dir": "/home/z/my-project/download/aes-remediation/W2-T21",
+        "files": {
+          "deploy.json": {
+            "exists": true,
+            "size": 5306
+          },
+          "verify.json": {
+            "exists": true,
+            "size": 2961
+          },
+          "chat_e2e.json": {
+            "exists": true,
+            "size": 4372
+          }
+        }
+      }
+    },
+    {
+      "id": "I2",
+      "group": "I",
+      "name": "سكربتات W2-T21 موجودة محلياً (w2t21_* + live_diag_* — ≥4 في scripts/ops بمساحة العمل)",
+      "pass": true,
+      "evidence": {
+        "workspace_scripts_ops": [
+          "live_diag_agentsearch.py",
+          "live_diag_agentsearch2.py",
+          "live_diag_agentsearch3.py",
+          "live_diag_bingnews.py",
+          "live_diag_encoding_ab.py",
+          "live_diag_enginebattery.py",
+          "w2t21_audit_check.py",
+          "w2t21_chat_e2e.py",
+          "w2t21_deploy.py",
+          "w2t21_verify_chat.py"
+        ],
+        "repo_scripts_ops": [],
+        "note": "الموقع قبل مزامنة R9 هو scripts/ops بمساحة العمل — نفس عرف W2-T20 (السكربت يُزامن إلى repo/scripts/ops عند الإغلاق)"
+      }
+    },
+    {
+      "id": "J1",
+      "group": "J",
+      "name": "لا ملف .search_api_key.local ولا اسم ملف 48-هكس داخل المستودع المحلي",
+      "pass": true,
+      "evidence": {
+        "key_file_hits": [],
+        "hex48_name_hits": []
+      }
+    },
+    {
+      "id": "J2",
+      "group": "J",
+      "name": "دليل W2-T21: لا اسم ملف 48-هكس ولا .search_api_key.local ولا سلسلة 48-هكس داخل المحتوى",
+      "pass": true,
+      "evidence": {
+        "evidence_dir_files": [
+          "audit_w2t21_independent.json",
+          "audit_w2t21_independent_run1_superseded.json",
+          "chat_e2e.json",
+          "deploy.json",
+          "verify.json"
+        ],
+        "hex48_filenames": [],
+        "key_file": [],
+        "hex48_in_contents": []
+      }
+    }
+  ],
+  "notes": [
+    {
+      "id": "N-A4",
+      "note": "untracked خارج القائمة المسبقة: ['runtime/browser/', 'runtime/projects/']"
+    },
+    {
+      "id": "N-I2",
+      "note": "السكربتات (9: w2t21×3 + live_diag×6) في scripts/ops بمساحة العمل ولم تُزامن بعد إلى repo/scripts/ops — مسؤولية المنفذ مع R9 عند الإغلاق (نفس عرف W2-T20 الذي دُقق بهذا الشكل ثم زُامن)."
+    },
+    {
+      "id": "N-J2",
+      "note": "مسح بايتي لمحتوى المستودع (بلا .git) عن نمط 48-هكس: صفر مطابقات — لا أثر لمفتاح Search API"
+    }
+  ]
+}

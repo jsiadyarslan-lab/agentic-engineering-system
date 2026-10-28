@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "task": "W2-T21 — استقرار البحث: محرك bing news + فصل الحظر الناعم",
+    "timestamp_utc": "2026-10-28T01:46:44Z",
+    "root_cause": "www.bing.com يقدم صفحات نتائج معلبة لهذا المضيف (Chess.com لاستعلام climate conference — حظر ناعم)؛ bing news + Wikipedia هما العاملان الحقيقيان"
+  },
+  "health_before": "200",
+  "services_before": {
+    "cmd": "services",
+    "rc": 0,
+    "out": "active active active active",
+    "err": ""
+  },
+  "git_head": {
+    "cmd": "git head",
+    "rc": 0,
+    "out": "be56bf237",
+    "err": ""
+  },
+  "providers_before": {
+    "cmd": "providers before",
+    "rc": 0,
+    "out": "[{'id': 1, 'name': 'DuckDuckGo', 'enabled': False, 'effective_status': 'DISABLED'}, {'id': 2, 'name': 'Bing', 'enabled': True, 'effective_status': 'STALE'}, {'id': 3, 'name': 'Wikipedia', 'enabled': True, 'effective_status': 'STALE'}, {'id': 4, 'name': 'SearXNG', 'enabled': True, 'effective_status': 'STALE'}, {'id': 5, 'name': 'Search API', 'enabled': True, 'effective_status': 'STALE'}]",
+    "err": ""
+  },
+  "backup": {
+    "cmd": "backup settings",
+    "rc": 0,
+    "out": "-rw-r-----. 1 root root 1072 Oct 28 01:46 /etc/searxng/settings.yml.pre-w2t21",
+    "err": ""
+  },
+  "engine_patch": {
+    "cmd": "append engine block",
+    "rc": 0,
+    "out": "disabled: true\n  # W2-T21 2026-10-28: bing news — المحرك الوحيد الذي أثبت نتائج حقيقية\n  # من هذا المضيف بعد الحظر الناعم لـwww.bing.com (صفحات معلبة موثقة:\n  # Chess.com لاستعلام climate conference). أخبار حقيقية عربية وإنجليزية.\n  # أُدرج في فئة general أيضًا حتى يُستعلم في البحث الافتراضي (أصله news).\n  - name: bing news\n    disabled: false\n    categories:\n      - general\n      - news\n  # W2-T21: brave — 429 \"Suspended: too many requests\" دائم لهذا المضيف؛\n  # إيقافه يوقف ضجيج السجل والطلبات المهدورة (كان يُستعلم كافتراضي غير معرّف)\n  - name: brave\n    disabled: true",
+    "err": ""
+  },
+  "restart_searxng": {
+    "cmd": "restart searxng",
+    "rc": 0,
+    "out": "active",
+    "err": ""
+  },
+  "default_query_en": {
+    "cmd": "default en query",
+    "rc": 0,
+    "out": "n_results: 20 by_engine: {}\ntitles: ['Knesset - Wikipedia', 'Knesset – Wikipedia', 'Knesset - gov.il', 'Knesset - DER SPIEGEL']\nunresponsive: []",
+    "err": ""
+  },
+  "default_query_ar": {
+    "cmd": "default ar query",
+    "rc": 0,
+    "out": "n_results: 20 by_engine: {}\ntitles: ['\"بن غفير برا\".. الأحزاب العربية تحتفي بتحقيق تقدم تاريخي في ', 'انتخابات الكنيست.. ما تأثير الناخبين المترددين؟', 'ائتلاف نتنياهو يحمّل وينتر مسؤولية إهدار أصوات اليمين في الا', 'استطلاعات أولية لانتخابات الكنيست: فوز معسكر آيزنكوت وتقدم ت']\nunresponsive: []",
+    "err": ""
+  },
+  "disable_bing_direct": {
+    "cmd": "disable Bing id=2 (canned SERP evidence)",
+    "rc": 0,
+    "out": "{'id': 2, 'name': 'Bing', 'enabled': False, 'last_probe_status': 'UNKNOWN'}",
+    "err": ""
+  },
+  "reprobe_4": {
+    "cmd": "re-probe provider 4",
+    "rc": 0,
+    "out": "status: READY | reason: \nresults: 8 | first: What is agentic engineering? - IBM",
+    "err": ""
+  },
+  "reprobe_5": {
+    "cmd": "re-probe provider 5",
+    "rc": 0,
+    "out": "status: READY | reason: \nresults: 8 | first: Agentic AI in Software Engineering Course Launch - Interview Kickstart",
+    "err": ""
+  },
+  "app_search_knesset_en": {
+    "cmd": "app search en news",
+    "rc": 2,
+    "out": "",
+    "err": "bash: -c: line 1: unexpected EOF while looking for matching `''\nbash: -c: line 2: syntax error: unexpected end of file"
+  },
+  "app_search_knesset_ar": {
+    "cmd": "app search ar news",
+    "rc": 2,
+    "out": "",
+    "err": "bash: -c: line 1: unexpected EOF while looking for matching `''\nbash: -c: line 2: syntax error: unexpected end of file"
+  },
+  "app_search_207": {
+    "cmd": "app search #207 query",
+    "rc": 2,
+    "out": "",
+    "err": "bash: -c: line 1: unexpected EOF while looking for matching `''\nbash: -c: line 2: syntax error: unexpected end of file"
+  },
+  "app_search_astro": {
+    "cmd": "app search astro (doc)",
+    "rc": 2,
+    "out": "",
+    "err": "bash: -c: line 1: unexpected EOF while looking for matching `''\nbash: -c: line 2: syntax error: unexpected end of file"
+  },
+  "health_after": "200",
+  "journal_errors": {
+    "cmd": "journal errors",
+    "rc": 0,
+    "out": "-- No entries --",
+    "err": ""
+  },
+  "providers_after": {
+    "cmd": "providers after",
+    "rc": 0,
+    "out": "[{'id': 1, 'name': 'DuckDuckGo', 'enabled': False, 'effective_status': 'DISABLED'}, {'id': 2, 'name': 'Bing', 'enabled': False, 'effective_status': 'DISABLED'}, {'id': 3, 'name': 'Wikipedia', 'enabled': True, 'effective_status': 'STALE'}, {'id': 4, 'name': 'SearXNG', 'enabled': True, 'effective_status': 'READY'}, {'id': 5, 'name': 'Search API', 'enabled': True, 'effective_status': 'READY'}]",
+    "err": ""
+  }
+}
