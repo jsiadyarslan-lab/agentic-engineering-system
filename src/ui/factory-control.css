@@ -98,7 +98,7 @@
   flex: none;
 }
 #factory-system-status.bad {
-  color: var(--err);
+  color: var(--danger-hi);
   background: var(--danger-chip);
   border-color: var(--danger-border);
 }
@@ -227,7 +227,7 @@
   line-height: 1.4;
 }
 .fc-stat-value.ok { color: var(--ok); }
-.fc-stat-value.bad { color: var(--err); }
+.fc-stat-value.bad { color: var(--danger-hi); }
 .fc-stat-value.warn { color: var(--warn); }
 
 /* ---------- 5b) (W2-T09) إنقاذ المصنع: البث فوق الطية ----------
@@ -276,7 +276,7 @@
   color: var(--text);
 }
 .fc-statbar-value.ok { color: var(--ok); }
-.fc-statbar-value.bad { color: var(--err); }
+.fc-statbar-value.bad { color: var(--danger-hi); }
 .fc-statbar-refresh {
   margin-inline-start: auto;
   flex: none;
@@ -338,7 +338,7 @@
 }
 .fc-run-status.bad,
 .fc-mission-status.bad {
-  color: var(--err);
+  color: var(--danger-hi);
   background: var(--danger-chip);
   border-color: var(--danger-border);
 }
@@ -378,7 +378,7 @@
   animation: fc-pulse 1.4s infinite;
 }
 .fc-run-live-badge.disconnected {
-  color: var(--err);
+  color: var(--danger-hi);
   background: var(--danger-chip);
   border-color: var(--danger-border);
 }
@@ -700,7 +700,7 @@
 .fc-task-graph-node.failed {
   border-color: var(--danger-border);
   background: var(--danger-soft);
-  color: var(--err);
+  color: var(--danger-hi);
 }
 .fc-task-graph-node.blocked {
   border-color: var(--warn-border);
@@ -857,7 +857,7 @@
   display: grid;
   place-items: center;
   border-radius: 99px;
-  color: var(--err);
+  color: var(--danger-hi);
   border: 1px solid var(--danger-border);
   font-family: var(--mono);
   font-size: 11px;
@@ -946,7 +946,7 @@
 
 /* حالات نصية مفردة داخل أجسام التبويبات ولوحة الإجراء الحالي */
 #factory-view .ok { color: var(--ok); }
-#factory-view .bad { color: var(--err); }
+#factory-view .bad { color: var(--danger-hi); }
 
 /* ---------- 20) الاستجابة ---------- */
 @media (max-width: 1100px) {

@@ -182,16 +182,18 @@ def test_project_dot_has_status_text() -> None:
 def test_no_solid_danger_as_text() -> None:
     """نص الخطر الصلب ممنوع — ‎--danger‎ للنقاط/الحدود، النص ‎--danger-hi‎.
 
-    الصلب ‎#E5574B‎ يخسر AA على المرفوع/الرقاقة (4.1/3.6:1) بينما danger-hi
-    يعبر على كل الأسطح (≥5:1) — كُنس 51 موضعًا نصيًا في W2-T11."""
+    الصلب يخسر AA على المرفوع/الرقاقة (4.1/3.6:1) بينما danger-hi يعبر على
+    كل الأسطح (≥5:1). كُنس 51 موضعًا مباشرًا + 8 عبر الاسم المستعار ‎--err‎
+    (ملاحظة التدقيق المستقل N1) — الأسماء المستعارة للصلب (err/danger-strong)
+    محظورة في النص أيضًا لأنها تحل إلى القيمة الصلبة نفسها."""
     offenders = []
     for p in sorted(UI_DIR.glob("*.css")):
         for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
-            if re.search(r"color:\s*var\(--danger\)\s*;", line):
+            if re.search(r"color:\s*var\(--(danger|err|danger-strong)\)\s*;", line):
                 offenders.append(f"{p.name}:{i}: {line.strip()[:80]}")
     assert not offenders, (
-        "نص خطر صلب — استخدم var(--danger-hi) للنص (الصلب للنقاط/الحدود فقط):\n"
-        + "\n".join(offenders))
+        "نص خطر صلب (مباشر أو عبر مستعار) — استخدم var(--danger-hi) للنص "
+        "(الصلب للنقاط/الحدود/الخلفيات فقط):\n" + "\n".join(offenders))
 
 
 def test_no_raw_colors_in_js_inline_styles() -> None:
