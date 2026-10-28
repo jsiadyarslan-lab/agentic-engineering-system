@@ -1439,3 +1439,20 @@ Work Log:
 Stage Summary:
 - الرقعة جاهزة للنشر: المصنع سينفذ npm install/build/preview فعليًا بأدلة exit_code حقيقية، وفقد node/npm صار عائق توفير يُحل بالتثبيت وإعادة الفحص — لا حرق موافقات.
 - التالي: الالتزام والدفع ثم النشر ببوابات R6 وتوفير Node.js LTS على الإنتاج وفك السدادة.
+
+---
+
+## W2-T24 إغلاق + W2-T25 افتتاح (2026-10-28 مساءً — جلسة المتابعة)
+
+### W2-T24 — الإغلاق بالتوقيع (R5)
+- وكيل التدقيق W2-T24-AUDIT أُطلق في الجلسة السابقة وأرجع **PASS 72/72** (17:31:45Z، سكربت scripts/ops/w2t24_audit_check.py md5 dbbcd1e7c405eb7e924ae46546185d25، الأدلة download/aes-remediation/W2-T24/audit_w2t24_independent.json) لكن الجلسة ماتت قبل كتابة التوقيع في البطاقة — هذه الجلسة تكتبه: البطاقة → مكتملة ✓ (موقَّعة)، اللوحة والترويسة محدثة.
+- N1 التدقيق: البوابة#33 (اعتماد الخطة v4) حُلّت بقرار المالك نفسه (POST /api/projects/3/plan/approve من IP المالك 2.215.157.88، متصفح Chrome، 16:34:09) بعد 80ث من اكتمال المهمة — المنفذ لم يمسّها.
+
+### W2-T25 — التشخيص القراءة-فقط الكامل (خطوة 0 منجزة)
+- **حالة المصنع:** صحة 200 · active×4 (agentic/nginx/searxng) · HEAD=525d9a3 بشجرة متعقلة · node v22.23.4/npm 10.9.9 موفَّران.
+- **حالة المشروع #3:** الخطوة 111 READY attempts=3 (فشلت التنفيذات #33-#35 كلها «الدورة لم تكتمل أدلةً») · بوابة #35 (مراجعة الخطة v4) اعتمدها المالك 18:36:43 → خطة v5 (vanilla JS+Vite) → بوابة #37 اعتماد PENDING · #34/#36 PREFLIGHT_BLOCKED (web_search STALE) بانتظار إعادة فحص · الوظيفة WAITING_GATE · جاهزية package_management/testing = UNAVAILABLE/DEPENDENCY_FAILURE (تلف تبعية عرضي من سلسلة web_search).
+- **تشريح فشل الخطوة 111 (tool_invocations):** web_search فشلت 4 مرات ب SEARCH_PROVIDER_NOT_READY — Wikipedia صفر نتائج حقيقية للاستعلامات التقنية، SearXNG «8 نتائج لكن تغطية 1/8 (المطلوب 4)»، Search API مبتور؛ fetch_page على npmjs.com → 403 ثلاث مرات (UNKNOWN_FAILURE).
+- **جذر SearXNG (اختبار عزل كل محرك):** bing يخدم خبثًا معلبًا من هذا المضيف (Next.co.uk لاستعلام Next.js! صفحات دعم Microsoft/Google) — نفس نمط الحظر الناعم الموثق W2-T21 لـwww.bing.com وصل الآن للمحرك؛ المحركات النظيفة mdn/stackoverflow/github/mwmbl معزولة بفئة it لا general؛ wikipedia/wikidata تعيدان 0 للاستعلامات التقنية بطبيعتها الموسوعية؛ Search API (8098) غلاف فوق نفس SearXNG فيرث التلوث (KiCad لاستعلام react!).
+- **جذر npmjs:** www.npmjs.com يصدّ 403 (حظر روبوتات) — registry.npmjs.org (JSON القانوني) يخدم بلا حظر.
+- **الأمر المرجعي (المالك):** «اريدك أنت ان تنفذ مشروع معقد في المصنع، وتتابع خطوة بخطوة وتصلح وتشغل حتى يعمل المصنع بشكل كامل دون اي اخطاء وينفذ مهام برمجية معقدة، اريد ان تجرب بناء شيء معقد باستخدام المصنع يتطلب بحث انترنت وادوات كثيرة مثل هذه الموجودة هنا في سوبر زد» — هذا الأمر هو تفويض المالك الموثق لحل بوابة #37 ودفع المشروع #3 حتى الاكتمال.
+- سكربتات التشخيص: scripts/p3_{state,deep,faildiag,searxtest,engines,engine2,engine3,engine4,engine5,tifull}.py + p3_schema.py — كلها قراءة-فقط، الأدلة الخام tool-results/p3_*.json.
