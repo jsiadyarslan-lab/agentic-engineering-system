@@ -1,12 +1,16 @@
-"""المنفذ الحي (الأمر السادس §2+§3+§4) — LLM يقود أدوات القائمة البيضاء.
+"""المنفذ الحي (الأمر السادس §2+§3+§4 + W2-T23) — LLM يقود أدوات القائمة البيضاء.
 
-مسار المهمة الواحدة (استدعاءان حيان فقط — ميزانية منضبطة):
+مسار المهمة الواحدة (ثلاثة استدعاءات حية — ميزانية منضبطة):
 1. chat_live الأول: خطة استدعاءات أدوات JSON (web_search/fetch_page).
 2. تنفيذ كل استدعاء عبر roles.tools.run_tool (قائمة بيضاء + sha256
    + أحداث فورية) — أي أداة خارج البيضاء = فشل خطوة صريح.
-3. chat_live الثاني: كتابة التقرير العربي Markdown من المادة المجلوبة
-   (قيد الصفحة الواحدة في البرومبت).
-4. write_file للتقرير ثم generate_pdf_arabic وverify_pdf_pages
+3. (W2-T23) create_files عند وجود ملفات مطلوبة في معايير القبول:
+   نداء حي يكتب ملفات المشروع بصيغة ### FILE: (المنطق في
+   roles/build_files.py — عقد الرقة) ثم كتابتها عبر write_file داخل
+   الركيزة بأدلة sha256 لكل ملف. مهام البحث/التقرير لا تمر هنا إطلاقًا.
+4. chat_live الأخير: كتابة التقرير العربي Markdown من المادة المجلوبة
+   (وإن وُجدت ملفات منشأة وُثّقها التقرير) — قيد الصفحة الواحدة.
+5. write_file للتقرير ثم generate_pdf_arabic وverify_pdf_pages
    (داخل الركيزة) — الناتج أدلة بمراجع sha256.
 
 فشل أي خطوة = ImplementerStatus.FAILED برسالة صريحة — لا ترقيع
@@ -27,6 +31,7 @@ from roles.implementer import (
     ImplementerStatus,
 )
 from core.stop_controller import CycleStopSignal
+from roles import build_files
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
 from roles.recovery import run_with_recovery
 from roles.tool_failures import ToolError, ToolFailure
@@ -41,15 +46,6 @@ from router.model_router import ChatMessage
 
 _TRUNCATE = 400
 _PDF_HINT = re.compile(r"\.pdf\b", re.IGNORECASE)
-
-
-def _sources_section(markdown: str) -> str:
-    """قسم «## المصادر» من التقرير — ما بعده حتى عنوان ## آخر أو النهاية."""
-    parts = re.split(r"^##\s+", markdown, flags=re.MULTILINE)
-    for part in parts[1:]:
-        if part.strip().startswith("المصادر"):
-            return part
-    return ""
 
 
 def _sha16(path: Path) -> str:
@@ -180,6 +176,8 @@ class LiveImplementer(LiveRoleBase):
 
     # ------------------------------------------------------------------ #
     # 2) كتابة التقرير — نص Markdown خام (عقد محتوى لا JSON)
+    # (2.5) إنشاء ملفات المشروع (W2-T23) في roles/build_files.py —
+    # الاستدعاء الحي والتحليل والفحوص الأمنية هناك؛ الدور هنا نحيل.
     # ------------------------------------------------------------------ #
 
     def _write_report(self, task_payload: dict, materials: dict) -> str:
@@ -254,10 +252,29 @@ class LiveImplementer(LiveRoleBase):
                     failed_calls=failed_calls,
                     max_results=MAX_SEARCH_RESULTS,
                 )
+            # (2.5) إنشاء ملفات المشروع (W2-T23) — قبل التقرير ليشمله:
+            # مهمة البناء تُعرف من معاييرها (ملفات مطلوبة غير مخرجات الدور)،
+            # والمنطق كله في roles/build_files.py (عقد الرقة 430 سطرًا).
+            required_build = build_files.required_build_files(
+                request.task.acceptance_criteria, request.task.id,
+            )
+            created_files: list[tuple[str, str]] = []
+            if required_build:
+                self._stop_requested(ctx, "implementer.create_files")
+                created_files = build_files.create_files_phase(
+                    live_call=self._live_call,
+                    system_prompt=self._system_prompt,
+                    task_payload=task_payload,
+                    materials=materials,
+                    required_files=required_build,
+                    previous_attempts=list(request.previous_attempts or []),
+                    role=self.ROLE,
+                )
             if (
                 not materials["search_results"]
                 and not materials["pages"]
                 and not materials["data"]
+                and not created_files
             ):
                 # فشل مادة مصنَّف (§18): TOOL_FAILURE/tool/queries/attempts
                 # — لا «كل استدعاءات الأدوات فشلت» الغامضة.
@@ -285,13 +302,30 @@ class LiveImplementer(LiveRoleBase):
                     },
                 )
 
-            # (2) التقرير من المادة المجلوبة
+            # (2) التقرير من المادة المجلوبة — وملفات البناء المنشأة
+            # تُمرّر معه (W2-T23) ليوثّق التقرير ما بُني لا ما وُصف فقط.
             self._stop_requested(ctx, "implementer.write_report")
-            report_md = self._write_report(task_payload, materials)
+            report_materials = build_files.materials_with_created(
+                materials, created_files,
+            )
+            report_md = self._write_report(task_payload, report_materials)
 
             # (3) الكتابة والـPDF — كلها عبر الأدوات (ركيزة + توثيق)
             artifacts: list[str] = []
             evidence_refs: list[str] = []
+            # (3.5) ملفات البناء أولًا (W2-T23) — عبر write_file داخل
+            # الركيزة بأدلة sha256 لكل ملف؛ المعايير هي العقد.
+            for build_path, build_body in created_files:
+                run_tool(
+                    "write_file",
+                    {"path": build_path, "content": build_body},
+                    ctx,
+                )
+                built = root / build_path
+                artifacts.append(str(built))
+                evidence_refs.append(
+                    f"sha256:{_sha16(built)}:{build_path}"
+                )
             md_name = f"{request.task.id}-report.md"
             run_tool("write_file", {"path": md_name, "content": report_md}, ctx)
             md_path = root / md_name
@@ -329,59 +363,10 @@ class LiveImplementer(LiveRoleBase):
                     )
                 evidence_refs.append(f"pdf_pages:{pages}:{pdf_name}")
 
-            # (4) ملف المصادر — المصادر الفعلية المذكورة في قسم
-            # «## المصادر» بالتقرير (اختيار النموذج الموثق)؛ وعند نقصها
-            # تُستكمل من نتائج البحث الفريدة — الدليل يطابق التقرير.
-            report_urls = re.findall(
-                r"https?://[^\s\)\]]+", _sources_section(report_md)
-            )
-            title_by_url = {
-                item.get("url", ""): item.get("title", "")
-                for item in ctx.search_results
-            }
-
-            def _title_of(url: str) -> str:
-                """عنوان المصدر: من نتائج البحث إن طابق، وإلا نص سطره."""
-                if url in title_by_url and title_by_url[url]:
-                    return title_by_url[url]
-                for line in _sources_section(report_md).splitlines():
-                    if url in line:
-                        head = line.split(url)[0]
-                        head = head.lstrip("-*• ").strip(" \u2014-:|")
-                        return head.strip()[:120]
-                return ""
-
-            seen: set[str] = set()
-            sources: list[dict] = []
-            for url in report_urls:
-                clean = url.rstrip(".,;")
-                if clean not in seen:
-                    seen.add(clean)
-                    sources.append(
-                        {"title": _title_of(clean), "url": clean}
-                    )
-            if len(sources) < 5:
-                for item in [*ctx.search_results, *ctx.data_urls]:
-                    url = item.get("url", "")
-                    if url and url not in seen:
-                        seen.add(url)
-                        sources.append(
-                            {"title": item.get("title", ""), "url": url}
-                        )
-                    if len(sources) >= 8:
-                        break
-            if sources:
-                run_tool(
-                    "write_file",
-                    {
-                        "path": "sources.json",
-                        "content": json.dumps(
-                            sources, ensure_ascii=False, indent=1
-                        ),
-                    },
-                    ctx,
-                )
-                src_path = root / "sources.json"
+            # (4) ملف المصادر — التجميع والكتابة في roles/build_files.py
+            # (W2-T23: استخراج لعقد الرقة 430 سطرًا)؛ الدليل يطابق التقرير.
+            src_path = build_files.write_sources_file(ctx, root, report_md)
+            if src_path is not None:
                 artifacts.append(str(src_path))
                 evidence_refs.append(f"sha256:{_sha16(src_path)}:sources.json")
 
@@ -389,8 +374,12 @@ class LiveImplementer(LiveRoleBase):
                 status=ImplementerStatus.EXECUTED,
                 artifacts=artifacts,
                 stdout_truncated=(
-                    f"نفّذت {len(calls)} استدعاء أداة وأنتجت "
-                    f"{len(artifacts)} ملفًا"
+                    f"نفّذت {len(calls)} استدعاء أداة"
+                    + (
+                        f" وأنشأت {len(created_files)} ملف بناء"
+                        if created_files else ""
+                    )
+                    + f" وأنتجت {len(artifacts)} ملفًا"
                 )[:_TRUNCATE],
                 evidence_refs=evidence_refs,
             )

@@ -110,6 +110,11 @@ def test_implementer_live_under_430_lines():
     assert _count_lines("src/roles/implementer_live.py") < 430
 
 
+def test_build_files_under_320_lines():
+    """W2-T23: مختبر ملفات البناء له سقفه — لا ينتفخ بدور المنفذ."""
+    assert _count_lines("src/roles/build_files.py") < 320
+
+
 def test_ui_js_under_2000_lines():
     """يعمل حتى بعد كتابة الواجهة — ملف app.js سقفه 2000."""
     path = REPO / "src/ui/app.js"

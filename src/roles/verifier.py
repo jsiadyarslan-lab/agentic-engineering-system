@@ -55,7 +55,13 @@ class VerifierResult(BaseModel):
 
 
 #: أسماء الملفات القابلة للاستخراج من نص المعيار (اتفاقية المفكر).
-_FILENAME = re.compile(r"[\w.-]+\.(?:txt|json|log|md|csv|xml|yaml|yml)")
+#: (W2-T23) وُسّعت لامتدادات البناء التي تذكرها خطط المشاريع
+#: (.astro/.mjs/.ts/...) — وإلا فمعايير الخطوات الملفية تُعرض
+#: «بلا ملف قابل للفحص» كذبًا.
+_FILENAME = re.compile(
+    r"[\w.-]+\.(?:txt|json|log|md|csv|xml|yaml|yml"
+    r"|astro|mjs|cjs|js|ts|tsx|jsx|css|html|toml|mdx|py)(?!\w)"
+)
 
 
 class Verifier:
