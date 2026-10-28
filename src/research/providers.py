@@ -110,6 +110,34 @@ _AR_FOLD_TABLE = str.maketrans({
 })
 
 
+#: (W2-T25 2026-10-28) استعلام المحرّكات منزوع أرقام الإصدارات حصرًا.
+#: الدافع المقيس (تنفيذات 33-35 للمشروع #3): محركات stackoverflow/github/
+#: mdn/wikipedia تبحث حرفيًا فتُسقط الاستعلامات المُرقَّمة («Next.js 14.2.0
+#: package.json…» ← صفر نتائج من الجميع) بينما المنزوعة تعيد صلة حقيقية
+#: (قياس حي: «React package.json peer dependencies» ← stackoverflow+mdn+mwmbl
+#: بتغطية 5/5 ونتائج قوية 3). الأمان الصادق: كل ما يُنزَع هنا (أنماط
+#: \d+(\.\d+)+ والأرقام المستقلة 1-2 خانة) تُسقطه الرموز الدلالية أصلًا
+#: (len<3) — فبوابة الصلة تقيّم الاستعلام الأصلي نفسه ولا ترى فرقًا؛
+#: والأرقام الطويلة (2024/100) لا تُمس. حدّ معلن: رقم طويل داخل نمط
+#: إصدار (1.100.0) يُنزَع مع النمط كله رغم أن «100» وحدها كانت ستبقى
+#: رمزًا — حالة نادرة مقايضة بصراحة مقابل محركات تجد المضمون.
+_VERSION_TOKEN_RE = re.compile(r"\b\d+(?:\.\d+)+\b")
+_SHORT_NUMBER_RE = re.compile(r"(?<![\d.])\b\d{1,2}\b(?![\d.])")
+
+
+def engine_query(query: str) -> str:
+    """نسخة الاستعلام للمحركات — بلا أرقام إصدارات (W2-T25).
+
+    فصل صادق: ما يُنزَع غير مرئي لبوابة الصلة أصلًا (رموز <3 خانات)،
+    والبوابة تُقيّم الاستعلام الأصلي كما هو — لا تمرير أوسع ولا صلة
+    مدّعاة: فقط محركات تجد المضمون الذي تطلبه بلا ضجيج رقمي.
+    """
+    stripped = _VERSION_TOKEN_RE.sub(" ", str(query or ""))
+    stripped = _SHORT_NUMBER_RE.sub(" ", stripped)
+    stripped = re.sub(r"\s+", " ", stripped).strip()
+    return stripped or str(query or "")
+
+
 def fold_text(text: str) -> str:
     """تطبيع عربي/حالة موحّد — الأساس المشترك للمطابقة (§L)."""
     lowered = str(text or "").lower()
@@ -458,8 +486,11 @@ class WikipediaSearchProvider:
 
     def _search_one(self, label: str, endpoint: str, query: str,
                     timeout: float) -> list[dict]:
+        # (W2-T25) المحرك يبحث بالنسخة المنزوعة الأرقام — بوابة الصلة
+        # في search() تقيّم الاستعلام الأصلي نفسه.
         url = endpoint + "?" + urllib.parse.urlencode({
-            "action": "query", "list": "search", "srsearch": query,
+            "action": "query", "list": "search",
+            "srsearch": engine_query(query),
             "format": "json", "srlimit": self.limit,
         })
         request = urllib.request.Request(url, headers={
@@ -856,8 +887,12 @@ class SearxJsonSearchProvider:
         # على en كان يجلب نتائج إنجليزية لاستعلام عربي فترفضها بوابة
         # الصلة بتغطية 0/5 بصدق — والاستعلامات الفعلية للنموذج عربية.
         language = "ar" if _ARABIC_SCRIPT_RE.search(query) else "en"
+        # (W2-T25) المحركات تُستعلم بالنسخة المنزوعة أرقام الإصدارات —
+        # المطابقة الحرفية لـ«14.2.0» تُسقط المحركات كلها؛ بوابة الصلة
+        # أدناه تقيّم الاستعلام الأصلي كما هو.
+        engine_q = engine_query(query)
         url = (
-            f"{self.base_url}/search?q={urllib.parse.quote(query)}"
+            f"{self.base_url}/search?q={urllib.parse.quote(engine_q)}"
             f"&format=json&language={language}"
         )
         request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
@@ -928,7 +963,11 @@ class ApiSearchProvider:
             raise ProviderNotReady(
                 "api: بلا نقطة نهاية — عيّنها من إعدادات البحث"
             )
-        body = json.dumps({"query": query, "q": query,
+        # (W2-T25) نقطة النهاية تُستعلم بالنسخة المنزوعة أرقام الإصدارات —
+        # هي غلاف فوق SearXNG فتتوارث مطابقته الحرفية؛ البوابة تقيّم
+        # الاستعلام الأصلي.
+        engine_q = engine_query(query)
+        body = json.dumps({"query": engine_q, "q": engine_q,
                            "max_results": MAX_SEARCH_RESULTS}).encode("utf-8")
         request = urllib.request.Request(
             self.endpoint, data=body, method="POST",
@@ -1008,6 +1047,35 @@ def _parse_api_payload(data: dict, style: str) -> list[dict]:
 # FetchProvider — جلب الصفحات (منقول سلوكه من web_tools مع نفس العقد)
 # ------------------------------------------------------------------ #
 
+#: (W2-T25 2026-10-28) www.npmjs.com يصدّ أتمتتنا بـ403 (موثق ثلاث مرات
+#: في تنفيذات 33-35 للمشروع #3). registry.npmjs.org هو المصدر القانوني
+#: نفسه لواجهة JSON بلا حظر — إعادة توجيه للمضمون ذاته لا بديل محتوى.
+_NPMJS_URL_RE = re.compile(
+    r"^(https?)://(?:www\.)?npmjs\.com/package/"
+    r"((?:@[^/?#]*/)?[^/?#]*)"
+    r"(?:/v/([^/?#]+))?",
+    re.IGNORECASE,
+)
+
+
+def _npm_registry_url(url: str) -> str | None:
+    """مقابل سجل npm JSON لصفحة حزمة npmjs.com — أو None."""
+    without_fragment = str(url or "").split("#", 1)[0].split("?", 1)[0]
+    match = _NPMJS_URL_RE.match(without_fragment)
+    if not match:
+        return None
+    package = urllib.parse.unquote(match.group(2) or "")
+    if not package or "/" in package and not package.startswith("@"):
+        return None
+    encoded = urllib.parse.quote(package, safe="")
+    version = match.group(3)
+    if version:
+        encoded_version = urllib.parse.quote(
+            urllib.parse.unquote(version), safe="")
+        return f"https://registry.npmjs.org/{encoded}/{encoded_version}"
+    return f"https://registry.npmjs.org/{encoded}"
+
+
 def fetch_page(
     url: str, *, timeout: float | None = None,
     max_bytes: int = MAX_PAGE_BYTES,
@@ -1018,8 +1086,24 @@ def fetch_page(
     if not url.startswith(("http://", "https://")):
         raise ValueError(f"رابط غير مدعوم: {url[:80]}")
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        raw = response.read(max_bytes + 1)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read(max_bytes + 1)
+    except urllib.error.HTTPError as error:
+        # (W2-T25) 403 من npmjs.com (حظر روبوتات) — المصدر القانوني
+        # نفسه (registry.npmjs.org بواجهة JSON) يخدم بلا حظر. نُحاول
+        # مقابل السجل قبل إعلان الفشل — المضمون ذاته لا بديل مختلق.
+        registry_url = _npm_registry_url(url)
+        if error.code == 403 and registry_url:
+            request = urllib.request.Request(
+                registry_url,
+                headers={"User-Agent": _USER_AGENT,
+                         "Accept": "application/json"},
+            )
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw = response.read(max_bytes + 1)
+        else:
+            raise
     if len(raw) > max_bytes:
         raw = raw[:max_bytes]
     text = raw.decode("utf-8", "replace")
@@ -1114,6 +1198,7 @@ __all__ = [
     "SearchProvider",
     "SearxJsonSearchProvider",
     "WikipediaSearchProvider",
+    "engine_query",
     "fetch_page",
     "filter_relevant",
     "fold_text",
