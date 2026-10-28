@@ -427,7 +427,7 @@
 .task-verdict { font-size: var(--fs-13); font-weight: 600; }
 
 .task-verdict.pass { color: var(--ok); }
-.task-verdict.fail { color: var(--danger); }
+.task-verdict.fail { color: var(--danger-hi); }
 
 .task-facts { font-size: var(--fs-13); color: var(--text-mid); }
 
@@ -452,7 +452,7 @@
   direction: ltr;
   unicode-bidi: isolate;
 }
-.verdict.fail { color: var(--danger); font-weight: 700; }
+.verdict.fail { color: var(--danger-hi); font-weight: 700; }
 
 .sys-card {
   align-self: center;
@@ -593,7 +593,7 @@
 .gen-row span { color: var(--muted); }
 .gen-row b { font-weight: 600; text-align: end; }
 .gen-row.warn { border-color: var(--danger-border); }
-.gen-row.warn b { color: var(--danger); }
+.gen-row.warn b { color: var(--danger-hi); }
 
 .gen-row .tech, .gen-row b[dir="ltr"] {
   font-family: var(--font-mono);
@@ -728,7 +728,7 @@
 
 .pv-btn.primary { color: var(--accent); border-color: var(--accent-border); }
 
-.pv-btn.danger { color: var(--danger); border-color: var(--danger-border); }
+.pv-btn.danger { color: var(--danger-hi); border-color: var(--danger-border); }
 
 .pv-result { font-size: var(--fs-12); color: var(--text-mid); margin-top: var(--sp-2); min-height: 16px; }
 
@@ -884,7 +884,7 @@
 }
 
 .env-badge.ok { background: var(--ok-chip); color: var(--ok); }
-.env-badge.bad { background: var(--danger-chip); color: var(--danger); }
+.env-badge.bad { background: var(--danger-chip); color: var(--danger-hi); }
 .env-badge.wait { color: var(--muted); }
 
 .env-default {
@@ -908,7 +908,7 @@
 
 .env-reason {
   font-size: var(--fs-12);
-  color: var(--danger);
+  color: var(--danger-hi);
   padding: var(--sp-1) 10px;
   background: var(--danger-soft);
   border-radius: var(--radius-s);
@@ -942,14 +942,14 @@
 .env-verify-head.ok { color: var(--ok); }
 .env-check { font-size: var(--fs-13); }
 .env-check.ok { color: var(--ok); }
-.env-check.bad { color: var(--danger); }
+.env-check.bad { color: var(--danger-hi); }
 
 .env-loading, .env-empty, .env-err {
   font-size: var(--fs-13);
   color: var(--muted);
   padding: 10px 2px;
 }
-.env-err { color: var(--danger); }
+.env-err { color: var(--danger-hi); }
 
 /* (013.3 §14) بطاقة فشل مساحة العمل — صادقة بفعل مالك وتفاصيل مطوية */
 .env-ws-invalid {
@@ -962,7 +962,7 @@
 }
 .env-ws-head {
   font-weight: 700;
-  color: var(--danger);
+  color: var(--danger-hi);
   font-size: var(--fs-14);
   margin-bottom: var(--sp-1);
 }
@@ -1074,7 +1074,7 @@
 
 .rp-status { font-size: var(--fs-11); padding: 3px 9px; border-radius: var(--radius-pill); background: var(--bg-elevated); }
 .rp-status.ok { background: var(--ok-chip); color: var(--ok); }
-.rp-status.bad { background: var(--danger-chip); color: var(--danger); }
+.rp-status.bad { background: var(--danger-chip); color: var(--danger-hi); }
 
 .rp-off { font-size: var(--fs-11); color: var(--muted); }
 
@@ -1150,7 +1150,7 @@
 .mx-status { font-family: var(--font-mono); font-size: var(--fs-12); }
 .mx-decision { text-align: end; }
 .mx-row:not(.bad) .mx-decision { color: var(--ok); }
-.mx-row.bad .mx-decision { color: var(--danger); }
+.mx-row.bad .mx-decision { color: var(--danger-hi); }
 
 .rd-env {
   font-size: var(--fs-13);
@@ -1173,7 +1173,7 @@
 .owner-action-title {
   font-weight: 700;
   font-size: var(--fs-13);
-  color: var(--danger);
+  color: var(--danger-hi);
 }
 
 .owner-action-body { font-size: var(--fs-13); line-height: 1.8; }
@@ -1203,7 +1203,7 @@
   flex-wrap: wrap;
 }
 
-.eb-title { font-weight: 700; color: var(--danger); }
+.eb-title { font-weight: 700; color: var(--danger-hi); }
 
 .eb-actions { display: flex; gap: var(--sp-2); }
 
@@ -1219,7 +1219,7 @@
   cursor: pointer;
   font-family: inherit;
 }
-.eb-btn.ghost { background: transparent; border: 1px solid var(--danger-border); color: var(--danger); }
+.eb-btn.ghost { background: transparent; border: 1px solid var(--danger-border); color: var(--danger-hi); }
 
 .eb-body { margin-top: var(--sp-2); display: flex; flex-direction: column; gap: var(--sp-1); }
 .eb-msg { line-height: 1.7; }
@@ -1247,7 +1247,7 @@
 
 /* ---------- (§31) حالات المحادثة في الشريط ---------- */
 
-.conv-err { color: var(--danger); font-size: var(--fs-13); padding: var(--sp-1) var(--sp-1); }
+.conv-err { color: var(--danger-hi); font-size: var(--fs-13); padding: var(--sp-1) var(--sp-1); }
 .conv-err-detail { font-size: var(--fs-12); color: var(--muted); padding: 2px var(--sp-1) var(--sp-1); }
 
 .conv-retry {
@@ -1276,7 +1276,7 @@
   text-align: center;
 }
 
-.pj-error-title { font-weight: 700; font-size: var(--fs-15); color: var(--danger); }
+.pj-error-title { font-weight: 700; font-size: var(--fs-15); color: var(--danger-hi); }
 .pj-error-detail { font-size: var(--fs-13); color: var(--muted); line-height: 1.8; }
 .pj-error-actions { display: flex; gap: 10px; justify-content: center; }
 

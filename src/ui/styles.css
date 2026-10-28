@@ -873,7 +873,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
   gap: var(--sp-1);
   flex: none;
   font-size: var(--fs-11);
-  color: var(--danger);
+  color: var(--danger-hi);
   border: 1px solid var(--danger-border);
   background: var(--danger-soft);
   border-radius: var(--radius-pill);
@@ -914,7 +914,7 @@ textarea, select, input { font-family: inherit; color: var(--text); }
 .btn.danger {
   background: var(--danger-soft);
   border-color: var(--danger-border);
-  color: var(--danger);
+  color: var(--danger-hi);
 }
 
 .btn.ghost { color: var(--text-mid); }

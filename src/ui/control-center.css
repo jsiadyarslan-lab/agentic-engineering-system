@@ -10,7 +10,7 @@
 .proj-run-dot.live { color: var(--accent-agent); }  /* (007 N-4) حي=أزرق وكيل */
 .proj-run-dot.paused { color: var(--warn); }
 .proj-run-dot.waiting { color: var(--warn); }
-.proj-run-dot.warn { color: var(--danger); }
+.proj-run-dot.warn { color: var(--danger-hi); }
 .proj-run-dot.ok { color: var(--ok); }
 
 /* ---------- أسطح مركز التحكم (runs/archive) ---------- */
@@ -71,7 +71,7 @@
 .cc-run-dot.live { color: var(--accent-agent); animation: cc-pulse 2s infinite; }  /* (007 N-4) */
 .cc-run-dot.paused { color: var(--warn); }
 .cc-run-dot.waiting { color: var(--warn); }
-.cc-run-dot.warn { color: var(--danger); }
+.cc-run-dot.warn { color: var(--danger-hi); }
 .cc-run-dot.ok { color: var(--ok); }
 @keyframes cc-pulse {
   0%, 100% { opacity: 1; }
@@ -186,7 +186,7 @@
   font-weight: 600;
 }
 .pl-act-btn.primary:hover { background: var(--accent-strong); }
-.pl-act-btn.danger { color: var(--danger); border-color: var(--danger-border); }
+.pl-act-btn.danger { color: var(--danger-hi); border-color: var(--danger-border); }
 .pl-act-btn.more { padding: 5px 9px; }
 .pl-act-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .pl-more-wrap { position: relative; }

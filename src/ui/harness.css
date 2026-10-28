@@ -53,7 +53,7 @@
 .pj-job-status.run { color: var(--info); border-color: var(--info-border); }
 .pj-job-status.wait { color: var(--warn); border-color: var(--warn-border); }
 .pj-job-status.ok { color: var(--ok); border-color: var(--ok-border); }
-.pj-job-status.bad { color: var(--danger); border-color: var(--danger-border); }
+.pj-job-status.bad { color: var(--danger-hi); border-color: var(--danger-border); }
 
 .pj-job-meta {
   display: flex;
@@ -173,7 +173,7 @@
 }
 
 .pj-chain-step.failed {
-  color: var(--danger);
+  color: var(--danger-hi);
   border-color: var(--danger-border);
 }
 

@@ -127,7 +127,7 @@ def test_tap_token_and_coarse_block() -> None:
     assert "min-height: var(--tap)" in block, "لا min-height: var(--tap) داخل كتلة اللمس"
     assert "min-width: var(--tap)" in block, "لا min-width: var(--tap) داخل كتلة اللمس"
     for needed in ("button", "select", "textarea", ".icon-btn", ".side-nav-item",
-                   ".pj-item", ".conv-item"):
+                   ".pj-item", ".conv-item", ".pl-act-btn"):
         assert needed in block, f"{needed} مفقود من منتقي أهداف اللمس"
 
 
@@ -177,6 +177,21 @@ def test_project_dot_has_status_text() -> None:
     assert 'aria-hidden' in src, "النقطة اللونية يجب أن تكون aria-hidden (النص يحمل المعنى)"
     css = (UI_DIR / "projects.css").read_text(encoding="utf-8")
     assert ".pj-status" in css and ".pj-meta" in css, "أنماط نص الحالة مفقودة من projects.css"
+
+
+def test_no_solid_danger_as_text() -> None:
+    """نص الخطر الصلب ممنوع — ‎--danger‎ للنقاط/الحدود، النص ‎--danger-hi‎.
+
+    الصلب ‎#E5574B‎ يخسر AA على المرفوع/الرقاقة (4.1/3.6:1) بينما danger-hi
+    يعبر على كل الأسطح (≥5:1) — كُنس 51 موضعًا نصيًا في W2-T11."""
+    offenders = []
+    for p in sorted(UI_DIR.glob("*.css")):
+        for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+            if re.search(r"color:\s*var\(--danger\)\s*;", line):
+                offenders.append(f"{p.name}:{i}: {line.strip()[:80]}")
+    assert not offenders, (
+        "نص خطر صلب — استخدم var(--danger-hi) للنص (الصلب للنقاط/الحدود فقط):\n"
+        + "\n".join(offenders))
 
 
 def test_no_raw_colors_in_js_inline_styles() -> None:

@@ -128,7 +128,7 @@ body.mode-project .project-view {
 .pj-badge.ok { color: var(--ok); border-color: var(--ok-border); }
 .pj-badge.run { color: var(--info); border-color: var(--info-border); }
 .pj-badge.wait { color: var(--warn); border-color: var(--warn-border); }
-.pj-badge.bad { color: var(--danger); border-color: var(--danger-border); }
+.pj-badge.bad { color: var(--danger-hi); border-color: var(--danger-border); }
 
 /* ---------- رأس المشروع ---------- */
 
@@ -254,7 +254,7 @@ body.mode-project .project-view {
 .pj-step.completed .pj-step-icon { color: var(--ok); border-color: var(--ok-border); }
 .pj-step.running .pj-step-icon { color: var(--info); border-color: var(--info-border); }
 .pj-step.failed .pj-step-icon,
-.pj-step.blocked .pj-step-icon { color: var(--danger); border-color: var(--danger-border); }
+.pj-step.blocked .pj-step-icon { color: var(--danger-hi); border-color: var(--danger-border); }
 
 .pj-step-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pj-step-obj { line-height: 1.6; }
@@ -325,7 +325,7 @@ body.mode-project .project-view {
 }
 
 .rd-badge.ok { color: var(--ok); border-color: var(--ok-border); }
-.rd-badge.bad { color: var(--danger); border-color: var(--danger-border); }
+.rd-badge.bad { color: var(--danger-hi); border-color: var(--danger-border); }
 
 .rd-detail {
   margin-top: var(--sp-1);
@@ -338,7 +338,7 @@ body.mode-project .project-view {
 }
 
 .pv-result.ok { color: var(--ok); }
-.pv-result.bad { color: var(--danger); }
+.pv-result.bad { color: var(--danger-hi); }
 
 /* ---------- تكوين الأدوار: عمود التكوين الجديد ---------- */
 

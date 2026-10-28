@@ -46,7 +46,7 @@
 .pl-head-status.ok { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) أخضر المريمية الناجي → توكن النظام */
 .pl-head-status.gold { color: var(--accent); border-color: var(--accent-border); }
 .pl-head-status.warn { color: var(--accent); border-color: var(--warn-border); }   /* (W2-T07) ذهب الملوحة الناجي → توكن النظام */
-.pl-head-status.danger { color: var(--danger); border-color: var(--danger-border); }
+.pl-head-status.danger { color: var(--danger-hi); border-color: var(--danger-border); }
 
 .pl-scroll {
   flex: 1;
@@ -133,7 +133,7 @@
 .pl-status.gold { color: var(--accent); background: var(--accent-soft); }
 .pl-status.live { color: var(--ok); background: var(--ok-soft); }
 .pl-status.warn { color: var(--accent); background: var(--warn-soft); }   /* (W2-T07) --warn-soft (.09) */
-.pl-status.danger { color: var(--danger); background: var(--danger-soft); }
+.pl-status.danger { color: var(--danger-hi); background: var(--danger-soft); }
 .pl-status.dim { color: var(--text-dim); background: var(--bg-raised); }
 
 .pl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -193,7 +193,7 @@
   font-weight: 600;
 }
 .pl-btn.primary:hover:not(:disabled) { background: var(--accent-strong); }
-.pl-btn.danger { color: var(--danger); border-color: var(--danger-border); }
+.pl-btn.danger { color: var(--danger-hi); border-color: var(--danger-border); }
 .pl-btn.danger:hover:not(:disabled) { background: var(--danger-soft); }
 
 .pl-feedback {
@@ -205,7 +205,7 @@
 }
 .pl-feedback.loading { color: var(--accent); border-color: var(--accent-border); }
 .pl-feedback.ok { color: var(--ok); border-color: var(--ok-border); }   /* (W2-T07) ألفا مطابقة */
-.pl-feedback.err { color: var(--danger); border-color: var(--danger-border); }
+.pl-feedback.err { color: var(--danger-hi); border-color: var(--danger-border); }
 .pl-feedback-detail { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
 /* ---------- بطاقة الحجب (§27) ---------- */
@@ -233,7 +233,7 @@
 }
 .pl-act-icon { flex-shrink: 0; font-size: 12.5px; }
 .pl-act.role { color: var(--accent); }
-.pl-act.err { color: var(--danger); }
+.pl-act.err { color: var(--danger-hi); }
 .pl-act.waiting { color: var(--accent); }
 @keyframes pl-fade-in { from { opacity: 0; transform: translateY(3px); } }
 
@@ -537,7 +537,7 @@ body.live-disconnected .substrate-dot {
   color: var(--text-dim);
 }
 
-.pl-fail-step.hit { color: var(--danger); }
+.pl-fail-step.hit { color: var(--danger-hi); }
 .pl-fail-step.active { color: var(--accent); }
 
 .pl-fail-arrow {
@@ -845,7 +845,7 @@ body.live-disconnected .substrate-dot {
 }
 .pl-plan-status.ok { color: var(--ok); background: var(--ok-soft); }
 .pl-plan-status.gold { color: var(--accent); background: var(--accent-soft); }
-.pl-plan-status.danger { color: var(--danger); background: var(--danger-soft); }
+.pl-plan-status.danger { color: var(--danger-hi); background: var(--danger-soft); }
 
 .pl-plan-meta {
   display: flex;
@@ -1149,18 +1149,18 @@ body.live-disconnected .substrate-dot {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: var(--danger);
+  color: var(--danger-hi);
   border: 2px solid var(--danger);
   font-size: 13px;
   animation: pl-esc-pulse 1.6s ease-in-out infinite;
 }
-.pl-esc-text { flex: 1; min-width: 200px; color: var(--danger); }
+.pl-esc-text { flex: 1; min-width: 200px; color: var(--danger-hi); }
 .pl-esc-open {
   flex: none;
   cursor: pointer;
   border: 1px solid var(--danger-border);
   background: var(--danger-chip);
-  color: var(--danger);
+  color: var(--danger-hi);
   border-radius: var(--btn-radius);
   padding: 5px 14px;
   font-size: 12.5px;
@@ -1186,7 +1186,7 @@ body.live-disconnected .substrate-dot {
   border-radius: var(--radius-m);
 }
 .pl-emergency-bar:has(.pl-er-chip.danger) {
-  border-inline-start-color: var(--danger);
+  border-inline-start-color: var(--danger-hi);
 }
 .pl-er-chip {
   font-size: 11.5px;
@@ -1200,7 +1200,7 @@ body.live-disconnected .substrate-dot {
 }
 .pl-er-chip.live { color: var(--accent); border-color: var(--accent-border); }
 .pl-er-chip.warn { color: var(--warn); border-color: var(--warn-border); }
-.pl-er-chip.danger { color: var(--danger); border-color: var(--danger-border); }
+.pl-er-chip.danger { color: var(--danger-hi); border-color: var(--danger-border); }
 .pl-er-label {
   font-size: 11px;
   color: var(--text-dim);
@@ -1209,14 +1209,14 @@ body.live-disconnected .substrate-dot {
 }
 .pl-er-stop {
   margin-inline-start: auto;
-  color: var(--danger);
+  color: var(--danger-hi);
   border-color: var(--danger-border);
   background: var(--danger-chip);
 }
 .pl-er-stop:hover:not(:disabled) {
   background: var(--danger);
   color: var(--danger-ink);
-  border-color: var(--danger);
+  border-color: var(--danger-hi);
 }
 .pl-er-resume { margin-inline-start: auto; }
 .pl-emergency-bar .pl-er-stop
