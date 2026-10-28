@@ -104,3 +104,23 @@ def test_strip_outer_fences_only_outer():
     inner = "intro\n```\nweb_search | x\n```\noutro"
     # الأسوار الداخلية لا تُمس — النزع للحافة الخارجية حصرًا
     assert tool_plan.strip_outer_fences(inner) == inner
+
+
+def test_no_calls_declaration_accepted():
+    """إعلان «لا استدعاءات» الصريح = خطة فارغة قانونية (مهمة بناء
+    محلية — قياس حي الخطوة 161: «# لا توجد استدعاءات أدوات خارجية —
+    مهمة بناء محلية فقط» كان يُسقط الجولة كاملة)."""
+    text = "# لا توجد استدعاءات أدوات خارجية — مهمة بناءة محلية فقط\nnpm install وnpm run lint يعملان محليًا."
+    assert parse(text) == []
+
+
+def test_no_calls_english_accepted():
+    text = "No external tool calls needed for this local build task."
+    assert parse(text) == []
+
+
+def test_no_false_no_calls():
+    """نص يذكر الأدوات بلا إعلان صريح — لا يُقبل كخطة فارغة."""
+    text = "سنستخدم web_search في مهمة أخرى، لكن هنا لا شيء"
+    with pytest.raises(ValueError):
+        parse(text)

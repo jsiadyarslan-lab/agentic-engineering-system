@@ -19,6 +19,17 @@ import re
 #: مصفوفة JSON مرشحة — تُحاول بالترتيب حتى تنجح واحدة.
 _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*?\]", re.MULTILINE)
 
+#: (W2-T25) إعلان «لا استدعاءات» — النموذج يحسم أحيانًا أن المهمة
+#: محلية بحتة (بناء/أوامر) فلا بحث ويب فيها، ويكتبها صراحةً. قَبول
+#: الإعلان الصريح خطة فارغة قانونية: مهام البناء تتابع (create_files
+#: + build_commands)، ومهام البحث تفشل بصدق لاحقًا عند فحص المادة
+#: («لا مادة قابلة للتحليل») — لا تجاوز: التحقق يبقى الحكم.
+_NO_CALLS_RE = re.compile(
+    r"لا توجد استدعاءات|بلا استدعاءات أدوات|لا حاجة لاستدعاء"
+    r"|no (?:external )?tool calls|no tools (?:are )?(?:needed|required)",
+    re.IGNORECASE,
+)
+
 
 def strip_outer_fences(text: str) -> str:
     """إزالة أسوار كود تحوط الرد كله — لا الأسوار الداخلية."""
@@ -122,7 +133,9 @@ def parse_tool_calls(
     kv_allowed_keys: dict[str, set[str]],
     strip_arg_chars: str,
 ) -> list[dict]:
-    """التحليل المتسامح الصادق — ثلاثة تنويعات ثم فشل صريح."""
+    """التحليل المتسامح الصادق — أربعة مقاربات قبل الفشل الصريح:
+    أسطر الأنابيب، ثم بعد نزع الأسوار، ثم مصفوفة JSON، ثم إعلان
+    «لا استدعاءات» الصريح (خطة فارغة قانونية)."""
     try:
         return _parse_pipe_lines(
             text, line_tools=line_tools, kv_line_tools=kv_line_tools,
@@ -141,7 +154,13 @@ def parse_tool_calls(
             )
         except ValueError:
             pass
-    return _parse_json_calls(text, line_tools=line_tools)
+    try:
+        return _parse_json_calls(text, line_tools=line_tools)
+    except ValueError:
+        pass
+    if _NO_CALLS_RE.search(text):
+        return []
+    raise ValueError("لا أسطر استدعاء صالحة في الرد ولا إعلان «لا استدعاءات»")
 
 
 __all__ = ["parse_tool_calls", "strip_outer_fences"]
