@@ -1458,7 +1458,18 @@ class ProjectEngine:
 
     def _on_step_failure(self, project: dict, plan: dict, phase: dict,
                          step: dict, execution_id: int, reason: str) -> dict:
-        """تصنيف الفشل (§13) — إعادة أو بوابة مالك، لا توقف أعمى."""
+        """تصنيف الفشل (§13) — إعادة أو بوابة مالك، لا توقف أعمى.
+
+        (W1-T06 2026-10-28) قبل حرق موافقة «مراجعة الخطة»: إن كان الفشل
+        بعائق بيئي (قدرة معطوبة) فالحاجز حاجز توفير (PREFLIGHT_BLOCKED —
+        يُحل بإعادة الفحص بعد التوفير بلا إعادة اعتماد)، وإن كانت القدرة
+        قد recuperated فمحاولة واحدة جديدة بلا بوابة أصلًا. العطل الحي
+        الموثق: عائق network_http/web_search كان يفتح بوابة مراجعة الخطة
+        فتُستهلك موافقات المالك في حلقة لا تنتهي — كل موافقة تولّد خطة
+        جديدة تحتاج نفس البحث المحجوب فيفشل ويفتح بوابة جديدة
+        (7+ بوابات موثقة في 24 ساعة؛ شكوى المالك: «أعطيت موافقتي
+        خمسين مرة»). المحرك يعرف جاهزية القدرات — والآن يُستشار فعلًا.
+        """
         project_id = project["id"]
         failures = self._step_failures(step["id"])
         if failures < self._max_step_failures:
@@ -1477,6 +1488,74 @@ class ProjectEngine:
                        {"step_id": step["id"], "attempt": failures + 1,
                         "decision": "RETRY"})
             return {"action": "continue", "reason": "إعادة محاولة الخطوة"}
+        # (W1-T06) تصنيف العائق البيئي أولًا — قبل فتح بوابة المراجعة
+        blocker = self._environment_blocker(project, step, execution_id,
+                                            reason)
+        if blocker is not None and blocker["status"] != "READY":
+            # البيئة ما زالت معطوبة — حاجز توفير يسمّي القدرة والحل،
+            # ويُحل بإعادة الفحص (GATE_AUTO_RESOLVED) لا بموافقة خطة.
+            service.update_step(self._sessions, step["id"], status="READY",
+                                last_error=reason[:500])
+            gate_id = service.open_gate(
+                self._sessions, project_id, "PREFLIGHT_BLOCKED",
+                f"{blocker['capability_id']} ({blocker['status']}) — "
+                "عائق بيئي أوقف تنفيذ الخطوة",
+                {
+                    "blocked": [{
+                        "capability_id": blocker["capability_id"],
+                        "status": blocker["status"],
+                        "reason": blocker["reason"],
+                    }],
+                    "origin": "step_failure_classification",
+                    "step_id": step["id"],
+                    "execution_id": execution_id,
+                    "last_error": reason[:500],
+                    "recheck_hint": "أعد الفحص بعد التوفير — لا إعادة اعتماد",
+                },
+                status="BLOCKED",
+            )
+            service.update_project(self._sessions, project_id,
+                                   status="BLOCKED",
+                                   last_error=reason[:500])
+            self._emit(project_id, "EXECUTION_FAILED",
+                       {"step_id": step["id"], "execution_id": execution_id,
+                        "reason": reason[:300], "exhausted": True,
+                        "classified_as": "environment_blocker"})
+            self._emit(project_id, "PREFLIGHT_BLOCKED",
+                       {"step_id": step["id"], "gate_id": gate_id,
+                        "capability_id": blocker["capability_id"],
+                        "status": blocker["status"],
+                        "origin": "step_failure_classification",
+                        "note": "حاجز توفير من تصنيف فشل الخطوة — "
+                                "يُحل بإعادة الفحص بعد التوفير"})
+            return {"action": "blocked", "blocked_kind": "environment",
+                    "reason": f"عائق بيئي: {blocker['capability_id']} "
+                              f"({blocker['status']})",
+                    "gate_id": gate_id}
+        if blocker is not None and blocker["status"] == "READY" \
+                and self._env_recovered_retries(step["id"]) == 0:
+            # القدرة جاهزة الآن — الفشل أثر عائق زال؛ محاولة واحدة
+            # بلا بوابة ولا موافقة (حرس الحلقة: مرة واحدة للخطوة حصرًا).
+            service.create_retry(
+                self._sessions, step_id=step["id"],
+                previous_execution_id=execution_id, reason=reason[:500],
+                diagnosis=(
+                    f"فشل بعائق بيئي ({blocker['capability_id']}) والقدرة "
+                    "جاهزة الآن — إعادة محاولة بلا مراجعة خطة"
+                ),
+                decision="ENV_RECOVERED_RETRY",
+            )
+            service.update_step(self._sessions, step["id"], status="READY",
+                                last_error=reason[:500])
+            self._emit(project_id, "EXECUTION_FAILED",
+                       {"step_id": step["id"], "execution_id": execution_id,
+                        "reason": reason[:300], "exhausted": True})
+            self._emit(project_id, "RETRY_REQUESTED",
+                       {"step_id": step["id"],
+                        "decision": "ENV_RECOVERED_RETRY",
+                        "note": "العائق البيئي زال — إعادة محاولة بلا بوابة"})
+            return {"action": "continue",
+                    "reason": "عائق بيئي زال — إعادة محاولة الخطوة"}
         # استنفد المحاولات — فشل خطة: مراجعة تقتضي قرار المالك (§4+§13)
         service.create_retry(
             self._sessions, step_id=step["id"],
@@ -1511,6 +1590,106 @@ class ProjectEngine:
                 _select(Execution).where(Execution.step_id == int(step_id))
             ).all()
             return len([r for r in rows if r.status == "FAILED"])
+
+    #: (W1-T06) بصمات العوائق البيئية في نص سبب الفشل → القدرة المتورطة.
+    #: سبب الخطوة نص عام («الدورة لم تكتمل أدلةً») فالتوقيع الصريح إن
+    #: وُجد هو الدليل الأسرع؛ والأدق منه استدعاءات الأدوات أدناه.
+    _ENV_BLOCKER_SIGNATURES: tuple[tuple[str, str], ...] = (
+        ("لا مزود بحث جاهز", "web_search"),
+        ("SEARCH_PROVIDER_NOT_READY", "web_search"),
+        ("PROVIDER_RESOLUTION", "web_search"),
+        ("WEB_UNAVAILABLE", "web_search"),
+        ("تجاوز بحث الويب الميزانية", "web_search"),
+        ("network_http (NOT_READY)", "network_http"),
+        ("network_https (NOT_READY)", "network_https"),
+    )
+
+    def _environment_blocker(self, project: dict, step: dict,
+                             execution_id: int, reason: str) -> dict | None:
+        """(W1-T06) عائق بيئي وراء فشل الخطوة — القدرة المتورطة وحالتها الآن.
+
+        الاستدلال من مصدرين: (1) توقيع صريح في نص السبب، (2) الأدق —
+        استدعاءات web_search الفاشلة بمحاولة التنفيذ نفسها
+        (SEARCH_PROVIDER_NOT_READY / PROVIDER_RESOLUTION /
+        DEPENDENCY_FAILURE): السلسلة كلها كانت معطوبة. ثم تُستشار
+        حالة القدرة **الراهنة** من مصدرها الوحيد (capability_view) —
+        المحرك كان يعرفها ولم يكن يستشارها في تصنيف الفشل.
+        """
+        from readiness import service as readiness_service
+
+        text = str(reason or "")
+        implicated: set[str] = {
+            capability_id for signature, capability_id
+            in self._ENV_BLOCKER_SIGNATURES if signature in text
+        }
+        try:
+            with self._sessions() as session:
+                from sqlalchemy import select as _select
+
+                from readiness.models import ToolInvocation
+                from workflow.models import Execution
+
+                started = session.scalar(
+                    _select(Execution.started_at).where(
+                        Execution.id == int(execution_id)))
+                query = _select(
+                    ToolInvocation.tool,
+                    ToolInvocation.failure_reason,
+                    ToolInvocation.failure_stage,
+                    ToolInvocation.failure_class,
+                ).where(
+                    ToolInvocation.cycle_id == (
+                        f"project-{project['id']}-step-{step['id']}"),
+                    ToolInvocation.status == "FAILED",
+                )
+                if started is not None:
+                    query = query.where(
+                        ToolInvocation.created_at >= started)
+                for tool, failure_reason, failure_stage, failure_class \
+                        in session.execute(query).all():
+                    if tool == "web_search" and (
+                        failure_reason == "SEARCH_PROVIDER_NOT_READY"
+                        or failure_stage == "PROVIDER_RESOLUTION"
+                        or failure_class == "DEPENDENCY_FAILURE"
+                    ):
+                        implicated.add("web_search")
+        except Exception:  # noqa: BLE001 — تشخيص داعم لا مسار حاسم
+            pass
+        if not implicated:
+            return None
+        capability_id = ("web_search" if "web_search" in implicated
+                         else sorted(implicated)[0])
+        try:
+            view = readiness_service.capability_view(
+                self._sessions, capability_id)
+        except Exception:  # noqa: BLE001
+            return None
+        if not view:
+            return None
+        current_reason = str(view.get("reason") or "")
+        return {
+            "capability_id": capability_id,
+            "status": view.get("readiness_status") or "UNKNOWN",
+            "reason": current_reason[:300],
+            "remediation": str(
+                view.get("failure_reason") or current_reason)[:300],
+        }
+
+    def _env_recovered_retries(self, step_id: int) -> int:
+        """(W1-T06) مرات منح «محاولة زوال العائق» للخطوة — مرة واحدة
+        حصرًا (حرس الحلقة اللانهائية: فشل متكرر رغم جاهزية البيئة
+        يسقط إلى مراجعة الخطة كما كان)."""
+        with self._sessions() as session:
+            from sqlalchemy import func as _func
+            from sqlalchemy import select as _select
+
+            from workflow.models import RetryRecord
+
+            return int(session.scalar(
+                _select(_func.count()).select_from(RetryRecord).where(
+                    RetryRecord.step_id == int(step_id),
+                    RetryRecord.decision == "ENV_RECOVERED_RETRY",
+                )) or 0)
 
     def _fail_orphaned_executions(self, step_id: int) -> None:
         """وسم تنفيذات RUNNING اليتيمة فشلًا بسبب صريح — لا حياة كاذبة."""
