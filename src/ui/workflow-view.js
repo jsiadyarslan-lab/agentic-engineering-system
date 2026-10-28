@@ -486,6 +486,7 @@
     ROLE_EXECUTING: "دور يعمل",
     TOOL_EXECUTION: "أداة",
     GATE_AUTO_RESOLVED: "بوابة حُلَّت آليًا",
+    GATE_KEPT_BLOCKED: "الحاجز باقٍ — الفجوة قائمة",
   };
 
   function historyText(event) {

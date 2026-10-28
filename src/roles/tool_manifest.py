@@ -25,6 +25,11 @@ TOOLS_MANIFEST: list[dict] = [
      "desc": "صفحة HTML → نص فقرات منسق (معلن خارج الركيزة)"},
     {"tool": "fred_csv", "args": {"series_id": "DGS10"},
      "desc": "سلسلة FRED رسمية بلا مفتاح — مثل DGS10/CPIAUCSL (معلن)"},
+    {"tool": "run_build_command",
+     "args": {"command": "npm install", "timeout_s": 600},
+     "desc": "أوامر بناء حقيقية (W2-T24) — قائمة بيضاء مغلقة تنفذ فعليًا "
+             "بأدلة exit_code/stdout/stderr؛ يستدعيها طور build_commands "
+             "النظامي لا خطة الأدوات الحرة"},
     {"tool": "worldbank_indicator",
      "args": {"indicator": "FP.CPI.TOTL.ZG", "countries": "SA;US", "dates": "2020:2024"},
      "desc": "مؤشر البنك الدولي — قيّد countries وdates (معلن)"},

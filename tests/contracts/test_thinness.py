@@ -92,6 +92,12 @@ def test_sources_registry_under_220_lines():
     assert _count_lines("src/sources/__init__.py") < 220
 
 
+def test_roles_build_tool_under_260_lines():
+    """(W2-T24) أداة أوامر البناء في وحدة مستقلة (أمر 008 — توزيع
+    الأنحاف) — التنفيذ والأدلة والقائمة البيضاء هنا لا في tools.py."""
+    assert _count_lines("src/roles/build_tool.py") < 260
+
+
 def test_roles_tools_under_660_lines():
     """الأمر 008: tools.py موزّع الأنحاف — التصنيف في tool_failures،
     الويب في web_tools، الـPDF في pdf_tools، المانيفست في tool_manifest.

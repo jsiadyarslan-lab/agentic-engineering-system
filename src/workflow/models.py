@@ -113,6 +113,7 @@ PROJECT_EVENT_KINDS: tuple[str, ...] = (
     "PREFLIGHT_BLOCKED",        # 011 §2+§27: حاجب توفير قبل التنفيذ
     "PREFLIGHT_RECHECKED",      # 011 §19: المالك أعاد الفحص بعد توفير
     "GATE_AUTO_RESOLVED",       # 011 §19: بوابة حُلّت آليًا بعد recheck
+    "GATE_KEPT_BLOCKED",        # W2-T24: recheck نجح والفجوة قائمة — حجب صادق
     "EXECUTION_POLICY_CHANGED", # 011 §26: المالك غيّر سياسة التنفيذ
     # (012-E) أحداث الوظيفة الدائمة — انتقالات فقط؛ النبضة حقل في
     # صف engineering_jobs. المفردة القانونية الكاملة في harness/events

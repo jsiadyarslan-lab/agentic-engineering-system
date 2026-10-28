@@ -45,6 +45,8 @@ from roles.web_tools import (
 
 #: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF + أدوات البيانات الخمس
 #: + أدوات المتصفح السبع (013 §13) — متصفح حي بأنشطة مسجلة.
+#: (W2-T24) run_build_command: أوامر بناء حقيقية (npm...) — تنفيذ
+#: في العملية معلن (تحتاج شبكة+HOME كأدوات الويب) بأدلة exit_code.
 TOOL_WHITELIST: tuple[str, ...] = (
     "web_search",
     "fetch_page",
@@ -57,6 +59,7 @@ TOOL_WHITELIST: tuple[str, ...] = (
     "page_to_text",
     "fred_csv",
     "worldbank_indicator",
+    "run_build_command",
     "browser_navigate",
     "browser_click",
     "browser_type",
@@ -299,6 +302,18 @@ def generate_pdf_arabic(ctx: ToolContext, md_path: str, out_path: str) -> str:
     return str(target) + f"#{site}"
 
 
+# ------------------------------------------------------------------ #
+# أوامر البناء الحقيقية (W2-T24) — التنفيذ في roles/build_tool.py
+# (أمر 008: توزيع الأنحاف — مثل web_tools/pdf_tools)؛ هنا الاستيراد
+# والعقد فقط: الأداة بيضاء، معلنة in_process (شبكة+HOME كأدوات الويب).
+# ------------------------------------------------------------------ #
+
+from roles.build_tool import (  # noqa: F401 — إعادة تصدير العقد
+    BUILD_COMMAND_WHITELIST,
+    resolve_build_tool,
+    run_build_command,
+)
+
 def verify_pdf_pages(ctx: ToolContext, path: str) -> int:
     """عدّ صفحات PDF عبر pypdf — داخل الركيزة أو معلنًا في العملية."""
     _bounded_path(ctx.grant_root, path)
@@ -346,9 +361,9 @@ def verify_pdf_pages(ctx: ToolContext, path: str) -> int:
 # المنفذ الموحد — القائمة البيضاء + التوثيق + التصنيف (008 §2-§5)
 # ------------------------------------------------------------------ #
 
-#: حقول الوسائط الآمنة للعرض — لا أسرار أبدًا (استعلام/رابط/مسار).
+#: حقول الوسائط الآمنة للعرض — لا أسرار أبدًا (استعلام/رابط/مسار/أمر).
 _QUERY_FIELDS = ("query", "url", "path", "series_id", "indicator",
-                 "md_path", "out_path")
+                 "md_path", "out_path", "command")
 
 
 def _record_of(name: str, args: dict, attempt: int) -> ToolCallRecord:
@@ -464,7 +479,7 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
     site = (
         "in_process_declared"
         if name in ("web_search", "fetch_page") or name in DATA_TOOLS
-        or name in BROWSER_TOOLS
+        or name in BROWSER_TOOLS or name == "run_build_command"
         else "substrate"
     )
     record = _record_of(name, args, attempt)
@@ -531,6 +546,17 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
             finalize(record)
             _finish_success(ctx, record, value, digest, site,
                             {"pages": value})
+        elif name == "run_build_command":
+            value = run_build_command(
+                ctx, str(args.get("command", "")),
+                timeout_s=float(args.get("timeout_s", 0) or 0),
+            )
+            digest = _sha256_text(json.dumps(value, ensure_ascii=False))
+            finalize(record)
+            _finish_success(ctx, record, value, digest, site,
+                            {"command": str(args.get("command", "")),
+                             "exit_code": value.get("exit_code")},
+                            result_count=1)
         elif name in DATA_TOOLS:
             from tools import data_tools
 

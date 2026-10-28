@@ -125,6 +125,7 @@ CANONICAL_MAP: dict[str, str] = {
     "OWNER_GATE_REQUIRED": "owner/gate.requested",
     "OWNER_GATE_RESOLVED": "owner/gate.resolved",
     "GATE_AUTO_RESOLVED": "owner/gate.auto_resolved",
+    "GATE_KEPT_BLOCKED": "owner/gate.kept_blocked",
     # الوظيفة (012-E)
     "JOB_CREATED": "job/created",
     "JOB_QUEUED": "job/queued",

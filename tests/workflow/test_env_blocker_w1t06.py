@@ -259,3 +259,110 @@ def test_env_blocker_requires_tool_failure_from_current_attempt(
     assert gate["kind"] == "PLAN_REVISION_APPROVAL", (
         "فشل قديم السبب لا يعني أن الفشل الحالي بيئي — النطاق زمني"
     )
+
+
+# ---------------- W2-T24: فجوة أدوات البناء ---------------- #
+
+def _add_build_tool_failure(wf_env, project, step, reason="BUILD_TOOLING_MISSING"):
+    """استدعاء run_build_command فاشل بفجوة node/npm — توقيع W2-T24."""
+    from readiness.models import ToolInvocation
+
+    with wf_env["sessions"]() as session:
+        session.add(ToolInvocation(
+            cycle_id=f"project-{project['id']}-step-{step['id']}",
+            tool_call_id="tc-w2t24-test", tool="run_build_command",
+            status="FAILED", transport_status="SUCCESS",
+            result_status="NOT_USABLE",
+            failure_class="DEPENDENCY_FAILURE",
+            failure_stage="TOOL_START",
+            failure_reason=reason,
+            query="npm install", error="node/npm غير متوفرين",
+            retryable=0,
+        ))
+        session.commit()
+
+
+def test_build_tooling_gap_opens_provisioning_gate(wf_env):
+    """(W2-T24) فجوة node/npm → PREFLIGHT_BLOCKED (توفير) لا مراجعة
+    خطة — حتى لو كانت كل القدرات الأخرى جاهزة: العمق البنيوي يقرأ
+    من سجل الأداة الصادق لا من مسبار build العام."""
+    engine, project, plan, phase, step = _approved_step(wf_env)
+    execution_id = _exhausted_executions(wf_env, step)
+    _add_build_tool_failure(wf_env, project, step)
+
+    outcome = engine._on_step_failure(
+        project, plan, phase, step, execution_id, GENERIC_REASON)
+
+    assert outcome["action"] == "blocked"
+    assert outcome["blocked_kind"] == "environment"
+    assert "build" in outcome["reason"]
+
+    gate = _gates(wf_env, project["id"])[-1]
+    assert gate["kind"] == "PREFLIGHT_BLOCKED", (
+        "فجوة أدوات البناء عائق توفير — لا موافقة مراجعة تُحرق"
+    )
+    assert gate["status"] == "BLOCKED"
+    assert "node/npm" in gate["reason"]
+    fresh_step = service.get_step(wf_env["sessions"], step["id"])
+    assert fresh_step["status"] == "READY"
+    assert all(r.decision != "ESCALATE" for r in _retries(wf_env, step["id"]))
+
+
+def test_build_tooling_signature_in_reason_text_classified(wf_env):
+    """(W2-T24) توقيع BUILD_TOOLING_MISSING في نص السبب يكفي وحده."""
+    engine, project, plan, phase, step = _approved_step(wf_env)
+    execution_id = _exhausted_executions(wf_env, step)
+
+    reason = (
+        "BUILD_TOOLING_MISSING — node/npm غير متوفرين لبيئة التنفيذ "
+        "(node, npm) — أوامر البناء تتطلبهما"
+    )
+    outcome = engine._on_step_failure(
+        project, plan, phase, step, execution_id, reason)
+
+    assert outcome["blocked_kind"] == "environment"
+    gate = _gates(wf_env, project["id"])[-1]
+    assert gate["kind"] == "PREFLIGHT_BLOCKED"
+    assert "node/npm" in gate["reason"]
+
+
+def test_build_tooling_priority_over_web_search(wf_env, monkeypatch):
+    """(W2-T24) فجوة node/npm أعمق من جاهزية البحث — حتى مع فشل بحث
+    موازٍ، الحاجز المسمى هو فجوة الأدوات (البحث عرض جانبي)."""
+    engine, project, plan, phase, step = _approved_step(wf_env)
+    execution_id = _exhausted_executions(wf_env, step)
+    _add_env_tool_failure(wf_env, project, step)
+    _add_build_tool_failure(wf_env, project, step)
+    _patch_capability(monkeypatch, "READY")  # البحث جاهز — الفجوة الأدوات
+
+    outcome = engine._on_step_failure(
+        project, plan, phase, step, execution_id, GENERIC_REASON)
+
+    assert outcome["blocked_kind"] == "environment"
+    gate = _gates(wf_env, project["id"])[-1]
+    assert gate["kind"] == "PREFLIGHT_BLOCKED"
+    assert "node/npm" in gate["reason"], (
+        "الأولوية للعمق البنيوي — لا لجاهزية البحث العابرة"
+    )
+
+
+def test_recheck_keeps_build_gate_when_tooling_still_missing(
+        wf_env, monkeypatch):
+    """(W2-T24) حرس الحل الآلي: إعادة فحص ناجحة لا تحل بوابة فجوة
+    node/npm ما دامت الأدوات غائبة فعليًا على المضيف."""
+    engine, project, plan, phase, step = _approved_step(wf_env)
+    execution_id = _exhausted_executions(wf_env, step)
+    _add_build_tool_failure(wf_env, project, step)
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+    engine._on_step_failure(
+        project, plan, phase, step, execution_id, GENERIC_REASON)
+    gate = _gates(wf_env, project["id"])[-1]
+    assert gate["kind"] == "PREFLIGHT_BLOCKED"
+
+    still = engine._build_tooling_still_missing(gate)
+    assert still is True, "الأدوات غائبة — البوابة تبقى محجوبة صادقة"
+
+    # وبعد التوفير الفعلي: البوابة تُحل
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/local/bin/" + name)
+    assert engine._build_tooling_still_missing(gate) is False

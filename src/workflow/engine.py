@@ -1086,6 +1086,16 @@ class ProjectEngine:
             })
             for gate in service.open_gates(self._sessions, project_id):
                 if gate["status"] == "BLOCKED":
+                    if self._build_tooling_still_missing(gate):
+                        # (W2-T24) زوال العائق يُثبت فعلًا لا بمجرد نجاح
+                        # فحص القدرات المطلوبة الأخرى — node/npm غائبان
+                        # فالبوابة تبقى صادقة الحجب.
+                        self._emit(project_id, "GATE_KEPT_BLOCKED", {
+                            "gate_id": gate["id"], "kind": gate["kind"],
+                            "note": "فجوة node/npm قائمة — الحاجز باقٍ حتى "
+                                    "التثبيت الفعلي",
+                        })
+                        continue
                     service.auto_resolve_gate(
                         self._sessions, gate["id"],
                         note="إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح",
@@ -1496,10 +1506,18 @@ class ProjectEngine:
             # ويُحل بإعادة الفحص (GATE_AUTO_RESOLVED) لا بموافقة خطة.
             service.update_step(self._sessions, step["id"], status="READY",
                                 last_error=reason[:500])
+            # (W2-T24) سبب القدرة يصل نص البوابة حرفيًا (011 §3 — نص
+            # دقيق لا placeholder): «node/npm غير متوفرين...» أبلغ من
+            # «build (NOT_READY)» وحدها.
+            gate_reason = (
+                f"{blocker['capability_id']} ({blocker['status']}) — "
+                "عائق بيئي أوقف تنفيذ الخطوة"
+            )
+            if blocker.get("reason"):
+                gate_reason += f": {str(blocker['reason'])[:220]}"
             gate_id = service.open_gate(
                 self._sessions, project_id, "PREFLIGHT_BLOCKED",
-                f"{blocker['capability_id']} ({blocker['status']}) — "
-                "عائق بيئي أوقف تنفيذ الخطوة",
+                gate_reason,
                 {
                     "blocked": [{
                         "capability_id": blocker["capability_id"],
@@ -1602,6 +1620,8 @@ class ProjectEngine:
         ("تجاوز بحث الويب الميزانية", "web_search"),
         ("network_http (NOT_READY)", "network_http"),
         ("network_https (NOT_READY)", "network_https"),
+        # (W2-T24) فجوة أدوات البناء — عائق توفير لا فشل خطة
+        ("BUILD_TOOLING_MISSING", "build"),
     )
 
     def _environment_blocker(self, project: dict, step: dict,
@@ -1653,10 +1673,33 @@ class ProjectEngine:
                         or failure_class == "DEPENDENCY_FAILURE"
                     ):
                         implicated.add("web_search")
+                    elif tool == "run_build_command" and (
+                        failure_reason == "BUILD_TOOLING_MISSING"
+                    ):
+                        # (W2-T24) الأداة سجلت فقد node/npm بصدق
+                        implicated.add("build")
         except Exception:  # noqa: BLE001 — تشخيص داعم لا مسار حاسم
             pass
         if not implicated:
             return None
+        if "build" in implicated:
+            # (W2-T24) فجوة node/npm أعمق من جاهزية البحث (البحث عرضٌ
+            # جانبي والتنفيذ مستحيل بنيويًا) — تُقرأ من سجل الأداة
+            # الصادق لا من مسبار build العام (python وحده يجعله READY
+            # كذبًا هنا) — حاجز توفير يُحل بتثبيت Node.js LTS وإعادة
+            # الفحص، بلا حرق موافقة مراجعة خطة.
+            return {
+                "capability_id": "build",
+                "status": "NOT_READY",
+                "reason": (
+                    "node/npm غير متوفرين لبيئة التنفيذ — أوامر البناء "
+                    "(npm install / npm run build) تتطلبهما"
+                ),
+                "remediation": (
+                    "ثبّت Node.js LTS (يتضمن npm) على مضيف التنفيذ ثم "
+                    "أعد الفحص — لا إعادة اعتماد"
+                ),
+            }
         capability_id = ("web_search" if "web_search" in implicated
                          else sorted(implicated)[0])
         try:
@@ -1674,6 +1717,35 @@ class ProjectEngine:
             "remediation": str(
                 view.get("failure_reason") or current_reason)[:300],
         }
+
+    @staticmethod
+    def _build_tooling_still_missing(gate: dict) -> bool:
+        """(W2-T24) بوابة فجوة node/npm — هل الفجوة قائمة فعليًا الآن؟
+
+        إعادة الفحص تنجح بقدراتها المطلوبة (llm/web/…) بينما node/npm
+        ما زالا غائبين — حل البوابة حينها كاذب يعيد المحاولة لتفشل
+        حتمًا. الحل الصادق: تُحل البوابة فقط حين تُرى الأدوات على
+        المضيف الذي ينفذ (المحرك والأداة نفس المضيف).
+        """
+        import json as _json
+        import shutil as _shutil
+
+        raw = gate.get("details")
+        if isinstance(raw, dict):
+            details = raw
+        else:
+            try:
+                details = _json.loads(str(raw or "{}"))
+            except ValueError:
+                return False
+        blocked = details.get("blocked") or []
+        if not any(
+                str((b or {}).get("capability_id", "")) == "build"
+                for b in blocked if isinstance(b, dict)):
+            return False
+        return any(
+            _shutil.which(tool) is None for tool in ("node", "npm")
+        )
 
     def _env_recovered_retries(self, step_id: int) -> int:
         """(W1-T06) مرات منح «محاولة زوال العائق» للخطوة — مرة واحدة

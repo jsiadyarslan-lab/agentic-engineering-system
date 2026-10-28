@@ -31,7 +31,7 @@ from roles.implementer import (
     ImplementerStatus,
 )
 from core.stop_controller import CycleStopSignal
-from roles import build_files
+from roles import build_commands, build_files
 from roles.live import LiveRoleBase, RoleSystemFault, load_prompt
 from roles.recovery import run_with_recovery
 from roles.tool_failures import ToolError, ToolFailure
@@ -270,11 +270,27 @@ class LiveImplementer(LiveRoleBase):
                     previous_attempts=list(request.previous_attempts or []),
                     role=self.ROLE,
                 )
+            # (2.7) أوامر البناء الحقيقية (W2-T24) — npm install/build
+            # تُنفَّذ فعليًا بأدلة exit_code؛ وفقد node/npm فشل صادق
+            # يغذي تصنيف المحرك (BUILD_TOOLING_MISSING → حاجز توفير).
+            commands = build_commands.required_build_commands(
+                request.task.acceptance_criteria,
+            )
+            build_outcome = None
+            if commands:
+                self._stop_requested(ctx, "implementer.build_commands")
+                build_outcome = build_commands.run_build_commands_phase(
+                    ctx, root, commands,
+                    request.task.acceptance_criteria,
+                )
+                if build_outcome.failed_result is not None:
+                    return build_outcome.failed_result
             if (
                 not materials["search_results"]
                 and not materials["pages"]
                 and not materials["data"]
                 and not created_files
+                and not (build_outcome and build_outcome.results)
             ):
                 # فشل مادة مصنَّف (§18): TOOL_FAILURE/tool/queries/attempts
                 # — لا «كل استدعاءات الأدوات فشلت» الغامضة.
@@ -308,6 +324,8 @@ class LiveImplementer(LiveRoleBase):
             report_materials = build_files.materials_with_created(
                 materials, created_files,
             )
+            if build_outcome and build_outcome.results:
+                report_materials["build_commands"] = build_outcome.results
             report_md = self._write_report(task_payload, report_materials)
 
             # (3) الكتابة والـPDF — كلها عبر الأدوات (ركيزة + توثيق)
@@ -325,6 +343,13 @@ class LiveImplementer(LiveRoleBase):
                 artifacts.append(str(built))
                 evidence_refs.append(
                     f"sha256:{_sha16(built)}:{build_path}"
+                )
+            for build_artifact in (
+                    build_outcome.artifacts if build_outcome else []):
+                artifacts.append(str(build_artifact))
+                evidence_refs.append(
+                    f"sha256:{_sha16(build_artifact)}:"
+                    f"{Path(build_artifact).name}"
                 )
             md_name = f"{request.task.id}-report.md"
             run_tool("write_file", {"path": md_name, "content": report_md}, ctx)
@@ -378,6 +403,10 @@ class LiveImplementer(LiveRoleBase):
                     + (
                         f" وأنشأت {len(created_files)} ملف بناء"
                         if created_files else ""
+                    )
+                    + (
+                        f" و{build_outcome.summary}"
+                        if build_outcome and build_outcome.summary else ""
                     )
                     + f" وأنتجت {len(artifacts)} ملفًا"
                 )[:_TRUNCATE],
