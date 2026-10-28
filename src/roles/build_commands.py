@@ -105,9 +105,15 @@ def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
     البناء تحتاج تراكم المشروع: المصدرية تُنسخ (إن غابت) وnode_modules/
     dist تُوصل symlink (ثقيلة ونفس المضيف). لا يُستبدل ملف موجود: ما
     أنشأته الخطوة الحالية (create_files) له الأولوية.
+
+    (W2-T25) مسارات مطلقة حصرًا: الرابط النسبي كان يُحل من موقع
+    الرابط لا من cwd الخدمة فيصير معلقًا (قياس حي الخطوة 161:
+    node_modules -> runtime/… معلق)، والجولة التالية تصطدم Errno 17
+    عند إعادة إنشائه لأن exists() لا يرى المعلق — يُستبدل لا يُصطدم.
     """
     copied: list[str] = []
     linked: list[str] = []
+    root = root.resolve()
     try:
         step_id = int(root.name)
         steps_dir = root.parent
@@ -139,6 +145,9 @@ def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
             source = source_dir / name
             target = root / name
             if source.is_dir() and not target.exists():
+                # رابط معلق من جولة سابقة (مسار نسبي قديم) يُستبدل
+                if target.is_symlink():
+                    target.unlink()
                 target.symlink_to(source, target_is_directory=True)
                 linked.append(name)
     return {"copied": copied, "linked": linked}

@@ -494,3 +494,50 @@ def test_lint_command_whitelisted():
     """الأمر في قائمة الإغلاق — يمر التنفيذ الموحد لا يرفضه."""
     from roles.build_tool import BUILD_COMMAND_WHITELIST
     assert "npm run lint" in BUILD_COMMAND_WHITELIST
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) روابط المتطلبات المطلقة + استبدال المعلق
+# ------------------------------------------------------------------ #
+
+def test_gather_symlink_absolute_and_survives_retry(tmp_path, monkeypatch):
+    """الجلب بمسار نسبي (كما يحدث من cwd الخدمة) ينشئ رابطًا مطلقًا
+    يعمل، وإعادة الجلب بعد جولة سابقة (رابط موجود — حتى معلق قديم)
+    لا تصطدم Errno 17 بل تستبدل المعلق."""
+    import os
+    # بنية المشروع: steps/142 (فيه node_modules حقيقي) وsteps/161
+    steps = tmp_path / "runtime" / "projects" / "3" / "steps"
+    (steps / "142" / "node_modules").mkdir(parents=True)
+    (steps / "142" / "node_modules" / "react").mkdir()
+    (steps / "161").mkdir(parents=True)
+    (steps / "161" / "package.json").write_text("{}", encoding="utf-8")
+    # cwd وهمي يحاكي الخدمة — الجلب بجذر نسبي كما يحدث فعلًا
+    monkeypatch.chdir(tmp_path)
+    from pathlib import Path as _P
+    result = build_commands.gather_build_prerequisites(
+        _P("runtime/projects/3/steps/161"))
+    assert "node_modules" in result["linked"]
+    link = steps / "161" / "node_modules"
+    assert link.is_symlink()
+    assert link.exists(), "الرابط يجب أن يعمل (مطلق لا معلق)"
+    assert (link / "react").is_dir()
+    # الجولة الثانية (إعادة المحاولة): لا Errno 17 — الرابط موجود فيتخطى
+    result2 = build_commands.gather_build_prerequisites(
+        _P("runtime/projects/3/steps/161"))
+    assert "node_modules" not in result2["linked"]
+
+
+def test_gather_replaces_dangling_symlink(tmp_path, monkeypatch):
+    """رابط معلق من جولة قديمة (مسار نسبي قديم) يُستبدل بمطلق صحيح."""
+    steps = tmp_path / "runtime" / "projects" / "3" / "steps"
+    (steps / "142" / "node_modules").mkdir(parents=True)
+    (steps / "161").mkdir(parents=True)
+    dangling = steps / "161" / "node_modules"
+    dangling.symlink_to("runtime/projects/3/steps/142/node_modules")
+    assert not dangling.exists() and dangling.is_symlink()  # معلق فعلًا
+    monkeypatch.chdir(tmp_path)
+    from pathlib import Path as _P
+    result = build_commands.gather_build_prerequisites(
+        _P("runtime/projects/3/steps/161"))
+    assert "node_modules" in result["linked"]
+    assert dangling.exists() and (dangling / ".").is_dir()
