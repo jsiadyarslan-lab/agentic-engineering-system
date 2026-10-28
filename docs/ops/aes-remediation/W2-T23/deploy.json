@@ -1,0 +1,73 @@
+{
+ "_meta": {
+  "task": "W2-T23 deploy (0916484)",
+  "ts": "2026-10-28T13:50:54Z"
+ },
+ "health_before": {
+  "cmd": "health before",
+  "rc": 0,
+  "out": "200",
+  "err": ""
+ },
+ "head_before": {
+  "cmd": "HEAD before",
+  "rc": 0,
+  "out": "6fc02343cbd7453d368bb3d96313214b004e989e",
+  "err": ""
+ },
+ "status_before": {
+  "cmd": "status before",
+  "rc": 0,
+  "out": "?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\n?? scripts/ops/nightly_backup.sh.pre-w1t04\n?? src/agentic_engineering_system.egg-info/",
+  "err": ""
+ },
+ "services_before": {
+  "cmd": "services before",
+  "rc": 0,
+  "out": "active\nactive\nactive\nactive",
+  "err": ""
+ },
+ "git_pull": {
+  "cmd": "git ff pull",
+  "rc": 0,
+  "out": "create mode 100644 scripts/ops/w2t11_local_touch_check.py\n create mode 100644 scripts/ops/w2t11_static_contrast.py\n create mode 100644 src/roles/build_files.py\n create mode 100644 tests/roles/test_implementer_create_files.py",
+  "err": ""
+ },
+ "head_after_pull": {
+  "cmd": "HEAD after pull",
+  "rc": 0,
+  "out": "0916484812bd371462a49bec5e939871240c2af1",
+  "err": ""
+ },
+ "py_compile": {
+  "cmd": "py_compile",
+  "rc": 0,
+  "out": "COMPILE_OK",
+  "err": ""
+ },
+ "restart": {
+  "cmd": "restart",
+  "rc": 0,
+  "out": "RESTART_ISSUED",
+  "err": ""
+ },
+ "health_after_restart": "200 (after 96s)",
+ "services_after": {
+  "cmd": "services after",
+  "rc": 0,
+  "out": "active\nactive\nactive\nactive",
+  "err": ""
+ },
+ "journal_err": {
+  "cmd": "journal errors",
+  "rc": 0,
+  "out": "-- No entries --",
+  "err": ""
+ },
+ "asset_version": {
+  "cmd": "asset/version check",
+  "rc": 0,
+  "out": "200091648481 fix(roles): W2-T23 — المنفذ الحي يبني الملفات: طور create_files نحيل داخل implementer_live (397 س تحت عقد 430) يستدعي وحدة build_files الجديدة (284 س تحت عقد 320): استخراج الملفات المطلوبة من معايير الخطوة بحد خلفي يمنع ابتلاع js لـjson واستبعاد نواتج الأوامر، تحليل ### FILE: بفحوص أمان (مسار نسبي/امتدادات بيضاء/سقوف 16 ملفًا و120 ألف حرف)، كتابة عبر run_tool(write_file) بأدلة sha256، إعادة تحليل واحدة ثم RoleSystemFault، write_sources_file منقولة — مطالبة الموجه قسم الطور الثالث + verifier regex موسع — عقد 14 اختبارًا جديدًا + عقد رقة build_files — يحرر 7 خطوات ملفية في خطة المشروع #3 (فشلها كان «تقريرًا بدل ملف» INSUFFICIENT_EVIDENCE)",
+  "err": ""
+ }
+}

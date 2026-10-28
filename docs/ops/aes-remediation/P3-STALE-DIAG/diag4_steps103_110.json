@@ -1,0 +1,53 @@
+{
+ "steps": [
+  {
+   "id": 103,
+   "ord": 2,
+   "obj": "Install all npm dependencies",
+   "criteria": "[\"npm install executes with exit code 0\", \"node_modules/astro exists\", \"node_modules/typescript exists\", \"node_modules/@astrojs/tailwind exists\", \"package-lock.json exists\"]"
+  },
+  {
+   "id": 104,
+   "ord": 3,
+   "obj": "Create base project directories and starter index page",
+   "criteria": "[\"src/layouts/, src/pages/, src/components/, src/content/, src/styles/ directories exist\", \"src/pages/index.astro exists with basic HTML structure and 'News Website' title\", \"src/styles/global.css exists with @tailwind base; @tailwind components; @tailwind utilities;\", \"src/env.d.ts exists with /// <reference types=\\\"astro/client\\\" />\"]"
+  },
+  {
+   "id": 105,
+   "ord": 1,
+   "obj": "Create content collections configuration and sample content",
+   "criteria": "[\"src/content/config.ts exists with defineCollection for 'articles' and 'categories' using z schemas\", \"src/content/articles/ contains at least 3 .mdx files with frontmatter matching schema\", \"src/content/categories/ contains at least 3 .mdx files with frontmatter matching schema\", \"Each article frontmatter includes: title, description, pubDate (ISO string), heroImage (string), category (string), tags (string[])\"]"
+  },
+  {
+   "id": 106,
+   "ord": 2,
+   "obj": "Build base layout components (BaseLayout, Header, Footer)",
+   "criteria": "[\"src/layouts/BaseLayout.astro exists with DOCTYPE, html, head (meta charset, viewport, title, description), body with Header, slot, Footer, imports ../styles/global.css\", \"src/components/Header.astro exists with <header>, site title link to '/', nav with links to '/', '/about', '/contact'\", \"src/components/Footer.astro exists with <footer>, copyright notice, social placeholder links\", \"All components use TypeScript interfaces for props where applicable\"]"
+  },
+  {
+   "id": 107,
+   "ord": 3,
+   "obj": "Build ArticleLayout and ArticleCard components",
+   "criteria": "[\"src/layouts/ArticleLayout.astro exists, extends BaseLayout pattern, accepts title, description, pubDate, heroImage, category props, renders article header with meta\", \"src/components/ArticleCard.astro exists, accepts title, description, pubDate, heroImage, slug, category props, renders card with link to article\", \"Both components have proper TypeScript prop interfaces\"]"
+  },
+  {
+   "id": 108,
+   "ord": 1,
+   "obj": "Implement home page, article detail page, and category page",
+   "criteria": "[\"src/pages/index.astro imports getCollection, queries articles sorted by pubDate desc, renders ArticleCard grid (responsive: 1 col mobile, 2 tablet, 3 desktop)\", \"src/pages/article/[slug].astro exports getStaticPaths from getCollection('articles'), renders ArticleLayout with <Content /> for body\", \"src/pages/category/[slug].astro exports getStaticPaths from getCollection('categories'), filters articles by category, renders ArticleCard grid\", \"All pages import and use Header, Footer components\"]"
+  },
+  {
+   "id": 109,
+   "ord": 2,
+   "obj": "Create about, contact pages and RSS feed generator",
+   "criteria": "[\"src/pages/about.astro exists with BaseLayout, describes the news site\", \"src/pages/contact.astro exists with BaseLayout, contact form (mailto link)\", \"src/pages/rss.xml.js exists, exports GET function, uses getCollection('articles'), generates RSS 2.0 with title, link, description, items (title, link, pubDate, description, content)\", \"RSS feed includes absolute URLs using site config\"]"
+  },
+  {
+   "id": 110,
+   "ord": 3,
+   "obj": "Build project and verify preview server starts",
+   "criteria": "[\"npm run build executes with exit code 0\", \"dist/ directory exists with index.html, article/*, category/*, rss.xml, assets/\", \"npm run preview starts and binds to port (verified by process output containing 'Local' or 'Network' URL)\", \"No TypeScript errors in build output\"]"
+  }
+ ],
+ "host": "=== node ===\n---\n---\nactivate\nactivate.csh\nactivate.fish\nActivate.ps1\ndotenv\n\n\n=== prod_head ===\n6fc02343c fix(ui): W2-T11-N1 — كنس 8 مواضع نص err (الاسم المستعار للخطر الصلب في factory-view) إلى --danger-hي — عقد test_no_solid_danger_as_text يوسّع ليحل الأسماء المستعارة (danger/err/danger-strong) — ملاحظة التدقيق المستقل N1\n27c44dbad fix(ui): W2-T11 تكملة — كنس نظامي لـ51 موضع نص خطر صلب إلى --danger-hi (يعبر AA على كل الأسطح: canvas 7.4/raised 6.3/elevated 5.6 — الصلب للنقاط والحدود فقط)، و.pl-act-btn في مجموعة عرض أهداف اللمس (زر «المزيد» الأيقوني 31px→44) — عقد جديد test_no_solid_danger_as_text (46/46)\n1d44b0add fix(ui): W2-T11 — حزمة إمكانية الوصول: نص حالة بجوار نقطة المشروع (pj-status بنمط الجلسات الثنائي)، توكن --tap 44px مع كتلة pointer:coarse لكل التفاعلية، رفع --text-muted إلى AA على كل الأسطح (كان 4.07:1 على elevated)، --danger-hi لنص رقاقة الخطر (كان 3.64:1)، توحيد :focus-visible بإزالة 7 مواضع كتم outline، aria-hidden للنقاط الزخرفية، وسطرا harness.js الخامسان (رصيد W2-T09) → توكنات — عقد اختبار دائم tests/ui/test_a11y_w2t11.py (45/45)\n?? runtime/browser/\n?? runtime/projects/\n?? scripts/ops/nightly_backup.sh\n?? scripts/ops/nightly_backup.sh.pre-w1t04\n?? src/agentic_engineering_system.egg-info/\n\n\n"
+}

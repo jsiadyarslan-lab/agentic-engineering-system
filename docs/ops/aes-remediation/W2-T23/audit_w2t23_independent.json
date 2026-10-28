@@ -1,0 +1,771 @@
+{
+ "_meta": {
+  "task": "W2-T23-AUDIT — تدقيق مستقل (وكيل تدقيق مستقل — general-purpose)",
+  "ts": "2026-10-28T15:23:20.219309+00:00",
+  "commit_under_audit": "0916484812bd371462a49bec5e939871240c2af1",
+  "script": "/home/z/my-project/repo/scripts/ops/w2t23_audit_check.py",
+  "script_md5": "67728336b43480349eb343e349ca8d28",
+  "auditor_manual_pre_runs": [
+   "tests/roles/test_implementer_create_files.py: 14 passed in 0.35s",
+   "tests/roles/ + tests/contracts/: 84 passed + 1 failed (test_generate_pdf_arabic_one_page — ModuleNotFoundError: arabic_reshaper)",
+   "نفس الفاشل على worktree الأب 3764420 النقي: 1 failed (arabic_reshaper) — بيئي سابق للرقعة",
+   "tests/workflow/ + tests/harness/: 164 passed + 1 متذبذب توقيت (test_killed_planning_thread_leaves_no_phantom_planning — نجح معزولًا في 1.58s والالتزام 0916484 لا يمس workflow/harness إطلاقًا) — يعيد السكربت تشغيلها أدناه"
+  ],
+  "ssh": "read-only (paramiko, look_for_keys=False, allow_agent=False); الوحيد POST: /api/environment/probe {web_search} (مسبار تشخيصي — سابقة W2-T20-AUDIT)؛ لا preflight ولا restart ولا git كتابي",
+  "duration_s": 258.4
+ },
+ "checks": [
+  {
+   "id": "A1",
+   "group": "git/production",
+   "desc": "HEAD الإنتاج == 0916484812bd371462a49bec5e939871240c2af1",
+   "pass": true,
+   "evidence": "0916484812bd371462a49bec5e939871240c2af1"
+  },
+  {
+   "id": "A2",
+   "group": "git/production",
+   "desc": "أب HEAD == 3764420 (ff-only فوق حوكمة W2-T11)",
+   "pass": true,
+   "evidence": "0916484812bd371462a49bec5e939871240c2af1 3764420febeada9fa41d96cf1dce1206e0cce93d"
+  },
+  {
+   "id": "A3",
+   "group": "git/production",
+   "desc": "شجرة الإنتاج نظيفة — untracked المتوقع حصرًا (browser/projects/backup+pre/egg-info)",
+   "pass": true,
+   "evidence": [
+    "?? runtime/browser/",
+    "?? runtime/projects/",
+    "?? scripts/ops/nightly_backup.sh",
+    "?? scripts/ops/nightly_backup.sh.pre-w1t04",
+    "?? src/agentic_engineering_system.egg-info/"
+   ]
+  },
+  {
+   "id": "A4",
+   "group": "git/production",
+   "desc": "/health == 200",
+   "pass": true,
+   "evidence": "200"
+  },
+  {
+   "id": "A5",
+   "group": "git/production",
+   "desc": "الخدمات نشطة ×4 (agentic/nginx/searxng/search-api)",
+   "pass": true,
+   "evidence": [
+    "active",
+    "active",
+    "active",
+    "active"
+   ]
+  },
+  {
+   "id": "A6",
+   "group": "git/production",
+   "desc": "journalctl -u agentic -p err منذ 13:30 = صفر أخطاء",
+   "pass": true,
+   "evidence": "-- No entries --"
+  },
+  {
+   "id": "A7",
+   "group": "git/production",
+   "desc": "تطابق sha256 ثلاثي (خادم=محلي=blob 0916484) لملفات الرقعة الستة",
+   "pass": true,
+   "evidence": {
+    "src/roles/implementer_live.py": {
+     "server": "13f72b04df48f15635363043aebf2101ca7e32f3a4d097592903381d8e64a524",
+     "local": "13f72b04df48f15635363043aebf2101ca7e32f3a4d097592903381d8e64a524",
+     "blob": "13f72b04df48f15635363043aebf2101ca7e32f3a4d097592903381d8e64a524"
+    },
+    "src/roles/build_files.py": {
+     "server": "e36591a816cf4ce079e96503b77f57f9c8b0713129791726738f1876af0de08e",
+     "local": "e36591a816cf4ce079e96503b77f57f9c8b0713129791726738f1876af0de08e",
+     "blob": "e36591a816cf4ce079e96503b77f57f9c8b0713129791726738f1876af0de08e"
+    },
+    "src/roles/verifier.py": {
+     "server": "5c69bba1eb4ed98be516697c608fd80cae14ca7c8714067fada2991795f2a355",
+     "local": "5c69bba1eb4ed98be516697c608fd80cae14ca7c8714067fada2991795f2a355",
+     "blob": "5c69bba1eb4ed98be516697c608fd80cae14ca7c8714067fada2991795f2a355"
+    },
+    "prompts/implementer.md": {
+     "server": "8753ce890c5183f70012e2d9f2d2e3ed03552f7755f9e537953f904141684b2b",
+     "local": "8753ce890c5183f70012e2d9f2d2e3ed03552f7755f9e537953f904141684b2b",
+     "blob": "8753ce890c5183f70012e2d9f2d2e3ed03552f7755f9e537953f904141684b2b"
+    },
+    "tests/contracts/test_thinness.py": {
+     "server": "61c77dc153b0a1429cfb0bd5e52b7b6e9d76f21854f17968b7486d071672dcc9",
+     "local": "61c77dc153b0a1429cfb0bd5e52b7b6e9d76f21854f17968b7486d071672dcc9",
+     "blob": "61c77dc153b0a1429cfb0bd5e52b7b6e9d76f21854f17968b7486d071672dcc9"
+    },
+    "tests/roles/test_implementer_create_files.py": {
+     "server": "2d11a841655f9f8bce74411ee99e81bf062a687252f313e0f2209067af901eae",
+     "local": "2d11a841655f9f8bce74411ee99e81bf062a687252f313e0f2209067af901eae",
+     "blob": "2d11a841655f9f8bce74411ee99e81bf062a687252f313e0f2209067af901eae"
+    }
+   }
+  },
+  {
+   "id": "A8",
+   "group": "git/production",
+   "desc": "الدفع حصل: GitHub main (ls-remote) == origin/main المحلي == HEAD المحلي == 0916484 == HEAD الخادم",
+   "pass": true,
+   "evidence": {
+    "origin/main_local": "0916484812bd371462a49bec5e939871240c2af1",
+    "local_HEAD": "0916484812bd371462a49bec5e939871240c2af1",
+    "github_main_ls_remote": "0916484812bd371462a49bec5e939871240c2af1",
+    "ls_remote_rc": 0
+   }
+  },
+  {
+   "id": "B1",
+   "group": "code",
+   "desc": "أعداد الأسطر: implementer_live=397 (≤430) و build_files=284 (≤320) و test=320",
+   "pass": true,
+   "evidence": {
+    "src/roles/implementer_live.py": 397,
+    "src/roles/build_files.py": 284,
+    "src/roles/verifier.py": 135,
+    "prompts/implementer.md": 72,
+    "tests/contracts/test_thinness.py": 236,
+    "tests/roles/test_implementer_create_files.py": 320
+   }
+  },
+  {
+   "id": "B2",
+   "group": "code",
+   "desc": "الالتزام: 6 ملفات +702/−74 (نفس ملفات الرقعة حصرًا)",
+   "pass": true,
+   "evidence": [
+    "6",
+    "702",
+    "74"
+   ]
+  },
+  {
+   "id": "B3",
+   "group": "code",
+   "desc": "مكونات build_files.py الأربعة موجودة",
+   "pass": true,
+   "evidence": {
+    "required_build_files": true,
+    "parse_created_files": true,
+    "create_files_phase": true,
+    "write_sources_file": true
+   }
+  },
+  {
+   "id": "B4",
+   "group": "code",
+   "desc": "implementer_live يستدعي طور create_files ويكتب عبر run_tool(write_file)",
+   "pass": true,
+   "evidence": {
+    "required_build_files": true,
+    "create_files_phase": true,
+    "write_file": true,
+    "import": true
+   }
+  },
+  {
+   "id": "B5",
+   "group": "code",
+   "desc": "prompts/implementer.md فيه قسم الطور الثالث (create_files بصيغة ### FILE:)",
+   "pass": true,
+   "evidence": null
+  },
+  {
+   "id": "B6",
+   "group": "code",
+   "desc": "verifier.py: regex الملفات موسع لامتدادات الويب بحد خلفي (?!)\\w",
+   "pass": true,
+   "evidence": null
+  },
+  {
+   "id": "B7",
+   "group": "code",
+   "desc": "فحص وظيفي: معايير 102 الحقيقية → الملفات الثلاثة بالضبط (الحد الخلفي يمنع ابتلاع js لـjson)",
+   "pass": true,
+   "evidence": "OK\nJSGUARD:['package.json']"
+  },
+  {
+   "id": "B8",
+   "group": "code",
+   "desc": "عقدا الرقة يعملان: build_files<320 و implementer_live<430",
+   "pass": true,
+   "evidence": "2 passed, 1 warning in 0.94s"
+  },
+  {
+   "id": "C1",
+   "group": "tests",
+   "desc": "test_implementer_create_files.py = 14/14",
+   "pass": true,
+   "evidence": "14 passed, 1 warning in 0.36s"
+  },
+  {
+   "id": "C2",
+   "group": "tests",
+   "desc": "roles+contracts = 84 ناجحًا + فشل واحد بيئي معلن (arabic_reshaper) — لا غير",
+   "pass": true,
+   "evidence": [
+    "1 failed, 84 passed, 1 warning in 1.86s"
+   ]
+  },
+  {
+   "id": "C3",
+   "group": "tests",
+   "desc": "arabic_reshaper فشل سابق للرقعة (يتكرر حرفيًا على الأب 3764420 النقي بworktree) — بيئي لا كودي",
+   "pass": true,
+   "evidence": [
+    "1 failed, 1 warning in 1.12s"
+   ]
+  },
+  {
+   "id": "C4",
+   "group": "tests",
+   "desc": "workflow+harness = 165/165 (بمراقبة التذبذب: الفاشل تحت الحمل يعاد عزله)",
+   "pass": true,
+   "evidence": {
+    "script_run": [
+     "165 passed, 3 warnings in 229.44s (0:03:49)"
+    ],
+    "auditor_manual_pre_runs": [
+     "tests/roles/test_implementer_create_files.py: 14 passed in 0.35s",
+     "tests/roles/ + tests/contracts/: 84 passed + 1 failed (test_generate_pdf_arabic_one_page — ModuleNotFoundError: arabic_reshaper)",
+     "نفس الفاشل على worktree الأب 3764420 النقي: 1 failed (arabic_reshaper) — بيئي سابق للرقعة",
+     "tests/workflow/ + tests/harness/: 164 passed + 1 متذبذب توقيت (test_killed_planning_thread_leaves_no_phantom_planning — نجح معزولًا في 1.58s والالتزام 0916484 لا يمس workflow/harness إطلاقًا) — يعيد السكربت تشغيلها أدناه"
+    ]
+   }
+  },
+  {
+   "id": "D1",
+   "group": "database",
+   "desc": "steps#102: COMPLETED و attempts=4 و completed_at≈14:01:39",
+   "pass": true,
+   "evidence": {
+    "status": "COMPLETED",
+    "attempts": 4,
+    "completed_at": "2026-10-28 14:01:39.740855"
+   }
+  },
+  {
+   "id": "D2",
+   "group": "database",
+   "desc": "executions#28: attempt=4 و COMPLETED و commit_sha=0916484… (13:59:09→14:01:39)",
+   "pass": true,
+   "evidence": {
+    "attempt": 4,
+    "status": "COMPLETED",
+    "commit_sha": "0916484812bd371462a49bec5e939871240c2af1",
+    "started_at": "2026-10-28 13:59:09.817821",
+    "finished_at": "2026-10-28 14:01:39.690193"
+   }
+  },
+  {
+   "id": "D3",
+   "group": "database",
+   "desc": "executions#27: attempt=3 و FAILED قبله (13:53:59→13:59:09)",
+   "pass": true,
+   "evidence": {
+    "attempt": 3,
+    "status": "FAILED",
+    "started_at": "2026-10-28 13:53:59.536457",
+    "finished_at": "2026-10-28 13:59:09.755380"
+   }
+  },
+  {
+   "id": "D4",
+   "group": "database",
+   "desc": "owner_gates#30: PREFLIGHT_BLOCKED → APPROVED و auto_resolved=true و resolved_at≈13:53:59",
+   "pass": true,
+   "evidence": {
+    "kind": "PREFLIGHT_BLOCKED",
+    "status": "APPROVED",
+    "auto_resolved": true,
+    "resolved_at": "2026-10-28 13:53:59.387616",
+    "auto_resolution_note": "إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح"
+   }
+  },
+  {
+   "id": "D5",
+   "group": "database",
+   "desc": "المشروع 3 تقدم: steps_completed=1 من 25 و current_step=103",
+   "pass": true,
+   "evidence": {
+    "completed": 1,
+    "total": 25,
+    "current_step_id": 103,
+    "project_status_now": "BLOCKED",
+    "step103_now": "READY",
+    "step103_attempts_now": 2,
+    "latest_gates_p3": [
+     {
+      "id": 31,
+      "kind": "PREFLIGHT_BLOCKED",
+      "reason": "web_search (STALE) — عائق بيئي أوقف تنفيذ الخطوة",
+      "status": "BLOCKED",
+      "created_at": "2026-10-28 14:13:48.828690",
+      "resolved_at": null
+     },
+     {
+      "id": 30,
+      "kind": "PREFLIGHT_BLOCKED",
+      "reason": "web_search (STALE) — عائق بيئي أوقف تنفيذ الخطوة",
+      "status": "APPROVED",
+      "created_at": "2026-10-28 04:53:54.901758",
+      "resolved_at": "2026-10-28 13:53:59.387616"
+     },
+     {
+      "id": 29,
+      "kind": "PLAN_APPROVAL",
+      "reason": "اعتماد الخطة v3 — 3 مرحلة",
+      "status": "APPROVED",
+      "created_at": "2026-10-28 04:39:00.310136",
+      "resolved_at": "2026-10-28 04:51:22.218376"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D6",
+   "group": "database",
+   "desc": "tool_invocations (cycle project-3-step-102): write_file فعلية للملفات الثلاثة بالمسار الجذري وبـ sha256 المعلنة",
+   "pass": true,
+   "evidence": {
+    "root_writes": [
+     {
+      "file": "package.json",
+      "sha": "08c2c44698de5336442f82eff6f5327874d3308386a650624e29034346c9418d",
+      "invoked_at": "2026-10-28T13:55:33Z",
+      "recorded_at": "2026-10-28 13:59:09.744927",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/package.json"
+     },
+     {
+      "file": "tsconfig.json",
+      "sha": "7c6e2cd7ed66a56ea0e8fe6bce07e473be600615e2513c4841096abf53f0cf76",
+      "invoked_at": "2026-10-28T13:55:33Z",
+      "recorded_at": "2026-10-28 13:59:09.744974",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/tsconfig.json"
+     },
+     {
+      "file": "astro.config.mjs",
+      "sha": "9e6b2617131ee8406f01475be8b03026615006a98d970a7609a461d6a8654652",
+      "invoked_at": "2026-10-28T13:55:33Z",
+      "recorded_at": "2026-10-28 13:59:09.745020",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/astro.config.mjs"
+     },
+     {
+      "file": "package.json",
+      "sha": "d8954505e747ee9ea0795b92fc1d0d2bbd41e6b79a3ad1b1270b2abd74323ac6",
+      "invoked_at": "2026-10-28T13:58:08Z",
+      "recorded_at": "2026-10-28 13:59:09.745407",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/package.json"
+     },
+     {
+      "file": "tsconfig.json",
+      "sha": "7c6e2cd7ed66a56ea0e8fe6bce07e473be600615e2513c4841096abf53f0cf76",
+      "invoked_at": "2026-10-28T13:58:08Z",
+      "recorded_at": "2026-10-28 13:59:09.745448",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/tsconfig.json"
+     },
+     {
+      "file": "astro.config.mjs",
+      "sha": "9e6b2617131ee8406f01475be8b03026615006a98d970a7609a461d6a8654652",
+      "invoked_at": "2026-10-28T13:58:08Z",
+      "recorded_at": "2026-10-28 13:59:09.745488",
+      "path": "/opt/agentic-engineering-system/runtime/projects/3/steps/102/astro.config.mjs"
+     }
+    ]
+   }
+  },
+  {
+   "id": "D7",
+   "group": "database",
+   "desc": "أثر الرقعة سببي: قبل 13:50 (محاولتا 04:53) لم تُكتب ملفات مشروع قط (تقرير/PDF/مصادر فقط)؛ بعدها كُتبت الثلاثة",
+   "pass": true,
+   "evidence": {
+    "pre_patch_writes": [
+     "T1-report.md",
+     "sources.json"
+    ],
+    "post_patch_writes": [
+     "T1-report.md",
+     "astro.config.mjs",
+     "evidence/astro.config.mjs",
+     "evidence/package.json",
+     "evidence/tsconfig.json",
+     "package.json",
+     "sources.json",
+     "tsconfig.json"
+    ]
+   }
+  },
+  {
+   "id": "D8",
+   "group": "database",
+   "desc": "evidence_records للتنفيذ 28 (verdict=PASS): الملفات الثلاثة بشفاه المعلنة",
+   "pass": true,
+   "evidence": {
+    "execution_id": 28,
+    "verdict": "PASS",
+    "files": {
+     "T1-report.md": "d8f4bac510f80b99b3d672697003dbaa0c9fd0c2350d851625509905cc007c70",
+     "T1-report.pdf": "1d7a8163453cbed01e853a35e953b2016b98d7e2d3cc6a8d04c3ec2b38720d7b",
+     "astro.config.mjs": "9e6b2617131ee8406f01475be8b03026615006a98d970a7609a461d6a8654652",
+     "package.json": "d8954505e747ee9ea0795b92fc1d0d2bbd41e6b79a3ad1b1270b2abd74323ac6",
+     "sources.json": "3e5f3abde0c6d7ee9818afb80979b18ac1398d48e069f525184bc7bdcb0c805c",
+     "tsconfig.json": "7c6e2cd7ed66a56ea0e8fe6bce07e473be600615e2513c4841096abf53f0cf76"
+    }
+   }
+  },
+  {
+   "id": "D9",
+   "group": "database",
+   "desc": "الحالة الراهنة (خارج نطاق W2-T23): المشروع توقف بصدق على بوابة بيئية جديدة #31 بعد فشل خطوة 103 (npm/node غير متوفر) — كما تنبأت البطاقة؛ لا تقدم مصطنعًا ولا regress في خطوة 102",
+   "pass": true,
+   "evidence": {
+    "gate31": {
+     "kind": "PREFLIGHT_BLOCKED",
+     "reason": "web_search (STALE) — عائق بيئي أوقف تنفيذ الخطوة",
+     "status": "BLOCKED",
+     "created_at": "2026-10-28 14:13:48.828690"
+    },
+    "step103": {
+     "id": 103,
+     "ordinal": 2,
+     "objective": "Install all npm dependencies",
+     "status": "READY",
+     "attempts": 2,
+     "last_error": "الحالة النهائية ESCALATED_TO_HUMAN — الدورة لم تكتمل أدلةً",
+     "updated_at": "2026-10-28 14:13:48.823319"
+    },
+    "project3_now": "BLOCKED",
+    "job3": {
+     "id": 3,
+     "status": "WAITING_GATE",
+     "waiting_kind": "GATE",
+     "heartbeat_at": "2026-10-28 14:13:48.860120"
+    }
+   }
+  },
+  {
+   "id": "E1",
+   "group": "disk",
+   "desc": "sha256 على القرص الآن = المعلنة حرفيًا للملفات الثلاثة",
+   "pass": true,
+   "evidence": {
+    "package.json": "d8954505e747ee9ea0795b92fc1d0d2bbd41e6b79a3ad1b1270b2abd74323ac6",
+    "tsconfig.json": "7c6e2cd7ed66a56ea0e8fe6bce07e473be600615e2513c4841096abf53f0cf76",
+    "astro.config.mjs": "9e6b2617131ee8406f01475be8b03026615006a98d970a7609a461d6a8654652"
+   }
+  },
+  {
+   "id": "E2",
+   "group": "disk",
+   "desc": "الأحجام: package.json=310B و tsconfig=43B و astro.config=183B",
+   "pass": true,
+   "evidence": {
+    "sizes": {
+     "package.json": 310,
+     "tsconfig.json": 43,
+     "astro.config.mjs": 183,
+     "T1-report.md": 1574,
+     "sources.json": 226
+    },
+    "mtimes": {
+     "package.json": "2026-10-28 13:58:08.305154897",
+     "tsconfig.json": "2026-10-28 13:58:08.393155607",
+     "astro.config.mjs": "2026-10-28 13:58:08.477156285",
+     "T1-report.md": "2026-10-28 14:00:58.170528080",
+     "sources.json": "2026-10-28 14:00:58.262528827"
+    }
+   }
+  },
+  {
+   "id": "E3",
+   "group": "disk",
+   "desc": "package.json: JSON سليم فيه name/version/type:module/scripts(dev,build,preview)/dependencies(astro,typescript,@astrojs/tailwind)/devDependencies",
+   "pass": true,
+   "evidence": {
+    "name": "astro-project",
+    "version": "0.0.1",
+    "type": "module",
+    "scripts": {
+     "dev": "astro dev",
+     "build": "astro build",
+     "preview": "astro preview"
+    },
+    "dependencies": {
+     "astro": "^4.16.0",
+     "typescript": "^5.5.0",
+     "@astrojs/tailwind": "^5.1.0"
+    },
+    "devDependencies": {}
+   }
+  },
+  {
+   "id": "E4",
+   "group": "disk",
+   "desc": "tsconfig.json: JSON سليم و extends astro/tsconfigs/strict",
+   "pass": true,
+   "evidence": {
+    "extends": [
+     "astro/tsconfigs/strict"
+    ]
+   }
+  },
+  {
+   "id": "E5",
+   "group": "disk",
+   "desc": "astro.config.mjs: ESM سليم (import/export default + defineConfig + tailwind)",
+   "pass": true,
+   "evidence": "import { defineConfig } from 'astro/config';\nimport tailwind from '@astrojs/tailwind';\n\nexport default defineConfig({\n  integrations: [tailwind()],\n  site: 'http://localhost:4321'\n});"
+  },
+  {
+   "id": "E6",
+   "group": "disk",
+   "desc": "T1-report.md و sources.json موجودان و sources.json JSON سليم",
+   "pass": true,
+   "evidence": {
+    "ls": "sources.json\nT1-report.md\n1574 T1-report.md\n 226 sources.json\n1800 total",
+    "sources_json_valid": true
+   }
+  },
+  {
+   "id": "E7",
+   "group": "disk",
+   "desc": "سببية حية: mtime كل ملف من الثلاثة يطابق حرفيًا زمن استدعاء write_file له (13:58:08 — جولة داخل تنفيذ ما بعد النشر)، والتقرير/المصادر داخل نافذة التنفيذ 28",
+   "pass": true,
+   "evidence": {
+    "package.json": {
+     "disk_mtime": "2026-10-28 13:58:08",
+     "invocation_started_at": "2026-10-28 13:58:08",
+     "match": true
+    },
+    "tsconfig.json": {
+     "disk_mtime": "2026-10-28 13:58:08",
+     "invocation_started_at": "2026-10-28 13:58:08",
+     "match": true
+    },
+    "astro.config.mjs": {
+     "disk_mtime": "2026-10-28 13:58:08",
+     "invocation_started_at": "2026-10-28 13:58:08",
+     "match": true
+    },
+    "T1-report.md": {
+     "disk_mtime": "2026-10-28 14:00:58",
+     "in_execution_28_window": true
+    },
+    "sources.json": {
+     "disk_mtime": "2026-10-28 14:00:58",
+     "in_execution_28_window": true
+    }
+   }
+  },
+  {
+   "id": "F1",
+   "group": "readiness",
+   "desc": "GET readiness (عرض القدرات): web_search موجود وليس NOT_READY/فاشلًا (STALE بالـTTL=120ث عابر بطبيعته)",
+   "pass": true,
+   "evidence": {
+    "capabilities_http": "404",
+    "readiness_status": "READY",
+    "stored_status": "READY",
+    "last_success_at": "2026-10-28T15:17:34.496403",
+    "summary": {
+     "READY": 4,
+     "DEGRADED": 0,
+     "STALE": 13,
+     "NOT_READY": 0,
+     "NOT_CONFIGURED": 0,
+     "UNAVAILABLE": 2,
+     "UNKNOWN": 0
+    }
+   }
+  },
+  {
+   "id": "F2",
+   "group": "readiness",
+   "desc": "مسباري أنا (POST probe {web_search} فقط — المسموح الموثق): READY بنتائج حقيقية ≥5 من مزود حي",
+   "pass": true,
+   "evidence": {
+    "readiness_status": "READY",
+    "probe_latency_ms": 0,
+    "last_success_at": "2026-10-28T15:23:20.100487",
+    "live_providers": [
+     {
+      "name": "SearXNG",
+      "results": 8,
+      "latency_ms": 508,
+      "first": "Cadence Introduces Maestro, a Domain-Specialized AI Model Po"
+     },
+     {
+      "name": "Wikipedia",
+      "results": 6,
+      "latency_ms": 1075,
+      "first": "AI agent"
+     },
+     {
+      "name": "Search API",
+      "results": 5,
+      "latency_ms": 561,
+      "first": "Cadence Introduces Maestro, a Domain-Specialized AI Model Po"
+     }
+    ]
+   }
+  },
+  {
+   "id": "G1",
+   "group": "security",
+   "desc": "صفر سلاسل 48-hex (مفاتيح محتملة) في ملفات الرقعة الستة",
+   "pass": true,
+   "evidence": {}
+  },
+  {
+   "id": "G2",
+   "group": "security",
+   "desc": "صفر سلاسل 48-hex في أدلة المنفذ الثلاثة (بصمات sha256=64-hex مشروعة)",
+   "pass": true,
+   "evidence": {}
+  },
+  {
+   "id": "G3",
+   "group": "security",
+   "desc": "build_files.py: حراس أمان موجودة (رفض ../ والمطلق + امتدادات بيضاء + سقوف 16/120k/200) والكتابة عبر run_tool حصرًا — لا open() مباشر",
+   "pass": true,
+   "evidence": {
+    "reject_dotdot": true,
+    "reject_absolute": true,
+    "ext_whitelist": true,
+    "caps": true,
+    "no_direct_open_write": true,
+    "writes_via_run_tool_only": true
+   }
+  },
+  {
+   "id": "G4",
+   "group": "security",
+   "desc": "ملف الاختبارات: ../ في معاملات الرفض حصرًا",
+   "pass": true,
+   "evidence": [
+    [
+     86,
+     "\"src/layouts/BaseLayout.astro exists with DOCTYPE, html, head (meta charset, viewport, title, description), body with Header, slot, Footer, imports ../styles/global.css\","
+    ],
+    [
+     137,
+     "\"/etc/passwd\", \"../escape.json\", \"a/../../b.json\","
+    ]
+   ]
+  },
+  {
+   "id": "H1",
+   "group": "executor_evidence",
+   "desc": "deploy.json متسق داخليًا ومطابق للتاريخ الذي جمعته (قبل 6fc02343c → ff إلى 0916484 → COMPILE_OK → صحة 200 بعد 96ث → active×4 → journal صفر)",
+   "pass": true,
+   "evidence": {
+    "head_before": "6fc02343cbd7453d368bb3d96313214b004e989e",
+    "head_after": "0916484812bd371462a49bec5e939871240c2af1",
+    "health_after": "200 (after 96s)"
+   }
+  },
+  {
+   "id": "H2",
+   "group": "executor_evidence",
+   "desc": "unblock.json: المسبار READY (Wikipedia 6 نتائج ~1041ms + Search API 5 ~774ms) و preflight PASS مع launched=true/reason=launched/project_id=3",
+   "pass": true,
+   "evidence": {
+    "probe": true,
+    "preflight": true,
+    "preflight_out_len": 6000,
+    "probe_wikipedia": {
+     "results": 6,
+     "latency_ms": 1041
+    },
+    "probe_search_api": {
+     "results": 5,
+     "latency_ms": 774
+    }
+   }
+  },
+  {
+   "id": "H3",
+   "group": "executor_evidence",
+   "desc": "final_state.json متسق مع ما جمعته بنفسي من القاعدة والقرص (خطوة/بوابة/sha256/تنفيذ28/تقدم)",
+   "pass": true,
+   "evidence": {
+    "step102": {
+     "id": 102,
+     "ordinal": 1,
+     "objective": "Create Astro project structure with package.json, tsconfig.json, and astro.config.mjs",
+     "status": "COMPLETED",
+     "attempts": 4,
+     "completed_at": "2026-10-28 14:01:39.740855"
+    },
+    "gate30_status": "APPROVED",
+    "gate30_auto_resolved": true,
+    "files_sha256": {
+     "package.json": "d8954505e747ee9ea0795b92fc1d0d2bbd41e6b79a3ad1b1270b2abd74323ac6",
+     "tsconfig.json": "7c6e2cd7ed66a56ea0e8fe6bce07e473be600615e2513c4841096abf53f0cf76",
+     "astro.config.mjs": "9e6b2617131ee8406f01475be8b03026615006a98d970a7609a461d6a8654652"
+    },
+    "runs_active_progress": {
+     "steps_total": 25,
+     "steps_completed": 1,
+     "steps_failed": 1,
+     "percent": 4.0,
+     "current_step": {
+      "id": 103,
+      "objective": "Install all npm dependencies",
+      "status": "RUNNING"
+     }
+    }
+   }
+  }
+ ],
+ "notes": [
+  "نقطة GET /api/environment/capabilities المذكورة في التكليف تعيد 404 — عرض القدرات الفعلي هو GET /api/environment/readiness (200)",
+  "unblock.json: مخرج preflight الملتقط مقطوع عند 6000 حرف (سقف التقاط) — لكنه يحمل verdict=PASS وlaunch{launched:true,project_id:3} حرفيًا، والإطلاق مثبت مستقلًا بتنفيذين 27/28 وبوابة 30 المحلولة (D2-D4)",
+  "final_state.json: مخرج db_state مقطوع عند 8000 حرف داخل evidence1 — الأقسام الحاملة للادعاءات (steps/gates/exec28) كاملة، وكلها مثبتة مستقلًا بقراءاتي المباشرة للقاعدة (D) والقرص (E)"
+ ],
+ "summary": {
+  "total": 45,
+  "passed": 45,
+  "failed": 0,
+  "verdict": "PASS",
+  "groups": {
+   "git/production": {
+    "total": 8,
+    "passed": 8
+   },
+   "code": {
+    "total": 8,
+    "passed": 8
+   },
+   "tests": {
+    "total": 4,
+    "passed": 4
+   },
+   "database": {
+    "total": 9,
+    "passed": 9
+   },
+   "disk": {
+    "total": 7,
+    "passed": 7
+   },
+   "readiness": {
+    "total": 2,
+    "passed": 2
+   },
+   "security": {
+    "total": 4,
+    "passed": 4
+   },
+   "executor_evidence": {
+    "total": 3,
+    "passed": 3
+   }
+  }
+ }
+}
