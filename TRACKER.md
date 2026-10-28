@@ -41,7 +41,7 @@
 | W2-T11 | حزمة إمكانية الوصول (نصوص، 44px، تباين 4.5:1، focus-visible) | 2 | 3 أيام | لم تبدأ |
 | W2-T12 | وضع جوال مركّز لصفحة المشروع | 2 | أسبوع | لم تبدأ |
 | W2-T19 | هوية بصرية جديدة كاملة (قرار المالك: الحالي غير مقبول) | 2 | أسبوع | مؤجلة (D4) |
-| W2-T20 | تفعيل SearXNG وSearch API وإتاحة البحث الحقيقي (أمر مالك) | 2 | يوم | قيد التنفيذ |
+| W2-T20 | تفعيل SearXNG وSearch API وإتاحة البحث الحقيقي (أمر مالك) | 2 | يوم | منجزة — بانتظار التدقيق |
 | W3-T13 | تهجير تدريجي إلى ES Modules وإسقاط الـ15 global | 3 | 3 أسابيع | مؤجلة (D3) |
 | W3-T14 | حالة مركزية خفيفة (طراز dsh store) تُنهي دورات innerHTML الحية | 3 | 3 أسابيع | مؤجلة (D3) |
 | W3-T15 | تفكيك execution.py (5129) و routes.py (2484) | 3 | أسبوعان | لم تبدأ |
@@ -280,13 +280,13 @@
 - **الحالة:** قيد التنفيذ · **البند:** جديد خارج الـ18 الأصلية (يغلق عطل web_search العملي بعد W1-T05).
 - **الدافع الموثق (تشخيص):** بعد فتح 80/443 (W1-T05) ظل web_search يفشل — 11 استدعاء فاشلًا موثقًا في tool_invocations (project-2-step-77، آخرها #207) كلها `SEARCH_PROVIDER_NOT_READY` على `PROVIDER_RESOLUTION`: DDG يحجب المضيف بصفحة anomaly، والاستعلامات الطبيعية الطويلة (17 رمزًا) تُرفض من بوابة الصلة لأن عتبة «60% من الرموز في نتيجة واحدة» غير قابلة للتحقيق رياضيًا على عناوين قصيرة. المزودان الحقيقيان المخصصان للحل (search_searx، search_api) موجودان في الكود لكنهما معطلان بلا تكوين.
 - **الخطوات:**
-  - [x] خطوة 0 — تشخيص بالأدلة: قراءة tool_invocations من القاعدة (قراءة-فقط) + استخراج الاستعلامات الفاشلة الحقيقية + تأكيد code الإنتاج (036db8911) يحوي المزودين الخمسة وواجهة /configure — `download/aes-remediation/W2-T20/{recon,failure_evidence}.json`
-  - [x] خطوة 1 — إصلاح بوابة الصلة للاستعلامات الطويلة (>5 رموز: بار 3 رموز فعلية في النتيجة + سقف تغطية 4) + 5 اختبارات وحدة جديدة — `23/23 passed`
-  - [ ] خطوة 2 — نشر SearXNG من المصدر على الإنتاج (لا Docker/Podman): /opt/searxng + venv + settings.yml (JSON API مفعّل، limiter معطل، 127.0.0.1:8888) + systemd searxng.service
-  - [ ] خطوة 3 — نشر خدمة Search API محلية (غلاف SearXNG بلهجة generic_results + مفتاح) على 127.0.0.1:8098 + systemd search-api.service
-  - [ ] خطوة 4 — نشر كود إصلاح البوابة على الإنتاج (git fetch+checkout مع بوابات R6 قبل/بعد)
-  - [ ] خطوة 5 — تهيئة المزودين عبر API التطبيق الشرعي: id=4 (base_url) + id=5 (endpoint+style+مفتاح→secrets_store) enabled، وتعطيل DDG (id=1، محجوب بصفحة anomaly موثقة — يستهلك رأس السلسلة)
-  - [ ] خطوة 6 — التحقق النهائي: probe/all يظهر SearXNG+Search API READY + بحث فعلي بنفس استعلام #207 الفاشل يعيد نتائج + قدرة web_search READY
+  - [x] خطوة 0 — تشخيص بالأدلة: قراءة tool_invocations من القاعدة (قراءة-فقط) — 11 استدعاء web_search فاشلًا في project-2-step-77 (آخرها #207) كلها `SEARCH_PROVIDER_NOT_READY` على `PROVIDER_RESOLUTION` — `download/aes-remediation/W2-T20/{recon,failure_evidence}.json`
+  - [x] خطوة 1 — إصلاح بوابة الصلة للاستعلامات الطويلة (>5 رموز: بار 3 رموز فعلية في النتيجة + سقف تغطية 4) + المرادفات القصيرة (رمزان فعليان أحدهما مميّز = قوية؛ حرس التلفيق سليم: رمز واحد = ضعيف) — `26/26 passed` (التزامان 2447f4a + be56bf2)
+  - [x] خطوة 2 — نشر SearXNG من المصدر (python3.12 + gunicorn 2×4 خيوط): /opt/searxng + venv + /etc/searxng/settings.yml (JSON API مفعّل، limiter معطل، 127.0.0.1:8888، public_instance=false) + systemd searxng.service — **أُصلحت途中:** uwsgi بلا عجلة cp312 → gunicorn (صافٍ)؛ انهيار إضافة tracker_url_remover (SQLite نظام 3.34.1 < 3.35 UPSERT) → رقعة vendor موثقة بتدهور آمن + نسخة احتياطية `.pre-w2t20`؛ pysqlite3-binary غير متاح من PyPI لهذا المضيف؛ **ضبط المحركات:** تمكين bing (10 نتائج/صفر أعطال — الافتراضي معطل!) وتعطيل google cse (انهيار sqlite الموثق) وduckduckgo (CAPTCHA دائم) وqwant (access denied) وyahoo (انهيار) — `step2_*.json` (4 ملفات أدلة)
+  - [x] خطوة 3 — نشر خدمة Search API (غلاف SearXNG بلهجة generic_results + مفتاح 48-هكس في /etc/search-api/env بصرامة 640 root:searchapi + كشف لغة الاستعلام عربي→ar): 127.0.0.1:8098 + systemd search-api.service — `step3_search_api_deploy.json` (healthz سليم، بلا مفتاح=401 fail-closed، بالمفتاح=8 نتائج لاستعلام #207)
+  - [x] خطوة 4 — نشر كود الإصلاحات على الإنتاج (036db8911 → 097c391 → be56bf237) ببوابات R6 (py_compile قبل كل restart، health 200 قبل/بعد، journal بلا أخطاء) — `step4_code_deploy.json`
+  - [x] خطوة 5 — تهيئة عبر API التطبيق الشرعي: id=4 SearXNG (base_url=127.0.0.1:8888، enabled، مسبار تلقائي READY/973ms) + id=5 Search API (endpoint+style+مفتاح→secrets_store، READY/1139ms) + تعطيل DDG id=1 (anomaly موثق) — `step5_6_configure_verify.json`
+  - [x] خطوة 6 — التحقق النهائي: probe/all → المزودات الأربعة الممكنة كلها READY + قدرة web_search READY/READY + الاستعلامات الفاشلة الخمسة من القاعدة كلها نجحت (#207 و#193 و#201 عبر SearXNG بنتائج مطابقة، #192 عبر SearXNG «موقع أخبار بسيط متجاوب بالكامل…»، #199 عبر Wikipedia) — `final_verification_v3/v4.json` + `final_fresh_state.json`
 - **بوابة القبول:** مثيل SearXNG وخدمة Search API نشطان (systemd active، منفذان محليان فقط) · المزودان READY بمسبار حقيقي · `POST /api/research/search` بنفس الاستعلام الفاشل يُعيد ≥3 نتائج قابلة للتحليل · جاهزية web_search READY · `/health` 200 قبل/بعد كل خطوة إنتاجية.
 - **خطة التراجع:** (أ) مزودان: `POST /configure {enabled:false}` لكل من id=4/id=5 وإعادة تمكين DDG id=1 — بلا أي مس بقاعدة الكود. (ب) الخدمتان: `sudo systemctl disable --now searxng search-api` + حذف /opt/searxng و/opt/search-api و/etc/searxng و/etc/search-api. (ج) الكود: على الإنتاج `git checkout 036db8911 && sudo systemctl restart agentic`. كل مسار مستقل قابل للتنفيذ منفردًا.
 - **التدقيق الإلزامي:** _يُفتح عند التنفيذ_
