@@ -97,6 +97,8 @@ def required_build_files(
                 not clean or clean in own or clean in required
                 or clean in _CREATE_GENERATED_NAMES
                 or clean.startswith(_CREATE_GENERATED_PREFIXES)
+                or clean.startswith("@/")            # (W2-T25) alias مستورد
+                or ".." in clean.split("/")          # (W2-T25) استيراد أبوي
                 or Path(clean).stem.isdigit()      # «3.mdx» رقم لا ملف
                 or clean.lower() in _BUILD_TECH_NAMES  # «Next.js» تقنية
             ):

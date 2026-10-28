@@ -461,3 +461,34 @@ def test_parse_created_files_truly_missing_still_fails():
     with pytest.raises(ValueError) as err:
         _parse(text, ["layout.tsx"])
     assert "layout.tsx" in str(err.value)
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) مسارات الاستيراد ليست ملفات مطلوبة
+# ------------------------------------------------------------------ #
+
+def test_required_build_files_import_paths_not_required():
+    """«imports ../globals.css» و«@/app/globals.css» مسارات استيراد في
+    نص المعيار — لا ملفات تُبنى (قياس حي الخطوة 199: محاولتان
+    ROLE_SYSTEM_FAULT بمطالبة زائفة بـ ../globals.css و@/app/globals.css
+    والملف الحقيقي src/app/globals.css موجود أصلًا)."""
+    criteria = [
+        "File src/app/layout.tsx exists with RootLayout importing "
+        "../globals.css and the page imports '@/app/globals.css' via alias",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "src/app/layout.tsx" in req
+    assert "../globals.css" not in req
+    assert "@/app/globals.css" not in req
+
+
+def test_required_build_files_parent_import_any_depth():
+    """«imports ../../styles/theme.css» — أي جزء أبوي في المسار استيراد
+    لا ملف بناء."""
+    criteria = [
+        "File src/components/Header.tsx exists and imports ../../styles/theme.css",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "src/components/Header.tsx" in req
+    assert "../../styles/theme.css" not in req
+    assert "theme.css" not in req
