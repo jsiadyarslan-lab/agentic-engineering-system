@@ -35,16 +35,14 @@ from router.model_router import ChatMessage
 _BUILD_FILENAME = re.compile(
     r"(?:[\w@./-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
     r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py|env)"
-    # (W2-T25) ملف نقطي: النقطة بداية الاسم — البديل الثاني يشترط
-    # ألا يسبقها حرف كلمة فلا يبتلع «file.env».
+    # (W2-T25) ملف نقطي: لا يسبق النقطة حرف كلمة فلا يبتلع «file.env».
     r"|(?<![\w@./-])\.(?:gitignore|editorconfig|npmrc|nvmrc"
     r"|prettierrc|babelrc|eslintrc|browserslistrc|prettierignore"
     r"|eslintignore))(?!\w)"
 )
 
-#: (W2-T25) أسماء تقنية ليست ملفات — استخراج «Next.js» كملف مطلوب
-#: (قياس حي الخطوة 130: التنفيذان 39/40) جعل التحقق يطالب بملف اسمه
-#: حرفيًا «Next.js» فلا يكتبه النموذج (صحيحًا) وتفشل المحاولتان.
+#: (W2-T25) أسماء تقنية ليست ملفات — «Next.js» كملف مطلوب أفشل
+#: التنفيذين 39/40 (الخطوة 130) بمطالبة زائفة لا يكتبها النموذج.
 _BUILD_TECH_NAMES = frozenset({
     "next.js", "node.js", "vue.js", "nuxt.js", "react.js",
     "express.js", "svelte.js", "nest.js", "d3.js", "three.js",
@@ -85,18 +83,14 @@ def own_artifact_names(task_id: str) -> set[str]:
 def required_build_files(
     acceptance_criteria: list[str] | None, task_id: str,
 ) -> list[str]:
-    """الملفات المصدرية التي تطلبها المعايير فعليًا (W2-T23).
-
-    استخراج أسماء الملفات من نص المعايير، مع استبعاد مخرجات الدور
-    التلقائية ونواتج الأوامر — قائمة فارغة = مهمة بحث/تقرير على
-    مسارها الأصلي بلا أي تغيير في السلوك.
-    """
+    """الملفات المصدرية التي تطلبها المعايير فعليًا (W2-T23):
+    استخراج الأسماء مع استبعاد مخرجات الدور ونواتج الأوامر —
+    قائمة فارغة = مهمة بحث/تقرير بلا تغيير سلوك."""
     own = own_artifact_names(task_id)
     required: list[str] = []
     for criterion in acceptance_criteria or []:
         for match in _BUILD_FILENAME.findall(str(criterion)):
-            # (W2-T25) تنظيف رائد «./» دون أكل نقطة ملف نقطي.
-            clean = match.strip("/")
+            clean = match.strip("/")  # (W2-T25) دون أكل نقطة الملف النقطي
             while clean.startswith("./"):
                 clean = clean[2:]
             if (
@@ -111,14 +105,22 @@ def required_build_files(
     return required[:_CREATE_MAX_FILES]
 
 
+def _required_satisfied(required: str, seen: set[str]) -> bool:
+    """(W2-T25) حاضر؟ المطابقة الحرفية وحدها كانت تُفشل معايير الأدلة:
+    «Directory src/app exists with layout.tsx» يستخرج المجرد بينما يكتب
+    النموذج «src/app/layout.tsx» — فحكم «غائبة» كان زورًا (قياس 189)."""
+    if required in seen:
+        return True
+    if "/" in required:  # بمساره: لاحقة المسار نفسه، لا اسم مجرد بدليل آخر
+        return any(s.endswith("/" + required) for s in seen)
+    return any(Path(s).name == required for s in seen)  # مجردًا: الاسم يكفي
+
+
 def parse_created_files(
     text: str, required_files: list[str],
 ) -> list[tuple[str, str]]:
-    """تحليل رد الملفات: ‎### FILE: مسار ثم كتلة محتوى — لكل ملف.
-
-    يرفع ValueError موصوفة عند أي خلل (صيغة/أمان/اكتمال) — المتصل
-    يقرر الإعادة؛ الغائبة من required_files تُسمّى في الرسالة حرفيًا.
-    """
+    """تحليل رد الملفات: ‎### FILE: مسار ثم كتلة محتوى — يرفع
+    ValueError موصوفة عند أي خلل؛ الغائبة تُسمّى حرفيًا."""
     matches = list(_CREATE_FILE_HEADER.finditer(text))
     if not matches:
         raise ValueError("لا كتل ### FILE: في الرد")
@@ -157,7 +159,7 @@ def parse_created_files(
             )
         seen.add(path)
         files.append((path, body))
-    missing = [p for p in required_files if p not in seen]
+    missing = [p for p in required_files if not _required_satisfied(p, seen)]
     if missing:
         raise ValueError("ملفات مطلوبة غائبة عن الرد: " + ", ".join(missing))
     if not files:

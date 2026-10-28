@@ -378,3 +378,86 @@ def test_parse_created_files_rejects_unknown_dotfile():
     text = "### FILE: .secret\n```\nx\n```\n"
     with pytest.raises(ValueError, match="امتداد غير مسموح"):
         build_files.parse_created_files(text, [])
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) معايير الأدلة: الاسم المجرد يُشبع بالمسار المتداخل
+# ------------------------------------------------------------------ #
+
+def test_required_build_files_directory_criterion_bare_names():
+    """معيار «Directory src/app exists with layout.tsx, page.tsx,
+    globals.css» يستخرج الأسماء المجردة (قياس حي الخطوة 189)."""
+    criteria = [
+        "Directory src/app exists with layout.tsx, page.tsx, globals.css",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "layout.tsx" in req
+    assert "page.tsx" in req
+    assert "globals.css" in req
+
+
+def test_parse_created_files_bare_required_satisfied_by_nested_path():
+    """الاسم المجرد layout.tsx يُشبع بـ src/app/layout.tsx — فشل
+    الخطوة 189 الحي أربع محاولات لأن المطابقة كانت حرفية فقط."""
+    text = (
+        "### FILE: src/app/layout.tsx\n"
+        "```tsx\n"
+        "export default function RootLayout({ children }) {\n"
+        "  return <html><body>{children}</body></html>;\n"
+        "}\n"
+        "```\n"
+        "### FILE: src/app/page.tsx\n"
+        "```tsx\n"
+        "export default function Home() { return <main>news</main>; }\n"
+        "```\n"
+        "### FILE: src/app/globals.css\n"
+        "```css\n"
+        "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n"
+        "```\n"
+        "### FILE: package.json\n"
+        "```json\n"
+        "{\"name\": \"news\", \"scripts\": {\"lint\": \"next lint\"}}\n"
+        "```\n"
+    )
+    files = _parse(text, ["layout.tsx", "page.tsx", "globals.css", "package.json"])
+    assert len(files) == 4
+    assert files[0][0] == "src/app/layout.tsx"
+
+
+def test_parse_created_files_path_required_not_satisfied_by_other_dir():
+    """المطلوب بمساره src/styles/global.css لا يُشبع بملف الاسم نفسه
+    في دليل آخر — الصرامة تبقى للمسارات الصريحة."""
+    text = (
+        "### FILE: src/other/global.css\n"
+        "```css\n"
+        "@tailwind base;\n"
+        "```\n"
+    )
+    with pytest.raises(ValueError) as err:
+        _parse(text, ["src/styles/global.css"])
+    assert "src/styles/global.css" in str(err.value)
+
+
+def test_parse_created_files_path_required_satisfied_by_suffix():
+    """المطلوب بمساره يُشبع بلاحقة المسار نفسه (بادئة دليل جذر أعم)."""
+    text = (
+        "### FILE: app/src/styles/global.css\n"
+        "```css\n"
+        "@tailwind base;\n"
+        "```\n"
+    )
+    files = _parse(text, ["src/styles/global.css"])
+    assert files[0][0] == "app/src/styles/global.css"
+
+
+def test_parse_created_files_truly_missing_still_fails():
+    """الغائب فعلًا يبقى غائبًا — الإرخاء للمجرد لا يعني تعطيل الحكم."""
+    text = (
+        "### FILE: package.json\n"
+        "```json\n"
+        "{\"name\": \"x\"}\n"
+        "```\n"
+    )
+    with pytest.raises(ValueError) as err:
+        _parse(text, ["layout.tsx"])
+    assert "layout.tsx" in str(err.value)
