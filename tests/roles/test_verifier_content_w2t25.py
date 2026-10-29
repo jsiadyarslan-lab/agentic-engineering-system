@@ -369,3 +369,58 @@ def test_content_tail_reaches_verifier(tmp_path):
     facts = payload["facts"]["files"]["style.css"]
     assert "@media (max-width: 600px)" in facts["content_tail"]
     assert "@media" not in facts["content_head"]
+
+
+def test_token_counts_reach_verifier(tmp_path):
+    """«شبكة مقالات (article.card) لكل مقال» و«رابط لarticle.html?id=» —
+    عدّ ميكانيكي للرموز البنيوية في الملف (قياس حي الخطوة 300:
+    index.html كامل أكبر من النوافذ والمراجع لا يعد البطاقات)."""
+    root = tmp_path / "step300"
+    (root / "project").mkdir(parents=True)
+    html = root / "project" / "index.html"
+    html.write_text(
+        '<section class="hero"><article class="featured">A</article></section>'
+        '<section class="latest">'
+        + '<article class="card"><a href="article.html?id=2">x</a></article>' * 4
+        + "</section>",
+        encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "يوجد section.hero به article.featured واحد",
+            "يوجد section.latest به شبكة مقالات (article.card) لكل مقال غير بارز",
+            "كل card يحتوي رابط لarticle.html?id=...",
+        ],
+        artifacts=[str(html)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    counts = payload["facts"]["token_counts"]["index.html"]
+    assert counts["section.hero"] == 1
+    assert counts["article.featured"] == 1
+    assert counts["article.card"] == 4
+    assert counts["article.html?id="] == 4
+
+
+def test_token_counts_absent_when_no_tokens(tmp_path):
+    """معايير بلا رموز بنيوية — لا حقل token_counts مختلق."""
+    root = tmp_path / "plain"
+    root.mkdir()
+    f = root / "notes.txt"
+    f.write_text("hello world", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["File notes.txt exists"],
+        artifacts=[str(f)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    assert "token_counts" not in payload["facts"]

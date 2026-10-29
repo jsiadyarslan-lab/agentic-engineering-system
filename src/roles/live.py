@@ -51,6 +51,32 @@ def load_prompt(name: str) -> str:
 
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
 
+#: (W2-T25) رمز بنيوي ASCII في نص المعايير — tag.class أو file.ext?query.
+#: الحروف العربية (لام الجر مثلًا «لarticle.html») تُقلم تلقائيًا.
+_ASCII_TOKEN = re.compile(
+    r"[A-Za-z][\w-]*\.[A-Za-z][\w-]*(?:\?[A-Za-z]\w*=?)?"
+)
+#: امتدادات ملفات معروفة — tag.ext بامتداد ملف يُعدّ حرفيًا لا كمحدد CSS.
+_FILE_EXT_TOKEN = frozenset({
+    "html", "css", "js", "ts", "json", "md", "mjs", "cjs", "tsx", "jsx",
+    "svg", "jpg", "png", "webp", "gif", "ico", "txt", "csv", "xml",
+    "yaml", "yml", "toml", "py", "astro", "env", "log", "pdf",
+})
+
+
+def _count_token(text: str, token: str) -> int:
+    """عدّ الرمز في النص: محدد CSS (tag.class) يُعد بصيغة السمة
+    الحقيقية <tag class="class"> إضافة للصيغة النصية؛ والبقية حرفيًا."""
+    parts = token.split(".")
+    if (len(parts) == 2 and "?" not in token
+            and parts[1].lower() not in _FILE_EXT_TOKEN):
+        tag, cls = parts
+        attr = re.compile(
+            r"<%s\b[^>]*\bclass\s*=\s*[\"'][^\"']*\b%s\b[\"']" % (
+                re.escape(tag), re.escape(cls)))
+        return len(attr.findall(text)) + text.count(token)
+    return text.count(token)
+
 
 def extract_json(text: str) -> dict:
     """استخراج أول كائن JSON من رد النموذج — يتحمل أي لفّ نصي حوله."""
@@ -191,6 +217,11 @@ class VerifierLive(LiveRoleBase):
     _DIR_CONTAINS = re.compile(
         r"contains\s+([\w@.-]+(?:/[\w@.-]+)*)/?\s+directory",
         re.IGNORECASE,
+    )
+    #: (W2-T25) رموز بنيوية في المعايير (section.hero، article.card،
+    #: article.html?id=) — عدّها في الملفات دليل ميكانيكي مباشر.
+    _CRIT_TOKEN = re.compile(
+        r"`([^`\n]{2,60})`|(\b[\w-]+\.[\w-]+(?:\?\w+=)?\b)"
     )
 
     #: فحوص ميكانيكية إضافية تُدمج في facts إن توفرت الدالة الخارجية.
@@ -342,6 +373,41 @@ class VerifierLive(LiveRoleBase):
                             base_root / name / child).is_dir()
             if dirs:
                 facts["directories"] = dirs
+        # (W2-T25) عدّ الرموز البنيوية المذكورة في المعايير داخل الملفات
+        # النصية: «article.card لكل مقال» تُحسم بأعداد ميكانيكية (قياس
+        # 300: index.html كامل والمراجع لا يعد البطاقات) — محدد CSS
+        # (tag.class) يُعد بصيغة <tag class="class"> الحقيقية + النصية.
+        tokens: list[str] = []
+        for criterion in request.task_acceptance_criteria:
+            for backtick, _dotted in self._CRIT_TOKEN.findall(str(criterion)):
+                for hit in _ASCII_TOKEN.finditer(backtick):
+                    token = hit.group(0)
+                    if token not in tokens:
+                        tokens.append(token)
+            for hit in _ASCII_TOKEN.finditer(str(criterion)):
+                token = hit.group(0)
+                if token not in tokens:
+                    tokens.append(token)
+        if tokens:
+            counts: dict[str, dict[str, int]] = {}
+            for reference in request.artifacts:
+                path = Path(reference)
+                if not path.is_file() or path.stat().st_size > \
+                        self._CONTENT_FILE_LIMIT:
+                    continue
+                if (path.suffix.lower() not in self._TEXT_EXTS
+                        and not (path.name.startswith(".") and not path.suffix)):
+                    continue
+                try:
+                    text = path.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    continue
+                file_counts = {
+                    t: _count_token(text, t) for t in tokens}
+                if any(file_counts.values()):
+                    counts[path.name] = file_counts
+            if counts:
+                facts["token_counts"] = counts
         payload = {
             "criteria": request.task_acceptance_criteria,
             "evidence_refs": request.evidence_refs[:40],
