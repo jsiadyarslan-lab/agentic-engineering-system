@@ -146,8 +146,11 @@ def test_parse_created_files_unsafe_path(bad_path):
 def test_parse_created_files_bad_extension_and_empty():
     with pytest.raises(ValueError):
         _parse("### FILE: run.sh\n```\necho hi\n```\n", ["run.sh"])
-    with pytest.raises(ValueError):
-        _parse("### FILE: empty.json\n```\n\n```\n", ["empty.json"])
+    # (W2-T25) الملف الفارغ المطلوب مشروع («empty CSS files» قياس 276):
+    # معايير الوجود يحققها والمراجع يحكم المضمون — لا رفض للفراغ المطلوب.
+    files = _parse("### FILE: empty.json\n```\n\n```\n", ["empty.json"])
+    assert files[0][0] == "empty.json"
+    assert files[0][1] == ""
     with pytest.raises(ValueError):
         _parse("لا كتل إطلاقًا", ["x.json"])
 
@@ -571,3 +574,22 @@ def test_parse_created_files_required_bad_ext_still_fails():
     with pytest.raises(ValueError) as err:
         _parse(text, ["console.log"])
     assert "امتداد غير مسموح" in str(err.value)
+
+
+def test_parse_created_files_empty_required_css_legal():
+    """«Create project directories and empty CSS files» — الملفان
+    الفارغان المطلوبان مقبولان (قياس حي الخطوة 276: محاولتان
+    ROLE_SYSTEM_FAULT «ملف فارغ: styles/global.css» على طلب حرفي
+    للفراغ)."""
+    text = (
+        "### FILE: styles/global.css\n"
+        "```\n"
+        "```\n"
+        "### FILE: styles/components.css\n"
+        "```\n"
+        "```\n"
+    )
+    files = _parse(text, ["styles/global.css", "styles/components.css"])
+    assert [p for p, _ in files] == ["styles/global.css",
+                                     "styles/components.css"]
+    assert files[0][1] == ""

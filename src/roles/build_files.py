@@ -160,12 +160,12 @@ def parse_created_files(
         bad_ext = (
             Path(path).suffix.lower() not in _CREATE_ALLOWED_EXTS
             and Path(path).name.lower() not in _CREATE_ALLOWED_DOTFILES)
-        if bad_ext or (not body.strip() and ".gitkeep" not in path):
+        if bad_ext:
             if wanted:
-                raise ValueError(
-                    f"{'امتداد غير مسموح' if bad_ext else 'ملف فارغ'}:"
-                    f" {path[:80]}")
+                raise ValueError(f"امتداد غير مسموح: {path[:80]}")
             continue
+        # (W2-T25) الملف الفارغ المطلوب مشروع («empty CSS files» قياس
+        # 276): معايير الوجود يحققها والمراجع يحكم مضمونها بصدق.
         if len(body) > _CREATE_MAX_CHARS:
             raise ValueError(
                 f"الملف {path[:60]} يتجاوز {_CREATE_MAX_CHARS} حرفًا"
