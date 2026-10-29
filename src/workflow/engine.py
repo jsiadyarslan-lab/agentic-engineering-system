@@ -2088,18 +2088,37 @@ def _git_head() -> str:
         return ""
 
 
+#: (W2-T25) أدلة ثقيلة لا تدخل جرد الأدلة — تُفحص بمعاييرها الخاصة.
+_EVIDENCE_SKIP_DIRS = frozenset({"node_modules", "dist", "build", ".astro"})
+_EVIDENCE_MAX_FILES = 400
+
+
 def _files_with_sha(workspace: str) -> dict:
-    """ملفات مساحة العمل وsha256 — الأدلة الميكانيكية للتنفيذ."""
+    """ملفات مساحة العمل وsha256 — الأدلة الميكانيكية للتنفيذ.
+
+    (W2-T25) جرد تكراري بمفاتيح المسارات النسبية: iterdir السطحي كان
+    يعمي الأدلة المتداخلة (data/articles.json وsrc/**) فتحكم المدقق
+    الميكانيكي بالمفقود زورًا على عمل مكتمل (قياس 257 التنفيذ 109:
+    الدورة EVIDENCED ثم فشل التدقيق بmissing الملف الموجود فعلًا).
+    """
     root = Path(workspace)
     if not root.is_dir():
         return {}
     out = {}
-    for path in sorted(root.iterdir()):
-        if path.is_file() and path.name != "evidence.json":
-            out[path.name] = {
+    for path in sorted(root.rglob("*")):
+        if len(out) >= _EVIDENCE_MAX_FILES:
+            break
+        if not path.is_file() or path.name == "evidence.json":
+            continue
+        if any(part in _EVIDENCE_SKIP_DIRS for part in path.parts):
+            continue
+        try:
+            out[str(path.relative_to(root))] = {
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "bytes": path.stat().st_size,
             }
+        except OSError:
+            continue
     return out
 
 

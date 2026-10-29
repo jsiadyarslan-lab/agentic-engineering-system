@@ -28,6 +28,18 @@ def _criterion_files(criterion: str) -> list[str]:
     return _FILE_TOKEN.findall(criterion)
 
 
+def _name_in_files(name: str, files: dict) -> bool:
+    """(W2-T25) الاسم المذكور حاضر؟ الجرد بمسارات نسبية (data/articles.json)
+    والاستخراج basename — الأساسي أو لاحقة المسار أو الاسم المجرد كلها
+    حضور صادق (قياس 257: «articles.json» لم يطابق data/articles.json)."""
+    if name in files:
+        return True
+    return any(
+        key.endswith("/" + name) or Path(key).name == name
+        for key in files
+    )
+
+
 def _check_criterion(criterion: str, evidence: dict) -> bool:
     """فحص المعيار: كل ملف مذكور فيه موجود ضمن أدلة التنفيذ.
 
@@ -38,7 +50,7 @@ def _check_criterion(criterion: str, evidence: dict) -> bool:
     mentioned = _criterion_files(criterion)
     if not mentioned:
         return False
-    return all(name in files for name in mentioned)
+    return all(_name_in_files(name, files) for name in mentioned)
 
 
 def _criterion_mechanical(criterion: str, evidence: dict) -> bool:
