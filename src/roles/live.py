@@ -196,7 +196,11 @@ class VerifierLive(LiveRoleBase):
     _CONTENT_FILE_LIMIT = 262_144
 
     def _content_head(self, path: Path) -> str | None:
-        """مقتطف حقيقي محدود من ملف نصي صغير — أو None."""
+        """مقتطف حقيقي محدود من ملف نصي صغير — أو None.
+
+        (W2-T25) الملف النصي الفارغ يقتطف «» — فراغ المضمون دليل
+        بذاته (سجل أمر بلا أخطاء) لا غياب فحص.
+        """
         try:
             # (W2-T25) ملف نقطي بلا امتداد (.prettierrc/.gitignore) نصٌّ
             # بطبيعته — Path().suffix له فارغ فكان يُحجب مضمونه زورًا
@@ -209,15 +213,26 @@ class VerifierLive(LiveRoleBase):
                 return None
             raw = path.read_bytes()[: self._CONTENT_HEAD_LIMIT]
             text = raw.decode("utf-8", "replace").strip()
-            return text or None
+            return text if text or path.stat().st_size == 0 else None
         except OSError:
             return None
 
     def run(self, request: VerifierRequest) -> VerifierResult:
         facts: dict[str, Any] = {"files": {}}
+        # (W2-T25) relpath: أصل مشترك للأدلة — معايير المسارات
+        # («node_modules/.package-lock.json exists») تتحقق من المسار
+        # النسبي لا من الاسم المجرد وحده (قياس 221: الملف موجود والاسم
+        # المجرد .package-lock.json لم يُطابق عند المراجع).
+        parents = [str(Path(r).parent) for r in request.artifacts]
+        common = None
+        if parents:
+            try:
+                common = __import__("os").path.commonpath(parents)
+            except ValueError:
+                common = None
         for reference in request.artifacts:
             path = Path(reference)
-            facts["files"][path.name] = {
+            entry: dict[str, Any] = {
                 "exists": path.is_file(),
                 "sha256_head": (
                     __import__("hashlib")
@@ -227,6 +242,12 @@ class VerifierLive(LiveRoleBase):
                     else None
                 ),
             }
+            if common:
+                try:
+                    entry["relpath"] = str(path.relative_to(common))
+                except ValueError:
+                    entry["relpath"] = str(path)
+            facts["files"][path.name] = entry
             head = self._content_head(path)
             if head is not None:
                 facts["files"][path.name]["content_head"] = head

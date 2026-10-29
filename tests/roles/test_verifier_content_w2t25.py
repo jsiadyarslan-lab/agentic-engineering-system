@@ -152,3 +152,64 @@ def test_content_head_covers_dotfiles(tmp_path):
     gitignore = payload["facts"]["files"][".gitignore"]
     assert '"semi": true' in prettier["content_head"]
     assert "node_modules" in gitignore["content_head"]
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) relpath في حقائق المراجع — معايير المسارات
+# ------------------------------------------------------------------ #
+
+def test_relpath_in_facts_for_path_criteria(tmp_path):
+    """معيار «node_modules/.package-lock.json exists» يتحقق من relpath —
+    قياس حي الخطوة 221: الملف موجود والاسم المجرد (.package-lock.json)
+    لم يطابق المسار المذكور عند المراجع فحكم بالغياب زورًا."""
+    root = tmp_path / "step221"
+    (root / "node_modules").mkdir(parents=True)
+    lock = root / "node_modules" / ".package-lock.json"
+    lock.write_text('{"lockfileVersion": 3}', encoding="utf-8")
+    root_pkg = root / "package-lock.json"
+    root_pkg.write_text('{"lockfileVersion": 3}', encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "package-lock.json exists at root",
+            "node_modules/.package-lock.json exists (indicates install completed)",
+        ],
+        artifacts=[str(root_pkg), str(lock)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    facts = payload["facts"]["files"]
+    assert facts[".package-lock.json"]["relpath"] == \
+        "node_modules/.package-lock.json"
+    assert facts["package-lock.json"]["relpath"] == "package-lock.json"
+    assert facts[".package-lock.json"]["exists"] is True
+
+
+def test_install_log_evidence_reaches_verifier(tmp_path):
+    """سجل أمر البناء (install log) يصل الأدلة فيراه المراجع —
+    ملفات evidence/build-* مع مضمونها (stderr فارغ = لا أخطاء)."""
+    ev = tmp_path / "evidence"
+    ev.mkdir()
+    stdout_log = ev / "build-npm-install-stdout.txt"
+    stdout_log.write_text("added 2 packages in 5s", encoding="utf-8")
+    stderr_log = ev / "build-npm-install-stderr.txt"
+    stderr_log.write_text("", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["No error output captured in install log"],
+        artifacts=[str(stdout_log), str(stderr_log)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    facts = payload["facts"]["files"]
+    assert facts["build-npm-install-stderr.txt"]["content_head"] == ""
+    assert "added 2 packages" in facts[
+        "build-npm-install-stdout.txt"]["content_head"]

@@ -261,10 +261,9 @@ def run_build_commands_phase(
 ) -> BuildPhaseOutcome:
     """الطور الكامل: فحص الأدوات → تجميع المتطلبات → تنفيذ → أدلة.
 
-    كل أمر عبر run_tool("run_build_command") — الاستدعاء المسجل في
-    tool_invocations هو دليل المصنف (BUILD_TOOLING_MISSING) عند فقد
-    الأدوات، والأدلة exit_code/stdout/stderr تكتب داخل مساحة الخطوة.
-    فشل أي أمر = فشل صادق برسالة الأمر الحقيقية — لا تزييف.
+    كل أمر عبر run_tool المسجل في tool_invocations؛ الأدلة
+    exit_code/stdout/stderr تكتب داخل مساحة الخطوة. فشل أي أمر =
+    فشل صادق برسالة الأمر الحقيقية — لا تزييف.
     """
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
@@ -282,13 +281,10 @@ def run_build_commands_phase(
         command in ("npm run build", "npm run preview")
         for command in effective
     )
-    if (
-        needs_deps
-        and "npm install" not in effective
-        and "npm ci" not in effective
-        and (root / "package.json").is_file()
-        and not (root / "node_modules").exists()
-    ):
+    if (needs_deps and "npm install" not in effective
+            and "npm ci" not in effective
+            and (root / "package.json").is_file()
+            and not (root / "node_modules").exists()):
         effective.insert(0, "npm install")
 
     for command in effective:
@@ -317,14 +313,18 @@ def run_build_commands_phase(
         })
 
     outcome.artifacts = collect_criterion_outputs(root, acceptance_criteria)
+    # (W2-T25) سجل الأوامر (install log) دليل يراه المراجع: معيار
+    # «No error output captured in install log» يحتاج الملف نفسه.
+    ev_dir = root / "evidence"
+    if ev_dir.is_dir():
+        outcome.artifacts += sorted(
+            p for p in ev_dir.iterdir() if p.is_file()
+        )[:12]
     ran = len(outcome.results)
     gathered_count = len(gathered.get("copied", [])) \
         + len(gathered.get("linked", []))
-    outcome.summary = (
-        f"نفّذت {ran} أمر بناء فعلي"
-        + (f" وجلبت {gathered_count} متطلبًا من خطوات سابقة"
-           if gathered_count else "")
-    )
+    extra = f" وجلبت {gathered_count} متطلبًا من خطوات سابقة" if gathered_count else ""
+    outcome.summary = f"نفّذت {ran} أمر بناء فعلي{extra}"
     return outcome
 
 

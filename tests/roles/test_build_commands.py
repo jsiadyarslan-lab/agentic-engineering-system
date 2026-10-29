@@ -561,3 +561,25 @@ def test_gather_latest_sibling_wins(tmp_path):
         encoding="utf-8")
     assert "new-next" in gathered_pkg
     assert "lint" in gathered_pkg
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) سجل أوامر البناء ضمن الأدلة — المراجع يرى install log
+# ------------------------------------------------------------------ #
+
+def test_phase_includes_command_evidence_in_artifacts(tmp_path, monkeypatch):
+    """ملفات evidence/build-* (install log) تُضم للأدلة — قياس حي
+    الخطوة 221: معيار «No error output captured in install log» بلا
+    ملف السجل عند المراجع أفشل تحققًا كاملًا لعمل ناجح (stderr فارغ)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path)
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["npm install"], STEP103_CRITERIA)
+    assert outcome.failed_result is None
+    artifact_names = {a.name for a in outcome.artifacts}
+    assert "build-npm-install-stdout.txt" in artifact_names
+    assert "build-npm-install-stderr.txt" in artifact_names
+    assert "build-npm-install-exit.json" in artifact_names
+    stderr_file = root / "evidence" / "build-npm-install-stderr.txt"
+    assert stderr_file.is_file()
+    assert stderr_file.read_text(encoding="utf-8").strip() == ""
