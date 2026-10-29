@@ -593,3 +593,36 @@ def test_parse_created_files_empty_required_css_legal():
     assert [p for p, _ in files] == ["styles/global.css",
                                      "styles/components.css"]
     assert files[0][1] == ""
+
+
+def test_required_build_files_extracts_image_names():
+    """«news1.jpg ... news5.jpg (أو SVG)» — أسماء الصور تُستخرج (قياس
+    حي الخطوة 290: الصور لم تُطلب فلم تُكتب)."""
+    criteria = [
+        "يوجد 5 ملفات في assets/images بأسماء news1.jpg ... news5.jpg (أو SVG)",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "news1.jpg" in req
+    assert "news5.jpg" in req
+
+
+def test_required_satisfied_image_svg_alternative():
+    """news1.jpg يُشبع بـ news1.svg — البديل النصي القانوني للصور."""
+    assert build_files._required_satisfied(
+        "news1.jpg", {"assets/images/news1.svg"}) is True
+    assert build_files._required_satisfied(
+        "assets/images/news2.jpg", {"assets/images/news2.svg"}) is True
+    assert build_files._required_satisfied(
+        "news3.jpg", {"other/news9.svg"}) is False
+
+
+def test_parse_created_files_accepts_svg():
+    """SVG نصي قابل للكتابة عبر ### FILE:."""
+    text = (
+        "### FILE: assets/images/news1.svg\n"
+        "```\n"
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>\n'
+        "```\n"
+    )
+    files = _parse(text, ["news1.jpg"])
+    assert files[0][0] == "assets/images/news1.svg"

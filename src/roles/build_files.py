@@ -29,53 +29,47 @@ from typing import Any, Callable
 from roles.live import RoleSystemFault
 from router.model_router import ChatMessage
 
-#: ملفات البناء القابلة للطلب من المعايير — أوسع من اتفاقية المراجع
-#: الوهمي لأن خطط البناء تذكر .astro/.mjs/.ts/.css/... والحد الخلفي
-#: (?!\w) يمنع ابتلاع js لـ json (خطأ ترتيب البدائل الكلاسيكي).
+#: ملفات البناء القابلة للطلب — الحد الخلفي (?!\w) يمنع ابتلاع
+#: js لـ json (خطأ ترتيب البدائل الكلاسيكي).
 _BUILD_FILENAME = re.compile(
     r"(?:[\w@./-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
-    r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py|env)"
+    r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py|env|svg|jpe?g|png|webp|gif|ico)"
     # (W2-T25) ملف نقطي: لا يسبق النقطة حرف كلمة فلا يبتلع «file.env».
     r"|(?<![\w@./-])\.(?:gitignore|editorconfig|npmrc|nvmrc"
     r"|prettierrc|babelrc|eslintrc|browserslistrc|prettierignore"
     r"|eslintignore))(?!\w)"
 )
 
-#: (W2-T25) أسماء تقنية ليست ملفات — «Next.js» كملف مطلوب أفشل
-#: التنفيذين 39/40 (الخطوة 130) بمطالبة زائفة لا يكتبها النموذج.
-_BUILD_TECH_NAMES = frozenset({
-    "next.js", "node.js", "vue.js", "nuxt.js", "react.js",
-    "express.js", "svelte.js", "nest.js", "d3.js", "three.js",
-    "chart.js", "socket.io", "prisma.io", "github.io", "vue.cjs",
-})
+_BUILD_TECH_NAMES = frozenset({  # (W2-T25) أسماء تقنية لا ملفات (130)
+    "next.js", "node.js", "vue.js", "nuxt.js", "react.js", "express.js",
+    "svelte.js", "nest.js", "d3.js", "three.js", "chart.js", "socket.io",
+    "prisma.io", "github.io", "vue.cjs",})
 
-#: (W2-T25) ملفات نقطية مسموحة — Path().suffix لها فارغ فيُرفض زورًا.
+#: (W2-T25) نقطية مسموحة — suffix فارغ فيُرفض زورًا.
 _CREATE_ALLOWED_DOTFILES = frozenset({
     ".env", ".gitignore", ".editorconfig", ".npmrc", ".nvmrc",
     ".prettierrc", ".eslintrc", ".babelrc", ".browserslistrc",
     ".prettierignore", ".eslintignore", ".gitkeep",})
-#: صيغة رد إنشاء الملفات (نمط missions_textstats المُثبت): ‎### FILE: مسار
+#: صيغة رد الإنشاء (نمط missions_textstats): ‎### FILE: مسار
 _CREATE_FILE_HEADER = re.compile(r"^###\s+FILE:\s*(\S+)\s*$", re.MULTILINE)
 _CREATE_ALLOWED_EXTS = frozenset({
     ".astro", ".mjs", ".cjs", ".js", ".ts", ".tsx", ".jsx", ".css",
     ".html", ".json", ".md", ".mdx", ".txt", ".toml", ".yaml", ".yml",
-    ".xml", ".csv", ".py", ".cfg", ".env", ".d.ts",
+    ".xml", ".csv", ".py", ".cfg", ".env", ".d.ts", ".svg",
 })
 #: نواتج أوامر لا يُختلق نصها — تُنتج بأوامر حقيقية (بطاقة لاحقة)
 _CREATE_GENERATED_PREFIXES = ("node_modules/", "dist/", "build/", ".astro/")
 _CREATE_GENERATED_NAMES = frozenset({
-    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
-})
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",})
 _CREATE_MAX_FILES = 16
 _CREATE_MAX_CHARS = 120_000
 _CREATE_MAX_PATH = 200
-#: (W2-T25) معيار دليل بلا ملف — علامة .gitkeep تنشئ الدليل (قياس 256).
-_DIR_ONLY = re.compile(
-    r"Directory\s+`?([\w@./-]+)/?`?\s+exists", re.IGNORECASE)
+#: (W2-T25) دليل بلا ملف — علامة .gitkeep تنشئه (قياس 256).
+_DIR_ONLY = re.compile(r"Directory\s+`?([\w@./-]+)/?`?\s+exists", re.IGNORECASE)
 
 
 def own_artifact_names(task_id: str) -> set[str]:
-    """مخرجات الدور التلقائية — لا تُطلب من النموذج «بناؤها»."""
+    """مخرجات الدور التلقائية — لا تُطلب من النموذج بناؤها."""
     return {f"{task_id}-report.md", f"{task_id}-report.pdf",
             "report.md", "report.pdf", "sources.json"}
 
@@ -83,9 +77,8 @@ def own_artifact_names(task_id: str) -> set[str]:
 def required_build_files(
     acceptance_criteria: list[str] | None, task_id: str,
 ) -> list[str]:
-    """الملفات المصدرية التي تطلبها المعايير فعليًا (W2-T23): استخراج
-    الأسماء مع استبعاد مخرجات الدور ونواتج الأوامر — الفارغة = مهمة
-    بحث/تقرير بلا تغيير سلوك."""
+    """الملفات المصدرية المطلوبة فعليًا (W2-T23): استخراج مع استبعاد
+    مخرجات الدور ونواتج الأوامر — الفارغة = مهمة بحث بلا تغيير سلوك."""
     own = own_artifact_names(task_id)
     required: list[str] = []
     for criterion in acceptance_criteria or []:
@@ -104,10 +97,9 @@ def required_build_files(
             ):
                 continue
             required.append(clean)
-    # (W2-T25) دليل بلا ملف: علامة .gitkeep تُطلب فيُخلق الدليل بكتابتها.
-    for directory in _DIR_ONLY.findall(
-            " ".join(map(str, acceptance_criteria or []))):
-        d = directory.strip("/")
+    # (W2-T25) دليل بلا ملف: .gitkeep تُطلب فيُخلق الدليل بكتابتها.
+    for d in _DIR_ONLY.findall(" ".join(map(str, acceptance_criteria or []))):
+        d = d.strip("/")
         marker = f"{d}/.gitkeep"
         if d and marker not in required \
                 and not any(r.startswith(d + "/") for r in required):
@@ -115,12 +107,20 @@ def required_build_files(
     return required[:_CREATE_MAX_FILES]
 
 
+#: (W2-T25) صور ثنائية — بديلها النصي SVG معلن في المعايير («أو SVG»).
+_IMAGE_BINARY_EXTS = frozenset({".jpg", ".jpeg", ".png", ".gif", ".webp", ".ico"})
+
+
 def _required_satisfied(required: str, seen: set[str]) -> bool:
     """(W2-T25) حاضر؟ الحرفية وحدها كانت تُفشل معايير الأدلة (قياس 189):
     المجرد يُستخرج والنموذج يكتب المتداخل — «غائبة» كانت زورًا."""
     if required in seen:
         return True
-    if "/" in required:  # بمساره: لاحقة المسار نفسه، لا اسم مجرد بدليل آخر
+    stem, ext = Path(required).stem, Path(required).suffix.lower()
+    if ext in _IMAGE_BINARY_EXTS and any(  # jpg ⇒ svg بديل معلن
+            Path(s).stem == stem and s.lower().endswith(".svg") for s in seen):
+        return True
+    if "/" in required:  # بمساره: لاحقة المسار نفسه، لا اسم بدليل آخر
         return any(s.endswith("/" + required) for s in seen)
     return any(Path(s).name == required for s in seen)  # مجردًا: الاسم يكفي
 
