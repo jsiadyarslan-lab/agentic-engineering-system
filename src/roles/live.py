@@ -206,6 +206,38 @@ class VerifierLive(LiveRoleBase):
     _CONTENT_HEAD_LIMIT = 1800
     _CONTENT_FILE_LIMIT = 262_144
 
+    def _json_summary(self, path: Path) -> dict | None:
+        """(W2-T25) ملخص بنيوي ميكانيكي لملف JSON — الطول والمفاتيح
+        وعدادات القيم النصية منخفضة التفرّد. المقتطف وحده لا يكفي
+        لمعايير مثل «Array length is 7» أو «Categories World (3)»
+        على ملف أكبر من نافذة الاقتطاع (قياس 257)."""
+        if path.suffix.lower() != ".json" \
+                or path.stat().st_size > self._CONTENT_FILE_LIMIT:
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if isinstance(data, list):
+            out: dict[str, Any] = {"type": "array", "length": len(data)}
+            dicts = [x for x in data if isinstance(x, dict)]
+            if dicts:
+                out["item_keys"] = sorted(
+                    set().union(*(x.keys() for x in dicts)))
+                if len(dicts) <= 50:
+                    counts: dict[str, dict[str, int]] = {}
+                    for key in out["item_keys"]:
+                        strs = [x.get(key) for x in dicts
+                                if isinstance(x.get(key), str)]
+                        if strs and len(set(strs)) <= 10:
+                            counts[key] = {v: strs.count(v) for v in set(strs)}
+                    if counts:
+                        out["string_value_counts"] = counts
+            return out
+        if isinstance(data, dict):
+            return {"type": "object", "keys": sorted(data.keys())}
+        return {"type": type(data).__name__}
+
     def _content_head(self, path: Path) -> str | None:
         """مقتطف حقيقي محدود من ملف نصي صغير — أو None.
 
@@ -262,6 +294,10 @@ class VerifierLive(LiveRoleBase):
             head = self._content_head(path)
             if head is not None:
                 facts["files"][path.name]["content_head"] = head
+            if path.is_file():
+                summary = self._json_summary(path)
+                if summary is not None:
+                    facts["files"][path.name]["json_summary"] = summary
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))

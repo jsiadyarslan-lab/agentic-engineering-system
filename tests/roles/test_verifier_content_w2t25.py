@@ -271,3 +271,72 @@ def test_directory_facts_false_when_missing(tmp_path):
     import json
     payload = json.loads(router.payloads[0])
     assert payload["facts"]["directories"]["src/pages"] is False
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) ملخص JSON البنيوي — معايير الطول والعدادات
+# ------------------------------------------------------------------ #
+
+def test_json_summary_reaches_verifier(tmp_path):
+    """«Array length is 7» و«Categories World (3), Tech (2), Local (2)»
+    تتحقق من ملخص بنيوي ميكانيكي — قياس حي الخطوة 257: الملف مثالي
+    تمامًا والمقتطف وحده (1800 حرف من ~10KB) أعجز المراجع عن العد
+    فحكم بالنقص (ESCALATED_TO_HUMAN بعد دورة 10/10 أدوات ناجحة)."""
+    import json as _json
+    arts = []
+    cats = ["World"] * 3 + ["Tech"] * 2 + ["Local"] * 2
+    for i, cat in enumerate(cats):
+        arts.append({"slug": f"article-{i}-mock", "title": f"A{i}",
+                     "category": cat, "excerpt": "x" * 900,
+                     "body": "<p>" + "y" * 900 + "</p>",
+                     "date": "2024-11-20T09:15:00Z",
+                     "image": "/img/a.png"})
+    root = tmp_path / "step257"
+    root.mkdir()
+    pkg = root / "data"
+    pkg.mkdir()
+    arts_file = pkg / "articles.json"
+    arts_file.write_text(_json.dumps(arts, ensure_ascii=False),
+                         encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "File `data/articles.json` exists and is valid JSON.",
+            "Array length is 7.",
+            "Categories used: World (3), Tech (2), Local (2).",
+        ],
+        artifacts=[str(arts_file)],
+        evidence_refs=[],
+    ))
+    payload = _json.loads(router.payloads[0])
+    summary = payload["facts"]["files"]["articles.json"]["json_summary"]
+    assert summary["type"] == "array"
+    assert summary["length"] == 7
+    assert summary["string_value_counts"]["category"] == \
+        {"World": 3, "Tech": 2, "Local": 2}
+    assert "slug" in summary["item_keys"]
+
+
+def test_json_summary_invalid_json_absent(tmp_path):
+    """JSON تالف — لا ملخص مختلق؛ الوجود والاسم يبقيان."""
+    root = tmp_path / "bad"
+    root.mkdir()
+    bad = root / "broken.json"
+    bad.write_text("{not valid json", encoding="utf-8")
+    router = _StubRouter({"verdict": "not_evidenced",
+                          "checks_performed": [], "missing_evidence": ["x"],
+                          "confidence": 0.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["File broken.json is valid JSON"],
+        artifacts=[str(bad)],
+        evidence_refs=[],
+    ))
+    import json as _json
+    payload = _json.loads(router.payloads[0])
+    entry = payload["facts"]["files"]["broken.json"]
+    assert "json_summary" not in entry
+    assert entry["exists"] is True
