@@ -124,3 +124,29 @@ def test_no_false_no_calls():
     text = "سنستخدم web_search في مهمة أخرى، لكن هنا لا شيء"
     with pytest.raises(ValueError):
         parse(text)
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) صيغ الإعلان الأخرى — «لا استدعاءات» المجردة
+# ------------------------------------------------------------------ #
+
+def test_no_calls_bare_variant_accepted():
+    """«لا استدعاءات» المجردة (قياس حي الخطوة 241: رأس الرد الأخير
+    حرفيًا «لا استدعاءات» فرفضها المحلل وفشلت المهمة بعد إعادتين)."""
+    from roles.tool_plan import _NO_CALLS_RE
+    assert _NO_CALLS_RE.search("لا استدعاءات")
+    assert _NO_CALLS_RE.search("لا استدعاءات أدوات خارجية")
+
+
+def test_no_calls_without_variant_accepted():
+    """«بدون استدعاءات»/«بدون أي استدعاءات» صيغ إعلان قانونية."""
+    from roles.tool_plan import _NO_CALLS_RE
+    assert _NO_CALLS_RE.search("بدون استدعاءات")
+    assert _NO_CALLS_RE.search("بدون أي استدعاءات")
+
+
+def test_no_calls_word_not_false_positive():
+    """«الاستدعاءات» بلا نفي لا تُقبل — لا اختلاق خطة فارغة."""
+    from roles.tool_plan import _NO_CALLS_RE
+    assert _NO_CALLS_RE.search("الاستدعاءات كثيرة") is None
+    assert _NO_CALLS_RE.search("سأنفذ الاستدعاءات الآن") is None

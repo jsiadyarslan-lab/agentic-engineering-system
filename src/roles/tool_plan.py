@@ -26,6 +26,7 @@ _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*?\]", re.MULTILINE)
 #: («لا مادة قابلة للتحليل») — لا تجاوز: التحقق يبقى الحكم.
 _NO_CALLS_RE = re.compile(
     r"لا توجد استدعاءات|بلا استدعاءات أدوات|لا حاجة لاستدعاء"
+    r"|لا استدعاءات|بدون (?:أي )?استدعاءات"
     r"|no (?:external )?tool calls|no tools (?:are )?(?:needed|required)",
     re.IGNORECASE,
 )
