@@ -492,3 +492,48 @@ def test_required_build_files_parent_import_any_depth():
     assert "src/components/Header.tsx" in req
     assert "../../styles/theme.css" not in req
     assert "theme.css" not in req
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) معايير الأدلة وحدها — علامة .gitkeep
+# ------------------------------------------------------------------ #
+
+def test_required_build_files_directory_only_synthesizes_markers():
+    """«Directory articles/ exists» بلا ملفات — علامة .gitkeep تُطلب
+    فيكتبها النموذج فيُخلق الدليل (قياس حي الخطوة 256: NO_ANALYZABLE_
+    MATERIAL مرتين لأن الطور كان يُتخطى كليًا)."""
+    criteria = [
+        "Directory `articles/` exists.",
+        "Directory `data/` exists.",
+        "Directory `assets/` exists.",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "articles/.gitkeep" in req
+    assert "data/.gitkeep" in req
+    assert "assets/.gitkeep" in req
+
+
+def test_required_build_files_directory_with_file_no_marker():
+    """دليل وقد طُلب ملف داخله — لا علامة زائدة."""
+    criteria = [
+        "Directory data/ exists",
+        "File data/articles.json exists",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "data/articles.json" in req
+    assert "data/.gitkeep" not in req
+
+
+def test_parse_created_files_accepts_gitkeep_and_nested_dotfile():
+    """.gitkeep (فراغها طبيعتها) والملف النقطي المتداخل مقبولان."""
+    text = (
+        "### FILE: articles/.gitkeep\n"
+        "```\n"
+        "```\n"
+        "### FILE: config/.prettierrc\n"
+        "```\n"
+        "{\"semi\": true}\n"
+        "```\n"
+    )
+    files = _parse(text, ["articles/.gitkeep", "config/.prettierrc"])
+    assert [p for p, _ in files] == ["articles/.gitkeep", "config/.prettierrc"]

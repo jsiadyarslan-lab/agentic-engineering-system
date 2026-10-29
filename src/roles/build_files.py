@@ -53,8 +53,7 @@ _BUILD_TECH_NAMES = frozenset({
 _CREATE_ALLOWED_DOTFILES = frozenset({
     ".env", ".gitignore", ".editorconfig", ".npmrc", ".nvmrc",
     ".prettierrc", ".eslintrc", ".babelrc", ".browserslistrc",
-    ".prettierignore", ".eslintignore",
-})
+    ".prettierignore", ".eslintignore", ".gitkeep",})
 #: صيغة رد إنشاء الملفات (نمط missions_textstats المُثبت): ‎### FILE: مسار
 _CREATE_FILE_HEADER = re.compile(r"^###\s+FILE:\s*(\S+)\s*$", re.MULTILINE)
 _CREATE_ALLOWED_EXTS = frozenset({
@@ -70,22 +69,23 @@ _CREATE_GENERATED_NAMES = frozenset({
 _CREATE_MAX_FILES = 16
 _CREATE_MAX_CHARS = 120_000
 _CREATE_MAX_PATH = 200
+#: (W2-T25) معيار دليل بلا ملف — علامة .gitkeep تنشئ الدليل (قياس 256).
+_DIR_ONLY = re.compile(
+    r"Directory\s+`?([\w@./-]+)/?`?\s+exists", re.IGNORECASE)
 
 
 def own_artifact_names(task_id: str) -> set[str]:
     """مخرجات الدور التلقائية — لا تُطلب من النموذج «بناؤها»."""
-    return {
-        f"{task_id}-report.md", f"{task_id}-report.pdf",
-        "report.md", "report.pdf", "sources.json",
-    }
+    return {f"{task_id}-report.md", f"{task_id}-report.pdf",
+            "report.md", "report.pdf", "sources.json"}
 
 
 def required_build_files(
     acceptance_criteria: list[str] | None, task_id: str,
 ) -> list[str]:
-    """الملفات المصدرية التي تطلبها المعايير فعليًا (W2-T23):
-    استخراج الأسماء مع استبعاد مخرجات الدور ونواتج الأوامر —
-    قائمة فارغة = مهمة بحث/تقرير بلا تغيير سلوك."""
+    """الملفات المصدرية التي تطلبها المعايير فعليًا (W2-T23): استخراج
+    الأسماء مع استبعاد مخرجات الدور ونواتج الأوامر — الفارغة = مهمة
+    بحث/تقرير بلا تغيير سلوك."""
     own = own_artifact_names(task_id)
     required: list[str] = []
     for criterion in acceptance_criteria or []:
@@ -104,13 +104,21 @@ def required_build_files(
             ):
                 continue
             required.append(clean)
+    # (W2-T25) دليل بلا ملف: علامة .gitkeep تُطلب فيُخلق الدليل بكتابتها.
+    for directory in _DIR_ONLY.findall(
+            " ".join(map(str, acceptance_criteria or []))):
+        d = directory.strip("/")
+        marker = f"{d}/.gitkeep"
+        if d and marker not in required \
+                and not any(r.startswith(d + "/") for r in required):
+            required.append(marker)
     return required[:_CREATE_MAX_FILES]
 
 
 def _required_satisfied(required: str, seen: set[str]) -> bool:
-    """(W2-T25) حاضر؟ المطابقة الحرفية وحدها كانت تُفشل معايير الأدلة:
-    «Directory src/app exists with layout.tsx» يستخرج المجرد بينما يكتب
-    النموذج «src/app/layout.tsx» — فحكم «غائبة» كان زورًا (قياس 189)."""
+    """(W2-T25) حاضر؟ الحرفية وحدها كانت تُفشل معايير الأدلة: «Directory
+    src/app exists with layout.tsx» يستخرج المجرد والنموذج يكتب المتداخل
+    (قياس 189) — فحكم «غائبة» كان زورًا."""
     if required in seen:
         return True
     if "/" in required:  # بمساره: لاحقة المسار نفسه، لا اسم مجرد بدليل آخر
@@ -150,11 +158,11 @@ def parse_created_files(
             raise ValueError(f"ملف مكرر: {path}")
         if (
             Path(path).suffix.lower() not in _CREATE_ALLOWED_EXTS
-            and path.lower() not in _CREATE_ALLOWED_DOTFILES
+            and Path(path).name.lower() not in _CREATE_ALLOWED_DOTFILES
         ):
             raise ValueError(f"امتداد غير مسموح: {path[:80]}")
-        if not body.strip():
-            raise ValueError(f"ملف فارغ: {path[:80]}")
+        if not body.strip() and Path(path).name != ".gitkeep":
+            raise ValueError(f"ملف فارغ: {path[:80]}")  # .gitkeep علامة فراغها طبيعتها
         if len(body) > _CREATE_MAX_CHARS:
             raise ValueError(
                 f"الملف {path[:60]} يتجاوز {_CREATE_MAX_CHARS} حرفًا"
@@ -253,18 +261,13 @@ def _sources_section(markdown: str) -> str:
 
 
 def write_sources_file(ctx, root: Path, report_md: str) -> Path | None:
-    """ملف المصادر (W2-T23: مستخرج من implementer_live لرقته).
-
-    المصادر الفعلية المذكورة في قسم «## المصادر» بالتقرير (اختيار
-    النموذج الموثق)؛ وعند نقصها تُستكمل من نتائج البحث الفريدة —
-    الدليل يطابق التقرير. يكتب عبر run_tool("write_file") بأدلة
-    sha256 ويعيد مسار الملف أو None عند انعدام المصادر.
-    """
+    """ملف المصادر (W2-T23): الفعلية من قسم «## المصادر» بالتقرير، وعند
+    نقصها تُستكمل من نتائج البحث — الدليل يطابق التقرير؛ عبر run_tool
+    بأدلة sha256، أو None عند انعدام المصادر."""
     from roles.tools import run_tool
 
     report_urls = re.findall(
-        r"https?://[^\s\)\]]+", _sources_section(report_md)
-    )
+        r"https?://[^\s\)\]]+", _sources_section(report_md))
     title_by_url = {
         item.get("url", ""): item.get("title", "")
         for item in ctx.search_results
@@ -298,14 +301,8 @@ def write_sources_file(ctx, root: Path, report_md: str) -> Path | None:
                 break
     if not sources:
         return None
-    run_tool(
-        "write_file",
-        {
-            "path": "sources.json",
-            "content": json.dumps(sources, ensure_ascii=False, indent=1),
-        },
-        ctx,
-    )
+    run_tool("write_file", {"path": "sources.json",
+             "content": json.dumps(sources, ensure_ascii=False, indent=1)}, ctx)
     return root / "sources.json"
 
 
