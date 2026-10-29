@@ -276,7 +276,8 @@ def run_build_commands_phase(
     gathered = gather_build_prerequisites(root)
     outcome.gathered = gathered
 
-    # ضمان الاعتماديات: build/preview بلا node_modules ⇒ install أولًا
+    # ضمان الاعتماديات: install قبل build/preview ما دام package.json —
+    # node_modules القديم لا يكفي: الاعتماديات تتغير (قياس 325: marked).
     effective = list(commands)
     needs_deps = any(
         command in ("npm run build", "npm run preview")
@@ -284,8 +285,7 @@ def run_build_commands_phase(
     )
     if (needs_deps and "npm install" not in effective
             and "npm ci" not in effective
-            and (root / "package.json").is_file()
-            and not (root / "node_modules").exists()):
+            and (root / "package.json").is_file()):
         effective.insert(0, "npm install")
 
     for command in effective:

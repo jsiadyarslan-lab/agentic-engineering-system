@@ -654,3 +654,17 @@ def test_run_build_command_npx_whitelisted(tmp_path, monkeypatch):
     assert value["exit_code"] == 0
     exit_json = tmp_path / "evidence" / "build-npx---yes-htmlhint-*.html-exit.json"
     assert exit_json.is_file()
+
+
+def test_phase_install_before_build_even_with_old_node_modules(
+        tmp_path, monkeypatch):
+    """node_modules قديم (من خطوة سابقة) لا يلغي install: الاعتماديات
+    تتغير بين الخطوات (قياس حي الخطوة 325: symlink بلا marked ففشل
+    build بMODULE_NOT_FOUND رغم وجود node_modules)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path, with_node_modules=True)  # قديم ناقص
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["npm run build"], STEP110_CRITERIA)
+    assert outcome.failed_result is None
+    executed = [r["command"] for r in outcome.results]
+    assert executed == ["npm install", "npm run build"]
