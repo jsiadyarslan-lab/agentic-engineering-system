@@ -19,15 +19,16 @@ from pathlib import Path
 
 from roles.tool_failures import ToolFailure
 
-#: أوامر البناء المسموحة حصرًا — قائمة مغلقة (لا تفسير ولا مسارات).
-#: (W2-T25) npm run lint — خطط المصنع (v6/v7) تشترطه حرفيًا في المعايير
-#: ("`npm run lint` runs ESLint... ") وقائمة الإغلاق لم تكن تعرفه فلم
-#: يُستخرج ولم يُنفّذ والتزم المنفذ بالصدق («لم يُنفّذ — لا دليل») فرفض
-#: التحقق بحق. أمر محدود بطبيعته (ESLint يخرج بنفسه) بسقف مهلة 300ث.
+#: أوامر مسموحة حصرًا — قائمة مغلقة (لا تفسير ولا وسائط حرة).
+#: (W2-T25) npm run lint وnpx htmlhint وnode verify — تشترطها معايير
+#: خطط المصنع نصًّا فلم تكن تُنفّذ والتزم المنفذ بالصدق («لا دليل»).
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node --version", "npm --version",
     "npm install", "npm ci",
     "npm run build", "npm run preview", "npm run lint",
+    # (W2-T25) أدوات التحقق وسكربته — معايير خطوات التحقق تشترطها
+    # نصًا («npx htmlhint تعيد 0»، «فحص DOM عبر script») فلم تكن تُنفّذ.
+    "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
@@ -163,9 +164,9 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
             stage="TOOL_START", retryable=False,
             details={"command": command[:120]},
         )
-    missing = [
-        name for name in ("node", "npm") if resolve_build_tool(name) is None
-    ]
+    missing = [n for n in ("node", "npm") if resolve_build_tool(n) is None]
+    if command.startswith("npx") and resolve_build_tool("npx") is None:
+        missing.append("npx")
     if missing:
         raise ToolFailure(
             "run_build_command",
@@ -203,9 +204,14 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
                              encoding="utf-8")
         return result
 
-    argv = [npm_path, *command.split()[1:]] \
-        if command.startswith("npm") \
-        else [resolve_build_tool("node"), *command.split()[1:]]
+    # (W2-T25) npx كأداة ثالثة بجانب npm/node — أدوات التحقق تعبرها.
+    if command.startswith("npm"):
+        runner = npm_path
+    elif command.startswith("npx"):
+        runner = resolve_build_tool("npx")
+    else:
+        runner = resolve_build_tool("node")
+    argv = [runner, *command.split()[1:]]
     started = _time.monotonic()
     try:
         completed = _subprocess.run(  # noqa: S603 — argv من القائمة البيضاء

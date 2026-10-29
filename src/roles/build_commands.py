@@ -1,27 +1,18 @@
 """طور أوامر البناء الحقيقية (W2-T24) — npm يُنفَّذ فعليًا بأدلة صادقة.
 
-بطاقة W2-T23 حررت الخطوات الملفية وقالت في build_files.py حرفيًا:
-«نواتج أوامر لا يُختلق نصها — تُنتج بأوامر حقيقية (بطاقة لاحقة)» —
-هذه هي البطاقة. الخطوات التي تطلب معاييرها أوامرِ بناء (npm install /
-npm run build / npm run preview — نصًّا أو بعلامات نواتجها:
-node_modules/ وpackage-lock.json وdist/) تنفذ الأوامر فعلًا:
+بطاقة W2-T23 قالت في build_files.py حرفيًا: «نواتج أوامر لا يُختلق
+نصها — تُنتج بأوامر حقيقية (بطاقة لاحقة)» — هذه هي البطاقة. الخطوات
+التي تطلب معاييرها أوامر (نصًّا أو بعلامات نواتجها) تنفذها فعلًا:
 
-- ‎required_build_commands(): الأوامر التي تطلبها المعايير بترتيب
-  التبعية (install قبل build قبل preview) — بلا أوامر = مهمة على
-  مسارها الأصلي بلا أي تغيير في السلوك.
-- ‎gather_build_prerequisites(): مساحة كل خطوة مستقلة (projects/«pid»/
-  steps/«id») — ملفات الخطوات السابقة تُجلب إلى مساحة الخطوة الحالية:
-  نسخ للملفات المصدرية (package.json/tsconfig/src/public...) وsymlink
-  لنواتج الأوامر الثقيلة (node_modules/dist) بلا نسخها.
-- ‎run_build_commands_phase(): فحص الأدوات → التجميع → تنفيذ كل أمر
-  عبر run_tool("run_build_command") بأدلة exit_code/stdout/stderr
-  حقيقية → جمع نواتج المعايير الموجودة على القرص كأدلة (package-lock
-  .json، dist/index.html...).
+- required_build_commands(): أوامر المعايير بترتيب التبعية — بلا
+  أوامر = مهمة على مسارها الأصلي بلا تغيير سلوك.
+- gather_build_prerequisites(): ملفات الخطوات السابقة تُجلب لمساحة
+  الحالية (نسخ للمصدرية، symlink للثقيلة) بلا نسخها.
+- run_build_commands_phase(): فحص الأدوات → التجميع → التنفيذ عبر
+  run_tool بأدلة exit_code/stdout/stderr حقيقية → جمع النواتج.
 
-فقد node/npm ليس فشل خطوة بل عائق توفير: النتيجة تحمل توقيع
-BUILD_TOOLING_MISSING (مع استدعاء أداة مسجل) فيفتح المحرك حاجز
-PREFLIGHT_BLOCKED قابلًا للحل بإعادة الفحص بعد التثبيت — لا حرق
-موافقات مراجعة الخطة (امتداد آلية W1-T06).
+فقد node/npm عائق توفير لا فشل خطوة: توقيع BUILD_TOOLING_MISSING
+يفتح حاجز PREFLIGHT_BLOCKED قابلًا للحل بإعادة الفحص (W1-T06).
 """
 
 from __future__ import annotations
@@ -40,6 +31,10 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+run\s+preview", re.IGNORECASE), "npm run preview"),
     (re.compile(r"node\s+--version", re.IGNORECASE), "node --version"),
     (re.compile(r"npm\s+--version", re.IGNORECASE), "npm --version"),
+    # (W2-T25) أدوات التحقق وسكربته — معايير خطوات التحقق تشترطها نصًا.
+    (re.compile(r"npx\s+htmlhint", re.IGNORECASE), "npx --yes htmlhint *.html"),
+    (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
+    (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
 )
 #: علامات النواتج التي تستلزم أمرًا لم يُذكر نصًّا.
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -51,12 +46,14 @@ _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
     "npm install": 1, "npm run lint": 2, "npm run build": 3,
-    "npm run preview": 4,
+    "npm run preview": 4, "npx --yes htmlhint *.html": 5,
+    "node verify.js": 6, "node verify.mjs": 6,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
     "npm install": 600, "npm run lint": 300, "npm run build": 600,
-    "npm run preview": 90,
+    "npm run preview": 90, "npx --yes htmlhint *.html": 300,
+    "node verify.js": 120, "node verify.mjs": 120,
 }
 
 #: ملفات تُنسخ من الخطوات السابقة (المصدرية — صغيرة بالطبع).
@@ -99,15 +96,10 @@ def missing_build_tooling() -> list[str]:
 
 
 def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
-    """جلب متطلبات البناء من الخطوات السابقة إلى مساحة الخطوة الحالية.
-
-    مساحات الخطوات مستقلة بتصميم (أدلة معزولة لكل تنفيذ) — لكن أوامر
-    البناء تحتاج تراكم المشروع: المصدرية تُنسخ (إن غابت) وnode_modules/
-    dist تُوصل symlink (ثقيلة ونفس المضيف). لا يُستبدل ملف موجود: ما
-    أنشأته الخطوة الحالية (create_files) له الأولوية.
-
-    (W2-T25) مسارات مطلقة حصرًا: الرابط النسبي معلق (قياس 161) والجولة
-    التالية تصطدم Errno 17 لأن exists() لا يرى المعلق.
+    """جلب متطلبات البناء من الخطوات السابقة إلى مساحة الحالية:
+    المصدرية تُنسخ (إن غابت) والثقيلة (node_modules/dist) تُوصل symlink
+    بلا استبدال (ما أنشأته الخطوة الحالية أولًا). (W2-T25) مسارات
+    مطلقة حصرًا: الرابط النسبي معلق (قياس 161) يصطدم Errno 17 لاحقًا.
     """
     copied: list[str] = []
     linked: list[str] = []
@@ -267,6 +259,15 @@ def run_build_commands_phase(
     """
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
+
+    # (W2-T25) سكربت التحقق المكتوب يُشغَّل حين تطلب المعايير فحص DOM —
+    # الاسم اختيار النموذج (قياس 309: verify.js موجود ولم يُشغَّل أبدًا).
+    if re.search(r"querySelector|فحص DOM|DOM check",
+                 " ".join(map(str, acceptance_criteria or [])),
+                 re.IGNORECASE):
+        for name in ("verify.js", "verify.mjs"):
+            if (root / name).is_file() and f"node {name}" not in commands:
+                commands.append(f"node {name}")
 
     outcome = BuildPhaseOutcome(commands=list(commands))
     if not commands:

@@ -150,6 +150,9 @@ def _make_stub_tools(tmp_path: Path) -> Path:
     node = stub_dir / "node"
     node.write_text("#!/bin/sh\necho v22.0.0-stub\n")
     node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    npx = stub_dir / "npx"  # (W2-T25) أدوات التحقق تعبر npx
+    npx.write_text("#!/bin/sh\necho htmlhint: 0 errors\n")
+    npx.chmod(npx.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
     return stub_dir
 
 
@@ -583,3 +586,71 @@ def test_phase_includes_command_evidence_in_artifacts(tmp_path, monkeypatch):
     stderr_file = root / "evidence" / "build-npm-install-stderr.txt"
     assert stderr_file.is_file()
     assert stderr_file.read_text(encoding="utf-8").strip() == ""
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) أدوات التحقق — npx htmlhint وسكربت verify
+# ------------------------------------------------------------------ #
+
+def test_required_build_commands_htmlhint_validator():
+    """«npx htmlhint تعيد كود خروج 0» → أمر التحقق يُستخرج ويُنفّذ."""
+    commands = build_commands.required_build_commands([
+        "أداة سطر أوامر (مثل html-validate أو npx htmlhint) تعيد كود خروج 0",
+    ])
+    assert "npx --yes htmlhint *.html" in commands
+
+
+def test_required_build_commands_node_verify_script():
+    """«node verify.js» المذكور نصًا يُستخرج."""
+    commands = build_commands.required_build_commands([
+        "فحص DOM عبر script: node verify.js يتحقق querySelectorAll",
+    ])
+    assert "node verify.js" in commands
+
+
+def test_phase_runs_verify_script_when_criteria_demand_dom(tmp_path, monkeypatch):
+    """معايير DOM (querySelectorAll) + verify.js مكتوب → يُشغَّل فعليًا
+    بأدلة exit_code (قياس حي الخطوة 309: السكربت كُتب ولم يُشغَّل أبدًا
+    فحكم المراجع «Run log not provided»)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path)
+    (root / "verify.js").write_text(
+        "console.log('cards:', 3)", encoding="utf-8")
+    (root / "index.html").write_text(
+        '<article class="card">a</article>', encoding="utf-8")
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, [], [
+            "فحص DOM عبر script بسيط يؤكد "
+            "document.querySelectorAll('#latest .article-card').length === 6",
+        ])
+    assert outcome.failed_result is None
+    executed = [r["command"] for r in outcome.results]
+    assert "node verify.js" in executed
+    exit_json = root / "evidence" / "build-node-verify.js-exit.json"
+    assert exit_json.is_file()
+    record = json.loads(exit_json.read_text(encoding="utf-8"))
+    assert record["command"] == "node verify.js"
+    assert record["exit_code"] == 0
+
+
+def test_phase_no_verify_script_no_run(tmp_path, monkeypatch):
+    """لا سكربت ولا معايير DOM — لا تشغيل اختلاقي."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path)
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, [], ["File package.json exists"])
+    assert outcome.results == []
+    assert not (root / "evidence").exists() or \
+        not (root / "evidence" / "build-node-verify.js-exit.json").exists()
+
+
+def test_run_build_command_npx_whitelisted(tmp_path, monkeypatch):
+    """npx htmlhint عبر القائمة البيضاء — أدلة باسم الأمر على القرص."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    ctx = _ctx(tmp_path)
+    value = run_tool("run_build_command",
+                     {"command": "npx --yes htmlhint *.html",
+                      "timeout_s": 60}, ctx)
+    assert value["exit_code"] == 0
+    exit_json = tmp_path / "evidence" / "build-npx---yes-htmlhint-*.html-exit.json"
+    assert exit_json.is_file()
