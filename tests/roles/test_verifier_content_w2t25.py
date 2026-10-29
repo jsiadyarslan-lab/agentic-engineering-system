@@ -340,3 +340,32 @@ def test_json_summary_invalid_json_absent(tmp_path):
     entry = payload["facts"]["files"]["broken.json"]
     assert "json_summary" not in entry
     assert entry["exists"] is True
+
+
+def test_content_tail_reaches_verifier(tmp_path):
+    """«Media query @media (max-width: 600px)» في نهاية ملف كبير —
+    الرأس المبتور لا يراها والذيل يصل (قياس حي الخطوة 271)."""
+    css_body = "/* reset */\n* { box-sizing: border-box; margin: 0; }\n"
+    css_body += ".filler { color: #333; }\n" * 90  # >1800 chars
+    css_body += "@media (max-width: 600px) {\n  nav { flex-direction: column; }\n}\n"
+    root = tmp_path / "step271"
+    (root / "public" / "css").mkdir(parents=True)
+    css = root / "public" / "css" / "style.css"
+    css.write_text(css_body, encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "File `public/css/style.css` exists.",
+            "Media query @media (max-width: 600px) present.",
+        ],
+        artifacts=[str(css)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    facts = payload["facts"]["files"]["style.css"]
+    assert "@media (max-width: 600px)" in facts["content_tail"]
+    assert "@media" not in facts["content_head"]

@@ -204,7 +204,25 @@ class VerifierLive(LiveRoleBase):
     })
     #: سقف المقتطف وحد حجم الملف المقروء — أمان إحداثي معلن.
     _CONTENT_HEAD_LIMIT = 1800
+    #: (W2-T25) ذيل الملف — استعلامات الوسائط ونواتج البنية تعيش في
+    #: النهاية والمقتطف الأولي يعميها (قياس 271: @media غائبة عن head).
+    _CONTENT_TAIL_LIMIT = 600
     _CONTENT_FILE_LIMIT = 262_144
+
+    def _content_tail(self, path: Path) -> str | None:
+        """(W2-T25) آخر الملف النصي — تكملة الرأس للمعايير الختامية."""
+        try:
+            dotfile_text = path.name.startswith(".") and not path.suffix
+            if (path.suffix.lower() not in self._TEXT_EXTS
+                    and not dotfile_text):
+                return None
+            if path.stat().st_size > self._CONTENT_FILE_LIMIT:
+                return None
+            raw = path.read_bytes()[-self._CONTENT_TAIL_LIMIT:]
+            text = raw.decode("utf-8", "replace").strip()
+            return text if text or path.stat().st_size == 0 else None
+        except OSError:
+            return None
 
     def _json_summary(self, path: Path) -> dict | None:
         """(W2-T25) ملخص بنيوي ميكانيكي لملف JSON — الطول والمفاتيح
@@ -294,6 +312,9 @@ class VerifierLive(LiveRoleBase):
             head = self._content_head(path)
             if head is not None:
                 facts["files"][path.name]["content_head"] = head
+            tail = self._content_tail(path)
+            if tail is not None and tail != head:
+                facts["files"][path.name]["content_tail"] = tail
             if path.is_file():
                 summary = self._json_summary(path)
                 if summary is not None:
