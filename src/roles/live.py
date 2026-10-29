@@ -182,6 +182,17 @@ class VerifierLive(LiveRoleBase):
     PROMPT_NAME = "verifier"
     ROLE = "verifier"
 
+    #: (W2-T25) معايير الأدلة: «Directory src/pages/ exists» و
+    #: «contains @astrojs/ directory» — وجود الأدلة حقيقة ميكانيكية.
+    _DIR_CRITERION = re.compile(
+        r"Directory\s+([\w@.-]+(?:/[\w@.-]+)*)/?(?=\s+(?:exists|and)\b)",
+        re.IGNORECASE,
+    )
+    _DIR_CONTAINS = re.compile(
+        r"contains\s+([\w@.-]+(?:/[\w@.-]+)*)/?\s+directory",
+        re.IGNORECASE,
+    )
+
     #: فحوص ميكانيكية إضافية تُدمج في facts إن توفرت الدالة الخارجية.
     facts_builder: Any = None
 
@@ -256,6 +267,24 @@ class VerifierLive(LiveRoleBase):
                 facts.update(self.facts_builder(request))
             except Exception:  # noqa: BLE001 — الحقائق الإضافية اختيارية
                 pass
+        # (W2-T25) حقائق الأدلة الميكانيكية: «Directory src/pages/
+        # exists» و«contains @astrojs/ directory» — الوجود يُقاس من
+        # الأصل المشترك للأدلة (قياس 230: node_modules/@astrojs وsrc/pages
+        # موجودان فعلًا والمراجع أعمى عن الأدلة فحكم بالغياب).
+        if common:
+            base_root = Path(common)
+            dirs: dict[str, bool] = {}
+            for criterion in request.task_acceptance_criteria:
+                text = str(criterion)
+                for match in self._DIR_CRITERION.finditer(text):
+                    name = match.group(1)
+                    dirs[name] = (base_root / name).is_dir()
+                    for sub in self._DIR_CONTAINS.finditer(text):
+                        child = sub.group(1)
+                        dirs[f"{name}/{child}"] = (
+                            base_root / name / child).is_dir()
+            if dirs:
+                facts["directories"] = dirs
         payload = {
             "criteria": request.task_acceptance_criteria,
             "evidence_refs": request.evidence_refs[:40],

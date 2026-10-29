@@ -213,3 +213,61 @@ def test_install_log_evidence_reaches_verifier(tmp_path):
     assert facts["build-npm-install-stderr.txt"]["content_head"] == ""
     assert "added 2 packages" in facts[
         "build-npm-install-stdout.txt"]["content_head"]
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) حقائق الأدلة — معايير Directory
+# ------------------------------------------------------------------ #
+
+def test_directory_facts_reach_verifier(tmp_path):
+    """«Directory node_modules/ exists and contains @astrojs/ directory»
+    و«Directory src/pages/ exists» تتحقق من حقائق ميكانيكية — قياس حي
+    الخطوة 230: الأدلة موجودة فعلًا (node_modules/@astrojs + src/pages)
+    والمراجع أعمى عن الأدلة فحكم بالغياب مرتين وركود."""
+    root = tmp_path / "step230"
+    (root / "node_modules" / "@astrojs" / "compiler").mkdir(parents=True)
+    (root / "src" / "pages").mkdir(parents=True)
+    pkg = root / "package.json"
+    pkg.write_text('{"dependencies": {"astro": "^4.16.0"}}',
+                   encoding="utf-8")
+    cfg = root / "astro.config.mjs"
+    cfg.write_text("export default {}", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            'File package.json exists and contains "astro" in dependencies',
+            "Directory node_modules/ exists and contains @astrojs/ directory",
+            "Directory src/pages/ exists",
+        ],
+        artifacts=[str(pkg), str(cfg)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    dirs = payload["facts"]["directories"]
+    assert dirs["node_modules"] is True
+    assert dirs["node_modules/@astrojs"] is True
+    assert dirs["src/pages"] is True
+
+
+def test_directory_facts_false_when_missing(tmp_path):
+    """الدليل الغائب يظهر false — لا اختلاق وجود."""
+    root = tmp_path / "empty_step"
+    root.mkdir()
+    pkg = root / "package.json"
+    pkg.write_text("{}", encoding="utf-8")
+    router = _StubRouter({"verdict": "not_evidenced",
+                          "checks_performed": [], "missing_evidence": ["x"],
+                          "confidence": 0.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["Directory src/pages/ exists"],
+        artifacts=[str(pkg)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    assert payload["facts"]["directories"]["src/pages"] is False
