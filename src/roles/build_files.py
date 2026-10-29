@@ -116,9 +116,8 @@ def required_build_files(
 
 
 def _required_satisfied(required: str, seen: set[str]) -> bool:
-    """(W2-T25) حاضر؟ الحرفية وحدها كانت تُفشل معايير الأدلة: «Directory
-    src/app exists with layout.tsx» يستخرج المجرد والنموذج يكتب المتداخل
-    (قياس 189) — فحكم «غائبة» كان زورًا."""
+    """(W2-T25) حاضر؟ الحرفية وحدها كانت تُفشل معايير الأدلة (قياس 189):
+    المجرد يُستخرج والنموذج يكتب المتداخل — «غائبة» كانت زورًا."""
     if required in seen:
         return True
     if "/" in required:  # بمساره: لاحقة المسار نفسه، لا اسم مجرد بدليل آخر
@@ -129,13 +128,13 @@ def _required_satisfied(required: str, seen: set[str]) -> bool:
 def parse_created_files(
     text: str, required_files: list[str],
 ) -> list[tuple[str, str]]:
-    """تحليل رد الملفات: ‎### FILE: مسار ثم كتلة محتوى — يرفع
-    ValueError موصوفة عند أي خلل؛ الغائبة تُسمّى حرفيًا."""
+    """تحليل الرد: ‎### FILE: مسار ثم كتلة — ValueError موصوفة عند الخلل."""
     matches = list(_CREATE_FILE_HEADER.finditer(text))
     if not matches:
         raise ValueError("لا كتل ### FILE: في الرد")
     files: list[tuple[str, str]] = []
     seen: set[str] = set()
+    required_set = set(required_files)
     for index, match in enumerate(matches):
         # (W2-T25) تنظيف «./» رائد دون أكل نقطة ملف نقطي.
         path = match.group(1).strip()
@@ -143,7 +142,7 @@ def parse_created_files(
             path = path[2:]
         end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         body = text[match.end():end].strip()
-        # تقشير أسوار الكود من الحافتين (يتحمل الأسوار المزدوجة/الخارجية)
+        # تقشير أسوار الكود من الحافتين
         body_lines = body.splitlines()
         while body_lines and body_lines[0].strip().startswith("```"):
             body_lines.pop(0)
@@ -156,13 +155,17 @@ def parse_created_files(
             raise ValueError(f"مسار أطول من {_CREATE_MAX_PATH}: {path[:60]}")
         if path in seen:
             raise ValueError(f"ملف مكرر: {path}")
-        if (
+        # (W2-T25) المطلوب وحده العقد — الزائد الشاذ يُهمل (قياس 269).
+        wanted = path in required_set or Path(path).name in required_set
+        bad_ext = (
             Path(path).suffix.lower() not in _CREATE_ALLOWED_EXTS
-            and Path(path).name.lower() not in _CREATE_ALLOWED_DOTFILES
-        ):
-            raise ValueError(f"امتداد غير مسموح: {path[:80]}")
-        if not body.strip() and Path(path).name != ".gitkeep":
-            raise ValueError(f"ملف فارغ: {path[:80]}")  # .gitkeep علامة فراغها طبيعتها
+            and Path(path).name.lower() not in _CREATE_ALLOWED_DOTFILES)
+        if bad_ext or (not body.strip() and ".gitkeep" not in path):
+            if wanted:
+                raise ValueError(
+                    f"{'امتداد غير مسموح' if bad_ext else 'ملف فارغ'}:"
+                    f" {path[:80]}")
+            continue
         if len(body) > _CREATE_MAX_CHARS:
             raise ValueError(
                 f"الملف {path[:60]} يتجاوز {_CREATE_MAX_CHARS} حرفًا"

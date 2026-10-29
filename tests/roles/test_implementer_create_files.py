@@ -366,18 +366,20 @@ def test_parse_created_files_accepts_dotfiles():
 
 
 def test_parse_created_files_still_rejects_disallowed():
-    """امتداد غير مسموح يبقى مرفوضًا — الملفات النقطية استثناء معلن
-    بالاسم الكامل لا فتحة عشوائية."""
+    """امتداد غير مسموح لا يصل القرص أبدًا: الزائد يُهمل من الناتج
+    (لا يُكتب)؛ ورد كله شاذ = «لا ملفات صالحة» (W2-T25: الهمل
+    بدل فشل الطور كله — قياس 269 console.log)."""
     text = "### FILE: evil.exe\n```\nbinary\n```\n"
-    with pytest.raises(ValueError, match="امتداد غير مسموح"):
+    with pytest.raises(ValueError, match="لا ملفات صالحة"):
         build_files.parse_created_files(text, [])
 
 
 def test_parse_created_files_rejects_unknown_dotfile():
-    """dotfile خارج القائمة المعلنة يُرفض — لا تمرير أوسع."""
-    text = "### FILE: .secret\n```\nx\n```\n"
-    with pytest.raises(ValueError, match="امتداد غير مسموح"):
-        build_files.parse_created_files(text, [])
+    """dotfile خارج القائمة المعلنة لا يُكتب — يُهمل من الناتج."""
+    text = ("### FILE: .secret\n```\nx\n```\n"
+            "### FILE: ok.json\n```\n{}\n```\n")
+    files = build_files.parse_created_files(text, [])
+    assert [p for p, _ in files] == ["ok.json"]
 
 
 # ------------------------------------------------------------------ #
@@ -537,3 +539,35 @@ def test_parse_created_files_accepts_gitkeep_and_nested_dotfile():
     )
     files = _parse(text, ["articles/.gitkeep", "config/.prettierrc"])
     assert [p for p, _ in files] == ["articles/.gitkeep", "config/.prettierrc"]
+
+
+def test_parse_created_files_drops_bogus_extra_not_required():
+    """«### FILE: console.log» زائدًا (امتداد .log مسموح؟ لا) لا يُفشل
+    الطور ما دامت الملفات المطلوبة سليمة — قياس حي الخطوة 269: النموذج
+    كتب console.log زائدًا فرفض التحليل كل الرد بعد إعادته."""
+    text = (
+        "### FILE: verify.mjs\n"
+        "```js\n"
+        "import fs from 'node:fs';\n"
+        "console.log(JSON.stringify({ok: true}));\n"
+        "```\n"
+        "### FILE: console.log\n"
+        "```\n"
+        "some stray log\n"
+        "```\n"
+    )
+    files = _parse(text, ["verify.mjs"])
+    assert [p for p, _ in files] == ["verify.mjs"]
+
+
+def test_parse_created_files_required_bad_ext_still_fails():
+    """المطلوب نفسه بامتداد شاذ يبقى رفضًا صريحًا — لا إهمال للعقد."""
+    text = (
+        "### FILE: console.log\n"
+        "```\n"
+        "x\n"
+        "```\n"
+    )
+    with pytest.raises(ValueError) as err:
+        _parse(text, ["console.log"])
+    assert "امتداد غير مسموح" in str(err.value)
