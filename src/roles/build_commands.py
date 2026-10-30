@@ -1,17 +1,16 @@
 """طور أوامر البناء الحقيقية (W2-T24) — npm يُنفَّذ فعليًا بأدلة صادقة.
 
-بطاقة W2-T23 قالت في build_files.py حرفيًا: «نواتج أوامر لا يُختلق
-نصها — تُنتج بأوامر حقيقية (بطاقة لاحقة)» — هذه هي البطاقة. الخطوات
-التي تطلب معاييرها أوامر (نصًّا أو بعلامات نواتجها) تنفذها فعلًا:
+بطاقة W2-T23: «نواتج أوامر لا يُختلق نصها — تُنتج بأوامر حقيقية» —
+هذه هي البطاقة. الخطوات التي تطلب معاييرها أوامر تنفذها فعلًا:
 
 - required_build_commands(): أوامر المعايير بترتيب التبعية — بلا
-  أوامر = مهمة على مسارها الأصلي بلا تغيير سلوك.
-- gather_build_prerequisites(): ملفات الخطوات السابقة تُجلب لمساحة
-  الحالية (نسخ للمصدرية، symlink للثقيلة) بلا نسخها.
+  أوامر = مهمة على مسارها الأصلي بلا تغيير.
+- gather_build_prerequisites(): جلب ملفات الخطوات السابقة (نسخ
+  للمصدرية، symlink للثقيلة).
 - run_build_commands_phase(): فحص الأدوات → التجميع → التنفيذ عبر
-  run_tool بأدلة exit_code/stdout/stderr حقيقية → جمع النواتج.
+  run_tool بأدلة exit_code حقيقية → جمع النواتج.
 
-فقد node/npm عائق توفير لا فشل خطوة: توقيع BUILD_TOOLING_MISSING
+فقد الأدوات عائق توفير لا فشل خطوة: توقيع BUILD_TOOLING_MISSING
 يفتح حاجز PREFLIGHT_BLOCKED قابلًا للحل بإعادة الفحص (W1-T06).
 """
 
@@ -22,7 +21,7 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-#: الأوامر الصريحة التي تذكرها المعايير نصًّا → الأمر الموحد.
+#: الأوامر الصريحة في نص المعايير → الأمر الموحد.
 _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+install", re.IGNORECASE), "npm install"),
     (re.compile(r"npm\s+ci\b", re.IGNORECASE), "npm ci"),
@@ -35,6 +34,8 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npx\s+htmlhint", re.IGNORECASE), "npx --yes htmlhint *.html"),
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
+    (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
+    (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
 )
 #: علامات نواتج تستلزم أمرًا لم يُذكر نصًّا.
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -42,33 +43,34 @@ _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"package-lock\.json", re.IGNORECASE), "npm install"),
     (re.compile(r"\bdist/", re.IGNORECASE), "npm run build"),
 )
-#: ترتيب التبعية — install يسبق lint/build يسبق preview.
+#: ترتيب التبعية — install يسبق lint/build يسبق preview/التحقق.
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
     "npm install": 1, "npm run lint": 2, "npm run build": 3,
     "npm run preview": 4, "npx --yes htmlhint *.html": 5,
     "node verify.js": 6, "node verify.mjs": 6,
+    "pnpm install": 1, "pnpm dev": 4,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
     "npm install": 600, "npm run lint": 300, "npm run build": 600,
     "npm run preview": 90, "npx --yes htmlhint *.html": 300,
     "node verify.js": 120, "node verify.mjs": 120,
+    "pnpm install": 600, "pnpm dev": 90,
 }
 
-#: ملفات تُنسخ من الخطوات السابقة (المصدرية — صغيرة بالطبع).
+#: ملفات تُنسخ من الخطوات السابقة (المصدرية) وأدلة تُوصل symlink.
 _GATHER_FILES = (
     "package.json", "package-lock.json", "tsconfig.json",
     "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts",
 )
 _GATHER_DIRS = ("src", "public", "styles")
-#: نواتج ثقيلة تُوصل symlink لا نسخًا.
-_GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")
+_GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")  # ثقيلة symlink
 
 
 def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
     """أوامر المعايير + «npx tsc --version» الديناميكي — الفارغة =
-    مهمة بحث/ملفات والطور لا يعمل.
+    مهمة بلا أوامر والطور لا يعمل.
     """
     found: set[str] = set()
     for criterion in acceptance_criteria or []:
@@ -86,7 +88,7 @@ def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
 
 
 def missing_build_tooling() -> list[str]:
-    """الأدوات الغائبة فعليًا (node/npm) — من PATH والمسارات الشائعة."""
+    """الأدوات الغائبة فعليًا (node/npm) — من PATH والمسارات."""
     from roles.tools import resolve_build_tool
 
     return [
@@ -190,7 +192,7 @@ def collect_criterion_outputs(
 
 @dataclass
 class BuildPhaseOutcome:
-    """نتيجة طور أوامر البناء — المنفذ الحي يستهلكها نحيلًا."""
+    """نتيجة طور الأوامر — المنفذ الحي يستهلكها نحيلًا."""
 
     commands: list[str] = field(default_factory=list)
     results: list[dict] = field(default_factory=list)
@@ -200,8 +202,7 @@ class BuildPhaseOutcome:
     summary: str = ""
 
 
-def _tooling_missing_result(missing: list[str],
-                            commands: list[str]) -> object:
+def _tooling_missing_result(missing: list[str], commands: list[str]) -> object:
     from roles.implementer import ImplementerResult, ImplementerStatus
 
     message = (
@@ -278,14 +279,15 @@ def run_build_commands_phase(
     # (W2-T25) ci بلا lockfile (مشروع وليد) = install (قياس 388).
     if "npm ci" in effective and not (root / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    needs_deps = any(
-        command in ("npm run build", "npm run preview")
+    needs_deps = any(  # (W2-T25) pnpm dev كمعاينة أيضًا
+        command in ("npm run build", "npm run preview", "pnpm dev")
         for command in effective
     )
     if (needs_deps and "npm install" not in effective
-            and "npm ci" not in effective
+            and "npm ci" not in effective and "pnpm install" not in effective
             and (root / "package.json").is_file()):
-        effective.insert(0, "npm install")
+        effective.insert(0, "pnpm install" if "pnpm dev" in effective
+                         else "npm install")
 
     for command in effective:
         timeout = _COMMAND_TIMEOUTS.get(command, 300)
@@ -313,8 +315,7 @@ def run_build_commands_phase(
         })
 
     outcome.artifacts = collect_criterion_outputs(root, acceptance_criteria)
-    # (W2-T25) سجل الأوامر (install log) دليل يراه المراجع: معيار
-    # «No error output captured in install log» يحتاج الملف نفسه.
+    # (W2-T25) سجل الأوامر (install log) دليل يراه المراجع.
     ev_dir = root / "evidence"
     if ev_dir.is_dir():
         outcome.artifacts += sorted(

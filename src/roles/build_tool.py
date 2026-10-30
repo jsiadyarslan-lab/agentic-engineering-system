@@ -20,16 +20,14 @@ from pathlib import Path
 
 from roles.tool_failures import ToolFailure
 
-#: أوامر مسموحة حصرًا — قائمة مغلقة (لا تفسير ولا وسائط حرة).
-#: (W2-T25) npm run lint وnpx htmlhint وnode verify — تشترطها معايير
-#: خطط المصنع نصًّا فلم تكن تُنفّذ والتزم المنفذ بالصدق («لا دليل»).
+#: أوامر مسموحة حصرًا — قائمة مغلقة (لا تفسير ولا وسائط حرة). تشترطها
+#: معايير خطط المصنع نصًّا فلم تكن تُنفّذ والتزم المنفذ بالصدق («لا دليل»).
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node --version", "npm --version",
     "npm install", "npm ci",
     "npm run build", "npm run preview", "npm run lint",
-    # (W2-T25) أدوات التحقق وسكربته — معايير خطوات التحقق تشترطها
-    # نصًا («npx htmlhint تعيد 0»، «فحص DOM عبر script») فلم تكن تُنفّذ.
     "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
+    "pnpm install", "pnpm dev",  # (W2-T25) تشترطها معايير الخطط نصًّا
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
@@ -73,7 +71,7 @@ def _build_command_env(npm_path: str) -> dict:
 
 
 def _build_evidence_paths(ctx, command: str) -> tuple[Path, Path, Path]:
-    """مسارات أدلة الأمر داخل مساحة الخطوة (evidence/build-«slug»-*)."""
+    """مسارات أدلة الأمر: evidence/build-«slug»-{stdout,stderr,exit}."""
     slug = command.replace(" ", "-").replace("/", "-")
     evidence_dir = ctx.grant_root / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
@@ -84,11 +82,10 @@ def _build_evidence_paths(ctx, command: str) -> tuple[Path, Path, Path]:
     )
 
 
-def _run_preview_command(ctx, npm_path: str, timeout_s: float) -> dict:
-    """npm run preview: مراقبة مخرج Local/Network ثم قتل المجموعة.
-
-    نجاح المعيار هو «عملية تبدأ وتصرح بعنوانها» — لا خادم يبقى حيًا:
-    عند رؤية العنوان يُقتل أمرًا ويوثق preview_url_seen=true.
+def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
+                          label: str, timeout_s: float) -> dict:
+    """أمر معاينة (npm run preview / pnpm dev): مراقبة مخرج Local/Network
+    ثم قتل المجموعة. النجاح «عملية تبدأ وتصرح بعنوانها» لا خادم حي.
     """
     import os as _os
     import select as _select
@@ -98,8 +95,8 @@ def _run_preview_command(ctx, npm_path: str, timeout_s: float) -> dict:
 
     started = _time.monotonic()
     process = _subprocess.Popen(  # noqa: S603 — argv ثابت من القائمة البيضاء
-        [npm_path, "run", "preview"],
-        cwd=str(ctx.grant_root), env=_build_command_env(npm_path),
+        [runner_path, *argv_tail],
+        cwd=str(ctx.grant_root), env=_build_command_env(runner_path),
         stdout=_subprocess.PIPE, stderr=_subprocess.PIPE,
         start_new_session=True,
     )
@@ -136,7 +133,7 @@ def _run_preview_command(ctx, npm_path: str, timeout_s: float) -> dict:
         except _subprocess.TimeoutExpired:  # pragma: no cover — قتل بالفعل
             pass
     return {
-        "command": "npm run preview",
+        "command": label,
         "exit_code": 0 if url_seen else 124,
         "duration_s": round(_time.monotonic() - started, 2),
         "preview_url_seen": url_seen,
@@ -145,15 +142,11 @@ def _run_preview_command(ctx, npm_path: str, timeout_s: float) -> dict:
 
 
 def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
-    """أداة سطر أوامر تُنفّذ أمرًا حقيقيًا bounded بأدلة exit_code/stdout/stderr
-    داخل مساحة الخطوة. قائمة مغلقة + قاعدة إصدارات npx — لا وسائط حرة.
-    """
     import subprocess as _subprocess
     import time as _time
 
     command = str(command or "").strip()
-    # (W2-T25) فحص إصدار npx ديناميكي آمن بالطبع (قراءة فقط):
-    # «npx tsc --version» و«npx prisma --version» — معايير خطوات التحقق.
+    # (W2-T25) فحص إصدار npx ديناميكي آمن (قراءة فقط) — معايير التحقق.
     if (command not in BUILD_COMMAND_WHITELIST
             and not re.fullmatch(r"npx --yes [\w@/.-]+ --version", command)):
         raise ToolFailure(
@@ -167,6 +160,8 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
     missing = [n for n in ("node", "npm") if resolve_build_tool(n) is None]
     if command.startswith("npx") and resolve_build_tool("npx") is None:
         missing.append("npx")
+    if command.startswith("pnpm") and resolve_build_tool("pnpm") is None:
+        missing.append("pnpm")
     if missing:
         raise ToolFailure(
             "run_build_command",
@@ -180,12 +175,15 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
     npm_path = resolve_build_tool("npm")
     timeout = float(timeout_s) if timeout_s and timeout_s > 0 else 600.0
 
-    if command == "npm run preview":
-        result = _run_preview_command(ctx, npm_path, timeout)
+    if command in ("npm run preview", "pnpm dev"):  # (W2-T25) dev=معاينة
+        runner, tail = (npm_path, ["run", "preview"]) \
+            if command.startswith("npm") \
+            else (resolve_build_tool("pnpm"), ["dev"])
+        result = _run_preview_command(ctx, runner, tail, command, timeout)
         if not result["preview_url_seen"]:
             raise ToolFailure(
                 "run_build_command",
-                "npm run preview لم يصرح بعنوان Local/Network خلال "
+                f"{command} لم يصرح بعنوان Local/Network خلال "
                 f"{timeout:.0f}ث — "
                 + result["output_tail"][-200:],
                 failure_class="TOOL_FAILURE",
@@ -204,11 +202,11 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
                              encoding="utf-8")
         return result
 
-    # (W2-T25) npx كأداة ثالثة بجانب npm/node — أدوات التحقق تعبرها.
+    # (W2-T25) npx/pnpm أدوات بجانب npm/node — أدوات التحقق تعبرها.
     if command.startswith("npm"):
         runner = npm_path
-    elif command.startswith("npx"):
-        runner = resolve_build_tool("npx")
+    elif command.startswith(("npx", "pnpm")):
+        runner = resolve_build_tool(command.split()[0])
     else:
         runner = resolve_build_tool("node")
     argv = [runner, *command.split()[1:]]

@@ -153,6 +153,9 @@ def _make_stub_tools(tmp_path: Path) -> Path:
     npx = stub_dir / "npx"  # (W2-T25) أدوات التحقق تعبر npx
     npx.write_text("#!/bin/sh\necho htmlhint: 0 errors\n")
     npx.chmod(npx.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    pnpm = stub_dir / "pnpm"  # (W2-T25) pnpm dev كمعاينة
+    pnpm.write_text("#!/bin/sh\ncase \"$1\" in dev) echo '  Local: http://localhost:3000/'; sleep 20 ;; *) echo pnpm-$1 ;; esac\n")
+    pnpm.chmod(pnpm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
     return stub_dir
 
 
@@ -717,3 +720,29 @@ def test_phase_ci_without_lockfile_becomes_install(tmp_path, monkeypatch):
     executed = [r["command"] for r in outcome.results]
     assert executed == ["npm install"]
     assert (root / "package-lock.json").is_file()
+
+
+def test_required_build_commands_pnpm():
+    """«`pnpm dev` shows styled page» → pnpm install + pnpm dev."""
+    commands = build_commands.required_build_commands([
+        "tailwind.config.ts defines colors, typography, spacing, breakpoints",
+        "postcss.config.js exists with tailwindcss and autoprefixer",
+        "app/globals.css imports @tailwind base/components/utilities",
+        "`pnpm dev` shows styled page without errors",
+    ])
+    assert "pnpm dev" in commands
+
+
+def test_phase_pnpm_dev_gets_pnpm_install(tmp_path, monkeypatch):
+    """pnpm dev بلا اعتماديات مثبتة ⇒ pnpm install يُقحم قبله."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path, with_node_modules=False)
+    (root / "node_modules").unlink(missing_ok=True) \
+        if (root / "node_modules").exists() else None
+    import shutil as _sh
+    _sh.rmtree(root / "node_modules", ignore_errors=True)
+    (root / "package.json").write_text('{"name": "x"}', encoding="utf-8")
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["pnpm dev"], ["`pnpm dev` shows styled page"])
+    executed = [r["command"] for r in outcome.results]
+    assert executed == ["pnpm install", "pnpm dev"]
