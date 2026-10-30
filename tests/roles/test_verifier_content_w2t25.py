@@ -364,6 +364,32 @@ def test_html_summary_reaches_verifier(tmp_path):
     assert summary["class_counts"]["site-header"] == 1
 
 
+def test_directory_facts_reversed_and_arabic(tmp_path):
+    """صيغ الدليل المعكوسة والعربية تُنتج facts.directories — قياس حي
+    الخطوة 555 (التنفيذ 348): المراجع صدّق «No directory listing facts
+    supplied» على معيار دليل لم يطابق صيغة Directory X exists الحصرية."""
+    import json as _json
+    root = tmp_path / "step555"
+    root.mkdir()
+    art = root / "T1-report.md"
+    art.write_text("# r", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "`.next` directory exists with production build output",
+            "دليل .next موجود",
+        ],
+        artifacts=[str(art)],
+        evidence_refs=[],
+    ))
+    payload = _json.loads(router.payloads[0])
+    dirs = payload["facts"]["directories"]
+    assert dirs[".next"] is False  # غير موجود في هذه المساحة التجريبية
+
+
 def test_html_summary_absent_for_non_html(tmp_path):
     """غير HTML — لا ملخص مختلق."""
     root = tmp_path / "nohtml"

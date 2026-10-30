@@ -34,14 +34,14 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),  # (W2-T25 492)
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
-    # (W2-T25) اختبارات المشروع (npm test في backend/ — قياس 497).
-    (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE), "npm test"),
+    (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE),
+     "npm test"),  # (W2-T25 497) اختبارات المشروع
 )
-#: علامات نواتج تستلزم أمرًا لم يُذكر نصًّا.
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"node_modules/", re.IGNORECASE), "npm install"),
-    (re.compile(r"package-lock\.json", re.IGNORECASE), "npm install"),
-    (re.compile(r"\bdist/", re.IGNORECASE), "npm run build"),
+    (re.compile(r"node_modules/|package-lock\.json", re.IGNORECASE),
+     "npm install"),
+    (re.compile(r"\bdist/|\.next\b|build\.log", re.IGNORECASE),
+     "npm run build"),  # (W2-T25 555) الناتج يستلزم الأمر
 )
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,

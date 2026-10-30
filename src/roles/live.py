@@ -214,6 +214,12 @@ class VerifierLive(LiveRoleBase):
         r"Directory\s+([\w@.-]+(?:/[\w@.-]+)*)/?(?=\s+(?:exists|and)\b)",
         re.IGNORECASE,
     )
+    #: (W2-T25 قياس 555) صيغ الدليل المعكوسة والعربية — «.next directory
+    #: exists» و«دليل .next موجود» لم تُطابق فغابت facts.directories.
+    _DIR_REVERSED = re.compile(
+        r"([\w@./-]+)/?\s+directory\s+exists", re.IGNORECASE)
+    _DIR_ARABIC = re.compile(
+        r"دليل\s+`?([\w@./-]+)`?\s+موجود", re.IGNORECASE)
     _DIR_CONTAINS = re.compile(
         r"contains\s+([\w@.-]+(?:/[\w@.-]+)*)/?\s+directory",
         re.IGNORECASE,
@@ -448,9 +454,11 @@ class VerifierLive(LiveRoleBase):
             dirs: dict[str, bool] = {}
             for criterion in request.task_acceptance_criteria:
                 text = str(criterion)
-                for match in self._DIR_CRITERION.finditer(text):
-                    name = match.group(1)
-                    dirs[name] = (base_root / name).is_dir()
+                for pattern in (self._DIR_CRITERION, self._DIR_REVERSED,
+                                self._DIR_ARABIC):
+                    for match in pattern.finditer(text):
+                        name = match.group(1)
+                        dirs[name] = (base_root / name).is_dir()
                     for sub in self._DIR_CONTAINS.finditer(text):
                         child = sub.group(1)
                         dirs[f"{name}/{child}"] = (
