@@ -210,6 +210,17 @@ def test_required_build_commands_step562_tsc_noemit():
         "npx --yes tsc --noEmit"]
 
 
+def test_required_build_commands_step632_pnpm_build():
+    """معايير 632 الحرفية: اختصار pnpm build يُستخرج — قياس حي (التنفيذان
+    382/384): «Build command log files for pnpm build» والخطط المولدة
+    بـpnpm تكتب الاختصار (pnpm build لا pnpm run build) فلم يُستخرج."""
+    criteria = ["pnpm build completes without TypeScript or build errors"]
+    assert build_commands.required_build_commands(criteria) == ["pnpm build"]
+    # «pnpm run build» يستخرج الأمرين (npm substring داخل pnpm) — لا ضرر
+    assert "pnpm build" in build_commands.required_build_commands([
+        "pnpm run build exits 0"])
+
+
 def test_required_build_commands_step597_pnpm_lint():
     """معايير 597 الحرفية: pnpm lint يُستخرج — قياس حي (التنفيذ 371):
     «No mechanical evidence (build log) for pnpm lint command exit code
