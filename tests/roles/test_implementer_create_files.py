@@ -545,9 +545,9 @@ def test_parse_created_files_accepts_gitkeep_and_nested_dotfile():
 
 
 def test_parse_created_files_drops_bogus_extra_not_required():
-    """«### FILE: console.log» زائدًا (امتداد .log مسموح؟ لا) لا يُفشل
-    الطور ما دامت الملفات المطلوبة سليمة — قياس حي الخطوة 269: النموذج
-    كتب console.log زائدًا فرفض التحليل كل الرد بعد إعادته."""
+    """«### FILE: console.log» زائدًا: .log مسموح الآن (قياس 492) فيُكتب
+    ضجيجًا نصيًا هادئًا؛ والامتداد الشاذ حقًا (exe) يُهمل — قياس 269:
+    الهمل لا يُفشل الطور ما دامت الملفات المطلوبة سليمة."""
     text = (
         "### FILE: verify.mjs\n"
         "```js\n"
@@ -558,22 +558,60 @@ def test_parse_created_files_drops_bogus_extra_not_required():
         "```\n"
         "some stray log\n"
         "```\n"
+        "### FILE: evil.exe\n"
+        "```\n"
+        "binary\n"
+        "```\n"
     )
     files = _parse(text, ["verify.mjs"])
-    assert [p for p, _ in files] == ["verify.mjs"]
+    assert [p for p, _ in files] == ["verify.mjs", "console.log"]
 
 
 def test_parse_created_files_required_bad_ext_still_fails():
-    """المطلوب نفسه بامتداد شاذ يبقى رفضًا صريحًا — لا إهمال للعقد."""
+    """المطلوب نفسه بامتداد شاذ يبقى رفضًا صريحًا — لا إهمال للعقد
+    (.log صار مسموحًا بقياس 492 فمثال العقد exe)."""
     text = (
-        "### FILE: console.log\n"
+        "### FILE: app.exe\n"
         "```\n"
         "x\n"
         "```\n"
     )
     with pytest.raises(ValueError) as err:
-        _parse(text, ["console.log"])
+        _parse(text, ["app.exe"])
     assert "امتداد غير مسموح" in str(err.value)
+
+
+def test_required_build_files_log_evidence():
+    """«File evidence/server-start.log exists containing '...'» يستخرج
+    دليلًا مطلوبًا (قياس حي الخطوة 492)."""
+    criteria = [
+        "File evidence/server-start.log exists containing "
+        "'Server running on port 3000'",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "evidence/server-start.log" in req
+
+
+def test_parse_created_files_required_log_evidence_writes():
+    """سجل الأدلة المطلوب يُكتب — قياس حي الخطوة 492 (التنفيذ 289):
+    المطلوب evidence/server-start.log رُفض امتداده ففشل الطور كله بعد
+    إعادة واحدة (ROLE_SYSTEM_FAULT) والدورة أعادت الخطة كاملة؛
+    والمستخرِج (_BUILD_FILENAME) والمدقق (_FILE_TOKEN) والمراجع
+    (_TEXT_EXTS) تعتبر .log نصًا مشروعًا فكان الرفض تناقضًا محضًا."""
+    text = (
+        "### FILE: server.js\n"
+        "```js\n"
+        "console.log('Server running on port 3000');\n"
+        "```\n"
+        "### FILE: evidence/server-start.log\n"
+        "```\n"
+        "Server running on port 3000\n"
+        "```\n"
+    )
+    files = _parse(text, ["server.js", "evidence/server-start.log"])
+    assert [p for p, _ in files] == [
+        "server.js", "evidence/server-start.log"]
+    assert "Server running on port 3000" in files[1][1]
 
 
 def test_parse_created_files_empty_required_css_legal():

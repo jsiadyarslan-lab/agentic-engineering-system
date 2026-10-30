@@ -5,8 +5,7 @@
 
 - required_build_commands(): أوامر المعايير بترتيب التبعية — بلا
   أوامر = مهمة على مسارها الأصلي بلا تغيير.
-- gather_build_prerequisites(): جلب ملفات الخطوات السابقة (نسخ
-  للمصدرية، symlink للثقيلة).
+- gather_build_prerequisites(): جلب ملفات الخطوات السابقة (نسخ/symlink).
 - run_build_commands_phase(): فحص الأدوات → التجميع → التنفيذ عبر
   run_tool بأدلة exit_code حقيقية → جمع النواتج.
 
@@ -34,6 +33,8 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npx\s+htmlhint", re.IGNORECASE), "npx --yes htmlhint *.html"),
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
+    # (W2-T25) خادم التحقق المباشر (قياس 492): يُنفَّذ بمراقبة الربط.
+    (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
 )
@@ -48,21 +49,21 @@ _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
     "npm install": 1, "npm run lint": 2, "npm run build": 3,
     "npm run preview": 4, "npx --yes htmlhint *.html": 5,
-    "node verify.js": 6, "node verify.mjs": 6,
+    "node verify.js": 6, "node verify.mjs": 6, "node server.js": 7,
     "pnpm install": 1, "pnpm dev": 4,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
     "npm install": 600, "npm run lint": 300, "npm run build": 600,
     "npm run preview": 90, "npx --yes htmlhint *.html": 300,
-    "node verify.js": 120, "node verify.mjs": 120,
+    "node verify.js": 120, "node verify.mjs": 120, "node server.js": 60,
     "pnpm install": 600, "pnpm dev": 90,
 }
 
 #: ملفات تُنسخ من الخطوات السابقة (المصدرية) وأدلة تُوصل symlink.
 _GATHER_FILES = (
     "package.json", "package-lock.json", "tsconfig.json",
-    "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts",
+    "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts", "server.js",
 )
 _GATHER_DIRS = ("src", "public", "styles")
 _GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")  # ثقيلة symlink
@@ -279,10 +280,9 @@ def run_build_commands_phase(
     # (W2-T25) ci بلا lockfile (مشروع وليد) = install (قياس 388).
     if "npm ci" in effective and not (root / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    needs_deps = any(  # (W2-T25) pnpm dev كمعاينة أيضًا
-        command in ("npm run build", "npm run preview", "pnpm dev")
-        for command in effective
-    )
+    needs_deps = any(  # (W2-T25) dev معاينة؛ node server.js خادم (492)
+        command in ("npm run build", "npm run preview", "pnpm dev",
+                    "node server.js") for command in effective)
     if (needs_deps and "npm install" not in effective
             and "npm ci" not in effective and "pnpm install" not in effective
             and (root / "package.json").is_file()):

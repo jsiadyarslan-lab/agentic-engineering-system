@@ -40,6 +40,15 @@ STEP110_CRITERIA = [
     "No TypeScript errors in build output",
 ]
 
+#: (W2-T25) معايير الخطوة 492 الحرفية (خطة v50) — تحقق خادم Express.
+STEP492_CRITERIA = [
+    "Command `node server.js` starts and binds to port 3000 "
+    "(verified by stdout containing 'Server running on port 3000')",
+    "HTTP GET to http://localhost:3000/api/articles returns 200 "
+    "and JSON array matching seed data",
+    "Process terminates cleanly on SIGINT",
+]
+
 
 class FakeRouter:
     """موجّه مسجَّل — يعيد النصوص بالترتيب ويعدّ الاستدعاءات."""
@@ -70,6 +79,14 @@ def test_required_build_commands_step110_order():
     """معايير 110: build قبل preview (ترتيب التبعية)."""
     commands = build_commands.required_build_commands(STEP110_CRITERIA)
     assert commands == ["npm run build", "npm run preview"]
+
+
+def test_required_build_commands_step492_server():
+    """معايير 492 الحرفية: خادم Express يُستخرج أمر تشغيله الفعلي —
+    قياس حي (التنفيذ 288): الطور لم يستخرج شيئًا فلم يُشغّل الخادم
+    أصلًا والتدقيق حكم بالمفقود والدورة أعادت الخطة كاملة."""
+    commands = build_commands.required_build_commands(STEP492_CRITERIA)
+    assert commands == ["node server.js"]
 
 
 def test_required_build_commands_research_empty():
@@ -123,6 +140,19 @@ def test_gather_prerequisites_never_overwrites_current(tmp_path):
     build_commands.gather_build_prerequisites(root)
     assert json.loads(
         (root / "package.json").read_text())["name"] == "current"
+
+
+def test_gather_prerequisites_copies_server_js(tmp_path):
+    """server.js من خطوة سابقة يُجلب لخطوة التحقق (قياس 492: المدقق
+    طلب الملف حاضرًا في أدلة الخطوة 492 وهو في مساحة الخطوة 491)."""
+    steps = tmp_path / "projects" / "3" / "steps"
+    (steps / "491").mkdir(parents=True)
+    (steps / "491" / "server.js").write_text(
+        "console.log('Server running on port 3000');\n")
+    (steps / "492").mkdir()
+    gathered = build_commands.gather_build_prerequisites(steps / "492")
+    assert (steps / "492" / "server.js").is_file()
+    assert "server.js" in gathered["copied"]
 
 
 # ------------------------------------------------------------------ #
@@ -251,6 +281,37 @@ def test_run_build_command_preview_watches_url(tmp_path, monkeypatch):
     assert "Local" in exit_json.read_text()
 
 
+def test_run_build_command_node_server_watches_binding(
+        tmp_path, monkeypatch):
+    """node server.js: رؤية سطر البدء تُثبت الربط ويُقتل الخادم — stdout
+    حقيقي في الأدلة (قياس 492: التحقق بالتنفيذ الفعلي لا بالوصف)."""
+    import time as _time
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    node = stub_dir / "node"
+    node.write_text(
+        "#!/bin/sh\n"
+        "echo 'Server running on port 3000'\n"
+        "sleep 30\n"
+    )
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    npm = stub_dir / "npm"
+    npm.write_text("#!/bin/sh\necho stub-npm\n")
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    started = _time.monotonic()
+    value = run_tool("run_build_command",
+                     {"command": "node server.js", "timeout_s": 30},
+                     _ctx(tmp_path))
+    elapsed = _time.monotonic() - started
+    assert value["preview_url_seen"] is True
+    assert value["exit_code"] == 0
+    assert elapsed < 20, "الخادم يُقتل فور سطر البدء لا بعد المهل"
+    stdout_txt = tmp_path / "evidence" / "build-node-server.js-stdout.txt"
+    assert "Server running on port 3000" in stdout_txt.read_text()
+
+
 def test_run_build_command_sanitized_env_no_secrets(tmp_path, monkeypatch):
     """بيئة الأمر منظفة — مفاتيح الخدمة لا تصل سكربتات npm."""
     from roles import tools as tools_mod
@@ -319,6 +380,38 @@ def test_phase_ensures_install_before_build(tmp_path, monkeypatch):
     assert (root / "dist" / "index.html").is_file()
     artifact_names = {a.name for a in outcome.artifacts}
     assert "index.html" in artifact_names
+
+
+def test_phase_node_server_gathers_and_evidences(tmp_path, monkeypatch):
+    """طور كامل لخطوة تحقق خادم (492): الجلب + التشغيل الحقيقي + أدلة
+    stdout الفعلية — الخادم الذي لا يصرح بسطر بدء يفشل بصدق."""
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    node = stub_dir / "node"
+    node.write_text(
+        "#!/bin/sh\n"
+        "echo 'Server running on port 3000'\n"
+        "sleep 30\n"
+    )
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    npm = stub_dir / "npm"
+    npm.write_text("#!/bin/sh\necho stub-npm\n")
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    steps = tmp_path / "projects" / "3" / "steps"
+    (steps / "491").mkdir(parents=True)
+    (steps / "491" / "server.js").write_text(
+        "console.log('Server running on port 3000');\n")
+    root = steps / "492"
+    root.mkdir()
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["node server.js"], STEP492_CRITERIA)
+    assert outcome.failed_result is None
+    assert outcome.results[0]["preview_url_seen"] is True
+    assert (root / "server.js").is_file(), "الجلب نسخ خادم الخطوة السابقة"
+    stdout_txt = root / "evidence" / "build-node-server.js-stdout.txt"
+    assert "Server running on port 3000" in stdout_txt.read_text()
 
 
 REPORT_MD_103 = (

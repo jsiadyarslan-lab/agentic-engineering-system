@@ -27,13 +27,15 @@ BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "npm install", "npm ci",
     "npm run build", "npm run preview", "npm run lint",
     "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
-    "pnpm install", "pnpm dev",  # (W2-T25) تشترطها معايير الخطط نصًّا
+    "pnpm install", "pnpm dev", "node server.js",  # (W2-T25) 492
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
 #: سقوف الأدلة المكتوبة (حد أقصى للنص المحفوظ من مخرجات الأمر).
 _BUILD_EVIDENCE_MAX_CHARS = 200_000
-_BUILD_PREVIEW_URL_HINTS = (b"Local", b"Network")
+#: (W2-T25) أسطر بدء الخادم/المعاينة — قياس 492: الربط يُثبت بالسطر.
+_BUILD_PREVIEW_URL_HINTS = (b"Local", b"Network", b"Server running",
+                            b"listening", b"Listening")
 
 
 def resolve_build_tool(name: str) -> str | None:
@@ -84,8 +86,8 @@ def _build_evidence_paths(ctx, command: str) -> tuple[Path, Path, Path]:
 
 def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
                           label: str, timeout_s: float) -> dict:
-    """أمر معاينة (npm run preview / pnpm dev): مراقبة مخرج Local/Network
-    ثم قتل المجموعة. النجاح «عملية تبدأ وتصرح بعنوانها» لا خادم حي.
+    """أمر معاينة/خادم (preview / pnpm dev / node server.js): مراقبة
+    سطر البدء ثم قتل المجموعة — النجاح «عملية تبدأ وتصرح ببدئها».
     """
     import os as _os
     import select as _select
@@ -175,16 +177,19 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
     npm_path = resolve_build_tool("npm")
     timeout = float(timeout_s) if timeout_s and timeout_s > 0 else 600.0
 
-    if command in ("npm run preview", "pnpm dev"):  # (W2-T25) dev=معاينة
+    if command in ("npm run preview", "pnpm dev", "node server.js"):
+        # (W2-T25) dev=معاينة؛ والخادم المباشر خادم تحقق (قياس 492).
         runner, tail = (npm_path, ["run", "preview"]) \
             if command.startswith("npm") \
+            else (resolve_build_tool("node"), command.split()[1:]) \
+            if command.startswith("node") \
             else (resolve_build_tool("pnpm"), ["dev"])
         result = _run_preview_command(ctx, runner, tail, command, timeout)
         if not result["preview_url_seen"]:
             raise ToolFailure(
                 "run_build_command",
-                f"{command} لم يصرح بعنوان Local/Network خلال "
-                f"{timeout:.0f}ث — "
+                f"{command} لم يصرح بسطر بدء (Local/Network/Server"
+                f" running) خلال {timeout:.0f}ث — "
                 + result["output_tail"][-200:],
                 failure_class="TOOL_FAILURE",
                 reason="BUILD_COMMAND_FAILED",
@@ -250,8 +255,5 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
     return record
 
 
-__all__ = [
-    "BUILD_COMMAND_WHITELIST",
-    "resolve_build_tool",
-    "run_build_command",
-]
+__all__ = ["BUILD_COMMAND_WHITELIST", "resolve_build_tool",
+           "run_build_command"]

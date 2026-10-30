@@ -52,10 +52,13 @@ _CREATE_ALLOWED_DOTFILES = frozenset({
     ".prettierignore", ".eslintignore", ".gitkeep",})
 #: صيغة رد الإنشاء (نمط missions_textstats): ‎### FILE: مسار
 _CREATE_FILE_HEADER = re.compile(r"^###\s+FILE:\s*(\S+)\s*$", re.MULTILINE)
+#: (W2-T25) ‎.log سجل أدلة نصي: المستخرِج (_BUILD_FILENAME) والمدقق
+#: (_FILE_TOKEN) والمراجع (_TEXT_EXTS) تعتبره مشروعًا — رفض كتابته
+#: كان تناقضًا ميكانيكيًا (قياس 492: evidence/server-start.log).
 _CREATE_ALLOWED_EXTS = frozenset({
     ".astro", ".mjs", ".cjs", ".js", ".ts", ".tsx", ".jsx", ".css",
     ".html", ".json", ".md", ".mdx", ".txt", ".toml", ".yaml", ".yml",
-    ".xml", ".csv", ".py", ".cfg", ".env", ".d.ts", ".svg",
+    ".xml", ".csv", ".py", ".cfg", ".env", ".d.ts", ".svg", ".log",
 })
 #: نواتج أوامر لا يُختلق نصها — تُنتج بأوامر حقيقية (بطاقة لاحقة)
 _CREATE_GENERATED_PREFIXES = ("node_modules/", "dist/", "build/", ".astro/")
@@ -309,11 +312,6 @@ def write_sources_file(ctx, root: Path, report_md: str) -> Path | None:
     return root / "sources.json"
 
 
-__all__ = [
-    "create_files_phase",
-    "materials_with_created",
-    "own_artifact_names",
-    "parse_created_files",
-    "required_build_files",
-    "write_sources_file",
-]
+__all__ = ["create_files_phase", "materials_with_created",
+           "own_artifact_names", "parse_created_files",
+           "required_build_files", "write_sources_file"]
