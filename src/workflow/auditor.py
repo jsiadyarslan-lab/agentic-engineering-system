@@ -25,10 +25,18 @@ _FILE_TOKEN = re.compile(
     r"|svg|png|jpe?g|webp|gif|ico|mjs|cjs|jsx?|tsx?|css|astro|env)(?!\w)"
 )
 
+#: (W2-T25) «Console.log» استدعاء JS API لا اسم ملف — الامتداد log
+#: يجذبه زورًا من رمز الملفات (قياس 458: script.js يحقق المعيار
+#: فعلًا بسطر console.log والمدقق حكم بالمفقود فتصعيد زور).
+_JS_API_DOT = re.compile(r"(?i)\bconsole\.log\b")
+
 
 def _criterion_files(criterion: str) -> list[str]:
-    """الملفات المذكورة حرفيًا في المعيار — القابل للفحص الميكانيكي."""
-    return _FILE_TOKEN.findall(criterion)
+    """الملفات المذكورة حرفيًا في المعيار — القابل للفحص الميكانيكي.
+
+    (W2-T25) استدعاءات console.log تُنزَح أولًا — ليست ملفًا.
+    """
+    return _FILE_TOKEN.findall(_JS_API_DOT.sub(" ", criterion))
 
 
 def _name_in_files(name: str, files: dict) -> bool:

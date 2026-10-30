@@ -96,3 +96,53 @@ def test_audit_mdx_criterion_satisfied():
         "3 .mdx files exist (e.g., breaking-news.mdx, tech-update.mdx, "
         "sports-highlights.mdx) each with frontmatter: title, date, "
         "excerpt, slug", evidence)
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) «Console.log» استدعاء JS API لا اسم ملف
+# ------------------------------------------------------------------
+
+def test_audit_step_console_log_api_not_missing():
+    """«Console.log confirms initialization» ليست مطلب ملف — قياس حي
+    الخطوة 458: script.js يحقق المعيار فعلًا (سطر console.log) والمدقق
+    الميكانيكي استخرج Console.log كاسم ملف (امتداد log في الرمز) فحكم
+    missing وPARTIAL رغم دورة EVIDENCED كاملة — توقيع 458 حرفيًا."""
+    step = {
+        "objective": "Create script.js with mobile navigation toggle logic",
+        "acceptance_criteria": [
+            "File script.js exists",
+            "Linked in index.html before </body>",
+            "Selects hamburger button and nav menu by ID/class",
+            "Adds click listener toggling .open class on nav menu",
+            "Updates aria-expanded attribute on button",
+            "Adds click-outside listener to close menu",
+            "Console.log confirms initialization",
+        ],
+    }
+    evidence = {
+        "files": {
+            "script.js": {"sha256": "a" * 64, "bytes": 898},
+            "index.html": {"sha256": "b" * 64, "bytes": 1233},
+            "T1-report.md": {"sha256": "c" * 64, "bytes": 2000},
+        },
+        "tool_calls": [{"tool": "write_file"}],
+        "verification": {"final_state": "EVIDENCED"},
+        "verdict": "PASS",
+        "final_state": "EVIDENCED",
+        "evidence_sha256": "d" * 64,
+    }
+    findings = audit_step(step, {"status": "COMPLETED"}, evidence)
+    assert findings["verdict"] == "PASS"
+    assert findings["missing"] == []
+    assert "Console.log confirms initialization" in findings["unverifiable"]
+
+
+def test_real_log_file_still_mechanical():
+    """ملف .log الحقيقي يبقى مطلوبًا — لا تصفية زائدة (النزح console.log
+    وحده لا كل امتداد log)."""
+    evidence = {"files": {
+        "build.log": {"sha256": "a" * 64, "bytes": 100},
+    }}
+    assert _check_criterion("No errors in build.log", evidence) is True
+    assert _check_criterion(
+        "Run log present in verify.log", {"files": {}}) is False
