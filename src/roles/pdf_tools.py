@@ -34,6 +34,8 @@ def build_pdf_code(md_rel: str, out_rel: str, font_path: str,
         "md = md.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')\n"
         "font = pathlib.Path(payload['font'])\n"
         "pdfmetrics.registerFont(TTFont('PlexArabic', str(font)))\n"
+        # (W2-T25) التهريب نقطة واحدة فوق (على md كاملاً) — لا تهريب ثانٍ
+        # داخل ar() فلا &amp;amp; في الناتج (الدمج أولًا ضاعفه).
         "def ar(t):\n"
         "    return get_display(arabic_reshaper.reshape(str(t)))\n"
         "def build(compact):\n"

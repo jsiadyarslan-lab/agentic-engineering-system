@@ -240,6 +240,16 @@ def read_file(ctx: ToolContext, path: str) -> str:
         ) from error
 
 
+def substrate_font_ref(font_name: str) -> str:
+    """مسار الخط داخل الركيزة (W2-T25) — WORK_MOUNT هو ربط مساحة
+    العمل الحقيقي (/work قراءةً) لا /ws الاتفاقية القديمة الميتة
+    (قياس 460: bwrap قبل التنفيذ فانكشف المسار الزور وTTFError
+    فشل دورة كاملة كانت تُغطّى سابقًا برفض الركيزة والاحتياطي)."""
+    from substrate.local_substrate import WORK_MOUNT
+
+    return f"{WORK_MOUNT}/_fonts/{font_name}"
+
+
 def generate_pdf_arabic(ctx: ToolContext, md_path: str, out_path: str) -> str:
     """توليد PDF عربي RTL A4 — داخل الركيزة؛ وعند رفض الاستيراد تنفيذ
     معلن في العملية (execution_site في الحدث والدليل)."""
@@ -257,7 +267,8 @@ def generate_pdf_arabic(ctx: ToolContext, md_path: str, out_path: str) -> str:
     font_copy = fonts_dir / PDF_FONT_PATH.name
     if not font_copy.is_file():
         font_copy.write_bytes(PDF_FONT_PATH.read_bytes())
-    code = build_pdf_code(md_path, out_path, "/ws/_fonts/" + PDF_FONT_PATH.name)
+    code = build_pdf_code(
+        md_path, out_path, substrate_font_ref(PDF_FONT_PATH.name))
     exit_code, _out, stderr = _run_in_substrate(ctx, code, workspace, ctx.grant_root)
     site = "substrate"
     if exit_code != 0:
