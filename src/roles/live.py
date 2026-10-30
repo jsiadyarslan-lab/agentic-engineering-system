@@ -336,6 +336,35 @@ class VerifierLive(LiveRoleBase):
             "var_function_count": len(re.findall(r"var\(--", text)),
         }
 
+    def _html_summary(self, path: Path) -> dict | None:
+        """(W2-T25) ملخص عناصر HTML ميكانيكي من الملف كاملًا: عدّات
+        الوسوم الدلالية وعدّات الأصناف — معايير «يعرض هيدرًا وهيرو و6
+        بطاقات وفوترًا» تفحص ملفًا أكبر من نافذة الرأس فتُحسم بأعداد
+        مثبتة (قياس 520: article-card ×6 في index.html والمراجع أعمى)."""
+        if path.suffix.lower() not in (".html", ".htm") \
+                or path.stat().st_size > self._CONTENT_FILE_LIMIT:
+            return None
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+        counts: dict[str, int] = {}
+        for tag in ("header", "main", "footer", "nav", "section", "article",
+                    "aside", "h1", "h2", "h3", "a", "img", "button", "form",
+                    "ul", "li", "div", "span", "p", "script", "link"):
+            hits = len(re.findall(rf"<{tag}[\s>]", text, re.IGNORECASE))
+            if hits:
+                counts[tag] = hits
+        classes: dict[str, int] = {}
+        for matched in re.finditer(r'class="([^"]+)"', text):
+            for one in matched.group(1).split():
+                classes[one] = classes.get(one, 0) + 1
+        return {
+            "element_count": sum(counts.values()),
+            "elements": counts,
+            "class_counts": {k: classes[k] for k in sorted(classes)[:48]},
+        }
+
     def _content_head(self, path: Path) -> str | None:
         """مقتطف حقيقي محدود من ملف نصي صغير — أو None.
 
@@ -402,6 +431,9 @@ class VerifierLive(LiveRoleBase):
                 css = self._css_summary(path)
                 if css is not None:
                     facts["files"][path.name]["css_summary"] = css
+                html = self._html_summary(path)
+                if html is not None:
+                    facts["files"][path.name]["html_summary"] = html
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))

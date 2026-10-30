@@ -320,6 +320,70 @@ def test_json_summary_reaches_verifier(tmp_path):
     assert "slug" in summary["item_keys"]
 
 
+def test_html_summary_reaches_verifier(tmp_path):
+    """«الصفحة تعرض: هيدر، هيرو، 6 بطاقات، فوتر» تُحسم بعدّات ميكانيكية —
+    قياس حي الخطوة 520 (التنفيذ 311): المراجع صدّق «Missing full
+    index.html content or token counts to verify» والملف أكبر من نافذة
+    الرأس — عدّات الوسوم والأصناف (article-card ×6) دليل مثبت."""
+    import json as _json
+    cards = "\n".join(
+        f'      <article class="article-card"><h3>A{i}</h3></article>'
+        for i in range(6))
+    page = (
+        "<!DOCTYPE html><html lang=\"ar\"><head>"
+        "<title>News</title></head><body>"
+        '<header class="site-header"><nav>nav</nav></header>'
+        '<main class="site-main"><section class="hero">hero</section>'
+        f'<section class="latest-articles">{cards}</section></main>'
+        '<footer class="site-footer">foot</footer>'
+        "<!-- " + "padding " * 400 + " -->"
+        "</body></html>"
+    )
+    root = tmp_path / "step520"
+    root.mkdir()
+    page_file = root / "index.html"
+    page_file.write_text(page, encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "الصفحة تعرض: هيدر، هيرو، 6 بطاقات، فوتر — كلها مرئية",
+        ],
+        artifacts=[str(page_file)],
+        evidence_refs=[],
+    ))
+    payload = _json.loads(router.payloads[0])
+    summary = payload["facts"]["files"]["index.html"]["html_summary"]
+    assert summary["elements"]["header"] == 1
+    assert summary["elements"]["footer"] == 1
+    assert summary["elements"]["section"] == 2
+    assert summary["elements"]["article"] == 6
+    assert summary["class_counts"]["article-card"] == 6
+    assert summary["class_counts"]["site-header"] == 1
+
+
+def test_html_summary_absent_for_non_html(tmp_path):
+    """غير HTML — لا ملخص مختلق."""
+    root = tmp_path / "nohtml"
+    root.mkdir()
+    css = root / "styles.css"
+    css.write_text("a { color: red }", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["css exists"],
+        artifacts=[str(css)],
+        evidence_refs=[],
+    ))
+    import json as _json
+    payload = _json.loads(router.payloads[0])
+    assert "html_summary" not in payload["facts"]["files"]["styles.css"]
+
+
 def test_json_summary_invalid_json_absent(tmp_path):
     """JSON تالف — لا ملخص مختلق؛ الوجود والاسم يبقيان."""
     root = tmp_path / "bad"
