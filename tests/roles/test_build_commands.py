@@ -100,6 +100,18 @@ STEP497_CRITERIA = [
 ]
 
 
+def test_required_build_commands_step512_generic_html_validation():
+    """معايير 512 الحرفية: عبارة التحقق العامة (validator.w3.org/أداة
+    تحقق HTML) تستخرج مدقق htmlhint — قياس حي (التنفيذ 298): المراجع
+    طلب «ملف مخرجات مدقق HTML» والمعيار لم يذكر htmlhint حرفيًا فلم
+    يُستخرج أمر ولم يُشغّل المدقق قط."""
+    criteria = [
+        "يمر بفحص validator.w3.org (محلياً عبر أداة تحقق HTML إن توفرت)",
+    ]
+    assert build_commands.required_build_commands(criteria) == [
+        "npx --yes htmlhint *.html"]
+
+
 def test_required_build_commands_step497_npm_test():
     """معايير 497 الحرفية: npm test يُستخرج — قياس حي (التنفيذان 290/291):
     الملفات الأربعة كُتبت صحيحة والمراجع صدّق «الأدلة الكلية ناقصة:

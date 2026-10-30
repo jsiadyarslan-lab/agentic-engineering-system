@@ -27,12 +27,12 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+run\s+preview", re.IGNORECASE), "npm run preview"),
     (re.compile(r"node\s+--version", re.IGNORECASE), "node --version"),
     (re.compile(r"npm\s+--version", re.IGNORECASE), "npm --version"),
-    # (W2-T25) أدوات التحقق وسكربته — معايير خطوات التحقق تشترطها نصًا.
-    (re.compile(r"npx\s+htmlhint", re.IGNORECASE), "npx --yes htmlhint *.html"),
+    # (W2-T25) أدوات التحقق + عبارة التحقق العامة (قياس 512: w3.org).
+    (re.compile(r"npx\s+htmlhint|validator\.w3\.org|أداة تحقق HTML|فحص HTML",
+                re.IGNORECASE), "npx --yes htmlhint *.html"),
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
-    # (W2-T25) خادم التحقق المباشر (قياس 492): يُنفَّذ بمراقبة الربط.
-    (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),
+    (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),  # (W2-T25 492)
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
     # (W2-T25) اختبارات المشروع (npm test في backend/ — قياس 497).
