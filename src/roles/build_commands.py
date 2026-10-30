@@ -35,7 +35,7 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
-    # (W2-T25) اختبارات المشروع — قياس 497: npm test في backend/.
+    # (W2-T25) اختبارات المشروع (npm test في backend/ — قياس 497).
     (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE), "npm test"),
 )
 #: علامات نواتج تستلزم أمرًا لم يُذكر نصًّا.
@@ -68,7 +68,8 @@ _GATHER_FILES = (
     "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts", "server.js",
 )
 _GATHER_DIRS = ("src", "public", "styles")
-_GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")  # ثقيلة symlink
+_GATHER_LINK_DIRS = ("node_modules", ".astro")  # ثقيلة symlink
+# (W2-T25) dist ناتج يُولّد نظيفًا — لا يُجلب رمزًا (قياس 506: kleur قديم).
 
 
 def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
@@ -202,9 +203,8 @@ def _tooling_missing_result(missing: list[str], commands: list[str]) -> object:
 
     message = (
         "BUILD_TOOLING_MISSING — node/npm غير متوفرين لبيئة التنفيذ "
-        f"({', '.join(missing)}) — أوامر البناء المطلوبة "
-        f"({'؛ '.join(commands)}) تتطلبهما. ثبّت Node.js LTS على مضيف "
-        "التنفيذ ثم أعد الفحص — الحاجز حاجز توفير لا مراجعة خطة"
+        f"({', '.join(missing)}) — أوامر البناء ({'؛ '.join(commands)}) "
+        "تتطلبهما؛ ثبّت Node.js LTS ثم أعد الفحص — حاجز توفير لا مراجعة"
     )
     return ImplementerResult(
         status=ImplementerStatus.FAILED,
@@ -224,11 +224,9 @@ def _command_failed_result(command: str, failure) -> object:
     details = getattr(failure, "details", None) or {}
     exit_code = details.get("exit_code")
     stderr_tail = str(details.get("stderr_tail") or str(failure))[:300]
-    message = (
-        f"أمر البناء فشل فعليًا: {command}"
-        + (f" (exit_code={exit_code})" if exit_code is not None else "")
-        + f" — {stderr_tail}"
-    )
+    message = (f"أمر البناء فشل فعليًا: {command}"
+               + (f" (exit_code={exit_code})" if exit_code is not None else "")
+               + f" — {stderr_tail}")
     return ImplementerResult(
         status=ImplementerStatus.FAILED,
         stderr_truncated=message[:400],
@@ -255,9 +253,8 @@ def run_build_commands_phase(
     if re.search(r"querySelector|فحص DOM|DOM check",
                  " ".join(map(str, acceptance_criteria or [])),
                  re.IGNORECASE):
-        for name in ("verify.js", "verify.mjs"):
-            if (root / name).is_file() and f"node {name}" not in commands:
-                commands.append(f"node {name}")
+        commands += [f"node {n}" for n in ("verify.js", "verify.mjs")
+                     if (root / n).is_file() and f"node {n}" not in commands]
 
     outcome = BuildPhaseOutcome(commands=list(commands))
     if not commands:
@@ -273,6 +270,9 @@ def run_build_commands_phase(
          if d.is_dir() and (d / "package.json").is_file()), root)
     if workdir == root:
         outcome.gathered = gather_build_prerequisites(root)
+    # (W2-T25) رمز dist قديم (جلب سابق) يُنزع — البناء يولّده نظيفًا.
+    if (workdir / "dist").is_symlink():
+        (workdir / "dist").unlink()
 
     # install قبل build/preview/test ما دام package.json (قياس 325).
     effective = list(commands)

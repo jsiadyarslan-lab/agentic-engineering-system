@@ -175,6 +175,32 @@ def test_gather_prerequisites_copies_server_js(tmp_path):
     assert "server.js" in gathered["copied"]
 
 
+def test_gather_no_dist_link_and_phase_strips_stale(tmp_path, monkeypatch):
+    """dist ناتج بناء لا يُجلب رمزًا، والرمز القديم القائم يُنزع قبل
+    الأوامر — قياس حي الخطوة 506 (التنفيذ 294): بناء Astro صُدّ بـ
+    «Cannot find package 'kleur' imported from steps/444/dist/pages/…mjs»
+    لأن رمز dist المجلوب سلّم مخرجات خطة ميتة لخطوة الخطة الحية."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    steps = tmp_path / "projects" / "3" / "steps"
+    dead = steps / "444"
+    (dead / "dist" / "pages").mkdir(parents=True)
+    (dead / "dist" / "pages" / "index.astro.mjs").write_text(
+        "import 'kleur';\n")
+    (dead / "package.json").write_text('{"name": "dead"}')
+    root = steps / "506"
+    root.mkdir()
+    (root / "dist").symlink_to(dead / "dist", target_is_directory=True)
+    gathered = build_commands.gather_build_prerequisites(root)
+    assert "dist" not in gathered["linked"], "dist لا يُجلب رمزًا"
+    assert (root / "dist").is_symlink(), "الرمز القائم قائم قبل الطور"
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["npm run build"],
+        ["npm run build executes with exit code 0"])
+    assert outcome.failed_result is None
+    assert not (root / "dist").is_symlink(), "الرمز القديم نُزع"
+    assert (root / "dist").is_dir(), "البناء ولّد dist نظيفًا (stub build)"
+
+
 # ------------------------------------------------------------------ #
 # 3) أداة run_build_command
 # ------------------------------------------------------------------ #
