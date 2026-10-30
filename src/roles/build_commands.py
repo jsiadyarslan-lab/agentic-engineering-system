@@ -1,14 +1,13 @@
 """طور أوامر البناء الحقيقية (W2-T24) — npm يُنفَّذ فعليًا بأدلة صادقة.
 
-بطاقة W2-T23: «نواتج أوامر لا يُختلق نصها — تُنتج بأوامر حقيقية» —
-هذه هي البطاقة. الخطوات التي تطلب معاييرها أوامر تنفذها فعلًا:
+بطاقة W2-T23: نواتج الأوامر تُنتج بأوامر حقيقية — لا تُختلق نصًّا.
 
 - required_build_commands(): أوامر المعايير بترتيب التبعية.
 - gather_build_prerequisites(): جلب ملفات الخطوات السابقة (نسخ/symlink).
 - run_build_commands_phase(): فحص الأدوات ← التجميع ← التنفيذ ← النواتج.
 
-فقد الأدوات عائق توفير لا فشل خطوة: توقيع BUILD_TOOLING_MISSING
-يفتح حاجز PREFLIGHT_BLOCKED قابلًا للحل بإعادة الفحص (W1-T06).
+فقد الأدوات عائق توفير (BUILD_TOOLING_MISSING → PREFLIGHT قابلة
+للحل بإعادة الفحص — W1-T06) لا فشل خطوة.
 """
 
 from __future__ import annotations
@@ -18,13 +17,13 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-#: الأوامر الصريحة في نص المعايير → الأمر الموحد.
 _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+install", re.IGNORECASE), "npm install"),
     (re.compile(r"npm\s+ci\b", re.IGNORECASE), "npm ci"),
     (re.compile(r"npm\s+run\s+lint\b", re.IGNORECASE), "npm run lint"),
     (re.compile(r"npm\s+run\s+build", re.IGNORECASE), "npm run build"),
     (re.compile(r"npm\s+run\s+preview", re.IGNORECASE), "npm run preview"),
+    (re.compile(r"npm\s+run\s+dev\b", re.IGNORECASE), "npm run dev"),  # 545
     (re.compile(r"node\s+--version", re.IGNORECASE), "node --version"),
     (re.compile(r"npm\s+--version", re.IGNORECASE), "npm --version"),
     # (W2-T25) أدوات التحقق + عبارة التحقق العامة (قياس 512: w3.org).
@@ -44,11 +43,10 @@ _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"package-lock\.json", re.IGNORECASE), "npm install"),
     (re.compile(r"\bdist/", re.IGNORECASE), "npm run build"),
 )
-#: ترتيب التبعية — install يسبق lint/build يسبق preview/التحقق.
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
     "npm install": 1, "npm run lint": 2, "npm run build": 3,
-    "npm run preview": 4, "npx --yes htmlhint *.html": 5,
+    "npm run preview": 4, "npm run dev": 4, "npx --yes htmlhint *.html": 5,
     "node verify.js": 6, "node verify.mjs": 6, "node server.js": 7,
     "npm test": 8,
     "pnpm install": 1, "pnpm dev": 4,
@@ -56,13 +54,12 @@ _COMMAND_ORDER = {
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
     "npm install": 600, "npm run lint": 300, "npm run build": 600,
-    "npm run preview": 90, "npx --yes htmlhint *.html": 300,
+    "npm run preview": 90, "npm run dev": 90, "npx --yes htmlhint *.html": 300,
     "node verify.js": 120, "node verify.mjs": 120, "node server.js": 60,
     "npm test": 300,
     "pnpm install": 600, "pnpm dev": 90,
 }
 
-#: ملفات تُنسخ من الخطوات السابقة (المصدرية) وأدلة تُوصل symlink.
 _GATHER_FILES = (
     "package.json", "package-lock.json", "tsconfig.json",
     "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts", "server.js",
@@ -98,8 +95,9 @@ def missing_build_tooling() -> list[str]:
     ]
 
 
-def gather_build_prerequisites(root: Path, *, include_files: bool = True) -> dict[str, list[str]]:
-    """جلب متطلبات سابقة: المصدرية تُنسخ والثقيلة symlink بلا استبدال؛
+def gather_build_prerequisites(root: Path, *, include_files: bool = True,
+                               extra_files: tuple = ()) -> dict[str, list[str]]:
+    """جلب متطلبات سابقة: نسخ المصدرية وsymlink الثقيلة بلا استبدال —
     مسارات مطلقة (النسبي المعلق يصطدم Errno 17 — قياس 161)."""
     copied: list[str] = []
     linked: list[str] = []
@@ -117,10 +115,10 @@ def gather_build_prerequisites(root: Path, *, include_files: bool = True) -> dic
                 siblings.append(int(entry.name))
         except ValueError:
             continue
-    # (W2-T25) الأحدث أولًا — أحدث نسخة تفوز (قياس 172).
-    for sibling in sorted(siblings, reverse=True):
+    for sibling in sorted(siblings, reverse=True):  # (172) الأحدث أولًا
         source_dir = project_dir / "steps" / str(sibling)
-        for name in (_GATHER_FILES if include_files else ()):
+        for name in (*(_GATHER_FILES if include_files else ()),
+                     *extra_files):
             source = source_dir / name
             target = root / name
             if source.is_file() and not target.exists():
@@ -162,8 +160,8 @@ def _criterion_output_names(
 def collect_criterion_outputs(
     root: Path, acceptance_criteria: list[str] | None,
 ) -> list[Path]:
-    """النواتج الموجودة فعلًا والمطابقة لأسماء المعايير — البحث محصور
-    (الجذر + dist/ + public/ + src/) لا يعبر node_modules ولا يختلق غائبًا."""
+    """النواتج الموجودة فعلًا المطابقة للمعايير — بحث محصور (الجذر
+    + dist/ + public/ + src/) لا يعبر node_modules ولا يختلق غائبًا."""
     artifacts: list[Path] = []
     for name in _criterion_output_names(acceptance_criteria):
         candidates = [
@@ -270,18 +268,20 @@ def run_build_commands_phase(
     if (workdir / "dist").is_symlink():  # (W2-T25 506) قديم يُنزع
         (workdir / "dist").unlink()
 
-    # install قبل build/preview/test ما دام package.json (قياس 325).
+    # (W2-T25) ci بلا lockfile = install (388)؛ install قبل build (325).
     effective = list(commands)
-    # (W2-T25) ci بلا lockfile (مشروع وليد) = install (قياس 388).
     if "npm ci" in effective and not (workdir / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    needs_deps = any(  # (W2-T25) dev معاينة؛ الخادم والاختبار كذلك
-        command in ("npm run build", "npm run preview", "pnpm dev",
-                    "node server.js", "npm test") for command in effective)
-    # (W2-T25) ملفات الإطار لحاجة npm/خادم حصرًا (526: type:module أفشل require).
+    # (W2-T25) dev معاينة؛ الخادم والاختبار كذلك — install قبلهما.
+    needs_deps = any(command in ("npm run build", "npm run preview",
+                                 "npm run dev", "pnpm dev", "node server.js",
+                                 "npm test") for command in effective)
+    # (W2-T25) ملفات الإطار لحاجة npm/خادم (526) + ملفات المعايير (520/545).
     if workdir == root and (needs_deps or any(
             c.startswith(("npm", "pnpm", "npx")) for c in effective)):
-        outcome.gathered = gather_build_prerequisites(root)
+        outcome.gathered = gather_build_prerequisites(
+            root, extra_files=tuple(_criterion_output_names(
+                acceptance_criteria) or ()))
     if (needs_deps and "npm install" not in effective
             and "npm ci" not in effective and "pnpm install" not in effective
             and (workdir / "package.json").is_file()):

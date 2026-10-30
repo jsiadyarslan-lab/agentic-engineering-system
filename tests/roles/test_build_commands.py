@@ -187,6 +187,66 @@ def test_gather_prerequisites_copies_server_js(tmp_path):
     assert "server.js" in gathered["copied"]
 
 
+def test_required_build_commands_step545_npm_run_dev():
+    """معايير 545 الحرفية: npm run dev يُستخرج خادم معاينة — قياس حي
+    (التنفيذ 336): الأمر لم يكن في الأنماط فلم يُشغّل والتدقيق علّق
+    المعيار unverifiable والمراجع بلا دليل تشغيل حقيقي."""
+    criteria = [
+        "Command 'npm run dev' starts server on localhost (port printed)",
+    ]
+    assert build_commands.required_build_commands(criteria) == ["npm run dev"]
+
+
+def test_run_build_command_npm_run_dev_watches_url(tmp_path, monkeypatch):
+    """npm run dev: خادم معاينة يُراقب ويُقتل عند رؤية Local — كpreview."""
+    import time as _time
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    npm = stub_dir / "npm"
+    npm.write_text(
+        "#!/bin/sh\n"
+        "case \"$1 $2\" in \"run dev\")"
+        " echo '  Local: http://localhost:5173/'; sleep 30 ;; "
+        "*) echo stub-$1-$2 ;; esac\n"
+    )
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    node = stub_dir / "node"
+    node.write_text("#!/bin/sh\necho v22.0.0-stub\n")
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    started = _time.monotonic()
+    value = run_tool("run_build_command",
+                     {"command": "npm run dev", "timeout_s": 30},
+                     _ctx(tmp_path))
+    elapsed = _time.monotonic() - started
+    assert value["preview_url_seen"] is True
+    assert value["exit_code"] == 0
+    assert elapsed < 20
+    stdout_txt = tmp_path / "evidence" / "build-npm-run-dev-stdout.txt"
+    assert "Local" in stdout_txt.read_text()
+
+
+def test_gather_criterion_files_from_previous_step(tmp_path):
+    """ملفات المعايير تُجلب من الخطوات السابقة — قياسا 520/545: تدقيق
+    خطوة التحقق يطلب article.html/index.html حاضرًا في أدلة الخطوة
+    وهي مبنية في مساحة سابقة (plain-HTML خارج قوائم الجلب الثابتة)."""
+    steps = tmp_path / "projects" / "3" / "steps"
+    prev = steps / "543"
+    prev.mkdir(parents=True)
+    (prev / "article.html").write_text(
+        "<article>full story</article>")
+    (prev / "index.html").write_text("<h1>News</h1>")
+    root = steps / "545"
+    root.mkdir()
+    gathered = build_commands.gather_build_prerequisites(
+        root, extra_files=("article.html", "index.html"))
+    assert (root / "article.html").is_file()
+    assert (root / "index.html").is_file()
+    assert "article.html" in gathered["copied"]
+    assert "index.html" in gathered["copied"]
+
+
 def test_phase_node_verify_skips_dead_framework_files(
         tmp_path, monkeypatch):
     """خطوة node verify.js وحدها لا تجلب ملفات إطار خطة ميتة — قياس حي

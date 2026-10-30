@@ -22,7 +22,7 @@ from roles.tool_failures import ToolFailure
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node --version", "npm --version",
     "npm install", "npm ci",
-    "npm run build", "npm run preview", "npm run lint",
+    "npm run build", "npm run preview", "npm run lint", "npm run dev",
     "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
     "pnpm install", "pnpm dev", "node server.js", "npm test",  # (492/497)
 })
@@ -177,9 +177,9 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
         if ctx.grant_root.resolve() in _cand.parents:
             workdir = _cand
 
-    if command in ("npm run preview", "pnpm dev", "node server.js"):
+    if command in ("npm run preview", "npm run dev", "pnpm dev", "node server.js"):
         # (W2-T25) dev=معاينة؛ والخادم المباشر خادم تحقق (قياس 492).
-        runner, tail = (npm_path, ["run", "preview"]) \
+        runner, tail = (npm_path, command.split()[1:]) \
             if command.startswith("npm") \
             else (resolve_build_tool("node"), command.split()[1:]) \
             if command.startswith("node") \
