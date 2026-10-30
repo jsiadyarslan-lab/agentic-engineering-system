@@ -1,15 +1,12 @@
 """أداة أوامر البناء الحقيقية (W2-T24) — مستخرجة لرقة tools.py.
 
-أمر 008 وزّع أنحاف tools.py (التصنيف في tool_failures، الويب في
-web_tools، الـPDF في pdf_tools) — وأوامر البناء هنا مثلها: التنفيذ
-والأدلة والقائمة البيضاء في هذه الوحدة، وtools.py يستوردها نحيلًا.
+أمر 008 وزّع أنحاف tools.py — وأوامر البناء هنا مثلها نحيلة: التنفيذ
+والأدلة والقائمة البيضاء في هذه الوحدة وtools.py يستوردها.
 
-العقد (W2-T24): قائمة أوامر مغلقة تنفذ فعليًا في العملية معلنة
-(npm يحتاج شبكة+HOME كأدوات الويب — execution_site=in_process_declared)
-بأدلة exit_code/stdout/stderr مكتوبة bounded داخل مساحة الخطوة،
-وبيئة منظفة بلا أسرار الخدمة (سكربتات npm لا ترى المفاتيح). فقد
-node/npm فشل صنفي BUILD_TOOLING_MISSING غير قابل لإعادة المحاولة —
-يقرؤه مصنف المحرك فيفتح حاجز توفير (امتداد W1-T06) لا مراجعة خطة.
+العقد: قائمة مغلقة تنفذ فعليًا معلنة (npm يحتاج شبكة+HOME) بأدلة
+exit_code/stdout/stderr bounded داخل مساحة الخطوة وبيئة منظفة بلا
+أسرار الخدمة؛ فقد node/npm = BUILD_TOOLING_MISSING يفتح حاجز توفير
+(W1-T06) لا مراجعة خطة.
 """
 
 from __future__ import annotations
@@ -27,7 +24,7 @@ BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "npm install", "npm ci",
     "npm run build", "npm run preview", "npm run lint",
     "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
-    "pnpm install", "pnpm dev", "node server.js",  # (W2-T25) 492
+    "pnpm install", "pnpm dev", "node server.js", "npm test",  # (492/497)
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
@@ -54,12 +51,8 @@ def resolve_build_tool(name: str) -> str | None:
 
 
 def _build_command_env(npm_path: str) -> dict:
-    """بيئة منظفة للأمر — بلا أسرار الخدمة إطلاقًا.
-
-    npm يحتاج شبكة وHOME (ذاكرة التخزين) كأدوات الويب — التنفيذ في
-    العملية معلن (execution_site=in_process_declared)؛ ويمرر لأمر
-    npm متغيرات عامة حصرًا: لا مفاتيح مزودين ولا أسرار search-api.
-    """
+    """بيئة منظفة — لا أسرار الخدمة: npm يحتاج شبكة+HOME فقط
+    (تنفيذ معلن in_process) لا مفاتيح مزودين ولا أسرار search-api."""
     import os as _os
 
     keep = {}
@@ -85,10 +78,10 @@ def _build_evidence_paths(ctx, command: str) -> tuple[Path, Path, Path]:
 
 
 def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
-                          label: str, timeout_s: float) -> dict:
-    """أمر معاينة/خادم (preview / pnpm dev / node server.js): مراقبة
-    سطر البدء ثم قتل المجموعة — النجاح «عملية تبدأ وتصرح ببدئها».
-    """
+                          label: str, timeout_s: float,
+                          workdir: Path | None = None) -> dict:
+    """معاينة/خادم (preview/dev/server.js): مراقبة سطر البدء ثم قتل
+    المجموعة — النجاح «عملية تبدأ وتصرح ببدئها»."""
     import os as _os
     import select as _select
     import signal as _signal
@@ -98,7 +91,7 @@ def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
     started = _time.monotonic()
     process = _subprocess.Popen(  # noqa: S603 — argv ثابت من القائمة البيضاء
         [runner_path, *argv_tail],
-        cwd=str(ctx.grant_root), env=_build_command_env(runner_path),
+        cwd=str(workdir or ctx.grant_root), env=_build_command_env(runner_path),
         stdout=_subprocess.PIPE, stderr=_subprocess.PIPE,
         start_new_session=True,
     )
@@ -143,7 +136,8 @@ def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
     }
 
 
-def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
+def run_build_command(ctx, command: str, timeout_s: float = 0,
+                      cwd: str = "") -> dict:
     import subprocess as _subprocess
     import time as _time
 
@@ -176,6 +170,12 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
         )
     npm_path = resolve_build_tool("npm")
     timeout = float(timeout_s) if timeout_s and timeout_s > 0 else 600.0
+    # (W2-T25) دليل العمل المتداخل (npm test في backend/ — قياس 497).
+    workdir = ctx.grant_root
+    if cwd:
+        _cand = (ctx.grant_root / cwd).resolve()
+        if ctx.grant_root.resolve() in _cand.parents:
+            workdir = _cand
 
     if command in ("npm run preview", "pnpm dev", "node server.js"):
         # (W2-T25) dev=معاينة؛ والخادم المباشر خادم تحقق (قياس 492).
@@ -184,12 +184,12 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
             else (resolve_build_tool("node"), command.split()[1:]) \
             if command.startswith("node") \
             else (resolve_build_tool("pnpm"), ["dev"])
-        result = _run_preview_command(ctx, runner, tail, command, timeout)
+        result = _run_preview_command(ctx, runner, tail, command, timeout,
+                                      workdir)
         if not result["preview_url_seen"]:
             raise ToolFailure(
                 "run_build_command",
-                f"{command} لم يصرح بسطر بدء (Local/Network/Server"
-                f" running) خلال {timeout:.0f}ث — "
+                f"{command} لم يصرح بسطر بدء خلال {timeout:.0f}ث — "
                 + result["output_tail"][-200:],
                 failure_class="TOOL_FAILURE",
                 reason="BUILD_COMMAND_FAILED",
@@ -218,7 +218,7 @@ def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
     started = _time.monotonic()
     try:
         completed = _subprocess.run(  # noqa: S603 — argv من القائمة البيضاء
-            argv, cwd=str(ctx.grant_root),
+            argv, cwd=str(workdir),
             env=_build_command_env(npm_path),
             capture_output=True, timeout=timeout,
         )

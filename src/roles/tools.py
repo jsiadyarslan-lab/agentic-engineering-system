@@ -560,7 +560,7 @@ def run_tool(name: str, args: dict, ctx: ToolContext,
             value = run_build_command(
                 ctx, str(args.get("command", "")),
                 timeout_s=float(args.get("timeout_s", 0) or 0),
-            )
+                cwd=str(args.get("cwd") or ""))
             digest = _sha256_text(json.dumps(value, ensure_ascii=False))
             finalize(record)
             _finish_success(ctx, record, value, digest, site,

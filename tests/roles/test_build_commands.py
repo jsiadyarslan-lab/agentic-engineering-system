@@ -89,6 +89,26 @@ def test_required_build_commands_step492_server():
     assert commands == ["node server.js"]
 
 
+#: (W2-T25) معايير الخطوة 497 الحرفية (خطة v51) — مهيّء خلفي متداخل.
+STEP497_CRITERIA = [
+    "File backend/package.json contains dependencies: express, cors, "
+    "dotenv, jest, supertest",
+    "File backend/src/server.js imports and uses health router",
+    "File backend/src/routes/health.js exports router with GET /health",
+    "File backend/tests/health.test.js exists and passes when running "
+    "`npm test`",
+]
+
+
+def test_required_build_commands_step497_npm_test():
+    """معايير 497 الحرفية: npm test يُستخرج — قياس حي (التنفيذان 290/291):
+    الملفات الأربعة كُتبت صحيحة والمراجع صدّق «الأدلة الكلية ناقصة:
+    Test execution logs for npm test run in backend» فتصعيد
+    ESCALATED_TO_HUMAN مرتين — الأمر لم يكن قابلًا للتنفيذ أصلًا."""
+    commands = build_commands.required_build_commands(STEP497_CRITERIA)
+    assert commands == ["npm test"]
+
+
 def test_required_build_commands_research_empty():
     """مهمة بحث/ملفات بلا أوامر → قائمة فارغة (الطور لا يعمل)."""
     assert build_commands.required_build_commands(
@@ -312,6 +332,41 @@ def test_run_build_command_node_server_watches_binding(
     assert "Server running on port 3000" in stdout_txt.read_text()
 
 
+def test_run_build_command_npm_test_in_nested_cwd(
+        tmp_path, monkeypatch):
+    """npm test بدليل متداخل (backend/): الأمر يعمل حيث المشروع والأدلة
+    في جذر الخطوة — قياس 497: «Test execution logs for npm test run in
+    backend» يُثبتها سجل حقيقي لا وصف."""
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    npm = stub_dir / "npm"
+    npm.write_text(
+        "#!/bin/sh\n"
+        "case \"$1\" in test) echo 'PASS health.test.js'; echo '"
+        "1 passing'; echo '{\"lockfileVersion\": 3}' > package-lock.json "
+        ";; *) echo stub-$1 ;; esac\n"
+    )
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    node = stub_dir / "node"
+    node.write_text("#!/bin/sh\necho v22.0.0-stub\n")
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    (backend / "package.json").write_text(
+        '{"name": "news-backend", "scripts": {"test": "jest"}}')
+    value = run_tool(
+        "run_build_command",
+        {"command": "npm test", "timeout_s": 60, "cwd": "backend"},
+        _ctx(tmp_path))
+    assert value["exit_code"] == 0
+    # التنفيذ في backend/ — الأدلة في جذر الخطوة (يراها المراجع)
+    assert (backend / "package-lock.json").is_file(), "npm شغّل في backend/"
+    stdout_txt = tmp_path / "evidence" / "build-npm-test-stdout.txt"
+    assert "1 passing" in stdout_txt.read_text()
+
+
 def test_run_build_command_sanitized_env_no_secrets(tmp_path, monkeypatch):
     """بيئة الأمر منظفة — مفاتيح الخدمة لا تصل سكربتات npm."""
     from roles import tools as tools_mod
@@ -412,6 +467,49 @@ def test_phase_node_server_gathers_and_evidences(tmp_path, monkeypatch):
     assert (root / "server.js").is_file(), "الجلب نسخ خادم الخطوة السابقة"
     stdout_txt = root / "evidence" / "build-node-server.js-stdout.txt"
     assert "Server running on port 3000" in stdout_txt.read_text()
+
+
+def test_phase_npm_test_nested_backend_runs_and_evidences(
+        tmp_path, monkeypatch):
+    """طور كامل لخطوة 497 (خلفي متداخل): install يُقحم وnpm test يعمل في
+    backend/ والأدلة (stdout/exit) في جذر الخطوة يراها المراجع."""
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    npm = stub_dir / "npm"
+    npm.write_text(
+        "#!/bin/sh\n"
+        "case \"$1\" in install) echo '{\"lockfileVersion\": 3}' "
+        "> package-lock.json; echo installed ;; "
+        "test) echo 'PASS health.test.js'; echo '1 passing' ;; "
+        "*) echo stub-$1 ;; esac\n"
+    )
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    node = stub_dir / "node"
+    node.write_text("#!/bin/sh\necho v22.0.0-stub\n")
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    steps = tmp_path / "projects" / "3" / "steps"
+    (steps / "496").mkdir(parents=True)
+    (steps / "496" / "package.json").write_text('{"name": "dead-astro"}')
+    root = steps / "497"
+    root.mkdir()
+    backend = root / "backend"
+    backend.mkdir()
+    (backend / "package.json").write_text(
+        '{"name": "news-backend", "scripts": {"test": "jest"}}')
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["npm test"], STEP497_CRITERIA)
+    assert outcome.failed_result is None
+    executed = [r["command"] for r in outcome.results]
+    assert executed == ["npm install", "npm test"]
+    # المتداخل: لا خلط أطر ميتة — جذر الخطوة بلا package.json زائد
+    assert not (root / "package.json").is_file(), "لا تلوث إطار ميت"
+    assert (backend / "package-lock.json").is_file(), "install في backend/"
+    stdout_txt = root / "evidence" / "build-npm-test-stdout.txt"
+    assert "1 passing" in stdout_txt.read_text()
+    artifact_names = {p.name for p in outcome.artifacts}
+    assert "build-npm-test-stdout.txt" in artifact_names
 
 
 REPORT_MD_103 = (
