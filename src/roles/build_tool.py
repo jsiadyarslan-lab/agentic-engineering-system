@@ -15,6 +15,7 @@ node/npm فشل صنفي BUILD_TOOLING_MISSING غير قابل لإعادة ال
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from roles.tool_failures import ToolFailure
@@ -144,18 +145,17 @@ def _run_preview_command(ctx, npm_path: str, timeout_s: float) -> dict:
 
 
 def run_build_command(ctx, command: str, timeout_s: float = 0) -> dict:
-    """تنفيذ أمر بناء حقيقي (W2-T24) — أدلة exit_code/stdout/stderr.
-
-    قائمة بيضاء مغلقة (لا تفسير ولا وسائط حرة)؛ وفقد node/npm فشل
-    مصنّف BUILD_TOOLING_MISSING غير قابل لإعادة المحاولة (توفير
-    بيئي)؛ والأدلة تكتب bounded داخل مساحة الخطوة (evidence/). نجاح
-    الأمر لا يعني نجاح الخطوة — المراجع يحكم على الملفات الناتجة.
+    """أداة سطر أوامر تُنفّذ أمرًا حقيقيًا bounded بأدلة exit_code/stdout/stderr
+    داخل مساحة الخطوة. قائمة مغلقة + قاعدة إصدارات npx — لا وسائط حرة.
     """
     import subprocess as _subprocess
     import time as _time
 
     command = str(command or "").strip()
-    if command not in BUILD_COMMAND_WHITELIST:
+    # (W2-T25) فحص إصدار npx ديناميكي آمن بالطبع (قراءة فقط):
+    # «npx tsc --version» و«npx prisma --version» — معايير خطوات التحقق.
+    if (command not in BUILD_COMMAND_WHITELIST
+            and not re.fullmatch(r"npx --yes [\w@/.-]+ --version", command)):
         raise ToolFailure(
             "run_build_command",
             f"أمر بناء خارج القائمة البيضاء: '{command}' "

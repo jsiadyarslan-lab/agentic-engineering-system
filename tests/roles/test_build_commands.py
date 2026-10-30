@@ -668,3 +668,37 @@ def test_phase_install_before_build_even_with_old_node_modules(
     assert outcome.failed_result is None
     executed = [r["command"] for r in outcome.results]
     assert executed == ["npm install", "npm run build"]
+
+
+def test_required_build_commands_dynamic_npx_versions():
+    """«npx tsc --version outputs version string» → فحص إصدار ديناميكي
+    (قياس حي الخطوة 336: tsc/tailwindcss/prisma)."""
+    commands = build_commands.required_build_commands([
+        "npm ci completes with exit code 0",
+        "npx tsc --version outputs version string",
+        "npx tailwindcss --version outputs version string",
+        "npx prisma --version outputs version string",
+    ])
+    assert "npm ci" in commands
+    assert "npx --yes tsc --version" in commands
+    assert "npx --yes tailwindcss --version" in commands
+    assert "npx --yes prisma --version" in commands
+
+
+def test_run_build_command_npx_version_dynamic_whitelist(tmp_path, monkeypatch):
+    """فحص إصدار npx لحزمة غير مدرجة — قاعدة الأمان تقبله (قراءة فقط)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    value = run_tool("run_build_command",
+                     {"command": "npx --yes tsc --version",
+                      "timeout_s": 60}, _ctx(tmp_path))
+    assert value["exit_code"] == 0
+
+
+def test_run_build_command_npx_arbitrary_still_blocked(tmp_path, monkeypatch):
+    """npx بأي شيء آخر غير الإصدار — يبقى محجوبًا (لا وسائط حرة)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    with pytest.raises(ToolFailure) as err:
+        run_tool("run_build_command",
+                 {"command": "npx --yes some-pkg run-script"},
+                 _ctx(tmp_path))
+    assert err.value.reason == "COMMAND_NOT_WHITELISTED"

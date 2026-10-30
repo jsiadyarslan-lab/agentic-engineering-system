@@ -36,7 +36,7 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
 )
-#: علامات النواتج التي تستلزم أمرًا لم يُذكر نصًّا.
+#: علامات نواتج تستلزم أمرًا لم يُذكر نصًّا.
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"node_modules/", re.IGNORECASE), "npm install"),
     (re.compile(r"package-lock\.json", re.IGNORECASE), "npm install"),
@@ -62,16 +62,15 @@ _GATHER_FILES = (
     "astro.config.mjs", ".npmrc", "env.d.ts", "astro.config.ts",
 )
 _GATHER_DIRS = ("src", "public", "styles")
-#: نواتج ثقيلة تُوصل symlink لا نسخًا (نفس المضيف ونفس نظام الملفات).
+#: نواتج ثقيلة تُوصل symlink لا نسخًا.
 _GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")
 
 
 def required_build_commands(
     acceptance_criteria: list[str] | None,
 ) -> list[str]:
-    """الأوامر التي تطلبها المعايير (نصًّا أو بعلامات نواتجها).
-
-    قائمة فارغة = مهمة بحث/ملفات على مسارها الأصلي — الطور لا يعمل.
+    """أوامر المعايير (نصًّا أو بعلامات نواتجها) + «npx tsc --version»
+    الديناميكي — الفارغة = مهمة بحث/ملفات والطور لا يعمل.
     """
     found: set[str] = set()
     for criterion in acceptance_criteria or []:
@@ -82,7 +81,10 @@ def required_build_commands(
         for pattern, command in _OUTPUT_MARKERS:
             if pattern.search(text):
                 found.add(command)
-    return sorted(found, key=lambda c: _COMMAND_ORDER[c])[:4]
+        for hit in re.finditer(
+                r"npx\s+([\w@/.-]+)\s+--version", text, re.IGNORECASE):
+            found.add(f"npx --yes {hit.group(1)} --version")
+    return sorted(found, key=lambda c: _COMMAND_ORDER.get(c, 5))[:6]
 
 
 def missing_build_tooling() -> list[str]:
@@ -97,9 +99,8 @@ def missing_build_tooling() -> list[str]:
 
 def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
     """جلب متطلبات البناء من الخطوات السابقة إلى مساحة الحالية:
-    المصدرية تُنسخ (إن غابت) والثقيلة (node_modules/dist) تُوصل symlink
-    بلا استبدال (ما أنشأته الخطوة الحالية أولًا). (W2-T25) مسارات
-    مطلقة حصرًا: الرابط النسبي معلق (قياس 161) يصطدم Errno 17 لاحقًا.
+    المصدرية تُنسخ والثقيلة تُوصل symlink بلا استبدال. (W2-T25)
+    مسارات مطلقة: النسبي معلق (قياس 161) يصطدم Errno 17 لاحقًا.
     """
     copied: list[str] = []
     linked: list[str] = []
@@ -251,11 +252,8 @@ def run_build_commands_phase(
     ctx, root: Path, commands: list[str],
     acceptance_criteria: list[str] | None,
 ) -> BuildPhaseOutcome:
-    """الطور الكامل: فحص الأدوات → تجميع المتطلبات → تنفيذ → أدلة.
-
-    كل أمر عبر run_tool المسجل في tool_invocations؛ الأدلة
-    exit_code/stdout/stderr تكتب داخل مساحة الخطوة. فشل أي أمر =
-    فشل صادق برسالة الأمر الحقيقية — لا تزييف.
+    """الطور الكامل: فحص الأدوات → التجميع → التنفيذ → الأدلة. كل أمر
+    عبر run_tool المسجل؛ فشل أي أمر = فشل صادق برسالة حقيقية.
     """
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
