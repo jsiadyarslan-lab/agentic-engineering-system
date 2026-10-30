@@ -66,11 +66,9 @@ _GATHER_DIRS = ("src", "public", "styles")
 _GATHER_LINK_DIRS = ("node_modules", "dist", ".astro")
 
 
-def required_build_commands(
-    acceptance_criteria: list[str] | None,
-) -> list[str]:
-    """أوامر المعايير (نصًّا أو بعلامات نواتجها) + «npx tsc --version»
-    الديناميكي — الفارغة = مهمة بحث/ملفات والطور لا يعمل.
+def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
+    """أوامر المعايير + «npx tsc --version» الديناميكي — الفارغة =
+    مهمة بحث/ملفات والطور لا يعمل.
     """
     found: set[str] = set()
     for criterion in acceptance_criteria or []:
@@ -274,9 +272,12 @@ def run_build_commands_phase(
     gathered = gather_build_prerequisites(root)
     outcome.gathered = gathered
 
-    # ضمان الاعتماديات: install قبل build/preview ما دام package.json —
-    # node_modules القديم لا يكفي: الاعتماديات تتغير (قياس 325: marked).
+    # install قبل build/preview ما دام package.json — الاعتماديات
+    # تتغير بين الخطوات (قياس 325) فيفشل البناء بMODULE_NOT_FOUND.
     effective = list(commands)
+    # (W2-T25) ci بلا lockfile (مشروع وليد) = install (قياس 388).
+    if "npm ci" in effective and not (root / "package-lock.json").is_file():
+        effective = [c.replace("npm ci", "npm install") for c in effective]
     needs_deps = any(
         command in ("npm run build", "npm run preview")
         for command in effective

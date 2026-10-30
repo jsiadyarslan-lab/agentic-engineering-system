@@ -702,3 +702,18 @@ def test_run_build_command_npx_arbitrary_still_blocked(tmp_path, monkeypatch):
                  {"command": "npx --yes some-pkg run-script"},
                  _ctx(tmp_path))
     assert err.value.reason == "COMMAND_NOT_WHITELISTED"
+
+
+def test_phase_ci_without_lockfile_becomes_install(tmp_path, monkeypatch):
+    """npm ci بلا package-lock.json (مشروع وليد) → install — المكافئ
+    الميكانيكي (قياس حي الخطوة 388: ci فشل بusage error على مشروع
+    بلا lockfile رغم كتابة 39 ملفًا صحيحة)."""
+    _patch_tool_paths(monkeypatch, _make_stub_tools(tmp_path))
+    root = _project_tree(tmp_path, with_node_modules=False)
+    (root / "package-lock.json").unlink(missing_ok=True)
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["npm ci"], STEP103_CRITERIA)
+    assert outcome.failed_result is None
+    executed = [r["command"] for r in outcome.results]
+    assert executed == ["npm install"]
+    assert (root / "package-lock.json").is_file()
