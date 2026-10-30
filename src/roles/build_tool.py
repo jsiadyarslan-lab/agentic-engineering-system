@@ -24,7 +24,7 @@ BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "npm run build", "npm run preview", "npm run lint", "npm run dev",
     "npx --yes htmlhint *.html", "npx --yes tsc --noEmit",
     "node verify.js", "node verify.mjs", "node server.js",
-    "pnpm install", "pnpm dev",  # (W2-T25 492/497/562)
+    "pnpm install", "pnpm dev", "pnpm lint",  # (W2-T25 492/497/562/597)
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")

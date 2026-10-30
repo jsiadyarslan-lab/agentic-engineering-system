@@ -210,6 +210,17 @@ def test_required_build_commands_step562_tsc_noemit():
         "npx --yes tsc --noEmit"]
 
 
+def test_required_build_commands_step597_pnpm_lint():
+    """معايير 597 الحرفية: pnpm lint يُستخرج — قياس حي (التنفيذ 371):
+    «No mechanical evidence (build log) for pnpm lint command exit code
+    0» والأمر ليس في الأنماط (npm run lint فقط) فلا يمكن تنفيذه قط."""
+    criteria = [
+        "Command pnpm lint exits with code 0",
+        "File .eslintrc.js exists",
+    ]
+    assert build_commands.required_build_commands(criteria) == ["pnpm lint"]
+
+
 def test_run_build_command_tsc_noemit_real(tmp_path, monkeypatch):
     """npx tsc --noEmit: فحص أنواع حقيقي بأدلة stdout/exit على القرص."""
     stub_dir = tmp_path / "stub-bin"

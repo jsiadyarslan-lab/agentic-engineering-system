@@ -29,12 +29,13 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npx\s+htmlhint|validator\.w3\.org|أداة تحقق HTML|فحص HTML",
                 re.IGNORECASE), "npx --yes htmlhint *.html"),
     (re.compile(r"npx\s+tsc\s+--noEmit\b", re.IGNORECASE),
-     "npx --yes tsc --noEmit"),  # (W2-T25 562) فحص أنواع قراءة فقط
+     "npx --yes tsc --noEmit"),  # (W2-T25 562) قراءة فقط
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
     (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),  # (W2-T25 492)
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
+    (re.compile(r"pnpm\s+lint\b", re.IGNORECASE), "pnpm lint"),  # 597
     (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE), "npm test"),  # 497
 )
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -50,7 +51,7 @@ _COMMAND_ORDER = {
     "node verify.js": 6, "node verify.mjs": 6, "node server.js": 7,
     "npx --yes htmlhint *.html": 5, "npx --yes tsc --noEmit": 6,
     "npm test": 8,
-    "pnpm install": 1, "pnpm dev": 4,
+    "pnpm install": 1, "pnpm dev": 4, "pnpm lint": 2,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
@@ -59,7 +60,7 @@ _COMMAND_TIMEOUTS = {
     "node verify.js": 120, "node verify.mjs": 120, "node server.js": 60,
     "npx --yes htmlhint *.html": 300, "npx --yes tsc --noEmit": 300,
     "npm test": 300,
-    "pnpm install": 600, "pnpm dev": 90,
+    "pnpm install": 600, "pnpm dev": 90, "pnpm lint": 300,
 }
 
 _GATHER_FILES = (
@@ -272,10 +273,10 @@ def run_build_commands_phase(
     effective = list(commands)
     if "npm ci" in effective and not (workdir / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    # (W2-T25) dev معاينة؛ الخادم والاختبار كذلك — install قبلهما.
-    needs_deps = any(command in ("npm run build", "npm run preview",
-                                 "npm run dev", "pnpm dev", "node server.js",
-                                 "npm test") for command in effective)
+    # (W2-T25) dev معاينة؛ خادم/اختبار/lint — install قبلها (597).
+    needs_deps = any(command in ("npm run build", "npm run preview", "npm run dev",
+                                 "pnpm dev", "node server.js", "npm test", "pnpm lint",
+                                 "npm run lint") for command in effective)
     # (W2-T25) ملفات الإطار لحاجة npm/خادم (526) + ملفات المعايير (520/545).
     if workdir == root and (needs_deps or any(
             c.startswith(("npm", "pnpm", "npx")) for c in effective)):
@@ -315,7 +316,6 @@ def run_build_commands_phase(
         })
 
     outcome.artifacts = collect_criterion_outputs(root, acceptance_criteria)
-    # (W2-T25) سجل الأوامر (install log) دليل يراه المراجع.
     ev_dir = root / "evidence"
     if ev_dir.is_dir():
         outcome.artifacts += sorted(
