@@ -223,6 +223,9 @@ class VerifierLive(LiveRoleBase):
     _CRIT_TOKEN = re.compile(
         r"`([^`\n]{2,60})`|(\b[\w-]+\.[\w-]+(?:\?\w+=)?\b)"
     )
+    #: (W2-T25) خصائص CSS المخصصة «--color-primary» — تُعد ميكانيكيًا
+    #: (قياس 445: معايير التوكنز تطلب عشرات المتغيرات بالاسم).
+    _CSS_VAR = re.compile(r"--[a-zA-Z][\w-]*")
 
     #: فحوص ميكانيكية إضافية تُدمج في facts إن توفرت الدالة الخارجية.
     facts_builder: Any = None
@@ -388,6 +391,9 @@ class VerifierLive(LiveRoleBase):
                 token = hit.group(0)
                 if token not in tokens:
                     tokens.append(token)
+            for var in self._CSS_VAR.findall(str(criterion)):
+                if var not in tokens:  # (W2-T25) توكنز CSS بالاسم
+                    tokens.append(var)
         if tokens:
             counts: dict[str, dict[str, int]] = {}
             for reference in request.artifacts:

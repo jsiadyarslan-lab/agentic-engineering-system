@@ -424,3 +424,37 @@ def test_token_counts_absent_when_no_tokens(tmp_path):
     import json
     payload = json.loads(router.payloads[0])
     assert "token_counts" not in payload["facts"]
+
+
+def test_css_var_tokens_reach_verifier(tmp_path):
+    """«Defines CSS custom properties for colors (--color-primary,
+    --color-bg...)» — المتغيرات تُعد ميكانيكيًا (قياس 445)."""
+    root = tmp_path / "step445"
+    (root / "src" / "css").mkdir(parents=True)
+    css = root / "src" / "css" / "styles.css"
+    css.write_text(
+        ":root { --color-primary: #2563eb; --color-bg: #ffffff;\n"
+        "  --space-1: 0.25rem; --font-sans: system-ui; }\n"
+        "* { box-sizing: border-box; margin: 0; }\n",
+        encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "File src/css/styles.css exists",
+            "Defines CSS custom properties for: colors "
+            "(--color-primary, --color-bg), spacing (--space-1), "
+            "typography (--font-sans)",
+        ],
+        artifacts=[str(css)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    counts = payload["facts"]["token_counts"]["styles.css"]
+    assert counts["--color-primary"] == 1
+    assert counts["--color-bg"] == 1
+    assert counts["--space-1"] == 1
+    assert counts["--font-sans"] == 1
