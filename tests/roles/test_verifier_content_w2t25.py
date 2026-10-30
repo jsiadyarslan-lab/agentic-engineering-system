@@ -458,3 +458,88 @@ def test_css_var_tokens_reach_verifier(tmp_path):
     assert counts["--color-bg"] == 1
     assert counts["--space-1"] == 1
     assert counts["--font-sans"] == 1
+
+
+# ------------------------------------------------------------------ #
+# (W2-T25) ملخص قواعد CSS — معايير المحددات وسط ملف أكبر من النوافذ
+# ------------------------------------------------------------------
+
+def test_css_summary_selectors_reach_verifier(tmp_path):
+    """«Link (a) base typography» و«Utility classes .container and
+    .sr-only» وسط ملف أكبر من الرأس+الذيل — قياس حي الخطوة 445:
+    styles.css ‏3254 حرفًا و30 قاعدة والنافذة 2400 — القواعد المطلوبة
+    في الوسط لا يراها المراجع فيصعّد زورًا رغم اكتمال الملف (ثلاث
+    محاولات ESCALATED_TO_HUMAN والملف سليم بالكامل)."""
+    root = tmp_path / "step445b"
+    (root / "src" / "css").mkdir(parents=True)
+    css = root / "src" / "css" / "styles.css"
+    body = (":root { --color-primary: #2563eb; --color-bg: #ffffff;\n"
+            "  --space-1: 0.25rem; --font-sans: system-ui; }\n"
+            "* { box-sizing: border-box; margin: 0; }\n")
+    # حشوة قبل الوسط تتجاوز نافذة الرأس (1800) وبعدها تتجاوز الذيل (600)
+    body += "".join(
+        f".filler{i} {{ color: #333; margin: 0; }}\n" for i in range(50))
+    body += ("a { color: inherit; text-decoration: underline; }\n"
+             "a:hover { text-decoration: none; }\n"
+             ".container { width: 100%; margin-inline: auto; }\n"
+             ".sr-only { position: absolute; clip: rect(0 0 0 0); }\n")
+    body += "".join(
+        f".tail{i} {{ padding: 0; }}\n" for i in range(30))
+    body += ("@media (min-width: 640px) {\n"
+             "  .container { max-width: 640px; }\n}\n")
+    css.write_text(body, encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=[
+            "File src/css/styles.css exists",
+            "Link (a) base typography rules present",
+            "Utility classes .container and .sr-only present",
+        ],
+        artifacts=[str(css)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    summary = payload["facts"]["files"]["styles.css"]["css_summary"]
+    assert "a" in summary["selectors"]
+    assert ".container" in summary["selectors"]
+    assert ".sr-only" in summary["selectors"]
+    assert summary["rule_count"] >= 10
+    assert summary["custom_property_count"] == 4
+    assert "--color-primary" in summary["custom_properties"]
+    assert "@media (min-width: 640px)" in summary["media_queries"]
+
+
+def test_css_summary_absent_for_non_css_and_honest_zero(tmp_path):
+    """غير CSS لا يحمل ملخصًا (لا اختلاق)، وCSS فارغ يحمل rule_count 0
+    (الفراغ الصادق دليل بذاته كما في content_head «»)."""
+    root = tmp_path / "plain"
+    root.mkdir()
+    notes = root / "notes.txt"
+    notes.write_text("hello world", encoding="utf-8")
+    empty = root / "empty.css"
+    empty.write_text("", encoding="utf-8")
+    router = _StubRouter({"verdict": "evidenced",
+                          "checks_performed": [], "missing_evidence": [],
+                          "confidence": 1.0})
+    role = VerifierLive(router)
+    role.run(VerifierRequest(
+        task_acceptance_criteria=["x"],
+        artifacts=[str(notes), str(empty)],
+        evidence_refs=[],
+    ))
+    import json
+    payload = json.loads(router.payloads[0])
+    assert "css_summary" not in payload["facts"]["files"]["notes.txt"]
+    summary = payload["facts"]["files"]["empty.css"]["css_summary"]
+    assert summary["rule_count"] == 0
+    assert summary["selectors"] == []
+
+
+def test_verifier_prompt_mentions_css_summary():
+    """البرومبت يعلن قاعدة css_summary للمراجع (لا يفاجأ بها)."""
+    prompt = (REPO / "prompts" / "verifier.md").read_text(encoding="utf-8")
+    assert "css_summary" in prompt

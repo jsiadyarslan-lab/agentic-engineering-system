@@ -290,6 +290,40 @@ class VerifierLive(LiveRoleBase):
             return {"type": "object", "keys": sorted(data.keys())}
         return {"type": type(data).__name__}
 
+    def _css_summary(self, path: Path) -> dict | None:
+        """(W2-T25) ملخص قواعد CSS ميكانيكي من الملف كاملًا: المحددات
+        كما هي وعددها واستعلامات الوسائط والخصائص المخصصة المعرَّفة.
+        معايير «Link (a) base typography» و«Utility classes .container
+        and .sr-only» تسكن وسط ملف أكبر من نافذة الرأس+الذيل (قياس
+        445: styles.css ‏3254 حرفًا و30 قاعدة والنافذة 2400 فتصعيد
+        زور رغم اكتمال الملف)."""
+        if path.suffix.lower() != ".css" \
+                or path.stat().st_size > self._CONTENT_FILE_LIMIT:
+            return None
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+        selectors: list[str] = []
+        for chunk in text.split("{")[:-1]:
+            for part in re.split(r"[};]", chunk)[-1].split(","):
+                sel = " ".join(part.split())
+                if sel and sel not in selectors:
+                    selectors.append(sel[:80])
+        props: list[str] = []
+        for name in re.findall(r"(--[a-zA-Z][\w-]*)\s*:", text):
+            if name not in props:
+                props.append(name)
+        return {
+            "rule_count": len(selectors),
+            "selectors": selectors[:64],
+            "media_queries": [s for s in selectors
+                              if s.startswith("@media")][:12],
+            "custom_property_count": len(props),
+            "custom_properties": props[:40],
+        }
+
     def _content_head(self, path: Path) -> str | None:
         """مقتطف حقيقي محدود من ملف نصي صغير — أو None.
 
@@ -353,6 +387,9 @@ class VerifierLive(LiveRoleBase):
                 summary = self._json_summary(path)
                 if summary is not None:
                     facts["files"][path.name]["json_summary"] = summary
+                css = self._css_summary(path)
+                if css is not None:
+                    facts["files"][path.name]["css_summary"] = css
         if self.facts_builder is not None:
             try:
                 facts.update(self.facts_builder(request))
