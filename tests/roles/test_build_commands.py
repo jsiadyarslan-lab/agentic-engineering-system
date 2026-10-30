@@ -187,6 +187,41 @@ def test_gather_prerequisites_copies_server_js(tmp_path):
     assert "server.js" in gathered["copied"]
 
 
+def test_phase_node_verify_skips_dead_framework_files(
+        tmp_path, monkeypatch):
+    """خطوة node verify.js وحدها لا تجلب ملفات إطار خطة ميتة — قياس حي
+    الخطوة 526 (التنفيذان 318/319): package.json مجلوب type:module جعل
+    node يعامل verify.js وحدة ESM ففشل «require is not defined» مرتين
+    على سكربت CommonJS سليم في خطة HTML صرفة لا npm فيها."""
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    node = stub_dir / "node"
+    node.write_text("#!/bin/sh\necho PASS\n")
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    npm = stub_dir / "npm"
+    npm.write_text("#!/bin/sh\necho stub-npm\n")
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    steps = tmp_path / "projects" / "3" / "steps"
+    dead = steps / "505"
+    dead.mkdir(parents=True)
+    (dead / "package.json").write_text('{"type": "module"}')
+    (dead / "astro.config.mjs").write_text("export default {}")
+    root = steps / "526"
+    root.mkdir()
+    (root / "verify.js").write_text(
+        "const fs = require('fs');\nconsole.log('PASS');\n")
+    outcome = build_commands.run_build_commands_phase(
+        _ctx(root), root, ["node verify.js"],
+        ["ينفذ بـ `node verify.js` ويطبع PASS"])
+    assert outcome.failed_result is None
+    assert outcome.results[0]["exit_code"] == 0
+    assert not (root / "package.json").is_file(), "لا تلوث type:module ميت"
+    stdout_txt = root / "evidence" / "build-node-verify.js-stdout.txt"
+    assert "PASS" in stdout_txt.read_text()
+
+
 def test_gather_no_dist_link_and_phase_strips_stale(tmp_path, monkeypatch):
     """dist ناتج بناء لا يُجلب رمزًا، والرمز القديم القائم يُنزع قبل
     الأوامر — قياس حي الخطوة 506 (التنفيذ 294): بناء Astro صُدّ بـ

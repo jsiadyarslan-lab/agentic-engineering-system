@@ -69,7 +69,6 @@ _GATHER_FILES = (
 )
 _GATHER_DIRS = ("src", "public", "styles")
 _GATHER_LINK_DIRS = ("node_modules", ".astro")  # ثقيلة symlink
-# (W2-T25) dist ناتج يُولّد نظيفًا — لا يُجلب رمزًا (قياس 506: kleur قديم).
 
 
 def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
@@ -99,7 +98,7 @@ def missing_build_tooling() -> list[str]:
     ]
 
 
-def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
+def gather_build_prerequisites(root: Path, *, include_files: bool = True) -> dict[str, list[str]]:
     """جلب متطلبات سابقة: المصدرية تُنسخ والثقيلة symlink بلا استبدال؛
     مسارات مطلقة (النسبي المعلق يصطدم Errno 17 — قياس 161)."""
     copied: list[str] = []
@@ -121,7 +120,7 @@ def gather_build_prerequisites(root: Path) -> dict[str, list[str]]:
     # (W2-T25) الأحدث أولًا — أحدث نسخة تفوز (قياس 172).
     for sibling in sorted(siblings, reverse=True):
         source_dir = project_dir / "steps" / str(sibling)
-        for name in _GATHER_FILES:
+        for name in (_GATHER_FILES if include_files else ()):
             source = source_dir / name
             target = root / name
             if source.is_file() and not target.exists():
@@ -268,10 +267,7 @@ def run_build_commands_phase(
     workdir = _sub or next(
         (d for d in sorted(root.iterdir())
          if d.is_dir() and (d / "package.json").is_file()), root)
-    if workdir == root:
-        outcome.gathered = gather_build_prerequisites(root)
-    # (W2-T25) رمز dist قديم (جلب سابق) يُنزع — البناء يولّده نظيفًا.
-    if (workdir / "dist").is_symlink():
+    if (workdir / "dist").is_symlink():  # (W2-T25 506) قديم يُنزع
         (workdir / "dist").unlink()
 
     # install قبل build/preview/test ما دام package.json (قياس 325).
@@ -282,6 +278,10 @@ def run_build_commands_phase(
     needs_deps = any(  # (W2-T25) dev معاينة؛ الخادم والاختبار كذلك
         command in ("npm run build", "npm run preview", "pnpm dev",
                     "node server.js", "npm test") for command in effective)
+    # (W2-T25) ملفات الإطار لحاجة npm/خادم حصرًا (526: type:module أفشل require).
+    if workdir == root and (needs_deps or any(
+            c.startswith(("npm", "pnpm", "npx")) for c in effective)):
+        outcome.gathered = gather_build_prerequisites(root)
     if (needs_deps and "npm install" not in effective
             and "npm ci" not in effective and "pnpm install" not in effective
             and (workdir / "package.json").is_file()):
