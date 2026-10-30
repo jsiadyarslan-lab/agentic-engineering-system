@@ -129,3 +129,24 @@ def test_web_search_parses_ddg_html():
     assert results[0]["url"] == "https://example.com/a"
     assert results[0]["title"].startswith("عنوان النتيجة الأولى")
     assert "مقتطف" in results[0]["snippet"]
+
+
+def test_generate_pdf_arabic_survives_escape_and_markup_text(tmp_path):
+    """(W2-T25) نص المنفذ أحيانًا يحمل تسلسلات هروب حرفية ‎\\uXXXX‎
+    وبوسوم XML — تفلسم Paragraph فيفشل PDF كاملًا على تقرير سليم
+    (قياس حي الخطوة 460: MODULE view «المنفذ الحي فشل» على عمل صحيح).
+    التنظيف ميكانيكي داخل الكود المولد قبل التحليل."""
+    events: list[dict] = []
+    ctx = _ctx(tmp_path, events.append)
+    md = (
+        "# تقرير بهروب حرفي\n\n"
+        "متن يحتوي \\ufed2\\ufee0\\ufe80 تسلسلات وبوسوم <b>و</b> & رموز\n\n"
+        "## المصادر\n\n"
+        "- مصدر أول\n"
+    )
+    run_tool("write_file", {"path": "report.md", "content": md}, ctx)
+    run_tool("generate_pdf_arabic",
+             {"md_path": "report.md", "out_path": "report.pdf"}, ctx)
+    pages = run_tool("verify_pdf_pages", {"path": "report.pdf"}, ctx)
+    assert pages == 1
+    assert (tmp_path / "report.pdf").stat().st_size > 1000

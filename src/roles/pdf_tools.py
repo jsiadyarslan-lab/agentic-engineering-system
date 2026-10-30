@@ -27,6 +27,11 @@ def build_pdf_code(md_rel: str, out_rel: str, font_path: str,
         f"payload = json.loads({json.dumps({'md': md_rel, 'out': out_rel, 'font': font_path})!r})\n"
         f"root = {root_expr}\n"
         "md = (root / payload['md']).read_text(encoding='utf-8')\n"
+        "import re as _re\n"
+        # (W2-T25) تنظيف تسلسلات الهروب الحرفية \uXXXX من نص المنفذ
+        "md = _re.sub(r'\\\\u[0-9a-fA-F]{4}', '', md)\n"
+        # (W2-T25) XML entities تفلسم Paragraph
+        "md = md.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')\n"
         "font = pathlib.Path(payload['font'])\n"
         "pdfmetrics.registerFont(TTFont('PlexArabic', str(font)))\n"
         "def ar(t):\n"
