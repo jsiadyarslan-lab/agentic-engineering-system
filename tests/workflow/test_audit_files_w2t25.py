@@ -80,3 +80,19 @@ def test_audit_criterion_wrong_dir_not_satisfied():
     assert _check_criterion(
         "File articles.json exists.", evidence) is True
     assert "data/articles.json" not in evidence["files"]
+
+
+def test_audit_mdx_criterion_satisfied():
+    """«3 .mdx files exist (breaking-news.mdx...)» — امتداد mdx في رمز
+    المدقق + الحد الخلفي يمنع مطابقة md كبادئة لmdx (قياس 431: الملفات
+    موجودة في الأدلة والمدقق حكم بالمفقود ثلاث مرات)."""
+    evidence = {"files": {
+        "content/articles/breaking-news.mdx": {"sha256": "a" * 64},
+        "content/articles/tech-update.mdx": {"sha256": "b" * 64},
+        "content/articles/sports-highlights.mdx": {"sha256": "c" * 64},
+        "package.json": {"sha256": "d" * 64},
+    }}
+    assert _check_criterion(
+        "3 .mdx files exist (e.g., breaking-news.mdx, tech-update.mdx, "
+        "sports-highlights.mdx) each with frontmatter: title, date, "
+        "excerpt, slug", evidence)

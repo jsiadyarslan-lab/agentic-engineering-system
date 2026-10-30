@@ -18,8 +18,11 @@ import re
 from pathlib import Path
 
 #: الرمز الملفي — اسم ملف بامتغال قابل للفحص داخل نص المعيار.
+#: (W2-T25) امتدادات البناء كاملة (mdx/astro/js/ts/tsx/...) + حد خلفي
+#: (?!\w) يمنع مطابقة md كبادئة لmdx (قياس 431).
 _FILE_TOKEN = re.compile(
-    r"[\w\-.]+\.(?:md|pdf|json|txt|csv|py|html|htm|xml|log|yml|yaml|toml|svg|png)"
+    r"[\w\-.]+\.(?:mdx|md|pdf|json|txt|csv|py|html?|xml|log|ya?ml|toml"
+    r"|svg|png|jpe?g|webp|gif|ico|mjs|cjs|jsx?|tsx?|css|astro|env)(?!\w)"
 )
 
 
