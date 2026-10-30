@@ -239,6 +239,8 @@ class LiveImplementer(LiveRoleBase):
                 request.task.acceptance_criteria, request.task.id,
             )
             created_files: list[tuple[str, str]] = []
+            artifacts: list[str] = []
+            evidence_refs: list[str] = []
             if required_build:
                 self._stop_requested(ctx, "implementer.create_files")
                 created_files = build_files.create_files_phase(
@@ -250,6 +252,20 @@ class LiveImplementer(LiveRoleBase):
                     previous_attempts=list(request.previous_attempts or []),
                     role=self.ROLE,
                 )
+                # (2.6 W2-T25) الكتابة الفورية قبل أوامر البناء: البناء
+                # يحتاج الملفات على القرص (قياس 362: build.js لم يُكتب بعد
+                # ففشل npm run build بMODULE_NOT_FOUND على عمل صحيح).
+                for build_path, build_body in created_files:
+                    run_tool(
+                        "write_file",
+                        {"path": build_path, "content": build_body},
+                        ctx,
+                    )
+                    built = root / build_path
+                    artifacts.append(str(built))
+                    evidence_refs.append(
+                        f"sha256:{_sha16(built)}:{build_path}"
+                    )
             # (2.7) أوامر البناء الحقيقية (W2-T24) — npm install/build
             # تُنفَّذ فعليًا بأدلة exit_code؛ وفقد node/npm فشل صادق
             # يغذي تصنيف المحرك (BUILD_TOOLING_MISSING → حاجز توفير).
@@ -309,21 +325,8 @@ class LiveImplementer(LiveRoleBase):
             report_md = self._write_report(task_payload, report_materials)
 
             # (3) الكتابة والـPDF — كلها عبر الأدوات (ركيزة + توثيق)
-            artifacts: list[str] = []
-            evidence_refs: list[str] = []
-            # (3.5) ملفات البناء أولًا (W2-T23) — عبر write_file داخل
-            # الركيزة بأدلة sha256 لكل ملف؛ المعايير هي العقد.
-            for build_path, build_body in created_files:
-                run_tool(
-                    "write_file",
-                    {"path": build_path, "content": build_body},
-                    ctx,
-                )
-                built = root / build_path
-                artifacts.append(str(built))
-                evidence_refs.append(
-                    f"sha256:{_sha16(built)}:{build_path}"
-                )
+            # (3.5 W2-T25) ملفات البناء كُتبت فورًا في (2.6) قبل الأوامر —
+            # هنا نواتج الأوامر والتقرير فقط.
             for build_artifact in (
                     build_outcome.artifacts if build_outcome else []):
                 artifacts.append(str(build_artifact))

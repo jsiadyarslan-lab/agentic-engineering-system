@@ -626,3 +626,50 @@ def test_parse_created_files_accepts_svg():
     )
     files = _parse(text, ["news1.jpg"])
     assert files[0][0] == "assets/images/news1.svg"
+
+
+def test_build_files_written_before_build_commands(tmp_path, monkeypatch):
+    """ترتيب الطورين: ملفات البناء على القرص قبل تشغيل أوامر البناء —
+    قياس حي الخطوة 362: create_files فُرِّغت فقط (كتابة القرص كانت في
+    3.5 بعد الأوامر!) ففشل npm run build بMODULE_NOT_FOUND على
+    scripts/build.js الذي كان محفوظًا في الرد ولم يصل القرص بعد."""
+    written = _fake_tools(monkeypatch, tmp_path)
+    import roles.tools as roles_tools_mod
+    fake_run = roles_tools_mod.run_tool  # المزيفة من _fake_tools
+
+    def spy_run(name, args, ctx, **kw):
+        if name == "run_build_command":
+            # عند تنفيذ أمر البناء يجب أن يكون الملف المطلوب مكتوبًا
+            assert (Path(ctx.grant_root) / "scripts" / "build.js").is_file(), (
+                "أمر البناء شُغّل قبل كتابة scripts/build.js على القرص")
+            return {"exit_code": 0, "duration_s": 0.1}
+        return fake_run(name, args, ctx, **kw)
+
+    monkeypatch.setattr(roles_tools_mod, "run_tool", spy_run)
+    create_response = (
+        "### FILE: scripts/build.js\n"
+        "```js\n"
+        "const fs = require('fs');\n"
+        "fs.mkdirSync('dist', {recursive: true});\n"
+        "```\n"
+        "### FILE: index.html\n"
+        "```html\n"
+        "<!DOCTYPE html><html><body>news</body></html>\n"
+        "```\n"
+    )
+    router = FakeRouter([
+        "# لا استدعاءات أدوات خارجية — مهمة بناء محلية فقط",
+        create_response,
+        REPORT_MD,
+    ])
+    criteria = [
+        "ملف scripts/build.js موجود",
+        "node scripts/build.js ينفذ دون استثناءات",
+        "مجلد dist/ يُنشأ ويحتوي على index.html",
+    ]
+    implementer = LiveImplementer(router)
+    result = implementer.run(_build_request(tmp_path, criteria))
+    # خطة فارغة → create_files → (لا تقرير؟ التقرير دائمًا) — النداءات
+    assert result.status is ImplementerStatus.EXECUTED, result.stderr_truncated
+    written_paths = {w["path"] for w in written}
+    assert "scripts/build.js" in written_paths
