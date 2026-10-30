@@ -673,3 +673,16 @@ def test_build_files_written_before_build_commands(tmp_path, monkeypatch):
     assert result.status is ImplementerStatus.EXECUTED, result.stderr_truncated
     written_paths = {w["path"] for w in written}
     assert "scripts/build.js" in written_paths
+
+
+def test_required_build_files_bracket_dynamic_routes():
+    """مسارات Astro الديناميكية بأقواس — «src/pages/news/[slug].astro»
+    تُستخرج كاملة (قياس حي الخطوة 428: القوس أفشل الاستخراج فلم
+    يُطلب الملف ولم يُكتب وحكم المراجع بالغياب)."""
+    criteria = [
+        "File exists at src/pages/news/[slug].astro",
+        "Exports async getStaticPaths() returning params from getCollection('news')",
+        "Uses ArticleLayout with frontmatter and <Content />",
+    ]
+    req = build_files.required_build_files(criteria, "T1")
+    assert "src/pages/news/[slug].astro" in req

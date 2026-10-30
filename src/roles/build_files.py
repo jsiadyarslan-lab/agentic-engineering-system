@@ -32,7 +32,7 @@ from router.model_router import ChatMessage
 #: ملفات البناء القابلة للطلب — الحد الخلفي (?!\w) يمنع ابتلاع
 #: js لـ json (خطأ ترتيب البدائل الكلاسيكي).
 _BUILD_FILENAME = re.compile(
-    r"(?:[\w@./-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
+    r"(?:[\w@./\[\]-]+\.(?:astro|mjs|cjs|json|mdx|toml|yaml|yml|html|css"
     r"|tsx|jsx|csv|xml|txt|log|md|js|ts|py|env|svg|jpe?g|png|webp|gif|ico)"
     # (W2-T25) ملف نقطي: لا يسبق النقطة حرف كلمة فلا يبتلع «file.env».
     r"|(?<![\w@./-])\.(?:gitignore|editorconfig|npmrc|nvmrc"
