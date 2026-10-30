@@ -197,6 +197,44 @@ def test_required_build_commands_step545_npm_run_dev():
     assert build_commands.required_build_commands(criteria) == ["npm run dev"]
 
 
+def test_required_build_commands_step562_tsc_noemit():
+    """معايير 562 الحرفية: فحص الأنواع يُستخرج ويُنفَّذ فعليًا — قياس حي
+    (الخطة v58): npx tsc --noEmit لم يكن في الأنماط (الديناميكي
+    الحصري لـ--version) فلا يمكن تنفيذه قط."""
+    criteria = [
+        "npx tsc --noEmit executed",
+        "Output captured to build-typecheck.log",
+        "Any errors documented for fixing",
+    ]
+    assert build_commands.required_build_commands(criteria) == [
+        "npx --yes tsc --noEmit"]
+
+
+def test_run_build_command_tsc_noemit_real(tmp_path, monkeypatch):
+    """npx tsc --noEmit: فحص أنواع حقيقي بأدلة stdout/exit على القرص."""
+    stub_dir = tmp_path / "stub-bin"
+    stub_dir.mkdir()
+    npx = stub_dir / "npx"
+    npx.write_text(
+        "#!/bin/sh\ncase \"$2 $3\" in \"tsc --noEmit\")"
+        " echo 'No type errors found' ;; *) echo npx-$1-$2 ;; esac\n")
+    npx.chmod(npx.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    node = stub_dir / "node"
+    node.write_text("#!/bin/sh\necho v22.0.0-stub\n")
+    node.chmod(node.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    npm = stub_dir / "npm"
+    npm.write_text("#!/bin/sh\necho stub-npm\n")
+    npm.chmod(npm.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP)
+    _patch_tool_paths(monkeypatch, stub_dir)
+
+    value = run_tool("run_build_command",
+                     {"command": "npx --yes tsc --noEmit", "timeout_s": 60},
+                     _ctx(tmp_path))
+    assert value["exit_code"] == 0
+    stdout_txt = tmp_path / "evidence" / "build-npx---yes-tsc---noEmit-stdout.txt"
+    assert "No type errors" in stdout_txt.read_text()
+
+
 def test_run_build_command_npm_run_dev_watches_url(tmp_path, monkeypatch):
     """npm run dev: خادم معاينة يُراقب ويُقتل عند رؤية Local — كpreview."""
     import time as _time

@@ -26,16 +26,16 @@ _COMMAND_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"npm\s+run\s+dev\b", re.IGNORECASE), "npm run dev"),  # 545
     (re.compile(r"node\s+--version", re.IGNORECASE), "node --version"),
     (re.compile(r"npm\s+--version", re.IGNORECASE), "npm --version"),
-    # (W2-T25) أدوات التحقق + عبارة التحقق العامة (قياس 512: w3.org).
     (re.compile(r"npx\s+htmlhint|validator\.w3\.org|أداة تحقق HTML|فحص HTML",
                 re.IGNORECASE), "npx --yes htmlhint *.html"),
+    (re.compile(r"npx\s+tsc\s+--noEmit\b", re.IGNORECASE),
+     "npx --yes tsc --noEmit"),  # (W2-T25 562) فحص أنواع قراءة فقط
     (re.compile(r"node\s+verify\.js\b", re.IGNORECASE), "node verify.js"),
     (re.compile(r"node\s+verify\.mjs\b", re.IGNORECASE), "node verify.mjs"),
     (re.compile(r"node\s+server\.js\b", re.IGNORECASE), "node server.js"),  # (W2-T25 492)
     (re.compile(r"pnpm\s+(?:ci|install)", re.IGNORECASE), "pnpm install"),
     (re.compile(r"pnpm\s+dev\b", re.IGNORECASE), "pnpm dev"),
-    (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE),
-     "npm test"),  # (W2-T25 497) اختبارات المشروع
+    (re.compile(r"npm\s+(?:run\s+)?test\b", re.IGNORECASE), "npm test"),  # 497
 )
 _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"node_modules/|package-lock\.json", re.IGNORECASE),
@@ -46,16 +46,18 @@ _OUTPUT_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
 _COMMAND_ORDER = {
     "node --version": 0, "npm --version": 0, "npm ci": 1,
     "npm install": 1, "npm run lint": 2, "npm run build": 3,
-    "npm run preview": 4, "npm run dev": 4, "npx --yes htmlhint *.html": 5,
+    "npm run preview": 4, "npm run dev": 4,
     "node verify.js": 6, "node verify.mjs": 6, "node server.js": 7,
+    "npx --yes htmlhint *.html": 5, "npx --yes tsc --noEmit": 6,
     "npm test": 8,
     "pnpm install": 1, "pnpm dev": 4,
 }
 _COMMAND_TIMEOUTS = {
     "node --version": 30, "npm --version": 30, "npm ci": 600,
     "npm install": 600, "npm run lint": 300, "npm run build": 600,
-    "npm run preview": 90, "npm run dev": 90, "npx --yes htmlhint *.html": 300,
+    "npm run preview": 90, "npm run dev": 90,
     "node verify.js": 120, "node verify.mjs": 120, "node server.js": 60,
+    "npx --yes htmlhint *.html": 300, "npx --yes tsc --noEmit": 300,
     "npm test": 300,
     "pnpm install": 600, "pnpm dev": 90,
 }
@@ -97,8 +99,7 @@ def missing_build_tooling() -> list[str]:
 
 def gather_build_prerequisites(root: Path, *, include_files: bool = True,
                                extra_files: tuple = ()) -> dict[str, list[str]]:
-    """جلب متطلبات سابقة: نسخ المصدرية وsymlink الثقيلة بلا استبدال —
-    مسارات مطلقة (النسبي المعلق يصطدم Errno 17 — قياس 161)."""
+    """نسخ المصدرية وsymlink الثقيلة بلا استبدال — مسارات مطلقة (161)."""
     copied: list[str] = []
     linked: list[str] = []
     root = root.resolve()
@@ -246,10 +247,9 @@ def run_build_commands_phase(
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
 
-    # (W2-T25) سكربت التحقق المكتوب يُشغَّل حين تطلب المعايير فحص DOM (309).
+    # (W2-T25) سكربت التحقق المكتوب يُشغَّل لفحص DOM (قياس 309).
     if re.search(r"querySelector|فحص DOM|DOM check",
-                 " ".join(map(str, acceptance_criteria or [])),
-                 re.IGNORECASE):
+                 " ".join(map(str, acceptance_criteria or [])), re.IGNORECASE):
         commands += [f"node {n}" for n in ("verify.js", "verify.mjs")
                      if (root / n).is_file() and f"node {n}" not in commands]
 

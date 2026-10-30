@@ -20,11 +20,11 @@ from roles.tool_failures import ToolFailure
 #: أوامر مسموحة حصرًا — قائمة مغلقة (لا تفسير ولا وسائط حرة). تشترطها
 #: معايير خطط المصنع نصًّا فلم تكن تُنفّذ والتزم المنفذ بالصدق («لا دليل»).
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
-    "node --version", "npm --version",
-    "npm install", "npm ci",
+    "node --version", "npm --version", "npm install", "npm ci", "npm test",
     "npm run build", "npm run preview", "npm run lint", "npm run dev",
-    "npx --yes htmlhint *.html", "node verify.js", "node verify.mjs",
-    "pnpm install", "pnpm dev", "node server.js", "npm test",  # (492/497)
+    "npx --yes htmlhint *.html", "npx --yes tsc --noEmit",
+    "node verify.js", "node verify.mjs", "node server.js",
+    "pnpm install", "pnpm dev",  # (W2-T25 492/497/562)
 })
 #: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
