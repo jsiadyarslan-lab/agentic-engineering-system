@@ -315,6 +315,14 @@ class VerifierLive(LiveRoleBase):
         for name in re.findall(r"(--[a-zA-Z][\w-]*)\s*:", text):
             if name not in props:
                 props.append(name)
+        # (W2-T25) خريطة الإعلانات: معايير القيم تسكن وسط الملف
+        # («gap using spacing tokens»، «aspect-ratio 16:9» — قياس 465:
+        # ملف 6574 حرفًا والنافذة 2400 والخاصيات موجودة فعلًا).
+        decls: dict[str, int] = {}
+        for block in re.findall(r"\{([^{}]*)\}", text):
+            for dm in re.finditer(r"([a-zA-Z-]+)\s*:\s*[^;{}]+", block):
+                name = dm.group(1).lower()
+                decls[name] = decls.get(name, 0) + 1
         return {
             "rule_count": len(selectors),
             "selectors": selectors[:64],
@@ -322,6 +330,10 @@ class VerifierLive(LiveRoleBase):
                               if s.startswith("@media")][:12],
             "custom_property_count": len(props),
             "custom_properties": props[:40],
+            "declaration_count": sum(decls.values()),
+            "declarations": {
+                k: decls[k] for k in sorted(decls)[:96]},
+            "var_function_count": len(re.findall(r"var\(--", text)),
         }
 
     def _content_head(self, path: Path) -> str | None:

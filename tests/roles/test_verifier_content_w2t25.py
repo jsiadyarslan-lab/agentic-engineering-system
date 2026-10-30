@@ -482,7 +482,11 @@ def test_css_summary_selectors_reach_verifier(tmp_path):
     body += ("a { color: inherit; text-decoration: underline; }\n"
              "a:hover { text-decoration: none; }\n"
              ".container { width: 100%; margin-inline: auto; }\n"
-             ".sr-only { position: absolute; clip: rect(0 0 0 0); }\n")
+             ".sr-only { position: absolute; clip: rect(0 0 0 0); }\n"
+             ".site-header { display: flex; gap: var(--space-2); }\n"
+             ".card img { aspect-ratio: 16 / 9; object-fit: cover; }\n"
+             "#articles-grid { display: grid; grid-template-columns: "
+             "repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); }\n")
     body += "".join(
         f".tail{i} {{ padding: 0; }}\n" for i in range(30))
     body += ("@media (min-width: 640px) {\n"
@@ -511,6 +515,12 @@ def test_css_summary_selectors_reach_verifier(tmp_path):
     assert summary["custom_property_count"] == 4
     assert "--color-primary" in summary["custom_properties"]
     assert "@media (min-width: 640px)" in summary["media_queries"]
+    # (W2-T25) خريطة الإعلانات — معايير القيم وسط الملف (قياس 465)
+    assert summary["declarations"]["gap"] == 2
+    assert summary["declarations"]["aspect-ratio"] == 1
+    assert summary["declarations"]["display"] == 2
+    assert summary["declarations"]["grid-template-columns"] == 1
+    assert summary["var_function_count"] == 2
 
 
 def test_css_summary_absent_for_non_css_and_honest_zero(tmp_path):
@@ -537,9 +547,12 @@ def test_css_summary_absent_for_non_css_and_honest_zero(tmp_path):
     summary = payload["facts"]["files"]["empty.css"]["css_summary"]
     assert summary["rule_count"] == 0
     assert summary["selectors"] == []
+    assert summary["declarations"] == {}
+    assert summary["var_function_count"] == 0
 
 
 def test_verifier_prompt_mentions_css_summary():
-    """البرومبت يعلن قاعدة css_summary للمراجع (لا يفاجأ بها)."""
+    """البرومبت يعلن قاعدة css_summary وdeclarations للمراجع."""
     prompt = (REPO / "prompts" / "verifier.md").read_text(encoding="utf-8")
     assert "css_summary" in prompt
+    assert "declarations" in prompt

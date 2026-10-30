@@ -31,7 +31,12 @@ custom properties» يتحقق من عدّ كل متغير مذكور ≥1. وم
 المخصصة المعرَّفة) — معيار «Utility classes .container and
 .sr-only» أو «Link (a) base typography» يتحقق من وجود المحدد
 في `selectors` مهما بلغ حجم الملف: النوافذ النصية (رأس/ذيل)
-لا ترى وسط الملف والملخص يراه كاملًا.
+لا ترى وسط الملف والملخص يراه كاملًا. والملخص يضم خريطة
+`declarations` (خاصية → عدد مرات الإعلان في الملف كاملًا)
+و`var_function_count` — معيار «Gap using spacing tokens» أو
+«Aspect-ratio 16:9» يتحقق من وجود الخاصية في `declarations`
+(مع `var_function_count` وtoken_counts لدليل قيم التوكنز)
+حتى لو كانت في وسط الملف خارج النوافذ.
 
 ## قواعد صارمة
 1. أعد **JSON فقط**.
