@@ -410,6 +410,13 @@ class VerifierLive(LiveRoleBase):
             path = Path(reference)
             entry: dict[str, Any] = {
                 "exists": path.is_file(),
+                # (W2-T25) قابلية الكتابة حقيقة ميكانيكية مقيسة — معيار
+                # «Each file exists and is writable» كان يحكم النقص لأن
+                # الحقائق بلا أي بيانات صلاحيات (قياس 726: الملفات
+                # الخمسة موجودة على القرص والمراجع أعمى للكتابة فرفض
+                # الدورة كاملة التنفيذ بصمت «no file permission data»).
+                "writable": __import__("os").access(
+                    path, __import__("os").W_OK),
                 "sha256_head": (
                     __import__("hashlib")
                     .sha256(path.read_bytes())
