@@ -117,6 +117,10 @@
     return k ? k[0] : String(kind || "حدث");
   }
 
+  function known(kind) {
+    return !!KINDS[String(kind || "")];
+  }
+
   function toneOf(kind) {
     var k = KINDS[String(kind || "")];
     return k ? k[1] : "";
@@ -324,6 +328,7 @@
 
   window.Evolution = {
     title: title,
+    known: known,
     toneOf: toneOf,
     narrate: narrate,
     toolLabel: toolLabel,

@@ -477,6 +477,8 @@
   function select(pid) {
     S.sel = pid;
     S.evLastId = 0;
+    S.now = {}; /* M6: «الآن» للمشروع المحدد حصرًا — بلا تبعثرة */
+    renderNow();
     S.toolCards = {};
     S.modelCards = {};
     S.flowCount = 0;
@@ -1096,7 +1098,7 @@
     var tone = Evolution.toneOf(kind);
     var c = evtShell("evt-generic" + (tone ? " evt-" + tone : ""), "i-info");
     var title = el("span", "evt-title");
-    var known = !!KIND_TITLES[kind];
+    var known = !!KIND_TITLES[kind] || Evolution.known(kind);
     title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind)));
     if (!known) tech(title, kind); /* النوع الخام مرئي للتتبع — لا اختفاء */
     c._row.appendChild(title);
@@ -1537,6 +1539,16 @@
     if (n) n.textContent = val;
   }
   function updateStatsFromRuns() {
+    /* M6: حالة الانتظار الحقيقية تغذي «الآن» حتى بلا أحدث جديدة */
+    var r = findRun(S.sel);
+    if (r && r.waiting_for && r.waiting_for.kind === "owner_gate") {
+      S.now.action = "بانتظار اعتمادك — التنفيذ متوقف على قرارك";
+      S.now.tone = "warn";
+      S.now.role = "";
+      S.now.model = "";
+      S.now.obj = "";
+      S.now.step = null;
+    }
     var r = findRun(S.sel);
     var p = findProject(S.sel);
     var st = statusMeta(r, p);
