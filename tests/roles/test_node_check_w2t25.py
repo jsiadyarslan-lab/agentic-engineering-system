@@ -145,3 +145,31 @@ def test_thinness_ratchets_hold():
                           ("src/roles/build_tool.py", 260)):
         n = len((REPO / path).read_text(encoding="utf-8").splitlines())
         assert n < ceiling, f"{path}={n} >= {ceiling}"
+
+
+def test_generic_node_script_extracted_and_runs(tmp_path, monkeypatch):
+    """«node validate-data.js» (سكربت يكتبه المنفذ) يُستخرج ويُنفَّذ."""
+    _patch(monkeypatch, _make_stub_tools(tmp_path))
+    cmds = build_commands.required_build_commands([
+        "Running `node validate-data.js` confirms data integrity (exit 0).",
+    ])
+    assert "node validate-data.js" in cmds
+    (tmp_path / "validate-data.js").write_text(
+        "console.log('data ok');\n")
+    value = run_tool("run_build_command",
+                     {"command": "node validate-data.js", "timeout_s": 30},
+                     ToolContext(grant_root=tmp_path))
+    assert value["exit_code"] == 0
+    ev = tmp_path / "evidence"
+    assert any("validate-data" in p.name and "exit" in p.name
+               for p in ev.iterdir())
+
+
+def test_node_script_traversal_rejected(tmp_path, monkeypatch):
+    """«node ../x.js» → POLICY_BLOCK — المسار النسبي الآمن حصرًا."""
+    _patch(monkeypatch, _make_stub_tools(tmp_path))
+    with pytest.raises(ToolFailure) as err:
+        run_tool("run_build_command",
+                 {"command": "node ../secrets.js"},
+                 ToolContext(grant_root=tmp_path))
+    assert err.value.reason == "COMMAND_NOT_WHITELISTED"

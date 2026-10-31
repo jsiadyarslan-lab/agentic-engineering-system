@@ -143,8 +143,8 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
     if (command not in BUILD_COMMAND_WHITELIST
             and not re.fullmatch(r"npx --yes [\w@/.-]+ --version", command)
             and not (".." not in command and re.fullmatch(
-                r"node --check [\w@/.-]+\.(?:js|mjs|cjs|ts|tsx|json)",
-                command))):
+                r"node (?:--check )?[\w@/.-]+"
+                r"\.(?:js|mjs|cjs|ts|tsx|json)", command))):
         raise ToolFailure(
             "run_build_command",
             f"أمر بناء خارج القائمة البيضاء: '{command}' "

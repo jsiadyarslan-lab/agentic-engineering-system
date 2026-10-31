@@ -1,10 +1,8 @@
 """طور أوامر البناء الحقيقية (W2-T24) — npm يُنفَّذ فعليًا بأدلة صادقة.
-بطاقة W2-T23: نواتج الأوامر تُنتج بأوامر حقيقية — لا تُختلق نصًّا.
-
+بطاقة W2-T23: نواتج الأوامر تُنتج بأوامر حقيقية لا تُختلق.
 - required_build_commands(): أوامر المعايير بترتيب التبعية.
 - gather_build_prerequisites() + run_build_commands_phase(): جلب ← فحص ← تنفيذ.
-فقد الأدوات عائق توفير (BUILD_TOOLING_MISSING → PREFLIGHT قابلة
-للحل بإعادة الفحص — W1-T06) لا فشل خطوة.
+فقد الأدوات عائق توفير (PREFLIGHT قابلة للحل — W1-T06) لا فشل خطوة.
 """
 
 from __future__ import annotations
@@ -67,7 +65,6 @@ _GATHER_FILES = (
 _GATHER_DIRS = ("src", "public", "styles")
 _GATHER_LINK_DIRS = ("node_modules", ".astro")  # ثقيلة symlink
 
-
 def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
     """أوامر المعايير + «npx --version» الديناميكي — الفارغة = بلا طور."""
     found: set[str] = set()
@@ -85,8 +82,12 @@ def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
         for hit in re.finditer(r"node\s+--check\s+([\w@/.-]+)", text,
                                re.IGNORECASE):
             found.add(f"node --check {hit.group(1)}")
+        for hit in re.finditer(  # (728) سكربت تحقق يكتبه المنفذ نفسه
+                r"node\s+([\w@/.-]+\.(?:js|mjs|cjs))\b", text,
+                re.IGNORECASE):
+            if hit.group(1) not in ("verify.js", "verify.mjs", "server.js"):
+                found.add(f"node {hit.group(1)}")
     return sorted(found, key=lambda c: _COMMAND_ORDER.get(c, 5))[:6]
-
 
 def missing_build_tooling() -> list[str]:
     """الأدوات الغائبة فعليًا (node/npm) — من PATH والمسارات."""
@@ -96,7 +97,6 @@ def missing_build_tooling() -> list[str]:
         name for name in ("node", "npm")
         if resolve_build_tool(name) is None
     ]
-
 
 def gather_build_prerequisites(root: Path, *, include_files: bool = True,
                                extra_files: tuple = ()) -> dict[str, list[str]]:
@@ -136,12 +136,11 @@ def gather_build_prerequisites(root: Path, *, include_files: bool = True,
             source = source_dir / name
             target = root / name
             if source.is_dir() and not target.exists():
-                if target.is_symlink():  # معلق قديم يُستبدل
-                    target.unlink()
+                if target.is_symlink():
+                    target.unlink()  # معلق قديم يُستبدل
                 target.symlink_to(source, target_is_directory=True)
                 linked.append(name)
     return {"copied": copied, "linked": linked}
-
 
 def _criterion_output_names(
     acceptance_criteria: list[str] | None,
@@ -156,7 +155,6 @@ def _criterion_output_names(
             if clean and clean not in names:
                 names.append(clean)
     return names[:16]
-
 
 def collect_criterion_outputs(
     root: Path, acceptance_criteria: list[str] | None,
@@ -183,7 +181,6 @@ def collect_criterion_outputs(
                         break
     return artifacts[:24]
 
-
 @dataclass
 class BuildPhaseOutcome:
     """نتيجة طور الأوامر — المنفذ الحي يستهلكها نحيلًا."""
@@ -195,8 +192,7 @@ class BuildPhaseOutcome:
     failed_result: object | None = None  # ImplementerResult عند الفشل
     summary: str = ""
 
-
-def _tooling_missing_result(missing: list[str], commands: list[str]) -> object:
+def _tooling_missing_result(missing: list, commands: list) -> object:
     from roles.implementer import ImplementerResult, ImplementerStatus
 
     message = (
@@ -214,7 +210,6 @@ def _tooling_missing_result(missing: list[str], commands: list[str]) -> object:
             "missing": missing, "commands": commands,
         },
     )
-
 
 def _command_failed_result(command: str, failure) -> object:
     from roles.implementer import ImplementerResult, ImplementerStatus
@@ -237,17 +232,15 @@ def _command_failed_result(command: str, failure) -> object:
         },
     )
 
-
 def run_build_commands_phase(
     ctx, root: Path, commands: list[str],
     acceptance_criteria: list[str] | None,
 ) -> BuildPhaseOutcome:
-    """الطور الكامل: فحص الأدوات → التجميع → التنفيذ → الأدلة — فشل أي
-    أمر = فشل صادق برسالة حقيقية عبر run_tool المسجل."""
+    """الطور الكامل: أدوات ← تجميع ← تنفيذ ← أدلة — فشل أمر = فشل صادق."""
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
 
-    # (W2-T25 309) سكربت التحقق المكتوب يُشغَّل لفحص DOM.
+    # (309) سكربت التحقق المكتوب يُشغَّل لفحص DOM.
     if re.search(r"querySelector|فحص DOM|DOM check",
                  " ".join(map(str, acceptance_criteria or [])), re.IGNORECASE):
         commands += [f"node {n}" for n in ("verify.js", "verify.mjs")
@@ -257,7 +250,7 @@ def run_build_commands_phase(
     if not commands:
         return outcome
 
-    # (W2-T25 497) دليل npm المتداخل أولًا.
+    # (497) دليل npm المتداخل أولًا.
     _m = re.search(r"([\w@./-]+)/package\.json",
                    " ".join(map(str, acceptance_criteria or [])))
     _sub = root / _m.group(1).strip("/") if _m and ".." not in _m.group(1) \
@@ -268,15 +261,15 @@ def run_build_commands_phase(
     if (workdir / "dist").is_symlink():  # (506) قديم يُنزع
         (workdir / "dist").unlink()
 
-    # (W2-T25) ci بلا lockfile = install (388).
+    # (388) ci بلا lockfile = install.
     effective = list(commands)
     if "npm ci" in effective and not (workdir / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    # (W2-T25 597) install قبل الخوادم/الاختبار.
+    # (597) install قبل الخوادم/الاختبار.
     needs_deps = any(command in ("npm run build", "npm run preview", "npm run dev",
                                  "pnpm dev", "node server.js", "npm test", "pnpm lint",
                                  "npm run lint", "pnpm build") for command in effective)
-    # (W2-T25 520/526/545) جلب ملفات الإطار والمعايير.
+    # (520/526/545) جلب ملفات الإطار والمعايير.
     if workdir == root and (needs_deps or any(
             c.startswith(("npm", "pnpm", "npx")) for c in effective)):
         outcome.gathered = gather_build_prerequisites(
@@ -295,7 +288,8 @@ def run_build_commands_phase(
             value = run_tool(
                 "run_build_command",
                 {"command": command, "timeout_s": timeout,
-                 "cwd": "" if command.startswith("node --check ") else _rel},
+                 "cwd": "" if (command.startswith("node ")
+                               and "server" not in command) else _rel},
                 ctx,
             )
         except ToolFailure as failure:
@@ -327,7 +321,6 @@ def run_build_commands_phase(
     extra = f" وجلبت {gathered_count} متطلبًا من خطوات سابقة" if gathered_count else ""
     outcome.summary = f"نفّذت {ran} أمر بناء فعلي{extra}"
     return outcome
-
 
 __all__ = [
     "BuildPhaseOutcome",
