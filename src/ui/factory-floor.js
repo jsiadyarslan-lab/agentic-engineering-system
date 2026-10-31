@@ -14,6 +14,14 @@
 (function () {
   "use strict";
 
+  /* M1: حارس — إن غاب محرّك السرد فالواجهة تعمل بصدق دون سرد */
+  if (!window.Evolution) {
+    window.Evolution = { title: function (k) { return String(k || "حدث"); },
+      toneOf: function () { return ""; }, narrate: function () { return null; },
+      toolLabel: function () { return ""; }, toolNarr: function () { return null; },
+      roleMeta: function (r) { return { label: r || "وكيل", cls: "role-coordinator" }; } };
+  }
+
   var API = "/api";
   var MAX_NODES = 300;
 
@@ -653,6 +661,16 @@
 
   /* ---------- رسم الأحداث: عقود دلالية ---------- */
   function drawEvent(e) {
+    /* M1: عطل رسم حدث واحد لا يكسر البث أبدًا — تقرير مرة واحدة */
+    try { drawEventInner(e); } catch (err) {
+      try { console.warn("[floor] draw fail", e && e.kind, err); } catch (e2) {}
+      if (window.ErrorBoundary && window.ErrorBoundary.report && !drawEvent._warned) {
+        drawEvent._warned = true;
+        window.ErrorBoundary.report("تعذّر رسم حدث («" + (e && e.kind) + "»): " + err.message, err.stack);
+      }
+    }
+  }
+  function drawEventInner(e) {
     var id = parseInt(e.id || e.event_id || 0, 10);
     if (id) {
       if (id <= S.evLastId) return;
@@ -702,7 +720,8 @@
       card = evtShell("evt-tool", "i-terminal");
       card.setAttribute("data-toolkey", key);
       var title = el("span", "evt-title");
-      title.appendChild(el("span", "evt-kind", "أداة"));
+      var tl = Evolution.toolLabel(p.tool);
+      title.appendChild(el("span", "evt-kind", tl !== p.tool ? tl : "أداة"));
       var nm = el("span", "evt-tool-name");
       tech(nm, p.tool || "?");
       title.appendChild(nm);
@@ -739,11 +758,17 @@
     if (p.duration_ms) bits.push("زمن " + fmtDur(p.duration_ms));
     if (p.execution_site) bits.push("موقع " + p.execution_site);
     if (p.error) bits.push("خطأ: " + p.error);
-    var subTxt = p.summary ? String(p.summary) : "";
-    if (subTxt.length > 180) subTxt = subTxt.slice(0, 180) + "…";
     var sub = card._sub;
     sub.textContent = "";
-    if (subTxt) sub.appendChild(el("div", "evt-sub-line", subTxt));
+    var tn = Evolution.toolNarr(p);
+    if (tn && tn.text) {
+      sub.appendChild(el("div", "evt-sub-line", tn.text));
+      if (tn.ltr) tech(sub, tn.ltr);
+    } else {
+      var subTxt = p.summary ? String(p.summary) : "";
+      if (subTxt.length > 180) subTxt = subTxt.slice(0, 180) + "…";
+      if (subTxt) sub.appendChild(el("div", "evt-sub-line", subTxt));
+    }
     if (bits.length) {
       var meta = el("div", "evt-meta");
       bits.forEach(function (b) { tech(meta, b); });
@@ -780,15 +805,19 @@
     }
     if (kind === "MODEL_REASONING" || kind === "MODEL_CALL_PROGRESS") {
       if (p.chars) {
+        if (!S.rateBuf) S.rateBuf = [];
         S.rateBuf.push([Date.now(), Number(p.chars)]);
         var cut = Date.now() - 30000;
         while (S.rateBuf.length > 2 && S.rateBuf[0][0] < cut) S.rateBuf.shift();
       }
       card._chars = (card._chars || 0) + (Number(p.chars) || 0);
+      if (!card._t0) card._t0 = Date.now();
       card._sub.textContent = "";
       var prog = el("div", "evt-sub-line");
       prog.appendChild(el("span", "", kind === "MODEL_REASONING" ? "تفكير جارٍ — " : "إنتاج جارٍ — "));
       tech(prog, card._chars + " حرف");
+      var elS = (Date.now() - card._t0) / 1000;
+      if (elS > 2 && card._chars > 0) tech(prog, Math.round(card._chars / elS) + " حرف/ث");
       card._sub.appendChild(prog);
     }
     if (kind === "MODEL_CALL_COMPLETED") {
@@ -875,7 +904,7 @@
     var c = evtShell("evt-verdict " + (ok ? "evt-ok" : (warn ? "evt-warn" : "evt-fail")),
                      ok ? "i-check" : "i-alert");
     var title = el("span", "evt-title");
-    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || kind));
+    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind) || kind));
     if (verdict) title.appendChild(el("span", "evt-verdict-text", String(verdict)));
     if (p.step_id != null) tech(title, "#خطوة " + p.step_id);
     c._row.appendChild(title);
@@ -883,21 +912,31 @@
     return c;
   }
   function drawGeneric(kind, p, e) {
-    var c = evtShell("evt-generic", "i-info");
+    var tone = Evolution.toneOf(kind);
+    var c = evtShell("evt-generic" + (tone ? " evt-" + tone : ""), "i-info");
     var title = el("span", "evt-title");
-    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || kind));
+    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind)));
     c._row.appendChild(title);
-    var keys = Object.keys(p || {}).slice(0, 4);
-    if (keys.length) {
+    var narr = Evolution.narrate(kind, p);
+    if (narr && (narr.text || (narr.chips && narr.chips.length))) {
       var sub = el("div", "evt-sub");
-      keys.forEach(function (k) {
-        var v = typeof p[k] === "object" ? JSON.stringify(p[k]).slice(0, 60) : String(p[k]).slice(0, 80);
-        var line = el("div", "evt-kv");
-        line.appendChild(el("span", "evt-kv-label", k));
-        tech(line, v);
-        sub.appendChild(line);
-      });
+      if (narr.text) sub.appendChild(el("div", "evt-sub-line", narr.text));
+      (narr.chips || []).forEach(function (ch) { tech(sub, ch); });
       c.appendChild(sub);
+    } else {
+      /* لا سرد لهذا النوع: التفاصيل الخام بصدق — لا اختلاق */
+      var keys = Object.keys(p || {}).slice(0, 4);
+      if (keys.length) {
+        var sub2 = el("div", "evt-sub");
+        keys.forEach(function (k) {
+          var v = typeof p[k] === "object" ? JSON.stringify(p[k]).slice(0, 60) : String(p[k]).slice(0, 80);
+          var line = el("div", "evt-kv");
+          line.appendChild(el("span", "evt-kv-label", k));
+          tech(line, v);
+          sub2.appendChild(line);
+        });
+        c.appendChild(sub2);
+      }
     }
     stamp(c.querySelector(".evt-time"), e.created_at);
     return c;
