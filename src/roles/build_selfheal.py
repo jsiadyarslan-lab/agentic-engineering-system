@@ -9,6 +9,10 @@ build المناسب للإطار ويُعاد الأمر مرة واحدة؛ ا
 في المُخرج (self_heal) ليحكم المراجع على الناتج بوعي به. كل ما
 عداه فشل صادق كما كان: لا تخمين لسكربتات غير build، ولا دخول بلا
 إطار معروف، ولا مساس بـpackage.json المعطوب.
+
+القياس 849 (v91): tsconfig.json كُتب قبل next.config فلم يُعرف
+الإطار من ملف إعداد — الكشف يُكمل من اعتماديات package.json:
+next/astro في dependencies أو devDependencies تكفي للتعرف.
 """
 from __future__ import annotations
 
@@ -24,6 +28,21 @@ _FRAMEWORKS = (
     (("astro.config.mjs", "astro.config.ts"), "astro build"),
     (("next.config.js", "next.config.ts", "next.config.mjs"), "next build"),
 )
+#: كشف احتياطي من اعتماديات package.json (قياس 849 أعلاه).
+_DEPS = (("astro", "astro build"), ("next", "next build"))
+
+
+def _detect_framework(root: Path, pkg: dict):
+    """أمر بناء الإطار: من ملف الإعداد أولًا ثم من الاعتماديات."""
+    for cfgs, build_cmd in _FRAMEWORKS:
+        if any((root / c).exists() for c in cfgs):
+            return build_cmd
+    deps = {**(pkg.get("dependencies") or {}),
+            **(pkg.get("devDependencies") or {})}
+    for name, build_cmd in _DEPS:
+        if name in deps:
+            return build_cmd
+    return None
 
 
 def heal_and_rerun(workdir, command: str, stderr: bytes, argv: list,
@@ -49,11 +68,8 @@ def heal_and_rerun(workdir, command: str, stderr: bytes, argv: list,
             return None  # موجود فعلًا أو بنية شاذة — الفشل لسبب آخر
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
-    root = Path(workdir)
-    for cfgs, build_cmd in _FRAMEWORKS:
-        if any((root / c).exists() for c in cfgs):
-            break
-    else:
+    build_cmd = _detect_framework(Path(workdir), pkg)
+    if build_cmd is None:
         return None  # لا إطار معروف — لا تخمين أعمى
     scripts["build"] = build_cmd
     try:
