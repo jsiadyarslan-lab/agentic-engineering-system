@@ -35,10 +35,20 @@ def streaming_live_transport(
     المزود يعمل فعلًا — فيُوسم MODEL_TIMEOUT وهو حكم كاذب. النداء هنا
     يُبلّغ عن **نشاط حقيقي** (عدد الأحرف) دون تمرير الاستدلال كنص
     إجابة — الاستدلال لا يُعرض للعميل أبدًا.
+
+    (W2-T25 §D2) ``stream_idle_timeout`` (افتراض 240ث، 0 يعطل): مهلة
+    الصمت الحقيقي — القياس الحي 2026-10-31 16:27–16:44Z: مزود تجمّد
+    بلا محتوى ولا استدلال 17 دقيقة بينما إطارات الإبقاء على الحياة
+    تصل فتعيد ضبط مهلة المقبس فلا تنطلق — والحلقة تجمّدت داخل النداء
+    فلا تستطيع التقاط إعادة الطابور ولا الرد على وسم فقدان العامل.
+    الآن: المخرجات الفعلية وحدها (محتوى أو استدلال) تمدّد ساعة
+    النشاط؛ سكون أبعد من السقف = إحباط صادق مصنّف بدل تجميد صامت —
+    والفشل المبكر يعاد عقده من الحلقة ذاتها بلا وسم عامل مفقود.
     """
     base_url = str(provider_cfg["base_url"]).rstrip("/")
     api_key = str(provider_cfg.get("api_key", ""))
     timeout = float(provider_cfg.get("timeout", 120))
+    stream_idle = float(provider_cfg.get("stream_idle_timeout", 240) or 0)
     max_tokens = int(provider_cfg.get("max_tokens", 4000) or 0)
 
     def transport(model: str, messages: list[ChatMessage]):
@@ -90,7 +100,20 @@ def streaming_live_transport(
 
         with response:
             reasoning_chars = 0
+            last_activity = time.monotonic()
             for raw_line in response:
+                # (W2-T25 §D2) حارس الصمت الحقيقي — قبل معالجة السطر:
+                if stream_idle > 0:
+                    idle = time.monotonic() - last_activity
+                    if idle > stream_idle:
+                        raise ProviderCallError(
+                            f"بث صامت {idle:.0f}ث من {base_url} — بلا "
+                            "محتوى ولا استدلال (السقف "
+                            f"{stream_idle:.0f}ث) — إحباط صادق بدل "
+                            "تجميد حلقة التنفيذ (STREAM_IDLE_TIMEOUT)",
+                            is_timeout=True,
+                            error_class="STREAM_IDLE_TIMEOUT",
+                        )
                 line = raw_line.decode("utf-8", "replace").strip()
                 if not line.startswith("data:"):
                     continue
@@ -109,10 +132,12 @@ def streaming_live_transport(
                 reasoning = delta_obj.get("reasoning_content")
                 if reasoning:
                     reasoning_chars += len(str(reasoning))
+                    last_activity = time.monotonic()
                     if on_reasoning is not None:
                         on_reasoning(reasoning_chars)
                 delta = delta_obj.get("content")
                 if delta:
+                    last_activity = time.monotonic()
                     yield delta
 
     return transport

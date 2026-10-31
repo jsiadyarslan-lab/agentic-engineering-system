@@ -150,3 +150,101 @@ def test_streaming_transport_sends_stream_true(monkeypatch):
     assert body["stream"] is True
     assert body["model"] == "stub-model"
     assert body["max_tokens"] == 100
+
+
+def _install_ticking_sse(monkeypatch, frames: list[str], step_s: float):
+    """SSE بساعة زمنية مضبوطة: كل سطر يُقدّم الساعة step_s ثانية.
+
+    (W2-T25 §D2) يثبت مهلة الصمت الحقيقي: الإطارات تجيء (إبقاء حياة)
+    والساعة تجري — والمخرجات الفعلية وحدها تمدّد ساعة النشاط.
+    """
+    import router.streaming as streaming_mod
+
+    clock = {"now": 1000.0}
+
+    def fake_monotonic():
+        return clock["now"]
+
+    monkeypatch.setattr(streaming_mod.time, "monotonic", fake_monotonic)
+
+    class TickingResponse:
+        status = 200
+
+        def __init__(self, body_frames: list[str]):
+            self._frames = body_frames
+
+        def __iter__(self):
+            for frame in self._frames:
+                clock["now"] += step_s
+                yield frame.encode("utf-8")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(request, timeout=None):
+        return TickingResponse(frames)
+
+    monkeypatch.setattr(streaming_mod.urllib.request, "urlopen", fake_urlopen)
+
+
+IDLE_CFG = {**CFG, "stream_idle_timeout": 240}
+
+
+def test_stream_idle_timeout_aborts_silent_keepalive_stream(monkeypatch):
+    """إبقاء حياة بلا مخرجات يخدع مهلة المقبس — حارس الصمت يُحبط صادقًا.
+
+    القياس الحي 2026-10-31 16:27–16:44Z: تجمّد مزود 17 دقيقة بلا محتوى
+    ولا استدلال بينما إطارات الإبقاء تصل فتُبقي المقبس حيًا — الحلقة
+    تجمّدت داخل النداء فتعذّر التقاط إعادة الطابور. الآن: 3 دقائق صمت
+    فأبعد = ProviderCallError مصنّف مهلة بلا تجميد.
+    """
+    _install_ticking_sse(monkeypatch, [
+        ": keep-alive\n\n",
+        ": keep-alive\n\n",
+        ": keep-alive\n\n",   # هنا الساعة تجاوزت 240ث من آخر مخرج
+        'data: {"choices":[{"delta":{"content":"متأخر"}}]}\n\n',
+        "data: [DONE]\n\n",
+    ], step_s=100.0)
+    with pytest.raises(ProviderCallError) as caught:
+        stream_completion(IDLE_CFG, "stub-model", [
+            ChatMessage(role="user", content="x")], on_delta=lambda d: None)
+    assert caught.value.is_timeout is True
+    assert "STREAM_IDLE_TIMEOUT" in str(caught.value)
+
+
+def test_stream_reasoning_activity_extends_idle_clock(monkeypatch):
+    """الاستدلال الحيّ نشاط حقيقي يمدّد الساعة — لا إحباط كاذب (§D+§D2).
+
+    فجوات الاستدلال 100ث (< السقف 240ث) تنعش الساعة مع كل دلتا،
+    والصمت الكلي لا يتجاوز السقف أبدًا حتى اكتمال المحتوى.
+    """
+    _install_ticking_sse(monkeypatch, [
+        'data: {"choices":[{"delta":{"reasoning_content":"تفكير"}}]}\n\n',
+        ": keep-alive\n\n",
+        'data: {"choices":[{"delta":{"reasoning_content":"مزيد"}}]}\n\n',
+        ": keep-alive\n\n",
+        'data: {"choices":[{"delta":{"content":"جواب"}}]}\n\n',
+        "data: [DONE]\n\n",
+    ], step_s=100.0)
+    text = stream_completion(IDLE_CFG, "stub-model", [
+        ChatMessage(role="user", content="x")], on_delta=lambda d: None)
+    assert text == "جواب"
+
+
+def test_stream_idle_zero_disables_guard(monkeypatch):
+    """stream_idle_timeout=0 يعطل الحارس صراحة — العقد القديم كما هو."""
+    _install_ticking_sse(monkeypatch, [
+        ": keep-alive\n\n",
+        ": keep-alive\n\n",
+        ": keep-alive\n\n",
+        ": keep-alive\n\n",
+        'data: {"choices":[{"delta":{"content":"نص"}}]}\n\n',
+        "data: [DONE]\n\n",
+    ], step_s=100.0)
+    off_cfg = {**CFG, "stream_idle_timeout": 0}
+    text = stream_completion(off_cfg, "stub-model", [
+        ChatMessage(role="user", content="x")], on_delta=lambda d: None)
+    assert text == "نص"
