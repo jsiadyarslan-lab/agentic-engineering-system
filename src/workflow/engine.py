@@ -2088,8 +2088,16 @@ def _git_head() -> str:
         return ""
 
 
-#: (W2-T25) أدلة ثقيلة لا تدخل جرد الأدلة — تُفحص بمعاييرها الخاصة.
-_EVIDENCE_SKIP_DIRS = frozenset({"node_modules", "dist", "build", ".astro"})
+#: (W2-T25 2026-11-01) node_modules و.astro وحدهما يُتخطيان — أعداد
+#: آلاف الملفات لا هدف قبول مشروع. أما dist/ وbuild/ فكانا بتخطيهما
+#: يصنعان عمى أعمى: أي معيار يطالب بناتج بناء («Build produces
+#: /dist/layout-test.html») لا يمكن إثباته ميكانيكيًا أبدًا لأن الملف
+#: خارج الجرد كليًا — قياس حي الخطوة 1003 (التنفيذان 637/638): البناء
+#: أنتج dist/html/layout-test.html فعلًا والمدقق حكم «not found in
+#: evidence facts» مرتين فأعاد تكرار «فشل متكرر استنفد المحاولات»
+#: وأعاد كتابة الخطة كلها (v104→v107 بثلاث ساعات) — عصيان دائم
+#: لمعايير شرعية بسبب قائمة تخطٍ متعجّلة.
+_EVIDENCE_SKIP_DIRS = frozenset({"node_modules", ".astro"})
 _EVIDENCE_MAX_FILES = 400
 
 

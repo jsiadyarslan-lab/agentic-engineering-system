@@ -250,6 +250,13 @@ class VerifierLive(LiveRoleBase):
     #: النهاية والمقتطف الأولي يعميها (قياس 271: @media غائبة عن head).
     _CONTENT_TAIL_LIMIT = 600
     _CONTENT_FILE_LIMIT = 262_144
+    #: (W2-T25 2026-11-01) الملف الصغير كله: الرأس+الذيل يغطيان 2400
+    #: حرفًا فقط ووسط الملف يعمى — قياس حي الخطوة 1009 (تنفيذ 638):
+    #: index.html فيه الأقسام (#latest/#categories/#newsletter) في وسطه
+    #: والمراجع حكم «not observed in provided snippets» مرتين رغم
+    #: كتابتها فعلًا. الملف النصي ≤8KB يُقرأ كله (content_full) —
+    #: الأصح أصلًا: حجب وسط ملف 3KB اقتطاع بلا داعٍ.
+    _CONTENT_FULL_LIMIT = 8_192
 
     def _content_tail(self, path: Path) -> str | None:
         """(W2-T25) آخر الملف النصي — تكملة الرأس للمعايير الختامية."""
@@ -395,6 +402,26 @@ class VerifierLive(LiveRoleBase):
         except OSError:
             return None
 
+    def _content_full(self, path: Path) -> str | None:
+        """(W2-T25 2026-11-01) الملف النصي الصغير كله — لا اقتطاع.
+
+        الرأس+الذيل (1800+600) يغطيان 2400 حرفًا ووسط ملف 3KB يعمى:
+        الأقسام الدلالية (#latest/#categories) تسكن الوسط عادة.
+        المعيار يُحكم على المضمون المثبت كله لا على نافذة.
+        """
+        try:
+            dotfile_text = path.name.startswith(".") and not path.suffix
+            if (path.suffix.lower() not in self._TEXT_EXTS
+                    and not dotfile_text):
+                return None
+            size = path.stat().st_size
+            if size > self._CONTENT_FULL_LIMIT:
+                return None
+            text = path.read_bytes().decode("utf-8", "replace").strip()
+            return text if text or size == 0 else None
+        except OSError:
+            return None
+
     def run(self, request: VerifierRequest) -> VerifierResult:
         facts: dict[str, Any] = {"files": {}}
         # (W2-T25) relpath: أصل مشترك للأدلة — معايير المسارات
@@ -433,12 +460,17 @@ class VerifierLive(LiveRoleBase):
                 except ValueError:
                     entry["relpath"] = str(path)
             facts["files"][path.name] = entry
-            head = self._content_head(path)
-            if head is not None:
-                facts["files"][path.name]["content_head"] = head
-            tail = self._content_tail(path)
-            if tail is not None and tail != head:
-                facts["files"][path.name]["content_tail"] = tail
+            full = self._content_full(path)
+            if full is not None:
+                # الملف الصغير كله — الرأس/الذيل زائدان عنه (لا ازدواج).
+                facts["files"][path.name]["content_full"] = full
+            else:
+                head = self._content_head(path)
+                if head is not None:
+                    facts["files"][path.name]["content_head"] = head
+                tail = self._content_tail(path)
+                if tail is not None and tail != head:
+                    facts["files"][path.name]["content_tail"] = tail
             if path.is_file():
                 summary = self._json_summary(path)
                 if summary is not None:

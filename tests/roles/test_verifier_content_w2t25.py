@@ -65,10 +65,12 @@ def test_content_head_in_facts_for_text_files(tmp_path):
     payload = json.loads(router.payloads[0])
     files = payload["facts"]["files"]["package.json"]
     assert files["exists"] is True
-    assert "content_head" in files
-    assert '"news-site"' in files["content_head"]
-    assert '"1.0.0"' in files["content_head"]
-    assert '"vite": "^5.0.0"' in files["content_head"]
+    # (W2-T25 2026-11-01) الملف الصغير يصل كله (content_full) —
+    # المضمون المثبت أوسع من النافذة القديمة لا أضيق منها.
+    assert "content_full" in files
+    assert '"news-site"' in files["content_full"]
+    assert '"1.0.0"' in files["content_full"]
+    assert '"vite": "^5.0.0"' in files["content_full"]
 
 
 def test_content_head_absent_for_binary_and_missing(tmp_path):
@@ -90,8 +92,9 @@ def test_content_head_absent_for_binary_and_missing(tmp_path):
 
 
 def test_content_head_bounded(tmp_path):
-    """ملف نصي كبير: المقتطف محدود بالسقف المعلن لا يتجاوزه."""
-    big = _write(tmp_path, "big.md", "x" * 5000)
+    """ملف نصي كبير (فوق سقف content_full 8KB): المقتطف محدود بالسقف
+    المعلن لا يتجاوزه — النافذة للكبيرة لا للصغيرة."""
+    big = _write(tmp_path, "big.md", "x" * 9_000)
     router = _StubRouter({"verdict": "evidenced",
                           "checks_performed": [], "missing_evidence": [],
                           "confidence": 1.0})
@@ -100,7 +103,9 @@ def test_content_head_bounded(tmp_path):
                              artifacts=[big]))
     import json
     payload = json.loads(router.payloads[0])
-    head = payload["facts"]["files"]["big.md"]["content_head"]
+    entry = payload["facts"]["files"]["big.md"]
+    assert "content_full" not in entry
+    head = entry["content_head"]
     assert len(head) <= role._CONTENT_HEAD_LIMIT
 
 
@@ -150,8 +155,8 @@ def test_content_head_covers_dotfiles(tmp_path):
     payload = json.loads(router.payloads[0])
     prettier = payload["facts"]["files"][".prettierrc"]
     gitignore = payload["facts"]["files"][".gitignore"]
-    assert '"semi": true' in prettier["content_head"]
-    assert "node_modules" in gitignore["content_head"]
+    assert '"semi": true' in prettier["content_full"]
+    assert "node_modules" in gitignore["content_full"]
 
 
 # ------------------------------------------------------------------ #
@@ -210,9 +215,9 @@ def test_install_log_evidence_reaches_verifier(tmp_path):
     import json
     payload = json.loads(router.payloads[0])
     facts = payload["facts"]["files"]
-    assert facts["build-npm-install-stderr.txt"]["content_head"] == ""
+    assert facts["build-npm-install-stderr.txt"]["content_full"] == ""
     assert "added 2 packages" in facts[
-        "build-npm-install-stdout.txt"]["content_head"]
+        "build-npm-install-stdout.txt"]["content_full"]
 
 
 # ------------------------------------------------------------------ #
@@ -436,7 +441,7 @@ def test_content_tail_reaches_verifier(tmp_path):
     """«Media query @media (max-width: 600px)» في نهاية ملف كبير —
     الرأس المبتور لا يراها والذيل يصل (قياس حي الخطوة 271)."""
     css_body = "/* reset */\n* { box-sizing: border-box; margin: 0; }\n"
-    css_body += ".filler { color: #333; }\n" * 90  # >1800 chars
+    css_body += ".filler { color: #333; padding: 0 1rem 0 1rem; }\n" * 400  # >8KB فتبقى نافذة الرأس/الذيل
     css_body += "@media (max-width: 600px) {\n  nav { flex-direction: column; }\n}\n"
     root = tmp_path / "step271"
     (root / "public" / "css").mkdir(parents=True)
