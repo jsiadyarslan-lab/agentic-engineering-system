@@ -232,6 +232,8 @@ class VerifierLive(LiveRoleBase):
     #: (W2-T25) خصائص CSS المخصصة «--color-primary» — تُعد ميكانيكيًا
     #: (قياس 445: معايير التوكنز تطلب عشرات المتغيرات بالاسم).
     _CSS_VAR = re.compile(r"--[a-zA-Z][\w-]*")
+    #: (W2-T25 728) حرفيات grep بالمعايير — «grep -o '{' | wc -l».
+    _GREP_LITERAL = re.compile(r"grep\s+(?:-[A-Za-z]+\s+)?'([^']+)'")
 
     #: فحوص ميكانيكية إضافية تُدمج في facts إن توفرت الدالة الخارجية.
     facts_builder: Any = None
@@ -490,6 +492,9 @@ class VerifierLive(LiveRoleBase):
             for var in self._CSS_VAR.findall(str(criterion)):
                 if var not in tokens:  # (W2-T25) توكنز CSS بالاسم
                     tokens.append(var)
+            for lit in self._GREP_LITERAL.findall(str(criterion)):
+                if lit and lit not in tokens:  # (W2-T25 728) حرفيات grep
+                    tokens.append(lit)
         if tokens:
             counts: dict[str, dict[str, int]] = {}
             for reference in request.artifacts:

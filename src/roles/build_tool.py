@@ -5,8 +5,7 @@
 
 العقد: قائمة مغلقة تنفذ فعليًا معلنة (npm يحتاج شبكة+HOME) بأدلة
 exit_code/stdout/stderr bounded داخل مساحة الخطوة وبيئة منظفة بلا
-أسرار الخدمة؛ فقد node/npm = BUILD_TOOLING_MISSING يفتح حاجز توفير
-(W1-T06) لا مراجعة خطة.
+أسرار الخدمة؛ فقد node/npm = حاجز توفير (W1-T06) لا مراجعة خطة.
 """
 
 from __future__ import annotations
@@ -17,8 +16,7 @@ from pathlib import Path
 
 from roles.tool_failures import ToolFailure
 
-#: أوامر مسموحة حصرًا — قائمة مغلقة (لا تفسير ولا وسائط حرة). تشترطها
-#: معايير خطط المصنع نصًّا فلم تكن تُنفّذ والتزم المنفذ بالصدق («لا دليل»).
+#: أوامر مغلقة تشترطها معايير الخطط نصًّا («لا دليل» بلا تنفيذ).
 BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node --version", "npm --version", "npm install", "npm ci", "npm test",
     "npm run build", "npm run preview", "npm run lint", "npm run dev",
@@ -26,9 +24,8 @@ BUILD_COMMAND_WHITELIST: frozenset[str] = frozenset({
     "node verify.js", "node verify.mjs", "node server.js",
     "pnpm install", "pnpm dev", "pnpm lint", "pnpm build",  # (597/632)
 })
-#: مسارات شائعة إلى جانب PATH (تثبيت tarball القياسي إلى /usr/local).
+#: مسارات بجانب PATH (tarball القياسي /usr/local) وسقف مخرجات الأمر.
 _BUILD_TOOL_FALLBACK_DIRS = ("/usr/local/bin", "/opt/node/bin")
-#: سقوف الأدلة المكتوبة (حد أقصى للنص المحفوظ من مخرجات الأمر).
 _BUILD_EVIDENCE_MAX_CHARS = 200_000
 #: (W2-T25) أسطر بدء الخادم/المعاينة — قياس 492: الربط يُثبت بالسطر.
 _BUILD_PREVIEW_URL_HINTS = (b"Local", b"Network", b"Server running",
@@ -142,9 +139,12 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
     import time as _time
 
     command = str(command or "").strip()
-    # (W2-T25) فحص إصدار npx ديناميكي آمن (قراءة فقط) — معايير التحقق.
+    # (W2-T25) npx --version ديناميكي وnode --check <ملف> آمنان — قراءة فقط.
     if (command not in BUILD_COMMAND_WHITELIST
-            and not re.fullmatch(r"npx --yes [\w@/.-]+ --version", command)):
+            and not re.fullmatch(r"npx --yes [\w@/.-]+ --version", command)
+            and not (".." not in command and re.fullmatch(
+                r"node --check [\w@/.-]+\.(?:js|mjs|cjs|ts|tsx|json)",
+                command))):
         raise ToolFailure(
             "run_build_command",
             f"أمر بناء خارج القائمة البيضاء: '{command}' "
@@ -207,7 +207,7 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
                              encoding="utf-8")
         return result
 
-    # (W2-T25) npx/pnpm أدوات بجانب npm/node — أدوات التحقق تعبرها.
+    # (W2-T25) npx/pnpm بجانب npm/node.
     if command.startswith("npm"):
         runner = npm_path
     elif command.startswith(("npx", "pnpm")):

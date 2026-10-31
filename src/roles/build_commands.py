@@ -1,11 +1,8 @@
 """طور أوامر البناء الحقيقية (W2-T24) — npm يُنفَّذ فعليًا بأدلة صادقة.
-
 بطاقة W2-T23: نواتج الأوامر تُنتج بأوامر حقيقية — لا تُختلق نصًّا.
 
 - required_build_commands(): أوامر المعايير بترتيب التبعية.
-- gather_build_prerequisites(): جلب ملفات الخطوات السابقة (نسخ/symlink).
-- run_build_commands_phase(): فحص الأدوات ← التجميع ← التنفيذ ← النواتج.
-
+- gather_build_prerequisites() + run_build_commands_phase(): جلب ← فحص ← تنفيذ.
 فقد الأدوات عائق توفير (BUILD_TOOLING_MISSING → PREFLIGHT قابلة
 للحل بإعادة الفحص — W1-T06) لا فشل خطوة.
 """
@@ -85,6 +82,9 @@ def required_build_commands(acceptance_criteria: list[str] | None) -> list[str]:
         for hit in re.finditer(
                 r"npx\s+([\w@/.-]+)\s+--version", text, re.IGNORECASE):
             found.add(f"npx --yes {hit.group(1)} --version")
+        for hit in re.finditer(r"node\s+--check\s+([\w@/.-]+)", text,
+                               re.IGNORECASE):
+            found.add(f"node --check {hit.group(1)}")
     return sorted(found, key=lambda c: _COMMAND_ORDER.get(c, 5))[:6]
 
 
@@ -136,8 +136,7 @@ def gather_build_prerequisites(root: Path, *, include_files: bool = True,
             source = source_dir / name
             target = root / name
             if source.is_dir() and not target.exists():
-                # رابط معلق من جولة سابقة (مسار نسبي قديم) يُستبدل
-                if target.is_symlink():
+                if target.is_symlink():  # معلق قديم يُستبدل
                     target.unlink()
                 target.symlink_to(source, target_is_directory=True)
                 linked.append(name)
@@ -248,7 +247,7 @@ def run_build_commands_phase(
     from roles.tools import run_tool
     from roles.tool_failures import ToolFailure
 
-    # (W2-T25) سكربت التحقق المكتوب يُشغَّل لفحص DOM (قياس 309).
+    # (W2-T25 309) سكربت التحقق المكتوب يُشغَّل لفحص DOM.
     if re.search(r"querySelector|فحص DOM|DOM check",
                  " ".join(map(str, acceptance_criteria or [])), re.IGNORECASE):
         commands += [f"node {n}" for n in ("verify.js", "verify.mjs")
@@ -258,7 +257,7 @@ def run_build_commands_phase(
     if not commands:
         return outcome
 
-    # (W2-T25) دليل npm: المتداخل (backend/) أولًا (npm test — قياس 497).
+    # (W2-T25 497) دليل npm المتداخل أولًا.
     _m = re.search(r"([\w@./-]+)/package\.json",
                    " ".join(map(str, acceptance_criteria or [])))
     _sub = root / _m.group(1).strip("/") if _m and ".." not in _m.group(1) \
@@ -266,18 +265,18 @@ def run_build_commands_phase(
     workdir = _sub or next(
         (d for d in sorted(root.iterdir())
          if d.is_dir() and (d / "package.json").is_file()), root)
-    if (workdir / "dist").is_symlink():  # (W2-T25 506) قديم يُنزع
+    if (workdir / "dist").is_symlink():  # (506) قديم يُنزع
         (workdir / "dist").unlink()
 
-    # (W2-T25) ci بلا lockfile = install (388)؛ install قبل build (325).
+    # (W2-T25) ci بلا lockfile = install (388).
     effective = list(commands)
     if "npm ci" in effective and not (workdir / "package-lock.json").is_file():
         effective = [c.replace("npm ci", "npm install") for c in effective]
-    # (W2-T25) dev معاينة؛ خادم/اختبار/lint — install قبلها (597).
+    # (W2-T25 597) install قبل الخوادم/الاختبار.
     needs_deps = any(command in ("npm run build", "npm run preview", "npm run dev",
                                  "pnpm dev", "node server.js", "npm test", "pnpm lint",
                                  "npm run lint", "pnpm build") for command in effective)
-    # (W2-T25) ملفات الإطار لحاجة npm/خادم (526) + ملفات المعايير (520/545).
+    # (W2-T25 520/526/545) جلب ملفات الإطار والمعايير.
     if workdir == root and (needs_deps or any(
             c.startswith(("npm", "pnpm", "npx")) for c in effective)):
         outcome.gathered = gather_build_prerequisites(
@@ -295,7 +294,8 @@ def run_build_commands_phase(
         try:
             value = run_tool(
                 "run_build_command",
-                {"command": command, "timeout_s": timeout, "cwd": _rel},
+                {"command": command, "timeout_s": timeout,
+                 "cwd": "" if command.startswith("node --check ") else _rel},
                 ctx,
             )
         except ToolFailure as failure:
