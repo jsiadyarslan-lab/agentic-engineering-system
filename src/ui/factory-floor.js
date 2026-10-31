@@ -42,6 +42,8 @@
     panel: { open: true, tab: "files", w: 45 },
     sessionsCollapsed: false,
     gateBusy: false,
+    stepGroup: null,
+    now: {},
     built: false,
     started: false,
   };
@@ -253,8 +255,11 @@
         stats.appendChild(c);
       });
 
+    var nowBar = el("div", "floor-now");
+    nowBar.id = "floor-now";
     center.appendChild(cHead);
     center.appendChild(gate);
+    center.appendChild(nowBar);
     center.appendChild(densityBar);
     center.appendChild(flow);
     center.appendChild(trimmedNote);
@@ -678,12 +683,16 @@
     }
     var p = e.payload || {};
     var kind = e.kind;
-    var node = null;
+    updateNow(kind, p, e);
 
+    /* M2: تطور المشروع لحظة بلحظة — الخطوات مراسي وما يخدمها متداخل تحتها */
+    if (kind === "STEP_STARTED") { startStepGroup(p, e); return; }
+    if (kind === "STEP_COMPLETED") { closeStepGroup(p, e); return; }
+
+    var node = null;
     if (kind === "TOOL_EXECUTION") node = drawTool(p, e);
     else if (kind === "MODEL_CALL_STARTED" || kind === "MODEL_CALL_PROGRESS" ||
              kind === "MODEL_REASONING" || kind === "MODEL_CALL_COMPLETED") node = drawModel(kind, p, e);
-    else if (kind === "STEP_STARTED" || kind === "STEP_COMPLETED") node = drawStep(kind, p, e);
     else if (kind === "EXECUTION_STARTED" || kind === "EXECUTION_COMPLETED" ||
              kind === "EXECUTION_FAILED" || kind === "EXECUTION_BLOCKED") node = drawExecution(kind, p, e);
     else if (kind === "ROLE_EXECUTING") node = drawRole(p, e);
@@ -694,7 +703,17 @@
     else if (kind === "PLAN_APPROVAL_REQUIRED" || kind === "OWNER_GATE_REQUIRED") node = drawGateEvent(p, e);
     else node = drawGeneric(kind, p, e);
 
-    if (node) { markJson(node, e); addNode(node); }
+    if (node) {
+      markJson(node, e);
+      var g = S.stepGroup;
+      if (g && g.node.isConnected &&
+          p.step_id != null && Number(p.step_id) === Number(g.step_id)) {
+        groupAppend(node);
+      } else {
+        if (g && !g.node.isConnected) S.stepGroup = null;
+        addNode(node);
+      }
+    }
   }
   function evtShell(cls, iconId) {
     var c = el("div", "evt " + cls);
@@ -714,8 +733,8 @@
   function drawTool(p, e) {
     var key = (p.execution_id != null ? p.execution_id : (p.step_id || "?")) + "|" + (p.tool || "?");
     var phase = p.phase || "";
-    var created = !S.toolCards[key];
-    var card;
+    var card = S.toolCards[key];
+    var created = !(card && card.isConnected);
     if (created) {
       card = evtShell("evt-tool", "i-terminal");
       card.setAttribute("data-toolkey", key);
@@ -779,8 +798,8 @@
   }
   function drawModel(kind, p, e) {
     var rid = p.request_id || ("session-" + p.session_id);
-    var created = !S.modelCards[rid];
-    var card;
+    var card = S.modelCards[rid];
+    var created = !(card && card.isConnected);
     if (created) {
       card = evtShell("evt-model", "i-info");
       card.setAttribute("data-modelkey", rid);
@@ -911,11 +930,171 @@
     stamp(c.querySelector(".evt-time"), e.created_at);
     return c;
   }
+  /* ---------- M2: تجميع الخطوات + شريط «الآن» ---------- */
+  function startStepGroup(p, e) {
+    closeGroupLoose();
+    var g = el("div", "evt-group");
+    var head = el("div", "evt-group-head");
+    var badge = el("span", "evt-group-badge",
+                   p.step_id != null ? "خطوة " + p.step_id : "خطوة");
+    head.appendChild(badge);
+    if (p.objective) {
+      head.appendChild(el("span", "evt-group-obj",
+        String(p.objective).slice(0, 220)));
+    }
+    var meta = el("span", "evt-group-meta");
+    meta.textContent = "لحظات 0";
+    head.appendChild(meta);
+    var st = el("span", "evt-group-status", "جارية");
+    head.appendChild(st);
+    var body = el("div", "evt-group-body");
+    var more = el("button", "evt-group-more");
+    more.hidden = true;
+    more.addEventListener("click", function () {
+      g.classList.remove("collapsed", "peek");
+      more.hidden = true;
+      followLive(true);
+    });
+    g.appendChild(head);
+    g.appendChild(body);
+    g.appendChild(more);
+    g._body = body;
+    g._n = 0;
+    g._meta = meta;
+    g._more = more;
+    markJson(g, e);
+    addNode(g);
+    S.stepGroup = { step_id: p.step_id, node: g };
+    followLive(false);
+  }
+  function groupAppend(node) {
+    var g = S.stepGroup.node;
+    g._n++;
+    if (g._meta) g._meta.textContent = "لحظات " + g._n;
+    /* كثافة DSH: بعد 12 لحظة تُطوى الجارية تلقائيًا وزر كشف صريح */
+    if (g._n === 13 && !g.classList.contains("peek")) {
+      g.classList.add("collapsed", "peek");
+      if (g._more) {
+        g._more.textContent = "كشف 13 لحظة داخل الخطوة";
+        g._more.hidden = false;
+      }
+    } else if (g._n > 13 && g.classList.contains("peek") && g._more &&
+               g._more.hidden === false) {
+      g._more.textContent = "كشف " + g._n + " لحظة داخل الخطوة";
+    }
+    g._body.appendChild(node);
+    followLive(false);
+  }
+  function closeGroupLoose() {
+    if (S.stepGroup && S.stepGroup.node && S.stepGroup.node.isConnected) {
+      var g = S.stepGroup.node;
+      g.classList.add("open-ended");
+      var st = g.querySelector(".evt-group-status");
+      if (st && st.textContent === "جارية") st.textContent = "انتقلت";
+    }
+    S.stepGroup = null;
+  }
+  function closeStepGroup(p, e) {
+    var g = S.stepGroup;
+    if (g && p.step_id != null && Number(p.step_id) === Number(g.step_id) &&
+        g.node.isConnected) {
+      g.node.classList.add("evt-ok");
+      var st = g.node.querySelector(".evt-group-status");
+      if (st) st.textContent = "اكتملت";
+      S.stepGroup = null;
+    } else {
+      var c = drawStep("STEP_COMPLETED", p, e);
+      if (c) { markJson(c, e); addNode(c); }
+    }
+  }
+  function updateNow(kind, p, e) {
+    var now = S.now;
+    if (kind === "ROLE_EXECUTING") {
+      now.role = p.role || "";
+      now.action = p.objective ? String(p.objective) : "يعمل";
+      now.step = p.step_id;
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "MODEL_REASONING" || kind === "MODEL_CALL_PROGRESS") {
+      now.action = kind === "MODEL_REASONING" ? "يفكّر…" : "يُنتج…";
+      if (p.model) now.model = (p.provider ? p.provider + " · " : "") + p.model;
+      now.chars = (now.chars || 0) + (Number(p.chars) || 0);
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "MODEL_CALL_COMPLETED") {
+      now.action = "أتم استدعاء النموذج";
+      now.chars = 0;
+      now.at = Date.now();
+      now.tone = "ok";
+    } else if (kind === "TOOL_EXECUTION") {
+      now.role = p.role || now.role;
+      now.action = (p.phase === "failed" ? "فشلت " :
+                    p.phase === "started" ? "يستدعي " : "نجحت ") +
+                   Evolution.toolLabel(p.tool);
+      now.at = Date.now();
+      now.tone = p.phase === "failed" ? "fail" : "run";
+    } else if (kind === "STEP_STARTED") {
+      now.step = p.step_id;
+      now.obj = p.objective || "";
+      now.action = "بدأت خطوة جديدة";
+      now.chars = 0;
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "STEP_COMPLETED") {
+      now.action = "اكتملت الخطوة";
+      now.obj = "";
+      now.at = Date.now();
+      now.tone = "ok";
+    } else if (kind === "OWNER_GATE_REQUIRED" || kind === "PLAN_APPROVAL_REQUIRED") {
+      now.action = "بانتظار اعتمادك";
+      now.at = Date.now();
+      now.tone = "warn";
+    } else if (kind === "EXECUTION_FAILED" || kind === "JOB_FAILED") {
+      now.action = "فشل تنفيذ — الحلقة تعيد المحاولة";
+      now.at = Date.now();
+      now.tone = "fail";
+    }
+  }
+  function renderNow() {
+    var bar = $("#floor-now");
+    if (!bar) return;
+    var now = S.now || {};
+    bar.className = "floor-now" + (now.tone ? " fn-" + now.tone : "");
+    bar.textContent = "";
+    var wrap = el("div", "fn-wrap");
+    var pulse = el("span", "fn-pulse" + (now.tone === "fail" ? " fail" : ""));
+    wrap.appendChild(pulse);
+    if (now.role) {
+      var rm = Evolution.roleMeta(now.role);
+      wrap.appendChild(el("span", "role-chip " + rm.cls, rm.label));
+    }
+    wrap.appendChild(el("span", "fn-action",
+      now.action || "الحلقة حيّة — بانتظار الحدث التالي"));
+    if (now.obj) {
+      wrap.appendChild(el("span", "fn-obj", String(now.obj).slice(0, 90)));
+    }
+    if (now.chars > 0) {
+      var ch = el("span", "fn-chars tech", now.chars + " حرف");
+      wrap.appendChild(ch);
+    }
+    if (now.model) {
+      var m = el("span", "fn-model");
+      tech(m, now.model);
+      wrap.appendChild(m);
+    }
+    if (now.step != null) {
+      wrap.appendChild(el("span", "fn-step", "الخطوة " + now.step));
+    }
+    bar.appendChild(wrap);
+  }
+
   function drawGeneric(kind, p, e) {
     var tone = Evolution.toneOf(kind);
     var c = evtShell("evt-generic" + (tone ? " evt-" + tone : ""), "i-info");
     var title = el("span", "evt-title");
+    var known = !!KIND_TITLES[kind];
     title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind)));
+    if (!known) tech(title, kind); /* النوع الخام مرئي للتتبع — لا اختفاء */
     c._row.appendChild(title);
     var narr = Evolution.narrate(kind, p);
     if (narr && (narr.text || (narr.chips && narr.chips.length))) {
@@ -924,19 +1103,22 @@
       (narr.chips || []).forEach(function (ch) { tech(sub, ch); });
       c.appendChild(sub);
     } else {
-      /* لا سرد لهذا النوع: التفاصيل الخام بصدق — لا اختلاق */
-      var keys = Object.keys(p || {}).slice(0, 4);
-      if (keys.length) {
-        var sub2 = el("div", "evt-sub");
-        keys.forEach(function (k) {
-          var v = typeof p[k] === "object" ? JSON.stringify(p[k]).slice(0, 60) : String(p[k]).slice(0, 80);
-          var line = el("div", "evt-kv");
-          line.appendChild(el("span", "evt-kv-label", k));
-          tech(line, v);
-          sub2.appendChild(line);
+      /* لا سرد لهذا النوع: صف مقتضب صادق — أهم قيمة واحدة، والباقي بالنقر */
+      var fb = (p && (p.text || p.note || p.summary || p.status ||
+                      p.reason || p.message || p.error)) || "";
+      var sub2 = el("div", "evt-sub");
+      if (fb) {
+        sub2.appendChild(el("div", "evt-sub-line", String(fb).slice(0, 140)));
+      } else {
+        var keys = Object.keys(p || {}).slice(0, 2);
+        keys.forEach(function (k2) {
+          var v = typeof p[k2] === "object"
+            ? JSON.stringify(p[k2]).slice(0, 60)
+            : String(p[k2]).slice(0, 80);
+          tech(sub2, k2 + ": " + v);
         });
-        c.appendChild(sub2);
       }
+      c.appendChild(sub2);
     }
     stamp(c.querySelector(".evt-time"), e.created_at);
     return c;
@@ -1384,6 +1566,7 @@
     S.timers.push(setInterval(loadDetail, 6000));
     S.timers.push(setInterval(updateStatsFromRuns, 3000));
     S.timers.push(setInterval(relTimeLoop, 15000));
+    S.timers.push(setInterval(renderNow, 1000));
   }
   function LiveBridge() {
     if (window.LiveEvents && window.LiveEvents.onEvent) {

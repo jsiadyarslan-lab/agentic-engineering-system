@@ -13,14 +13,15 @@
   /* ---------- أدوار الوكلاء (هوية AES-UI-REDESIGN-014) ---------- */
   var ROLES = {
     thinker:     { label: "المفكّر",  cls: "role-thinker" },
-    planner:     { label: "المخطّط",  cls: "role-planner" },
+    planner:     { label: "المخطّط",  cls: "role-thinker" },
     implementer: { label: "المنفّذ",   cls: "role-implementer" },
     builder:     { label: "البنّاء",   cls: "role-implementer" },
     reviewer:    { label: "المحكّم",   cls: "role-reviewer" },
-    auditor:     { label: "المدقّق",   cls: "role-reviewer" },
-    verifier:    { label: "المتحقّق",  cls: "role-reviewer" },
+    auditor:     { label: "المدقّق",   cls: "role-arbiter" },
+    verifier:    { label: "المتحقّق",  cls: "role-verifier" },
     coordinator: { label: "المنسّق",   cls: "role-coordinator" },
     owner:       { label: "المالك",    cls: "role-coordinator" },
+    mission:     { label: "المهمّة",    cls: "role-coordinator" },
   };
 
   function roleMeta(r) {
@@ -76,6 +77,39 @@
     "router.call.logged":    ["توجيه دور إلى نموذج", ""],
     RECOVERY_ASSESSED:       ["قُيّمت حالة الاسترداد بعد الإقلاع", ""],
     JOB_RECOVERY_ASSESSED:   ["قُيّمت وظيفة المشروع بعد الإقلاع", ""],
+    RETRY_REQUESTED:         ["أُعيدت جدولة المحاولة", "warn"],
+    JOB_WAITING:             ["الوظيفة تنتظر شرطًا خارجيًا", "warn"],
+    JOB_RETRYING:            ["الحلقة تعيد المحاولة", "run"],
+    JOB_RESUMED:             ["استُأنفت الوظيفة من نقطة الحفظ", "ok"],
+    PROJECT_RESUMED:         ["استُأنف المشروع", "ok"],
+    JOB_INTERRUPTED:         ["قُطعت الوظيفة — ستُستأنف من نقطة الحفظ", "warn"],
+    JOB_CREATED:             ["أُنشئت وظيفة تنفيذ", ""],
+    PREFLIGHT_STARTED:       ["فحص التمهيد جارٍ…", "run"],
+    PREFLIGHT_RECHECKED:     ["أُعيد فحص التمهيد", ""],
+    ENVIRONMENT_CHECK_STARTED: ["جارٍ فحص بيئة التنفيذ…", "run"],
+    CAPABILITIES_EVALUATED:  ["قُيّمت قدرات التنفيذ", ""],
+    MODEL_CALL_FAILED:       ["فشل استدعاء النموذج", "fail"],
+    PLANNING_FAILED:         ["فشلت جلسة التخطيط — تُعاد المحاولة", "fail"],
+    PLANNING_INTERRUPTED:    ["قُطعت جلسة التخطيط", "warn"],
+    PLANNING_RETRY:          ["تُعاد جلسة التخطيط", "run"],
+    GATE_AUTO_RESOLVED:      ["بوابة تلقائية حُسمت بلا تدخل", ""],
+    WORKFLOW_DIAGNOSED:      ["شخّصت الحلقة سير العمل", ""],
+    ADJUDICATION_COMPLETED:  ["اكتمل الفصل في الاعتراض", "ok"],
+    "step.progress":         ["تقدّم في الخطوة", ""],
+    message_started:         ["بدأ الوكيل صياغة رسالة", "run"],
+    "chat.status":           ["حالة المحادثة تغيّرت", ""],
+    "conversation.bind":     ["رُبطت محادثة بمشروع", ""],
+    "research.started":      ["بحث خارجي جارٍ…", "run"],
+    "research.used":         ["استُخدمت نتائج بحث خارجي", "ok"],
+    "research.results":      ["وصلت نتائج بحث خارجية", ""],
+    "research.unavailable":  ["البحث الخارجي غير متاح", "warn"],
+    "chat.error":            ["خطأ في المحادثة", "fail"],
+    "rate_limit.wait":       ["انتظار حصة المزوّد — محدود المعدل", "warn"],
+    "task.conversation":     ["مهمة محادثة", ""],
+    "preflight.started":     ["فحص التمهيد جارٍ…", "run"],
+    "preflight.blocked":     ["فحص التمهيد حاجب", "fail"],
+    ROLE_PROVIDER_CHANGED:   ["تغيّر مزوّد أحد الأدوار", ""],
+    CONFIGURATION_REQUIRED:  ["إعداد مطلوب — أكمل الإعدادات أولًا", "warn"],
   };
 
   function title(kind) {
@@ -207,6 +241,81 @@
       text = "سُجّل مشروع جديد في المصنع";
     } else if (k === "PROJECT_VERIFIED") {
       text = "اعتُمد المشروع كمتحقَّق منه";
+    } else if (k === "RETRY_REQUESTED" || k === "JOB_RETRYING" || k === "PLANNING_RETRY") {
+      text = "الحلقة تعيد المحاولة بعد عقبة";
+      if (p.reason) chips.push(String(p.reason).slice(0, 90));
+      if (p.retries) chips.push("محاولة " + p.retries);
+    } else if (k === "JOB_WAITING") {
+      text = String(p.waiting_kind) === "GATE"
+        ? "الوظيفة تنتظر قرارك في بوابة المالك"
+        : "الوظيفة تنتظر شرطًا خارجيًا";
+      if (p.waiting_detail && p.waiting_detail.summary) {
+        chips.push(String(p.waiting_detail.summary).slice(0, 90));
+      }
+    } else if (k === "JOB_RESUMED" || k === "PROJECT_RESUMED") {
+      text = "استئناف من نقطة الحفظ — العمل مستمر";
+    } else if (k === "JOB_INTERRUPTED" || k === "PLANNING_INTERRUPTED") {
+      text = "انقطاع — سيُستأنف من نقطة الحفظ تلقائيًا";
+      if (p.reason) chips.push(String(p.reason).slice(0, 90));
+    } else if (k === "JOB_CREATED") {
+      text = "أُنشئت وظيفة تنفيذ للمشروع";
+    } else if (k === "PREFLIGHT_STARTED" || k === "preflight.started" ||
+               k === "ENVIRONMENT_CHECK_STARTED") {
+      text = "جارٍ فحص التمهيد والبيئة…";
+    } else if (k === "PREFLIGHT_RECHECKED") {
+      text = "أُعيد فحص التمهيد";
+      if (p.result) chips.push(String(p.result));
+    } else if (k === "CAPABILITIES_EVALUATED") {
+      text = "قُيّمت قدرات التنفيذ المتاحة";
+    } else if (k === "MODEL_CALL_FAILED") {
+      text = "فشل استدعاء النموذج";
+      if (p.error_class) chips.push(String(p.error_class));
+      if (p.retry_count) chips.push("محاولات " + p.retry_count);
+    } else if (k === "PLANNING_FAILED") {
+      text = "فشلت جلسة التخطيط — تُعاد المحاولة";
+      if (p.error) chips.push(String(p.error).slice(0, 90));
+    } else if (k === "GATE_AUTO_RESOLVED") {
+      text = "بوابة تلقائية حُسمت بقواعد المصنع بلا تدخل";
+      if (p.decision) chips.push(String(p.decision));
+    } else if (k === "WORKFLOW_DIAGNOSED") {
+      text = "شخّصت الحلقة سير العمل وحدّثت الخطة";
+    } else if (k === "ADJUDICATION_COMPLETED") {
+      text = "اكتمل الفصل في اعتراض المراجعة";
+      if (p.verdict) chips.push(String(p.verdict));
+    } else if (k === "step.progress") {
+      if (String(p.verdict).indexOf("PASS") !== -1 || p.task_done) {
+        text = "أُنجزت مهمة الخطوة بنجاح";
+      } else {
+        text = "تقدّم في تنفيذ الخطوة";
+      }
+    } else if (k === "message_started") {
+      text = "بدأ الوكيل صياغة رسالة جديدة";
+    } else if (k === "chat.status") {
+      text = "حالة المحادثة: " + String(p.status || "تحديث");
+    } else if (k === "conversation.bind") {
+      text = "رُبطت محادثة بالمشروع";
+    } else if (k === "research.started") {
+      text = "يبحث الوكيل خارجيًا عن مراجع…";
+    } else if (k === "research.used") {
+      text = "استُخدمت نتائج بحث خارجي في العمل";
+    } else if (k === "research.results") {
+      text = "وصلت نتائج البحث الخارجي" +
+        (p.count ? " (" + p.count + " نتيجة)" : "");
+    } else if (k === "research.unavailable") {
+      text = "البحث الخارجي غير متاح الآن — العمل يكمل داخليًا";
+    } else if (k === "chat.error") {
+      text = "خطأ في المحادثة";
+      if (p.error) chips.push(String(p.error).slice(0, 90));
+    } else if (k === "rate_limit.wait") {
+      text = "انتظار حصة المزوّد — محدود المعدل";
+      if (p.wait_s) chips.push(p.wait_s + "ث");
+    } else if (k === "task.conversation") {
+      text = "مهمة محادثة ضمن الدورة";
+    } else if (k === "ROLE_PROVIDER_CHANGED") {
+      text = "تغيّر مزوّد النموذج لأحد الأدوار";
+      if (p.role) chips.push(String(p.role));
+    } else if (k === "CONFIGURATION_REQUIRED") {
+      text = "إعداد مطلوب — أكمل الإعدادات أولًا";
     } else {
       return null; /* لا سرد؟ يعرض الرسّام التفاصيل الخام بصدق */
     }
