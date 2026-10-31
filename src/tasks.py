@@ -166,6 +166,27 @@ def _persist_tool_invocations(sessions, cycle_id: str,
         pass
 
 
+def _verification_block(task_events: list) -> list[dict]:
+    """أحكام التحقق من أحداث الدورة — النقص الحرفي للمراجع موثقًا."""
+    out: list[dict] = []
+    for event in task_events:
+        kind = str(event.get("kind") or "")
+        if kind not in ("task_verification", "verification_rollup"):
+            continue
+        details = event.get("details") or {}
+        out.append({
+            "kind": kind,
+            "task_id": details.get("task_id", ""),
+            "verdict": details.get("verdict", ""),
+            "confidence": details.get("confidence"),
+            "missing_evidence": [
+                str(m)[:200] for m in (details.get("missing_evidence")
+                                       or [])[:8]
+            ],
+        })
+    return out[:10]
+
+
 def run_task(
     goal: str,
     *,
@@ -391,6 +412,10 @@ def run_task(
         },
         "tool_calls": tool_calls,
         "tool_invocations": tool_records,
+        # (W2-T25 728) حكم المراجع الحرفي يصل الأدلة — النقص المعلن
+        # بmissing_evidence من كل تحقق (للمهمة والجرد الكلي) بدل
+        # ابتلاعه في «لم تكتمل أدلةً» العامة.
+        "verification": _verification_block(task_events),
         "failure": failure_block,
         "evidence_quality": (
             "NO_EVIDENCE" if not files and not tool_records else "PRESENT"
