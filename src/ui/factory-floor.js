@@ -431,6 +431,7 @@
     var top = el("div", "fs-item-top");
     top.appendChild(el("span", "status-dot sm " + (st.pulse ? "live" : (st.cls === "st-blocked" ? "off" : ""))));
     var name = el("span", "fs-item-name", p.name || ("مشروع " + p.id));
+    name.dir = "auto"; /* BiDi: الاسم المختلط يأخذ اتجاه أول حرف قوي */
     name.title = name.textContent;
     top.appendChild(name);
     top.appendChild(el("span", "chip " + st.cls, st.label));
@@ -447,9 +448,12 @@
       var cur = prog.current_step && prog.current_step.objective
         ? String(prog.current_step.objective) : "";
       if (cur.length > 64) cur = cur.slice(0, 64) + "…";
-      sub.appendChild(el("span", "fs-item-step", cur || "…"));
+      var curEl = el("span", "fs-item-step", cur || "…");
+      curEl.dir = "ltr"; /* BiDi: أهداف الخطوات إنجليزية غالبًا */
+      sub.appendChild(curEl);
       var nums = el("span", "fs-item-nums");
-      tech(nums, Math.round(pct) + "%");
+      tech(nums, (prog.steps_completed || 0) + "/" + (prog.steps_total || 0)
+        + " · " + Math.round(pct) + "%");
       sub.appendChild(nums);
       card.appendChild(sub);
     } else {

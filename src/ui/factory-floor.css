@@ -818,3 +818,15 @@
 .fn-action { max-width: 34ch; }
 .fn-obj { max-width: 26ch; }
 .fn-model, .fn-chars { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 016 M4 — سطر الخطوة في الجلسات: قصّ سليم للنص المعزول LTR */
+.fs-item-sub { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.fs-item-step {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-item-step[dir="ltr"] { text-align: left; }
+.fs-item-nums { flex: none; }
