@@ -33,7 +33,7 @@ import json
 import threading
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -1015,6 +1015,33 @@ def project_artifacts(project_id: int) -> dict:
     artifacts.sort(key=lambda a: str(a.get("created_at") or ""),
                    reverse=True)
     return {"artifacts": artifacts}
+
+
+@router.get("/{project_id}/artifacts/content")
+def project_artifact_content(project_id: int, step_id: int,
+                             name: str) -> Response:
+    """محتوى ملف مخرَج حقيقي من دليل الخطوة (016 M3) — قراءة قرص حصرًا.
+
+    من ملفات الأدلة الدائمة حصرًا: runtime/projects/{id}/steps/{sid}/{name}.
+    أمان المسار: بلا ".." ولا جذر مطلق ولا شرطة عكسية ولا بايت صفر —
+    يجب أن يبقى الحسم داخل دليل الخطوة. نص utf-8 (مع استبدال) حتى 256KB
+    لأن الغرض معاينة حية لا تنزيل ثنائي.
+    """
+    _project_or_404(project_id)
+    if (not name or name.startswith("/") or "\\" in name
+            or ".." in name or "\x00" in name):
+        raise HTTPException(status_code=400, detail="invalid artifact name")
+    from pathlib import Path
+    from core.config import settings
+    base = (Path(settings.db_path).parent / "projects" / str(project_id)
+            / "steps" / str(step_id)).resolve()
+    target = (base / name).resolve()
+    if base not in target.parents or not target.is_file():
+        raise HTTPException(status_code=404, detail="artifact file not found")
+    data = target.read_bytes()[:262144]
+    return Response(content=data.decode("utf-8", "replace"),
+                    media_type="text/plain; charset=utf-8",
+                    headers={"Cache-Control": "no-cache"})
 
 
 class PauseIn(BaseModel):

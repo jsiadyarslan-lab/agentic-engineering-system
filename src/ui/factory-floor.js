@@ -1249,6 +1249,26 @@
     else renderExecs(body, d.executions || []);
   }
   var panelSig = "";
+  /* M3: معاينة محتوى حقيقي من القرص — بلا تصنيع */
+  function previewArtifact(a) {
+    if (S.sel == null || a.step_id == null || !a.name) return;
+    var url = "/api/projects/" + S.sel + "/artifacts/content?step_id=" +
+      a.step_id + "&name=" + encodeURIComponent(String(a.name));
+    fetch(url, { headers: { accept: "text/plain" } })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (text) {
+        openJsonModal(String(a.name) +
+          (a.sha256 ? " — " + String(a.sha256).slice(0, 10) : ""), text);
+      })
+      .catch(function (err) {
+        openJsonModal(String(a.name || "ملف"),
+          "تعذر جلب المحتوى: " + err.message);
+      });
+  }
+
   function fileMeta(a) {
     var wrap = el("div", "fp-file");
     var top = el("div", "fp-file-top");
@@ -1261,6 +1281,14 @@
     if (a.verdict) {
       var ok = a.verdict === "PASS";
       top.appendChild(el("span", "chip " + (ok ? "ok" : "danger"), a.verdict));
+    }
+    if (a.step_id != null && a.name) {
+      var pvb = el("button", "chip fp-open", "معاينة");
+      pvb.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        previewArtifact(a);
+      });
+      top.appendChild(pvb);
     }
     wrap.appendChild(top);
     var meta = el("div", "fp-file-meta");
