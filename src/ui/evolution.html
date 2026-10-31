@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>متصفح التطور — نظام الهندسة الوكيلي</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/evolution-browser.css">
+</head>
+<body>
+<header class="evo-top">
+  <div class="evo-brand">
+    <span class="evo-live-dot" id="evo-conn-dot" title="حالة الاتصال"></span>
+    <strong>متصفح التطور</strong>
+    <span class="evo-conn-label" id="evo-conn-label">جارٍ الاتصال…</span>
+  </div>
+  <select id="evo-project" class="evo-picker" title="اختيار المشروع"></select>
+  <div class="evo-heartbeat" id="evo-heartbeat">—</div>
+</header>
+
+<main class="evo-grid">
+  <aside class="evo-rail evo-rail-plan">
+    <h2>الخطة الحية</h2>
+    <div class="evo-progress">
+      <div class="evo-progress-bar" id="evo-progress-bar"></div>
+    </div>
+    <div class="evo-progress-nums tnum" id="evo-progress-nums">—</div>
+    <ol id="evo-steps" class="evo-steps"></ol>
+  </aside>
+
+  <section class="evo-center">
+    <div class="evo-now" id="evo-now">
+      <div class="evo-now-empty" id="evo-now-empty">لا تنفيذ جاري الآن</div>
+      <div class="evo-now-body" id="evo-now-body" hidden>
+        <span class="evo-now-pulse"></span>
+        <span class="evo-now-role" id="evo-now-role">—</span>
+        <span class="evo-now-tool" id="evo-now-tool"></span>
+        <span class="evo-now-step" id="evo-now-step"></span>
+        <span class="evo-now-since tnum" id="evo-now-since"></span>
+      </div>
+    </div>
+    <div class="evo-stream" id="evo-stream"></div>
+  </section>
+
+  <aside class="evo-rail evo-rail-files">
+    <h2>ملفات المشروع <span class="evo-count tnum" id="evo-files-count"></span></h2>
+    <ul id="evo-files" class="evo-files"></ul>
+  </aside>
+</main>
+
+<footer class="evo-stats tnum" id="evo-stats"></footer>
+
+<div class="evo-modal" id="evo-modal" hidden>
+  <div class="evo-modal-box">
+    <header><strong id="evo-modal-title"></strong>
+      <button id="evo-modal-close" class="evo-btn">إغلاق</button></header>
+    <pre id="evo-modal-pre" dir="ltr"></pre>
+  </div>
+</div>
+
+<script src="/static/evolution-browser.js"></script>
+</body>
+</html>

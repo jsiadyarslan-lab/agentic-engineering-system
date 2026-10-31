@@ -2509,3 +2509,16 @@ def textstats_evidence() -> dict:
     if not path.is_file():
         raise HTTPException(status_code=404, detail="لا دليل بعد — شغّل المهمة أولًا")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+# --- متصفح التطور اللحظي (016-E) — ربط إضافي فقط: راوتر جديد + مسار صفحة ---
+from api.evolution import router as evolution_router
+app.include_router(evolution_router)
+
+
+@app.get("/evolution")
+def evolution_browser_page(request: Request) -> Response:
+    """متصفح التطور اللحظي — صفحة معزولة عن واجهة المصنع الأساسية."""
+    from api.evolution import evolution_page
+
+    return evolution_page(request)
