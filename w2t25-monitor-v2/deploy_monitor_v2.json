@@ -1,0 +1,30 @@
+{
+ "task": "W2-T25 MONITOR v2 — control room rebuild (user complaint: opaque page, separate link, no visible agent thinking)",
+ "deployed_at": "2026-10-31T20:46:00Z",
+ "url": "http://92.5.14.150/w2t25-monitor/?k=<token>",
+ "changes": [
+  "new endpoint /api/now (single unified payload: status + full step objective/input/expected_output/acceptance_criteria + live evidence + tool_invocations w/ failure_class+reason + project_events story + recent closed steps + step files + raw stdout/stderr + merged tree counts + driver)",
+  "new INDEX: control-room page — hero 'what is the agent doing right now', thinking section (goal/inputs/outputs/acceptance criteria with live file auto-check + lifecycle + verdicts), live tool table with Arabic tool names, raw outputs, step files clickable, event story translated to Arabic, embedded site preview iframe (no second link needed), closed steps, full legend explaining every factory term in plain Arabic",
+  "old endpoints untouched: /api/status /api/activity /api/steps /api/files /api/stepfiles /api/log /api/evidence /api/file /preview/*"
+ ],
+ "verification": {
+  "py_compile": "rc=0",
+  "service": "w2t25-monitor.service active after restart",
+  "endpoints": {
+   "/healthz": "ok",
+   "/api/now": "200 (direct + via nginx /w2t25-monitor/)",
+   "/api/status": "200",
+   "/api/steps": "200",
+   "/preview/index.html": "200"
+  },
+  "browser": "playwright: JS errors none; preview iframe contains 3 article elements + 479 chars text (site no longer blank — plan v100 wrote index.html)",
+  "screenshots": [
+   "control_top.png (VLM: Arabic RTL correct, no mojibake, no layout breakage, KPI grid clean)",
+   "control_live.png (VLM: table aligned readable)",
+   "control_site.png (VLM: iframe shows real site content)"
+  ]
+ },
+ "rollback": "cp /home/opc/w2t25_monitor.py.bak_v1 /home/opc/w2t25_monitor.py && sudo systemctl restart w2t25-monitor.service",
+ "backup": "/home/opc/w2t25_monitor.py.bak_v1 (40033 bytes pre-patch)",
+ "honest_limit": "engine does not persist agent free-text 'thoughts'; the page shows everything the factory actually records (objectives, criteria, actions, verdicts) — labeled as such in the UI"
+}

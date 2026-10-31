@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🏭 غرفة التحكم — مصنع «منصة المقالات»</title>
+<style>
+:root{--bg:#0b1220;--panel:#101a2e;--panel2:#0d1626;--line:#1d2b47;--txt:#e6edf7;--dim:#8fa3c0;--acc:#4f8cff;--ok:#2ecc71;--warn:#f1c40f;--err:#e74c3c;--run:#38bdf8}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI",Tahoma,system-ui,sans-serif;font-size:14.5px;line-height:1.65}
+a{color:#7ab0ff}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 18px;background:linear-gradient(90deg,#0d1a33,#0b1220);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+header h1{font-size:17px;margin:0}
+header .sub{color:var(--dim);font-size:12px}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--line)}
+.chip.ok{background:#0c2b1a;color:var(--ok);border-color:#1d5c3a}
+.chip.err{background:#2b0c0c;color:var(--err);border-color:#5c1d1d}
+.chip.run{background:#0c2233;color:var(--run);border-color:#1d4a5c}
+.chip.warn{background:#2b240c;color:var(--warn);border-color:#5c4d1d}
+.chip.dim{color:var(--dim)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:5px;vertical-align:middle}
+.dot.ok{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+.dot.err{background:var(--err);box-shadow:0 0 6px var(--err)}
+.secnav{position:sticky;top:58px;z-index:40;display:flex;gap:6px;flex-wrap:wrap;padding:8px 18px;background:#0c1424ee;border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.secnav a{color:#9fc0f5;text-decoration:none;font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2)}
+.secnav a:hover{background:#1a2b4d}
+main{max-width:1380px;margin:0 auto;padding:16px 18px 60px}
+section{margin-bottom:22px}
+h2{font-size:16.5px;color:var(--acc);margin:0 0 4px}
+.hint{color:var(--dim);font-size:12.5px;margin:0 0 10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.hero{background:linear-gradient(135deg,#10233f,#101a2e);border:1px solid #274067;border-radius:14px;padding:18px}
+.hero .l1{font-size:19px;font-weight:700;line-height:1.8}
+.hero .l1 b{color:var(--run)}
+.hero .metas{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.lastact{margin-top:14px;background:#0c1a2f;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.lastact .t{color:var(--dim);font-size:12px;margin-bottom:4px}
+.lastact .b{font-size:15px}
+.alert{background:#241c07;border:1px solid #5c4d1d;color:#ffd97a;border-radius:10px;padding:10px 14px;margin-top:12px;font-size:13.5px}
+.alert b{color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+.kpi .l{color:var(--dim);font-size:11.5px}
+.kpi .v{font-size:17px;font-weight:700;margin-top:3px;word-break:break-word}
+.bar{height:9px;background:#0a1226;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:7px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#2fa3ff,#2ecc71)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;position:sticky;top:0;background:var(--panel)}
+tr.new td{animation:flash 2.4s ease-out}
+@keyframes flash{0%{background:#1d4f8f}100%{background:transparent}}
+.mono{font-family:ui-monospace,Consolas,monospace;direction:ltr;text-align:left;unicode-bidi:embed}
+.sub{color:var(--dim);font-size:12px}
+.tag{display:inline-block;padding:2px 9px;border-radius:6px;font-size:11.5px;font-weight:700}
+.tag.ok{background:#0c2b1a;color:var(--ok)}
+.tag.err{background:#2b0c0c;color:var(--err)}
+.tag.run{background:#0c2233;color:var(--run)}
+.tag.dim{background:#141d31;color:var(--dim)}
+.tag.warn{background:#2b240c;color:var(--warn)}
+.objbox{background:#0c1a2f;border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;font-size:13.5px}
+.steps-lifecycle{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.steps-lifecycle .st{padding:3px 10px;border-radius:6px;font-size:11.5px;background:#141d31;color:var(--dim)}
+.steps-lifecycle .st.on{background:#0c2b1a;color:var(--ok);font-weight:700}
+.steps-lifecycle .ar{color:#3a4f78}
+ul.acr{margin:8px 0;padding:0;list-style:none}
+ul.acr li{padding:5px 10px;border-bottom:1px dashed #1a2b47;display:flex;gap:8px;align-items:flex-start}
+ul.acr li .ck{flex:none;font-weight:900}
+ul.acr li .ck.y{color:var(--ok)}
+ul.acr li .ck.n{color:#3a4f78}
+pre.raw{background:#0a1120;border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:220px;font-size:12px;direction:ltr;text-align:left}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tlev{display:flex;gap:12px;padding:7px 4px;border-bottom:1px solid #14203a}
+.tlev .when{flex:none;width:118px;color:var(--dim);font-size:11.5px;direction:ltr;text-align:right}
+.tlev .what{font-size:13.5px}
+.tlev .what .k{font-weight:700;color:#9fc0f5}
+.storyline{display:flex;flex-direction:column-reverse}
+details{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+details summary{cursor:pointer;font-weight:700;color:#bcd0f5;font-size:13.5px}
+details p{color:#c4d3ec;font-size:13px;margin:8px 0 2px}
+.sitegrid{display:grid;grid-template-columns:1fr 300px;gap:12px}
+@media(max-width:980px){.sitegrid{grid-template-columns:1fr}}
+iframe.site{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;background:#fff}
+button.btn{background:#16263f;color:#cfe0ff;border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit}
+button.btn:hover{background:#1d3358}
+button.btn.primary{background:var(--acc);color:#04101f;font-weight:700;border-color:var(--acc)}
+.footbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+#modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;max-width:92vw;width:1000px;max-height:86vh;display:flex;flex-direction:column}
+#modal .hd{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+#modal .bd{overflow:auto;padding:14px 16px;font-size:12.5px}
+footer.site-footer{color:var(--dim);font-size:12px;text-align:center;padding:18px;border-top:1px solid var(--line)}
+.gone{opacity:.35}
+@media(max-width:760px){header h1{font-size:15px}.hero .l1{font-size:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏭 غرفة التحكم — مصنع «منصة المقالات»</h1>
+  <span class="sub">مشروع #3 · وصول قراءة فقط</span>
+  <span style="flex:1"></span>
+  <span id="h-proj" class="chip dim">—</span>
+  <span id="h-driver" class="chip dim">السائق: —</span>
+  <span id="h-beat" class="chip dim">النبض: —</span>
+  <span id="h-err" class="chip err" style="display:none">اتصال مقطوع</span>
+  <span id="h-upd" class="chip dim">—</span>
+  <span id="clock" class="sub mono"></span>
+</header>
+
+<nav class="secnav">
+  <a href="#s-hero">⚡ الآن</a>
+  <a href="#s-think">🧠 بماذا يفكر</a>
+  <a href="#s-live">📡 البث الحي</a>
+  <a href="#s-raw">🖥️ مخرجات خام</a>
+  <a href="#s-files">📁 ملفات الخطوة</a>
+  <a href="#s-story">📖 قصة المصنع</a>
+  <a href="#s-site">🌐 الموقع</a>
+  <a href="#s-closed">✅ خطوات مغلقة</a>
+  <a href="#s-legend">❔ كيف أقرأ اللوحة؟</a>
+</nav>
+
+<main>
+
+<section id="s-hero">
+  <div class="hero">
+    <div class="l1" id="heroL1">جارٍ التحميل…</div>
+    <div class="metas" id="heroMetas"></div>
+    <div class="lastact" id="heroLast"><div class="t">آخر فعل قام به الوكيل</div><div class="b" id="heroLastB">…</div></div>
+    <div id="revreason"></div>
+  </div>
+</section>
+
+<section id="s-kpis"><div class="kpis" id="kpis"></div></section>
+
+<section id="s-think">
+  <h2>🧠 بماذا «يفكر» الوكيل؟ — هدف الخطوة الحالية وأحكامها المكتوبة</h2>
+  <p class="hint">المحرك لا يخزّن خواطر الوكيل كنص حر؛ ما يخزّنه فعليًا هو <b>الهدف</b> و<b>معايير القبول</b> و<b>الأفعال</b> و<b>الأحكام</b> — وهذا كلّه معروض هنا كما سُجّل، لحظة بلحظة. أصدق تمثيل متاح لتفكيره.</p>
+  <div class="panel" id="think">…</div>
+</section>
+
+<section id="s-live">
+  <h2>📡 البث الحي — كل استدعاء أداة لحظة حدوثه</h2>
+  <p class="hint">هذا ما يفعله الوكيل <b>الآن بالضبط</b>: كل سطر = أداة استُدعيت، ماذا طلبت، كم استغرقت، وهل نجحت. الصفوف الجديدة تُومض.</p>
+  <div class="panel" id="tools">…</div>
+</section>
+
+<section id="s-raw">
+  <h2>🖥️ آخر مخرجات خام من الأدوات (سطر أوامر حقيقي)</h2>
+  <p class="hint">مقتطفات فعلية من مخرجات آخر الأدوات في مساحة عمل الخطوة — كما كتبها النظام، بلا تجميل.</p>
+  <div class="panel" id="raws">…</div>
+</section>
+
+<section id="s-files">
+  <h2>📁 ملفات مساحة عمل الخطوة الحالية</h2>
+  <p class="hint">انقر أي ملف لعرض محتواه. الملفات التي كُتبت خلال الدقيقة الأخيرة تُومض — هذا «قلم» الوكيل على الورق.</p>
+  <div class="panel" id="wfiles">…</div>
+</section>
+
+<section id="s-story">
+  <h2>📖 قصة المصنع — آخر الأحداث بلغة واضحة</h2>
+  <p class="hint">من سجل الأحداث الرسمي: خطوات تبدأ، محاولات تنطلق، خطط تُولد، أدوار تستيقظ — الأحدث في الأسفل.</p>
+  <div class="panel"><div class="timeline storyline" id="story">…</div></div>
+</section>
+
+<section id="s-site">
+  <h2>🌐 الموقع كما بُني حتى الآن</h2>
+  <p class="hint" id="sitenote">معاينة مدمجة من ملفات الموقع التي أنتجتها الخطوات (لا تحتاج رابطًا آخر). تُحدَّث تلقائيًا.</p>
+  <div class="sitegrid">
+    <div class="panel" style="padding:10px">
+      <iframe id="pframe" class="site" title="معاينة الموقع"></iframe>
+      <div class="footbar">
+        <button class="btn" onclick="reloadPrev()">↻ تحديث المعاينة</button>
+        <button class="btn" onclick="window.open(A('preview/index.html'),'_blank')">فتح الموقع في تبويب جديد ↗</button>
+        <span class="sub" id="arts"></span>
+      </div>
+    </div>
+    <div class="panel" id="siteinfo">…</div>
+  </div>
+</section>
+
+<section id="s-closed">
+  <h2>✅ آخر الخطوات المغلقة (بحكمها النهائي)</h2>
+  <div class="panel" id="closed">…</div>
+</section>
+
+<section id="s-legend">
+  <h2>❔ كيف تقرأ هذه اللوحة؟ — فكّ شيفرة المصنع</h2>
+  <p class="hint">كل مصطلح يظهر في اللوحة مشروح هنا بلا غموض.</p>
+  <details open><summary>ما هي «الخطوة» و«المرحلة» و«الخطة»؟</summary>
+    <p><b>الخطوة</b> أصغر وحدة عمل (مثل: «اكتب ملف tsconfig.json») — لكل خطوة هدف ومدخلات ومخرج متوقع ومعايير قبول حرفية. <b>المرحلة</b> مجموعة خطوات (مثل: إعداد المشروع ثم بناء الصفحات). <b>الخطة</b> مجموعة مراحل كاملة لمشروع الموقع.</p>
+    <p>الخطة <b>تُعاد كتابتها تلقائيًا</b> إذا فشلت خطوة مرات متكررة — سبب آخر مراجعة يظهر بأعلى اللوحة. أعيدت كتابة الخطة اليوم عدة مرات بسبب أعطاب مزوّد الذكاء الاصطناعي الخارجي (تجميدات صامتة)، لا بسبب كود الموقع نفسه.</p>
+  </details>
+  <details><summary>معاني الأحكام: EVIDENCED / FAILED / ESCALATED_TO_HUMAN / HARD STOP …</summary>
+    <p><b>EVIDENCED أو PASS</b>: الخطوة نجحت و«أثبتت» إنجازها بدليل قابل للفحص. <b>FAILED</b>: استنفدت محاولاتها بلا نجاح. <b>ESCALATED_TO_HUMAN</b>: استنفدت المحاولات ورفعت يدها طالبة تدخلًا بشريًا (والمصنع أحيانًا يستأنفها آليًا). <b>HARD STOP</b>: توقفت قسرًا على عائق مثل «NO_ANALYZABLE_MATERIAL» أي أن مخرجات الأداة جاءت غير قابلة للتحليل.</p>
+  </details>
+  <details><summary>ما معنى «المحاولة» (attempt)؟ ولماذا تتكرر الخطوة نفسها؟</summary>
+    <p>المحاولة = تنفيذ واحد كامل للخطوة. إذا انقطعت الجلسة (تجميد مزوّد مثلًا) تُحرق المحاولة وتُعاد الخطوة من بدايتها. لهذا قد ترى «.env.example» ثلاث مرات في يوم واحد: كل مرة تُولد خطة جديدة تعيد نفس المهمة — حتى تصل الجلسة إلى نهايتها فتُغلق.</p>
+  </details>
+  <details><summary>ما هي «النبض» و«السائق»؟</summary>
+    <p><b>النبض</b>: توقيع حياة يرسله عامل التنفيذ كل بضع ثوان. إن تجاوز عمره ~150 ثانية فهناك تجميد — لوحة الرأس تصفره. <b>السائق</b>: برنامج مراقبة يشغّل وظيفة المصنع ويعيد المحاولات ويعالج البوابات — إن مات تعيد تشغيله حراسة آلية كل 5 دقائق.</p>
+  </details>
+  <details><summary>ما هي «بوابات المالك» (PREFLIGHT_BLOCKED / PLAN_APPROVAL …)؟</summary>
+    <p>نقاط توقف اخترناها نحن لسلامة العمل: <b>PLAN_APPROVAL</b> اعتماد خطة جديدة قبل تنفيذها (تُعتمد آليًا في وضع التشغيل الحالي). <b>PREFLIGHT_BLOCKED</b> فحص جاهزية قبل الطيران — مثلًا: مسبار مزود بحث الويب انتهت صلاحيته فيُعاد الفحص ثم يكمل. تظهر آخر البوابات ضمن «قصة المصنع».</p>
+  </details>
+  <details><summary>لماذا يبدو الموقع أحيانًا فارغًا أو «0 مقالات»؟</summary>
+    <p>الموقع الحي يُبنى من ملفات تنتجها الخطوات. كلما أعيدت كتابة الخطة بدأ المسار من نقطة الصفر حتى يبلغ خطوات بناء الصفحات والنشر — فترى الشجرة تنمو (قسم «الموقع») بينما تبقى المعاينة فقيرة مؤقتًا. في اللحظة التي تصل فيها خطوات الصفحات (كما الآن) ستبدأ المعاينة تكتمل سريعًا.</p>
+  </details>
+  <details><summary>هل هذه اللوحة آمنة؟ وهل تكتب في المصنع؟</summary>
+    <p>لا. اللوحة <b>قراءة فقط</b> بالكامل: تقرأ قاعدة البيانات وملفات مساحات العمل دون أن تكتب حرفًا واحدًا في المصنع. محمية بمفتاح وصول سري في الرابط.</p>
+  </details>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footbar" style="justify-content:center">
+    <button class="btn" onclick="showSteps()">📚 آخر 60 خطوة</button>
+    <button class="btn" onclick="showTree()">🌳 شجرة ملفات الموقع</button>
+    <button class="btn" onclick="showLog()">📜 سجل السائق</button>
+    <button class="btn" onclick="showEvidence()">🧾 دليل خطوة (JSON)</button>
+    <button class="btn" onclick="window.open(A('api/now'),'_blank')">⚙️ الحالة الخام JSON</button>
+  </div>
+  <div style="margin-top:10px">غرفة تحكم قراءة فقط · تُحدَّث تلقائيًا كل 5 ثوان · <span id="verline"></span></div>
+</footer>
+
+<div id="modal" onclick="if(event.target===this)closeM()">
+  <div class="box">
+    <div class="hd"><b id="mtitle">—</b><span style="flex:1"></span><button class="btn" onclick="closeM()">✕ إغلاق</button></div>
+    <div class="bd" id="mbody"></div>
+  </div>
+</div>
+
+<script>
+const K=new URLSearchParams(location.search).get('k')||'__TOKEN__';
+const B=location.pathname.replace(/[^\/]*$/,'');
+const A=p=>B+p.replace(/^\//,'')+(p.includes('?')?'&':'?')+'k='+encodeURIComponent(K);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmS=n=>{n=+n||0;return n>1048576?(n/1048576).toFixed(1)+' MB':n>1024?(n/1024).toFixed(1)+' KB':n+' B'};
+const fmDur=s=>{s=Math.max(0,+s||0);if(s<90)return Math.round(s)+' ث';const m=Math.round(s/60);if(m<90)return m+' د';return (m/60).toFixed(1)+' س'};
+const fmAge=s=>{s=Math.max(0,+s||0);return 'قبل '+fmDur(s)};
+const utc=ts=>ts?Date.parse(String(ts).replace(' ','T')+'Z'):null;
+const ago=ts=>{const e=utc(ts);return e==null?'—':fmAge((Date.now()-e)/1000)};
+const hhmm=ts=>{const e=utc(ts);return e==null?'—':new Date(e).toISOString().substr(11,8)+'Z'};
+let startedEpoch=null,lastToolSig='',lastFileSig='',curStepId=null,prevStepId=null,refreshN=0;
+
+const STATUS_AR={RUNNING:'يعمل الآن',COMPLETED:'مكتملة',EVIDENCED:'مُثبتة بالدليل',PASS:'مُثبتة بالدليل',FAILED:'فاشلة',ESCALATED_TO_HUMAN:'طلبت يدًا بشرية (استنفدت المحاولات)','HARD STOP':'توقفت قسرًا',QUEUED:'في الطابور',INTERRUPTED:'قُطعت',WAITING_GATE:'بانتظار بوابة',BLOCKED:'محجوبة',PAUSED:'موقوفة مؤقتًا',RETRYING:'تعيد المحاولة'};
+const stTag=st=>{const cls=(st==='RUNNING'||st==='RETRYING')?'run':(st==='COMPLETED'||st==='EVIDENCED'||st==='PASS')?'ok':(st==='FAILED'||st==='ESCALATED_TO_HUMAN'||st==='HARD STOP'||st==='INTERRUPTED')?'err':'dim';return '<span class="tag '+cls+'">'+esc(STATUS_AR[st]||st)+'</span>'};
+const TOOL_AR={write_file:'كتابة ملف',read_file:'قراءة ملف',list_dir:'فحص مجلد',bash:'تنفيذ أمر',shell:'تنفيذ أمر',run_command:'تنفيذ أمر',web_search:'بحث في الويب',web_fetch:'جلب صفحة ويب',generate_pdf_arabic:'توليد PDF عربي',verify_pdf_pages:'تحقق من صفحات PDF',analyze:'تحليل',verify:'تحقق'};
+const toolAr=t=>TOOL_AR[t]||t;
+const KIND_AR={STEP_STARTED:'بدأت خطوة',EXECUTION_STARTED:'انطلق تنفيذ',ROLE_EXECUTING:'دور يعمل الآن',PHASE_STARTED:'بدأت مرحلة',EXECUTION_OPENED:'الخطة مفتوحة للتنفيذ',ENVIRONMENT_READY:'البيئة جاهزة',STEP_COMPLETED:'اكتملت خطوة',STEP_FAILED:'فشلت خطوة',PLAN_CREATED:'وُلدت خطة جديدة',GATE:'بوابة',PROVIDER_TEST_COMPLETED:'اختبار مزوّد'};
+
+function tickClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('ar-EG')}
+setInterval(tickClock,1000);tickClock();
+async function jget(p){const r=await fetch(A(p));if(!r.ok)throw new Error(p+' '+r.status);return r.json()}
+
+async function tick(){
+ try{
+  const n=await jget('/api/now');
+  refreshN++;
+  document.getElementById('h-err').style.display='none';
+  render(n);
+  document.getElementById('h-upd').textContent='حدّثت قبل لحظة · جولة '+refreshN;
+ }catch(e){
+  const el=document.getElementById('h-err');el.style.display='';el.textContent='⚠️ تعذر الاتصال — سنعيد المحاولة';
+ }
+}
+
+function render(n){
+ const s=n, c=s.counts||{}, proj=s.project||{}, job=s.job||{}, step=s.cur_step||{}, exf=s.cur_exec_full||{}, sf=s.cur_step_full||{}, ev=s.cur_evidence||{};
+ curStepId=step.id;
+ // header
+ document.getElementById('h-proj').textContent='حالة المشروع: '+(STATUS_AR[proj.status]||proj.status||'—');
+ document.getElementById('h-proj').className='chip '+(proj.status==='RUNNING'?'run':proj.status==='COMPLETED'?'ok':'err');
+ document.getElementById('h-driver').innerHTML=(s.driver&&s.driver.alive?'<span class="dot ok"></span>السائق يعمل':'<span class="dot err"></span>السائق متوقف!')+(s.driver&&s.driver.log_age!=null?' <span class="sub">('+s.driver.log_age+'ث منذ آخر سجل)</span>':'');
+ const ba=s.heartbeat_age;
+ document.getElementById('h-beat').innerHTML='النبض: '+(ba==null?'—':ba+' ث')+(ba!=null&&ba>150?' ⚠️ متجمد':' ✓');
+ // hero
+ startedEpoch=utc(exf.started_at);
+ const toolCount=((ev.tool_calls)||[]).length;
+ const fileCount=(s.step_files||[]).length;
+ const objShort=String(sf.objective||step.objective||'').split('\n')[0].slice(0,140);
+ document.getElementById('heroL1').innerHTML=
+  'الوكيل '+(STATUS_AR[step.status]||'')+' على <b>الخطوة #'+esc(step.id||'—')+'</b> من الخطة v'+esc((s.cur_plan||{}).version||'—')+
+  ' (المرحلة: '+esc((s.cur_phase||{}).title||'—')+'):<br>«'+esc(objShort)+'»';
+ let metas='';
+ metas+='<span class="chip '+(step.attempts>2?'warn':'run')+'">المحاولة رقم '+esc(exf.attempt||'—')+' (محاولات الخطوة: '+esc(step.attempts||'—')+')</span>';
+ if(startedEpoch)metas+='<span class="chip dim">بدأ التنفيذ قبل '+fmDur((Date.now()-startedEpoch)/1000)+'</span>';
+ metas+='<span class="chip dim">الدور: '+esc(exf.agent_role||job.current_role||'—')+'</span>';
+ metas+='<span class="chip dim">'+toolCount+' استدعاء أداة</span>';
+ metas+='<span class="chip dim">'+fileCount+' ملفًا في مساحة العمل</span>';
+ document.getElementById('heroMetas').innerHTML=metas;
+ // last action
+ const rt=(s.recent_tools||[])[0]||(((ev.tool_calls)||[]).slice(-1)[0]||null);
+ let lastHtml='<span class="sub">لا أداة بعد في هذه المحاولة — الوكيل يفكر/ينتظر المزوّد…</span>';
+ if(rt&&rt.tool){
+  const dur=rt.duration_ms!=null?(rt.duration_ms/1000).toFixed(1)+'ث':'';
+  const q=rt.query||'';
+  const fail=rt.failure_class?' <span class="tag err">'+esc(rt.failure_class)+'</span>':'';
+  lastHtml='<b>'+esc(toolAr(rt.tool))+'</b> '+esc(q)+' '+fail+' <span class="sub">'+dur+' · '+ago(rt.created_at)+'</span>';
+  if(rt.failure_reason)lastHtml+='<div class="sub" style="color:#ff9c9c">'+esc(String(rt.failure_reason).slice(0,220))+'</div>';
+ }else if(rt&&rt.args_summary){
+  lastHtml='<b>'+esc(toolAr(rt.tool))+'</b> <span class="mono sub">'+esc(String(rt.args_summary.path||rt.args_summary.command||rt.query||'').slice(0,160))+'</span>';
+ }
+ document.getElementById('heroLastB').innerHTML=lastHtml;
+ // plan revision reason
+ const rr=(s.cur_plan||{}).revision_reason;
+ document.getElementById('revreason').innerHTML=rr?'<div class="alert">🔁 <b>لماذا وُلدت الخطة الحالية v'+esc((s.cur_plan||{}).version||'')+'؟</b> '+esc(rr)+' — إعادة الكتابة تحدث تلقائيًا عند تكرار الفشل، وغالبًا يكون السبب أعطاب مزوّد خارجي لا كود الموقع.</div>':'';
+ // KPIs
+ const pct=c.steps_total?Math.round(100*c.steps_done/c.steps_total):0;
+ document.getElementById('kpis').innerHTML=
+  '<div class="kpi"><div class="l">التقدم الكلي</div><div class="v">'+(c.steps_done||0)+'/'+(c.steps_total||0)+' خطوة ('+pct+'%)</div><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+  '<div class="kpi"><div class="l">خطوات فاشلة (تُعاد ولادتها بخطط جديدة)</div><div class="v" style="color:var(--err)">'+(c.steps_failed||0)+'</div></div>'+
+  '<div class="kpi"><div class="l">المراحل</div><div class="v">'+(c.phases_done||0)+'/'+(c.phases_total||0)+'</div></div>'+
+  '<div class="kpi"><div class="l">نسخ الخطط منذ البداية</div><div class="v">'+(c.plans_total||0)+'</div></div>'+
+  '<div class="kpi"><div class="l">إعادة محاولات الوظيفة</div><div class="v">'+(job.retries||0)+'</div></div>'+
+  '<div class="kpi"><div class="l">إصدار الخطة الحالي</div><div class="v">v'+esc((s.cur_plan||{}).version||'—')+'</div></div>';
+ renderThink(n,sf,ev,s);
+ renderTools(n);
+ renderRaws(s);
+ renderFiles(s);
+ renderStory(s);
+ renderClosed(s);
+ renderSiteInfo(s);
+ document.getElementById('verline').textContent='الخطوة #'+(step.id||'—')+' · خطة v'+((s.cur_plan||{}).version||'—');
+}
+
+function renderThink(n,sf,ev,s){
+ let h='';
+ const parts=[];
+ parts.push('<div class="t">🎯 الهدف الكامل كما سُلّم للوكيل</div><div class="objbox">'+esc(sf.objective||'—')+'</div>');
+ if(sf.input)parts.push('<div class="t" style="margin-top:12px">📥 المدخلات</div><div class="objbox">'+esc(String(sf.input).slice(0,900))+'</div>');
+ if(sf.expected_output)parts.push('<div class="t" style="margin-top:12px">📤 المخرج المتوقع</div><div class="objbox">'+esc(String(sf.expected_output).slice(0,900))+'</div>');
+ // acceptance criteria with live auto-check
+ let acr=[];
+ const acRaw=sf.acceptance_criteria;
+ if(acRaw){
+  try{const j=JSON.parse(acRaw);acr=Array.isArray(j)?j:[j];}catch(e){acr=String(acRaw).split(/\n|؛/).map(x=>x.replace(/^\s*[-•*]\s*/,'').trim()).filter(Boolean);}
+ }
+ if(acr.length){
+  const names=new Set((n.step_files||[]).map(f=>f.name.split('/').pop()));
+  let rows='';
+  acr.forEach(a=>{
+   const line=String(a);
+   const toks=line.match(/[\w.\-]+(?:\.[\w\-]+)+/g)||[];
+   let hit=null;
+   for(const t of toks){if(t.length>2&&names.has(t)){hit=t;break}}
+   for(const t of toks){if(t.length>2){for(const nm of names){if(nm===t||nm.endsWith('/'+t)){hit=t;break}}}if(hit)break}
+   rows+='<li><span class="ck '+(hit?'y':'n')+'">'+(hit?'✓':'○')+'</span><span>'+esc(line)+(hit?' <span class="sub">(الملف '+esc(hit)+' موجود في مساحة العمل ✓)':'')+'</span></li>';
+  });
+  parts.push('<div class="t" style="margin-top:12px">📋 معايير القبول — مع تحقق تلقائي من الملفات المطلوبة</div><ul class="acr">'+rows+'</ul><div class="sub">✓ = الملف موجود فعلًا في مساحة عمل الخطوة · ○ = لم يُكتب بعد (أو المعيار غير ملفي)</div>');
+ }
+ // lifecycle
+ const sh=ev.state_history||[];
+ if(sh.length){
+  const cur=sh[sh.length-1];
+  parts.push('<div class="t" style="margin-top:12px">🧬 دورة حياة الخطوة</div><div class="steps-lifecycle">'+sh.map(x=>'<span class="st'+(x===cur?' on':'')+'">'+esc(x)+'</span>').join('<span class="ar">←</span>')+'</div>');
+ }
+ // verification
+ const vf=ev.verification||[];
+ if(vf.length){
+  parts.push('<div class="t" style="margin-top:12px">⚖️ أحكام التحقق (المُحكّم الآلي)</div><div class="objbox">'+vf.map(v=>'• '+(v.task_id?'مهمة '+esc(v.task_id)+' — ':'')+esc(STATUS_AR[String(v.verdict).toUpperCase()]||v.verdict)+' بثقة '+Math.round((v.confidence||0)*100)+'%'+((v.missing_evidence||[]).length?' · أدلة ناقصة: '+esc((v.missing_evidence||[]).join('، ')):'')).join('\n')+'</div>');
+ }
+ // arbiter decisions
+ const ad=ev.arbiter_decisions||[];
+ if(ad.length){
+  parts.push('<div class="t" style="margin-top:12px">🧑‍⚖️ قرارات المُحكّم أثناء التنفيذ</div><div class="objbox">'+esc(ad.map(d=>typeof d==='string'?d:JSON.stringify(d)).join('\n---\n').slice(0,2000))+'</div>');
+ }
+ // verdict + reasons
+ if(ev.verdict){
+  parts.push('<div class="t" style="margin-top:12px">🏁 حكم الوكيل عن نفسه</div><div>'+stTag(ev.verdict)+' '+esc((ev.verdict_reasons||[]).join(' | '))+'</div>');
+ }
+ // failure
+ if(ev.failure){
+  const f=ev.failure;
+  parts.push('<div class="t" style="margin-top:12px">💥 تفاصيل الفشل المسجلة</div><div class="objbox" style="color:#ffb3b3">'+esc(typeof f==='string'?f:JSON.stringify(f,null,1)).slice(0,1200)+'</div>');
+ }
+ if(sf.last_error)parts.push('<div class="t" style="margin-top:12px">⚠️ آخر خطأ على الخطوة</div><div class="objbox" style="color:#ffd0a0">'+esc(sf.last_error)+'</div>');
+ h=parts.join('');
+ document.getElementById('think').innerHTML=h;
+}
+
+function renderTools(n){
+ const rt=n.recent_tools||[];
+ const evc=(n.cur_evidence||{}).tool_calls||[];
+ let rows='';
+ if(rt.length){
+  const sig=rt.map(x=>x.id).join(',');
+  const isNew=sig!==lastToolSig&&lastToolSig!=='';
+  lastToolSig=sig;
+  rows=rt.map((x,i)=>{
+   const cls=(i===0&&isNew)?' class="new"':'';
+   const st=x.status==='SUCCEEDED'?'ok':(x.status&&x.status.indexOf('FAIL')>=0)?'err':'run';
+   return '<tr'+cls+'><td class="mono sub">'+hhmm(x.created_at)+'</td><td><b>'+esc(toolAr(x.tool))+'</b><div class="sub">'+esc(x.tool)+'</div></td>'+
+    '<td><span class="mono">'+esc(String(x.query||'').slice(0,110))+'</span>'+(x.failure_reason?'<div class="sub" style="color:#ff9c9c">'+esc(String(x.failure_reason).slice(0,180))+'</div>':'')+'</td>'+
+    '<td>'+(x.duration_ms!=null?(x.duration_ms/1000).toFixed(1)+'ث':'—')+'</td>'+
+    '<td><span class="tag '+st+'">'+esc(x.status||'—')+'</span>'+(x.result_status&&x.result_status!=='USABLE'?' <span class="sub">'+esc(x.result_status)+'</span>':'')+'</td></tr>';
+  }).join('');
+ } else if(evc.length){
+  rows=evc.slice(-18).reverse().map(x=>{
+   const a=x.args_summary||{};
+   return '<tr><td class="sub">#</td><td><b>'+esc(toolAr(x.tool))+'</b></td><td><span class="mono">'+esc(String(a.path||a.command||x.query||'').slice(0,110))+'</span></td><td>'+(x.duration_ms!=null?(x.duration_ms/1000).toFixed(1)+'ث':'—')+'</td><td><span class="tag '+(x.transport_status==='SUCCESS'?'ok':'err')+'">'+esc(x.result_status||x.transport_status||'—')+'</span></td></tr>';
+  }).join('');
+ }
+ document.getElementById('tools').innerHTML=rows?'<table><tr><th>الوقت (UTC)</th><th>الأداة</th><th>ماذا فعلت بالضبط</th><th>المدة</th><th>الحالة</th></tr>'+rows+'</table>':'<div class="sub">لا استدعاءات أدوات بعد — الوكيل داخل نداء نموذج (يفكر)…</div>';
+}
+
+function renderRaws(n){
+ const rs=n.raw_outputs||[];
+ if(!rs.length){document.getElementById('raws').innerHTML='<div class="sub">لا مخرجات خام بعد في هذه الخطوة.</div>';return}
+ document.getElementById('raws').innerHTML=rs.map(r=>'<div style="margin-bottom:10px"><div class="sub mono">'+esc(r.name)+' · '+fmAge(r.age||0)+'</div><pre class="raw">'+esc((r.text||'(فارغ)').slice(0,1200))+'</pre></div>').join('');
+}
+
+function renderFiles(n){
+ const fs_=n.step_files||[];
+ if(!fs_.length){document.getElementById('wfiles').innerHTML='<div class="sub">مساحة العمل فارغة — لم يكتب الوكيل ملفات بعد.</div>';return}
+ const sig=fs_.slice(0,8).map(f=>f.name+':'+f.mtime).join('|');
+ const isNew=sig!==lastFileSig&&lastFileSig!=='';
+ lastFileSig=sig;
+ const nowS=Date.now()/1000;
+ document.getElementById('wfiles').innerHTML='<table><tr><th>الملف</th><th>الحجم</th><th>آخر كتابة</th></tr>'+
+  fs_.slice(0,30).map((f,i)=>{
+   const fresh=nowS-f.mtime<70;
+   return '<tr'+((i===0&&isNew&&fresh)?' class="new"':'')+'><td><a href="javascript:void(0)" onclick="viewFile(\''+esc(f.name).replace(/'/g,"\\'")+'\')" class="mono">'+esc(f.name)+'</a></td><td>'+fmS(f.size)+'</td><td class="'+(fresh?'':'sub')+'">'+(fresh?'🔥 كُتب الآن · ':'')+fmAge(Math.max(0,nowS-f.mtime))+'</td></tr>';
+  }).join('')+'</table><div class="sub">'+fs_.length+' ملفًا (أحدث 30 معروضة) — انقر لعرض المحتوى</div>';
+}
+
+function renderStory(n){
+ const st=n.story||[];
+ if(!st.length){document.getElementById('story').innerHTML='<div class="sub">لا أحداث.</div>';return}
+ document.getElementById('story').innerHTML=st.map(x=>{
+  let d='';
+  try{const p=JSON.parse(x.payload||'{}');d=p.objective||p.title||p.summary||(p.step_id?'خطوة #'+p.step_id:'')||'';}catch(e){d=String(x.payload||'').slice(0,120)}
+  return '<div class="tlev"><div class="when">'+hhmm(x.created_at)+'</div><div class="what"><span class="k">'+esc(KIND_AR[x.kind]||x.kind)+'</span>'+(d?' — '+esc(String(d).slice(0,150)):'')+'</div></div>';
+ }).join('');
+}
+
+function renderClosed(n){
+ const cl=n.recent_closed||[];
+ if(!cl.length){document.getElementById('closed').innerHTML='<div class="sub">لا خطوات مغلقة بعد.</div>';return}
+ document.getElementById('closed').innerHTML='<table><tr><th>الخطوة</th><th>الحكم</th><th>المحاولات</th><th>الهدف</th><th>أُغلقت</th></tr>'+
+  cl.map(x=>'<tr><td>#'+x.id+'</td><td>'+stTag(x.status)+'</td><td>'+esc(x.attempts||'—')+'</td><td>'+esc(String(x.objective||'').split('\n')[0].slice(0,120))+'</td><td class="sub">'+(x.completed_at?ago(x.completed_at):'—')+'</td></tr>').join('')+'</table>';
+}
+
+function renderSiteInfo(n){
+ const files=(n.merged_files_count!=null?n.merged_files_count:null);
+ const htmlPages=(n.merged_html_count!=null?n.merged_html_count:null);
+ document.getElementById('siteinfo').innerHTML=
+  '<h2 style="font-size:14px">📊 بناء الموقع</h2>'+
+  '<div class="kpi" style="margin-bottom:8px"><div class="l">ملفات الموقع المنتجة (الشجرة المدمجة)</div><div class="v" id="mfcount">'+(files!=null?files:'…')+'</div></div>'+
+  '<div class="kpi" style="margin-bottom:8px"><div class="l">صفحات HTML</div><div class="v" id="mhcount">'+(htmlPages!=null?htmlPages:'…')+'</div></div>'+
+  '<div class="sub">الشجرة المدمجة = آخر نسخة من كل ملف أنتجته أي خطوة في الخطة الحالية. عند اكتمال خطوات الصفحات ستكتمل هذه المعاينة تلقائيًا.</div>'+
+  '<div style="margin-top:10px"><button class="btn" onclick="loadMerged()">↻ إحصاء الآن</button></div>';
+ loadMerged();
+}
+async function loadMerged(){
+ try{
+  const r=await jget('/api/files');
+  const ks=Object.keys(r.files||{});
+  const hp=ks.filter(k=>k.endsWith('.html')).length;
+  const a=document.getElementById('mfcount');if(a)a.textContent=ks.length;
+  const b=document.getElementById('mhcount');if(b)b.textContent=hp;
+ }catch(e){}
+}
+function reloadPrev(){
+ const f=document.getElementById('pframe');
+ f.src=A('preview/index.html');f.onload=()=>{countArts()};
+}
+function countArts(){
+ try{
+  const d=document.getElementById('pframe').contentDocument;
+  if(!d)return;
+  const els=d.querySelectorAll('#article-list li, #article-list article, article');
+  const txt=(d.body&&d.body.innerText||'').trim();
+  document.getElementById('arts').textContent=els.length?('عدد عناصر المقالات الظاهرة: '+els.length):(txt?('الصفحة تحتوي نصًا ('+txt.length+' حرفًا)'):'الصفحة فارغة حتى الآن');
+ }catch(e){}
+}
+async function viewFile(name){
+ try{
+  const r=await jget('/api/file?step='+curStepId+'&path='+encodeURIComponent(name));
+  openM('الخطوة #'+curStepId+' :: '+name, r.binary?'(ملف ثنائي — '+fmS(r.size)+')':'<pre class="raw" style="max-height:60vh">'+esc((r.text||'(فارغ)').slice(0,40000))+'</pre>');
+ }catch(e){openM(name,'تعذر فتح الملف')}
+}
+async function showSteps(){
+ try{
+  const r=await jget('/api/steps');
+  const rows=(r.steps||[]).map(x=>'<tr><td>#'+x.id+'</td><td>'+stTag(x.status)+'</td><td>'+esc(x.attempts||'')+'</td><td>'+esc(String(x.objective||'').split('\n')[0].slice(0,110))+'</td><td class="sub">'+esc(x.phase_title||'')+'</td><td class="mono sub">'+esc(x.completed_at||x.updated_at||'')+'</td></tr>').join('');
+  openM('آخر 60 خطوة','<table><tr><th>#</th><th>الحالة</th><th>محاولات</th><th>الهدف</th><th>المرحلة</th><th>إغلاق/تحديث</th></tr>'+rows+'</table>');
+ }catch(e){openM('خطوات','تعذر الجلب')}
+}
+async function showTree(){
+ try{
+  const r=await jget('/api/files');
+  const ks=Object.keys(r.files||{}).sort();
+  openM('شجرة ملفات الموقع المدمجة ('+ks.length+' ملفًا — خطة #'+esc(r.plan_id||'')+')','<div class="mono" style="font-size:12px;line-height:1.9">'+ks.map(k=>esc(k)+' <span class="sub">'+fmS(r.files[k].size)+' · خطوة #'+r.files[k].step+'</span>').join('<br>')+'</div>');
+ }catch(e){openM('شجرة','تعذر الجلب')}
+}
+async function showLog(){
+ try{
+  const r=await jget('/api/log');
+  openM('سجل السائق (آخر 140 سطرًا — قبل '+(r.mtime_age!=null?r.mtime_age+' ث':'?')+')','<pre class="raw" style="max-height:64vh">'+esc((r.lines||[]).join('\n').slice(0,60000))+'</pre>');
+ }catch(e){openM('سجل','تعذر الجلب')}
+}
+async function showEvidence(){
+ const id=prompt('رقم الخطوة لعرض دليلها (JSON):',curStepId||'');
+ if(!id)return;
+ try{
+  const r=await jget('/api/evidence?id='+id);
+  let t=r.text||r.err||'';
+  try{t=JSON.stringify(JSON.parse(t),null,1)}catch(e){}
+  openM('دليل الخطوة #'+id,'<pre class="raw" style="max-height:64vh">'+esc(t.slice(0,50000))+'</pre>');
+ }catch(e){openM('دليل','تعذر الجلب')}
+}
+function openM(title,body){document.getElementById('mtitle').textContent=title;document.getElementById('mbody').innerHTML=body;document.getElementById('modal').style.display='flex'}
+function closeM(){document.getElementById('modal').style.display='none'}
+
+reloadPrev();
+setInterval(tick,5000);
+tick();
+</script>
+</body>
+</html>
