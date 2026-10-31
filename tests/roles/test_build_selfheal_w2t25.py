@@ -148,11 +148,16 @@ def test_pnpm_run_build_and_yarn_build_heal(tmp_path):
     assert out is not None and out[4]["script_command"] == "next build"
 
 
-def test_bun_and_npm_run_build_still_heal(tmp_path):
-    """`bun build` و`npm run build` يبقيان داخل النطاق بعد التوسعة."""
+def test_bun_build_heals(tmp_path):
+    """`bun build` بسلسلة فقد السكربت → داخل النطاق بعد التوسعة."""
     _pkg(tmp_path, dependencies={"next": "14"})
     assert _rerun(tmp_path, command="bun build",
                   stderr=_YARN_MISSING) is not None
+
+
+def test_npm_run_build_still_heals(tmp_path):
+    """`npm run build` يبقى داخل النطاق بعد التوسعة (مساحة مستقلة)."""
+    _pkg(tmp_path, dependencies={"next": "14"})
     assert _rerun(tmp_path, command="npm run build") is not None
 
 
