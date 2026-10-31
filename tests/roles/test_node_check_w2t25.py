@@ -140,9 +140,15 @@ def test_grep_literals_counted_in_token_facts(tmp_path):
 
 
 def test_thinness_ratchets_hold():
-    """عقود الرقة بعد الإضافة — build_commands<340 وbuild_tool<260."""
+    """عقود الرقة بعد الإضافة — build_commands<340 وbuild_tool<280 وselfheal<85.
+
+    (W2-T25) build_tool 259→279: الخطاف الهزيل فقط (+20: استيراد + 6 أسطر
+    استدعاء + سطرا سجل + سطر docstring) — منطق الإصلاح الذاتي كاملًا في
+    build_selfheal.py (80) بوحدته المستقلة بلا استيراد دائري.
+    """
     for path, ceiling in (("src/roles/build_commands.py", 340),
-                          ("src/roles/build_tool.py", 260)):
+                          ("src/roles/build_selfheal.py", 85),
+                          ("src/roles/build_tool.py", 280)):
         n = len((REPO / path).read_text(encoding="utf-8").splitlines())
         assert n < ceiling, f"{path}={n} >= {ceiling}"
 

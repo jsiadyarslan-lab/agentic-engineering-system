@@ -14,6 +14,7 @@ import json
 import re
 from pathlib import Path
 
+from roles.build_selfheal import heal_and_rerun
 from roles.tool_failures import ToolFailure
 
 #: أوامر مغلقة تشترطها معايير الخطط نصًّا («لا دليل» بلا تنفيذ).
@@ -135,6 +136,14 @@ def _run_preview_command(ctx, runner_path: str, argv_tail: list[str],
 
 def run_build_command(ctx, command: str, timeout_s: float = 0,
                       cwd: str = "") -> dict:
+    """تنفيذ أمر بناء حقيقي (W2-T24) — أدلة exit_code/stdout/stderr.
+
+    قائمة بيضاء مغلقة (لا تفسير ولا وسائط حرة)؛ وفقد node/npm فشل
+    مصنّف BUILD_TOOLING_MISSING غير قابل لإعادة المحاولة (توفير
+    بيئي)؛ والأدلة تكتب bounded داخل مساحة الخطوة (evidence/). نجاح
+    الأمر لا يعني نجاح الخطوة — المراجع يحكم على الملفات الناتجة.
+    (W2-T25) «Missing script: build» يُعالج ذاتيًا في roles.build_selfheal.
+    """
     import subprocess as _subprocess
     import time as _time
 
@@ -230,6 +239,15 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
         stdout = (error.stdout or b"")[:_BUILD_EVIDENCE_MAX_CHARS] \
             if isinstance(error.stdout, (bytes, bytearray)) else b""
         stderr = f"انتهت مهلة الأمر ({timeout:.0f}ث)".encode("utf-8")
+
+    # (W2-T25) إصلاح ذاتي «Missing script: build» — roles.build_selfheal.
+    self_heal = None
+    if exit_code != 0:
+        outcome = heal_and_rerun(workdir, command, stderr, argv,
+                                 _build_command_env(npm_path), timeout)
+        if outcome is not None:
+            exit_code, stdout, stderr, duration_s, self_heal = outcome
+            started = _time.monotonic() - duration_s
     duration_s = round(_time.monotonic() - started, 2)
 
     stdout_path, stderr_path, exit_path = _build_evidence_paths(ctx, command)
@@ -240,6 +258,8 @@ def run_build_command(ctx, command: str, timeout_s: float = 0,
         "duration_s": duration_s,
         "stdout_chars": len(stdout), "stderr_chars": len(stderr),
     }
+    if self_heal is not None:
+        record["self_heal"] = self_heal
     exit_path.write_text(json.dumps(record, ensure_ascii=False),
                          encoding="utf-8")
     if exit_code != 0:
