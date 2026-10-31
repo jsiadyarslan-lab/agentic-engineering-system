@@ -274,16 +274,18 @@ def index(request: Request) -> Response:
     إصدار ولو لم يتغير index.html نفسه، فيحصل المتصفح الحامل لنسخة
     قديمة على 200 بهيكل مرقّم جديد بدل 304 على قِدَم.
     """
-    etag = f'"ui{_ASSET_VERSION}"'
+    html = _V_PATTERN.sub(
+        b"?v=" + _ASSET_VERSION.encode("ascii"),
+        (UI_DIR / "index.html").read_bytes(),
+    )
+    # (016 M1) etag من البايتات المخدومة فعليًا — أي تغيير في index.html
+    # يصل المتصفح فورًا (200) بدل 304 أبدي على ثابت مجمّد عند الإقلاع.
+    etag = '"' + hashlib.sha256(html).hexdigest()[:20] + '"'
     inm = request.headers.get("if-none-match", "")
     tokens = [t.strip() for t in inm.split(",") if t.strip()]
     if etag in tokens or f"W/{etag}" in tokens or "*" in tokens:
         return Response(status_code=304, headers={"ETag": etag,
                                                   "Cache-Control": "no-cache"})
-    html = _V_PATTERN.sub(
-        b"?v=" + _ASSET_VERSION.encode("ascii"),
-        (UI_DIR / "index.html").read_bytes(),
-    )
     return Response(
         content=html,
         media_type="text/html",
@@ -2507,3 +2509,16 @@ def textstats_evidence() -> dict:
     if not path.is_file():
         raise HTTPException(status_code=404, detail="لا دليل بعد — شغّل المهمة أولًا")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+# --- متصفح التطور اللحظي (016-E) — ربط إضافي فقط: راوتر جديد + مسار صفحة ---
+from api.evolution import router as evolution_router
+app.include_router(evolution_router)
+
+
+@app.get("/evolution")
+def evolution_browser_page(request: Request) -> Response:
+    """متصفح التطور اللحظي — صفحة معزولة عن واجهة المصنع الأساسية."""
+    from api.evolution import evolution_page
+
+    return evolution_page(request)

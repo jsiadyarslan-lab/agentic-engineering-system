@@ -14,6 +14,14 @@
 (function () {
   "use strict";
 
+  /* M1: حارس — إن غاب محرّك السرد فالواجهة تعمل بصدق دون سرد */
+  if (!window.Evolution) {
+    window.Evolution = { title: function (k) { return String(k || "حدث"); },
+      toneOf: function () { return ""; }, narrate: function () { return null; },
+      toolLabel: function () { return ""; }, toolNarr: function () { return null; },
+      roleMeta: function (r) { return { label: r || "وكيل", cls: "role-coordinator" }; } };
+  }
+
   var API = "/api";
   var MAX_NODES = 300;
 
@@ -34,6 +42,8 @@
     panel: { open: true, tab: "files", w: 45 },
     sessionsCollapsed: false,
     gateBusy: false,
+    stepGroup: null,
+    now: {},
     built: false,
     started: false,
   };
@@ -245,8 +255,11 @@
         stats.appendChild(c);
       });
 
+    var nowBar = el("div", "floor-now");
+    nowBar.id = "floor-now";
     center.appendChild(cHead);
     center.appendChild(gate);
+    center.appendChild(nowBar);
     center.appendChild(densityBar);
     center.appendChild(flow);
     center.appendChild(trimmedNote);
@@ -418,6 +431,7 @@
     var top = el("div", "fs-item-top");
     top.appendChild(el("span", "status-dot sm " + (st.pulse ? "live" : (st.cls === "st-blocked" ? "off" : ""))));
     var name = el("span", "fs-item-name", p.name || ("مشروع " + p.id));
+    name.dir = "auto"; /* BiDi: الاسم المختلط يأخذ اتجاه أول حرف قوي */
     name.title = name.textContent;
     top.appendChild(name);
     top.appendChild(el("span", "chip " + st.cls, st.label));
@@ -434,9 +448,12 @@
       var cur = prog.current_step && prog.current_step.objective
         ? String(prog.current_step.objective) : "";
       if (cur.length > 64) cur = cur.slice(0, 64) + "…";
-      sub.appendChild(el("span", "fs-item-step", cur || "…"));
+      var curEl = el("span", "fs-item-step", cur || "…");
+      curEl.dir = "ltr"; /* BiDi: أهداف الخطوات إنجليزية غالبًا */
+      sub.appendChild(curEl);
       var nums = el("span", "fs-item-nums");
-      tech(nums, Math.round(pct) + "%");
+      tech(nums, (prog.steps_completed || 0) + "/" + (prog.steps_total || 0)
+        + " · " + Math.round(pct) + "%");
       sub.appendChild(nums);
       card.appendChild(sub);
     } else {
@@ -460,6 +477,8 @@
   function select(pid) {
     S.sel = pid;
     S.evLastId = 0;
+    S.now = {}; /* M6: «الآن» للمشروع المحدد حصرًا — بلا تبعثرة */
+    renderNow();
     S.toolCards = {};
     S.modelCards = {};
     S.flowCount = 0;
@@ -653,6 +672,16 @@
 
   /* ---------- رسم الأحداث: عقود دلالية ---------- */
   function drawEvent(e) {
+    /* M1: عطل رسم حدث واحد لا يكسر البث أبدًا — تقرير مرة واحدة */
+    try { drawEventInner(e); } catch (err) {
+      try { console.warn("[floor] draw fail", e && e.kind, err); } catch (e2) {}
+      if (window.ErrorBoundary && window.ErrorBoundary.report && !drawEvent._warned) {
+        drawEvent._warned = true;
+        window.ErrorBoundary.report("تعذّر رسم حدث («" + (e && e.kind) + "»): " + err.message, err.stack);
+      }
+    }
+  }
+  function drawEventInner(e) {
     var id = parseInt(e.id || e.event_id || 0, 10);
     if (id) {
       if (id <= S.evLastId) return;
@@ -660,12 +689,16 @@
     }
     var p = e.payload || {};
     var kind = e.kind;
-    var node = null;
+    updateNow(kind, p, e);
 
+    /* M2: تطور المشروع لحظة بلحظة — الخطوات مراسي وما يخدمها متداخل تحتها */
+    if (kind === "STEP_STARTED") { startStepGroup(p, e); return; }
+    if (kind === "STEP_COMPLETED") { closeStepGroup(p, e); return; }
+
+    var node = null;
     if (kind === "TOOL_EXECUTION") node = drawTool(p, e);
     else if (kind === "MODEL_CALL_STARTED" || kind === "MODEL_CALL_PROGRESS" ||
              kind === "MODEL_REASONING" || kind === "MODEL_CALL_COMPLETED") node = drawModel(kind, p, e);
-    else if (kind === "STEP_STARTED" || kind === "STEP_COMPLETED") node = drawStep(kind, p, e);
     else if (kind === "EXECUTION_STARTED" || kind === "EXECUTION_COMPLETED" ||
              kind === "EXECUTION_FAILED" || kind === "EXECUTION_BLOCKED") node = drawExecution(kind, p, e);
     else if (kind === "ROLE_EXECUTING") node = drawRole(p, e);
@@ -676,7 +709,17 @@
     else if (kind === "PLAN_APPROVAL_REQUIRED" || kind === "OWNER_GATE_REQUIRED") node = drawGateEvent(p, e);
     else node = drawGeneric(kind, p, e);
 
-    if (node) { markJson(node, e); addNode(node); }
+    if (node) {
+      markJson(node, e);
+      var g = S.stepGroup;
+      if (g && g.node.isConnected &&
+          p.step_id != null && Number(p.step_id) === Number(g.step_id)) {
+        groupAppend(node);
+      } else {
+        if (g && !g.node.isConnected) S.stepGroup = null;
+        addNode(node);
+      }
+    }
   }
   function evtShell(cls, iconId) {
     var c = el("div", "evt " + cls);
@@ -696,13 +739,14 @@
   function drawTool(p, e) {
     var key = (p.execution_id != null ? p.execution_id : (p.step_id || "?")) + "|" + (p.tool || "?");
     var phase = p.phase || "";
-    var created = !S.toolCards[key];
-    var card;
+    var card = S.toolCards[key];
+    var created = !(card && card.isConnected);
     if (created) {
       card = evtShell("evt-tool", "i-terminal");
       card.setAttribute("data-toolkey", key);
       var title = el("span", "evt-title");
-      title.appendChild(el("span", "evt-kind", "أداة"));
+      var tl = Evolution.toolLabel(p.tool);
+      title.appendChild(el("span", "evt-kind", tl !== p.tool ? tl : "أداة"));
       var nm = el("span", "evt-tool-name");
       tech(nm, p.tool || "?");
       title.appendChild(nm);
@@ -739,11 +783,17 @@
     if (p.duration_ms) bits.push("زمن " + fmtDur(p.duration_ms));
     if (p.execution_site) bits.push("موقع " + p.execution_site);
     if (p.error) bits.push("خطأ: " + p.error);
-    var subTxt = p.summary ? String(p.summary) : "";
-    if (subTxt.length > 180) subTxt = subTxt.slice(0, 180) + "…";
     var sub = card._sub;
     sub.textContent = "";
-    if (subTxt) sub.appendChild(el("div", "evt-sub-line", subTxt));
+    var tn = Evolution.toolNarr(p);
+    if (tn && tn.text) {
+      sub.appendChild(el("div", "evt-sub-line", tn.text));
+      if (tn.ltr) tech(sub, tn.ltr);
+    } else {
+      var subTxt = p.summary ? String(p.summary) : "";
+      if (subTxt.length > 180) subTxt = subTxt.slice(0, 180) + "…";
+      if (subTxt) sub.appendChild(el("div", "evt-sub-line", subTxt));
+    }
     if (bits.length) {
       var meta = el("div", "evt-meta");
       bits.forEach(function (b) { tech(meta, b); });
@@ -754,8 +804,8 @@
   }
   function drawModel(kind, p, e) {
     var rid = p.request_id || ("session-" + p.session_id);
-    var created = !S.modelCards[rid];
-    var card;
+    var card = S.modelCards[rid];
+    var created = !(card && card.isConnected);
     if (created) {
       card = evtShell("evt-model", "i-info");
       card.setAttribute("data-modelkey", rid);
@@ -780,15 +830,19 @@
     }
     if (kind === "MODEL_REASONING" || kind === "MODEL_CALL_PROGRESS") {
       if (p.chars) {
+        if (!S.rateBuf) S.rateBuf = [];
         S.rateBuf.push([Date.now(), Number(p.chars)]);
         var cut = Date.now() - 30000;
         while (S.rateBuf.length > 2 && S.rateBuf[0][0] < cut) S.rateBuf.shift();
       }
       card._chars = (card._chars || 0) + (Number(p.chars) || 0);
+      if (!card._t0) card._t0 = Date.now();
       card._sub.textContent = "";
       var prog = el("div", "evt-sub-line");
       prog.appendChild(el("span", "", kind === "MODEL_REASONING" ? "تفكير جارٍ — " : "إنتاج جارٍ — "));
       tech(prog, card._chars + " حرف");
+      var elS = (Date.now() - card._t0) / 1000;
+      if (elS > 2 && card._chars > 0) tech(prog, Math.round(card._chars / elS) + " حرف/ث");
       card._sub.appendChild(prog);
     }
     if (kind === "MODEL_CALL_COMPLETED") {
@@ -875,29 +929,202 @@
     var c = evtShell("evt-verdict " + (ok ? "evt-ok" : (warn ? "evt-warn" : "evt-fail")),
                      ok ? "i-check" : "i-alert");
     var title = el("span", "evt-title");
-    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || kind));
+    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind) || kind));
     if (verdict) title.appendChild(el("span", "evt-verdict-text", String(verdict)));
     if (p.step_id != null) tech(title, "#خطوة " + p.step_id);
     c._row.appendChild(title);
     stamp(c.querySelector(".evt-time"), e.created_at);
     return c;
   }
+  /* ---------- M2: تجميع الخطوات + شريط «الآن» ---------- */
+  function startStepGroup(p, e) {
+    closeGroupLoose();
+    var g = el("div", "evt-group");
+    var head = el("div", "evt-group-head");
+    var badge = el("span", "evt-group-badge",
+                   p.step_id != null ? "خطوة " + p.step_id : "خطوة");
+    head.appendChild(badge);
+    if (p.objective) {
+      head.appendChild(el("span", "evt-group-obj",
+        String(p.objective).slice(0, 220)));
+    }
+    var meta = el("span", "evt-group-meta");
+    meta.textContent = "لحظات 0";
+    head.appendChild(meta);
+    var st = el("span", "evt-group-status", "جارية");
+    head.appendChild(st);
+    var body = el("div", "evt-group-body");
+    var more = el("button", "evt-group-more");
+    more.hidden = true;
+    more.addEventListener("click", function () {
+      g.classList.remove("collapsed", "peek");
+      more.hidden = true;
+      followLive(true);
+    });
+    g.appendChild(head);
+    g.appendChild(body);
+    g.appendChild(more);
+    g._body = body;
+    g._n = 0;
+    g._meta = meta;
+    g._more = more;
+    markJson(g, e);
+    addNode(g);
+    S.stepGroup = { step_id: p.step_id, node: g };
+    followLive(false);
+  }
+  function groupAppend(node) {
+    var g = S.stepGroup.node;
+    g._n++;
+    if (g._meta) g._meta.textContent = "لحظات " + g._n;
+    /* كثافة DSH: بعد 12 لحظة تُطوى الجارية تلقائيًا وزر كشف صريح */
+    if (g._n === 13 && !g.classList.contains("peek")) {
+      g.classList.add("collapsed", "peek");
+      if (g._more) {
+        g._more.textContent = "كشف 13 لحظة داخل الخطوة";
+        g._more.hidden = false;
+      }
+    } else if (g._n > 13 && g.classList.contains("peek") && g._more &&
+               g._more.hidden === false) {
+      g._more.textContent = "كشف " + g._n + " لحظة داخل الخطوة";
+    }
+    g._body.appendChild(node);
+    followLive(false);
+  }
+  function closeGroupLoose() {
+    if (S.stepGroup && S.stepGroup.node && S.stepGroup.node.isConnected) {
+      var g = S.stepGroup.node;
+      g.classList.add("open-ended");
+      var st = g.querySelector(".evt-group-status");
+      if (st && st.textContent === "جارية") st.textContent = "انتقلت";
+    }
+    S.stepGroup = null;
+  }
+  function closeStepGroup(p, e) {
+    var g = S.stepGroup;
+    if (g && p.step_id != null && Number(p.step_id) === Number(g.step_id) &&
+        g.node.isConnected) {
+      g.node.classList.add("evt-ok");
+      var st = g.node.querySelector(".evt-group-status");
+      if (st) st.textContent = "اكتملت";
+      S.stepGroup = null;
+    } else {
+      var c = drawStep("STEP_COMPLETED", p, e);
+      if (c) { markJson(c, e); addNode(c); }
+    }
+  }
+  function updateNow(kind, p, e) {
+    var now = S.now;
+    if (kind === "ROLE_EXECUTING") {
+      now.role = p.role || "";
+      now.action = p.objective ? String(p.objective) : "يعمل";
+      now.step = p.step_id;
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "MODEL_REASONING" || kind === "MODEL_CALL_PROGRESS") {
+      now.action = kind === "MODEL_REASONING" ? "يفكّر…" : "يُنتج…";
+      if (p.model) now.model = (p.provider ? p.provider + " · " : "") + p.model;
+      now.chars = (now.chars || 0) + (Number(p.chars) || 0);
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "MODEL_CALL_COMPLETED") {
+      now.action = "أتم استدعاء النموذج";
+      now.chars = 0;
+      now.at = Date.now();
+      now.tone = "ok";
+    } else if (kind === "TOOL_EXECUTION") {
+      now.role = p.role || now.role;
+      now.action = (p.phase === "failed" ? "فشلت " :
+                    p.phase === "started" ? "يستدعي " : "نجحت ") +
+                   Evolution.toolLabel(p.tool);
+      now.at = Date.now();
+      now.tone = p.phase === "failed" ? "fail" : "run";
+    } else if (kind === "STEP_STARTED") {
+      now.step = p.step_id;
+      now.obj = p.objective || "";
+      now.action = "بدأت خطوة جديدة";
+      now.chars = 0;
+      now.at = Date.now();
+      now.tone = "run";
+    } else if (kind === "STEP_COMPLETED") {
+      now.action = "اكتملت الخطوة";
+      now.obj = "";
+      now.at = Date.now();
+      now.tone = "ok";
+    } else if (kind === "OWNER_GATE_REQUIRED" || kind === "PLAN_APPROVAL_REQUIRED") {
+      now.action = "بانتظار اعتمادك";
+      now.at = Date.now();
+      now.tone = "warn";
+    } else if (kind === "EXECUTION_FAILED" || kind === "JOB_FAILED") {
+      now.action = "فشل تنفيذ — الحلقة تعيد المحاولة";
+      now.at = Date.now();
+      now.tone = "fail";
+    }
+  }
+  function renderNow() {
+    var bar = $("#floor-now");
+    if (!bar) return;
+    var now = S.now || {};
+    bar.className = "floor-now" + (now.tone ? " fn-" + now.tone : "");
+    bar.textContent = "";
+    var wrap = el("div", "fn-wrap");
+    var pulse = el("span", "fn-pulse" + (now.tone === "fail" ? " fail" : ""));
+    wrap.appendChild(pulse);
+    if (now.role) {
+      var rm = Evolution.roleMeta(now.role);
+      wrap.appendChild(el("span", "role-chip " + rm.cls, rm.label));
+    }
+    wrap.appendChild(el("span", "fn-action",
+      now.action || "الحلقة حيّة — بانتظار الحدث التالي"));
+    if (now.obj) {
+      wrap.appendChild(el("span", "fn-obj", String(now.obj).slice(0, 90)));
+    }
+    if (now.chars > 0) {
+      var ch = el("span", "fn-chars tech", now.chars + " حرف");
+      wrap.appendChild(ch);
+    }
+    if (now.model) {
+      var m = el("span", "fn-model");
+      tech(m, now.model);
+      wrap.appendChild(m);
+    }
+    if (now.step != null) {
+      wrap.appendChild(el("span", "fn-step", "الخطوة " + now.step));
+    }
+    bar.appendChild(wrap);
+  }
+
   function drawGeneric(kind, p, e) {
-    var c = evtShell("evt-generic", "i-info");
+    var tone = Evolution.toneOf(kind);
+    var c = evtShell("evt-generic" + (tone ? " evt-" + tone : ""), "i-info");
     var title = el("span", "evt-title");
-    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || kind));
+    var known = !!KIND_TITLES[kind] || Evolution.known(kind);
+    title.appendChild(el("span", "evt-kind", KIND_TITLES[kind] || Evolution.title(kind)));
+    if (!known) tech(title, kind); /* النوع الخام مرئي للتتبع — لا اختفاء */
     c._row.appendChild(title);
-    var keys = Object.keys(p || {}).slice(0, 4);
-    if (keys.length) {
+    var narr = Evolution.narrate(kind, p);
+    if (narr && (narr.text || (narr.chips && narr.chips.length))) {
       var sub = el("div", "evt-sub");
-      keys.forEach(function (k) {
-        var v = typeof p[k] === "object" ? JSON.stringify(p[k]).slice(0, 60) : String(p[k]).slice(0, 80);
-        var line = el("div", "evt-kv");
-        line.appendChild(el("span", "evt-kv-label", k));
-        tech(line, v);
-        sub.appendChild(line);
-      });
+      if (narr.text) sub.appendChild(el("div", "evt-sub-line", narr.text));
+      (narr.chips || []).forEach(function (ch) { tech(sub, ch); });
       c.appendChild(sub);
+    } else {
+      /* لا سرد لهذا النوع: صف مقتضب صادق — أهم قيمة واحدة، والباقي بالنقر */
+      var fb = (p && (p.text || p.note || p.summary || p.status ||
+                      p.reason || p.message || p.error)) || "";
+      var sub2 = el("div", "evt-sub");
+      if (fb) {
+        sub2.appendChild(el("div", "evt-sub-line", String(fb).slice(0, 140)));
+      } else {
+        var keys = Object.keys(p || {}).slice(0, 2);
+        keys.forEach(function (k2) {
+          var v = typeof p[k2] === "object"
+            ? JSON.stringify(p[k2]).slice(0, 60)
+            : String(p[k2]).slice(0, 80);
+          tech(sub2, k2 + ": " + v);
+        });
+      }
+      c.appendChild(sub2);
     }
     stamp(c.querySelector(".evt-time"), e.created_at);
     return c;
@@ -1028,6 +1255,26 @@
     else renderExecs(body, d.executions || []);
   }
   var panelSig = "";
+  /* M3: معاينة محتوى حقيقي من القرص — بلا تصنيع */
+  function previewArtifact(a) {
+    if (S.sel == null || a.step_id == null || !a.name) return;
+    var url = "/api/projects/" + S.sel + "/artifacts/content?step_id=" +
+      a.step_id + "&name=" + encodeURIComponent(String(a.name));
+    fetch(url, { headers: { accept: "text/plain" } })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (text) {
+        openJsonModal(String(a.name) +
+          (a.sha256 ? " — " + String(a.sha256).slice(0, 10) : ""), text);
+      })
+      .catch(function (err) {
+        openJsonModal(String(a.name || "ملف"),
+          "تعذر جلب المحتوى: " + err.message);
+      });
+  }
+
   function fileMeta(a) {
     var wrap = el("div", "fp-file");
     var top = el("div", "fp-file-top");
@@ -1040,6 +1287,14 @@
     if (a.verdict) {
       var ok = a.verdict === "PASS";
       top.appendChild(el("span", "chip " + (ok ? "ok" : "danger"), a.verdict));
+    }
+    if (a.step_id != null && a.name) {
+      var pvb = el("button", "chip fp-open", "معاينة");
+      pvb.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        previewArtifact(a);
+      });
+      top.appendChild(pvb);
     }
     wrap.appendChild(top);
     var meta = el("div", "fp-file-meta");
@@ -1284,6 +1539,16 @@
     if (n) n.textContent = val;
   }
   function updateStatsFromRuns() {
+    /* M6: حالة الانتظار الحقيقية تغذي «الآن» حتى بلا أحدث جديدة */
+    var r = findRun(S.sel);
+    if (r && r.waiting_for && r.waiting_for.kind === "owner_gate") {
+      S.now.action = "بانتظار اعتمادك — التنفيذ متوقف على قرارك";
+      S.now.tone = "warn";
+      S.now.role = "";
+      S.now.model = "";
+      S.now.obj = "";
+      S.now.step = null;
+    }
     var r = findRun(S.sel);
     var p = findProject(S.sel);
     var st = statusMeta(r, p);
@@ -1345,6 +1610,7 @@
     S.timers.push(setInterval(loadDetail, 6000));
     S.timers.push(setInterval(updateStatsFromRuns, 3000));
     S.timers.push(setInterval(relTimeLoop, 15000));
+    S.timers.push(setInterval(renderNow, 1000));
   }
   function LiveBridge() {
     if (window.LiveEvents && window.LiveEvents.onEvent) {

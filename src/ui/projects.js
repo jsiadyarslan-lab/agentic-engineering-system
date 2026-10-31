@@ -774,6 +774,26 @@
     if (state.projectId == null) return;
     var body = $("pl-tab-body");
     if (!body || state.activeTab === "conversation") return;
+    if (state.activeTab === "evolution") {
+      var evoUrl = "/evolution?project=" + encodeURIComponent(state.projectId);
+      var fr = body.querySelector("iframe.evo-frame");
+      if (!fr || fr.getAttribute("data-src") !== evoUrl) {
+        body.innerHTML = "";
+        fr = document.createElement("iframe");
+        fr.className = "evo-frame";
+        fr.setAttribute("data-src", evoUrl);
+        fr.setAttribute("title", "متصفح التطور اللحظي");
+        fr.style.cssText = "width:100%;height:calc(100vh - 200px);border:1px solid #2A3340;border-radius:12px;background:#0A0D12";
+        fr.src = evoUrl;
+        body.appendChild(fr);
+      }
+      body.setAttribute("data-rendered", "evolution:" + state.projectId);
+      // تحصين: كل نبضة مصالحة تمر هنا فتبقى المشهد مخفيًا والجسد ظاهرًا
+      var scn = $("pl-scene");
+      if (scn) scn.hidden = true;
+      body.hidden = false;
+      return;
+    }
     if (!window.WorkflowView || !state.runtime) return;
     var wv = window.WorkflowView;
     var tab = state.activeTab;

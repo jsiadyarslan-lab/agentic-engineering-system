@@ -683,3 +683,150 @@
 /* إضافات 015-سقف العرض الصادق */
 .fp-trunc-note { font: 400 11px/1.4 var(--font-sans); color: var(--text-muted); }
 .fp-more { align-self: center; margin: 4px 0 8px; }
+
+/* ==========================================================================
+   AES-UI-REDESIGN-016 M2 — شريط «الآن» + تجميع الخطوات (تطور لحظة بلحظة)
+   توكنات 014 حصرًا — حركة 150ms، زوايا 12، لمس ≥ 40px.
+   ========================================================================== */
+.floor-now {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--bg-raised);
+  box-shadow: var(--elev-1);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.floor-now.fn-warn { border-color: var(--warn-border); background: var(--warn-chip); }
+.floor-now.fn-fail { border-color: var(--danger, #f85149); }
+.fn-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.fn-pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent-hi);
+  flex: none;
+  animation: fnPulse 1.6s ease-out infinite;
+}
+.fn-pulse.fail { background: var(--danger, #f85149); animation-name: fnPulseFail; }
+@keyframes fnPulse {
+  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.45); }
+  70% { box-shadow: 0 0 0 8px rgba(88, 166, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+}
+@keyframes fnPulseFail {
+  0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.45); }
+  70% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+}
+.fn-action {
+  font: 600 13px/1.5 var(--font-sans);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46ch;
+}
+.fn-obj {
+  font: 400 12px/1.5 var(--font-sans);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40ch;
+}
+.fn-model, .fn-chars { font-size: 11px; }
+.fn-step {
+  font: 600 11px/1 var(--font-sans);
+  color: var(--accent-hi);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  padding: 5px 9px;
+  flex: none;
+}
+.evt-group {
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--bg-canvas);
+  margin: 8px 0;
+  overflow: hidden;
+}
+.evt-group.evt-ok { border-color: var(--ok-border); }
+.evt-group.open-ended { border-color: var(--bg-elevated); opacity: 0.85; }
+.evt-group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 40px;
+  padding: 8px 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--accent-border);
+}
+.evt-group.evt-ok .evt-group-head { border-bottom-color: var(--ok-border); }
+.evt-group-badge {
+  font: 700 11px/1 var(--font-sans);
+  color: var(--accent-hi);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  padding: 5px 9px;
+  flex: none;
+}
+.evt-group.evt-ok .evt-group-badge {
+  color: var(--ok);
+  background: var(--ok-chip);
+  border-color: var(--ok-border);
+}
+.evt-group-obj {
+  font: 500 12.5px/1.5 var(--font-sans);
+  color: var(--text-primary);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.evt-group-meta { font-size: 11px; color: var(--text-muted); flex: none; }
+.evt-group-status { font: 700 11px/1 var(--font-sans); color: var(--accent-hi); flex: none; }
+.evt-group.evt-ok .evt-group-status { color: var(--ok); }
+.evt-group.open-ended .evt-group-status { color: var(--text-muted); }
+.evt-group-body { padding: 4px 12px 8px; display: flex; flex-direction: column; }
+.evt-group.collapsed .evt-group-body { display: none; }
+.evt-group-more {
+  margin: 0 12px 10px;
+  align-self: flex-start;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--accent-border);
+  background: transparent;
+  color: var(--accent-hi);
+  font: 600 12px/1 var(--font-sans);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.evt-group-more:hover { background: var(--bg-hover); }
+
+/* 016 M2.1 — إحكام شريط «الآن» على سطر أساس مع لفّ محدود */
+.fn-action { max-width: 34ch; }
+.fn-obj { max-width: 26ch; }
+.fn-model, .fn-chars { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 016 M4 — سطر الخطوة في الجلسات: قصّ سليم للنص المعزول LTR */
+.fs-item-sub { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.fs-item-step {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-item-step[dir="ltr"] { text-align: left; }
+.fs-item-nums { flex: none; }
