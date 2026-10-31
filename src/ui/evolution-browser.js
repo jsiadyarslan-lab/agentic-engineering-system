@@ -57,12 +57,16 @@
       case "ROLE_EXECUTING": return { role: p.role, cls: "", text: (role ? role + " يعمل" : "دور يعمل") + " على الخطوة " + (p.step_id ?? "?") };
       case "TOOL_EXECUTION": {
         const ph = p.phase || "";
-        let path = "";
-        const m = /'path':\s*'([^']+)'/.exec(p.summary || "");
-        if (m) path = m[1].split("/").pop();
-        return { role: p.role, cls: "k-tool", tool: p.tool, phase: ph,
-          text: "أداة " + (p.tool || "?") + (path ? " ← " + path : ""),
-          extra: (p.duration_ms != null ? (p.duration_ms + "ms") : "") + (p.error ? " — " + p.error : "") };
+        const su = String(p.summary || "");
+        let target = "", mono = false;
+        if (/(write|read|edit)_file/.test(p.tool || "")) {
+          const m = /'path':\s*'([^']+)'/.exec(su);
+          if (m) { target = m[1].split("/").pop(); mono = true; }
+        } else if (su && !su.startsWith("{'")) { target = su; mono = true; }
+        return { role: p.role, cls: "k-tool", tool: p.tool, phase: ph, mono,
+          err: p.error || "",
+          text: "أداة " + (p.tool || "?") + (target ? " ← " + target : ""),
+          extra: (p.duration_ms != null ? (p.duration_ms + "ms") : "") };
       }
       case "MODEL_CALL_STARTED": return { role: p.role, throttle: "llm", text: "استدعاء نموذج بدأ" + (p.provider ? " عبر " + p.provider : "") };
       case "MODEL_CALL_PROGRESS": return { role: p.role, throttle: "llm", text: "تدفق توليد من النموذج…" };
@@ -114,7 +118,8 @@
     if (n.extra) head.appendChild(el("span", "evo-dur", n.extra));
     head.appendChild(el("span", "evo-ago")).dataset.ts = e.created_at || "";
     card.appendChild(head);
-    card.appendChild(el("div", "evo-detail", n.text));
+    card.appendChild(el("div", "evo-detail" + (n.mono ? " mono-ltr" : ""), n.text));
+    if (n.err) card.appendChild(el("div", "evo-err", n.err));
     card.dataset.ts = e.created_at || "";
     return card;
   }
@@ -171,8 +176,13 @@
       case "EXECUTION_STARTED": setNow(null, "خطوة " + (p.step_id ?? "")); break;
       case "EXECUTION_COMPLETED": case "EXECUTION_FAILED": clearNow(); break;
       case "EVIDENCE_CREATED": markFilesHot(); break;
+      case "MODEL_REASONING": bumpMind(p, "r"); break;
+      case "MODEL_CALL_PROGRESS": bumpMind(p, "c"); break;
+      case "MODEL_CALL_COMPLETED": setMindDone(p); break;
       case "STEP_COMPLETED": case "EXECUTION_COMPLETED": scheduleRefetch(1200); break;
     }
+    if (e.kind === "MODEL_REASONING" || e.kind === "MODEL_CALL_PROGRESS"
+        || e.kind === "MODEL_CALL_COMPLETED") return updateStats();
     if (n.throttle) {
       if (handleThrottled(e, n)) { updateStats(); return; }
       if (handleThrottled(e, n)) { updateStats(); return; }
@@ -181,6 +191,96 @@
     if (n.throttle) { state.throttle[n.throttle] = { at: Date.now(), el: card, count: 1 }; }
     prependCard(card);
     updateStats();
+  }
+
+  /* ---------- عقل الوكيل: عدادات التفكير والكتابة الحية ---------- */
+  const mind = { req: null, reasoning: 0, content: 0, purpose: "", done: 0 };
+  function bumpMind(p, which) {
+    if (p.request_id !== mind.req) {
+      mind.req = p.request_id || mind.req;
+      mind.reasoning = 0; mind.content = 0; mind.done = 0; mind.purpose = "";
+      $("evo-mind").hidden = false;
+    }
+    const n = Number(p.chars) || 0;
+    if (which === "r") mind.reasoning += n; else mind.content += n;
+    renderMind();
+  }
+  function setMindDone(p) {
+    mind.done = Date.now();
+    mind.purpose = p.purpose || "";
+    renderMind();
+  }
+  function renderMind() {
+    const m = $("evo-mind");
+    if (!m || m.hidden) return;
+    m.innerHTML = "";
+    const put = (cls, txt) => { const sp = el("span", cls); sp.textContent = txt; m.appendChild(sp); };
+    const dot = () => { const sp = el("span", "m-dim"); sp.textContent = "·"; m.appendChild(sp); };
+    if (mind.reasoning) {
+      const sp = el("span", "m-think");
+      sp.appendChild(el("b", null, "يفكر… "));
+      sp.appendChild(document.createTextNode(mind.reasoning.toLocaleString("ar-EG") + " حرفًا"));
+      m.appendChild(sp);
+    }
+    if (mind.content) {
+      if (m.children.length) dot();
+      const sp = el("span", "m-write");
+      sp.appendChild(el("b", null, "يكتب… "));
+      sp.appendChild(document.createTextNode(mind.content.toLocaleString("ar-EG") + " حرفًا"));
+      m.appendChild(sp);
+    }
+    if (mind.purpose) { if (m.children.length) dot(); put("m-dim", "الغرض: " + mind.purpose); }
+    if (mind.done && Date.now() - mind.done > 30000) { if (m.children.length) dot(); put("m-dim", "انتهى الاستدعاء"); }
+    const prov = (state.snap && state.snap.run && state.snap.run.provider) || "";
+    if (prov) { if (m.children.length) dot(); put("m-dim", String(prov)); }
+    if (!m.children.length) put("m-dim", "لا تدفق نشط الآن — بانتظار دور النموذج التالي");
+  }
+
+  /* ---------- الأمر المرسوم + خطاب المفكر + استخدام الأدوات ---------- */
+  function renderBrief(s) {
+    const box = $("evo-brief"); box.innerHTML = "";
+    const cc = s.current_command;
+    if (cc && cc.command) {
+      const d = el("div", "evo-cmd");
+      const h = el("h3", null, "الأمر المرسوم إلى " + (ROLE_AR[cc.role] || cc.role || "الوكيل"));
+      h.appendChild(el("span", "cmd-status " + String(cc.status || ""), String(cc.status || "")));
+      d.appendChild(h);
+      const pre = el("pre", null, cc.command);
+      pre.title = "انقر للتوسيع/الطي";
+      pre.addEventListener("click", () => pre.classList.toggle("open"));
+      d.appendChild(pre);
+      box.appendChild(d);
+    }
+    const t = s.thinker;
+    if (t && t.objective) {
+      const d = el("div", "evo-think");
+      const det = document.createElement("details");
+      det.appendChild(el("summary", null,
+        "خطاب المفكر — الخطة v" + (t.version ?? "?") + (t.status ? " · " + t.status : "")));
+      det.appendChild(el("div", "tk-obj", t.objective));
+      const ul = el("ul");
+      (t.assumptions || []).forEach((x) => ul.appendChild(el("li", null, "افتراض: " + x)));
+      (t.risks || []).forEach((x) => ul.appendChild(el("li", null, "خطر: " + x)));
+      (t.owner_decisions || []).forEach((x) => ul.appendChild(el("li", null, "قرار مطلوب منك: " + x)));
+      if (t.revision_reason) ul.appendChild(el("li", null, "سبب آخر تعديل: " + t.revision_reason));
+      det.appendChild(ul);
+      d.appendChild(det);
+      box.appendChild(d);
+    }
+    const ts = s.tools_summary || {};
+    const keys = Object.keys(ts);
+    if (keys.length) {
+      const d = el("div", "evo-tools");
+      d.appendChild(el("span", null, "الأدوات (آخر 400 حدث):"));
+      keys.sort((a, b) => ts[b].n - ts[a].n).slice(0, 8).forEach((k) => {
+        const sp = el("span");
+        sp.appendChild(document.createTextNode(k + " "));
+        sp.appendChild(el("b", "tnum", String(ts[k].ok) + "✓"));
+        if (ts[k].fail) sp.appendChild(el("b", "t-fail tnum", " " + String(ts[k].fail) + "✗"));
+        d.appendChild(sp);
+      });
+      box.appendChild(d);
+    }
   }
 
   /* ---------- اللقطة ---------- */
@@ -239,6 +339,7 @@
       ul.appendChild(li);
     }
     renderNowFromSnapshot(s);
+    renderBrief(s);
     updateStats();
   }
   function renderNowFromSnapshot(s) {
@@ -346,6 +447,7 @@
     connectSSE();
   }
   function handleBootEvent(e) {
+    if (e.kind === "MODEL_REASONING" || e.kind === "MODEL_CALL_PROGRESS") return;
     const n = narrate(e);
     if (n.throttle && n.throttle === "llm" && state.throttle.llm) return; /* أحدث تقدم يكفي */
     if (n.throttle) state.throttle[n.throttle] = { at: Date.now(), el: null, count: 1 };

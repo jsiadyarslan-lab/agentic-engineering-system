@@ -107,6 +107,84 @@ def evolution_snapshot(project_id: Optional[int] = None) -> dict:
     except Exception:  # noqa: BLE001
         pass
 
+    current_command = None
+    try:
+        for ex in service.list_executions(sessions, pid, limit=10):
+            cmd_text = str(ex.get("command") or "")
+            if not cmd_text:
+                # أمر فارغ في السجل — نبنيه من نص الخطوة نفسها بلا تخمين
+                try:
+                    st = service.get_step(sessions, ex.get("step_id"))
+                    if st:
+                        import json as _cj
+                        crit = st.get("acceptance_criteria")
+                        try:
+                            crit = _cj.loads(crit) if isinstance(crit, str)                                 else (crit or [])
+                        except Exception:  # noqa: BLE001
+                            crit = []
+                        parts = [str(st.get("objective") or "")]
+                        if st.get("expected_output"):
+                            parts.append("\nالمخرج المتوقع: "
+                                         + str(st.get("expected_output")))
+                        if crit:
+                            parts.append("\nمعايير القبول (تحقق حرفيًا):\n- "
+                                         + "\n- ".join(str(x) for x in crit))
+                        cmd_text = "\n".join(parts)
+                except Exception:  # noqa: BLE001
+                    cmd_text = ""
+            current_command = {
+                "execution_id": ex.get("id"),
+                "step_id": ex.get("step_id"),
+                "role": ex.get("agent_role"),
+                "status": ex.get("status"),
+                "command": cmd_text[:4000],
+                "started_at": str(ex.get("started_at") or ""),
+                "model": str(ex.get("model") or ""),
+            }
+            if str(ex.get("status") or "").upper() == "RUNNING":
+                break
+    except Exception:  # noqa: BLE001
+        current_command = None
+
+    thinker = None
+    try:
+        import json as _json
+        plan = service.latest_plan(sessions, pid)
+        if plan:
+            def _lst(x):
+                try:
+                    return _json.loads(x) if isinstance(x, str) else (x or [])
+                except Exception:  # noqa: BLE001
+                    return []
+            thinker = {
+                "version": plan.get("version"),
+                "objective": plan.get("objective"),
+                "assumptions": _lst(plan.get("assumptions"))[:6],
+                "risks": _lst(plan.get("risks"))[:6],
+                "owner_decisions": _lst(
+                    plan.get("required_owner_decisions"))[:6],
+                "revision_reason": plan.get("revision_reason") or "",
+                "status": plan.get("status"),
+            }
+    except Exception:  # noqa: BLE001
+        thinker = None
+
+    tools_summary = {}
+    try:
+        for ev in service.list_events(sessions, pid, limit=400):
+            if ev.get("kind") != "TOOL_EXECUTION":
+                continue
+            pl = ev.get("payload") or {}
+            t = tools_summary.setdefault(str(pl.get("tool") or "?"),
+                                         {"n": 0, "ok": 0, "fail": 0})
+            t["n"] += 1
+            if str(pl.get("phase")) == "succeeded":
+                t["ok"] += 1
+            elif str(pl.get("phase")) == "failed":
+                t["fail"] += 1
+    except Exception:  # noqa: BLE001
+        tools_summary = {}
+
     run = {k: snap.get(k) for k in
            ("status", "stage", "waiting_for", "heartbeat_at", "elapsed_s",
             "progress", "role", "tool", "provider", "last_event")
@@ -120,6 +198,9 @@ def evolution_snapshot(project_id: Optional[int] = None) -> dict:
                     "objective": proj.get("objective"),
                     "status": proj.get("status")},
         "run": run,
+        "current_command": current_command,
+        "thinker": thinker,
+        "tools_summary": tools_summary,
         "steps": steps,
         "files": file_list[:200],
         "files_total": len(files),
