@@ -74,6 +74,8 @@
     PROVIDER_TEST_STARTED:   ["اختبار مزوّد النموذج بدأ", "run"],
     PROVIDER_TEST_COMPLETED: ["انتهى اختبار المزوّد", ""],
     "router.call.logged":    ["توجيه دور إلى نموذج", ""],
+    RECOVERY_ASSESSED:       ["قُيّمت حالة الاسترداد بعد الإقلاع", ""],
+    JOB_RECOVERY_ASSESSED:   ["قُيّمت وظيفة المشروع بعد الإقلاع", ""],
   };
 
   function title(kind) {
