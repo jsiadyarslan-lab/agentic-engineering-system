@@ -13,6 +13,11 @@ build المناسب للإطار ويُعاد الأمر مرة واحدة؛ ا
 القياس 849 (v91): tsconfig.json كُتب قبل next.config فلم يُعرف
 الإطار من ملف إعداد — الكشف يُكمل من اعتماديات package.json:
 next/astro في dependencies أو devDependencies تكفي للتعرف.
+
+القياس 863 (v92): `pnpm build` بـ«Command "build" not found» —
+مدير حزم آخر وسلسلة خطأ أخرى والنمط القديم (npm run build حصرًا)
+أعمى عنها فماتت v92 كذلك. الكشف الآن عبر مديري الحزم المعروفين
+(npm/pnpm/yarn/bun) بسكربت build حصرًا وبسلاسل فقد السكربت.
 """
 from __future__ import annotations
 
@@ -30,6 +35,19 @@ _FRAMEWORKS = (
 )
 #: كشف احتياطي من اعتماديات package.json (قياس 849 أعلاه).
 _DEPS = (("astro", "astro build"), ("next", "next build"))
+#: مديرو الحزام المعروفون وسلاسل «السكربت مفقود» عندهم (قياس 863).
+_PKG_MANAGERS = ("npm", "pnpm", "yarn", "bun")
+_MISSING_STRINGS = ('Missing script: "build"', 'Command "build" not found')
+
+
+def _missing_build_script(command: str, stderr: str):
+    """صحيح إن كان الأمر بناءً مفقودًا عند مدير حزم معروف."""
+    parts = command.split()
+    if not parts or parts[0] not in _PKG_MANAGERS:
+        return False
+    script = parts[2] if (len(parts) >= 3 and parts[1] == "run") \
+        else (parts[1] if len(parts) == 2 else None)
+    return script == "build" and any(s in stderr for s in _MISSING_STRINGS)
 
 
 def _detect_framework(root: Path, pkg: dict):
@@ -53,9 +71,8 @@ def heal_and_rerun(workdir, command: str, stderr: bytes, argv: list,
     يبقى كما هو)، وإلا الخماسية
     (exit_code, stdout, stderr, duration_s, self_heal).
     """
-    parts = command.split()
-    if ("Missing script" not in stderr.decode("utf-8", "replace")
-            or len(parts) < 3 or parts[2] != "build"):
+    stderr_text = stderr.decode("utf-8", "replace")
+    if not _missing_build_script(command, stderr_text):
         return None
     pkg_path = Path(workdir) / "package.json"
     try:

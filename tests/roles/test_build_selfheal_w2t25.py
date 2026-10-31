@@ -90,10 +90,9 @@ def test_other_stderr_not_healed(tmp_path):
 
 
 def test_non_build_script_not_healed(tmp_path):
-    """«npm run lint» أو أمر قصير → خارج نطاق الشفاء حصرًا."""
+    """«npm run lint» → خارج نطاق الشفاء حصرًا (سكربت غير build)."""
     _pkg(tmp_path, dependencies={"next": "14"})
     assert _rerun(tmp_path, command="npm run lint") is None
-    assert _rerun(tmp_path, command="npm build") is None
 
 
 def test_rerun_failure_recorded_honestly(tmp_path):
@@ -120,3 +119,59 @@ def test_heal_record_shape(tmp_path):
                         "package_json"}
     assert rec["added_script"] == "build"
     assert rec["package_json"].endswith("package.json")
+
+
+# ——— قياس 863 (v92): مديرو حزم آخرون وسلاسل فقد أخرى ———
+
+_PNPM_MISSING = ('Error: ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL\n\n'
+                 '  \u00d7 Command "build" not found\n').encode("utf-8")
+_YARN_MISSING = b'error Command "build" not found.'
+
+
+def test_pnpm_build_heals(tmp_path):
+    """قياس 863: `pnpm build` بسلسلة pnpm → شفاء من الاعتماديات."""
+    _pkg(tmp_path, dependencies={"next": "14.2.0"})
+    out = _rerun(tmp_path, command="pnpm build", stderr=_PNPM_MISSING)
+    assert out is not None and out[0] == 0
+    assert out[4]["script_command"] == "next build"
+    assert json.loads((tmp_path / "package.json").read_text())[
+        "scripts"]["build"] == "next build"
+
+
+def test_pnpm_run_build_and_yarn_build_heal(tmp_path):
+    """`pnpm run build` و`yarn build` بنمط فقد السكربت عند كل منهما."""
+    _pkg(tmp_path, devDependencies={"astro": "^4"})
+    assert _rerun(tmp_path, command="pnpm run build",
+                  stderr=_PNPM_MISSING)[4]["script_command"] == "astro build"
+    _pkg(tmp_path, dependencies={"next": "14"})
+    out = _rerun(tmp_path, command="yarn build", stderr=_YARN_MISSING)
+    assert out is not None and out[4]["script_command"] == "next build"
+
+
+def test_bun_and_npm_run_build_still_heal(tmp_path):
+    """`bun build` و`npm run build` يبقيان داخل النطاق بعد التوسعة."""
+    _pkg(tmp_path, dependencies={"next": "14"})
+    assert _rerun(tmp_path, command="bun build",
+                  stderr=_YARN_MISSING) is not None
+    assert _rerun(tmp_path, command="npm run build") is not None
+
+
+def test_unknown_pm_and_non_build_scripts_rejected(tmp_path):
+    """مدير مجهول أو سكربت غير build → لا دخول حتى بسلسلة خطأ مطابقة."""
+    _pkg(tmp_path, dependencies={"next": "14"})
+    assert _rerun(tmp_path, command="deno build",
+                  stderr=_YARN_MISSING) is None
+    assert _rerun(tmp_path, command="pnpm lint",
+                  stderr=_PNPM_MISSING) is None
+    assert _rerun(tmp_path, command="pnpm test",
+                  stderr=b'Missing script: "test"') is None
+
+
+def test_pnpm_build_existing_script_untouched(tmp_path):
+    """`pnpm build` والسكربت موجود فعلًا → لا شفاء ولا مساس."""
+    _pkg(tmp_path, scripts={"build": "vite build"},
+        dependencies={"next": "14"})
+    before = (tmp_path / "package.json").read_text()
+    assert _rerun(tmp_path, command="pnpm build",
+                  stderr=_PNPM_MISSING) is None
+    assert (tmp_path / "package.json").read_text() == before
