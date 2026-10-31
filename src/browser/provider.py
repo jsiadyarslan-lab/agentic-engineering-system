@@ -34,7 +34,13 @@ BROWSER_RUNTIME_DIR = Path("runtime") / "browser"
 #: وسيط تشغيل Chromium في الحاويات (بلا user namespaces للـSandbox
 #: الداخلي) — معلن لا مخفي: العزل هنا حدود عملية+مهل+سياق، وعامل
 #: متصفح بعيد هو مسار العزل الأقوى (§15 عقد العامل البعيد).
-_CONTAINER_ARGS = ["--no-sandbox", "--disable-setuid-sandbox"]
+#: (W2-T25) allow-file-access-from-files: صفحات file:// المحلية
+#: (browser_open_local) تقرأ مواردها المجاورة (fetch css/js/json) —
+#: علم Chromium الموثق، نطاقه الملفات المحلية حصرًا لا الشبكة.
+_CONTAINER_ARGS = [
+    "--no-sandbox", "--disable-setuid-sandbox",
+    "--allow-file-access-from-files",
+]
 
 
 def _utc_now_iso() -> str:
@@ -173,10 +179,39 @@ class BrowserSession:
         self.page.wait_for_timeout(int(seconds * 1000))
         return {"waited_s": seconds}
 
-    def screenshot(self, name: str = "") -> dict:
+    def open_local(self, abs_path: str) -> dict:
+        """فتح ملف HTML محلي (file://) — عقد مساحة الخطوة لا شبكة.
+
+        المتصل (browser_tools) ضمن المسار داخل مساحة الخطوة
+        وبامتداد .html/.htm — هنا تنقل فعلي وحدث حي كالتنقل الويب.
+        """
+        target = Path(abs_path).resolve()
+        url = target.as_uri()
+        self._emit("navigate", {"url": url, "host": "local-file"})
+        started = time.monotonic()
+        self.page.goto(url, wait_until="domcontentloaded",
+                       timeout=self.policy.nav_timeout_s * 1000)
+        result = {
+            "file": str(target), "url": url, "title": self.page.title(),
+            "duration_ms": int((time.monotonic() - started) * 1000),
+        }
+        self._emit("page.loaded", result)
+        return result
+
+    def screenshot(self, name: str = "", width: int = 0,
+                   height: int = 0) -> dict:
+        # (W2-T25) شاشة اللقطة تُضبط قبل التصوير (375 جوال/1280 حاسوب)
+        if width or height:
+            self.page.set_viewport_size({
+                "width": max(200, min(int(width or 1280), 2000)),
+                "height": max(200, min(int(height or 800), 4000)),
+            })
         artifacts = self._artifacts_dir()
-        filename = (name or f"shot-{uuid.uuid4().hex[:8]}") + ".png"
+        # الاسم مسار نسبي بمجلدات فرعية (evidence/list-mobile)
+        stem = name or f"shot-{uuid.uuid4().hex[:8]}"
+        filename = stem if stem.lower().endswith(".png") else stem + ".png"
         path = artifacts / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
         self.page.screenshot(path=str(path),
                              timeout=self.policy.action_timeout_s * 1000)
         size = path.stat().st_size

@@ -12,6 +12,8 @@
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
 from typing import Any
 
 from browser import service as browser_service
@@ -92,11 +94,89 @@ def browser_extract(mode: str = "text", limit: int = 50, ctx=None) -> dict:
         raise _fail("browser_extract", error) from error
 
 
-def browser_screenshot(name: str = "", ctx=None) -> dict:
-    """لقطة شاشة — أثر ملموس بـsha256 داخل أدلة الجلسة."""
+#: (W2-T25) صفحات محلية قابلة للفتح — حصرًا صفحات الويب المرجوة.
+_LOCAL_PAGE_EXTS = (".html", ".htm")
+
+
+def _safe_rel(raw: str) -> str | None:
+    """مسار نسبي آمن داخل مساحة الخطوة — أو None موصوف بالفشل."""
+    p = str(raw or "").strip().strip("'\"` ")
+    if (not p or p.startswith("/") or ".." in p.split("/")
+            or len(p) > 200):
+        return None
+    return p
+
+
+def _int_or0(value) -> int:
     try:
-        result = _session_of(ctx).screenshot(name)
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _bad_path(tool: str, path: str) -> ToolFailure:
+    return ToolFailure(
+        tool, f"مسار غير آمن: {path[:80]}",
+        failure_class="INPUT_FAILURE", reason="BAD_PATH",
+        stage="TOOL_START", retryable=False,
+    )
+
+
+def browser_open_local(path: str = "", ctx=None) -> dict:
+    """فتح ملف HTML من مساحة الخطوة في المتصفح الحي (file://).
+
+    عقد الأمان: مسار نسبي داخل grant_root حصرًا (لا اجتياز)،
+    امتداد .html/.htm، والملف موجود — لا شبكة ولا بروتوكول غير
+    file:// المحلي (سياسة الشبكة الخاصة تبقى للتنقل الويب).
+    """
+    rel = _safe_rel(path)
+    root = getattr(ctx, "grant_root", None)
+    if rel is None or root is None:
+        raise _bad_path("browser_open_local", str(path))
+    if Path(rel).suffix.lower() not in _LOCAL_PAGE_EXTS:
+        raise ToolFailure(
+            "browser_open_local",
+            f"امتداد غير مسموح (صفحات حصرًا): {rel[:80]}",
+            failure_class="INPUT_FAILURE", reason="BAD_EXT",
+            stage="TOOL_START", retryable=False,
+        )
+    target = Path(root) / rel
+    if not target.is_file():
+        raise ToolFailure(
+            "browser_open_local", f"الملف غير موجود: {rel[:80]}",
+            failure_class="INPUT_FAILURE", reason="FILE_MISSING",
+            stage="TOOL_START", retryable=False,
+        )
+    try:
+        session = _session_of(ctx)
+        if not getattr(session, "_pages", None):
+            session.new_page()
+        result = session.open_local(str(target))
         return {"ok": True, **result}
+    except Exception as error:  # noqa: BLE001
+        raise _fail("browser_open_local", error) from error
+
+
+def browser_screenshot(name: str = "", width: int = 0, height: int = 0,
+                       ctx=None) -> dict:
+    """لقطة شاشة — بالشاشة المطلوبة، وتُنسخ داخل مساحة الخطوة
+    حين يكون الاسم مسارًا نسبيًا (name="evidence/list-mobile")."""
+    try:
+        result = _session_of(ctx).screenshot(
+            str(name or ""), _int_or0(width), _int_or0(height))
+        out = {"ok": True, **result}
+        rel = _safe_rel(name)
+        root = getattr(ctx, "grant_root", None)
+        if rel and root:
+            rel = rel if rel.lower().endswith(".png") else rel + ".png"
+            step_file = Path(root) / rel
+            step_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(result["file"], step_file)
+            out["step_file"] = str(step_file)
+            out["step_bytes"] = step_file.stat().st_size
+        return out
+    except ToolFailure:
+        raise
     except Exception as error:  # noqa: BLE001
         raise _fail("browser_screenshot", error) from error
 
@@ -134,6 +214,7 @@ __all__ = [
     "browser_download",
     "browser_extract",
     "browser_navigate",
+    "browser_open_local",
     "browser_screenshot",
     "browser_type",
     "browser_wait",
@@ -155,7 +236,11 @@ def run_browser_tool(name: str, args: dict, ctx) -> dict:
         return browser_extract(mode=str(args.get("mode", "text")),
                                limit=int(args.get("limit", 50)), ctx=ctx)
     if name == "browser_screenshot":
-        return browser_screenshot(str(args.get("name", "")), ctx=ctx)
+        return browser_screenshot(str(args.get("name", "")),
+                                  args.get("width", 0),
+                                  args.get("height", 0), ctx=ctx)
+    if name == "browser_open_local":
+        return browser_open_local(str(args.get("path", "")), ctx=ctx)
     if name == "browser_download":
         return browser_download(str(args.get("url", "")), ctx)
     if name == "browser_wait":
