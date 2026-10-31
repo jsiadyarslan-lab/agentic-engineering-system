@@ -46,6 +46,8 @@ from router.model_router import ChatMessage
 
 _TRUNCATE = 400
 _PDF_HINT = re.compile(r"\.pdf\b", re.IGNORECASE)
+#: (W2-T25) لقطات الشاشة نواتج أدوات (browser_screenshot) لا نصًا.
+_SHOT_EXTS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico"})
 
 
 def _sha16(path: Path) -> str:
@@ -84,13 +86,15 @@ class LiveImplementer(LiveRoleBase):
         "http_get_text": "url",
         "http_get_json": "url",
         "page_to_text": "url",
+        "browser_open_local": "path",
     }
     #: وسيطة أساسية + أزواج مفتاح=قيمة اختيارية بعد فراغ (fail-closed:
     #: أي جزء بلا «=» بعد الوسيطة الأساسية = سطر غير صالح).
-    _KV_LINE_TOOLS = {"fred_csv": "series_id", "worldbank_indicator": "indicator"}
+    _KV_LINE_TOOLS = {"fred_csv": "series_id", "worldbank_indicator": "indicator", "browser_screenshot": "name"}
     _KV_ALLOWED_KEYS = {
         "fred_csv": {"start", "end"},
         "worldbank_indicator": {"countries", "dates"},
+        "browser_screenshot": {"width", "height"},
     }
     _STRIP_ARG_CHARS = "`'\""  # أسوار الكود وعلامات الاقتباس المحيطة
 
@@ -238,17 +242,21 @@ class LiveImplementer(LiveRoleBase):
             required_build = build_files.required_build_files(
                 request.task.acceptance_criteria, request.task.id,
             )
+            # (W2-T25) اللقطات نواتج أدوات لا نصًا (browser_screenshot).
+            shot_required = [f for f in required_build
+                             if Path(f).suffix.lower() in _SHOT_EXTS]
+            text_required = [f for f in required_build if f not in shot_required]
             created_files: list[tuple[str, str]] = []
             artifacts: list[str] = []
             evidence_refs: list[str] = []
-            if required_build:
+            if text_required:
                 self._stop_requested(ctx, "implementer.create_files")
                 created_files = build_files.create_files_phase(
                     live_call=self._live_call,
                     system_prompt=self._system_prompt,
                     task_payload=task_payload,
                     materials=materials,
-                    required_files=required_build,
+                    required_files=text_required,
                     previous_attempts=list(request.previous_attempts or []),
                     role=self.ROLE,
                 )
@@ -266,6 +274,18 @@ class LiveImplementer(LiveRoleBase):
                     evidence_refs.append(
                         f"sha256:{_sha16(built)}:{build_path}"
                     )
+            missing_shots = [f for f in shot_required if not (root / f).exists()]
+            if missing_shots:
+                return ImplementerResult(
+                    status=ImplementerStatus.FAILED,
+                    stderr_truncated=(
+                        "أثر لقطة مفقود: " + ", ".join(missing_shots)
+                        + " — أنشئها بـ browser_screenshot بمسار نسبي"
+                    )[:_TRUNCATE],
+                )
+            artifacts.extend(str(root / f) for f in shot_required)
+            evidence_refs.extend(
+                f"sha256:{_sha16(root / f)}:{f}" for f in shot_required)
             # (2.7) أوامر البناء الحقيقية (W2-T24) — npm install/build
             # تُنفَّذ فعليًا بأدلة exit_code؛ وفقد node/npm فشل صادق
             # يغذي تصنيف المحرك (BUILD_TOOLING_MISSING → حاجز توفير).
@@ -285,7 +305,7 @@ class LiveImplementer(LiveRoleBase):
                 not materials["search_results"]
                 and not materials["pages"]
                 and not materials["data"]
-                and not created_files
+                and not artifacts
                 and not (build_outcome and build_outcome.results)
             ):
                 # فشل مادة مصنَّف (§18): TOOL_FAILURE/tool/queries/attempts

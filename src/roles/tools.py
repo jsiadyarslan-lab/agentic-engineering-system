@@ -43,9 +43,9 @@ from roles.web_tools import (
 )
 
 #: القائمة البيضاء (§3.2): 4 أساس + أداتا PDF + أدوات البيانات الخمس
-#: + أدوات المتصفح السبع (013 §13) — متصفح حي بأنشطة مسجلة.
-#: (W2-T24) run_build_command: أوامر بناء حقيقية (npm...) — تنفيذ
-#: في العملية معلن (تحتاج شبكة+HOME كأدوات الويب) بأدلة exit_code.
+#: + أدوات المتصفح (013 §13 + W2-T25 open_local لصفحة من مساحة الخطوة)
+#: — متصفح حي بأنشطة مسجلة؛ run_build_command (W2-T24) أوامر بناء
+#: حقيقية (npm...) في العملية معلنة (شبكة+HOME) بأدلة exit_code.
 TOOL_WHITELIST: tuple[str, ...] = (
     "web_search",
     "fetch_page",
@@ -65,14 +65,14 @@ TOOL_WHITELIST: tuple[str, ...] = (
     "browser_extract",
     "browser_screenshot",
     "browser_download",
-    "browser_wait",
+    "browser_wait", "browser_open_local",
 )
 
 #: أدوات المتصفح (013 §13) — تنفيذ معلن داخل عملية المتصفح دائمًا.
 BROWSER_TOOLS: frozenset[str] = frozenset({
     "browser_navigate", "browser_click", "browser_type",
     "browser_extract", "browser_screenshot", "browser_download",
-    "browser_wait",
+    "browser_wait", "browser_open_local",
 })
 
 #: أدوات البيانات الخمس (الأمر 003) — تنفيذ معلن خارج الركيزة دائمًا.
