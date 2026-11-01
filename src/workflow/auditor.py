@@ -56,12 +56,27 @@ def _check_criterion(criterion: str, evidence: dict) -> bool:
 
     المعايير التي لا تذكر أي ملف ليست ميكانيكية — تُعلّق (None)
     لا تُمرَّر كذبًا.
+
+    (SUPERZ 2026-11-01) المعايير العابرة للخطوات («load index.html
+    with only theme.css + layout.css» في خطوة CSS) تذكر ملفات أنتجتها
+    خطوات سابقة — تُفحص أيضًا من أدلة المشروع المتراكمة
+    (project_files ببصمات sha256 مسجلة) لا من أدلة الخطوة وحدها،
+    وإلا حُكم بالمفقود على ملف موجود موثق (تنفيذ 650: فشل missing
+    على index.html/theme.css المكتملتين في 1027/1028).
     """
     files = evidence.get("files", {}) or {}
     mentioned = _criterion_files(criterion)
     if not mentioned:
         return False
-    return all(_name_in_files(name, files) for name in mentioned)
+    if all(_name_in_files(name, files) for name in mentioned):
+        return True
+    project_files = evidence.get("project_files") or {}
+    if not project_files:
+        return False
+    return all(
+        _name_in_files(name, files) or _name_in_files(name, project_files)
+        for name in mentioned
+    )
 
 
 def _criterion_mechanical(criterion: str, evidence: dict) -> bool:

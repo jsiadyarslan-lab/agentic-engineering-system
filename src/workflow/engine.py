@@ -1376,8 +1376,21 @@ class ProjectEngine:
         self._emit(project_id, "REVIEW_COMPLETED",
                    {"step_id": step["id"], "verdict": result.verdict})
 
+        evidence_view = _evidence_view(result)
+        # (SUPERZ 2026-11-01) أدلة المشروع المتراكمة — للمعايير
+        # العابرة للخطوات التي تذكر ملفات خطوات سابقة (فحص حضور
+        # ببصمات مسجلة في evidence_records، لا حكم مضمون).
+        try:
+            prior_files: dict = {}
+            for ev in service.list_evidence(self._sessions, project_id):
+                ev_files = ev.get("files") if isinstance(ev, dict) else None
+                if isinstance(ev_files, dict):
+                    prior_files.update(ev_files)
+            evidence_view["project_files"] = prior_files
+        except Exception:  # noqa: BLE001 — الأدلة التراكمية تحسين لا حاجز
+            pass
         findings = auditor.audit_step(
-            step, {"status": "COMPLETED"}, _evidence_view(result)
+            step, {"status": "COMPLETED"}, evidence_view
         )
         audit_id = service.create_audit(
             self._sessions, project_id=project_id, phase_id=phase["id"],
