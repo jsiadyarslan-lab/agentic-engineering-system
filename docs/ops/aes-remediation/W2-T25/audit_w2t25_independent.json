@@ -1,0 +1,79 @@
+{
+ "task": "W2-T25-AUDIT",
+ "scope": "Independent completion audit of project #3 BUILD A NEWS WEBSITE (factory terminal state)",
+ "audited_at_utc": "2026-11-01T04:25:32.098155+00:00",
+ "method": "live re-verification: API status + read-only sqlite (owner_gates/audit_records/steps) + nginx access log + site HTML + local artifacts",
+ "verdict": "PASS",
+ "checks_total": 10,
+ "checks_passed": 10,
+ "checks": [
+  {
+   "id": "A1",
+   "check": "project.status == COMPLETED (API)",
+   "result": "PASS",
+   "evidence": "{\"status\": \"COMPLETED\", \"updated_at\": \"2026-11-01 04:11:33.337135\"}"
+  },
+  {
+   "id": "A2",
+   "check": "final audit #418 verdict PASS and failed_audits empty and no pending/broken",
+   "result": "PASS",
+   "evidence": "{\"verdict\": \"PASS\", \"failed_audits\": [], \"phases\": \"3/3\"}"
+  },
+  {
+   "id": "A3",
+   "check": "plan v112 steps 1038-1043 all COMPLETED attempts=1",
+   "result": "PASS",
+   "evidence": "[{\"id\": 1038, \"status\": \"COMPLETED\", \"attempts\": 1}, {\"id\": 1039, \"status\": \"COMPLETED\", \"attempts\": 1}, {\"id\": 1040, \"status\": \"COMPLETED\", \"attempts\": 1}, {\"id\": 1041, \"status\": \"COMPLETED\", \"attempts\": 1}, {\"id\": 1042, \"status\": \"COMPLETED\", \"attempts\": 1}, {\"id\": 1043, \"status\": \"COMPLETED\", \"attempts\": 1}]"
+  },
+  {
+   "id": "A4",
+   "check": "counts reconciled: done=300 total=958 failed=87 plans=112",
+   "result": "PASS",
+   "evidence": "{\"steps_total\": 958, \"steps_done\": 300, \"steps_failed\": 87, \"phases_total\": 341, \"phases_done\": 77, \"plans_total\": 112}"
+  },
+  {
+   "id": "A5",
+   "check": "gate ledger: 288 total, 287 APPROVED, only #312 FINAL_VERIFICATION PENDING",
+   "result": "PASS",
+   "evidence": "{\"by_status\": {\"APPROVED\": 287, \"PENDING\": 1}, \"by_kind\": {\"FINAL_VERIFICATION\": 1, \"PLAN_APPROVAL\": 112, \"PLAN_REVISION_APPROVAL\": 120, \"PREFLIGHT_BLOCKED\": 55}}"
+  },
+  {
+   "id": "A6",
+   "check": "driver stopped itself cleanly (PROJECT_TERMINAL:COMPLETED), no python driver process runs, keepalive refuses restart",
+   "result": "PASS",
+   "evidence": "1\nNOPROC\n2026-11-01T04:20:02Z keepalive: project COMPLETED — no restart\n2026-11-01T04:25:01Z keepalive: project COMPLETED — no restart"
+  },
+  {
+   "id": "A7",
+   "check": "owner-mode brake file still present (mtime unchanged 2026-10-31 23:46 UTC) — all gate approvals human",
+   "result": "PASS",
+   "evidence": "2026-10-31 23:46:19.348643699 +0000"
+  },
+  {
+   "id": "A8",
+   "check": "nginx log: owner browser (2.215.157.88) POSTs approved gates/plan with 200",
+   "result": "PASS",
+   "evidence": "2.215.157.88 - vis [01/Nov/2026:01:02:36 +0000] \"POST /api/projects/3/gates/302 HTTP/1.1\" 200 130 \"http://92.5.14.150/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36\" \"-\"\n2.215.157.88 - vis [01/Nov/2026:02:38:33 +0000] \"POST /api/projects/3/gates/306 HTTP/1.1\" 200 130 \"http://92.5.14.150/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+  },
+  {
+   "id": "A9",
+   "check": "live preview site HTTP 200 and serves the three Arabic article cards",
+   "result": "PASS",
+   "evidence": "{\"http\": \"200\", \"headings\": [\"      1 مقال أول\", \"      1 مقال ثالث\", \"      1 مقال ثاني\"]}"
+  },
+  {
+   "id": "A10",
+   "check": "4 fresh screenshots pulled (>= 2026-11-01T04:21Z) for owner visual proof",
+   "result": "PASS",
+   "evidence": "{\"dashboard.png\": {\"size\": 212574, \"mtime\": \"2026-11-01T04:22:16.584205+00:00\"}, \"site_desktop.png\": {\"size\": 17168, \"mtime\": \"2026-11-01T04:22:17.850212+00:00\"}, \"site_mobile.png\": {\"size\": 14049, \"mtime\": \"2026-11-01T04:22:19.114219+00:00\"}, \"control_owner.png\": {\"size\": 46355, \"mtime\": \"2026-11-01T04:22:20.559228+00:00\"}}"
+  }
+ ],
+ "honest_caveats": [
+  "87/958 steps failed historically (death-spiral era v84-v107) — count preserved in ledger, not hidden.",
+  "Final audit at 11:35 (+08) FAILED citing 11 historical failed audits; plan v112 remediation cleared them (audit #418 failed_audits=[]) — the cumulative-blocking mechanism remains a watch item.",
+  "Audits 398/399 (11:02-11:10 +08) marked CSS content criteria 'unverifiable' though layout.css was evidenced — auditor content-window issue, engine fix candidate.",
+  "Shot script reports 'list articles: 0' while the rendered page visually shows the 3 article cards — selector mismatch in the shot tool, site itself renders them (A9 evidence).",
+  "Rendered page is functionally minimal (no visible theme/layout styling in screenshot; placeholder Arabic copy) — COMPLETED reflects the plan's mechanical acceptance criteria, not production-grade design.",
+  "Gate #312 FINAL_VERIFICATION deliberately left PENDING for the owner (owner-mode brake never lifted)."
+ ]
+}
