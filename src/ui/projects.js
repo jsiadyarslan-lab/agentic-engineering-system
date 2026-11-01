@@ -775,23 +775,11 @@
     var body = $("pl-tab-body");
     if (!body || state.activeTab === "conversation") return;
     if (state.activeTab === "evolution") {
-      var evoUrl = "/evolution?project=" + encodeURIComponent(state.projectId);
-      var fr = body.querySelector("iframe.evo-frame");
-      if (!fr || fr.getAttribute("data-src") !== evoUrl) {
-        body.innerHTML = "";
-        fr = document.createElement("iframe");
-        fr.className = "evo-frame";
-        fr.setAttribute("data-src", evoUrl);
-        fr.setAttribute("title", "متصفح التطور اللحظي");
-        fr.style.cssText = "width:100%;height:calc(100vh - 200px);border:1px solid #2A3340;border-radius:12px;background:#0A0D12";
-        fr.src = evoUrl;
-        body.appendChild(fr);
-      }
-      body.setAttribute("data-rendered", "evolution:" + state.projectId);
-      // تحصين: كل نبضة مصالحة تمر هنا فتبقى المشهد مخفيًا والجسد ظاهرًا
+      // (016-F) دمج مباشر بلا iframe — يُحمَّل مرة واحدة ويُركَّب داخل التبويب
       var scn = $("pl-scene");
       if (scn) scn.hidden = true;
       body.hidden = false;
+      mountEvolutionTab(body, state.projectId);
       return;
     }
     if (!window.WorkflowView || !state.runtime) return;
@@ -814,6 +802,50 @@
         wv.renderHistoryTab(body, state.projectId);
       }
     }
+  }
+
+  /* ---------- (016-F) تحميل وتركيب متصفح التطور بلا iframe ---------- */
+  function ensureEvoAssets(cb) {
+    if (window.EvoBrowser) { cb(); return; }
+    if (!document.getElementById("evo-browser-css")) {
+      var l = document.createElement("link");
+      l.id = "evo-browser-css"; l.rel = "stylesheet";
+      l.href = "/static/evolution-browser.css?v=2";
+      document.head.appendChild(l);
+    }
+    var s = document.createElement("script");
+    s.src = "/static/evolution-browser.js?v=2";
+    s.onload = function () { cb(); };
+    s.onerror = function () { console.error("[evo] failed to load evolution-browser.js"); };
+    document.head.appendChild(s);
+  }
+  function mountEvolutionTab(body, pid) {
+    var rootEl = body.querySelector(".evo-app");
+    if (rootEl && rootEl._evoInstance && body.getAttribute("data-evo-pid") === String(pid)) {
+      /* مُركَّب بالفعل لنفس المشروع — نبضة المصالحة تؤكد الظهور فقط */
+      return;
+    }
+    if (rootEl && window.EvoBrowser) { try { window.EvoBrowser.unmount(rootEl); } catch (e) {} }
+    var seq = (body._evoSeq = (body._evoSeq || 0) + 1);
+    body.innerHTML = "";
+    body.setAttribute("data-evo-pid", String(pid));
+    var host = document.createElement("div");
+    host.className = "evo-host";
+    host.style.height = "100%";
+    body.appendChild(host);
+    ensureEvoAssets(function () {
+      if (body._evoSeq !== seq) return; /* طلب أحدث حل محلنا */
+      if (!window.EvoBrowser) {
+        host.innerHTML = '<div style="padding:20px;color:#F85149">تعذّر تحميل متصفح التطور</div>';
+        return;
+      }
+      window.EvoBrowser.mount(host, {
+        embedded: true,
+        projectId: pid,
+        height: "calc(100vh - 190px)",
+        onChangeProject: function (npid) { mountEvolutionTab(body, npid); },
+      });
+    });
   }
 
   document.querySelectorAll(".pl-tab").forEach(function (btn) {
