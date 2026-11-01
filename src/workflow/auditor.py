@@ -202,7 +202,29 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
                       ("COMPLETED", "REVISED")]
     steps_pending = [s for s in steps if s["status"] not in
                      ("COMPLETED", "BLOCKED")]
-    failed_audits = [a for a in audits if a.get("verdict") == "FAIL"]
+    # (SUPERZ 2026-11-01) التدقيق النهائي القديم (بلا خطوة/مرحلة) يحل
+    # محلّه هذا الفحص ذاته — لا مرجعية ذاتية لانهائية؛ والفشل يُحتسب
+    # لتدقيقيات خطوات/مراحل نطاق الخطة الحالية فقط.
+    failed_audits = [
+        a for a in audits
+        if a.get("verdict") == "FAIL"
+        and (a.get("step_id") is not None
+             or a.get("phase_id") is not None)
+    ]
+
+    # (SUPERZ 2026-11-01) سلامة الدليل تُفحص لأحدث دليل لكل خطوة:
+    # إعادة تنفيذ الخطوة تعيد كتابة مساحة العمل فيُخرب بصمة دليل
+    # محاولة أقدم (تنفيذ 650 مثلًا: evidence.json أعيدت كتابته ففشلت
+    # بصمة الدليل 309 رغم أن دليل المحاولة 310 هو الدعوى الحية).
+    latest_by_step: dict = {}
+    for evidence in evidences:
+        sid = evidence.get("step_id")
+        if sid is None:
+            continue
+        eid = int(evidence["id"])
+        if sid not in latest_by_step or eid > latest_by_step[sid]:
+            latest_by_step[sid] = eid
+    superseded_evidence: list = []
 
     integrity: dict[str, bool] = {}
     for evidence in evidences:
@@ -210,6 +232,11 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
         # تنفيذ — لا تدخل فحص السلامة الميكانيكي
         if evidence.get("verdict") == "EXECUTION_BLOCKED" and not \
                 evidence.get("evidence_path"):
+            continue
+        sid = evidence.get("step_id")
+        if sid is not None and int(evidence["id"]) != \
+                latest_by_step.get(sid):
+            superseded_evidence.append(evidence["id"])
             continue
         path = evidence.get("evidence_path", "")
         if path and Path(path).is_file():
@@ -241,6 +268,7 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
         "failed_audits": [a["id"] for a in failed_audits],
         "evidence_integrity": integrity,
         "broken_evidence": broken_evidence,
+        "superseded_evidence": superseded_evidence,
         "unresolved_issues": (
             [p["id"] for p in phases_pending]
             + [s["id"] for s in steps_pending]

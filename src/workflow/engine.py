@@ -1858,8 +1858,21 @@ class ProjectEngine:
         project_id = project["id"]
         steps = self._pending_steps(project_id, plan_id=plan["id"],
                                     include_completed=True)
-        evidences = service.list_evidence(self._sessions, project_id)
-        audits = service.list_audits(self._sessions, project_id)
+        all_evidence = service.list_evidence(self._sessions, project_id)
+        all_audits = service.list_audits(self._sessions, project_id)
+        # (SUPERZ 2026-11-01) سلامة الإكمال تُحكم على نطاق الخطة الحالية
+        # حصرًا: أدلة وتدقيقيات الخطط الملغاة سجل تاريخي لا دعوى إكمال —
+        # التدقيق الحي 408 فشل على 11 تدقيقية فاشلة قديمة و6 أدلة
+        # مكسورة من خطط سابقة رغم اكتمال v111 نظيفة (3/3 مراحل، لا
+        # معلق). والمرجعية الذاتية للتدقيق النهائي القديم تُستبعد:
+        # هذا الفحص هو من يحل محلها.
+        current_step_ids = {int(s["id"]) for s in steps}
+        current_phase_ids = {int(p["id"]) for p in phases}
+        evidences = [e for e in all_evidence
+                     if e.get("step_id") in current_step_ids]
+        audits = [a for a in all_audits
+                  if a.get("step_id") in current_step_ids
+                  or a.get("phase_id") in current_phase_ids]
         result = auditor.audit_final(project, phases, steps, evidences, audits)
         audit_id = service.create_audit(
             self._sessions, project_id=project_id, phase_id=None,
