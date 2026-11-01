@@ -256,7 +256,10 @@ class VerifierLive(LiveRoleBase):
     #: والمراجع حكم «not observed in provided snippets» مرتين رغم
     #: كتابتها فعلًا. الملف النصي ≤8KB يُقرأ كله (content_full) —
     #: الأصح أصلًا: حجب وسط ملف 3KB اقتطاع بلا داعٍ.
-    _CONTENT_FULL_LIMIT = 8_192
+    #: (SUPERZ-FIX 2026-11-01) سقف 8_192 أعاد علة W2-T25 نفسها بأرفع
+    #: حدّ: index.html (تنفيذ 640) ‏12,762 بايت فسقطت من content_full
+    #: وعاد العمى الأوسط. 32KB يغطي صفحات HTML كاملة بلا نفخ سياق.
+    _CONTENT_FULL_LIMIT = 32_768
 
     def _content_tail(self, path: Path) -> str | None:
         """(W2-T25) آخر الملف النصي — تكملة الرأس للمعايير الختامية."""
@@ -366,7 +369,8 @@ class VerifierLive(LiveRoleBase):
         counts: dict[str, int] = {}
         for tag in ("header", "main", "footer", "nav", "section", "article",
                     "aside", "h1", "h2", "h3", "a", "img", "button", "form",
-                    "ul", "li", "div", "span", "p", "script", "link"):
+                    "ul", "li", "div", "span", "p", "time",
+                    "script", "link"):
             hits = len(re.findall(rf"<{tag}[\s>]", text, re.IGNORECASE))
             if hits:
                 counts[tag] = hits
@@ -374,9 +378,22 @@ class VerifierLive(LiveRoleBase):
         for matched in re.finditer(r'class="([^"]+)"', text):
             for one in matched.group(1).split():
                 classes[one] = classes.get(one, 0) + 1
+        ids: dict[str, int] = {}
+        for matched in re.finditer("""id=["']([^"']+)["']""", text):
+            for one in matched.group(1).split():
+                ids[one] = ids.get(one, 0) + 1
+        # (SUPERZ-FIX 2026-11-01) معرفات الأقسام والروابط الخارجية تُقاس
+        # ميكانيكيًا من الملف كاملًا — معايير «sections #latest...»
+        # و«No external CSS/JS» حُكم عليها بلا رقم يثبت (تنفيذ 640:
+        # الأقسام الأربعة ووسوم time الأربعة على القرص والحكم غياب).
+        external = len(re.findall(
+            r"""<link\b[^>]*href\s*=\s*["']https?://|<script\b[^>]*src\s*=\s*["']https?://""",
+            text, re.IGNORECASE))
         return {
             "element_count": sum(counts.values()),
             "elements": counts,
+            "ids": {k: ids[k] for k in sorted(ids)[:48]},
+            "external_links": external,
             "class_counts": {k: classes[k] for k in sorted(classes)[:48]},
         }
 
@@ -524,6 +541,13 @@ class VerifierLive(LiveRoleBase):
             for var in self._CSS_VAR.findall(str(criterion)):
                 if var not in tokens:  # (W2-T25) توكنز CSS بالاسم
                     tokens.append(var)
+            # (SUPERZ-FIX 2026-11-01) معرفات الأقسام «#latest» في
+            # المعايير تُعد بصيغة السمة الحقيقية id="latest" —
+            # _ASCII_TOKEN بنقطة إلزامية فلم يلتقطها قط (تنفيذ 640).
+            for hash_id in re.findall(r"""#([A-Za-z][\w-]*)""", str(criterion)):
+                token = f'id="{hash_id}"'
+                if token not in tokens:
+                    tokens.append(token)
             for lit in self._GREP_LITERAL.findall(str(criterion)):
                 if lit and lit not in tokens:  # (W2-T25 728) حرفيات grep
                     tokens.append(lit)
