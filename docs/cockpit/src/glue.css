@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════
+   GLUE — أصناف التكامل فوق طبقة وكيل التصميم (رمادي صرف كذلك)
+   ═══════════════════════════════════════════════════════════ */
+
+/* روابط فتح الملفات داخل المحادثة — أزرار شبحية بحد شعري */
+.a-links{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.flink{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;
+  border:1px solid var(--g-raise);background:var(--g-recess);color:var(--g-bright);
+  font-family:var(--sans);font-size:12px;font-weight:500;
+  transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease)}
+.flink:hover{background:var(--g9);border-color:var(--g9);color:var(--accent-ink)}
+.flink .ic{width:12px;height:12px}
+
+/* نتيجة بحث قابلة للفتح — ملف حقيقي */
+.sr-file{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border-radius:8px;padding:2px 6px;
+  transition:background-color var(--t-fast) var(--ease)}
+.sr-file:hover{background:var(--g-lift)}
+.tmon.sm{width:18px;height:18px;font-size:8px;border-radius:5px}
+
+/* أفاتار جلسة المصنع — معكوس (أبيض على أسود) */
+.sess-av.av-self{background:var(--g9) !important;color:var(--accent-ink) !important}
+
+/* تذييل متصفح الملفات — سطر أمانة */
+.files-foot{padding:14px 18px 22px;font-size:11px;line-height:1.8;color:var(--g-ghost);
+  border-top:1px solid var(--g-line);margin-top:10px}
+.files-foot b{color:var(--g7);font-weight:500}
+
+/* بطاقة «الذات» — قائمة صفوف حقائق */
+.pv-selflist{margin:0 18px 20px;border:1px solid var(--g-line);border-radius:12px;overflow:hidden}
+.psrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;
+  font-size:12px;color:var(--g8);border-top:1px solid var(--g-line)}
+.psrow:first-child{border-top:0}
+.psrow span:first-child{font-weight:600;color:var(--g9)}
+.psrow span:last-child{color:var(--g-ghost);font-size:11px;text-align:end}
+.self-note{border-style:solid;border-color:var(--g-soft)}
+
+/* صورة 100% — إلغاء الاحتواء */
+.pv-img-stage img.full{max-width:none;max-height:none}
+
+/* حالة أمان مزدوجة للقانون: كل الوسائط رمادية ولو تسربت قناة لونية */
+.pv-frame,.pv-img-stage img,.g{filter:grayscale(1)}
+
+/* تلميح أمانة تحت شريط المعاينة */
+.pv-meta{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 18px 18px;
+  font-family:var(--mono);font-size:10px;color:var(--g-ghost);direction:ltr;unicode-bidi:isolate}
+
+/* فقاعة المستخدم في السجل الحقيقي — بطء تنفس أنيق */
+.u-msg{animation:fadein var(--t-med) var(--ease)}
+
+/* ═══════════ V9 — التطبيق على المشروع ═══════════ */
+
+/* رقاقات الأسئلة المقترحة فوق المُنشئ */
+.qchips{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px 8px}
+.qchip{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--g7);
+  background:var(--g-recess);border:1px solid var(--g-line);border-radius:var(--r-pill);padding:6px 12px;
+  cursor:pointer;transition:color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),background-color var(--t-fast) var(--ease)}
+.qchip:hover{color:var(--g9);border-color:var(--g6);background:var(--g-lift)}
+
+/* سلسلة بوابات P1/P2 الحقيقية */
+.chainhd{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:11px;font-weight:600;color:var(--g-ghost);letter-spacing:.02em}
+.chainhd .ic{width:13px;height:13px}
+.grow{display:grid;grid-template-columns:44px 118px 78px 1fr 64px;gap:10px;align-items:center;
+  padding:9px 12px;border:1px solid var(--g-line);border-radius:10px;margin-bottom:6px;background:var(--g-recess);font-size:11.5px}
+.g-id{color:var(--g-ghost)}
+.g-kind{font-weight:600;color:var(--g8)}
+.g-st{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--g-ghost);border:1px dashed var(--g-mid);border-radius:6px;text-align:center;padding:2px 4px}
+.g-st.ok{color:var(--g-near);border:1px solid var(--pass-line);background:var(--pass-bg)}
+.g-why{color:var(--g7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-wait{color:var(--g-bright);text-align:end}
+
+/* diff الخطة v1↔v2 — محاذاة صفوف بلا ألوان */
+.diffgrid{display:grid;grid-template-columns:1fr 34px 1fr;gap:10px;align-items:stretch;margin:14px 0}
+.dcol{border:1px solid var(--g-line);border-radius:12px;background:var(--g-recess);overflow:hidden}
+.dcol-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--g-line);font-size:12px;font-weight:700;color:var(--g9);background:var(--g-lift)}
+.dcol-h .mono{font-size:10px;color:var(--g-ghost);font-weight:500}
+.dphase{padding:10px 14px;border-bottom:1px solid var(--g-hairline)}
+.dphase:last-child{border-bottom:0}
+.dp-t{font-size:12px;font-weight:600;color:var(--g8);margin-bottom:3px}
+.dp-o{font-size:11px;color:var(--g-ghost);line-height:1.7}
+.dp-meta{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap}
+.dmid{display:flex;align-items:center;justify-content:center;color:var(--g-mid)}
+.whyrow{display:grid;grid-template-columns:86px 14px 1fr;gap:10px;padding:9px 14px;border:1px solid var(--g-line);border-radius:10px;margin-bottom:6px;background:var(--g-recess)}
+.why-at{font-family:var(--mono);font-size:10px;color:var(--g-ghost);direction:ltr;text-align:end;padding-top:2px}
+.why-dot{width:8px;height:8px;border-radius:50%;background:var(--g-slate);margin-top:5px}
+.why-dot.err{background:var(--g9);box-shadow:0 0 0 3px var(--g-lift)}
+.why-dot.ok{background:var(--g-bright)}
+.why-dot.vio{background:var(--g-slate);border:1px solid var(--g-bright)}
+.why-t{font-size:12px;font-weight:600;color:var(--g8)}
+.why-b{font-size:11px;color:var(--g-ghost);line-height:1.7;margin-top:2px}
+.vlist{margin:10px 0 4px;border:1px solid var(--g-line);border-radius:12px;background:var(--g-recess);overflow:hidden}
+.vrow{display:flex;gap:10px;padding:9px 14px;border-top:1px solid var(--g-hairline);font-size:11.5px;color:var(--g7);line-height:1.7}
+.vrow:first-child{border-top:0}
+.vrow .n{color:var(--g-mid);font-family:var(--mono);font-size:10px;padding-top:2px;min-width:14px}
+.plan-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 10px}
+.plan-hd .t{font-size:12px;font-weight:700;color:var(--g9)}
+.metchips{display:flex;gap:6px;flex-wrap:wrap}
+.metchip{font-size:10px;color:var(--g7);border:1px solid var(--g-line);border-radius:var(--r-pill);padding:4px 10px;background:var(--g-recess)}
+.metchip b{color:var(--g-near);font-family:var(--mono);font-weight:600}
+.pv-ext{padding:14px 18px}
