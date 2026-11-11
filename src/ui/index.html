@@ -1,447 +1,1704 @@
 <!DOCTYPE html>
+<!-- AES-UI-v4 — قاعة تحكم المصنع: خط إنتاج، طابور قرارات، أرضية وكلاء، مستودع أدلة.
+     بيانات حية فقط من API المصنع — لا بيانات وهمية إطلاقًا. لغة بصرية صناعية، لا لغة محادثة. -->
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agentic Engineering System</title>
-  <link rel="stylesheet" href="/static/fonts/fonts.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/theme.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/styles.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/projects.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/harness.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/live.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/app-shell.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/project-live.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/control-center.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/factory-control.css?v=4.0.0">
-  <link rel="stylesheet" href="/static/factory-floor.css?w=m2">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>مصنع الوكلاء الهندسي — قاعة التحكم</title>
+<!-- الخط الوحيد المسموح تحميله خارجيًا: IBM Plex Sans Arabic من الخادم -->
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<style>
+/* ============ نظام التصميم الصناعي — v4 ============ */
+:root{
+  --bg:#0e1216; --panel:#151b22; --panel2:#1a222b; --panel3:#212b36;
+  --border:#2a3542; --border2:#38465a;
+  --ink:#e9eef4; --muted:#93a1b0; --faint:#61707f;
+  --amber:#ffb020; --amber-dim:#8a6112;
+  --blue:#4aa3ff; --green:#41c46f; --red:#ff5d5d; --violet:#8f7bff; --cyan:#39c5cf;
+  --r:8px; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans Arabic",system-ui,sans-serif; font-size:14px; line-height:1.6;
+  min-height:100vh;
+}
+/* نسيج شبكي خفيف يوحي بأرضية مصنع */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:linear-gradient(rgba(255,255,255,.017) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.017) 1px,transparent 1px);
+  background-size:34px 34px;
+}
+h1,h2,h3{margin:0;font-weight:700}
+a{color:var(--blue);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none}
+input,textarea{font-family:inherit}
+.mono{font-family:var(--mono);font-size:.92em;letter-spacing:-.2px}
+[dir="auto"]{overflow-wrap:anywhere}
+
+/* ============ الشريط العلوي ============ */
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;
+  padding:10px 20px;background:rgba(14,18,22,.92);backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16.5px;letter-spacing:.2px}
+.brand .mark{
+  width:30px;height:30px;border:2px solid var(--amber);border-radius:6px;position:relative;flex:0 0 auto;
+}
+.brand .mark::before{content:"";position:absolute;inset:5px;background:var(--amber);clip-path:polygon(0 100%,100% 0,100% 100%)}
+.brand small{color:var(--muted);font-weight:500;font-size:11.5px;display:block;line-height:1.1}
+.top-spacer{flex:1}
+.connchip{
+  display:flex;align-items:center;gap:7px;padding:5px 12px;border:1px solid var(--border);
+  border-radius:20px;font-size:12.5px;color:var(--muted);background:var(--panel);
+}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+.dot.green{background:var(--green);box-shadow:0 0 7px var(--green)}
+.dot.red{background:var(--red);box-shadow:0 0 7px var(--red)}
+.dot.amber{background:var(--amber)}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:var(--r);
+  font-size:13.5px;font-weight:700;border:1px solid var(--border2);background:var(--panel2);color:var(--ink);
+  transition:filter .15s;
+}
+.btn:hover{filter:brightness(1.18)}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1204}
+.btn.success{background:var(--green);border-color:var(--green);color:#04180b}
+.btn.danger{background:transparent;border-color:var(--red);color:var(--red)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:15px;height:15px;flex:0 0 auto}
+
+/* ============ الشرائح (حالة بلون واحد) ============ */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:4px;
+  font-size:11.8px;font-weight:700;border:1px solid transparent;white-space:nowrap;
+}
+.chip .chip-en{font-family:var(--mono);font-size:10px;opacity:.75;direction:ltr}
+.st-blue{background:rgba(74,163,255,.13);color:var(--blue);border-color:rgba(74,163,255,.35)}
+.st-amber{background:rgba(255,176,32,.13);color:var(--amber);border-color:rgba(255,176,32,.4)}
+.st-green{background:rgba(65,196,111,.13);color:var(--green);border-color:rgba(65,196,111,.35)}
+.st-green-outline{background:transparent;color:var(--green);border-color:rgba(65,196,111,.4)}
+.st-red{background:rgba(255,93,93,.12);color:var(--red);border-color:rgba(255,93,93,.4)}
+.st-gray{background:rgba(147,161,176,.1);color:var(--muted);border-color:var(--border)}
+.st-grayblue{background:rgba(143,123,255,.1);color:var(--violet);border-color:rgba(143,123,255,.3)}
+.st-cyan{background:rgba(57,197,207,.12);color:var(--cyan);border-color:rgba(57,197,207,.35)}
+
+/* ============ أقسام القاعة ============ */
+main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.sect{margin-bottom:26px}
+.sect-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.sect-head .overline{
+  font-size:11px;font-weight:800;letter-spacing:1.5px;color:var(--amber);
+  border-right:3px solid var(--amber);padding-right:9px;
+}
+.sect-head h2{font-size:17px}
+.sect-head .sub{color:var(--faint);font-size:12.5px}
+.sect-head .spacer{flex:1}
+
+/* ============ عدادات النصّة ============ */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+  padding:13px 16px;display:flex;align-items:center;gap:13px;position:relative;overflow:hidden;
+}
+.kpi::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;background:var(--kc,var(--faint))}
+.kpi .num{font-size:27px;font-weight:800;line-height:1;font-family:var(--mono);white-space:nowrap}
+.kpi .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .ic{margin-inline-start:auto;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);color:var(--kc,var(--muted))}
+.kpi .ic svg{width:16px;height:16px}
+.kpi.click{cursor:pointer}
+.kpi.click:hover{border-color:var(--kc)}
+
+
+.dot.amber-static{background:var(--amber)}
+.dot.red-static{background:var(--red)}
+.dot.gray-static{background:var(--faint)}
+.floorrow .dot{flex:0 0 auto}
+
+/* ============ طابور القرارات ============ */
+.queue-empty{
+  border:1px dashed var(--border);border-radius:var(--r);padding:14px 18px;color:var(--faint);
+  font-size:13px;background:rgba(255,255,255,.012);
+}
+.gatecard{
+  background:var(--panel);border:1px solid rgba(255,176,32,.42);border-radius:var(--r);
+  padding:0;margin-bottom:10px;overflow:hidden;
+}
+.gatecard .gstrip{
+  height:4px;background:repeating-linear-gradient(45deg,var(--amber) 0 9px,#3a2c07 9px 18px);
+}
+.gatecard .gbody{padding:13px 16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.gatecard .ginfo{flex:1;min-width:250px}
+.gatecard .gkind{font-weight:800;font-size:14.5px;color:var(--amber)}
+.gatecard .gkind .mono{color:var(--muted);font-size:10.5px;font-weight:500;margin-inline-start:8px}
+.gatecard .greason{color:var(--muted);font-size:13px;margin-top:3px;overflow-wrap:anywhere}
+.gatecard .gproj{font-size:12px;color:var(--faint);margin-top:5px}
+.gatecard .gproj b{color:var(--ink);font-weight:600}
+.gatecard .gerr{
+  margin-top:7px;font-size:12px;color:var(--red);background:rgba(255,93,93,.07);
+  border:1px solid rgba(255,93,93,.25);border-radius:5px;padding:5px 9px;overflow-wrap:anywhere;
+}
+.gatecard .gacts{display:flex;gap:8px;align-items:center}
+.gwait{color:var(--amber);font-size:12px;font-weight:700}
+
+/* ============ أرضية المصنع ============ */
+.floor-empty{border:1px dashed var(--border);border-radius:var(--r);padding:16px 18px;color:var(--faint);font-size:13px}
+.floorrow{
+  display:flex;align-items:center;gap:14px;padding:11px 15px;background:var(--panel);
+  border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;flex-wrap:wrap;
+}
+.floorrow .live{width:9px;height:9px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:pulse 1.6s infinite;flex:0 0 auto}
+.floorrow .who{font-weight:800;font-size:13.5px}
+.floorrow .what{color:var(--muted);font-size:12.8px;flex:1;min-width:200px;overflow-wrap:anywhere}
+.floorrow .what b{color:var(--ink);font-weight:600}
+.floorrow .since{font-size:11.5px;color:var(--faint);font-family:var(--mono)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ============ خط الإنتاج (المحطات) ============ */
+.pcard{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+  padding:15px 17px 13px;margin-bottom:12px;position:relative;
+}
+.pcard:hover{border-color:var(--border2)}
+.pcard.line-amber{border-color:rgba(255,176,32,.45)}
+.pcard.line-red{border-color:rgba(255,93,93,.4)}
+.phead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}
+.phead .pname{font-weight:800;font-size:15px;flex:1;min-width:200px;overflow-wrap:anywhere}
+.pobj{color:var(--muted);font-size:12.3px;margin-top:4px;overflow-wrap:anywhere}
+.pobj.ltr-en{direction:ltr;text-align:left}
+.perr{
+  margin-top:9px;font-size:12px;color:var(--red);background:rgba(255,93,93,.06);
+  border-inline-start:3px solid var(--red);border-radius:4px;padding:6px 10px;overflow-wrap:anywhere;
+}
+.pfoot{display:flex;align-items:center;gap:14px;margin-top:10px;font-size:11.8px;color:var(--faint);flex-wrap:wrap}
+.pfoot .pbar{flex:1;min-width:120px;height:5px;border-radius:3px;background:var(--panel3);overflow:hidden}
+.pfoot .pbar i{display:block;height:100%;background:var(--kc,var(--blue));border-radius:3px}
+.pfoot .openlink{color:var(--amber);font-weight:700;font-size:12.5px;cursor:pointer}
+.pline{margin-top:13px}
+.ptrack{display:flex;align-items:flex-start;overflow-x:auto;padding:8px 2px 4px;scrollbar-width:thin}
+.station{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;min-width:64px;max-width:132px;position:relative;padding-top:8px}
+.station .sdot{
+  width:15px;height:15px;border-radius:4px;background:var(--panel3);border:2px solid var(--border2);
+  position:relative;z-index:2;flex:0 0 auto;
+}
+.station .slabel{font-size:10.6px;color:var(--faint);text-align:center;line-height:1.35;overflow-wrap:anywhere}
+.station.ph-done .sdot{background:var(--green);border-color:var(--green)}
+.station.ph-done .slabel{color:var(--muted)}
+.station.ph-run .sdot{background:var(--amber);border-color:var(--amber);box-shadow:0 0 9px rgba(255,176,32,.65);animation:pulse 1.5s infinite}
+.station.ph-run .slabel{color:var(--amber);font-weight:700}
+.station.ph-fail .sdot{background:var(--red);border-color:var(--red);box-shadow:0 0 8px rgba(255,93,93,.55)}
+.station.ph-fail .slabel{color:var(--red)}
+.station .sgate{
+  position:absolute;top:-6px;inset-inline-start:calc(50% - 7px);
+  width:15px;height:15px;border-radius:3px;background:repeating-linear-gradient(45deg,var(--amber) 0 3px,#1a1204 3px 6px);
+  border:1.5px solid var(--amber);z-index:3;
+}
+.slink{height:2.5px;flex:1 1 18px;background:var(--border2);margin-top:15px;min-width:12px}
+.slink.done{background:var(--green)}
+.smore{flex:0 0 auto;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:9px;padding-inline-start:8px}
+.lgate-hint{font-size:11px;color:var(--amber);margin-top:5px;display:flex;align-items:center;gap:6px}
+.lgate-hint .hgate{width:10px;height:10px;border-radius:2px;background:repeating-linear-gradient(45deg,var(--amber) 0 2px,#1a1204 2px 4px);border:1px solid var(--amber);display:inline-block;flex:0 0 auto}
+
+/* ============ تفاصيل المشروع ============ */
+.dhead{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 18px;margin-bottom:14px;
+}
+.dhead .trow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dhead h1{font-size:19px;flex:1;min-width:220px;overflow-wrap:anywhere}
+.dhead .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:12px;color:var(--faint)}
+.dhead .meta b{color:var(--muted);font-weight:600}
+.dhead .meta .mono{color:var(--muted);font-size:11px}
+.derr{
+  margin-top:10px;font-size:12.5px;color:var(--red);background:rgba(255,93,93,.07);
+  border:1px solid rgba(255,93,93,.3);border-radius:6px;padding:8px 12px;overflow-wrap:anywhere;
+}
+.dkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.dtabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:0}
+.dtab{
+  background:none;color:var(--muted);padding:9px 15px;font-size:13.2px;font-weight:700;
+  border-bottom:2.5px solid transparent;display:flex;gap:7px;align-items:center;
+}
+.dtab .n{font-family:var(--mono);font-size:10.5px;color:var(--faint);background:var(--panel3);border-radius:9px;padding:0 7px}
+.dtab.on{color:var(--amber);border-bottom-color:var(--amber)}
+.dtab.on .n{color:var(--amber)}
+.dtabbody{background:var(--panel);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);padding:14px 16px}
+
+/* خطوات */
+.steprow{border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;margin-bottom:9px;background:var(--panel2)}
+.steprow .st1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.steprow .st1 .sid{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.steprow .st1 .sobj{font-weight:600;font-size:13.3px;flex:1;min-width:220px;overflow-wrap:anywhere}
+.steprow .s2{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--faint)}
+.steprow .crit{margin:8px 0 0;padding:0;list-style:none}
+.steprow .crit li{font-size:11.8px;color:var(--muted);padding:2px 0;display:flex;gap:7px;align-items:baseline}
+.steprow .crit li::before{content:"□";color:var(--faint);font-size:11px}
+.steprow .crit li.ok::before{content:"✓";color:var(--green)}
+
+/* مستودع الأدلة */
+.whbar{display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-wrap:wrap}
+.whbar input{
+  background:var(--panel2);border:1px solid var(--border2);color:var(--ink);border-radius:6px;
+  padding:7px 12px;font-size:12.5px;min-width:200px;
+}
+.whbar .finfo{font-size:12px;color:var(--faint)}
+.whrow{
+  display:flex;align-items:center;gap:12px;padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:12.3px;flex-wrap:wrap;
+}
+.whrow:hover{background:rgba(255,255,255,.02)}
+.whrow .fname{font-family:var(--mono);direction:ltr;unicode-bidi:plaintext;flex:1;min-width:200px;overflow-wrap:anywhere;text-align:left}
+.whrow .fsize,.whrow .fdate{color:var(--faint);font-size:11px;font-family:var(--mono)}
+.vpass{color:var(--green);font-weight:800;font-family:var(--mono);font-size:11px}
+.vfail{color:var(--red);font-weight:800;font-family:var(--mono);font-size:11px}
+.vna{color:var(--faint);font-family:var(--mono);font-size:11px}
+
+/* أحداث */
+.evrow{display:flex;gap:11px;align-items:baseline;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.035);font-size:12.4px}
+.evrow .eid{font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:0 0 auto}
+.evrow .etime{font-family:var(--mono);font-size:10.5px;color:var(--faint);flex:0 0 auto;margin-inline-start:auto}
+.evrow .ekind{font-weight:700;flex:0 0 auto}
+.evrow .efact{color:var(--muted);overflow-wrap:anywhere}
+.evgroup{border:1px solid var(--border);border-radius:6px;margin-bottom:7px;background:var(--panel2);overflow:hidden}
+.evgroup .gvhead{display:flex;gap:10px;align-items:center;padding:7px 11px;cursor:pointer;font-size:12.4px}
+.evgroup .gvhead .xn{
+  font-family:var(--mono);font-size:10.5px;background:var(--panel3);color:var(--amber);
+  border-radius:9px;padding:0 8px;font-weight:700;
+}
+.evgroup .gvitems{border-top:1px solid var(--border)}
+
+/* خطة */
+.planblock{margin-bottom:16px}
+.planblock h3{font-size:13.5px;color:var(--amber);margin-bottom:7px}
+.planblock p,.planblock li{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.planblock ul{margin:4px 0;padding-inline-start:20px}
+.phaselist .pl-item{border:1px solid var(--border);border-radius:6px;padding:9px 13px;margin-bottom:7px;background:var(--panel2)}
+.phaselist .pl-item .t{font-weight:700;font-size:13px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere}
+.phaselist .pl-item .c{font-size:11.8px;color:var(--faint);margin-top:4px;overflow-wrap:anywhere}
+
+/* ============ لوحة البث ============ */
+.feedpanel{
+  position:fixed;top:0;bottom:0;inset-inline-start:-360px;width:340px;z-index:60;
+  background:var(--panel);border-inline-end:1px solid var(--border);
+  display:flex;flex-direction:column;transition:inset-inline-start .22s ease;
+}
+.feedpanel.open{inset-inline-start:0}
+.feedpanel .fhead{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.feedpanel .fhead h3{font-size:14px;flex:1}
+.feedpanel .fconn{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.feedpanel .fchips{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.fchip{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:14px;padding:3px 11px;font-size:11.5px;font-weight:600}
+.fchip.on{border-color:var(--amber);color:var(--amber)}
+.feedpanel .flist{flex:1;overflow-y:auto;padding:9px 11px}
+.fev{border-bottom:1px solid rgba(255,255,255,.04);padding:7px 4px}
+.fev .f1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.fev .fk{font-weight:700;font-size:11.8px}
+.fev .ft{font-family:var(--mono);font-size:10px;color:var(--faint);margin-inline-start:auto}
+.fev .fb{color:var(--muted);font-size:11.6px;margin-top:2px;overflow-wrap:anywhere}
+.feedpanel .fmask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:-1;display:none}
+.feedpanel.open .fmask{display:block}
+
+/* ============ النافذة المنبثقة ============ */
+.modal-mask{position:fixed;inset:0;background:rgba(4,6,9,.72);z-index:80;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{
+  background:var(--panel);border:1px solid var(--border2);border-radius:10px;width:520px;max-width:100%;
+  max-height:88vh;overflow-y:auto;box-shadow:0 18px 60px rgba(0,0,0,.55);
+}
+.modal .mhead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal .mhead h3{font-size:15.5px;flex:1}
+.modal .mhead .x{background:none;color:var(--muted);font-size:19px;padding:2px 8px}
+.modal .mbody{padding:15px 18px}
+.modal label{display:block;font-size:12.3px;font-weight:700;color:var(--muted);margin:11px 0 5px}
+.modal label:first-child{margin-top:0}
+.modal input,.modal textarea{
+  width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--ink);
+  border-radius:6px;padding:9px 12px;font-size:13.5px;
+}
+.modal textarea{min-height:110px;resize:vertical;line-height:1.65}
+.modal .hint{font-size:11.5px;color:var(--faint);margin-top:6px;line-height:1.6}
+.modal .mfoot{display:flex;gap:9px;justify-content:flex-start;padding:13px 18px;border-top:1px solid var(--border)}
+.modal .merr{color:var(--red);font-size:12.5px;margin-top:9px;overflow-wrap:anywhere}
+
+/* توست */
+.toast{
+  position:fixed;bottom:22px;inset-inline-start:50%;transform:translateX(50%);z-index:99;
+  background:var(--panel3);border:1px solid var(--border2);color:var(--ink);border-radius:8px;
+  padding:11px 18px;font-size:13.2px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.5);
+  max-width:86vw;overflow-wrap:anywhere;
+}
+.toast.ok{border-color:var(--green)}
+.toast.err{border-color:var(--red)}
+
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);padding:22px;justify-content:center}
+.spin{width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.errbox{
+  border:1px solid rgba(255,93,93,.4);background:rgba(255,93,93,.06);color:var(--red);
+  border-radius:8px;padding:13px 16px;font-size:13px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere;
+}
+.errbox button{background:var(--red);color:#fff;border-radius:6px;padding:5px 13px;font-weight:700;font-size:12px}
+.backlink{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;margin-bottom:10px;cursor:pointer}
+.backlink:hover{color:var(--amber)}
+
+/* عرض العرض الحالي */
+#viewDetail{display:none}
+body.view-detail #viewHome{display:none}
+body.view-detail #viewDetail{display:block}
+
+/* ============ الموبايل ============ */
+@media (max-width:480px){
+  .topbar{flex-wrap:wrap;row-gap:8px}
+  .brand{flex:1 1 100%}
+  .top-spacer{display:none}
+}
+@media (max-width:820px){
+  .kpis,.dkpis{grid-template-columns:repeat(2,1fr)}
+  main{padding:14px 12px 50px}
+  .topbar{padding:9px 10px;gap:7px}
+  .brand{font-size:13.5px;white-space:nowrap;gap:8px;flex:0 0 auto}
+  .brand .mark{width:22px;height:22px}
+  .btn{padding:7px 11px;font-size:12.5px;white-space:nowrap}
+  .brand small{display:none}
+  .connchip .ctxt{display:none}
+  .station{min-width:58px;max-width:110px}
+  .feedpanel{width:min(86vw,340px)}
+  .gatecard .gbody{flex-direction:column;gap:10px}
+  .gatecard .gacts{width:100%}
+  .gatecard .gacts .btn{flex:1;justify-content:center}
+}
+</style>
 </head>
 <body>
-  <!-- نظام الأيقونات الموحد (AES-UI-PREMIUM-REDESIGN-001): رموز خطية
-       متناسقة الأحجام والمعاني — بديل الرموز التعبيرية المتنافرة. -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-      <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2.5 20.5 7.25v9.5L12 21.5 3.5 16.75v-9.5L12 2.5z"/>
-        <path d="M12 7.2 16.4 9.7v5L12 17.2 7.6 14.7v-5L12 7.2z"/>
-        <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>
-      </symbol>
-      <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.9 8.9 0 0 1-3.8-.8L3 21l1.9-5.2a8.3 8.3 0 0 1-.9-3.7A8.4 8.4 0 0 1 12.5 3.1a8.4 8.4 0 0 1 8.5 8.4z"/>
-      </symbol>
-      <symbol id="i-task" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
-      </symbol>
-      <symbol id="i-project" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 8.2 12 3.5l9 4.7v7.6L12 20.5 3 15.8V8.2z"/><path d="M3 8.2l9 4.7 9-4.7M12 12.9v7.6"/>
-      </symbol>
-      <symbol id="i-runs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M2.5 12h4l2.5-7 4 14 2.5-7h6"/>
-      </symbol>
-      <symbol id="i-factory" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 21V9l5 3.5V9l5 3.5V9l5 3.5V21H4z"/><path d="M4 5.5h16M8 5.5V3M16 5.5V3"/>
-      </symbol>
-      <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M4.8 8.5V20a1 1 0 0 0 1 1h12.4a1 1 0 0 0 1-1V8.5M9.5 12.5h5"/>
-      </symbol>
-      <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3.2"/>
-        <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.09A1.6 1.6 0 0 0 9.1 19.4a1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.09A1.6 1.6 0 0 0 4.6 9.1a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9.1a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.09a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9.1a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.09a1.6 1.6 0 0 0-1.51 1z"/>
-      </symbol>
-      <symbol id="i-new" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M12 5v14M5 12h14"/>
-      </symbol>
-      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M12 5v14M5 12h14"/>
-      </symbol>
-      <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-      </symbol>
-      <symbol id="i-web" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-        <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14.5 14.5 0 0 1 0 18M12 3a14.5 14.5 0 0 0 0 18"/>
-      </symbol>
-      <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </symbol>
-      <symbol id="i-forward" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h14M12 5l7 7-7 7"/>
-      </symbol>
-      <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M18 6 6 18M6 6l12 12"/>
-      </symbol>
-      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 6 9 17l-5-5"/>
-      </symbol>
-      <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>
-      </symbol>
-      <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-        <circle cx="12" cy="12" r="9"/><path d="M12 16v-4.5M12 8h.01"/>
-      </symbol>
-      <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
-        <rect x="6" y="6" width="12" height="12" rx="1.5"/>
-      </symbol>
-      <symbol id="i-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 4h11M9 12h11M9 20h11M4 4v0.01M4 12v0.01M4 20v0.01"/>
-      </symbol>
-      <symbol id="i-chevron-d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m6 9 6 6 6-6"/>
-      </symbol>
-      <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m5 8 4 4-4 4M12 16h7"/>
-      </symbol>
-      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V7.5L14 2.5z"/><path d="M14 2.5v5h5"/>
-      </symbol>
-    </defs>
-  </svg>
 
-  <div class="app">
+<header class="topbar">
+  <div class="brand">
+    <div class="mark" aria-hidden="true"></div>
+    <div>مصنع الوكلاء الهندسي<small>قاعة التحكم — بيانات حية من خط الإنتاج</small></div>
+  </div>
+  <div class="top-spacer"></div>
+  <div class="connchip" id="healthBox" title="حالة خدمة المصنع">
+    <span class="dot" id="healthDot"></span><span id="healthText">جارٍ الفحص…</span>
+  </div>
+  <button class="btn ghost sm" id="btnFeed" title="سجل المصنع الحي">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M4 6h16M4 12h10M4 18h14"/></svg>
+    البث
+  </button>
+  <button class="btn primary" id="btnNew">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>
+    مشروع جديد
+  </button>
+</header>
 
-    <!-- الشريط الجانبي: هوية النظام والتنقل -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-head">
-        <span class="brand">
-          <span class="brand-mark icon lg"><svg><use href="#i-logo"/></svg></span>
-          <span class="brand-text">
-            <span class="brand-name">نظام الهندسة الوكيلي</span>
-            <span class="brand-sub" dir="ltr">AGENTIC ENGINEERING</span>
-          </span>
-        </span>
-        <button class="icon-btn" id="sidebar-collapse" title="طي الشريط">
-          <span class="icon"><svg><use href="#i-forward"/></svg></span>
-        </button>
+<main>
+  <!-- الشاشة الرئيسية: القاعة -->
+  <div id="viewHome">
+    <section class="sect" id="queueSect">
+      <div class="sect-head">
+        <span class="overline">قرارك الآن</span>
+        <h2>طابور القرارات</h2>
+        <span class="sub" id="queueSub"></span>
+        <span class="spacer"></span>
       </div>
+      <div id="queueBox"><div class="loading"><span class="spin"></span> جارٍ جلب البوابات المعلقة…</div></div>
+    </section>
 
-      <button class="new-chat" id="new-chat" title="بدء محادثة جديدة (Ctrl+K)">
-        <span class="new-chat-main">
-          <span class="icon sm"><svg><use href="#i-new"/></svg></span>
-          <span>محادثة جديدة</span>
-        </span>
-        <span class="new-chat-key" dir="ltr">Ctrl K</span>
-      </button>
-
-      <div class="side-search">
-        <span class="icon sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-        <input id="side-search" type="search" placeholder="ابحث في المحادثات والمشاريع…" aria-label="ابحث في المحادثات والمشاريع">
+    <section class="sect" id="floorSect">
+      <div class="sect-head">
+        <span class="overline">أرضية المصنع</span>
+        <h2>من يعمل الآن</h2>
+        <span class="sub" id="floorSub"></span>
       </div>
+      <div id="floorBox"><div class="loading"><span class="spin"></span> جارٍ فحص أرضية المصنع…</div></div>
+    </section>
 
-      <!-- التنقل الأساسي: محادثة/تشغيلات/مصنع/أرشيف -->
-      <nav class="side-nav" id="side-nav" aria-label="التنقل الأساسي">
-        <button class="side-nav-item" data-nav="chat" title="المحادثات">
-          <span class="icon"><svg><use href="#i-chat"/></svg></span>
-          <span class="side-nav-label">المحادثات</span>
-        </button>
-        <button class="side-nav-item" data-nav="runs" title="التشغيلات النشطة">
-          <span class="icon"><svg><use href="#i-runs"/></svg></span>
-          <span class="side-nav-label">التشغيلات</span>
-          <em class="nav-badge" id="runs-badge" hidden></em>
-        </button>
-        <button class="side-nav-item" data-nav="factory" title="غرفة التحكم بالمصنع">
-          <span class="icon"><svg><use href="#i-factory"/></svg></span>
-          <span class="side-nav-label">مصنع الوكلاء</span>
-        </button>
-        <button class="side-nav-item" data-nav="archive" title="المشاريع المؤرشفة">
-          <span class="icon"><svg><use href="#i-archive"/></svg></span>
-          <span class="side-nav-label">الأرشيف</span>
-        </button>
-      </nav>
-
-      <nav class="conversations" id="conversations" aria-label="قائمة المحادثات">
-        <!-- (014-المرحلة 3) ترويسة تجميع: تحول القائمة إلى مستند قابل للمسح -->
-        <div class="side-section-head conv-section-head"><span>جلسات حديثة</span></div>
-        <div class="conv-empty" id="conv-empty">لا محادثات بعد</div>
-      </nav>
-
-      <!-- المشاريع — الكيان الأول في النظام -->
-      <div class="projects-side" id="projects-side">
-        <div class="side-section-head">
-          <span>المشاريع</span>
-          <button class="icon-btn" id="project-new" title="مشروع جديد — هدف ← خطة ← تنفيذ ذاتي ← أدلة">
-            <span class="icon sm"><svg><use href="#i-plus"/></svg></span>
-          </button>
-        </div>
-        <nav class="projects-list" id="projects-list" aria-label="قائمة المشاريع"></nav>
+    <section class="sect">
+      <div class="sect-head">
+        <span class="overline">نصّة العدّاد</span>
+        <h2>حالة المصنع</h2>
       </div>
+      <div class="kpis" id="kpis"></div>
+    </section>
 
-      <div class="sidebar-foot">
-        <span class="substrate-dot" id="substrate-dot" title=""></span>
-        <span class="substrate-label" id="substrate-label">الركيزة: …</span>
-        <button class="icon-btn gear" id="settings-open" title="الإعدادات: المزودون والنماذج والقدرات وبيئات التنفيذ">
-          <span class="icon"><svg><use href="#i-settings"/></svg></span>
-        </button>
+    <section class="sect">
+      <div class="sect-head">
+        <span class="overline">خطوط الإنتاج</span>
+        <h2>المشاريع</h2>
+        <span class="sub" id="projSub"></span>
       </div>
-    </aside>
-
-    <!-- عمود المحادثة -->
-    <main class="chat">
-      <header class="chat-head">
-        <button class="icon-btn sidebar-toggle" id="sidebar-toggle" title="إظهار/إخفاء المحادثات">
-          <span class="icon"><svg><use href="#i-collapse"/></svg></span>
-        </button>
-        <span class="chat-title" id="chat-title">محادثة جديدة</span>
-        <span class="mode-badge" id="mode-badge" hidden></span>
-      </header>
-
-      <div class="chat-scroll" id="chat-scroll">
-
-        <!-- شاشة البطلة (014-المرحلة 1): بطل + حبوب مضغوطة — صندوق الأوامر صينية مثبتة بالأسفل -->
-      <section class="welcome" id="welcome">
-          <div class="welcome-mark icon lg"><svg><use href="#i-logo"/></svg></div>
-          <h1>كيف أساعدك اليوم؟</h1>
-          <p class="tagline">اكتب رسالة للمحادثة المباشرة، أو ابدأ مهمة كاملة ليعمل فريق الوكلاء على هدفك بخطوات وأدلة مرئية.</p>
-          <div class="suggestions">
-            <button class="suggestion" data-mode="chat">
-              <span class="icon sm"><svg><use href="#i-chat"/></svg></span>
-              <span class="suggestion-title">محادثة سريعة</span>
-            </button>
-            <button class="suggestion" data-mode="task">
-              <span class="icon sm"><svg><use href="#i-task"/></svg></span>
-              <span class="suggestion-title">مهمة كاملة</span>
-            </button>
-          </div>
-        </section>
-
-        <!-- الرسائل -->
-        <div class="messages" id="messages"></div>
-
-        <!-- زر متابعة الأسفل — يظهر عند صعود المالك للقراءة -->
-        <button id="follow-btn" class="follow-btn" hidden title="العودة إلى آخر حدث">
-          <span class="icon sm"><svg><use href="#i-chevron-d"/></svg></span>
-          <span>متابعة</span>
-        </button>
-      </div>
-
-      <!-- عرض المشروع — تجربة محادثة حية -->
-      <section class="project-view" id="project-view" hidden>
-        <header class="pl-head-bar" id="pl-head-bar">
-          <button class="icon-btn" id="pl-back" title="عودة للمحادثة">
-            <span class="icon"><svg><use href="#i-back"/></svg></span>
-          </button>
-          <span class="pl-head-title" id="pl-head-title">مشروع</span>
-          <span class="pl-head-status dim" id="pl-head-status">…</span>
-          <span class="pl-head-meta" id="pl-head-meta"></span>
-          <span class="pl-actions" id="pl-actions"></span>
-        </header>
-        <nav class="pl-tabs" id="pl-tabs" aria-label="أقسام المشروع">
-          <button class="pl-tab active" data-tab="conversation">المحادثة</button>
-          <button class="pl-tab" data-tab="evolution">متصفح التطور</button>
-          <button class="pl-tab" data-tab="overview">النظرة العامة</button>
-          <button class="pl-tab" data-tab="workflow">سير العمل</button>
-          <button class="pl-tab" data-tab="evidence">الأدلة</button>
-          <button class="pl-tab" data-tab="artifacts">المخرجات</button>
-          <button class="pl-tab" data-tab="history">التاريخ</button>
-        </nav>
-        <div class="pl-scroll">
-          <div class="pl-scene" id="pl-scene"></div>
-          <div class="pl-tab-body" id="pl-tab-body" hidden></div>
-        </div>
-      </section>
-
-      <!-- مركز التحكم: التشغيلات النشطة -->
-      <section class="cc-view" id="runs-view" hidden>
-        <header class="cc-head">
-          <button class="icon-btn" id="runs-back" title="عودة للمحادثة">
-            <span class="icon"><svg><use href="#i-back"/></svg></span>
-          </button>
-          <span class="cc-title">التشغيلات النشطة</span>
-          <span class="cc-sub">العمل المستمر مرئي حتى بعد مغادرة المشروع</span>
-        </header>
-        <div class="cc-scroll"><div class="cc-body" id="runs-body"></div></div>
-      </section>
-
-      <!-- الأرشيف -->
-      <section class="cc-view" id="archive-view" hidden>
-        <header class="cc-head">
-          <button class="icon-btn" id="archive-back" title="عودة للمحادثة">
-            <span class="icon"><svg><use href="#i-back"/></svg></span>
-          </button>
-          <span class="cc-title">الأرشيف</span>
-          <span class="cc-sub">المشاريع المؤرشفة تبقى كاملة وقابلة للاسترجاع</span>
-        </header>
-        <div class="cc-scroll"><div class="cc-body" id="archive-body"></div></div>
-      </section>
-
-      <!-- غرفة التحكم بالمصنع -->
-      <section class="cc-view" id="factory-view" hidden>
-        <header class="cc-head">
-          <button class="icon-btn" id="factory-back" title="عودة للمحادثة">
-            <span class="icon"><svg><use href="#i-back"/></svg></span>
-          </button>
-          <span class="cc-title">غرفة التحكم بالمصنع</span>
-          <span class="cc-sub" id="factory-system-status">SYSTEM: DISCONNECTED</span>
-        </header>
-        <div class="cc-scroll"><div class="cc-body" id="factory-body"></div></div>
-      </section>
-
-      <!-- إعدادات المهمة (نمط المهمة فقط) — قابلة للطي -->
-      <div class="task-settings" id="task-settings" hidden>
-        <button class="task-settings-toggle" id="task-settings-toggle">إعدادات المهمة <span class="caret">▾</span></button>
-        <div class="task-settings-body" id="task-settings-body" hidden></div>
-      </div>
-
-      <!-- صندوق الأوامر (014-المرحلة 1): صينية مثبتة بالحافة — صف أدوات سفلي داخلها -->
-      <div class="composer">
-        <div class="composer-inner">
-          <textarea id="input" rows="1" placeholder="اكتب أمرك للوكيل…" aria-label="رسالتك"></textarea>
-          <div class="composer-bar">
-            <div class="plus-wrap">
-              <button id="plus" title="اختر النمط: محادثة أو مهمة" aria-label="اختيار النمط">
-                <span class="icon"><svg><use href="#i-plus"/></svg></span>
-              </button>
-              <div class="plus-menu" id="plus-menu" hidden>
-                <button class="plus-option" data-mode="chat">
-                  <span class="icon sm"><svg><use href="#i-chat"/></svg></span>
-                  <span>محادثة</span>
-                </button>
-                <button class="plus-option" data-mode="task">
-                  <span class="icon sm"><svg><use href="#i-task"/></svg></span>
-                  <span>مهمة</span>
-                </button>
-                <button class="plus-option" data-mode="project">
-                  <span class="icon sm"><svg><use href="#i-project"/></svg></span>
-                  <span>مشروع</span>
-                </button>
-              </div>
-            </div>
-            <button id="web-toggle" class="web-toggle auto" title="البحث في الويب: تلقائي — يتغير لكشف نية الرسالة">
-              <span class="icon"><svg><use href="#i-web"/></svg></span>
-            </button>
-            <span class="mode-chip" id="mode-chip" title="النمط الحالي — غيّره من زر الإضافة">محادثة</span>
-            <span class="composer-hint" id="composer-hint" hidden></span>
-            <button id="stop-run" class="stop-btn" hidden title="إيقاف فوري آمن — يُكرَّم عند أقرب حدّ آمن مع حفظ الحالة">
-              <span class="icon sm"><svg><use href="#i-stop"/></svg></span>
-              <span>إيقاف</span>
-            </button>
-            <button id="send" title="إرسال" aria-label="إرسال" disabled>
-              <span class="icon"><svg><use href="#i-send"/></svg></span>
-            </button>
-          </div>
-        </div>
-        <div class="composer-foot">
-          <span class="composer-shortcut">Enter للإرسال · Shift+Enter لسطر جديد</span>
-        </div>
-      </div>
-    </main>
-
+      <div id="projectsBox"><div class="loading"><span class="spin"></span> جارٍ تجهيز خطوط الإنتاج…</div></div>
+    </section>
   </div>
 
-  <!-- حدود الأخطاء العامة -->
-  <div class="error-boundary" id="error-boundary" hidden></div>
+  <!-- شاشة تفاصيل المشروع -->
+  <div id="viewDetail"></div>
+</main>
 
-  <!-- لوحة الإعدادات الجانبية -->
-  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
-  <aside class="drawer" id="settings-drawer" hidden aria-label="الإعدادات">
-    <div class="drawer-head">
-      <span class="drawer-title">
-        <span class="icon sm"><svg><use href="#i-settings"/></svg></span>
-        <span>الإعدادات</span>
-      </span>
-      <button class="icon-btn" id="settings-close" title="إغلاق (Esc)">
-        <span class="icon"><svg><use href="#i-close"/></svg></span>
-      </button>
-    </div>
-
-    <nav class="settings-tabs" id="settings-tabs" aria-label="أقسام الإعدادات">
-      <button class="settings-tab active" data-tab="general">عام</button>
-      <button class="settings-tab" data-tab="providers">المزودون</button>
-      <button class="settings-tab" data-tab="models">النماذج</button>
-      <button class="settings-tab" data-tab="tools">الأدوات والقدرات</button>
-      <button class="settings-tab" data-tab="execution">بيئات التنفيذ</button>
-      <button class="settings-tab" data-tab="advanced">متقدم</button>
-    </nav>
-
-    <div class="drawer-body">
-
-      <section class="drawer-section tab-panel active" id="tab-general">
-        <h3>عام</h3>
-        <p class="drawer-note">حالة النظام والركيزة وبيئة التنفيذ الفعالة — بلا أسرار.</p>
-        <div id="general-body" class="general-body"></div>
-      </section>
-
-      <section class="drawer-section tab-panel" id="tab-providers" hidden>
-        <h3>المزودون والاتصال</h3>
-        <p class="drawer-note">إدارة كاملة من هنا: أضف مزودًا، عدّل Base URL، أضف تكوينات، واختبر الاتصال — المفاتيح محلية ولا تُعاد أبدًا.</p>
-        <div id="providers-body"></div>
-      </section>
-
-      <section class="drawer-section tab-panel" id="tab-models" hidden>
-        <h3>إعدادات النماذج</h3>
-        <p class="drawer-note">لكل دور نموذجه المستقل — لا دور يرث مزود دور آخر.</p>
-        <div id="role-models"></div>
-        <button class="btn primary" id="models-save">حفظ اختيارات النماذج</button>
-        <div class="save-result" id="models-save-result"></div>
-      </section>
-
-      <section class="drawer-section tab-panel" id="tab-tools" hidden>
-        <h3>الأدوات والقدرات</h3>
-        <p class="drawer-note">جرد حقيقي لقدرات النظام قبل أي مهمة — لا «جاهز» بلا مسبار فعلي، والجاهزية تنتهي صلاحيتها. البحث قدرة قابلة للتوفير: DDG مهلة ≠ الإنترنت مقطوع.</p>
-        <div class="env-summary" id="env-summary"></div>
-        <div class="pv-row">
-          <button class="pv-btn primary" id="env-run-all">فحص كامل للبيئة</button>
-          <button class="pv-btn" id="env-inventory">جرد البيئة (OS/شبكة/أدوات)</button>
-        </div>
-        <div class="env-note" id="env-note"></div>
-        <div class="env-inventory-body" id="env-inventory-body" hidden></div>
-        <div class="cap-grid" id="env-caps"></div>
-        <h4 class="research-head">مزودو البحث</h4>
-        <p class="drawer-note">ابحث عبر أول مزود جاهز — جهّز SearXNG (رابط) أو Search API (نقطة+مفتاح) عند تعطل DDG.</p>
-        <div id="research-providers"></div>
-      </section>
-
-      <section class="drawer-section tab-panel" id="tab-execution" hidden>
-        <h3>بيئات التنفيذ</h3>
-        <p class="drawer-note">المسبار والمنفذ من مصدر واحد — بيئة جاهزة فقط بعد فحوص إقلاع/كتابة/تنفيذ/التقاط حقيقية. للتنفيذ على Linux/WSL2: شغّل العامل ثم أضف بيئة REMOTE_WORKER.</p>
-        <div id="exec-env-body"></div>
-        <div id="exec-env-add" class="exec-env-add"></div>
-      </section>
-
-      <section class="drawer-section tab-panel advanced" id="tab-advanced" hidden>
-        <h3>أدوات متقدمة</h3>
-        <p class="drawer-note">مسارات تشخيصية ومتخصصة للمستخدم المتقدم.</p>
-        <div class="advanced-grid">
-          <button class="btn ghost" id="eoe-run" title="تنفيذ أمر تنفيذي كامل: المنح والدفع ينتظران موافقتك">تنفيذ أمر تنفيذي</button>
-          <button class="btn ghost" id="router-demo" title="عرض أحداث الموجّه: حد المعدل والتبريد والتبدل">أحداث الموجّه</button>
-          <button class="btn ghost" id="mission-run" title="المهمة الحية المتخصصة: تقرير جيوسياسي + PDF عربي">المهمة الحية المتخصصة</button>
-          <button class="btn ghost" id="build-run" title="مهمة البناء: حزمة textstats وتدفعها إلى فرعها ببطاقتي موافقة">مهمة البناء textstats</button>
-        </div>
-      </section>
-
-    </div>
-  </aside>
-
-  <!-- نافذة تفاصيل الحدث: الـ JSON الكامل -->
-  <div class="modal-backdrop" id="modal-backdrop" hidden>
-    <div class="modal" role="dialog" aria-label="تفاصيل الحدث">
-      <div class="modal-head">
-        <span id="modal-title">تفاصيل الحدث</span>
-        <button id="modal-copy" class="btn ghost small" title="نسخ الـJSON الخام">نسخ JSON</button>
-        <button id="modal-close" class="icon-btn" title="إغلاق (Esc)">
-          <span class="icon"><svg><use href="#i-close"/></svg></span>
-        </button>
-      </div>
-      <pre id="modal-json" dir="ltr"></pre>
-    </div>
+<!-- لوحة البث -->
+<aside class="feedpanel" id="feedPanel">
+  <div class="fmask" id="feedMask"></div>
+  <div class="fhead">
+    <h3>سجل المصنع الحي</h3>
+    <span class="fconn"><span class="dot" id="connDot"></span><span id="connText">جارٍ الاتصال…</span></span>
+    <button class="btn ghost sm" id="feedClose" title="إغلاق">✕</button>
   </div>
+  <div class="fchips" id="feedChips">
+    <button class="fchip on" data-f="all">الكل</button>
+    <button class="fchip" data-f="work">عمل الوكلاء</button>
+    <button class="fchip" data-f="gate">بوابات وخطط</button>
+    <button class="fchip" data-f="fault">أعطال واسترداد</button>
+  </div>
+  <div class="flist" id="feedList"></div>
+</aside>
 
-  <script src="/static/markdown.js?v=4.0.0"></script>
-  <script src="/static/app.js?v=4.0.0"></script>
-  <script src="/static/chat-stream.js?v=4.0.0"></script>
-  <script src="/static/task-cards.js?v=4.0.0"></script>
-  <script src="/static/model-picker.js?v=4.0.0"></script>
-  <script src="/static/error-boundary.js?v=4.0.0"></script>
-  <script src="/static/settings.js?v=4.0.0"></script>
-  <script src="/static/environment.js?v=4.0.0"></script>
-  <script src="/static/research-ui.js?v=4.0.0"></script>
-  <script src="/static/execution-env.js?v=4.0.0"></script>
-  <script src="/static/harness.js?v=4.0.0"></script>
-  <script src="/static/live-events.js?v=4.0.0"></script>
-  <script src="/static/project-live.js?v=4.0.0"></script>
-  <script src="/static/workflow-view.js?v=4.0.0"></script>
-  <script src="/static/control-center.js?v=4.0.0"></script>
-  <script src="/static/projects.js?v=4.0.0"></script>
-  <script src="/static/factory-control.js?v=4.0.0"></script>
-  <script src="/static/evolution.js?w=m2"></script>
-  <script src="/static/factory-floor.js?w=m2"></script>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   مصنع الوكلاء الهندسي — قاعة التحكم (v4)
+   كل البيانات تُجلب من الـ API الحقيقي — لا بيانات وهمية إطلاقًا.
+   المبادئ: خط إنتاج مرئي، طابور قرارات أولًا، أرضية وكلاء، مستودع أدلة.
+   ===================================================================== */
+
+/* ===== أدوات DOM آمنة: النصوص عبر textContent دائمًا (حماية من الحقن) ===== */
+function $(s){ return document.querySelector(s); }
+function el(tag, attrs){
+  const node = document.createElement(tag);
+  if (attrs) for (const k in attrs){
+    const v = attrs[k];
+    if (v == null) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k === 'html') node.innerHTML = v; /* أيقونات SVG ثابتة من الكود فقط */
+    else if (k.slice(0,2) === 'on') node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (let i = 2; i < arguments.length; i++){
+    const c = arguments[i];
+    if (c == null) continue;
+    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+function trunc(s, n){ s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function isLatin(s){ return /^[\x00-\xFF]*$/.test(String(s||'')) && /[a-zA-Z]/.test(String(s||'')) && !/[\u0600-\u06FF]/.test(String(s||'')); }
+function dirNode(s){ return isLatin(s) ? 'ltr' : 'auto'; }
+function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
+
+/* وقت نسبي عربي */
+function relTime(iso){
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return '—';
+  let s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'قبل لحظات';
+  if (s < 3600) return 'قبل ' + Math.floor(s/60) + ' دقيقة';
+  if (s < 86400) { const h = Math.floor(s/3600); return 'قبل ' + h + (h===1?' ساعة':h===2?' ساعتين':' ساعات'); }
+  const d = Math.floor(s/86400);
+  return 'قبل ' + d + (d===1?' يوم':d===2?' يومين':' أيام');
+}
+function clockTime(iso){
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return '—';
+  const d = new Date(t);
+  return ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+}
+function humanBytes(n){
+  n = num(n); if (n == null) return '—';
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n/1048576).toFixed(1) + ' MB';
+  return (n/1073741824).toFixed(2) + ' GB';
+}
+
+/* ===== استدعاء API مع مهلة وتفسير أخطاء صادق ===== */
+async function api(path, opts){
+  opts = opts || {};
+  const ctl = new AbortController();
+  const timer = setTimeout(function(){ ctl.abort(); }, 25000);
+  let res;
+  try {
+    res = await fetch(path, {
+      method: opts.method || 'GET',
+      headers: opts.body ? {'Content-Type':'application/json'} : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      signal: ctl.signal,
+      credentials: 'same-origin'
+    });
+  } catch(e){
+    clearTimeout(timer);
+    throw new Error('تعذر الوصول إلى الخادم — تحقق من الشبكة أو من حجب العنوان');
+  }
+  clearTimeout(timer);
+  if (!res.ok){
+    let detail = '';
+    try {
+      const j = await res.json();
+      if (j && typeof j.detail === 'string') detail = j.detail;
+      else if (j && typeof j.error === 'string') detail = j.error;
+    } catch(e){}
+    throw new Error(detail || ('الخادم رفض الطلب (' + res.status + ')'));
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (ct.indexOf('application/json') !== -1){
+    try { return await res.json(); }
+    catch(e){ throw new Error('استجابة غير مفهومة من الخادم'); }
+  }
+  return await res.text();
+}
+
+/* ===== خرائط المصنع ===== */
+const STATUS = {
+  PLANNING:                {ar:'قيد التخطيط',              cls:'st-gray'},
+  RUNNING:                 {ar:'يعمل الآن',                cls:'st-blue'},
+  PAUSED:                  {ar:'متوقف مؤقتًا',             cls:'st-grayblue'},
+  AWAITING_OWNER_APPROVAL: {ar:'ينتظر قرارك',              cls:'st-amber'},
+  COMPLETED:               {ar:'مكتمل — بانتظار تحققك',    cls:'st-green-outline'},
+  VERIFIED:                {ar:'مُتحقق منه',               cls:'st-green'},
+  FAILED:                  {ar:'فاشل',                     cls:'st-red'},
+  BLOCKED:                 {ar:'متعثر',                    cls:'st-red'},
+  STOPPED:                 {ar:'موقوف',                    cls:'st-red'},
+  ARCHIVED:                {ar:'مؤرشف',                    cls:'st-gray'}
+};
+const GATE_KINDS = {
+  PLAN_APPROVAL:            'اعتماد خطة',
+  PLAN_REVISION_APPROVAL:   'اعتماد مراجعة خطة',
+  STEP_REVISION_APPROVAL:   'اعتماد مراجعة خطوة',
+  PROVIDER_ACTION_REQUIRED: 'إجراء من المزوّد',
+  ESCALATION:               'تصعيد للمالك',
+  FINAL_VERIFICATION:       'التحقق النهائي من الإنجاز'
+};
+const STAGE_ORDER = ['GOAL','PLAN','APPROVAL','PREPARE','EXECUTE','TEST','REVIEW','AUDIT'];
+const STAGE_AR = {
+  GOAL:'الهدف', PLAN:'الخطة', APPROVAL:'الاعتماد', PREPARE:'التهيئة',
+  EXECUTE:'التنفيذ', TEST:'الاختبار', REVIEW:'المراجعة', AUDIT:'التدقيق', DELIVER:'التسليم'
+};
+const ROLE_AR = {
+  planner:'المخطِّط', implementer:'وكيل التنفيذ', verifier:'المدقق', reviewer:'المراجع',
+  auditor:'المُدقِّق', orchestrator:'قائد الخط', researcher:'باحث', tester:'مختبِر',
+  repair:'وكيل الإصلاح', owner:'المالك'
+};
+const PHASE_AR = {
+  PENDING:'لم تبدأ', PLANNED:'مخططة', RUNNING:'جارية الآن', COMPLETED:'مكتملة',
+  VERIFIED:'مُتحقق منها', TESTED:'مُختبَرة', REVIEWED:'مُدقَّقة',
+  FAILED:'فشلت', BLOCKED:'متعثرة', SKIPPED:'متجاوزة'
+};
+const PHASE_CLS = {
+  COMPLETED:'ph-done', VERIFIED:'ph-done', TESTED:'ph-done', REVIEWED:'ph-done',
+  RUNNING:'ph-run', FAILED:'ph-fail', BLOCKED:'ph-fail', SKIPPED:'ph-skip'
+};
+const STEP_CLS = {
+  COMPLETED:'st-green', VERIFIED:'st-green', TESTED:'st-green', RUNNING:'st-blue',
+  FAILED:'st-red', PENDING:'st-gray', PLANNED:'st-gray', BLOCKED:'st-red', SKIPPED:'st-gray'
+};
+const EVENT_KINDS = {
+  EXECUTION_STARTED:'بدأ تنفيذ', EXECUTION_COMPLETED:'انتهى تنفيذ بنجاح', EXECUTION_FAILED:'فشل تنفيذ', EXECUTION_OPENED:'فُتح تنفيذ',
+  STEP_STARTED:'بدأت خطوة', STEP_COMPLETED:'اكتملت خطوة', STEP_FAILED:'فشلت خطوة', STEP_RETRYING:'إعادة محاولة خطوة',
+  PLAN_CREATED:'أُنشئت خطة', PLAN_APPROVED:'اعتُمدت خطة', PLAN_GENERATING:'يُولَّد الخطة', PLAN_REVISED:'رُوّجت خطة مراجعة',
+  GATE_OPENED:'بوابة جديدة', GATE_RESOLVED:'حُسمت بوابة', OWNER_GATE_RESOLVED:'حسم المالك بوابة',
+  PHASE_STARTED:'بدأت مرحلة', PHASE_COMPLETED:'اكتملت مرحلة',
+  PROJECT_CREATED:'أُنشئ المشروع', STATUS_CHANGED:'تغيّرت الحالة',
+  TOOL_EXECUTION:'أداة نفّذت', MODEL_CALL_PROGRESS:'استدعاء نموذج جارٍ', MODEL_CALL_STARTED:'بدأ استدعاء نموذج', MODEL_REASONING:'استدلال النموذج',
+  ROLE_EXECUTING:'دور يعمل الآن', AUDIT_COMPLETED:'اكتمل التدقيق', AUDIT_STARTED:'بدأ التدقيق',
+  CHECKPOINT_CREATED:'نقطة حفظ', EVIDENCE_CREATED:'أُنشئ دليل',
+  RECOVERY_ASSESSED:'تقييم استرداد', JOB_RECOVERY_ASSESSED:'تقييم استرداد مهمة',
+  ENVIRONMENT_READY:'البيئة جاهزة', ENVIRONMENT_CHECK_STARTED:'بدأ فحص البيئة', PREFLIGHT_PASS:'فحص تمهيدي ناجح',
+  JOB_QUEUED:'مهمة في الطابور', JOB_STARTED:'بدأت مهمة', JOB_WAITING:'مهمة منتظرة', RETRY_REQUESTED:'طلب إعادة محاولة',
+  PLANNING_STARTED:'بدأ التخطيط', CAPABILITIES_EVALUATED:'تقييم قدرات', ERROR:'خطأ', HEARTBEAT:'نبضة'
+};
+function eventAR(kind){ return EVENT_KINDS[String(kind||'')] || String(kind||'—'); }
+/* تصنيف حدث للتصفية */
+function eventCat(kind){
+  const k = String(kind||'');
+  if (k.indexOf('GATE') !== -1 || k.indexOf('PLAN') !== -1 || k.indexOf('PHASE') !== -1 || k === 'OWNER_GATE_RESOLVED' || k === 'STATUS_CHANGED' || k === 'PLANNING_STARTED') return 'gate';
+  if (k.indexOf('RECOVERY') !== -1 || k.indexOf('RETRY') !== -1 || k === 'ERROR' || k.indexOf('FAILED') !== -1 || k === 'JOB_WAITING') return 'fault';
+  if (k === 'HEARTBEAT' || k === 'MODEL_CALL_PROGRESS') return 'noise';
+  return 'work';
+}
+
+/* ===== الحالة العامة ===== */
+const S = {
+  route: {view:'home', id:null},
+  health: 'checking',
+  projects: null,
+  states: {},            /* project_id → state كامل (أطوار، بوابات، أحداث) */
+  runs: {},              /* project_id → run حي */
+  homeSeq: 0,
+  homeError: null,
+  detail: {
+    id:null, state:null, runtime:null, steps:null, artifacts:null, evidence:null, events:null,
+    errors:{}, tab:'steps', artQuery:'', artShown:100, seq:0, lastRefresh:0
+  },
+  feed: { items:[], lastId:0, es:null, conn:'connecting', mode:'sse', open:false, filter:'all',
+          pollTimer:null, resusTimer:null, fallbackTimer:null }
+};
+
+/* ===== أيقونات SVG ثابتة ===== */
+const IC = {
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+  hourglass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M7 2v3l5 5 5-5V2M7 22v-3l5-5 5 5v3"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6 9 17l-5-5"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3zM12 10v5M12 18v.5"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>',
+  worker:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>'
+};
+
+/* ===== شرائح الحالة ===== */
+function statusChip(status, extraAr){
+  const info = STATUS[status];
+  const chip = el('span', {class:'chip ' + (info ? info.cls : 'st-gray')});
+  if (info){
+    chip.appendChild(el('span', {text: extraAr || info.ar}));
+    chip.appendChild(el('span', {class:'chip-en mono', dir:'ltr', text:String(status)}));
+  } else {
+    chip.appendChild(el('span', {text:String(status || '—')}));
+  }
+  return chip;
+}
+
+/* ===== تنبيهات ===== */
+let toastTimer = null;
+function toast(msg, kind){
+  const root = $('#toastRoot');
+  root.textContent = '';
+  root.appendChild(el('div', {class:'toast ' + (kind || ''), text:msg}));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ root.textContent = ''; }, 4200);
+}
+
+/* ===== مؤشر الصحة ===== */
+function renderHealth(){
+  const dot = $('#healthDot'), txt = $('#healthText');
+  dot.className = 'dot ' + (S.health === 'ok' ? 'green' : S.health === 'down' ? 'red' : '');
+  txt.textContent = S.health === 'ok' ? 'الخادم متصل' : S.health === 'down' ? 'الخادم غير متاح' : 'جارٍ الفحص…';
+}
+async function checkHealth(){
+  S.health = 'checking'; renderHealth();
+  try {
+    const r = await api('/health');
+    S.health = (r && r.status === 'ok') ? 'ok' : 'down';
+  } catch(e){ S.health = 'down'; }
+  renderHealth();
+}
+
+/* ===== خط الإنتاج: مكوّن المحطات ===== */
+function lineEl(phases, opts){
+  opts = opts || {};
+  const wrap = el('div', {class:'linewrap'});
+  const line = el('div', {class:'pline'});
+  const track = el('div', {class:'ptrack'});
+  const list = Array.isArray(phases)
+    ? phases.slice().sort(function(a,b){ return (num(a.ordinal)||0) - (num(b.ordinal)||0); })
+    : [];
+  if (!list.length){
+    wrap.appendChild(el('div', {class:'queue-empty', text:'لا أطوار معروفة بعد — لم تُعتمد خطة حتى الآن.'}));
+    return wrap;
+  }
+  const shown = list.slice(0, 8);
+  const gateAt = opts.gateAt;
+  shown.forEach(function(ph, i){
+    const st = String(ph.status || 'PENDING');
+    const cls = PHASE_CLS[st] || 'ph-pending';
+    const station = el('div', {class:'station ' + cls, title:trunc(ph.title||'',60) + ' — ' + (PHASE_AR[st]||st)});
+    if (st === 'RUNNING' || st === 'FAILED' || st === 'BLOCKED') station.classList.add('pulse');
+    station.appendChild(el('span', {class:'sdot'}));
+    if (gateAt != null && num(ph.id) === num(gateAt)) station.appendChild(el('span', {class:'sgate', title:'بوابة بانتظار قرارك'}));
+    station.appendChild(el('span', {class:'slabel', text: trunc(ph.title || ('طور ' + (num(ph.ordinal)||i+1)), 30)}));
+    track.appendChild(station);
+    if (i < shown.length - 1){
+      const nextSt = String(list[i+1].status || 'PENDING');
+      track.appendChild(el('span', {class:'slink ' + (PHASE_CLS[nextSt] === 'ph-done' ? 'done' : '')}));
+    }
+  });
+  if (list.length > 8) track.appendChild(el('span', {class:'smore', text:'+' + (list.length - 8) + ' أطوار'}));
+  line.appendChild(track);
+  wrap.appendChild(line);
+  if (gateAt != null){
+    wrap.appendChild(el('div', {class:'lgate-hint'},
+      el('span', {class:'hgate'}), el('span', {text:'علامة التوقف = بوابة تنتظر قرارك على هذا الطور'})));
+  }
+  return wrap;
+}
+/* الطور الذي تُعلَّق عليه البوابة: من details.phase_id أو الطور الحالي */
+function gatePhaseId(gate, state){
+  const d = gate && gate.details;
+  if (d){
+    if (num(d.phase_id) != null) return num(d.phase_id);
+    if (num(d.current_phase_id) != null) return num(d.current_phase_id);
+    const sid = num(d.step_id);
+    if (sid != null && state && Array.isArray(state.phases)){
+      for (const ph of state.phases){
+        if (Array.isArray(ph.steps) && ph.steps.some(function(st){ return num(st.id) === sid; })) return num(ph.id);
+        if (num(ph.current_step_id) === sid) return num(ph.id);
+      }
+    }
+  }
+  return state ? num(state.current_phase_id) : null;
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   الشاشة الرئيسية: طابور القرارات + أرضية المصنع + العدادات + خطوط الإنتاج
+   ===================================================================== */
+
+function pendingGatesOf(state){ return (state && Array.isArray(state.gates)) ? state.gates.filter(function(g){ return g && g.status === 'PENDING'; }) : []; }
+
+async function loadHome(){
+  const seq = ++S.homeSeq;
+  S.homeError = null;
+  let rP = null, rR = null, errA = null, errB = null;
+  try { rP = await api('/api/projects'); } catch(e){ errA = e; }
+  try { rR = await api('/api/projects/runs/active'); } catch(e){ errB = e; }
+  if (seq !== S.homeSeq || S.route.view !== 'home') return;
+  if (errA){ renderHomeError(errA.message); return; }
+  S.projects = (rP && Array.isArray(rP.projects)) ? rP.projects : (Array.isArray(rP) ? rP : []);
+  S.runs = {};
+  if (rR && Array.isArray(rR.runs)){
+    rR.runs.forEach(function(r){ if (r && num(r.project_id) != null) S.runs[num(r.project_id)] = r; });
+  }
+  renderKPIs(); renderFloor(); renderProjects();
+  $('#projSub').textContent = 'تُعرض ' + S.projects.length + ' من ' + S.projects.length;
+  await loadAllStates(seq);
+  if (seq !== S.homeSeq || S.route.view !== 'home') return;
+  renderKPIs(); renderQueue(); renderFloor(); renderProjects();
+}
+
+/* جلب حالة كل مشروع (أطوار + بوابات) — المشاريع قليلة، الطلبات رخيصة */
+async function loadAllStates(seq){
+  if (!S.projects) return;
+  const jobs = S.projects.map(function(p){
+    return api('/api/projects/' + p.id + '/state').then(
+      function(st){ S.states[num(p.id)] = st; },
+      function(){ delete S.states[num(p.id)]; }
+    );
+  });
+  await Promise.all(jobs);
+}
+async function loadOneState(pid){
+  try { S.states[pid] = await api('/api/projects/' + pid + '/state'); }
+  catch(e){ delete S.states[pid]; }
+}
+
+function renderHomeError(msg){
+  $('#queueBox').textContent = ''; $('#floorBox').textContent = ''; $('#kpis').textContent = '';
+  const box = $('#projectsBox');
+  box.textContent = '';
+  box.appendChild(errBox(msg, function(){ loadHome(); }));
+}
+function errBox(msg, retry){
+  const b = el('div', {class:'errbox'}, el('span', {text:msg}));
+  if (retry) b.appendChild(el('button', {text:'إعادة المحاولة', onclick:retry}));
+  return b;
+}
+
+/* ===== العدادات ===== */
+function computeKPIs(){
+  let running = 0, waiting = 0, done = 0, trouble = 0;
+  (S.projects || []).forEach(function(p){
+    const st = String(p.status || '');
+    const run = S.runs[num(p.id)];
+    const gates = pendingGatesOf(S.states[num(p.id)]);
+    const ownerWait = (run && run.waiting_for && run.waiting_for.kind === 'owner_approval') || gates.length > 0;
+    if (st === 'RUNNING' || st === 'PLANNING') running++;
+    else if (ownerWait || st === 'AWAITING_OWNER_APPROVAL' || st === 'COMPLETED') waiting++;
+    else if (st === 'VERIFIED') done++;
+    else if (st === 'BLOCKED' || st === 'FAILED' || st === 'STOPPED') trouble++;
+    else if (st === 'PAUSED') trouble++;
+  });
+  return {running:running, waiting:waiting, done:done, trouble:trouble};
+}
+function renderKPIs(){
+  const k = computeKPIs();
+  const box = $('#kpis'); box.textContent = '';
+  const defs = [
+    {n:k.running, lbl:'يعمل الآن',      ic:IC.bolt,      c:'var(--blue)'},
+    {n:k.waiting, lbl:'ينتظر قرارك',    ic:IC.hourglass, c:'var(--amber)'},
+    {n:k.done,    lbl:'مكتملة ومُتحقق منها', ic:IC.check, c:'var(--green)'},
+    {n:k.trouble, lbl:'متعثرة أو موقوفة', ic:IC.alert,  c:'var(--red)'}
+  ];
+  defs.forEach(function(d){
+    box.appendChild(el('div', {class:'kpi'},
+      el('span', {class:'num', style:'color:' + d.c, text:String(d.n)}),
+      el('span', {class:'lbl', text:d.lbl}),
+      el('span', {class:'ic', style:'color:' + d.c, html:d.ic})
+    ));
+  });
+}
+
+/* ===== طابور القرارات ===== */
+function renderQueue(){
+  const box = $('#queueBox'); box.textContent = '';
+  const items = [];
+  (S.projects || []).forEach(function(p){
+    const st = S.states[num(p.id)];
+    const gates = pendingGatesOf(st);
+    gates.forEach(function(g){ items.push({p:p, g:g, state:st}); });
+    const run = S.runs[num(p.id)];
+    if (run && run.waiting_for && run.waiting_for.kind === 'owner_approval' && !gates.length){
+      items.push({p:p, g:null, run:run, state:st});
+    }
+  });
+  const sub = $('#queueSub');
+  sub.textContent = items.length ? (items.length + ' بوابة تنتظر قرارك — المصنع متوقف عندها') : '';
+  if (!items.length){
+    box.appendChild(el('div', {class:'queue-empty', text:'لا قرارات معلقة — المصنع يكمل عمله بلا توقف. ستظهر البوابات هنا فور احتياجه لك.'}));
+    return;
+  }
+  items.sort(function(a,b){ return String(a.g?a.g.created_at:0).localeCompare(String(b.g?b.g.created_at:0)); });
+  items.forEach(function(it){ box.appendChild(gateCardEl(it.p, it.g, it.run, it.state)); });
+}
+function gateCardEl(p, gate, run, state){
+  const card = el('div', {class:'gatecard'});
+  card.appendChild(el('div', {class:'gstrip'}));
+  const body = el('div', {class:'gbody'});
+  const info = el('div', {class:'ginfo'});
+  const kind = gate ? String(gate.kind || '') : 'PLAN_APPROVAL';
+  const kindAr = GATE_KINDS[kind] || 'قرار مطلوب';
+  const kindRow = el('div', {class:'gkind'}, el('span', {text:kindAr}));
+  kindRow.appendChild(el('span', {class:'mono', dir:'ltr', text:kind}));
+  info.appendChild(kindRow);
+  if (gate && gate.reason) info.appendChild(el('div', {class:'greason', dir:'auto', text:String(gate.reason)}));
+  if (!gate && run && run.waiting_for && run.waiting_for.label)
+    info.appendChild(el('div', {class:'greason', dir:'auto', text:String(run.waiting_for.label)}));
+  const projRow = el('div', {class:'gproj'}, 'المشروع: ');
+  projRow.appendChild(el('b', {text:trunc(p.name || ('#' + p.id), 60)}));
+  const run0 = run || S.runs[num(p.id)];
+  if (run0 && num(run0.elapsed_s) != null) projRow.appendChild(el('span', {text:' — منذ ' + fmtDur(num(run0.elapsed_s))}));
+  info.appendChild(projRow);
+  const lastErr = gate && gate.details && (gate.details.last_error || gate.details.error);
+  if (lastErr) info.appendChild(el('div', {class:'gerr', dir:'auto', text:'آخر عطب: ' + String(lastErr)}));
+  body.appendChild(info);
+
+  const acts = el('div', {class:'gacts'});
+  const approve = el('button', {class:'btn success sm', html:IC.check + '<span> اعتماد والمتابعة</span>'});
+  approve.addEventListener('click', function(){ decideGateHome(p, gate, true, approve); });
+  acts.appendChild(approve);
+  const reject = el('button', {class:'btn danger sm', text:'رفض'});
+  reject.addEventListener('click', function(){ decideGateHome(p, gate, false, reject); });
+  acts.appendChild(reject);
+  const open = el('button', {class:'btn ghost sm', text:'فتح المشروع'});
+  open.addEventListener('click', function(){ location.hash = '#/p/' + p.id; });
+  acts.appendChild(open);
+  body.appendChild(acts);
+  card.appendChild(body);
+  return card;
+}
+function fmtDur(sec){
+  if (sec == null) return '';
+  if (sec < 90) return Math.round(sec) + ' ثانية';
+  if (sec < 5400) return Math.round(sec/60) + ' دقيقة';
+  if (sec < 172800) return Math.round(sec/3600) + ' ساعة';
+  return Math.round(sec/86400) + ' يوم';
+}
+async function decideGateHome(p, gate, approved, btn){
+  if (!approved && !confirm('الرفض سيوقف المشروع. هل أنت متأكد من رفض هذه البوابة؟')) return;
+  const kindAr = gate ? (GATE_KINDS[String(gate.kind)] || 'البوابة') : 'اعتماد الخطة';
+  if (approved && !confirm('اعتماد «' + kindAr + '» والمتابعة؟')) return;
+  btn.disabled = true;
+  try {
+    if (gate){
+      await api('/api/projects/' + p.id + '/gates/' + gate.id, {method:'POST', body:{approved:approved}});
+    } else {
+      await api('/api/projects/' + p.id + '/resume', {method:'POST'});
+    }
+    toast(approved ? 'اعتُمدت البوابة — سيكمل المصنع العمل' : 'رُفضت البوابة — توقف المشروع', approved ? 'ok' : '');
+    await loadOneState(num(p.id));
+    renderQueue(); renderKPIs(); renderProjects();
+  } catch(e){
+    toast(e.message || 'تعذر تنفيذ القرار — أعد المحاولة', 'err');
+    btn.disabled = false;
+  }
+}
+
+/* ===== أرضية المصنع: من يعمل الآن — صدق كامل: نعمل ≠ واقف ===== */
+function renderFloor(){
+  const box = $('#floorBox'); box.textContent = '';
+  const sub = $('#floorSub');
+  const runs = Object.values(S.runs || {}).filter(function(r){ return r && r.status !== 'COMPLETED'; });
+  if (!runs.length){
+    sub.textContent = '';
+    box.appendChild(el('div', {class:'floor-empty', text:'لا وكيل يعمل الآن — المصنع واقف. إما بانتظار قرارك في الطابور أعلاه، أو لم يُطلق أي مشروع.'}));
+    return;
+  }
+  /* ترتيب الصدق: الحضور الحقيقي أولًا، ثم الواقف عند بوابات، ثم الصامت */
+  const freshMs = 5 * 60 * 1000;
+  const now = Date.now();
+  function hbAge(r){ const t = Date.parse(r.heartbeat_at || r.updated_at || ''); return isFinite(t) ? now - t : Infinity; }
+  function classify(r){
+    if (r.waiting_for && r.waiting_for.kind === 'owner_approval') return 'gate';
+    if (String(r.status) === 'BLOCKED') return 'stuck';
+    if (String(r.status) === 'PAUSED' || String(r.status) === 'STOPPED') return 'paused';
+    if (r.planning_active) return hbAge(r) < freshMs ? 'live' : 'silent';
+    if (String(r.status) === 'RUNNING') return hbAge(r) < freshMs ? 'live' : 'silent';
+    return 'silent';
+  }
+  const order = {live:0, gate:1, stuck:2, paused:3, silent:4};
+  runs.sort(function(a,b){ return order[classify(a)] - order[classify(b)]; });
+  const liveCount = runs.filter(function(r){ return classify(r) === 'live'; }).length;
+  const stuckCount = runs.length - liveCount;
+  sub.textContent = liveCount
+    ? (liveCount + ' يعمل فعلاً' + (stuckCount ? ' · ' + stuckCount + ' واقفة' : ''))
+    : (stuckCount ? 'لا أحد يعمل — ' + stuckCount + ' واقفة' : '');
+  runs.forEach(function(r){
+    const pid = num(r.project_id);
+    const cat = classify(r);
+    const stage = String(r.stage || '');
+    const stageAr = STAGE_AR[stage] || stage || '—';
+    const row = el('div', {class:'floorrow'});
+    let who = '', dotCls = '', whatPrefix = '';
+    if (cat === 'live'){
+      who = r.planning_active ? (ROLE_AR.planner || 'المخطِّط') : (ROLE_AR.implementer || 'وكيل التنفيذ');
+      dotCls = 'live';
+      whatPrefix = 'يعمل على';
+    } else if (cat === 'gate'){
+      who = 'واقف عند بوابة المالك';
+      dotCls = 'dot amber-static';
+      whatPrefix = 'لا شيء ينفَّذ — ينتظر قرارك';
+    } else if (cat === 'stuck'){
+      who = 'واقف — متعثر';
+      dotCls = 'dot red-static';
+      whatPrefix = 'لا شيء ينفَّذ — يحتاج تدخلك';
+    } else if (cat === 'paused'){
+      who = 'موقوف مؤقتًا';
+      dotCls = 'dot amber-static';
+      whatPrefix = 'متوقف بإرادة المالك';
+    } else {
+      who = 'صامت — بلا نبضة';
+      dotCls = 'dot gray-static';
+      whatPrefix = 'سجل التشغيل موجود لكن لا نبضات حديثة';
+    }
+    const dotEl = el('span', {class: dotCls === 'live' ? 'live' : 'dot ' + dotCls.replace('dot ','')});
+    row.appendChild(dotEl);
+    row.appendChild(el('span', {class:'who', text:who}));
+    const what = el('span', {class:'what'});
+    what.appendChild(el('b', {text:trunc(r.name || ('مشروع #' + pid), 46)}));
+    what.appendChild(document.createTextNode(' — ' + whatPrefix + ' — محطة ' + stageAr));
+    const prog = r.progress;
+    if (prog && prog.current_step && prog.current_step.objective && cat === 'live'){
+      what.appendChild(el('div', {style:'font-size:11.5px;color:var(--faint)', dir:dirNode(prog.current_step.objective),
+        text:'الخطوة الحالية: ' + trunc(String(prog.current_step.objective), 80)}));
+    }
+    row.appendChild(what);
+    const hb = r.heartbeat_at || r.updated_at;
+    row.appendChild(el('span', {class:'since', text:hb ? (cat === 'live' ? 'نبضة ' : 'آخر نبضة ') + relTime(hb) : ''}));
+    row.addEventListener('click', function(){ location.hash = '#/p/' + pid; });
+    box.appendChild(row);
+  });
+}
+
+/* ===== خطوط الإنتاج (بطاقات المشاريع) ===== */
+function phasesOf(p){
+  const st = S.states[num(p.id)];
+  if (st && Array.isArray(st.phases) && st.phases.length) return st.phases;
+  if (st && st.plan && Array.isArray(st.plan.phases) && st.plan.phases.length){
+    return st.plan.phases.map(function(ph, i){
+      return {id:ph.id != null ? ph.id : null, ordinal:ph.ordinal != null ? ph.ordinal : i+1,
+              title:ph.title || ph.name || '', status:'PENDING'};
+    });
+  }
+  return [];
+}
+function progressOf(p){
+  const run = S.runs[num(p.id)];
+  if (run && run.progress && num(run.progress.percent) != null) return run.progress;
+  const st = S.states[num(p.id)];
+  if (st && Array.isArray(st.phases) && st.phases.length){
+    let done = 0, total = 0;
+    st.phases.forEach(function(ph){
+      if (Array.isArray(ph.steps)) ph.steps.forEach(function(s){
+        total++;
+        if (['COMPLETED','VERIFIED','TESTED','REVIEWED','SKIPPED'].indexOf(String(s.status)) !== -1) done++;
+      });
+    });
+    if (total) return {steps_total:total, steps_completed:done, percent:Math.round(done*100/total)};
+  }
+  return null;
+}
+function renderProjects(){
+  const box = $('#projectsBox'); box.textContent = '';
+  if (!S.projects || !S.projects.length){
+    box.appendChild(el('div', {class:'queue-empty', text:'لا مشاريع بعد — أنشئ مشروعك الأول من زر «مشروع جديد» أعلى الصفحة.'}));
+    return;
+  }
+  S.projects.forEach(function(p){ box.appendChild(projectCardEl(p)); });
+}
+function projectCardEl(p){
+  const st = S.states[num(p.id)];
+  const run = S.runs[num(p.id)];
+  const gates = pendingGatesOf(st);
+  const status = String(p.status || '');
+  const card = el('div', {class:'pcard'});
+  if (gates.length || status === 'AWAITING_OWNER_APPROVAL') card.classList.add('line-amber');
+  if (status === 'BLOCKED' || status === 'FAILED' || status === 'STOPPED') card.classList.add('line-red');
+
+  const head = el('div', {class:'phead'});
+  head.addEventListener('click', function(){ location.hash = '#/p/' + p.id; });
+  head.appendChild(el('span', {class:'pname', text:String(p.name || ('مشروع #' + p.id))}));
+  head.appendChild(statusChip(status));
+  gates.forEach(function(g){
+    head.appendChild(el('span', {class:'chip st-amber', title:String(g.reason || '')},
+      el('span', {text:GATE_KINDS[String(g.kind)] || 'بوابة'})));
+  });
+  card.appendChild(head);
+
+  const obj = String(p.objective || '');
+  if (obj && obj !== String(p.name || '')){
+    card.appendChild(el('div', {class:'pobj' + (isLatin(obj) ? ' ltr-en' : ''), dir:dirNode(obj), text:trunc(obj, 180)}));
+  }
+  if (st && st.last_error && (status === 'BLOCKED' || status === 'FAILED' || status === 'STOPPED')){
+    card.appendChild(el('div', {class:'perr', dir:'auto', text:'آخر عطب: ' + trunc(String(st.last_error), 160)}));
+  }
+
+  const phases = phasesOf(p);
+  if (phases.length){
+    let gateAt = null;
+    if (gates.length) gateAt = gatePhaseId(gates[0], st);
+    card.appendChild(lineEl(phases, {gateAt:gateAt}));
+  }
+
+  const foot = el('div', {class:'pfoot'});
+  const prog = progressOf(p);
+  if (prog && num(prog.percent) != null){
+    const bar = el('span', {class:'pbar'});
+    bar.appendChild(el('i', {style:'width:' + Math.max(0, Math.min(100, num(prog.percent))) + '%'}));
+    foot.appendChild(bar);
+    const pct = el('span', {class:'mono', text:Math.round(num(prog.percent)) + '%'});
+    if (num(prog.steps_total)) pct.textContent += ' (' + num(prog.steps_completed) + '/' + num(prog.steps_total) + ' خطوة)';
+    foot.appendChild(pct);
+  }
+  foot.appendChild(el('span', {text:relTime(p.updated_at)}));
+  const open = el('span', {class:'openlink', text:'فتح'});
+  open.addEventListener('click', function(){ location.hash = '#/p/' + p.id; });
+  foot.appendChild(open);
+  card.appendChild(foot);
+  return card;
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   تفاصيل المشروع: خط الإنتاج الكامل + القرار + المستودع + الأحداث + الخطة
+   ===================================================================== */
+
+async function loadDetail(id){
+  const seq = ++S.detail.seq;
+  S.detail.id = id;
+  S.detail.errors = {};
+  S.detail.state = null; S.detail.runtime = null; S.detail.steps = null;
+  S.detail.artifacts = null; S.detail.evidence = null; S.detail.events = null;
+  S.detail.artQuery = ''; S.detail.artShown = 100; S.detail.tab = 'steps';
+  const vd = $('#viewDetail');
+  vd.textContent = '';
+  vd.appendChild(el('div', {class:'loading'}, el('span', {class:'spin'}), 'جارٍ تحميل المشروع من خط الإنتاج…'));
+
+  const results = await Promise.allSettled([
+    api('/api/projects/' + id + '/state'),
+    api('/api/projects/' + id + '/runtime'),
+    api('/api/projects/' + id + '/steps'),
+    api('/api/projects/' + id + '/artifacts'),
+    api('/api/projects/' + id + '/evidence')
+  ]);
+  if (seq !== S.detail.seq || S.route.view !== 'detail' || S.route.id !== num(id)) return;
+
+  const [rState, rRuntime, rSteps, rArt, rEv] = results;
+  S.detail.state = rState.status === 'fulfilled' ? rState.value : null;
+  if (rState.status === 'rejected') S.detail.errors.state = rState.reason ? rState.reason.message : 'تعذر تحميل بيانات المشروع';
+  S.detail.runtime = rRuntime.status === 'fulfilled' ? rRuntime.value : null;
+  S.detail.steps = (rSteps.status === 'fulfilled' && rSteps.value && rSteps.value.steps) ? rSteps.value.steps : null;
+  if (rSteps.status === 'rejected') S.detail.errors.steps = rSteps.reason ? rSteps.reason.message : '';
+  S.detail.artifacts = (rArt.status === 'fulfilled' && rArt.value && rArt.value.artifacts) ? rArt.value.artifacts : null;
+  if (rArt.status === 'rejected') S.detail.errors.artifacts = rArt.reason ? rArt.reason.message : '';
+  S.detail.evidence = (rEv.status === 'fulfilled' && rEv.value && rEv.value.evidence) ? rEv.value.evidence : null;
+
+  S.detail.events = null;
+  try {
+    const er = await api('/api/projects/' + id + '/events?limit=60');
+    if (er && Array.isArray(er.events)) S.detail.events = er.events;
+  } catch(e){}
+  if (!S.detail.events && S.detail.state && Array.isArray(S.detail.state.events)) S.detail.events = S.detail.state.events;
+  if (!S.detail.events) S.detail.events = [];
+
+  renderDetailAll();
+}
+
+function renderDetailAll(){
+  const vd = $('#viewDetail');
+  vd.textContent = '';
+  if (!S.detail.state){
+    vd.appendChild(el('a', {class:'backlink', onclick:goHome}, '→ كل المشاريع'));
+    vd.appendChild(errBox(S.detail.errors.state || 'تعذر تحميل بيانات المشروع', function(){ refreshDetail(false); }));
+    return;
+  }
+  const st = S.detail.state;
+  const rt = S.detail.runtime;
+  const gates = pendingGatesOf(st);
+
+  vd.textContent = '';
+  vd.appendChild(el('a', {class:'backlink', onclick:goHome}, '→ كل المشاريع'));
+
+  /* رأس المشروع */
+  const head = el('div', {class:'dhead'});
+  const trow = el('div', {class:'trow'});
+  trow.appendChild(el('h1', {text:String(st.name || ('مشروع #' + st.id))}));
+  trow.appendChild(statusChip(String(st.status || '')));
+  const acts = detailActions(String(st.status || ''), gates, st, rt);
+  acts.forEach(function(b){ trow.appendChild(b); });
+  head.appendChild(trow);
+  const meta = el('div', {class:'meta'});
+  const model = rt && (rt.actual_model || rt.model);
+  if (model){
+    const m1 = el('span', {}, el('b', {text:'محرك التنفيذ: '}));
+    m1.appendChild(el('span', {class:'mono', dir:'ltr', text:String(model)}));
+    meta.appendChild(m1);
+  }
+  meta.appendChild(el('span', {}, el('b', {text:'أُنشئ: '}), document.createTextNode(relTime(st.created_at))));
+  meta.appendChild(el('span', {}, el('b', {text:'آخر تحديث: '}), document.createTextNode(relTime(st.updated_at))));
+  head.appendChild(meta);
+  if (st.last_error && ['BLOCKED','FAILED','STOPPED'].indexOf(String(st.status)) !== -1){
+    head.appendChild(el('div', {class:'derr', dir:'auto', text:'آخر عطب: ' + String(st.last_error)}));
+  }
+  vd.appendChild(head);
+
+  /* خط الإنتاج الكامل */
+  const lineSect = el('section', {class:'sect'});
+  const lh = el('div', {class:'sect-head'}, el('span', {class:'overline', text:'خط الإنتاج'}), el('h2', {text:'مواقع المشروع على الخط'}));
+  lineSect.appendChild(lh);
+  const lineCard = el('div', {class:'pcard'});
+  const phases = Array.isArray(st.phases) ? st.phases : [];
+  let gateAt = null;
+  if (gates.length) gateAt = gatePhaseId(gates[0], st);
+  if (phases.length) lineCard.appendChild(lineEl(phases, {gateAt:gateAt}));
+  else lineCard.appendChild(el('div', {class:'queue-empty', text:'لا أطوار بعد — لم تُعتمد خطة حتى الآن.'}));
+  lineSect.appendChild(lineCard);
+  vd.appendChild(lineSect);
+
+  /* طابور قرار هذا المشروع */
+  if (gates.length){
+    const gSect = el('section', {class:'sect'});
+    gSect.appendChild(el('div', {class:'sect-head'}, el('span', {class:'overline', text:'قرارك الآن'}), el('h2', {text:'بوابة تنتظر قرارك (' + gates.length + ')'})));
+    gates.forEach(function(g){ gSect.appendChild(gateCardEl(st, g, null, st)); });
+    vd.appendChild(gSect);
+  }
+
+  /* عدادات المشروع */
+  const dk = el('div', {class:'dkpis'});
+  const steps = S.detail.steps || [];
+  const doneSteps = steps.filter(function(s){ return ['COMPLETED','VERIFIED','TESTED','REVIEWED'].indexOf(String(s.status)) !== -1; }).length;
+  const arts = S.detail.artifacts || [];
+  const defs = [
+    {n:doneSteps + ' من ' + (steps.length || '—'), lbl:'خطوات مكتملة', ic:IC.check, c:'var(--green)'},
+    {n:(st.executions && st.executions.length) || 0, lbl:'التنفيذات المسجلة', ic:IC.bolt, c:'var(--blue)'},
+    {n:arts.length, lbl:'ملفات المستودع', ic:IC.box, c:'var(--cyan)'},
+    {n:gates.length, lbl:'بوابات مفتوحة', ic:IC.shield, c:'var(--amber)'}
+  ];
+  defs.forEach(function(d){
+    dk.appendChild(el('div', {class:'kpi'},
+      el('span', {class:'num', style:'color:' + d.c, text:String(d.n)}),
+      el('span', {class:'lbl', text:d.lbl}),
+      el('span', {class:'ic', style:'color:' + d.c, html:d.ic})));
+  });
+  vd.appendChild(dk);
+
+  /* التبويبات */
+  const tabs = el('div', {class:'dtabs'});
+  const body = el('div', {class:'dtabbody'});
+  const tabDefs = [
+    {k:'steps', ar:'الخطوات', n:steps.length},
+    {k:'artifacts', ar:'المستودع', n:arts.length},
+    {k:'events', ar:'الأحداث', n:(S.detail.events || []).length},
+    {k:'plan', ar:'الخطة', n:(st.plan && num(st.plan.version)) ? 'v' + num(st.plan.version) : 0}
+  ];
+  function renderTabs(){
+    tabs.textContent = '';
+    tabDefs.forEach(function(t){
+      const b = el('button', {class:'dtab' + (S.detail.tab === t.k ? ' on' : '')},
+        el('span', {text:t.ar}));
+      b.appendChild(el('span', {class:'n', text:String(t.n)}));
+      b.addEventListener('click', function(){ S.detail.tab = t.k; renderTabs(); renderTabBody(); });
+      tabs.appendChild(b);
+    });
+  }
+  function renderTabBody(){
+    body.textContent = '';
+    if (S.detail.tab === 'steps') renderStepsTab(body);
+    else if (S.detail.tab === 'artifacts') renderWarehouseTab(body);
+    else if (S.detail.tab === 'events') renderEventsTab(body);
+    else renderPlanTab(body);
+  }
+  renderTabs(); renderTabBody();
+  vd.appendChild(tabs);
+  vd.appendChild(body);
+}
+
+function detailActions(st, gates, state, rt){
+  const acts = [];
+  const id = S.detail.id;
+  const act = function(label, cls, icon, path, confirmMsg, okMsg){
+    const b = el('button', {class:'btn ' + cls + ' sm', html:icon + '<span> ' + label + '</span>'});
+    b.addEventListener('click', function(){
+      if (confirmMsg && !confirm(confirmMsg)) return;
+      b.disabled = true;
+      runAction(path, okMsg).finally(function(){ b.disabled = false; });
+    });
+    acts.push(b);
+  };
+  const pendingGates = gates.length > 0;
+  if (st === 'RUNNING'){
+    act('إيقاف مؤقت', '', IC.pause, '/api/projects/' + id + '/pause', 'إيقاف المشروع مؤقتًا؟', 'تم إيقاف المشروع مؤقتًا');
+    act('إيقاف', 'danger', IC.stop, '/api/projects/' + id + '/stop', 'إيقاف المشروع بالكامل؟', 'تم إيقاف المشروع');
+  }
+  if (st === 'PAUSED' || st === 'STOPPED' || st === 'BLOCKED'){
+    act('استئناف', 'success', IC.play, '/api/projects/' + id + '/resume', 'استئناف عمل المشروع؟', 'استؤنف المشروع');
+  }
+  const planningFailed = !!(rt && rt.planning && rt.planning.state === 'FAILED');
+  if ((!state.plan || planningFailed) && !pendingGates){
+    act('توليد الخطة', '', IC.doc, '/api/projects/' + id + '/plan/generate', 'توليد خطة جديدة لهذا المشروع؟', 'تم إرسال طلب توليد الخطة');
+  }
+  if (st === 'COMPLETED'){
+    const vb = el('button', {class:'btn success sm', html:IC.check + '<span> تحقق نهائي</span>'});
+    vb.addEventListener('click', function(){
+      if (!confirm('تأكيد التحقق النهائي من مخرجات المشروع؟')) return;
+      vb.disabled = true;
+      runAction('/api/projects/' + id + '/verify', 'تم التحقق النهائي من المشروع').finally(function(){ vb.disabled = false; });
+    });
+    acts.push(vb);
+  }
+  return acts;
+}
+async function runAction(path, okMsg){
+  try {
+    await api(path, {method:'POST'});
+    toast(okMsg || 'تم تنفيذ الإجراء بنجاح', 'ok');
+    await refreshDetail(false);
+  } catch(e){
+    toast(e.message || 'تعذر تنفيذ الإجراء — أعد المحاولة', 'err');
+  }
+}
+async function refreshDetail(silent){
+  const id = S.detail.id;
+  if (id == null) return;
+  try {
+    const results = await Promise.allSettled([
+      api('/api/projects/' + id + '/state'),
+      api('/api/projects/' + id + '/runtime'),
+      api('/api/projects/' + id + '/steps'),
+      api('/api/projects/' + id + '/artifacts')
+    ]);
+    if (S.route.view !== 'detail' || S.route.id !== num(id)) return;
+    S.detail.state = results[0].status === 'fulfilled' ? results[0].value : S.detail.state;
+    S.detail.runtime = results[1].status === 'fulfilled' ? results[1].value : S.detail.runtime;
+    if (results[2].status === 'fulfilled' && results[2].value && results[2].value.steps) S.detail.steps = results[2].value.steps;
+    if (results[3].status === 'fulfilled' && results[3].value && results[3].value.artifacts) S.detail.artifacts = results[3].value.artifacts;
+    renderDetailAll();
+  } catch(e){ if (!silent) toast('تعذر التحديث: ' + e.message, 'err'); }
+}
+
+/* ===== تبويب الخطوات ===== */
+function renderStepsTab(root){
+  const steps = S.detail.steps;
+  if (!steps){
+    root.appendChild(errBox(S.detail.errors.steps || 'لا بيانات خطوات — استجابة غير متوقعة'));
+    return;
+  }
+  if (!steps.length){
+    root.appendChild(el('div', {class:'queue-empty', text:'لا خطوات بعد — بانتظار اعتماد الخطة وتوليد الخطوات.'}));
+    return;
+  }
+  steps.slice().reverse().forEach(function(s){
+    const st = String(s.status || '');
+    const row = el('div', {class:'steprow'});
+    const l1 = el('div', {class:'st1'});
+    l1.appendChild(el('span', {class:'sid', text:'#' + (s.id != null ? s.id : '?')}));
+    l1.appendChild(el('span', {class:'sobj', dir:dirNode(s.objective), text:String(s.objective || '')}));
+    const info = STEP_CLS[st] ? STEP_CLS[st] : 'st-gray';
+    l1.appendChild(el('span', {class:'chip ' + info}, el('span', {text:PHASE_AR[st] || st})));
+    row.appendChild(l1);
+    const l2 = el('div', {class:'s2'});
+    if (num(s.attempt)) l2.appendChild(el('span', {text:'محاولات: ' + num(s.attempt)}));
+    if (s.phase_title) l2.appendChild(el('span', {text:'الطور: ' + trunc(String(s.phase_title), 40)}));
+    if (s.updated_at) l2.appendChild(el('span', {text:relTime(s.updated_at)}));
+    if (l2.childNodes.length) row.appendChild(l2);
+    if (Array.isArray(s.acceptance_criteria) && s.acceptance_criteria.length){
+      const ul = el('ul', {class:'crit'});
+      s.acceptance_criteria.forEach(function(c){
+        ul.appendChild(el('li', {dir:dirNode(c), text:String(c)}));
+      });
+      row.appendChild(ul);
+    }
+    if (s.last_error){
+      row.appendChild(el('div', {class:'perr', dir:'auto', text:trunc(String(s.last_error), 200)}));
+    }
+    root.appendChild(row);
+  });
+}
+
+/* ===== تبويب المستودع (الأدلة المادية) ===== */
+function renderWarehouseTab(root){
+  const arts = S.detail.artifacts;
+  const bar = el('div', {class:'whbar'});
+  if (!arts){
+    root.appendChild(errBox(S.detail.errors.artifacts || 'لا بيانات مستودع'));
+    return;
+  }
+  const search = el('input', {type:'search', placeholder:'بحث باسم الملف…', value:S.detail.artQuery});
+  search.addEventListener('input', function(){ S.detail.artQuery = search.value; S.detail.artShown = 100; renderList(); });
+  bar.appendChild(search);
+  bar.appendChild(el('span', {class:'finfo', text:'مخزون المستودع: ' + arts.length + ' ملف' + (S.detail.evidence ? ' — سجلات أدلة: ' + S.detail.evidence.length : '')}));
+  root.appendChild(bar);
+  const listBox = el('div');
+  root.appendChild(listBox);
+  function renderList(){
+    listBox.textContent = '';
+    const q = S.detail.artQuery.trim().toLowerCase();
+    const filtered = q ? arts.filter(function(a){ return String(a.name||'').toLowerCase().indexOf(q) !== -1; }) : arts;
+    if (!filtered.length){
+      listBox.appendChild(el('div', {class:'queue-empty', text:'لا ملفات مطابقة — المستودع فارغ من نتائج هذا البحث.'}));
+      return;
+    }
+    filtered.slice(0, S.detail.artShown).forEach(function(a){
+      const verdict = String(a.verdict || '');
+      const v = verdict === 'PASS' ? el('span', {class:'vpass', text:'PASS'})
+        : verdict === 'FAIL' ? el('span', {class:'vfail', text:'FAIL'})
+        : el('span', {class:'vna', text:'—'});
+      listBox.appendChild(el('div', {class:'whrow'},
+        el('span', {class:'fname', text:String(a.name || '—')}),
+        v,
+        el('span', {class:'fsize', text:humanBytes(a.bytes)}),
+        el('span', {class:'fdate', text:a.created_at ? relTime(a.created_at) : ''})
+      ));
+    });
+    if (filtered.length > S.detail.artShown){
+      const more = el('button', {class:'btn ghost sm', text:'عرض 100 ملف إضافي (' + (filtered.length - S.detail.artShown) + ' متبقية)'});
+      more.addEventListener('click', function(){ S.detail.artShown += 100; renderList(); });
+      listBox.appendChild(more);
+    }
+  }
+  renderList();
+}
+
+/* ===== تبويب الأحداث (بالعربي + تجميع المتكرر) ===== */
+function renderEventsTab(root){
+  const evs = S.detail.events || [];
+  if (!evs.length){
+    root.appendChild(el('div', {class:'queue-empty', text:'لا أحداث مسجلة بعد.'}));
+    return;
+  }
+  const list = evs.slice().reverse(); /* الأقدم أولًا ثم نجمع ثم نعرض الأحدث أعلى */
+  const groups = [];
+  list.forEach(function(ev){
+    const kind = String(ev.kind || '');
+    const last = groups[groups.length - 1];
+    if (last && last.kind === kind) { last.items.push(ev); return; }
+    groups.push({kind:kind, items:[ev]});
+  });
+  groups.reverse().forEach(function(gr){
+    const kAr = eventAR(gr.kind);
+    const head = el('div', {class:'gvhead'},
+      el('span', {class:'ekind', text:kAr}),
+      el('span', {class:'xn', text:'×' + gr.items.length}),
+      el('span', {class:'finfo mono', dir:'ltr', text:gr.kind}),
+      el('span', {class:'etime', text:relTime(gr.items[gr.items.length-1].created_at)}));
+    const wrap = el('div', {class:'evgroup'});
+    wrap.appendChild(head);
+    const items = el('div', {class:'gvitems', style:'display:none'});
+    gr.items.forEach(function(ev){ items.appendChild(evRowEl(ev, true)); });
+    wrap.appendChild(items);
+    head.addEventListener('click', function(){ items.style.display = items.style.display === 'none' ? 'block' : 'none'; });
+    root.appendChild(wrap);
+  });
+}
+function evRowEl(ev, withId){
+  const kind = String(ev.kind || '');
+  const row = el('div', {class:'evrow'});
+  if (withId) row.appendChild(el('span', {class:'eid', text:'#' + (ev.id != null ? ev.id : '?')}));
+  row.appendChild(el('span', {class:'ekind', text:eventAR(kind)}));
+  const fact = firstFact(ev);
+  if (fact) row.appendChild(el('span', {class:'efact', dir:dirNode(fact), text:trunc(fact, 150)}));
+  row.appendChild(el('span', {class:'etime', text:clockTime(ev.created_at)}));
+  return row;
+}
+function firstFact(ev){
+  const p = ev.payload;
+  if (!p || typeof p !== 'object') return '';
+  const keys = ['tool','role','phase','objective','summary','error','recommendation','reason','status','model'];
+  for (const k of keys){
+    const v = p[k];
+    if (v != null && typeof v !== 'object') return String(v);
+  }
+  return '';
+}
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   سجل المصنع الحي (SSE + استقصاء بديل) + الإنشاء + التوجيه + الإقلاع
+   ===================================================================== */
+
+function setConn(state, mode){
+  S.feed.conn = state; S.feed.mode = mode || S.feed.mode;
+  const dot = $('#connDot'), txt = $('#connText');
+  dot.className = 'dot ' + (state === 'open' ? 'green' : state === 'error' ? 'red' : 'amber');
+  txt.textContent = state === 'open' ? 'متصل'
+    : (S.feed.mode === 'poll' ? 'وضع الاستقصاء'
+    : state === 'connecting' ? 'جارٍ الاتصال…' : 'إعادة الاتصال…');
+}
+function startSSE(){
+  const f = S.feed;
+  if (f.es){ try { f.es.close(); } catch(e){} f.es = null; }
+  stopPolling();
+  if (!window.EventSource){ enterPollMode(); return; }
+  setConn('connecting', 'sse');
+  const es = new EventSource('/api/projects/events/stream?after_id=' + f.lastId);
+  f.es = es;
+  es.onopen = function(){
+    setConn('open', 'sse');
+    if (f.fallbackTimer){ clearTimeout(f.fallbackTimer); f.fallbackTimer = null; }
+  };
+  es.onmessage = function(e){
+    let data = null;
+    try { data = JSON.parse(e.data); } catch(err){ return; }
+    const eid = num(e.lastEventId) || num(data && data.id) || 0;
+    if (eid && eid <= f.lastId) return;
+    pushFeedItem(data || {id:eid});
+    renderFeed();
+    maybeLiveRefresh(data);
+  };
+  es.onerror = function(){
+    setConn('error', 'sse');
+    /* المتصفح يعيد المحاولة تلقائيًا؛ إن استمر الانقطاع 30 ثانية ننتقل للاستقصاء */
+    if (!f.fallbackTimer){
+      f.fallbackTimer = setTimeout(function(){
+        if (f.es && f.es.readyState !== 1) enterPollMode();
+      }, 30000);
+    }
+  };
+}
+function stopPolling(){
+  const f = S.feed;
+  if (f.pollTimer){ clearInterval(f.pollTimer); f.pollTimer = null; }
+  if (f.resusTimer){ clearInterval(f.resusTimer); f.resusTimer = null; }
+}
+function enterPollMode(){
+  const f = S.feed;
+  if (f.es){ try { f.es.close(); } catch(e){} f.es = null; }
+  setConn('error', 'poll');
+  if (f.pollTimer) return;
+  f.pollTimer = setInterval(pollOnce, 20000);
+  pollOnce();
+  /* محاولة استعادة SSE بصمت كل دقيقة */
+  f.resusTimer = setInterval(function(){
+    stopPolling(); startSSE();
+  }, 60000);
+}
+async function pollOnce(){
+  if (S.route.view === 'home'){
+    /* استقصاء خفيف للرئيسية: runs + حالة المشاريع */
+    try {
+      const rR = await api('/api/projects/runs/active');
+      const newRuns = {};
+      if (rR && Array.isArray(rR.runs)) rR.runs.forEach(function(r){ if (r && num(r.project_id) != null) newRuns[num(r.project_id)] = r; });
+      S.runs = newRuns;
+      if (S.projects){
+        await Promise.all(S.projects.map(function(p){ return loadOneState(num(p.id)); }));
+      }
+      renderKPIs(); renderQueue(); renderFloor(); renderProjects();
+    } catch(e){}
+  } else if (S.route.id != null){
+    try {
+      const r = await api('/api/projects/' + S.route.id + '/events?limit=15');
+      if (r && r.events){
+        let added = false;
+        r.events.forEach(function(ev){ if (pushFeedItem(ev)) added = true; });
+        if (added) renderFeed();
+      }
+    } catch(e){}
+  }
+}
+function maybeLiveRefresh(ev){
+  if (!ev) return;
+  const k = String(ev.kind || '');
+  const interesting = k.indexOf('GATE') !== -1 || k.indexOf('STEP') !== -1 || k.indexOf('EXECUTION') !== -1
+    || k.indexOf('STATUS') !== -1 || k.indexOf('PLAN') !== -1 || k.indexOf('PHASE') !== -1;
+  if (!interesting) return;
+  const pid = num(ev.project_id);
+  if (S.route.view === 'home'){
+    if (pid != null) loadOneState(pid);
+    api('/api/projects/runs/active').then(function(rR){
+      const newRuns = {};
+      if (rR && Array.isArray(rR.runs)) rR.runs.forEach(function(r){ if (r && num(r.project_id) != null) newRuns[num(r.project_id)] = r; });
+      S.runs = newRuns;
+      renderKPIs(); renderQueue(); renderFloor(); renderProjects();
+    }).catch(function(){});
+  } else if (S.route.view === 'detail' && pid === S.route.id){
+    refreshDetail(true);
+  }
+}
+function pushFeedItem(ev){
+  const f = S.feed;
+  const eid = num(ev && ev.id) || 0;
+  if (eid && f.items.some(function(x){ return num(x.id) === eid; })) return false;
+  if (eid) f.lastId = Math.max(f.lastId, eid);
+  f.items.push(ev);
+  if (f.items.length > 300) f.items = f.items.slice(-300);
+  return true;
+}
+function renderFeed(){
+  const list = $('#feedList');
+  list.textContent = '';
+  if (!S.feed.items.length){
+    list.appendChild(el('div', {class:'queue-empty', text:'لا أحداث بعد — سيظهر سجل المصنع هنا لحظة بدء أي عمل.'}));
+    return;
+  }
+  const items = S.feed.items.slice().reverse();
+  let shown = 0;
+  for (let i = 0; i < items.length && shown < 80; i++){
+    const ev = items[i];
+    const cat = eventCat(ev.kind);
+    if (S.feed.filter !== 'all' && cat !== S.feed.filter) continue;
+    /* تجميع المتكرر المتتالي */
+    let runCount = 1, j = i + 1;
+    while (j < items.length && items[j].kind === ev.kind){ runCount++; j++; }
+    const row = el('div', {class:'fev'});
+    const l1 = el('div', {class:'f1'});
+    l1.appendChild(el('span', {class:'fk', text:eventAR(ev.kind)}));
+    if (runCount > 1) l1.appendChild(el('span', {class:'xn mono', style:'color:var(--amber);font-size:10px', text:'×' + runCount}));
+    l1.appendChild(el('span', {class:'mono', style:'font-size:9.5px;color:var(--faint)', dir:'ltr', text:String(ev.kind || '')}));
+    l1.appendChild(el('span', {class:'ft', text:relTime(ev.created_at)}));
+    row.appendChild(l1);
+    const fact = firstFact(ev);
+    if (fact) row.appendChild(el('div', {class:'fb', dir:dirNode(fact), text:trunc(fact, 130)}));
+    list.appendChild(row);
+    shown++;
+    if (runCount > 1) i = j - 1;
+  }
+}
+function toggleFeed(force){
+  S.feed.open = force != null ? force : !S.feed.open;
+  $('#feedPanel').classList.toggle('open', S.feed.open);
+}
+function initFeedChips(){
+  document.querySelectorAll('#feedChips .fchip').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#feedChips .fchip').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      S.feed.filter = b.getAttribute('data-f');
+      renderFeed();
+    });
+  });
+}
+
+/* ===== نافذة مشروع جديد — المسار الوحيد للإنشاء ===== */
+function openNewProject(){
+  const root = $('#modalRoot');
+  root.textContent = '';
+  const mask = el('div', {class:'modal-mask'});
+  const modal = el('div', {class:'modal'});
+  const head = el('div', {class:'mhead'},
+    el('h3', {text:'مشروع جديد على خط الإنتاج'}),
+    el('button', {class:'x', text:'✕', onclick:closeModal}));
+  const body = el('div', {class:'mbody'});
+  body.appendChild(el('label', {text:'اسم المشروع'}));
+  const nameIn = el('input', {type:'text', placeholder:'مثال: موقع إخباري متعدد الصفحات', maxlength:'120'});
+  body.appendChild(nameIn);
+  body.appendChild(el('label', {text:'الهدف التفصيلي'}));
+  const objIn = el('textarea', {placeholder:'صف ما يجب أن ينتجه المصنع بدقة…'});
+  body.appendChild(objIn);
+  body.appendChild(el('div', {class:'hint', text:'حدّد المتطلبات الصلبة القابلة للتحقق ميكانيكيًا من الملفات المنتَجة (عدد الملفات، أسماؤها، محتواها الإلزامي). المدقق يحكم من الأدلة المادية لا من الكلام.'}));
+  const err = el('div', {class:'merr', style:'display:none'});
+  body.appendChild(err);
+  const foot = el('div', {class:'mfoot'});
+  const submit = el('button', {class:'btn primary', text:'إطلاق على خط الإنتاج'});
+  const cancel = el('button', {class:'btn ghost', text:'إلغاء', onclick:closeModal});
+  foot.appendChild(submit);
+  foot.appendChild(cancel);
+  function closeModal(){ root.textContent = ''; }
+  submit.addEventListener('click', async function(){
+    const nm = nameIn.value.trim();
+    const ob = objIn.value.trim();
+    err.style.display = 'none';
+    if (!nm || !ob){
+      err.textContent = 'الاسم والهدف كلاهما إلزامي — المصنع لا يعمل بوصف غامض.';
+      err.style.display = 'block';
+      return;
+    }
+    submit.disabled = true; submit.textContent = 'جارٍ الإطلاق…';
+    try {
+      const res = await api('/api/projects', {method:'POST', body:{name:nm, objective:ob}});
+      let pid = null;
+      if (res && typeof res === 'object'){
+        if (num(res.id) != null) pid = num(res.id);
+        else if (res.project && num(res.project.id) != null) pid = num(res.project.id);
+      }
+      closeModal();
+      toast('أُطلق المشروع على خط الإنتاج', 'ok');
+      if (pid != null) location.hash = '#/p/' + pid;
+      else { location.hash = '#/'; loadHome(); }
+    } catch(e){
+      submit.disabled = false; submit.textContent = 'إطلاق على خط الإنتاج';
+      err.textContent = e.message || 'تعذر إنشاء المشروع';
+      err.style.display = 'block';
+    }
+  });
+  modal.appendChild(head); modal.appendChild(body); modal.appendChild(foot);
+  mask.appendChild(modal);
+  mask.addEventListener('click', function(e){ if (e.target === mask) closeModal(); });
+  root.appendChild(mask);
+  nameIn.focus();
+}
+
+/* ===== التوجيه ===== */
+function parseHash(){
+  const h = location.hash || '#/';
+  const m = h.match(/^#\/p\/(\d+)/);
+  if (m) return {view:'detail', id:num(m[1])};
+  return {view:'home', id:null};
+}
+function goHome(){ location.hash = '#/'; }
+async function onRoute(){
+  const r = parseHash();
+  S.route = r;
+  if (r.view === 'home'){
+    document.body.classList.remove('view-detail');
+    document.title = 'مصنع الوكلاء الهندسي — قاعة التحكم';
+    await loadHome();
+  } else {
+    document.body.classList.add('view-detail');
+    document.title = 'مشروع #' + r.id + ' — قاعة التحكم';
+    await loadDetail(r.id);
+  }
+}
+
+/* ===== الإقلاع ===== */
+function boot(){
+  $('#btnNew').addEventListener('click', openNewProject);
+  $('#btnFeed').addEventListener('click', function(){ toggleFeed(); });
+  $('#feedClose').addEventListener('click', function(){ toggleFeed(false); });
+  $('#feedMask').addEventListener('click', function(){ toggleFeed(false); });
+  initFeedChips();
+  window.addEventListener('hashchange', onRoute);
+  checkHealth();
+  setInterval(checkHealth, 60000);
+  startSSE();
+  onRoute();
+}
+boot();
+</script>
 </body>
 </html>
