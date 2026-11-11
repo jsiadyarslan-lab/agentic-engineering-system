@@ -1,0 +1,609 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   FACTORY MONO — design_agent.css
+   طبقة التصميم الأحادية الصارمة — تُحمَّل «بعد» الورقة الداكنة الأساسية
+   (factory_dark_src/style.css) فتعيد تعريف الرموز وتضيف الأنظمة الجديدة:
+   ملفّات المتصفح · كروم المعاينة · ترقية السرد · نظام الحالة الرمادي.
+
+   ── HARD LAW (غير قابل للتفاوض) ─────────────────────────────────────────────
+   · تدرّج رمادي صارم: كل قيمة hex يجب أن تكون R==G==B.
+   · rgba() من أسود نقي (0,0,0) أو أبيض نقي (255,255,255) فقط — بأي ألفا.
+   · لا أزرق/أخضر/أحمر/كهرماني/بنفسجي — لا حتى في طبقات الألفا.
+   · الحالة (PASS / PENDING / FAIL) تُميَّز بالإضاءة + الوزن + نمط الحد +
+     الرمز (✓ ◷ ✕ كـ SVG) — أبداً بالتدرّج اللوني.
+   · الوسائط المضمّنة img/iframe/video تُفلتر grayscale(1) لخضوعها للقانون.
+   · الاتجاه: خصائص منطقية فقط (inline-start / inline-end) — RTL-safe.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   A) MONO TOKEN REFACTOR
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ── سلّم الرمادي العشري — 10-step gray ramp: --g0 near-black → --g9 white ──
+     g0 #0C0C0C   بئر المحرر/الشاشة — أعمق غمر
+     g1 #161616   كروم التطبيق (الشريط الجانبي)
+     g2 #1E1E1E   بطاقات غائرة، رقائق داكنة، خلفية FAIL
+     g3 #222222   أسطح أساسية (الجلسة النشطة)
+     g4 #2B2B2B   لوحة المحادثة
+     g5 #353535   بطاقات مرفوعة، تظليل hover
+     g6 #454545   خطوط شعرية على الأسطح المرفوعة
+     g7 #9C9C9C   نص ثانوي
+     g8 #D6D6D6   نص الفقرة
+     g9 #F2F2F2   الحبر الأساسي = الأكسنت (الأبيض هو الأكسنت)              */
+  --g0:#0C0C0C; --g1:#161616; --g2:#1E1E1E; --g3:#222222; --g4:#2B2B2B;
+  --g5:#353535; --g6:#454545; --g7:#9C9C9C; --g8:#D6D6D6; --g9:#F2F2F2;
+
+  /* خطوات دقيقة بين محطات السلّم — كلها R==G==B */
+  --g-hairline:#242424;
+  --g-line:#2A2A2A;
+  --g-recess:#141414;
+  --g-lift:#262626;
+  --g-raise:#2E2E2E;
+  --g-mid:#4A4A4A;
+  --g-slate:#5A5A5A;
+  --g-ghost:#6E6E6E;
+  --g-soft:#8A8A8A;
+  --g-mono:#A8A8A8;
+  --g-bright:#C9C9C9;
+  --g-near:#EAEAEA;
+
+  /* ── عائلة الأكسنت: الأبيض يحلّ محل الأزرق ── */
+  --accent:#F2F2F2;             /* الأكسنت = أفتح نقطة في النظام */
+  --accent-ink:#141414;         /* الحبر فوق الأكسنت */
+  --accent-soft:#EAEAEA;
+  --accent-dim:#9C9C9C;
+  --accent-line:rgba(255,255,255,.28);
+  --ring:rgba(255,255,255,.80); /* حلقة :focus-visible */
+
+  /* ── رموز الحالة الرمادية: PASS أبيض معكوس · PENDING متوسط متقطع · FAIL خافت ── */
+  --pass:#F2F2F2;  --pass-bg:#2A2A2A;  --pass-line:rgba(255,255,255,.60);
+  --pend:#C9C9C9;  --pend-bg:#202020;  --pend-line:#8A8A8A;
+  --fail:#6E6E6E;  --fail-bg:#141414;  --fail-line:#262626;
+
+  /* ── رموز قديمة في الورقة الأساسية تُعاد إلى الرمادي (تطبيق القانون على
+        كل var() تشير إليها: .st-ok/.amber/.mk.done/.fill/.cursor …) ── */
+  --ok:#F2F2F2;      --ok-bg:#262626;
+  --warn:#C9C9C9;    --warn-bg:#1E1E1E;
+  --err:#6E6E6E;     --err-bg:#141414;
+  --plan:#9C9C9C;    --plan-bg:#1A1A1A;
+
+  /* ── رموز الأصل — تبقى متوافقة؛ لون المحرر المزرّق في الأصل يُصحَّح إلى رمادي نقي ── */
+  --bg:#161616; --surf:#222222; --panel:#2B2B2B; --card:#353535;
+  --chip:#333333; --chip-hover:#3D3D3D; --chip-dark:#1E1E1E;
+  --editor:#0C0C0C;
+  --line:#3A3A3A; --line2:#454545; --line-dk:#2A2A2A;
+  --ink:#F2F2F2; --body:#D6D6D6; --dim:#9C9C9C; --faint:#6E6E6E;
+  --mono-ink:#A8A8A8;
+  --bubble:#444444; --cta:#EAEAEA; --cta-ink:#141414;
+  --r-card:16px; --r-pill:999px; --sbar-w:272px; --comp-w:min(46vw,600px);
+  --shadow-card:0 1px 2px rgba(0,0,0,.32),0 4px 16px rgba(0,0,0,.26);
+  --shadow-float:0 4px 12px rgba(0,0,0,.46),0 16px 40px rgba(0,0,0,.52);
+  --shadow-pop:0 0 0 1px rgba(0,0,0,.40),0 8px 24px rgba(0,0,0,.42);
+  --sans:'Readex Pro',-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono','Readex Pro',monospace;
+
+  /* ── الحركة: هادئة بمستوى مانوس — 150–220ms بلا نطّات ── */
+  --t-fast:150ms; --t-med:180ms; --t-slow:220ms;
+  --ease:cubic-bezier(.30,.70,.40,1);
+  --sticky-top:0px;   /* إزاحة الرؤوس اللاصقة داخل اللوحة إن وُجد شريط أعلى */
+
+  color-scheme:dark;
+  accent-color:#F2F2F2;         /* عناصر النماذج الأصلية تلتزم القانون */
+}
+
+/* التحديد بنص معكوس أبيض/أسود — بديل رمادي صارم للتحديد الأزرق */
+::selection{background:#F2F2F2;color:#141414;text-shadow:none}
+::-moz-selection{background:#F2F2F2;color:#141414;text-shadow:none}
+
+/* أشرطة تمرير رمادية رقيقة (WebKit + Firefox) */
+html{scrollbar-width:thin;scrollbar-color:#3A3A3A transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333333;border:3px solid transparent;background-clip:padding-box;border-radius:999px}
+::-webkit-scrollbar-thumb:hover{background-color:#454545}
+
+/* حلقة التركيز — أبيض شفاف، بلا لون */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.frow:focus-visible,.tprog-hd:focus-visible{outline-offset:-2px}
+
+/* قانون الوسائط: كل ما يُدرج من خارج المصنع يُدرَّج */
+img,iframe,video,object,embed{filter:grayscale(1)}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   B) FILE BROWSER — عرض «الملفات» داخل لوحة الحاسبة (~600px)
+   بنية: .fgroups > .fgroup > .fgroup-hd + .fgroup-body > .frow
+   ══════════════════════════════════════════════════════════════════════════ */
+.fgroups{display:flex;flex-direction:column;gap:14px;padding:12px 14px 28px}
+
+.fgroup{position:relative;background:var(--g1);border:1px solid var(--g-line);border-radius:14px}
+
+/* رأس المجموعة — لاصق داخل .canvas: chevron + أيقونة مجلد + الاسم +
+   عدّاد الملفات + الحجم الكلي + خط شعري مرن */
+.fgroup-hd{
+  position:sticky;top:var(--sticky-top);z-index:3;
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;
+  background:var(--g1);            /* صلب: رأس لاصق معتم — بلا طبقات ألفا */
+  border-bottom:1px solid var(--g-line);
+  border-start-start-radius:13px;border-start-end-radius:13px;
+  cursor:pointer;user-select:none;
+}
+.fgroup-hd .fchev{width:13px;height:13px;color:var(--g7);flex:0 0 auto;transition:transform var(--t-med) var(--ease)}
+.fgroup.closed .fchev{transform:rotate(90deg)}   /* مطوي → يشير لنهاية السطر (يسار في RTL) */
+.fgroup-hd .fic{width:14px;height:14px;color:var(--g-soft);flex:0 0 auto}
+.fgroup-name{font-size:12.5px;font-weight:600;color:var(--g8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fgroup-meta{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto}
+.fcount{font-size:10.5px;color:var(--g7);background:var(--g2);border:1px solid var(--g-line);border-radius:var(--r-pill);padding:1px 8px;white-space:nowrap}
+.fdot{color:var(--g-slate);font-size:10.5px}
+.ftotal{font-family:var(--mono);font-size:10.5px;color:var(--g-ghost);direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fgroup-line{flex:1 1 24px;height:1px;background:var(--g-hairline);min-width:12px}
+.fgroup-body{padding:2px 0 4px}
+.fgroup.closed .fgroup-body{display:none}
+
+/* صف الملف: [مونوغرام النوع][الاسم][الحجم][رقاقة sha]
+   RTL: الأعمدة تتدفق من اليمين تلقائياً (grid يتبع الاتجاه) */
+.frow{
+  position:relative;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;
+  align-items:center;gap:10px;
+  padding:7px 12px;
+  cursor:pointer;
+  transition:background-color var(--t-fast) var(--ease);
+}
+.frow + .frow{border-top:1px solid rgba(255,255,255,.035)}
+.frow:hover{background:var(--g2)}                 /* #1E1E1E فوق جسم #161616 */
+.frow:active{background:#222222}
+.fname{
+  direction:ltr;unicode-bidi:isolate;text-align:start;
+  font-family:var(--mono);font-size:12px;font-weight:500;color:var(--g8);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:color var(--t-fast) var(--ease);
+}
+.frow:hover .fname{color:var(--g9)}
+.fsize{font-family:var(--mono);font-size:10.5px;color:var(--g-ghost);direction:ltr;unicode-bidi:isolate;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fsha{
+  font-family:var(--mono);font-size:10.5px;color:var(--g-mono);
+  background:var(--g0);border:1px solid var(--g-line);border-radius:6px;
+  padding:2px 7px;letter-spacing:.02em;
+  direction:ltr;unicode-bidi:isolate;white-space:nowrap;
+}
+
+/* الحالة المحددة — لا لبس فيها في التدرّج الرمادي:
+   شريط أبيض 2px عند بداية السطر + خلفية مرفوعة + اسم أبيض + رقاقة sha معكوسة */
+.frow.sel{background:var(--g-lift)}               /* #262626 */
+.frow.sel:hover{background:var(--g-raise)}        /* #2E2E2E */
+.frow.sel::before{
+  content:"";position:absolute;inset-inline-start:0;top:5px;bottom:5px;width:2px;
+  border-radius:2px;background:var(--g9);
+  transform-origin:top;animation:selbar var(--t-med) var(--ease);
+}
+.frow.sel .fname{color:var(--g9);font-weight:600}
+.frow.sel .fsize{color:var(--g-bright)}
+.frow.sel .fsha{background:var(--g9);border-color:var(--g9);color:var(--accent-ink);font-weight:600}  /* معكوسة: أبيض/أسود */
+
+/* ── مونوغرامات النوع — مربع 26px بخط مونو وزوج حروف ──
+   كل نوع «معالجة رمادية» مختلفة (خلفية/حبر/نمط حد) لتبقى قابلة للمسح دون لون:
+   t-html  خلفية فاتحة صلبة            (أعلى تباين — مستند الوجه)
+   t-jpg   خلفية رمادية وسطى + حد فاتح (مرفوعة — صورة)
+   t-png   بلا خلفية + حد متقطع        (توأم الرaster المفتوح)
+   t-py    بئر شبه أسود                (كود غائر)
+   t-json  بلا خلفية + حد أبيض كامل    (مخطّط حاد)
+   t-md    خلفية مرتفعة قليلاً + حبر رمادي (مستند هادئ)
+   t-bin   أغمق خلفية وأخفت حبر        (ثنائي غير مقروء)
+   t-self  أبيض معكوس + هالة حلقة       (مخرجات المصنع نفسها)            */
+.tmon{
+  flex:none;width:26px;height:26px;border-radius:7px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:0;
+  direction:ltr;unicode-bidi:isolate;
+  border:1px solid transparent;
+  transition:transform var(--t-fast) var(--ease);
+}
+.frow:hover .tmon{transform:translateY(-1px)}
+.t-html{background:#EAEAEA;color:#141414;border-color:#EAEAEA}
+.t-jpg{background:#4A4A4A;color:#F2F2F2;border-color:#5A5A5A}
+.t-png{background:transparent;color:#D6D6D6;border:1px dashed #6E6E6E}
+.t-py{background:#0C0C0C;color:#C9C9C9;border-color:#333333}
+.t-json{background:transparent;color:#F2F2F2;border-color:#F2F2F2}
+.t-md{background:#2E2E2E;color:#A8A8A8;border-color:#454545}
+.t-bin{background:#161616;color:#5A5A5A;border-color:#242424}
+.t-self{background:#F2F2F2;color:#141414;border-color:#F2F2F2;box-shadow:0 0 0 2px #161616,0 0 0 3px #454545}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   C) PREVIEW CHROME — ي заменّ الشجرة داخل نفس الـ canvas عند فتح ملف
+   ══════════════════════════════════════════════════════════════════════════ */
+/* رأس المعاينة: رجوع + اسم (LTR معزول) + شارة النوع + حجم + sha16 + مسار + أدوات */
+.pv-hd{
+  position:sticky;top:var(--sticky-top);z-index:5;
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  background:var(--g1);            /* صلب: رأس لاصق معتم — بلا طبقات ألفا */
+  border-bottom:1px solid var(--g-line);
+}
+.pv-back{
+  flex:none;width:26px;height:26px;border-radius:8px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--g2);border:1px solid var(--g-line);color:var(--g8);
+  transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease);
+}
+.pv-back .ic{width:14px;height:14px}   /* استخدم #i-chevr — سهم RTL للخلف يشير لليمين */
+.pv-back:hover{background:var(--g5);border-color:var(--line2);color:var(--g9)}
+.pv-name{
+  flex:0 1 auto;min-width:0;
+  direction:ltr;unicode-bidi:isolate;text-align:start;
+  font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--g9);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pv-kind{
+  flex:none;padding:2px 8px;border-radius:6px;
+  border:1px solid var(--line2);background:var(--g4);
+  font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--g8);
+  direction:ltr;unicode-bidi:isolate;
+}
+.pv-size{flex:none;font-family:var(--mono);font-size:10.5px;color:var(--g-ghost);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+.pv-sha{
+  flex:none;font-family:var(--mono);font-size:10.5px;color:var(--g-mono);
+  background:var(--g0);border:1px solid var(--g-line);border-radius:6px;
+  padding:2px 7px;letter-spacing:.02em;direction:ltr;unicode-bidi:isolate;
+}
+.pv-path{
+  flex:1 1 40px;min-width:0;
+  direction:ltr;unicode-bidi:isolate;text-align:left;
+  font-family:var(--mono);font-size:10.5px;color:var(--g-soft);
+  background:var(--g0);border:1px solid var(--g-line);border-radius:6px;
+  padding:2px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pv-acts{flex:none;display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto}
+.pv-act{
+  height:26px;padding:0 11px;border-radius:8px;
+  display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--line);background:var(--g2);color:var(--g8);
+  font-family:var(--sans);font-size:11px;font-weight:500;
+  transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease);
+}
+.pv-act .ic{width:13px;height:13px}
+.pv-act:hover{background:var(--g5);border-color:var(--line2);color:var(--g9);transform:translateY(-1px)}
+.pv-act.on{background:var(--g9);border-color:var(--g9);color:var(--accent-ink);font-weight:600}  /* التبديل النشط معكوس */
+.pv-act.on:hover{transform:none;background:var(--g9)}
+
+/* ── معاينة حية: شريط «LIVE» رمادي + إطار مُدرَّج ── */
+.pv-live{
+  position:relative;display:flex;flex-direction:column;
+  height:100%;min-height:340px;
+  background:var(--g0);
+  animation:fadein var(--t-slow) var(--ease);
+}
+.pv-live-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 12px;
+  background:var(--g1);border-bottom:1px solid var(--g-line);
+  font-size:10.5px;color:var(--g7);letter-spacing:.03em;
+}
+.pv-live-dot{width:6px;height:6px;border-radius:50%;background:var(--g9);flex:0 0 auto;animation:livedot 2s ease-in-out infinite}
+.pv-live-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--g9);letter-spacing:.18em;direction:ltr;unicode-bidi:isolate}
+.pv-live-txt{color:var(--g7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-frame,.pv-live iframe{flex:1;min-height:0;width:100%;border:0;background:var(--g1);filter:grayscale(1)}
+
+/* ── عارض الصور: احتواء على شبه أسود + شطرنج شفافية + شريط أدوات fit/100% ── */
+.pv-img{
+  display:flex;flex-direction:column;
+  height:100%;min-height:340px;
+  background:#0A0A0A;
+  animation:fadein var(--t-slow) var(--ease);
+}
+.pv-img-stage{
+  flex:1;min-height:0;overflow:auto;
+  display:grid;place-items:center;padding:16px;
+  /* شطرنج رمادي يكشف الشفافية — بلا لون */
+  background:repeating-conic-gradient(#141414 0% 25%,#0A0A0A 0% 50%) 0 0/16px 16px;
+}
+.pv-img-stage img{
+  max-width:100%;max-height:100%;object-fit:contain;
+  border-radius:4px;box-shadow:0 0 0 1px rgba(255,255,255,.08);
+  filter:grayscale(1);
+}
+.pv-img-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--g1);border-top:1px solid var(--g-line)}
+.pv-tool{
+  height:24px;padding:0 10px;border-radius:7px;
+  display:inline-flex;align-items:center;gap:4px;
+  border:1px solid transparent;background:transparent;color:var(--g7);
+  font-family:var(--mono);font-size:10.5px;font-weight:500;
+  transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease);
+}
+.pv-tool .ic{width:12px;height:12px}
+.pv-tool:hover{color:var(--g9);background:var(--g4)}
+.pv-tool.on{background:var(--g9);border-color:var(--g9);color:var(--accent-ink);font-weight:700}  /* fit/100% النشطة معكوسة */
+.pv-sep{width:1px;height:14px;background:var(--g-line);flex:0 0 auto}
+.pv-img-dim{margin-inline-start:auto;font-family:var(--mono);font-size:10.5px;color:var(--g-ghost);direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+
+/* ── عارض الكود: عمود أرقام لاصق أفقياً + تمرير أفقي + مونو 11.5 ──
+   الحاوية LTR عمداً — الكود لا يُعكس؛ الخصائص المنطقية تتبع سياق LTR الداخلي */
+.pv-code{
+  display:flex;align-items:stretch;
+  height:100%;min-height:340px;overflow:auto;
+  direction:ltr;text-align:start;
+  background:var(--g0);
+  animation:fadein var(--t-slow) var(--ease);
+}
+.pv-gutter{
+  position:sticky;inset-inline-start:0;z-index:2;flex:none;min-width:44px;
+  margin:0;padding:12px 10px 18px 14px;
+  background:var(--g0);color:var(--g-mid);
+  font-family:var(--mono);font-size:11.5px;line-height:1.75;
+  text-align:end;user-select:none;
+  border-inline-end:1px solid var(--g2);
+}
+.pv-code pre,.pv-code-body{
+  flex:none;margin:0;padding:12px 28px 18px 14px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.75;
+  color:var(--g-bright);white-space:pre;tab-size:2;
+}
+
+/* ── عارض JSON: طباعة جميلة + أدلة إزاحة خافتة كل ~2ch (6.9px/حرف @11.5 JBM) ── */
+.pv-json{
+  height:100%;min-height:340px;overflow:auto;
+  direction:ltr;text-align:start;
+  background:var(--g0);
+  animation:fadein var(--t-slow) var(--ease);
+}
+.pv-json pre{
+  margin:0;padding:14px 28px 20px 16px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.85;
+  color:var(--g-bright);white-space:pre;tab-size:2;
+  background-image:repeating-linear-gradient(to right,rgba(255,255,255,.045) 0 1px,transparent 1px 14px);
+  background-origin:content-box;
+}
+/* خطافات تلوين الرموز الرمادية (اختيارية في الترميز) */
+.pv-json .jk{color:var(--g9);font-weight:600}   /* المفاتيح — أفتح */
+.pv-json .js{color:var(--g8)}                   /* النصوص */
+.pv-json .jn{color:var(--g-mono)}               /* الأرقام */
+.pv-json .jb{color:var(--g-soft)}               /* booleans/null */
+.pv-json .jp{color:var(--g-slate)}              /* علامات الترقيم — أخفت */
+
+/* ── بطاقة الحدود الصادقة للثنائيات: لا معاينة مضمنة — مسار/حجم/sha فقط ── */
+.pv-note{
+  margin:18px 16px 24px;padding:14px 16px;
+  border:1px dashed var(--line);border-radius:12px;
+  background:var(--g-recess);
+  animation:fadein var(--t-slow) var(--ease);
+}
+.pv-note-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--g8);margin-bottom:6px}
+.pv-note-title .ic{width:14px;height:14px;color:var(--g7);flex:0 0 auto}
+.pv-note p{margin:0 0 10px;font-size:11.5px;line-height:1.85;color:var(--g7)}
+.pv-note p:last-child{margin-bottom:0}
+.pv-note-kv{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;direction:ltr;unicode-bidi:isolate}
+.pv-kv{
+  font-family:var(--mono);font-size:10.5px;color:var(--g-mono);
+  background:var(--g0);border:1px solid var(--g-line);border-radius:6px;
+  padding:3px 8px;direction:ltr;unicode-bidi:isolate;
+}
+.pv-kv b{color:var(--g-ghost);font-weight:500}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   D) CHAT STORY UPGRADE — محادثة الإنتاج الطويلة (~700px)
+   ══════════════════════════════════════════════════════════════════════════ */
+/* فقاعة المستخدم — مرآة مانوس: عند نهاية السطر (يسار في RTL) — تعديل عن
+   flex-start الأصلي، وذيل الفقاعة أسفل جهة النهاية */
+.u-msg{display:flex;justify-content:flex-end;margin:16px 0 8px}
+.u-bubble{
+  max-width:min(78%,560px);
+  background:var(--bubble);color:var(--g9);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;border-end-end-radius:5px;   /* الذيل أسفل-جهة-النهاية */
+  padding:10px 14px;
+  font-size:14px;line-height:1.8;
+}
+.u-meta{margin-top:4px;font-size:10.5px;color:var(--g-ghost);text-align:end;font-variant-numeric:tabular-nums}
+
+/* بلوك الوكيل — إيقاع زمني مريح لسرد طويل */
+.a-msg{margin:20px 0 18px}
+.a-id{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.a-id .handlogo{width:22px;height:22px;border-radius:6px;background:var(--g9);color:var(--accent-ink)}
+.a-id .serifbrand{font-size:15px;color:var(--g9)}
+.a-time{font-size:10.5px;color:var(--g-ghost);font-variant-numeric:tabular-nums}
+.a-para{font-size:14px;line-height:1.9;color:var(--g8);margin-bottom:12px}
+.a-para b{color:var(--g9);font-weight:600}
+.a-para .mono,.a-opt .mono{
+  font-size:12px;color:var(--g-bright);
+  background:var(--g1);border:1px solid var(--g-line);border-radius:5px;
+  padding:0 5px;
+}
+.a-opts{margin:12px 0 4px;display:flex;flex-direction:column;gap:10px}
+.a-opt{display:flex;gap:12px;font-size:14px;line-height:1.8;color:var(--g8)}
+.a-opt .n{color:var(--g-ghost);flex:0 0 auto;font-weight:500;direction:ltr;unicode-bidi:isolate}
+.a-opt b{color:var(--g9);font-weight:600}
+
+/* بطاقات الأحداث — أغمق قليلاً من اللوحة، بلا ظلال صاخبة */
+.ev-card{background:var(--g1);border:1px solid var(--g-line);border-radius:14px;padding:13px 15px;margin:12px 0;transition:border-color var(--t-fast) var(--ease)}
+.ev-card:hover{border-color:#333333}
+.ev-k{font-size:10.5px;font-weight:500;color:var(--g-ghost)}
+.ev-title{font-size:13.5px;font-weight:600;color:var(--g9);line-height:1.65;margin-top:8px}
+.ev-body{font-size:13px;line-height:1.75;color:var(--g-bright);margin-top:6px}
+.ev-mono{background:var(--g-recess);border:1px solid var(--g-line);border-radius:10px;padding:9px 12px;margin-top:9px;font-size:11.5px;color:var(--g-mono);line-height:1.65;direction:ltr;text-align:left;overflow-wrap:anywhere}
+
+/* رقاقة الأداة — «Browsing …» في مانوس: قابلة للتوسع بلا JS إضافي
+   (.open تقلب الرقاقة أبيض، والتفاصيل تظهر كأخت لاحقة) */
+.toolchip{
+  display:inline-flex;align-items:center;gap:8px;
+  margin:8px 0 6px;padding:5px 12px;
+  background:var(--g1);border:1px solid var(--g-raise);border-radius:var(--r-pill);
+  color:var(--g-bright);
+  font-family:var(--sans);font-size:12px;font-weight:500;
+  cursor:pointer;user-select:none;
+  transition:background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease);
+}
+.toolchip:hover{background:var(--g-lift);border-color:var(--line2);color:var(--g9);transform:translateY(-1px)}
+.toolchip .tico{width:20px;height:20px;border-radius:50%;background:var(--g-recess);border:1px solid var(--g-raise);display:grid;place-items:center;color:var(--g7);flex:0 0 auto;transition:color var(--t-fast) var(--ease),background-color var(--t-fast) var(--ease)}
+.toolchip .tico .ic{width:11px;height:11px}
+.toolchip .mono{color:var(--g-mono);font-size:11.5px}
+.toolchip .tstate{color:var(--g-ghost);font-size:10.5px;margin-inline-start:2px}
+.toolchip.run{border-style:dashed;border-color:var(--g-soft)}
+.toolchip.run .tico{color:var(--g9);animation:livepulse 1.8s ease-in-out infinite}
+/* الحالة المفتوحة: انقلاب أبيض/أسود — أوضح تغيير ممكن بلا لون */
+.toolchip.open,
+.toolchip[aria-expanded="true"]{
+  background:var(--g9);border-color:var(--g9);border-style:solid;color:var(--accent-ink);transform:none;
+}
+.toolchip.open .tico,
+.toolchip[aria-expanded="true"] .tico{background:rgba(0,0,0,.08);border-color:transparent;color:var(--accent-ink);animation:none}
+.toolchip.open .mono,
+.toolchip[aria-expanded="true"] .mono{color:#3D3D3D}
+.toolchip.open .tstate,
+.toolchip[aria-expanded="true"] .tstate{color:var(--g-ghost)}
+/* صف التفاصيل — يظهر كأخ مباشر للرقاقة المفتوحة (CSS-only expand) */
+.toolchip-det{
+  display:none;
+  margin:8px 0 4px;padding:10px 12px;
+  border:1px dashed var(--line);border-radius:10px;
+  background:var(--g-recess);
+  font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--g-mono);
+  direction:ltr;text-align:left;unicode-bidi:isolate;
+  white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;
+}
+.toolchip.open + .toolchip-det,
+.toolchip[aria-expanded="true"] + .toolchip-det{display:block;animation:fadein var(--t-med) var(--ease)}
+.toolchip-det.show{display:block}
+
+/* فاصل مراحل الإنتاج — رقاقة هادئة بين خطّين شعريين متلاشيين */
+.story-day{
+  display:flex;align-items:center;gap:12px;
+  margin:22px 0 10px;
+  color:var(--g-ghost);font-size:10.5px;font-weight:500;letter-spacing:.08em;
+}
+.story-day::before,.story-day::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,#262626,transparent)}
+.story-day span{
+  padding:3px 12px;white-space:nowrap;
+  background:var(--g1);border:1px solid var(--g-hairline);border-radius:var(--r-pill);
+  color:var(--g7);letter-spacing:.05em;
+}
+
+/* بطاقة البوابة — اللحظة الأهم تُقلب معكوسة أبيض/أسود (نظير «Take control») */
+.gate-card{background:var(--g9);border:1px solid var(--g9);border-radius:var(--r-card);box-shadow:var(--shadow-card);display:flex;align-items:center;gap:14px;padding:16px 18px;margin:16px 0}
+.gate-card .gico{background:rgba(0,0,0,.07);color:var(--accent-ink)}
+.gate-card .gtxt{color:#3D3D3D}
+.gate-card .gtxt b{color:#141414}
+.gate-card .btn-dark{background:#141414;color:var(--g9)}
+.gate-card .btn-dark:hover{background:#000000}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   E) MONO STATUS SYSTEM — الحالة بالإضاءة + الوزن + نمط الحد + الرمز
+   سُلّم التمييز:  ok  أفتح حبر + حد صلب فاتح + وزن 700
+                  warn حبر متوسط + حد متقطع (انتظار) + وزن 600
+                  err  أخفت حبر + أخفت خلفية + وزن 500
+                  info حد صلب محايد ·  plan حد منقّط (نيّة/تخطيط)
+   ══════════════════════════════════════════════════════════════════════════ */
+.st-ok,.st-warn,.st-err,.st-info,.st-plan{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;line-height:1.6;white-space:nowrap;
+}
+.st-ok .ic,.st-warn .ic,.st-err .ic,.st-info .ic,.st-plan .ic{width:11px;height:11px;flex:0 0 auto}
+.st-ok{color:var(--pass);background:var(--pass-bg);border:1px solid var(--pass-line);font-weight:700}          /* ✓ */
+.st-warn{color:var(--pend);background:var(--pend-bg);border:1px dashed var(--pend-line);font-weight:600}       /* ◷ */
+.st-err{color:var(--fail);background:var(--fail-bg);border:1px solid var(--fail-line);font-weight:500}         /* ✕ */
+.st-info{color:var(--g-mono);background:transparent;border:1px solid var(--line2);font-weight:500}
+.st-plan{color:var(--g-soft);background:transparent;border:1px dotted var(--g-slate);font-weight:500;letter-spacing:.04em}
+
+/* رقائق الأحداث بنبراتها — سُلّم رمادي كامل */
+.ev-chip{
+  font-size:10.5px;color:var(--g7);
+  background:var(--g1);border:1px solid var(--g-line);
+  border-radius:var(--r-pill);padding:4px 10px;
+  display:inline-flex;gap:6px;align-items:center;
+}
+.ev-chip .mono{font-size:10.5px;color:var(--g-bright)}
+.ev-chip.c-ok{color:var(--g9);background:var(--g-lift);border-color:var(--g-soft);font-weight:600}   /* أفتح */
+.ev-chip.c-warn{color:var(--g-bright);background:var(--g-recess);border:1px dashed var(--g-ghost)}   /* متقطع */
+.ev-chip.c-err{color:var(--g-ghost);background:var(--g-recess);border-color:var(--g-hairline)}       /* أخفت */
+.ev-chip.c-plan{color:var(--g-mono);background:transparent;border:1px dotted var(--g-slate)}         /* منقّط */
+
+/* رقائق الحكم الكبرى — PASS معكوسة · PENDING محدّدة متقطعة · FAIL خافتة */
+.chip-pass,.chip-pend,.chip-fail{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:var(--r-pill);
+  font-size:11px;letter-spacing:.02em;white-space:nowrap;
+}
+.chip-pass .ic,.chip-pend .ic,.chip-fail .ic{width:12px;height:12px;flex:0 0 auto}
+.chip-pass{background:var(--g9);border:1px solid var(--g9);color:var(--accent-ink);font-weight:700}            /* انقلاب كامل */
+.chip-pend{background:transparent;border:1px dashed var(--pend-line);color:var(--g8);font-weight:600}         /* محدّدة فقط */
+.chip-fail{background:var(--fail-bg);border:1px solid var(--fail-line);color:var(--g-slate);font-weight:500}  /* خافتة */
+
+/* ── جولة إنفاذ القانون: مواضع ملونة متبقية في الورقة الأساسية تُعاد رمادية ── */
+.sess.active{background:var(--g3)}
+.sess-av{background:#3A3A3A !important;color:var(--g9)}   /* !important مقصود: JS يحقن لوناً inline (avc) */
+.st-active{background:var(--g9)}
+.st-verified{background:var(--g-bright)}
+.st-blocked{background:transparent;box-shadow:inset 0 0 0 1.5px var(--g-ghost)}
+.titem .mk.done{color:var(--g9)}
+.titem .mk.gate{color:var(--g-bright)}
+.titem .mk.pend{color:var(--g-mid)}
+.amber{background:var(--pend-bg);color:var(--pend);border:1px dashed var(--pend-line)}
+.spin{border:2px solid #3A3A3A;border-top-color:var(--g-near)}
+.searchres{background:var(--g-recess);border:1px solid var(--line2)}
+.searchres .sr-item{border-top-color:var(--g-line)}
+.searchres-hd .ic{color:var(--g-near)}
+.handlogo{background:var(--g9);color:var(--accent-ink)}
+.urlbar{background:var(--g1);border-color:var(--g-line);color:var(--g-soft)}
+.canvas{background:var(--g0)}                                   /* شاشة الحاسبة — أعمق بئر */
+.prev-stat{background:var(--g1);border:1px solid var(--g-line)}
+.prev-note{background:var(--g1);border:1px solid var(--g-line);color:var(--g7)}
+.art-hd{background:var(--g0);border-bottom-color:var(--g2)}
+.art-row:hover{background:var(--g-recess)}
+.evrow{background:var(--g-recess);border:1px solid var(--g-hairline)}
+.evrow-m .mchip{background:var(--g1);color:var(--g7)}
+.compose-pill{background:var(--g3);border:1px solid var(--line2)}
+.markpt.hot{background:var(--g9);box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+#playbtn.playing{color:var(--g9)}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   F) MICRO-INTERACTIONS — هادئة ومميزة: 150–220ms، بلا نطّات
+   ══════════════════════════════════════════════════════════════════════════ */
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes selbar{from{transform:scaleY(.25);opacity:0}to{transform:scaleY(1);opacity:1}}
+@keyframes livedot{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,255,255,.30)}
+  50%{opacity:.5;box-shadow:0 0 0 5px rgba(255,255,255,0)}
+}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* تلميع شريط إعادة التشغيل — المسار أبيض عند التشغيل، مقبض حلقي */
+.scrub{gap:10px}
+.track::before{height:4px;top:11px;background:#262626;border-radius:var(--r-pill)}
+.fill{height:4px;top:11px;border-radius:var(--r-pill);background:var(--g9);box-shadow:0 0 10px rgba(255,255,255,.20)}
+.markpt{width:2px;height:10px;top:8px;background:#3D3D3D;border-radius:1px}
+.cursor{
+  top:5px;width:14px;height:14px;
+  background:var(--g9);border:2px solid var(--g1);border-radius:50%;
+  box-shadow:0 1px 6px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.25);
+  transform:translateX(-50%);   /* كما هي — الموضع يُدار من JS بنِسَب منطقية */
+  transition:width var(--t-fast) var(--ease),height var(--t-fast) var(--ease),top var(--t-fast) var(--ease);
+}
+.cursor::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--g1)}   /* مقبض حلقي */
+.track:hover .cursor{width:16px;height:16px;top:4px}   /* translateX(-50%) يحفظ التمركز */
+.tstamp{color:var(--g7);min-width:64px;font-variant-numeric:tabular-nums}
+.speeds{background:var(--g-recess);border:1px solid var(--g-line)}
+.spd{color:var(--g7);transition:background-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease)}
+.spd:hover{color:var(--g9);background:var(--g-lift)}
+.spd.active{background:var(--g9);color:var(--accent-ink);font-weight:600}
+
+/* تغطية دفاعية إن بُني الشريط على input[type=range] */
+input[type=range]{-webkit-appearance:none;appearance:none;height:20px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:var(--r-pill);background:#262626}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--g9);border:2px solid var(--g1);box-shadow:0 1px 6px rgba(0,0,0,.55);
+  transition:transform var(--t-fast) var(--ease);
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+input[type=range]::-moz-range-track{height:4px;border-radius:var(--r-pill);background:#262626}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--g9);border:2px solid var(--g1)}
+
+/* احترام تقليل الحركة — أولوية على كل ما سبق */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}
