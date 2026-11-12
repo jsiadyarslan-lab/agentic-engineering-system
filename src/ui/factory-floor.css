@@ -78,7 +78,7 @@
   transition: background var(--dur) var(--ease);
 }
 .btn-primary:hover { background: var(--accent-strong); }
-.btn-primary.done { background: var(--ok); border-color: var(--ok-border); color: #06141c; }
+.btn-primary.done { background: var(--ok); border-color: var(--ok-border); color: #111111; }
 .btn-primary.err { background: var(--danger); border-color: var(--danger-border); color: #fff; }
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
 
@@ -463,8 +463,8 @@
   color: var(--text-secondary);
   flex: none;
 }
-.role-chip.role-thinker { background: rgba(217, 139, 168, 0.12); color: #D98BA8; border-color: rgba(217, 139, 168, 0.3); }
-.role-chip.role-implementer { background: rgba(184, 163, 240, 0.12); color: #B8A3F0; border-color: rgba(184, 163, 240, 0.3); }
+.role-chip.role-thinker { background: rgba(255,255,255,0.071); color: #9c9c9c; border-color: rgba(255,255,255,0.177); }
+.role-chip.role-implementer { background: rgba(255,255,255,0.078); color: #a8a8a8; border-color: rgba(255,255,255,0.196); }
 .role-chip.role-reviewer { background: var(--accent-soft); color: var(--accent-hi); border-color: var(--accent-border); }
 .role-chip.role-verifier { background: var(--ok-chip); color: var(--ok); border-color: var(--ok-border); }
 .role-chip.role-arbiter { background: var(--warn-chip); color: var(--warn); border-color: var(--warn-border); }
@@ -704,7 +704,7 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .floor-now.fn-warn { border-color: var(--warn-border); background: var(--warn-chip); }
-.floor-now.fn-fail { border-color: var(--danger, #f85149); }
+.floor-now.fn-fail { border-color: var(--danger, #6e6e6e); }
 .fn-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .fn-pulse {
   width: 9px;
@@ -714,16 +714,16 @@
   flex: none;
   animation: fnPulse 1.6s ease-out infinite;
 }
-.fn-pulse.fail { background: var(--danger, #f85149); animation-name: fnPulseFail; }
+.fn-pulse.fail { background: var(--danger, #6e6e6e); animation-name: fnPulseFail; }
 @keyframes fnPulse {
-  0% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.45); }
-  70% { box-shadow: 0 0 0 8px rgba(88, 166, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.262); }
+  70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
 }
 @keyframes fnPulseFail {
-  0% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.45); }
-  70% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.186); }
+  70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
 }
 .fn-action {
   font: 600 13px/1.5 var(--font-sans);

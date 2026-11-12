@@ -836,7 +836,7 @@
     ensureEvoAssets(function () {
       if (body._evoSeq !== seq) return; /* طلب أحدث حل محلنا */
       if (!window.EvoBrowser) {
-        host.innerHTML = '<div style="padding:20px;color:#F85149">تعذّر تحميل متصفح التطور</div>';
+        host.innerHTML = '<div style="padding:20px;color:#6e6e6e">تعذّر تحميل متصفح التطور</div>';
         return;
       }
       window.EvoBrowser.mount(host, {

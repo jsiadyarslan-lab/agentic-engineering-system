@@ -116,7 +116,7 @@ window.EvoBrowser = (function () {
     root.innerHTML = SKELETON;
     if (opts.embedded) {
       root.style.height = opts.height || "calc(100vh - 200px)";
-      root.style.border = "1px solid #2A3340";
+      root.style.border = "1px solid #2e2e2e";
       root.style.borderRadius = "12px";
       root.style.overflow = "hidden";
     }
