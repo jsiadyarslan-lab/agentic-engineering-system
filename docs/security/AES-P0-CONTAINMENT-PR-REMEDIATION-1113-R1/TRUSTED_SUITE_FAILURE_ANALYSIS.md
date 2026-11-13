@@ -10,6 +10,8 @@
 
 All three: `22 failed, 243 passed, 14 skipped`. The 16 failure IDs visible in each log (the `| tail -40` truncation hid the other 6 — see §5) are **byte-identical across all three runs** (VERIFIED by set-diff of the extracted `FAILED` lines).
 
+After the R1 push (commit `cda8cf0`, runs `43407564302`/`43407569994`/`43407564140`/`43407569854`): `secret-guard` **succeeded** on both events, and the trusted suite reported `22 failed / 279 passed / 14 skipped` — the same 22 pre-existing failures (now with the **complete list printed**), plus the 36 new `tests/security` tests **all passing** in CI. No new failure was introduced.
+
 ## 2. Which tests fail (OBSERVED from logs; classes)
 
 Visible 16 failure IDs (of 22):
@@ -22,7 +24,16 @@ Visible 16 failure IDs (of 22):
 | UI asset versioning (011) | `test_index_serves_current_version_urls_not_stale_literal`, `test_index_etag_version_derived_and_conditional` | 2 |
 | UI tokens (014) | `test_t1_canonical_token_values_locked`, `test_t4_g7_zero_letter_spacing_on_arabic` | 2 |
 
-The 6 hidden failures are among the same files/families (deterministic totals: 22 = 16 visible + 6 truncated; the truncation is now removed on this branch, so every future run prints the complete list).
+The 6 formerly-hidden failures (now enumerated by the fixed workflow on the R1 commit — OBSERVED):
+
+- `tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything`
+- `tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job`
+- `tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner`
+- `tests/api/test_projects_api.py::test_run_stream_completes_project`
+- `tests/api/test_projects_api.py::test_sub_resources_exposed`
+- `tests/core/test_stop_api.py::test_cycle_status_finished_shape`
+
+These are earlier in pytest's summary order than the visible 16 — that is exactly why `tail -40` cut them.
 
 ## 3. Causes
 
