@@ -14,11 +14,13 @@ import io, os, subprocess, sys, time
 SRC = "/home/opc/w2t25_monitor.py"
 BAK = "/home/opc/w2t25_monitor.py.bak_v1"
 HTML = "/home/opc/monitor_v2_index.html"
-# AES-P0-CONTAINMENT-1113: no hardcoded credential in the repo. Read from env
-# or the server's root-only secret file; never printed, never in URLs.
-TOKEN = os.environ.get("W2T25_MONITOR_TOKEN") or open(
-    os.environ.get("W2T25_MONITOR_TOKEN_FILE", "/etc/w2t25-monitor/monitor_token")
-).read().strip()
+# AES-P0-CONTAINMENT-1113 / R1-1113 fix 6: no hardcoded credential in the repo;
+# read lazily (never at import time) and never printed, never in URLs.
+def load_token():
+    """Lazy credential read — only when a deployment actually runs."""
+    return os.environ.get("W2T25_MONITOR_TOKEN") or open(
+        os.environ.get("W2T25_MONITOR_TOKEN_FILE", "/etc/w2t25-monitor/monitor_token")
+    ).read().strip()
 
 BUILD_NOW = '''
 
@@ -185,16 +187,18 @@ def main():
     print("restart rc=", r.returncode, r.stderr[:200])
     time.sleep(3)
     # verify
-    # AES-P0-CONTAINMENT-1113: token reaches verification shells via env, never via URL
-    os.environ["W2T25_MONITOR_TOKEN"] = TOKEN
+    # AES-P0-CONTAINMENT-1113 / R1-1113 fix 6: the token reaches the shell via env
+    # and reaches curl via STDIN headers (-H @-) — never in a URL, never in any
+    # process argument list (not visible in /proc/*/cmdline, ps, or logs).
+    os.environ["W2T25_MONITOR_TOKEN"] = load_token()
     checks = [
         ("healthz", 'curl -s -m 6 http://127.0.0.1:8765/healthz'),
-        ("page-v2", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/" | grep -c "غرفة التحكم"'),
-        ("api-now", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/api/now" | head -c 300'),
-        ("api-status", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/api/status" | head -c 160'),
-        ("api-steps", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/api/steps" | head -c 120'),
-        ("preview", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" -o /dev/null -w "%{http_code}" "http://127.0.0.1:8765/preview/index.html"'),
-        ("monitor-direct", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/api/now" | head -c 200'),
+        ("page-v2", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/" | grep -c "غرفة التحكم"'),
+        ("api-now", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/api/now" | head -c 300'),
+        ("api-status", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/api/status" | head -c 160'),
+        ("api-steps", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/api/steps" | head -c 120'),
+        ("preview", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- -o /dev/null -w "%{http_code}" "http://127.0.0.1:8765/preview/index.html"'),
+        ("monitor-direct", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/api/now" | head -c 200'),
         ("service", 'systemctl is-active w2t25-monitor.service'),
     ]
     for name, cmd in checks:
