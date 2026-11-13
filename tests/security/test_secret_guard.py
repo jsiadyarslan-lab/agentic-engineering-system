@@ -16,6 +16,8 @@ GUARD = REPO_ROOT / "scripts" / "ops" / "secret_guard.py"
 V1 = "Aq11" + "Bz22" + "Cx33" + "Dw44"
 V2 = "Qw55" + "Er66" + "Ty77" + "Ui88"
 V3 = "Op0o" + "Lk9l" + "Jm8m" + "In7n"
+# R3: قيمة طويلة (64 حرفًا) لاختبارات الربط — عتبة القيمة المربوطة ≥ 32
+VL = V1 + V2 + V1 + V2
 QK = "?" + "k="            # بُني بالتسلسل: لا يظهر نص الاستعلام كاملًا في المصدر
 QK2 = "?" + "token="
 
@@ -143,21 +145,39 @@ def test_copy_of_guard_with_credential_at_other_path(tmp_path):
     assert rc == 1, out
 
 
-# ------------------------------------------------- fix 4 — allowlist rules
+# ------------------------------------------- fix 4 — allowlist rules (R3)
+#
+# R3 content binding: an entry must bind to the reviewed content of the
+# target file (content_sha256 + lines/findings + value_fp/value_len).
+# The helper computes the binding from the guard itself — no secret values
+# appear in the test source (runtime-built, fingerprinted only).
 
-def _allow_entry(path, rule="*", expires="2027-01-31", **kw):
+def _bound_entry(repo, rel, rule="A", expires="2027-01-31", **overrides):
+    import hashlib
     import json
-    entry = {"path": path, "rule": rule, "owner": "test-owner",
-             "reason": "synthetic test entry", "created": "2026-11-13",
-             "expires": expires, "task": "R1-1113 tests"}
-    entry.update(kw)
+    sys.path.insert(0, str(REPO_ROOT / "scripts" / "ops"))
+    import secret_guard as sg
+    p = repo / rel
+    fnds = [f for f in sg.scan_file(str(p), rel) if f[0] == rule]
+    assert fnds, "no live %s finding in %s" % (rule, rel)
+    lines = sorted({f[1] for f in fnds})
+    entry = {
+        "path": rel, "rule": rule, "owner": "test-owner",
+        "reason": "synthetic test entry (runtime-built value)", "created": "2026-11-13",
+        "expires": expires, "task": "R1/R3-1113 tests",
+        "content_sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+        "lines": lines, "findings": len(lines),
+        "value_fp": fnds[0][3] if rule in ("A", "B") else None,
+        "value_len": fnds[0][4] if rule in ("A", "B") else None,
+    }
+    entry.update(overrides)
     return json.dumps(entry)
 
 
 def test_allowlist_valid_entry_suppresses(tmp_path):
     repo = _make_repo(tmp_path)
-    _write(repo, "legacy.py", _assign("TOKEN", V1) + "\n")
-    _write(repo, ".secretguard-allow", _allow_entry("legacy.py", "A") + "\n")
+    _write(repo, "legacy.py", _assign("TOKEN", VL) + "\n")
+    _write(repo, ".secretguard-allow", _bound_entry(repo, "legacy.py", "A") + "\n")
     rc, out = _run_guard(repo)
     assert rc == 0, out
 
@@ -166,7 +186,7 @@ def test_allowlist_missing_fields_rejected(tmp_path):
     repo = _make_repo(tmp_path)
     _write(repo, "legacy.py", _assign("TOKEN", V1) + "\n")
     import json
-    bad = json.dumps({"path": "legacy.py", "rule": "A"})  # بلا مالك ولا مدة
+    bad = json.dumps({"path": "legacy.py", "rule": "A"})  # بلا مالك ولا مدة ولا ربط
     _write(repo, ".secretguard-allow", bad + "\n")
     rc, out = _run_guard(repo)
     assert rc == 1
@@ -176,9 +196,9 @@ def test_allowlist_missing_fields_rejected(tmp_path):
 
 def test_allowlist_expired_entry_fails_closed(tmp_path):
     repo = _make_repo(tmp_path)
-    _write(repo, "legacy.py", _assign("TOKEN", V1) + "\n")
-    _write(repo, ".secretguard-allow", _allow_entry("legacy.py", "A",
-                                                     expires="2026-01-01") + "\n")
+    _write(repo, "legacy.py", _assign("TOKEN", VL) + "\n")
+    _write(repo, ".secretguard-allow",
+           _bound_entry(repo, "legacy.py", "A", expires="2026-01-01") + "\n")
     rc, out = _run_guard(repo)
     assert rc == 1
     assert "EXPIRED" in out
@@ -195,7 +215,11 @@ def test_allowlist_invalid_json_line_rejected(tmp_path):
 
 def test_allowlist_bad_rule_value_rejected(tmp_path):
     repo = _make_repo(tmp_path)
-    _write(repo, ".secretguard-allow", _allow_entry("legacy.py", "Z") + "\n")
+    _write(repo, "legacy.py", _assign("TOKEN", VL) + "\n")
+    import json
+    e = json.loads(_bound_entry(repo, "legacy.py", "A"))
+    e["rule"] = "Z"
+    _write(repo, ".secretguard-allow", json.dumps(e) + "\n")
     rc, out = _run_guard(repo)
     assert rc == 1
     assert "rule must be" in out
