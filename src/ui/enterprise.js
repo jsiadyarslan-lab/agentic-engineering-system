@@ -518,7 +518,7 @@
         c.appendChild(el("div", "ent-role-model", (s.provider || "—") + " · " + (s.model || "—")));
         var editBtn = c.querySelector(".ent-edit");
         editBtn.addEventListener("click", function () {
-          if (window.HubSettings) window.HubSettings.open("models");
+          if (window.HubSettings) window.HubSettings.openTab("models");
         });
         grid.appendChild(c);
       });
@@ -573,7 +573,7 @@
       sec3.appendChild(strip);
       var openEnv = el("button", "btn ghost small", "بيئات التنفيذ الكاملة (الإعدادات)");
       openEnv.addEventListener("click", function () {
-        if (window.HubSettings) window.HubSettings.open("execution");
+        if (window.HubSettings) window.HubSettings.openTab("execution");
       });
       sec3.appendChild(openEnv);
       body.appendChild(sec3);
