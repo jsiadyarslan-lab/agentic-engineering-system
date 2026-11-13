@@ -12,6 +12,7 @@
 كل المخرجات JSON واحد في stdout + نسخة في download/aes-remediation/P3-STALE-DIAG/
 """
 import json
+import re
 import sys
 import time
 
@@ -109,6 +110,23 @@ def main() -> int:
     dest = "/home/z/my-project/download/aes-remediation/P3-STALE-DIAG/diag_readonly.json"
     import os
     os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+    # R3 (AES-P0-CONTAINMENT-PR-REMEDIATION-1113-R3 §3.2): credential-shaped
+    # values must never reach published dumps — mask them at source. Row
+    # columns whose name carries token/secret/password/key/credential are
+    # replaced by a fixed placeholder before the JSON is written anywhere.
+    _MASK_KEY = re.compile(r"(token|secret|password|passwd|api_?key|access_?key|credential)", re.I)
+
+    def _mask(obj):
+        if isinstance(obj, dict):
+            return {k: ("<redacted-r3>" if _MASK_KEY.search(str(k)) else _mask(v))
+                    for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_mask(v) for v in obj]
+        return obj
+
+    collected = _mask(collected)
+
     with open(dest, "w", encoding="utf-8") as fh:
         json.dump(collected, fh, ensure_ascii=False, indent=1, default=str)
 
