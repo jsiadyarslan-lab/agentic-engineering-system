@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """W2-T25-AUDIT — independent completion audit of project #3 (BUILD A NEWS WEBSITE).
-Gathers live evidence from server API + sqlite (read-only) + site HTML; every claim re-verified here."""
+Gathers live evidence from server API + sqlite (read-only) + site HTML; every claim re-verified here.
+
+AES-P0-CONTAINMENT-PR-REMEDIATION-1113-R1 fix 6 — credential transport: the token
+never appears in this file, in the remote command text, in any URL, or in the
+argument list of any spawned process (curl reads the header from STDIN via
+`-H @-`; printf is a shell builtin, so the value stays in the remote shell's
+memory only). It is never printed and never written to the audit JSON."""
 import json, paramiko, sys, os
 
 KEY = "/tmp/oracle_key"
@@ -21,7 +27,8 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect("92.5.14.150", username="opc", key_filename=KEY, timeout=20)
 
 # A1: project terminal status
-o, _ = run(ssh, "curl -s -m 10 'http://127.0.0.1:8765/api/status?k=c9a39cb0a520d0d380c5136ca86b18f5'")
+# R1 fix 6: header piped via stdin — token never in curl's argv (not in /proc/*/cmdline)
+o, _ = run(ssh, "printf \"X-Access-Key: %s\" \"$(sudo cat /etc/w2t25-monitor/monitor_token)\" | curl -s -m 10 -H @- 'http://127.0.0.1:8765/api/status'")
 st = json.loads(o)
 add("A1", "project.status == COMPLETED (API)", st["project"]["status"] == "COMPLETED",
     {"status": st["project"]["status"], "updated_at": st["project"]["updated_at"]})
@@ -70,7 +77,8 @@ add("A8", "nginx log: owner browser (2.215.157.88) POSTs approved gates/plan wit
     bool(o.strip()), o[:400])
 
 # A9: live site (served via API 8765 /preview/index.html with token cookie) shows the three Arabic article cards
-o, _ = run(ssh, "K=c9a39cb0a520d0d380c5136ca86b18f5; curl -s -m 10 -o /dev/null -w '%{http_code}' -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html; echo; curl -s -m 10 -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html | grep -o -E 'مقال (أول|ثاني|ثالث)' | sort | uniq -c")
+# R1 fix 6: cookie header piped via stdin — token never in curl's argv
+o, _ = run(ssh, "printf \"Cookie: w2t25k=%s\" \"$(sudo cat /etc/w2t25-monitor/monitor_token)\" | curl -s -m 10 -o /dev/null -w '%{http_code}' -H @- http://127.0.0.1:8765/preview/index.html; echo; printf \"Cookie: w2t25k=%s\" \"$(sudo cat /etc/w2t25-monitor/monitor_token)\" | curl -s -m 10 -H @- http://127.0.0.1:8765/preview/index.html | grep -o -E 'مقال (أول|ثاني|ثالث)' | sort | uniq -c")
 lines = [l for l in o.splitlines() if l.strip()]
 code = lines[0] if lines else "?"
 arts = [l for l in lines[1:] if l.strip()]

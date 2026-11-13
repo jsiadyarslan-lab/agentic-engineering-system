@@ -122,7 +122,7 @@ def test_key_never_in_api_response(store_dir, monkeypatch, tmp_path):
     sessions = make_session_factory(engine)
     monkeypatch.setattr(routes, "_sessions", sessions)
 
-    secret = "nvapi-VERYSECRET-7777"
+    secret = "fake-nvapi-VERYSECRET-7777"
     store_mod.set_key("nvidia", secret)
     client = TestClient(routes.app)
     response = client.get("/api/providers")

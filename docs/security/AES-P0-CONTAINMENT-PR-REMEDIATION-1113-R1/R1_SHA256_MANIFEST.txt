@@ -1,0 +1,29 @@
+R1_SHA256_MANIFEST — AES-P0-CONTAINMENT-PR-REMEDIATION-1113-R1 (2026-11-13)
+Repo: jsiadyarslan-lab/agentic-engineering-system · branch security/monitor-credential-containment-1113 (PR #4, NOT merged)
+Baseline: main @ 9d77a79e71902411371decef2dd68499068246ee · PR head at review start: 1adfaf11454ea123217c9e40c3591c45171b4c6f
+
+## Deliverables (8/8)
+ALLOWLIST_REVIEW.md  sha256=57f9278b4a43389f951a348599b09bca87a1d672d5a3ff2846eb735c1b4b4d79  bytes=5042
+BASELINE_VS_PR_TEST_RESULTS.csv  sha256=a2611c2e612a69982064cc3bba2673549bcc9fa38274b7d970e9cec564438508  bytes=4063
+DEPLOY_SCRIPT_SAFETY.md  sha256=790e9eb36a44070509b5fa1ddf632049498e6a5fbcab72dd6a49cfd64e2e4213  bytes=4016
+NGINX_RULE_VALIDATION.md  sha256=ff416983c32f4e597ed1a7955c60d30bf3cde0c84ebf2111f8830ecf09d67b06  bytes=4631
+SECRET_GUARD_REVIEW.md  sha256=2d82794f567ee30f9c9be5d0088d204f435b374fbd3305e35514d4a9dc0c41b4  bytes=5076
+SECRET_GUARD_TEST_MATRIX.csv  sha256=00ad0c36efe02d8011f2f43bba32d64ca3244399ab744e153690160a5f20c71e  bytes=3384
+TRUSTED_SUITE_FAILURE_ANALYSIS.md  sha256=efde9127ed429de869255e48a197704434726eab6d1027480f0ac658464985c7  bytes=8634
+
+## Key changed files on this branch
+scripts/ops/secret_guard.py  sha256=444c6f506bc23eb5175a96c498f7ffa77459cb42a0b5f21aeb2c66f343c4f170  bytes=18398
+.secretguard-allow  sha256=8c8e43d6484f5e5770e4fc38d84fc4826b2199585ba0e5e5f03f5c5aa114a000  bytes=2633
+.github/workflows/trusted-suite.yml  sha256=4e0eee6be5094d1d00e6ce8dfc2717f43445bf659eda5ad5a98bf5bbd5339d62  bytes=1984
+scripts/ops/w2t25_audit_check.py  sha256=a87daa7d847f67a017f8db00bc52f88d10223cfa9aec2860dabfd2dd9576662e  bytes=8719
+w2t25-monitor-v2/apply_monitor_v2.py  sha256=5007736748b215ce6c38681743fdc23f5880f4d2e43f21c57a60201044edee65  bytes=10805
+w2t25-monitor-v2/apply_owner_console_v3.py  sha256=423986c24e8d9d253e87a2cedc7043d494af4741b4fd1c6aa38e0061b43d16e5  bytes=18274
+w2t25-monitor-v2/DEPLOY-1113.md  sha256=f543cb35850c85779c76616763f4773cb3f25695d06cf4f615f3e89e8851238e  bytes=5343
+tests/security/test_secret_guard.py  sha256=c94282ed2daceae2798ba860c5343f6a4ace5bdf40a83eb03dc0a50060ac4523  bytes=10530
+tests/security/test_deploy_script_safety.py  sha256=83f57ad55f9f2358f6d4ac6acdaaf9c06069b3a024f364a9ec3eca9f105d2eb2  bytes=3540
+tests/security/test_audit_token_path.py  sha256=34cc048dd82764c91cc78f72b0d0d4d24b95762424b62d9bb6aecc0003fac0e6  bytes=6752
+
+CI-verified commit: cda8cf05c96b6e5293ee922c66de2970dc78b4cd — secret-guard success (runs 43407564302, 43407569994), trusted suite 22/279/14 (runs 43407564140, 43407569854).
+This manifest commit adds documentation/evidence only on top of cda8cf0 — no code or test changes.
+Evidence references: CI runs 43394921919 / 43394927622 (PR head), 43404020521 (baseline main), 43407564302 / 43407569994 / 43407564140 / 43407569854 (R1 commit).
+Credential values: NONE in this manifest or any deliverable (fingerprints only).

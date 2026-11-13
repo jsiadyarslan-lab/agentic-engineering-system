@@ -5,13 +5,30 @@
    + GET/POST /api/owner-mode (flag file) + UI owner console section
 2) w2t25_server_drive.py: owner-mode gate hold (PLAN_* gates wait for human)
    + OWNER_DIRECTIVE upgraded with binding Arabic/RTL product requirements
-3) py_compile both, restart monitor service + driver, verify relay harmlessly.
+3) py_compile both, restart monitor service + driver, verify.
+
+AES-P0-CONTAINMENT-PR-REMEDIATION-1113-R1 fix 5: the verification phase is
+GET-ONLY by default and changes NO project state. The state-changing POST
+checks (gates / owner-mode / pause/resume/retry) are collected in
+POST_CHECKS and run ONLY under a dual explicit opt-in:
+    python3 apply_owner_console_v3.py --with-post-checks --confirm-post-changes
+A missing second flag is refused. R1 fix 6: the token reaches curl through
+STDIN headers (-H @-) — never in a URL, never in a process argument list.
+
 Rollback: .bak_v3 copies for both files.
 """
-import io, os, subprocess, sys, time
+import argparse, io, os, subprocess, sys, time
 
 MON = "/home/opc/w2t25_monitor.py"
 DRV = "/home/opc/w2t25_server_drive.py"
+
+# AES-P0-CONTAINMENT-1113 / R1-1113: no hardcoded credential in the repo; read
+# lazily (never at import time), never printed, never in URLs or argv.
+def load_token():
+    """Lazy credential read — only when a deployment actually runs."""
+    return os.environ.get("W2T25_MONITOR_TOKEN") or open(
+        os.environ.get("W2T25_MONITOR_TOKEN_FILE", "/etc/w2t25-monitor/monitor_token")
+    ).read().strip()
 
 DO_POST = '''    OWNER_PATHS = (
         "^/api/projects/3/pause$", "^/api/projects/3/resume$", "^/api/projects/3/retry$",
@@ -217,7 +234,63 @@ def patch_driver():
     return True
 
 
-def main():
+# R1-1113 fix 5: DEFAULT verification — GET-only, no state change, no POST.
+GET_CHECKS = [
+    ("healthz", 'curl -s -m 6 http://127.0.0.1:8765/healthz'),
+    ("owner-mode-get", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/api/owner-mode"'),
+    ("page-has-owner", 'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | curl -s -m 8 -H @- "http://127.0.0.1:8765/" | grep -c "لوحة المالك"'),
+    ("driver-alive", 'sleep 2; pgrep -af "[w]2t25_server_drive.py" || echo DRIVER-DEAD'),
+    ("driver-log", 'sleep 3; tail -n 2 /home/opc/w2t25_drive/latest.log 2>/dev/null | head -c 400'),
+]
+
+# R1-1113 fix 5: STATE-CHANGING verification — disabled by default; runs only
+# under the dual explicit opt-in (--with-post-checks + --confirm-post-changes).
+POST_CHECKS = [
+    ("relay-harmless-gate",
+     'printf "X-Access-Key: %s\\r\\nContent-Type: application/json\\r\\n" "$W2T25_MONITOR_TOKEN" | '
+     'curl -s -m 15 -H @- -X POST -d \'{"approved":true}\' "http://127.0.0.1:8765/api/projects/3/gates/999999" | head -c 300'),
+    ("relay-forbidden-path",
+     'printf "X-Access-Key: %s" "$W2T25_MONITOR_TOKEN" | '
+     'curl -s -m 8 -H @- -X POST -d "{}" "http://127.0.0.1:8765/api/projects/3/plan/delete" -o /dev/null -w "%{http_code}"'),
+    ("owner-mode-on",
+     'printf "X-Access-Key: %s\\r\\nContent-Type: application/json\\r\\n" "$W2T25_MONITOR_TOKEN" | '
+     'curl -s -m 8 -H @- -X POST -d \'{"on":true}\' "http://127.0.0.1:8765/api/owner-mode"; ls -la /home/opc/w2t25_owner_mode 2>/dev/null | head -1'),
+    ("owner-mode-off",
+     'printf "X-Access-Key: %s\\r\\nContent-Type: application/json\\r\\n" "$W2T25_MONITOR_TOKEN" | '
+     'curl -s -m 8 -H @- -X POST -d \'{"on":false}\' "http://127.0.0.1:8765/api/owner-mode"; ls /home/opc/w2t25_owner_mode 2>&1 | head -1'),
+]
+
+
+def verification_checks(with_post: bool, confirm: bool):
+    """R1-1113 fix 5: default = GET-only. POST checks need BOTH flags.
+
+    Returns None when the opt-in is incomplete (refused — fail-closed).
+    """
+    if with_post and not confirm:
+        return None
+    return list(GET_CHECKS) + (list(POST_CHECKS) if (with_post and confirm) else [])
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="W2-T25 owner console v3 deploy — POST verification off by default")
+    ap.add_argument("--with-post-checks", action="store_true",
+                    help="enable STATE-CHANGING POST verification (gates/owner-mode)")
+    ap.add_argument("--confirm-post-changes", action="store_true",
+                    help="second explicit confirmation — required with --with-post-checks")
+    args = ap.parse_args(argv)
+
+    checks = verification_checks(args.with_post_checks, args.confirm_post_changes)
+    if checks is None:
+        print("REFUSED: --with-post-checks also requires --confirm-post-changes (dual opt-in).")
+        return 2
+    if args.with_post_checks and args.confirm_post_changes:
+        print("WARNING — state-changing POST verification ENABLED:")
+        for name, cmd in POST_CHECKS:
+            print("   -", name, "->", cmd.split('"http')[-1][:110])
+        print("These change project state (gates / owner-mode). Starting in 10s — Ctrl-C to abort...")
+        time.sleep(10)
+
     if not patch_monitor():
         return 1
     if not patch_driver():
@@ -235,20 +308,14 @@ def main():
     time.sleep(2)
     subprocess.run("setsid nohup python3 /home/opc/w2t25_server_drive.py >> /home/opc/w2t25_server_drive.out 2>&1 &", shell=True)
     time.sleep(4)
-    checks = [
-        ("healthz", 'curl -s -m 6 http://127.0.0.1:8765/healthz'),
-        ("relay-harmless-gate", 'curl -s -m 15 -X POST -H "Content-Type: application/json" -d \'{"approved":true}\' "http://127.0.0.1:8765/api/projects/3/gates/999999?k=c9a39cb0a520d0d380c5136ca86b18f5" | head -c 300'),
-        ("relay-forbidden-path", 'curl -s -m 8 -X POST -d "{}" "http://127.0.0.1:8765/api/projects/3/plan/delete?k=c9a39cb0a520d0d380c5136ca86b18f5" -o /dev/null -w "%{http_code}"'),
-        ("owner-mode-on", 'curl -s -m 8 -X POST -H "Content-Type: application/json" -d \'{"on":true}\' "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"; ls -la /home/opc/w2t25_owner_mode 2>/dev/null | head -1'),
-        ("owner-mode-get", 'curl -s -m 8 "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"'),
-        ("owner-mode-off", 'curl -s -m 8 -X POST -H "Content-Type: application/json" -d \'{"on":false}\' "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"; ls /home/opc/w2t25_owner_mode 2>&1 | head -1'),
-        ("page-has-owner", 'curl -s -m 8 "http://127.0.0.1:8765/?k=c9a39cb0a520d0d380c5136ca86b18f5" | grep -c "لوحة المالك"'),
-        ("driver-alive", 'sleep 2; pgrep -af "[w]2t25_server_drive.py" || echo DRIVER-DEAD'),
-        ("driver-log", 'sleep 3; tail -n 2 /home/opc/w2t25_drive/latest.log 2>/dev/null | head -c 400'),
-    ]
+    # AES-P0-CONTAINMENT-1113 / R1-1113 fix 6: token via env + STDIN headers —
+    # never in a URL, never in any process argument list, never printed.
+    os.environ["W2T25_MONITOR_TOKEN"] = load_token()
     for name, cmd in checks:
         r = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
         print("[check]", name, "=>", (r.stdout or r.stderr).strip()[:320])
+    if not (args.with_post_checks and args.confirm_post_changes):
+        print("POST verification SKIPPED (default) — no state-changing POST executed.")
     print("V3-DEPLOY-DONE")
     return 0
 

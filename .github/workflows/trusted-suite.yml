@@ -33,14 +33,17 @@ jobs:
 
       - name: Trusted suite
         # المجموعة الموثوقة: الجاهزية + النواة + مسار API الحي + تراجعات
-        # AES-EXP-03. لا تشمل أجيال المهام القديمة (e3/e4/e6) — تحتاج
-        # ركيزة عزل (bwrap) وتُعالج في خطة الإصلاح المعتمدة (AES-EXP-04).
+        # AES-EXP-03 + فحوصات أمان R1-1113 (tests/security: فاحص الأسرار
+        # وسلامة سكربتات النشر ومسار التوكن).
         # AES-ORACLE-LIVE-REPAIR-001 §4: shell bash = -eo pipefail —
         # لا يمكن لـ tail إخفاء رمز فشل pytest بعد اليوم؛ الحكم المعروض
         # يطابق نتيجة الاختبارات الفعلية أو لا يعرض شيئاً.
+        # R1-1113 §9: أُزيل tail -40 (كان يقصع قائمة الفشل الكاملة —
+        # 6 من 22 فشلًا لم تكن تظهر في السجلات)؛ المخرج الكامل يُطبع الآن
+        # و pipefail يضمن رمز الخروج.
         shell: bash
         run: |
           set -o pipefail
-          pytest tests/readiness tests/core tests/api \
+          pytest tests/readiness tests/core tests/api tests/security \
             --timeout=150 -q --no-header \
-            -p no:cacheprovider 2>&1 | tail -40
+            -p no:cacheprovider 2>&1

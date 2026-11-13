@@ -461,7 +461,7 @@ def test_no_secret_anywhere_in_responses(client, prov_env):
     """المفتاح لا يظهر في أي نقطة: قائمة/تفصيل/اختبار/نماذج (§22)."""
     from secrets_store import store as store_mod
 
-    secret = "nvapi-SUPERSECRET-424242"
+    secret = "fake-nvapi-SUPERSECRET-424242"
     store_mod.set_key("nvidia", secret)
     config_id = _primary_config_id(client, "nvidia")
 
