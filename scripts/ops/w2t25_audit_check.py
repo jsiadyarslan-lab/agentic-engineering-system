@@ -21,7 +21,7 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh.connect("92.5.14.150", username="opc", key_filename=KEY, timeout=20)
 
 # A1: project terminal status
-o, _ = run(ssh, "curl -s -m 10 'http://127.0.0.1:8765/api/status?k=c9a39cb0a520d0d380c5136ca86b18f5'")
+o, _ = run(ssh, "curl -s -m 10 -H \"X-Access-Key: $(sudo cat /etc/w2t25-monitor/monitor_token)\" 'http://127.0.0.1:8765/api/status'")
 st = json.loads(o)
 add("A1", "project.status == COMPLETED (API)", st["project"]["status"] == "COMPLETED",
     {"status": st["project"]["status"], "updated_at": st["project"]["updated_at"]})
@@ -70,7 +70,7 @@ add("A8", "nginx log: owner browser (2.215.157.88) POSTs approved gates/plan wit
     bool(o.strip()), o[:400])
 
 # A9: live site (served via API 8765 /preview/index.html with token cookie) shows the three Arabic article cards
-o, _ = run(ssh, "K=c9a39cb0a520d0d380c5136ca86b18f5; curl -s -m 10 -o /dev/null -w '%{http_code}' -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html; echo; curl -s -m 10 -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html | grep -o -E 'مقال (أول|ثاني|ثالث)' | sort | uniq -c")
+o, _ = run(ssh, "K=$(sudo cat /etc/w2t25-monitor/monitor_token); curl -s -m 10 -o /dev/null -w '%{http_code}' -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html; echo; curl -s -m 10 -H 'Cookie: w2t25k='$K http://127.0.0.1:8765/preview/index.html | grep -o -E 'مقال (أول|ثاني|ثالث)' | sort | uniq -c")
 lines = [l for l in o.splitlines() if l.strip()]
 code = lines[0] if lines else "?"
 arts = [l for l in lines[1:] if l.strip()]

@@ -13,6 +13,12 @@ import io, os, subprocess, sys, time
 MON = "/home/opc/w2t25_monitor.py"
 DRV = "/home/opc/w2t25_server_drive.py"
 
+# AES-P0-CONTAINMENT-1113: no hardcoded credential in the repo. Read from env
+# or the server's root-only secret file; never printed, never in URLs.
+TOKEN = os.environ.get("W2T25_MONITOR_TOKEN") or open(
+    os.environ.get("W2T25_MONITOR_TOKEN_FILE", "/etc/w2t25-monitor/monitor_token")
+).read().strip()
+
 DO_POST = '''    OWNER_PATHS = (
         "^/api/projects/3/pause$", "^/api/projects/3/resume$", "^/api/projects/3/retry$",
         "^/api/projects/3/gates/[0-9]+$", "^/api/projects/3/plan/approve$", "^/api/owner-mode$",
@@ -235,14 +241,16 @@ def main():
     time.sleep(2)
     subprocess.run("setsid nohup python3 /home/opc/w2t25_server_drive.py >> /home/opc/w2t25_server_drive.out 2>&1 &", shell=True)
     time.sleep(4)
+    # AES-P0-CONTAINMENT-1113: token via env, never via URL
+    os.environ["W2T25_MONITOR_TOKEN"] = TOKEN
     checks = [
         ("healthz", 'curl -s -m 6 http://127.0.0.1:8765/healthz'),
-        ("relay-harmless-gate", 'curl -s -m 15 -X POST -H "Content-Type: application/json" -d \'{"approved":true}\' "http://127.0.0.1:8765/api/projects/3/gates/999999?k=c9a39cb0a520d0d380c5136ca86b18f5" | head -c 300'),
-        ("relay-forbidden-path", 'curl -s -m 8 -X POST -d "{}" "http://127.0.0.1:8765/api/projects/3/plan/delete?k=c9a39cb0a520d0d380c5136ca86b18f5" -o /dev/null -w "%{http_code}"'),
-        ("owner-mode-on", 'curl -s -m 8 -X POST -H "Content-Type: application/json" -d \'{"on":true}\' "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"; ls -la /home/opc/w2t25_owner_mode 2>/dev/null | head -1'),
-        ("owner-mode-get", 'curl -s -m 8 "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"'),
-        ("owner-mode-off", 'curl -s -m 8 -X POST -H "Content-Type: application/json" -d \'{"on":false}\' "http://127.0.0.1:8765/api/owner-mode?k=c9a39cb0a520d0d380c5136ca86b18f5"; ls /home/opc/w2t25_owner_mode 2>&1 | head -1'),
-        ("page-has-owner", 'curl -s -m 8 "http://127.0.0.1:8765/?k=c9a39cb0a520d0d380c5136ca86b18f5" | grep -c "لوحة المالك"'),
+        ("relay-harmless-gate", 'curl -s -m 15 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" -X POST -H "Content-Type: application/json" -d \'{"approved":true}\' "http://127.0.0.1:8765/api/projects/3/gates/999999" | head -c 300'),
+        ("relay-forbidden-path", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" -X POST -d "{}" "http://127.0.0.1:8765/api/projects/3/plan/delete" -o /dev/null -w "%{http_code}"'),
+        ("owner-mode-on", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" -X POST -H "Content-Type: application/json" -d \'{"on":true}\' "http://127.0.0.1:8765/api/owner-mode"; ls -la /home/opc/w2t25_owner_mode 2>/dev/null | head -1'),
+        ("owner-mode-get", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/api/owner-mode"'),
+        ("owner-mode-off", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" -X POST -H "Content-Type: application/json" -d \'{"on":false}\' "http://127.0.0.1:8765/api/owner-mode"; ls /home/opc/w2t25_owner_mode 2>&1 | head -1'),
+        ("page-has-owner", 'curl -s -m 8 -H "X-Access-Key: $W2T25_MONITOR_TOKEN" "http://127.0.0.1:8765/" | grep -c "لوحة المالك"'),
         ("driver-alive", 'sleep 2; pgrep -af "[w]2t25_server_drive.py" || echo DRIVER-DEAD'),
         ("driver-log", 'sleep 3; tail -n 2 /home/opc/w2t25_drive/latest.log 2>/dev/null | head -c 400'),
     ]

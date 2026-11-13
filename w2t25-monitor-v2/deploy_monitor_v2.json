@@ -1,7 +1,8 @@
 {
  "task": "W2-T25 MONITOR v2 — control room rebuild (user complaint: opaque page, separate link, no visible agent thinking)",
  "deployed_at": "2026-10-31T20:46:00Z",
- "url": "http://92.5.14.150/w2t25-monitor/?k=<token>",
+ "security_update_1113": "AES-P0-CONTAINMENT-1113 (2026-11-13): public token revoked and rotated at the service; /w2t25-monitor/ now inherits nginx IP allowlist + Basic Auth; auth channels are X-Access-Key header / w2t25k cookie — query-string (?k=) auth removed; token never in URLs/logs/served HTML.",
+ "url": "http://92.5.14.150/w2t25-monitor/",
  "changes": [
   "new endpoint /api/now (single unified payload: status + full step objective/input/expected_output/acceptance_criteria + live evidence + tool_invocations w/ failure_class+reason + project_events story + recent closed steps + step files + raw stdout/stderr + merged tree counts + driver)",
   "new INDEX: control-room page — hero 'what is the agent doing right now', thinking section (goal/inputs/outputs/acceptance criteria with live file auto-check + lifecycle + verdicts), live tool table with Arabic tool names, raw outputs, step files clickable, event story translated to Arabic, embedded site preview iframe (no second link needed), closed steps, full legend explaining every factory term in plain Arabic",
