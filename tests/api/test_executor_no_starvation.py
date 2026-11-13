@@ -87,15 +87,17 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
 ):
     """(§6) مهمة محجوبة بالفحص المسبق تنتهي بحد معلن ويُحرَّر الخيط.
 
-    محرك بلا حقن مسبارات + AES_PROBE_TIMEOUT_S قصيرة = حجب صادق؛
-    حد إعادة الفحص ينهي الوظيفة بفشل مسمّى بدل حلقة مفتوحة. المهمة
-    التالية (بحقن الـfixture القياسي) تكتمل — دليل تحرر الخيط.
+    حجب حتمي بمصدر مضبوط: حقن https_fn فاشل دائمًا في نقطة الحقن
+    المعتمدة (run_probe — «المسار نفسه بمصادر مضبوطة») — كود المسبار
+    الحقيقي كاملًا يُنفذ (تصنيف/كتابة/إعادة فحص) لكن المصدر شبكة سوداء
+    لا تعتمد على المضيف. كان الاعتماد سابقًا على مضيف بلا خروج —
+    على مضيف متصل المسبارات الحقيقية تمرّ فتكتمل الدورة بصدق وينهار
+    المنطق المفروض للاختبار (AES-FACTORY-RECOVERY-001: إصلاح
+    المقدمة البيئية لا العقد). حد إعادة الفحص ينهي الوظيفة بفشل
+    مسمّى بدل حلقة مفتوحة، والمهمة التالية تكتمل — دليل تحرر الخيط.
 
     (AES-EXP-04) السقف مضبوط للاختبار (30ث عبر AES_PREFLIGHT_
-    BLOCKED_LIMIT_S — العقد نفسه، قيمة أضيق للحتمية): بالسقف
-    الافتراضي 120ث كانت مرحلة الحجب وحدها + التحقق تتجاوز مهلة
-    الاختبار الكلية (150ث) على شبكة سوداء المسبارات (كل نبضة
-    تنتظر مهلة اتصال كاملة) فيفشل الاختبار زمنيًا لا عقديًا.
+    BLOCKED_LIMIT_S — العقد نفسه، قيمة أضيق للحتمية).
     """
     from api import projects as projects_mod
     from tests.api.planning_wait import wait_for_plan
@@ -105,9 +107,13 @@ def test_preflight_blocked_run_terminates_and_releases_runner(
     real_factory = projects_mod._test_engine_factory
     monkeypatch.setenv("AES_PREFLIGHT_BLOCKED_LIMIT_S", "30")
 
+    def blackholed_https(url, timeout=3.0, **_kw):
+        raise OSError("شبكة سوداء محاكاة — مصدر مضبوط للاختبار")
+
     def no_injection_factory(on_event=None, **_kw):
         engine = real_factory(on_event=on_event)
-        engine._probe_injections = None  # المسبارات الحقيقية حصرًا
+        # كود المسبار الحقيقي حصرًا — بمصدر مضبوط أسود حتميًا لا بالغياب
+        engine._probe_injections = {"https_fn": blackholed_https}
         return engine
 
     monkeypatch.setattr(
