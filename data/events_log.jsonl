@@ -1,0 +1,519 @@
+{"t": "13:44:32", "kind": "screenshot", "detail": "A1_settings_models_before"}
+{"t": "13:44:32", "kind": "model_selects", "detail": "[{\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?\", \"opts\": [\"default\"]}, {\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?\", \"opts\": [\"default\"]}, {\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?\", \"opts\": [\"default\"]}, {\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?\", \"opts\": [\"default\"]}, {\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?\", \"opts\": [\"default\"]}, {\"id\": \"?\", \"opts\": [\"nvidia\", \"openai_compatible\", \"zai_internal\"]}, {\"id\": \"?"}
+{"t": "13:44:32", "kind": "model_changes", "detail": "[]"}
+{"t": "13:44:34", "kind": "screenshot", "detail": "A2_settings_models_saved"}
+{"t": "13:44:34", "kind": "models_saved_via_ui"}
+{"t": "13:44:35", "kind": "dialog", "detail": "اكتب هدف المشروع — سيُحوَّل إلى خطة تعتمدها ثم يُنفَّذ ذاتيًا:"}
+{"t": "13:44:38", "kind": "screenshot", "detail": "B1_project_created"}
+{"t": "13:44:38", "kind": "project_id_from_ui_state", "detail": "None"}
+{"t": "13:44:38", "kind": "project_id_from_hub_state", "detail": "None"}
+{"t": "13:44:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:44:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:44:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:44:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:13", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:18", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:23", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:28", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:33", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:38", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:45:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:13", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:18", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:23", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:28", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:33", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:38", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:46:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:13", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:18", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:23", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:28", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:33", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:38", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:47:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:13", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:18", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:23", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:28", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:33", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:38", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:48:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:13", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:18", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:23", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:28", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:33", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:38", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:43", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:48", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:53", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:49:58", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:03", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:08", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:50:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:51:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:52:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:53:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:54:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:29", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:34", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:39", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:44", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:49", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:54", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:55:59", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:04", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:09", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:14", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:19", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:24", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:30", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:35", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:40", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:44", "kind": "screenshot", "detail": "A1_settings_models_before"}
+{"t": "13:56:44", "kind": "providers_switched", "detail": "6 roles -> zai_internal"}
+{"t": "13:56:45", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:45", "kind": "model_inputs_set", "detail": "0 inputs -> glm-4.6"}
+{"t": "13:56:47", "kind": "screenshot", "detail": "A2_settings_models_saved"}
+{"t": "13:56:47", "kind": "models_saved_via_ui", "detail": ""}
+{"t": "13:56:48", "kind": "dialog", "detail": "اكتب هدف المشروع — سيُحوَّل إلى خطة تعتمدها ثم يُنفَّذ ذاتيًا:"}
+{"t": "13:56:50", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:56:51", "kind": "screenshot", "detail": "B1_project_created"}
+{"t": "13:56:51", "kind": "project_id", "detail": "from UI state: None"}
+{"t": "13:56:51", "kind": "pid_unknown_abort", "detail": ""}
+{"t": "13:56:55", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:00", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:05", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:10", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:15", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:20", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:25", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:30", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:35", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:40", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:45", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:50", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:57:55", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:00", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:05", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:10", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:15", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:16", "kind": "screenshot", "detail": "A1_settings_models_before"}
+{"t": "13:58:16", "kind": "providers_switched", "detail": "0 roles -> zai_internal"}
+{"t": "13:58:17", "kind": "model_inputs_set", "detail": "0 inputs -> glm-4.6"}
+{"t": "13:58:19", "kind": "screenshot", "detail": "A2_settings_models_saved"}
+{"t": "13:58:19", "kind": "models_saved_via_ui", "detail": ""}
+{"t": "13:58:20", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:20", "kind": "dialog", "detail": "اكتب هدف المشروع — سيُحوَّل إلى خطة تعتمدها ثم يُنفَّذ ذاتيًا:"}
+{"t": "13:58:23", "kind": "screenshot", "detail": "B1_project_created"}
+{"t": "13:58:23", "kind": "project_id", "detail": "newest project id (read-only list): 3"}
+{"t": "13:58:23", "kind": "screenshot", "detail": "B2_project_view"}
+{"t": "13:58:25", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:28", "ev": {"id": 21, "project_id": 3, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T13:58:20.944272"}}
+{"t": "13:58:28", "kind": "event", "detail": "#21 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "13:58:28", "ev": {"id": 22, "project_id": 3, "kind": "PLANNING_STARTED", "payload": {"session_id": 3, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:13:20.954815+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T13:58:20.986072"}}
+{"t": "13:58:28", "kind": "event", "detail": "#22 PLANNING_STARTED {\"session_id\": 3, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "13:58:28", "ev": {"id": 23, "project_id": 3, "kind": "PLAN_GENERATING", "payload": {"session_id": 3, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-22512c2c5012"}, "created_at": "2026-11-14T13:58:21.018653"}}
+{"t": "13:58:28", "kind": "event", "detail": "#23 PLAN_GENERATING {\"session_id\": 3, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-22512c2c5012\"}"}
+{"t": "13:58:28", "ev": {"id": 24, "project_id": 3, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-22512c2c5012", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T13:58:21.015669+00:00", "heartbeat_at": "2026-11-14T13:58:21.015679+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 3}, "created_at": "2026-11-14T13:58:21.039692"}}
+{"t": "13:58:28", "kind": "event", "detail": "#24 MODEL_CALL_STARTED {\"request_id\": \"req-22512c2c5012\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "13:58:28", "ev": {"id": 25, "project_id": 3, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 3, "activity": "content_delta", "chars": 3, "request_id": "req-22512c2c5012", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T13:58:21.526378"}}
+{"t": "13:58:28", "ev": {"id": 26, "project_id": 3, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 3, "activity": "content_delta", "chars": 5, "request_id": "req-22512c2c5012", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T13:58:23.525509"}}
+{"t": "13:58:28", "ev": {"id": 27, "project_id": 3, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 3, "activity": "content_delta", "chars": 3, "request_id": "req-22512c2c5012", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T13:58:25.734553"}}
+{"t": "13:58:28", "ev": {"id": 28, "project_id": 3, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-22512c2c5012", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T13:58:21.015669+00:00", "heartbeat_at": "2026-11-14T13:58:25.055191+00:00", "completed_at": "2026-11-14T13:58:25.753375+00:00", "duration_ms": 4698, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 3}, "created_at": "2026-11-14T13:58:25.753716"}}
+{"t": "13:58:28", "kind": "event", "detail": "#28 MODEL_CALL_COMPLETED {\"request_id\": \"req-22512c2c5012\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "13:58:28", "ev": {"id": 29, "project_id": 3, "kind": "PLAN_CREATED", "payload": {"plan_id": 2, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T13:58:25.759206"}}
+{"t": "13:58:28", "kind": "event", "detail": "#29 PLAN_CREATED {\"plan_id\": 2, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "13:58:28", "ev": {"id": 30, "project_id": 3, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 2, "gate_id": 2, "generated_by": {"request_id": "req-22512c2c5012", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T13:58:21.015669+00:00", "heartbeat_at": "2026-11-14T13:58:25.055191+00:00", "completed_at": "2026-11-14T13:58:25.753375+00:00", "duration_ms": 4698, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T13:58:25.762238"}}
+{"t": "13:58:28", "kind": "event", "detail": "#30 PLAN_APPROVAL_REQUIRED {\"plan_id\": 2, \"gate_id\": 2, \"generated_by\": {\"request_id\": \"req-22512c2c5012\", \"purpose\": \"planning\", \"provid"}
+{"t": "13:58:28", "ev": {"id": 31, "project_id": 3, "kind": "PLAN_CREATED", "payload": {"session_id": 3, "plan_id": 2, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 4698}, "created_at": "2026-11-14T13:58:25.763897"}}
+{"t": "13:58:28", "kind": "event", "detail": "#31 PLAN_CREATED {\"session_id\": 3, \"plan_id\": 2, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "13:58:30", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:35", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:40", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:45", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:50", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:58:55", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:00", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:05", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:10", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:15", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:20", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:25", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:30", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:35", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:40", "kind": "console_error", "detail": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"}
+{"t": "13:59:40", "kind": "screenshot", "detail": "C3_plan_timeout"}
+{"t": "13:59:40", "kind": "plan_gate_timeout"}
+{"t": "14:02:21", "kind": "screenshot", "detail": "A1_settings_models_before"}
+{"t": "14:02:21", "kind": "providers_switched", "detail": "0 roles -> zai_internal"}
+{"t": "14:02:22", "kind": "model_inputs_set", "detail": "0 inputs -> glm-4.6"}
+{"t": "14:02:24", "kind": "screenshot", "detail": "A2_settings_models_saved"}
+{"t": "14:02:24", "kind": "models_saved_via_ui", "detail": ""}
+{"t": "14:02:25", "kind": "dialog", "detail": "اكتب هدف المشروع — سيُحوَّل إلى خطة تعتمدها ثم يُنفَّذ ذاتيًا:"}
+{"t": "14:02:28", "kind": "screenshot", "detail": "B1_project_created"}
+{"t": "14:02:28", "kind": "project_id", "detail": "newest project id (read-only list): 4"}
+{"t": "14:02:28", "kind": "screenshot", "detail": "B2_project_view"}
+{"t": "14:02:33", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:02:33", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:02:33", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:02:33", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:02:33", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:02:33", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:02:33", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:02:33", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:02:33", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:02:33", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:02:33", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:02:38", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:02:38", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:02:38", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:02:38", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:02:38", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:02:38", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:02:38", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:02:38", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:02:38", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:05:46", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:05:46", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:05:50", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:05:55", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:05:55", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:05:55", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:05:55", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:05:55", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:05:55", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:05:55", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:05:55", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:05:55", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:05:55", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:05:55", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:05:55", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:05:55", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:05:55", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:05:55", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:05:55", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:05:55", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:05:55", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:05:55", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:05:55", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:08:54", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:08:54", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:08:58", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:09:03", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:09:03", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:09:03", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:09:03", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:09:03", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:09:03", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:09:03", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:09:03", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:09:03", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:09:03", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:09:03", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:09:03", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:09:03", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:09:03", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:09:03", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:09:03", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:09:03", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:09:03", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:09:03", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:09:03", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:09:28", "kind": "poll", "detail": "C-loop #6 approve_btn=2"}
+{"t": "14:09:58", "kind": "poll", "detail": "C-loop #12 approve_btn=2"}
+{"t": "14:10:28", "kind": "poll", "detail": "C-loop #18 approve_btn=2"}
+{"t": "14:10:51", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:10:51", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:10:55", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:11:00", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:11:00", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:11:00", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:11:00", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:11:00", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:11:00", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:11:00", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:11:00", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:11:00", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:11:00", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:11:00", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:11:00", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:11:00", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:11:00", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:11:00", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:11:00", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:11:00", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:11:00", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:11:00", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:11:00", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:11:25", "kind": "poll", "detail": "C-loop #6 approve_btn=2"}
+{"t": "14:11:56", "kind": "poll", "detail": "C-loop #12 approve_btn=2"}
+{"t": "14:12:26", "kind": "poll", "detail": "C-loop #18 approve_btn=2"}
+{"t": "14:12:55", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:12:55", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:12:59", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:13:04", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:13:04", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:13:04", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:13:04", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:13:04", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:13:04", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:13:04", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:13:04", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:13:04", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:13:04", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:13:04", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:13:04", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:13:04", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:13:04", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:13:04", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:13:04", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:13:04", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:13:04", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:13:04", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:13:04", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:13:31", "kind": "poll", "detail": "C-loop #6 approve_btn=5"}
+{"t": "14:14:04", "kind": "poll", "detail": "C-loop #12 approve_btn=5"}
+{"t": "14:14:37", "kind": "poll", "detail": "C-loop #18 approve_btn=5"}
+{"t": "14:15:13", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:15:13", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:15:17", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:15:22", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:15:22", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:15:22", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:15:22", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:15:22", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:15:22", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:15:22", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:15:22", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:15:22", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:15:22", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:15:22", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:15:22", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:15:22", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:15:22", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:15:22", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:15:22", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:15:22", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:15:22", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:15:22", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:15:22", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:15:50", "kind": "poll", "detail": "C-loop #6 approve_btn=1"}
+{"t": "14:16:23", "kind": "poll", "detail": "C-loop #12 approve_btn=1"}
+{"t": "14:16:55", "kind": "poll", "detail": "C-loop #18 approve_btn=1"}
+{"t": "14:17:20", "kind": "models_already_configured_via_ui", "detail": "skip (persisted from previous UI save)"}
+{"t": "14:17:20", "kind": "resume_project_via_ui", "detail": "project 4"}
+{"t": "14:17:24", "kind": "screenshot", "detail": "B0_resumed_project_view"}
+{"t": "14:17:29", "ev": {"id": 32, "project_id": 4, "kind": "PROJECT_CREATED", "payload": {"name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على", "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته."}, "created_at": "2026-11-14T14:02:25.871710"}}
+{"t": "14:17:29", "kind": "event", "detail": "#32 PROJECT_CREATED {\"name\": \"اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على\", \"objective\": \"اكتب ملفاً باسم research"}
+{"t": "14:17:29", "ev": {"id": 33, "project_id": 4, "kind": "PLANNING_STARTED", "payload": {"session_id": 4, "attempt": 1, "provider": "zai_internal", "model": "glm-4.6", "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00", "hard_timeout_s": 900, "previous_failure": {}, "reason": "أمر صريح من الواجهة"}, "created_at": "2026-11-14T14:02:25.912120"}}
+{"t": "14:17:29", "kind": "event", "detail": "#33 PLANNING_STARTED {\"session_id\": 4, \"attempt\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"hard_deadline_at\": \"2026-11-1"}
+{"t": "14:17:29", "ev": {"id": 34, "project_id": 4, "kind": "PLAN_GENERATING", "payload": {"session_id": 4, "provider": "zai_internal", "model": "glm-4.6", "request_id": "req-a13233a3078f"}, "created_at": "2026-11-14T14:02:25.933322"}}
+{"t": "14:17:29", "kind": "event", "detail": "#34 PLAN_GENERATING {\"session_id\": 4, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"request_id\": \"req-a13233a3078f\"}"}
+{"t": "14:17:29", "ev": {"id": 35, "project_id": 4, "kind": "MODEL_CALL_STARTED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:25.923525+00:00", "completed_at": "", "duration_ms": 0, "retry_count": 0, "error_class": "", "error_detail": "", "session_id": 4}, "created_at": "2026-11-14T14:02:25.999358"}}
+{"t": "14:17:29", "kind": "event", "detail": "#35 MODEL_CALL_STARTED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:17:29", "ev": {"id": 36, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:27.342676"}}
+{"t": "14:17:29", "ev": {"id": 37, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:29.452212"}}
+{"t": "14:17:29", "ev": {"id": 38, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 2, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:31.591085"}}
+{"t": "14:17:29", "ev": {"id": 39, "project_id": 4, "kind": "MODEL_CALL_PROGRESS", "payload": {"session_id": 4, "activity": "content_delta", "chars": 3, "request_id": "req-a13233a3078f", "provider": "zai_internal", "model": "glm-4.6"}, "created_at": "2026-11-14T14:02:33.680347"}}
+{"t": "14:17:29", "ev": {"id": 40, "project_id": 4, "kind": "MODEL_CALL_COMPLETED", "payload": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "", "model": "", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9322, "retry_count": 0, "error_class": "", "error_detail": "", "streamed": false, "session_id": 4}, "created_at": "2026-11-14T14:02:35.338508"}}
+{"t": "14:17:29", "kind": "event", "detail": "#40 MODEL_CALL_COMPLETED {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provider\": \"\", \"model\": \"\", \"started_at\": \"2026-11-"}
+{"t": "14:17:29", "ev": {"id": 41, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"plan_id": 3, "version": 1, "supersedes": null, "reason": ""}, "created_at": "2026-11-14T14:02:35.344305"}}
+{"t": "14:17:29", "kind": "event", "detail": "#41 PLAN_CREATED {\"plan_id\": 3, \"version\": 1, \"supersedes\": null, \"reason\": \"\"}"}
+{"t": "14:17:29", "ev": {"id": 42, "project_id": 4, "kind": "PLAN_APPROVAL_REQUIRED", "payload": {"plan_id": 3, "gate_id": 3, "generated_by": {"request_id": "req-a13233a3078f", "purpose": "planning", "provider": "zai_internal", "model": "glm-4.6", "started_at": "2026-11-14T14:02:25.923517+00:00", "heartbeat_at": "2026-11-14T14:02:34.015991+00:00", "completed_at": "2026-11-14T14:02:35.338157+00:00", "duration_ms": 9321, "retry_count": 0, "error_class": "", "error_detail": ""}}, "created_at": "2026-11-14T14:02:35.347280"}}
+{"t": "14:17:29", "kind": "event", "detail": "#42 PLAN_APPROVAL_REQUIRED {\"plan_id\": 3, \"gate_id\": 3, \"generated_by\": {\"request_id\": \"req-a13233a3078f\", \"purpose\": \"planning\", \"provid"}
+{"t": "14:17:29", "ev": {"id": 43, "project_id": 4, "kind": "PLAN_CREATED", "payload": {"session_id": 4, "plan_id": 3, "version": 1, "phases": 1, "provider": "zai_internal", "model": "glm-4.6", "duration_ms": 9321}, "created_at": "2026-11-14T14:02:35.349003"}}
+{"t": "14:17:29", "kind": "event", "detail": "#43 PLAN_CREATED {\"session_id\": 4, \"plan_id\": 3, \"version\": 1, \"phases\": 1, \"provider\": \"zai_internal\", \"model\": \"glm-4.6\", \"du"}
+{"t": "14:17:29", "kind": "screenshot", "detail": "C1_plan_ready"}
+{"t": "14:17:31", "kind": "screenshot", "detail": "C2_plan_approved"}
+{"t": "14:17:31", "kind": "plan_approved_via_ui", "detail": ""}
+{"t": "14:17:36", "ev": {"id": 44, "project_id": 4, "kind": "OWNER_GATE_RESOLVED", "payload": {"gate_id": 3, "approved": true}, "created_at": "2026-11-14T14:17:29.470530"}}
+{"t": "14:17:36", "kind": "event", "detail": "#44 OWNER_GATE_RESOLVED {\"gate_id\": 3, \"approved\": true}"}
+{"t": "14:17:36", "ev": {"id": 45, "project_id": 4, "kind": "PLAN_APPROVED", "payload": {"plan_id": 3, "version": 1}, "created_at": "2026-11-14T14:17:29.477173"}}
+{"t": "14:17:36", "kind": "event", "detail": "#45 PLAN_APPROVED {\"plan_id\": 3, \"version\": 1}"}
+{"t": "14:17:36", "ev": {"id": 46, "project_id": 4, "kind": "JOB_CREATED", "payload": {"job_id": 1, "note": "اعتماد الخطة — أمر المالك", "resume_token": "rsm-8c51929f23124590", "attempt": 0}, "created_at": "2026-11-14T14:17:29.487780"}}
+{"t": "14:17:36", "kind": "event", "detail": "#46 JOB_CREATED {\"job_id\": 1, \"note\": \"اعتماد الخطة — أمر المالك\", \"resume_token\": \"rsm-8c51929f23124590\", \"attempt\": 0}"}
+{"t": "14:17:36", "ev": {"id": 47, "project_id": 4, "kind": "JOB_QUEUED", "payload": {"job_id": 1, "resumed": false, "note": "اعتماد الخطة — أمر المالك"}, "created_at": "2026-11-14T14:17:29.490041"}}
+{"t": "14:17:36", "kind": "event", "detail": "#47 JOB_QUEUED {\"job_id\": 1, \"resumed\": false, \"note\": \"اعتماد الخطة — أمر المالك\"}"}
+{"t": "14:17:36", "ev": {"id": 48, "project_id": 4, "kind": "JOB_STARTED", "payload": {"job_id": 1, "attempt": 1, "worker_id": "local"}, "created_at": "2026-11-14T14:17:29.495599"}}
+{"t": "14:17:36", "kind": "event", "detail": "#48 JOB_STARTED {\"job_id\": 1, \"attempt\": 1, \"worker_id\": \"local\"}"}
+{"t": "14:17:36", "ev": {"id": 49, "project_id": 4, "kind": "PREFLIGHT_STARTED", "payload": {"plan_id": 3, "version": 1, "policy": "STRICT_ISOLATED"}, "created_at": "2026-11-14T14:17:29.499159"}}
+{"t": "14:17:36", "kind": "event", "detail": "#49 PREFLIGHT_STARTED {\"plan_id\": 3, \"version\": 1, \"policy\": \"STRICT_ISOLATED\"}"}
+{"t": "14:17:36", "ev": {"id": 50, "project_id": 4, "kind": "CAPABILITIES_EVALUATED", "payload": {"verdict": "PASS", "required": ["llm", "sandbox", "filesystem", "network_dns", "network_https", "shell", "persistence"], "capabilities": [{"capability_id": "llm", "status": "READY", "ok": true}, {"capability_id": "sandbox", "status": "READY", "ok": true}, {"capability_id": "filesystem", "status": "READY", "ok": true}, {"capability_id": "network_dns", "status": "READY", "ok": true}, {"capability_id": "network_https", "status": "READY", "ok": true}, {"capability_id": "shell", "status": "READY", "ok": true}, {"capability_id": "persistence", "status": "READY", "ok": true}], "matrix": [{"capability": "سياسة التنفيذ", "capability_id": "execution_policy", "required": "معتمدة", "available": "عزل صارم — بيئة معزولة إلزامية", "decision": "PROCEED"}, {"capability": "بيئة التنفيذ", "capability_id": "environment", "required": "المطلوب: بيئة تنفيذ Linux/x86_64 معزولة فعليًا — الركيزة المحلية على مضيف Linux، أو عامل بعيد على أي Linux/WSL2 (python scripts/execution_worker.py). لم تُوفَّر بعد على هذا المضيف", "available": "local-linux (SANDBOXED)", "decision": "PROCEED"}, {"capability": "نماذج LLM (الأدوار)", "capability_id": "llm", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "بيئة التنفيذ", "capability_id": "sandbox", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "نظام الملفات والأدلة", "capability_id": "filesystem", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "تحليل DNS", "capability_id": "network_dns", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "اتصال HTTPS", "capability_id": "network_https", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "القشدة وPython", "capability_id": "shell", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "القاعدة الدائمة", "capability_id": "persistence", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}]}, "created_at": "2026-11-14T14:17:29.681496"}}
+{"t": "14:17:36", "kind": "event", "detail": "#50 CAPABILITIES_EVALUATED {\"verdict\": \"PASS\", \"required\": [\"llm\", \"sandbox\", \"filesystem\", \"network_dns\", \"network_https\", \"shell\", \"per"}
+{"t": "14:17:36", "ev": {"id": 51, "project_id": 4, "kind": "ENVIRONMENT_CHECK_STARTED", "payload": {"environment": {"id": 1, "name": "local-linux", "isolation": "SANDBOXED"}, "policy": "STRICT_ISOLATED"}, "created_at": "2026-11-14T14:17:29.682566"}}
+{"t": "14:17:36", "kind": "event", "detail": "#51 ENVIRONMENT_CHECK_STARTED {\"environment\": {\"id\": 1, \"name\": \"local-linux\", \"isolation\": \"SANDBOXED\"}, \"policy\": \"STRICT_ISOLATED\"}"}
+{"t": "14:17:36", "ev": {"id": 52, "project_id": 4, "kind": "PREFLIGHT_PASS", "payload": {"verdict": "PASS", "summary": "كل القدرات المطلوبة جاهزة بمسبارات حقيقية — التنفيذ مفتوح عبر بيئة: local-linux/معزولة", "policy": "STRICT_ISOLATED", "matrix": [{"capability": "سياسة التنفيذ", "capability_id": "execution_policy", "required": "معتمدة", "available": "عزل صارم — بيئة معزولة إلزامية", "decision": "PROCEED"}, {"capability": "بيئة التنفيذ", "capability_id": "environment", "required": "المطلوب: بيئة تنفيذ Linux/x86_64 معزولة فعليًا — الركيزة المحلية على مضيف Linux، أو عامل بعيد على أي Linux/WSL2 (python scripts/execution_worker.py). لم تُوفَّر بعد على هذا المضيف", "available": "local-linux (SANDBOXED)", "decision": "PROCEED"}, {"capability": "نماذج LLM (الأدوار)", "capability_id": "llm", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "بيئة التنفيذ", "capability_id": "sandbox", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "نظام الملفات والأدلة", "capability_id": "filesystem", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "تحليل DNS", "capability_id": "network_dns", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "اتصال HTTPS", "capability_id": "network_https", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "القشدة وPython", "capability_id": "shell", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}, {"capability": "القاعدة الدائمة", "capability_id": "persistence", "required": "مطلوبة", "available": "READY", "decision": "PROCEED"}], "blocked": [], "environment": {"id": 1, "name": "local-linux", "isolation": "SANDBOXED"}}, "created_at": "2026-11-14T14:17:29.683583"}}
+{"t": "14:17:36", "kind": "event", "detail": "#52 PREFLIGHT_PASS {\"verdict\": \"PASS\", \"summary\": \"كل القدرات المطلوبة جاهزة بمسبارات حقيقية — التنفيذ مفتوح عبر بيئة: local-linu"}
+{"t": "14:17:36", "ev": {"id": 53, "project_id": 4, "kind": "ENVIRONMENT_READY", "payload": {"environment": {"id": 1, "name": "local-linux", "isolation": "SANDBOXED"}}, "created_at": "2026-11-14T14:17:29.684505"}}
+{"t": "14:17:36", "kind": "event", "detail": "#53 ENVIRONMENT_READY {\"environment\": {\"id\": 1, \"name\": \"local-linux\", \"isolation\": \"SANDBOXED\"}}"}
+{"t": "14:17:36", "ev": {"id": 54, "project_id": 4, "kind": "EXECUTION_OPENED", "payload": {"plan_id": 3, "version": 1, "summary": "الخطة معتمدة والقدرات جاهزة — التنفيذ مفتوح"}, "created_at": "2026-11-14T14:17:29.685415"}}
+{"t": "14:17:36", "kind": "event", "detail": "#54 EXECUTION_OPENED {\"plan_id\": 3, \"version\": 1, \"summary\": \"الخطة معتمدة والقدرات جاهزة — التنفيذ مفتوح\"}"}
+{"t": "14:17:36", "ev": {"id": 55, "project_id": 4, "kind": "PHASE_STARTED", "payload": {"phase_id": 1, "title": "إنشاء وتجهيز ملف التوثيق"}, "created_at": "2026-11-14T14:17:29.690120"}}
+{"t": "14:17:36", "kind": "event", "detail": "#55 PHASE_STARTED {\"phase_id\": 1, \"title\": \"إنشاء وتجهيز ملف التوثيق\"}"}
+{"t": "14:17:36", "ev": {"id": 56, "project_id": 4, "kind": "STEP_STARTED", "payload": {"step_id": 1, "objective": "كتابة المحتوى الكامل للملف بما في ذلك الخمس فوائد والمثال العملي"}, "created_at": "2026-11-14T14:17:29.726886"}}
+{"t": "14:17:36", "kind": "event", "detail": "#56 STEP_STARTED {\"step_id\": 1, \"objective\": \"كتابة المحتوى الكامل للملف بما في ذلك الخمس فوائد والمثال العملي\"}"}
+{"t": "14:17:36", "ev": {"id": 57, "project_id": 4, "kind": "EXECUTION_STARTED", "payload": {"execution_id": 1, "attempt": 1, "step_id": 1}, "created_at": "2026-11-14T14:17:29.727897"}}
+{"t": "14:17:36", "kind": "event", "detail": "#57 EXECUTION_STARTED {\"execution_id\": 1, \"attempt\": 1, \"step_id\": 1}"}
+{"t": "14:17:36", "ev": {"id": 58, "project_id": 4, "kind": "ROLE_EXECUTING", "payload": {"step_id": 1, "execution_id": 1, "role": "implementer", "phase": "execution", "objective": "كتابة المحتوى الكامل للملف بما في ذلك الخمس فوائد والمثال العملي"}, "created_at": "2026-11-14T14:17:29.728807"}}
+{"t": "14:17:36", "kind": "event", "detail": "#58 ROLE_EXECUTING {\"step_id\": 1, \"execution_id\": 1, \"role\": \"implementer\", \"phase\": \"execution\", \"objective\": \"كتابة المحتوى الك"}
+{"t": "14:17:36", "kind": "screenshot", "detail": "D_progress_65856"}
+{"t": "14:17:36", "kind": "runtime", "detail": "{\"status\": \"RUNNING\"}"}
+{"t": "14:17:41", "ev": {"id": 59, "project_id": 4, "kind": "ROLE_EXECUTING", "payload": {"step_id": 1, "execution_id": 1, "role": "thinker", "phase": "cycle", "objective": "أنتجت خطة بـ 1 مهام ومخاطر 2 وافتراضات 2"}, "created_at": "2026-11-14T14:17:36.311428"}}
+{"t": "14:17:41", "kind": "event", "detail": "#59 ROLE_EXECUTING {\"step_id\": 1, \"execution_id\": 1, \"role\": \"thinker\", \"phase\": \"cycle\", \"objective\": \"أنتجت خطة بـ 1 مهام ومخاط"}
+{"t": "14:17:41", "ev": {"id": 60, "project_id": 4, "kind": "ROLE_EXECUTING", "payload": {"step_id": 1, "execution_id": 1, "role": "reviewer", "phase": "cycle", "objective": "verdict: approved (الجودة 9.0/10، التحسن 8.0/10)"}, "created_at": "2026-11-14T14:17:36.949916"}}
+{"t": "14:17:41", "kind": "event", "detail": "#60 ROLE_EXECUTING {\"step_id\": 1, \"execution_id\": 1, \"role\": \"reviewer\", \"phase\": \"cycle\", \"objective\": \"verdict: approved (الجود"}
+{"t": "14:17:41", "ev": {"id": 61, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "page_to_text", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "in_process_declared", "summary": "https://www.cbe.org.eg/en/economic-research/statistics", "error": ""}, "created_at": "2026-11-14T14:17:39.500100"}}
+{"t": "14:17:41", "kind": "event", "detail": "#61 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"page_to_text\", \"phase\": \"started\", \"role\": \"implementer\", \"duration"}
+{"t": "14:17:41", "ev": {"id": 62, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "page_to_text", "phase": "succeeded", "role": "implementer", "duration_ms": 836, "execution_site": "in_process_declared", "summary": "{'words': 17, 'artifact': 'data/normalized/page-www.cbe.org.eg-1632c2a4.txt'}", "error": ""}, "created_at": "2026-11-14T14:17:40.336986"}}
+{"t": "14:17:41", "kind": "event", "detail": "#62 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"page_to_text\", \"phase\": \"succeeded\", \"role\": \"implementer\", \"durati"}
+{"t": "14:17:41", "ev": {"id": 63, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "web_search", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "in_process_declared", "summary": "فوائد التوثيق التقني للمطورين", "error": ""}, "created_at": "2026-11-14T14:17:40.338477"}}
+{"t": "14:17:41", "kind": "event", "detail": "#63 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"web_search\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:17:51", "ev": {"id": 64, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "web_search", "phase": "failed", "role": "implementer", "duration_ms": 5961, "execution_site": "in_process_declared", "summary": "فوائد التوثيق التقني للمطورين", "error": "لا مزود بحث جاهز: DuckDuckGo: ProviderNotReady: ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html"}, "created_at": "2026-11-14T14:17:46.300719"}}
+{"t": "14:17:51", "kind": "event", "detail": "#64 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"web_search\", \"phase\": \"failed\", \"role\": \"implementer\", \"duration_ms"}
+{"t": "14:17:51", "ev": {"id": 65, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "web_search", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "in_process_declared", "summary": "مثال عملي على التوثيق التقني في تطوير البرمجيات", "error": ""}, "created_at": "2026-11-14T14:17:46.303488"}}
+{"t": "14:17:51", "kind": "event", "detail": "#65 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"web_search\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:17:51", "ev": {"id": 66, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "web_search", "phase": "failed", "role": "implementer", "duration_ms": 926, "execution_site": "in_process_declared", "summary": "مثال عملي على التوثيق التقني في تطوير البرمجيات", "error": "لا مزود بحث جاهز: DuckDuckGo: ProviderNotReady: ddg: كل الاستراتيجيات فشلت — lite-get: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ lite-post: صفحة تحدّ (anomaly) — DDG حجب هذا المضيف مؤقتًا؛ html"}, "created_at": "2026-11-14T14:17:47.229821"}}
+{"t": "14:17:51", "kind": "event", "detail": "#66 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"web_search\", \"phase\": \"failed\", \"role\": \"implementer\", \"duration_ms"}
+{"t": "14:17:51", "ev": {"id": 67, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "fetch_page", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "in_process_declared", "summary": "https://www.freecodecamp.org/news/technical-documentation-best-practices/", "error": ""}, "created_at": "2026-11-14T14:17:47.231342"}}
+{"t": "14:17:51", "kind": "event", "detail": "#67 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"fetch_page\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:17:51", "ev": {"id": 68, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "fetch_page", "phase": "failed", "role": "implementer", "duration_ms": 317, "execution_site": "in_process_declared", "summary": "https://www.freecodecamp.org/news/technical-documentation-best-practices/", "error": "الأداة fetch_page فشلت: HTTP Error 404: Not Found"}, "created_at": "2026-11-14T14:17:47.549178"}}
+{"t": "14:17:51", "kind": "event", "detail": "#68 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"fetch_page\", \"phase\": \"failed\", \"role\": \"implementer\", \"duration_ms"}
+{"t": "14:17:51", "ev": {"id": 69, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "fetch_page", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "in_process_declared", "summary": "https://developers.google.com/tech-writing", "error": ""}, "created_at": "2026-11-14T14:17:47.551037"}}
+{"t": "14:17:51", "kind": "event", "detail": "#69 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"fetch_page\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:17:51", "ev": {"id": 70, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "fetch_page", "phase": "succeeded", "role": "implementer", "duration_ms": 617, "execution_site": "in_process_declared", "summary": "{'chars': 3462}", "error": ""}, "created_at": "2026-11-14T14:17:48.168473"}}
+{"t": "14:17:51", "kind": "event", "detail": "#70 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"fetch_page\", \"phase\": \"succeeded\", \"role\": \"implementer\", \"duration"}
+{"t": "14:18:11", "ev": {"id": 71, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "substrate", "summary": "research_note.md", "error": ""}, "created_at": "2026-11-14T14:18:09.345283"}}
+{"t": "14:18:11", "kind": "event", "detail": "#71 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:18:11", "ev": {"id": 72, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "succeeded", "role": "implementer", "duration_ms": 158, "execution_site": "substrate", "summary": "{'path': '/home/z/my-project/aes-rr002/runtime/projects/4/steps/1/research_note.md'}", "error": ""}, "created_at": "2026-11-14T14:18:09.503315"}}
+{"t": "14:18:11", "kind": "event", "detail": "#72 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"succeeded\", \"role\": \"implementer\", \"duration"}
+{"t": "14:18:26", "ev": {"id": 73, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "substrate", "summary": "T1-report.md", "error": ""}, "created_at": "2026-11-14T14:18:21.430067"}}
+{"t": "14:18:26", "kind": "event", "detail": "#73 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:18:26", "ev": {"id": 74, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "succeeded", "role": "implementer", "duration_ms": 121, "execution_site": "substrate", "summary": "{'path': '/home/z/my-project/aes-rr002/runtime/projects/4/steps/1/T1-report.md'}", "error": ""}, "created_at": "2026-11-14T14:18:21.551224"}}
+{"t": "14:18:26", "kind": "event", "detail": "#74 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"succeeded\", \"role\": \"implementer\", \"duration"}
+{"t": "14:18:26", "ev": {"id": 75, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "started", "role": "implementer", "duration_ms": 0, "execution_site": "substrate", "summary": "sources.json", "error": ""}, "created_at": "2026-11-14T14:18:21.553765"}}
+{"t": "14:18:26", "kind": "event", "detail": "#75 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"started\", \"role\": \"implementer\", \"duration_m"}
+{"t": "14:18:26", "ev": {"id": 76, "project_id": 4, "kind": "TOOL_EXECUTION", "payload": {"step_id": 1, "execution_id": 1, "tool": "write_file", "phase": "succeeded", "role": "implementer", "duration_ms": 119, "execution_site": "substrate", "summary": "{'path': '/home/z/my-project/aes-rr002/runtime/projects/4/steps/1/sources.json'}", "error": ""}, "created_at": "2026-11-14T14:18:21.673017"}}
+{"t": "14:18:26", "kind": "event", "detail": "#76 TOOL_EXECUTION {\"step_id\": 1, \"execution_id\": 1, \"tool\": \"write_file\", \"phase\": \"succeeded\", \"role\": \"implementer\", \"duration"}
+{"t": "14:18:31", "ev": {"id": 77, "project_id": 4, "kind": "ROLE_EXECUTING", "payload": {"step_id": 1, "execution_id": 1, "role": "verifier", "phase": "cycle", "objective": "الأدلة الكلية تطابق معايير المهام كلها (ثقة 100%)"}, "created_at": "2026-11-14T14:18:28.159193"}}
+{"t": "14:18:31", "kind": "event", "detail": "#77 ROLE_EXECUTING {\"step_id\": 1, \"execution_id\": 1, \"role\": \"verifier\", \"phase\": \"cycle\", \"objective\": \"الأدلة الكلية تطابق معاي"}
+{"t": "14:18:31", "ev": {"id": 78, "project_id": 4, "kind": "EXECUTION_COMPLETED", "payload": {"execution_id": 1, "step_id": 1, "commit_sha": "4b427d868b96ce9831052635977c019971f875aa", "verdict": "PASS"}, "created_at": "2026-11-14T14:18:28.182287"}}
+{"t": "14:18:31", "kind": "event", "detail": "#78 EXECUTION_COMPLETED {\"execution_id\": 1, \"step_id\": 1, \"commit_sha\": \"4b427d868b96ce9831052635977c019971f875aa\", \"verdict\": \"PASS\"}"}
+{"t": "14:18:31", "ev": {"id": 79, "project_id": 4, "kind": "EVIDENCE_CREATED", "payload": {"evidence_id": 1, "step_id": 1, "files": ["T1-report.md", "research_note.md", "sources.json", "stderr-tool-7bec355c.txt", "stderr-tool-7ddb69b0.txt", "stderr-tool-818f137e.txt", "stdout-tool-7bec355c.txt", "stdout-tool-7ddb69b0.txt", "stdout-tool-818f137e.txt"]}, "created_at": "2026-11-14T14:18:28.194106"}}
+{"t": "14:18:31", "kind": "event", "detail": "#79 EVIDENCE_CREATED {\"evidence_id\": 1, \"step_id\": 1, \"files\": [\"T1-report.md\", \"research_note.md\", \"sources.json\", \"stderr-tool-7b"}
+{"t": "14:18:31", "ev": {"id": 80, "project_id": 4, "kind": "TEST_COMPLETED", "payload": {"step_id": 1, "final_state": "EVIDENCED"}, "created_at": "2026-11-14T14:18:28.195952"}}
+{"t": "14:18:31", "kind": "event", "detail": "#80 TEST_COMPLETED {\"step_id\": 1, \"final_state\": \"EVIDENCED\"}"}
+{"t": "14:18:31", "ev": {"id": 81, "project_id": 4, "kind": "REVIEW_COMPLETED", "payload": {"step_id": 1, "verdict": "PASS"}, "created_at": "2026-11-14T14:18:28.198148"}}
+{"t": "14:18:31", "kind": "event", "detail": "#81 REVIEW_COMPLETED {\"step_id\": 1, \"verdict\": \"PASS\"}"}
+{"t": "14:18:31", "ev": {"id": 82, "project_id": 4, "kind": "AUDIT_COMPLETED", "payload": {"audit_id": 1, "step_id": 1, "verdict": "PASS"}, "created_at": "2026-11-14T14:18:28.207377"}}
+{"t": "14:18:31", "kind": "event", "detail": "#82 AUDIT_COMPLETED {\"audit_id\": 1, \"step_id\": 1, \"verdict\": \"PASS\"}"}
+{"t": "14:18:31", "ev": {"id": 83, "project_id": 4, "kind": "STEP_COMPLETED", "payload": {"step_id": 1, "execution_id": 1, "evidence_id": 1, "attempts": 1}, "created_at": "2026-11-14T14:18:28.211102"}}
+{"t": "14:18:31", "kind": "event", "detail": "#83 STEP_COMPLETED {\"step_id\": 1, \"execution_id\": 1, \"evidence_id\": 1, \"attempts\": 1}"}
+{"t": "14:18:31", "ev": {"id": 84, "project_id": 4, "kind": "CHECKPOINT_CREATED", "payload": {"checkpoint_id": 1}, "created_at": "2026-11-14T14:18:28.217512"}}
+{"t": "14:18:31", "kind": "event", "detail": "#84 CHECKPOINT_CREATED {\"checkpoint_id\": 1}"}
+{"t": "14:18:31", "ev": {"id": 85, "project_id": 4, "kind": "STAGE_REVIEW", "payload": {"phase_id": 1, "phase_title": "إنشاء وتجهيز ملف التوثيق", "steps": 1, "stage": "review"}, "created_at": "2026-11-14T14:18:28.232385"}}
+{"t": "14:18:31", "kind": "event", "detail": "#85 STAGE_REVIEW {\"phase_id\": 1, \"phase_title\": \"إنشاء وتجهيز ملف التوثيق\", \"steps\": 1, \"stage\": \"review\"}"}
+{"t": "14:18:31", "ev": {"id": 86, "project_id": 4, "kind": "AUDIT_COMPLETED", "payload": {"audit_id": 2, "phase_id": 1, "verdict": "COMPLETED"}, "created_at": "2026-11-14T14:18:28.241605"}}
+{"t": "14:18:31", "kind": "event", "detail": "#86 AUDIT_COMPLETED {\"audit_id\": 2, \"phase_id\": 1, \"verdict\": \"COMPLETED\"}"}
+{"t": "14:18:31", "ev": {"id": 87, "project_id": 4, "kind": "PHASE_COMPLETED", "payload": {"phase_id": 1, "title": "إنشاء وتجهيز ملف التوثيق"}, "created_at": "2026-11-14T14:18:28.244358"}}
+{"t": "14:18:31", "kind": "event", "detail": "#87 PHASE_COMPLETED {\"phase_id\": 1, \"title\": \"إنشاء وتجهيز ملف التوثيق\"}"}
+{"t": "14:18:31", "ev": {"id": 88, "project_id": 4, "kind": "CHECKPOINT_CREATED", "payload": {"checkpoint_id": 2}, "created_at": "2026-11-14T14:18:28.247866"}}
+{"t": "14:18:31", "kind": "event", "detail": "#88 CHECKPOINT_CREATED {\"checkpoint_id\": 2}"}
+{"t": "14:18:31", "ev": {"id": 89, "project_id": 4, "kind": "AUDIT_COMPLETED", "payload": {"audit_id": 3, "final": true, "verdict": "PASS"}, "created_at": "2026-11-14T14:18:28.261039"}}
+{"t": "14:18:31", "kind": "event", "detail": "#89 AUDIT_COMPLETED {\"audit_id\": 3, \"final\": true, \"verdict\": \"PASS\"}"}
+{"t": "14:18:31", "ev": {"id": 90, "project_id": 4, "kind": "PROJECT_COMPLETION_CANDIDATE", "payload": {"final_audit_id": 3, "gate_id": 4}, "created_at": "2026-11-14T14:18:28.264523"}}
+{"t": "14:18:31", "kind": "event", "detail": "#90 PROJECT_COMPLETION_CANDIDATE {\"final_audit_id\": 3, \"gate_id\": 4}"}
+{"t": "14:18:31", "ev": {"id": 91, "project_id": 4, "kind": "JOB_WAITING", "payload": {"job_id": 1, "status": "WAITING_GATE", "waiting_kind": "GATE", "detail": {"summary": "مرشح — التحقق النهائي للمالك", "gate_kinds": ["FINAL_VERIFICATION"]}, "unblock_path": "عالج البوابة المعلقة من صفحة المشروع — القرار لك"}, "created_at": "2026-11-14T14:18:28.269681"}}
+{"t": "14:18:31", "kind": "event", "detail": "#91 JOB_WAITING {\"job_id\": 1, \"status\": \"WAITING_GATE\", \"waiting_kind\": \"GATE\", \"detail\": {\"summary\": \"مرشح — التحقق النهائي ل"}
+{"t": "14:18:31", "kind": "pending_primary_button", "detail": "التحقق النهائي ✓"}
+{"t": "14:18:31", "kind": "screenshot", "detail": "D_gate_65911"}
+{"t": "14:18:33", "kind": "gate_approved_via_ui", "detail": "التحقق النهائي ✓"}
+{"t": "14:18:35", "kind": "screenshot", "detail": "E_final_state"}
+{"t": "14:18:35", "kind": "final_status", "detail": "VERIFIED"}
+{"t": "14:18:35", "ev": {"id": 92, "project_id": 4, "kind": "OWNER_GATE_RESOLVED", "payload": {"gate_id": 4, "approved": true}, "created_at": "2026-11-14T14:18:31.597416"}}
+{"t": "14:18:35", "kind": "event", "detail": "#92 OWNER_GATE_RESOLVED {\"gate_id\": 4, \"approved\": true}"}
+{"t": "14:18:35", "ev": {"id": 93, "project_id": 4, "kind": "PROJECT_VERIFIED", "payload": {}, "created_at": "2026-11-14T14:18:31.616151"}}
+{"t": "14:18:35", "kind": "event", "detail": "#93 PROJECT_VERIFIED {}"}
+{"t": "14:18:35", "ev": {"id": 94, "project_id": 4, "kind": "JOB_COMPLETED", "payload": {"job_id": 1, "note": "تحقق المالك — VERIFIED"}, "created_at": "2026-11-14T14:18:31.625218"}}
+{"t": "14:18:35", "kind": "event", "detail": "#94 JOB_COMPLETED {\"job_id\": 1, \"note\": \"تحقق المالك — VERIFIED\"}"}

@@ -1,0 +1,290 @@
+{
+  "project_id": 4,
+  "conversation_id": null,
+  "run_id": 1,
+  "planning_session_id": 4,
+  "name": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على",
+  "objective": "اكتب ملفاً باسم research_note.md في مجلد المخرجات يحتوي على ملخص من خمس نقاط عن فوائد التوثيق التقني في المشاريع البرمجية، مع مثال عملي واحد ملموس في نهايته.",
+  "archived_at": null,
+  "status": "VERIFIED",
+  "phase": {
+    "id": 1,
+    "project_id": 4,
+    "plan_id": 3,
+    "ordinal": 1,
+    "title": "إنشاء وتجهيز ملف التوثيق",
+    "status": "COMPLETED",
+    "acceptance_criteria": [
+      "تم إنشاء الملف بنجاح في المسار المحدد",
+      "المحتوى يتضمن الخمس فوائد والمثال العملي"
+    ]
+  },
+  "stage": "DONE",
+  "stage_labels": {
+    "GOAL": "الهدف",
+    "PLAN": "الخطة",
+    "APPROVAL": "الاعتماد",
+    "PREPARE": "التهيئة",
+    "EXECUTE": "التنفيذ",
+    "TEST": "الاختبار",
+    "REVIEW": "المراجعة",
+    "AUDIT": "التدقيق",
+    "DONE": "الاكتمال"
+  },
+  "step": null,
+  "current_phase_id": 1,
+  "current_step_id": null,
+  "plan": {
+    "id": 3,
+    "version": 1,
+    "approved": true,
+    "phases": 1
+  },
+  "progress": {
+    "steps_total": 1,
+    "steps_completed": 1,
+    "steps_failed": 0,
+    "percent": 100,
+    "current_step": null
+  },
+  "started_at": "2026-11-14T14:17:29.494091",
+  "updated_at": "2026-11-14T14:18:31.598680",
+  "elapsed_seconds": 66.2,
+  "elapsed_s": 66.2,
+  "heartbeat_at": "2026-11-14T14:18:28.268199",
+  "last_meaningful_activity_at": "2026-11-14T14:02:35.339397+00:00",
+  "planning_silence_s": null,
+  "timeout_at": "2026-11-14T14:17:25.900251+00:00",
+  "finished_at": "2026-11-14T14:02:35.340795",
+  "provider": "zai_internal",
+  "model": "glm-4.6",
+  "actual_provider": "zai_internal",
+  "actual_model": "glm-4.6",
+  "request_id": "plan-bb3328c46124",
+  "attempt": 1,
+  "retry_count": 1,
+  "waiting_for": {
+    "kind": "none",
+    "label": ""
+  },
+  "blocking_reason": "",
+  "planning": {
+    "active": false,
+    "state": "COMPLETED",
+    "wait_phase": "DONE",
+    "waiting_for": null,
+    "retry_available": false,
+    "detail": {
+      "id": 4,
+      "project_id": 4,
+      "attempt": 1,
+      "state": "COMPLETED",
+      "provider": "zai_internal",
+      "model": "glm-4.6",
+      "request_id": "plan-bb3328c46124",
+      "started_at": "2026-11-14T14:02:25.900251",
+      "heartbeat_at": "2026-11-14T14:02:35.339397+00:00",
+      "last_meaningful_activity_at": "2026-11-14T14:02:35.339397+00:00",
+      "silence_s": null,
+      "hard_deadline_at": "2026-11-14T14:17:25.900251+00:00",
+      "hard_deadline_derived_at": null,
+      "hard_timeout_s": 900,
+      "last_activity_at": "2026-11-14T14:02:35.339397",
+      "lease_expires_at": "2026-11-14T14:04:35.339397",
+      "finished_at": "2026-11-14T14:02:35.340795",
+      "elapsed_s": 9.4,
+      "plan_id": 3,
+      "error_class": "",
+      "error_detail": "",
+      "retry_of": null,
+      "actual_provider": "zai_internal",
+      "actual_model": "glm-4.6",
+      "reasoning_chars": 0,
+      "owner_pid": 2604
+    }
+  },
+  "wait_phase": "DONE",
+  "last_error": "",
+  "job": {
+    "id": 1,
+    "status": "COMPLETED",
+    "waiting_kind": "",
+    "heartbeat_at": "2026-11-14T14:18:28.268199",
+    "tick_count": 3,
+    "attempt": 1
+  },
+  "activity": {
+    "role": "verifier",
+    "tool": "write_file",
+    "provider": ""
+  },
+  "environment": {
+    "state": "READY",
+    "coherent": {
+      "kind": "READY",
+      "label": "✓ بيئة التنفيذ جاهزة",
+      "detail": "البيئة «local-linux» اجتازت فحوص الصحة الحقيقية وتوافق السياسة"
+    },
+    "environment_id": 1,
+    "worker_id": "local",
+    "backend": {
+      "id": 1,
+      "name": "local-linux",
+      "backend": "LOCAL",
+      "status": "READY",
+      "isolation": "SANDBOXED",
+      "sandboxed": true,
+      "is_default": true,
+      "last_verified_at": "2026-11-14T14:17:29.665146"
+    }
+  },
+  "backend": {
+    "id": 1,
+    "name": "local-linux",
+    "backend": "LOCAL",
+    "status": "READY",
+    "isolation": "SANDBOXED",
+    "sandboxed": true,
+    "is_default": true,
+    "last_verified_at": "2026-11-14T14:17:29.665146"
+  },
+  "worker": {
+    "id": "local"
+  },
+  "execution": null,
+  "last_event": {
+    "id": 94,
+    "project_id": 4,
+    "kind": "JOB_COMPLETED",
+    "payload": {
+      "job_id": 1,
+      "note": "تحقق المالك — VERIFIED"
+    },
+    "created_at": "2026-11-14T14:18:31.625218"
+  },
+  "last_successful_transition": {
+    "kind": "JOB_COMPLETED",
+    "id": 94,
+    "at": "2026-11-14T14:18:31.625218",
+    "payload": {
+      "job_id": 1,
+      "note": "تحقق المالك — VERIFIED"
+    }
+  },
+  "recent_events": [
+    {
+      "id": 85,
+      "project_id": 4,
+      "kind": "STAGE_REVIEW",
+      "payload": {
+        "phase_id": 1,
+        "phase_title": "إنشاء وتجهيز ملف التوثيق",
+        "steps": 1,
+        "stage": "review"
+      },
+      "created_at": "2026-11-14T14:18:28.232385"
+    },
+    {
+      "id": 86,
+      "project_id": 4,
+      "kind": "AUDIT_COMPLETED",
+      "payload": {
+        "audit_id": 2,
+        "phase_id": 1,
+        "verdict": "COMPLETED"
+      },
+      "created_at": "2026-11-14T14:18:28.241605"
+    },
+    {
+      "id": 87,
+      "project_id": 4,
+      "kind": "PHASE_COMPLETED",
+      "payload": {
+        "phase_id": 1,
+        "title": "إنشاء وتجهيز ملف التوثيق"
+      },
+      "created_at": "2026-11-14T14:18:28.244358"
+    },
+    {
+      "id": 88,
+      "project_id": 4,
+      "kind": "CHECKPOINT_CREATED",
+      "payload": {
+        "checkpoint_id": 2
+      },
+      "created_at": "2026-11-14T14:18:28.247866"
+    },
+    {
+      "id": 89,
+      "project_id": 4,
+      "kind": "AUDIT_COMPLETED",
+      "payload": {
+        "audit_id": 3,
+        "final": true,
+        "verdict": "PASS"
+      },
+      "created_at": "2026-11-14T14:18:28.261039"
+    },
+    {
+      "id": 90,
+      "project_id": 4,
+      "kind": "PROJECT_COMPLETION_CANDIDATE",
+      "payload": {
+        "final_audit_id": 3,
+        "gate_id": 4
+      },
+      "created_at": "2026-11-14T14:18:28.264523"
+    },
+    {
+      "id": 91,
+      "project_id": 4,
+      "kind": "JOB_WAITING",
+      "payload": {
+        "job_id": 1,
+        "status": "WAITING_GATE",
+        "waiting_kind": "GATE",
+        "detail": {
+          "summary": "مرشح — التحقق النهائي للمالك",
+          "gate_kinds": [
+            "FINAL_VERIFICATION"
+          ]
+        },
+        "unblock_path": "عالج البوابة المعلقة من صفحة المشروع — القرار لك"
+      },
+      "created_at": "2026-11-14T14:18:28.269681"
+    },
+    {
+      "id": 92,
+      "project_id": 4,
+      "kind": "OWNER_GATE_RESOLVED",
+      "payload": {
+        "gate_id": 4,
+        "approved": true
+      },
+      "created_at": "2026-11-14T14:18:31.597416"
+    },
+    {
+      "id": 93,
+      "project_id": 4,
+      "kind": "PROJECT_VERIFIED",
+      "payload": {},
+      "created_at": "2026-11-14T14:18:31.616151"
+    },
+    {
+      "id": 94,
+      "project_id": 4,
+      "kind": "JOB_COMPLETED",
+      "payload": {
+        "job_id": 1,
+        "note": "تحقق المالك — VERIFIED"
+      },
+      "created_at": "2026-11-14T14:18:31.625218"
+    }
+  ],
+  "available_actions": [
+    "duplicate",
+    "rename",
+    "history",
+    "archive"
+  ]
+}

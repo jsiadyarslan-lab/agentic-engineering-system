@@ -1,0 +1,302 @@
+{
+  "generated_at_utc": "2026-11-14T14:43:03Z",
+  "base_commit": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+  "base_branch": "factory/recovery-ui-001",
+  "package_sha256": "45ce0fa5879e14542aae491a1d5e5673e8786102bae8aa9ebc6a9e6d20137dce",
+  "counts": {
+    "surface_screenshots": 51,
+    "lifecycle_screenshots": 13,
+    "total_screenshots": 64,
+    "data_files": 3,
+    "reports": 1,
+    "package_files": 2,
+    "index_and_checksums": 2
+  },
+  "viewports": {
+    "desktop1600": "1600×900",
+    "laptop1366": "1366×768",
+    "mobile390": "390×844"
+  },
+  "files": [
+    {
+      "path": "data/events_log.jsonl",
+      "bytes": 106074
+    },
+    {
+      "path": "data/final_runtime.json",
+      "bytes": 7614
+    },
+    {
+      "path": "data/visual_audit.json",
+      "bytes": 3116
+    },
+    {
+      "path": "package/ORIGINAL-PACKAGE-README.txt",
+      "bytes": 1095
+    },
+    {
+      "path": "package/rr002_evidence_package.zip",
+      "bytes": 5935572
+    },
+    {
+      "path": "reports/AES-FACTORY-RELEASE-READINESS-002-REPORT.md",
+      "bytes": 16833
+    },
+    {
+      "path": "screenshots/lifecycle/A1_settings_models_before.png",
+      "bytes": 139028
+    },
+    {
+      "path": "screenshots/lifecycle/A2_settings_models_saved.png",
+      "bytes": 141715
+    },
+    {
+      "path": "screenshots/lifecycle/B0_resumed_project_view.png",
+      "bytes": 107910
+    },
+    {
+      "path": "screenshots/lifecycle/B1_project_created.png",
+      "bytes": 110870
+    },
+    {
+      "path": "screenshots/lifecycle/B2_project_view.png",
+      "bytes": 110888
+    },
+    {
+      "path": "screenshots/lifecycle/C1_plan_ready.png",
+      "bytes": 107811
+    },
+    {
+      "path": "screenshots/lifecycle/C2_plan_approved.png",
+      "bytes": 89942
+    },
+    {
+      "path": "screenshots/lifecycle/D_gate_65911.png",
+      "bytes": 91104
+    },
+    {
+      "path": "screenshots/lifecycle/D_progress_65856.png",
+      "bytes": 89936
+    },
+    {
+      "path": "screenshots/lifecycle/E_final_state.png",
+      "bytes": 88269
+    },
+    {
+      "path": "screenshots/lifecycle/F1_after_restart_projects.png",
+      "bytes": 125449
+    },
+    {
+      "path": "screenshots/lifecycle/F2_after_restart_project4.png",
+      "bytes": 108269
+    },
+    {
+      "path": "screenshots/lifecycle/F3_after_restart_artifacts.png",
+      "bytes": 131243
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_activity.png",
+      "bytes": 130884
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_agents.png",
+      "bytes": 117758
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_archive.png",
+      "bytes": 86133
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_artifacts.png",
+      "bytes": 131258
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_chat.png",
+      "bytes": 76296
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_factory.png",
+      "bytes": 86161
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_logs.png",
+      "bytes": 166489
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_overview.png",
+      "bytes": 77642
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_projects.png",
+      "bytes": 125458
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_reviews.png",
+      "bytes": 118421
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_advanced.png",
+      "bytes": 113447
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_execution.png",
+      "bytes": 170852
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_general.png",
+      "bytes": 124982
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_models.png",
+      "bytes": 143305
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_providers.png",
+      "bytes": 168707
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_settings_tools.png",
+      "bytes": 169580
+    },
+    {
+      "path": "screenshots/surfaces/desktop1600_tasks.png",
+      "bytes": 64670
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_activity.png",
+      "bytes": 110833
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_agents.png",
+      "bytes": 93214
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_archive.png",
+      "bytes": 76713
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_artifacts.png",
+      "bytes": 113699
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_chat.png",
+      "bytes": 67021
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_factory.png",
+      "bytes": 76815
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_logs.png",
+      "bytes": 138843
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_overview.png",
+      "bytes": 68194
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_projects.png",
+      "bytes": 115616
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_reviews.png",
+      "bytes": 104334
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_advanced.png",
+      "bytes": 100677
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_execution.png",
+      "bytes": 149319
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_general.png",
+      "bytes": 112041
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_models.png",
+      "bytes": 127732
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_providers.png",
+      "bytes": 147782
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_settings_tools.png",
+      "bytes": 148055
+    },
+    {
+      "path": "screenshots/surfaces/laptop1366_tasks.png",
+      "bytes": 55411
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_activity.png",
+      "bytes": 58253
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_agents.png",
+      "bytes": 57173
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_archive.png",
+      "bytes": 51199
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_artifacts.png",
+      "bytes": 58554
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_chat.png",
+      "bytes": 46727
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_factory.png",
+      "bytes": 51224
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_logs.png",
+      "bytes": 61568
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_overview.png",
+      "bytes": 46358
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_projects.png",
+      "bytes": 57906
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_reviews.png",
+      "bytes": 50618
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_advanced.png",
+      "bytes": 29115
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_execution.png",
+      "bytes": 69467
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_general.png",
+      "bytes": 37715
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_models.png",
+      "bytes": 48609
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_providers.png",
+      "bytes": 69031
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_settings_tools.png",
+      "bytes": 64961
+    },
+    {
+      "path": "screenshots/surfaces/mobile390_tasks.png",
+      "bytes": 44354
+    }
+  ]
+}

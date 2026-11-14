@@ -1,0 +1,166 @@
+{
+  "viewports": {
+    "desktop1600": {
+      "overview": {
+        "overflow": false
+      },
+      "projects": {
+        "overflow": false
+      },
+      "tasks": {
+        "overflow": false
+      },
+      "activity": {
+        "overflow": false
+      },
+      "reviews": {
+        "overflow": false
+      },
+      "agents": {
+        "overflow": false
+      },
+      "artifacts": {
+        "overflow": false
+      },
+      "logs": {
+        "overflow": false
+      },
+      "chat": {
+        "overflow": false
+      },
+      "factory": {
+        "overflow": false
+      },
+      "archive": {
+        "overflow": false
+      },
+      "settings_general": {
+        "overflow": false
+      },
+      "settings_providers": {
+        "overflow": false
+      },
+      "settings_models": {
+        "overflow": false
+      },
+      "settings_tools": {
+        "overflow": false
+      },
+      "settings_execution": {
+        "overflow": false
+      },
+      "settings_advanced": {
+        "overflow": false
+      }
+    },
+    "laptop1366": {
+      "overview": {
+        "overflow": false
+      },
+      "projects": {
+        "overflow": false
+      },
+      "tasks": {
+        "overflow": false
+      },
+      "activity": {
+        "overflow": false
+      },
+      "reviews": {
+        "overflow": false
+      },
+      "agents": {
+        "overflow": false
+      },
+      "artifacts": {
+        "overflow": false
+      },
+      "logs": {
+        "overflow": false
+      },
+      "chat": {
+        "overflow": false
+      },
+      "factory": {
+        "overflow": false
+      },
+      "archive": {
+        "overflow": false
+      },
+      "settings_general": {
+        "overflow": false
+      },
+      "settings_providers": {
+        "overflow": false
+      },
+      "settings_models": {
+        "overflow": false
+      },
+      "settings_tools": {
+        "overflow": false
+      },
+      "settings_execution": {
+        "overflow": false
+      },
+      "settings_advanced": {
+        "overflow": false
+      }
+    },
+    "mobile390": {
+      "overview": {
+        "overflow": false
+      },
+      "projects": {
+        "overflow": false
+      },
+      "tasks": {
+        "overflow": false
+      },
+      "activity": {
+        "overflow": false
+      },
+      "reviews": {
+        "overflow": false
+      },
+      "agents": {
+        "overflow": false
+      },
+      "artifacts": {
+        "overflow": false
+      },
+      "logs": {
+        "overflow": false
+      },
+      "chat": {
+        "overflow": false
+      },
+      "factory": {
+        "overflow": false
+      },
+      "archive": {
+        "overflow": false
+      },
+      "settings_general": {
+        "overflow": false
+      },
+      "settings_providers": {
+        "overflow": false
+      },
+      "settings_models": {
+        "overflow": false
+      },
+      "settings_tools": {
+        "overflow": false
+      },
+      "settings_execution": {
+        "overflow": false
+      },
+      "settings_advanced": {
+        "overflow": false
+      }
+    }
+  },
+  "console_errors": [],
+  "generated_at": "2026-11-14T14:21:31+0000",
+  "base": "http://127.0.0.1:8010"
+}
