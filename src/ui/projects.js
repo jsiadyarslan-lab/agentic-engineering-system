@@ -651,6 +651,20 @@
                 ((out.j && out.j.detail) || url),
               details: out.j || {},
             });
+            /* (REARCH-001 §8) فشل الأمر مرئي في المشهد نفسه — لا يُدفن
+               في المحادثة المخفية خلف الأسطح المؤسسية. */
+            var headBar = document.getElementById("pl-head-bar");
+            if (headBar) {
+              var flashFail = document.createElement("div");
+              flashFail.className = "cmd-flash err";
+              flashFail.textContent = "تعذر الأمر: " +
+                ((out.j && out.j.detail) || url);
+              headBar.parentNode.insertBefore(flashFail,
+                headBar.nextSibling);
+              setTimeout(function () {
+                if (flashFail.parentNode) flashFail.remove();
+              }, 6000);
+            }
           }
         }, done);
       };
