@@ -733,6 +733,11 @@ _LAUNCHER_BOOTSTRAP_CODE = (
     "run_launcher_bootstrap()\n"
 )
 
+# (RR002 §2) 步骤标签：launcher 每个操作一个名字，失败时写进
+# SANDBOX-INIT-ERROR 行——与 _sandbox_init 的 step 契约相同；每
+# launcher 一个全新进程，模块级变量即每请求安全。
+_LAUNCHER_STEP: list[str] = ["bootstrap"]
+
 
 def run_launcher_bootstrap() -> None:
     """Entry point of the spawned LAUNCHER process (never returns).
@@ -758,7 +763,10 @@ def run_launcher_bootstrap() -> None:
         _launcher_sequence(config)
     except BaseException as error:  # noqa: BLE001 - child boundary
         try:
-            os.write(2, f"SANDBOX-INIT-ERROR: {error!r}\n".encode())
+            os.write(
+                2,
+                f"SANDBOX-INIT-ERROR at {_LAUNCHER_STEP[0]}: {error!r}\n".encode(),
+            )
         except OSError:
             pass
         os._exit(125)
@@ -766,23 +774,40 @@ def run_launcher_bootstrap() -> None:
 
 
 def _launcher_sequence(config: dict) -> None:
-    """Launcher-side namespace construction (single-threaded process)."""
+    """Launcher-side namespace construction (single-threaded process).
+
+    (RR002 §2) 每个操作前更新 _LAUNCHER_STEP —— 失败时 SANDBOX-INIT-ERROR
+    行点名确切步骤（unshare 成功、uid_map 写入失败这类区分此前
+    不可见：runner 上的 PermissionError(13) 无法定位是哪个文件）。
+    """
+    step = lambda label: _LAUNCHER_STEP.__setitem__(0, label)  # noqa: E731
+    step("unshare-user")
     _unshare(CLONE_NEWUSER)
+    step("setgroups-deny")
     with open("/proc/self/setgroups", "w") as handle:
         handle.write("deny")
+    step("uid-map")
     with open("/proc/self/uid_map", "w") as handle:
         handle.write(f"0 {_REAL_UID} 1\n")
+    step("gid-map")
     with open("/proc/self/gid_map", "w") as handle:
         handle.write(f"0 {_REAL_GID} 1\n")
+    step("unshare-uts")
     _unshare(CLONE_NEWUTS)
+    step("unshare-net")
     _unshare(CLONE_NEWNET)
+    step("unshare-mount")
     _unshare(CLONE_NEWNS)
+    step("unshare-pid")
     _unshare(CLONE_NEWPID)
+    step("sethostname")
     libc = _libc()
     libc.sethostname.restype = ctypes.c_int
     libc.sethostname.argtypes = [ctypes.c_char_p, ctypes.c_size_t]
     libc.sethostname(SANDBOX_HOSTNAME.encode(), len(SANDBOX_HOSTNAME))
+    step("setpgid")
     os.setpgid(0, 0)
+    step("fork-init")
     init_pid = os.fork()
     if init_pid != 0:
         # launcher: reap the sandbox init and relay its exit code
