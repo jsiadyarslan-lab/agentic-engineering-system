@@ -1,0 +1,358 @@
+{
+ "generated_at_utc": "2026-11-14T16:28:22Z",
+ "before_provenance": "rr002-evidence release package (sha256 45ce0fa5879e14542aae491a1d5e5673e8786102bae8aa9ebc6a9e6d20137dce) — byte-verified originals",
+ "counts": {
+  "after_surfaces_51": 51,
+  "lifecycle_states": 10,
+  "before_reference": 18,
+  "data_files": 5
+ },
+ "audit": {
+  "shots": 51,
+  "overflow_failures": [],
+  "mobile_drawer_open_failures": [],
+  "js_error_failures": []
+ },
+ "files": [
+  {
+   "path": "audit.json",
+   "bytes": 6313
+  },
+  {
+   "path": "before/desktop1600_activity.png",
+   "bytes": 130884
+  },
+  {
+   "path": "before/desktop1600_agents.png",
+   "bytes": 117758
+  },
+  {
+   "path": "before/desktop1600_archive.png",
+   "bytes": 86133
+  },
+  {
+   "path": "before/desktop1600_artifacts.png",
+   "bytes": 131258
+  },
+  {
+   "path": "before/desktop1600_chat.png",
+   "bytes": 76296
+  },
+  {
+   "path": "before/desktop1600_factory.png",
+   "bytes": 86161
+  },
+  {
+   "path": "before/desktop1600_logs.png",
+   "bytes": 166489
+  },
+  {
+   "path": "before/desktop1600_overview.png",
+   "bytes": 77642
+  },
+  {
+   "path": "before/desktop1600_projects.png",
+   "bytes": 125458
+  },
+  {
+   "path": "before/desktop1600_reviews.png",
+   "bytes": 118421
+  },
+  {
+   "path": "before/desktop1600_settings_models.png",
+   "bytes": 143305
+  },
+  {
+   "path": "before/desktop1600_settings_providers.png",
+   "bytes": 168707
+  },
+  {
+   "path": "before/desktop1600_tasks.png",
+   "bytes": 64670
+  },
+  {
+   "path": "before/laptop1366_overview.png",
+   "bytes": 68194
+  },
+  {
+   "path": "before/mobile390_overview.png",
+   "bytes": 46358
+  },
+  {
+   "path": "before/mobile390_projects.png",
+   "bytes": 57906
+  },
+  {
+   "path": "before/mobile390_reviews.png",
+   "bytes": 50618
+  },
+  {
+   "path": "before/mobile390_tasks.png",
+   "bytes": 44354
+  },
+  {
+   "path": "data/functional_cycle_summary.json",
+   "bytes": 2854
+  },
+  {
+   "path": "data/health.json",
+   "bytes": 376
+  },
+  {
+   "path": "data/project2_artifacts.json",
+   "bytes": 43792
+  },
+  {
+   "path": "data/project2_events.json",
+   "bytes": 126649
+  },
+  {
+   "path": "data/project2_final_runtime.json",
+   "bytes": 5823
+  },
+  {
+   "path": "screenshots/lifecycle/E2_project_view_verified.png",
+   "bytes": 86650
+  },
+  {
+   "path": "screenshots/lifecycle/E_command_center_verified_after_restart.png",
+   "bytes": 124726
+  },
+  {
+   "path": "screenshots/lifecycle/F1_projects_after_restart.png",
+   "bytes": 61184
+  },
+  {
+   "path": "screenshots/lifecycle/F3_artifacts_after_restart.png",
+   "bytes": 142711
+  },
+  {
+   "path": "screenshots/lifecycle/LIVE_B_command_center_running.png",
+   "bytes": 138276
+  },
+  {
+   "path": "screenshots/lifecycle/LIVE_C2_execution_live_isolated.png",
+   "bytes": 136111
+  },
+  {
+   "path": "screenshots/lifecycle/LIVE_D_activity_live_stream.png",
+   "bytes": 148985
+  },
+  {
+   "path": "screenshots/lifecycle/M1_mobile_drawer_open_real.png",
+   "bytes": 47720
+  },
+  {
+   "path": "screenshots/lifecycle/M2_mobile_after_nav_drawer_closed.png",
+   "bytes": 39884
+  },
+  {
+   "path": "screenshots/lifecycle/M3_mobile_settings_drawer.png",
+   "bytes": 41452
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_activity.png",
+   "bytes": 166648
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_agents.png",
+   "bytes": 137384
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_archive.png",
+   "bytes": 86712
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_artifacts.png",
+   "bytes": 184000
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_chat.png",
+   "bytes": 95640
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_factory.png",
+   "bytes": 86768
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_logs.png",
+   "bytes": 184395
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_overview.png",
+   "bytes": 165580
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_projects.png",
+   "bytes": 103185
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_reviews.png",
+   "bytes": 93162
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_advanced.png",
+   "bytes": 109812
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_execution.png",
+   "bytes": 178120
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_general.png",
+   "bytes": 121647
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_models.png",
+   "bytes": 138588
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_providers.png",
+   "bytes": 170346
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_settings_tools.png",
+   "bytes": 166275
+  },
+  {
+   "path": "screenshots/surfaces/desktop1600_tasks.png",
+   "bytes": 77005
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_activity.png",
+   "bytes": 139674
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_agents.png",
+   "bytes": 126466
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_archive.png",
+   "bytes": 76137
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_artifacts.png",
+   "bytes": 157007
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_chat.png",
+   "bytes": 84610
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_factory.png",
+   "bytes": 76199
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_logs.png",
+   "bytes": 158400
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_overview.png",
+   "bytes": 137369
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_projects.png",
+   "bytes": 92400
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_reviews.png",
+   "bytes": 82265
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_advanced.png",
+   "bytes": 96790
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_execution.png",
+   "bytes": 155037
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_general.png",
+   "bytes": 108721
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_models.png",
+   "bytes": 122482
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_providers.png",
+   "bytes": 148480
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_settings_tools.png",
+   "bytes": 143273
+  },
+  {
+   "path": "screenshots/surfaces/laptop1366_tasks.png",
+   "bytes": 67364
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_activity.png",
+   "bytes": 77236
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_agents.png",
+   "bytes": 48130
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_archive.png",
+   "bytes": 34296
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_artifacts.png",
+   "bytes": 38731
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_chat.png",
+   "bytes": 33771
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_factory.png",
+   "bytes": 34444
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_logs.png",
+   "bytes": 74481
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_overview.png",
+   "bytes": 39133
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_projects.png",
+   "bytes": 44752
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_reviews.png",
+   "bytes": 39884
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_advanced.png",
+   "bytes": 26780
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_execution.png",
+   "bytes": 77539
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_general.png",
+   "bytes": 36822
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_models.png",
+   "bytes": 45777
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_providers.png",
+   "bytes": 73522
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_settings_tools.png",
+   "bytes": 67697
+  },
+  {
+   "path": "screenshots/surfaces/mobile390_tasks.png",
+   "bytes": 22582
+  }
+ ]
+}

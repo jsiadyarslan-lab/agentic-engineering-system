@@ -1,0 +1,367 @@
+{
+ "rows": [
+  {
+   "vp": "desktop1600",
+   "surface": "overview",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "projects",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "tasks",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "activity",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "reviews",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "agents",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "artifacts",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "logs",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "chat",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "factory",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "archive",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_general",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_models",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_providers",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_execution",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_tools",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "desktop1600",
+   "surface": "settings_advanced",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "overview",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "projects",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "tasks",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "activity",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "reviews",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "agents",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "artifacts",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "logs",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "chat",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "factory",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "archive",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_general",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_models",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_providers",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_execution",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_tools",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "laptop1366",
+   "surface": "settings_advanced",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "overview",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "projects",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "tasks",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "activity",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "reviews",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "agents",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "artifacts",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "logs",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "chat",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "factory",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "archive",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_general",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_models",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_providers",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_execution",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_tools",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  },
+  {
+   "vp": "mobile390",
+   "surface": "settings_advanced",
+   "overflowX": null,
+   "drawerOpen": false,
+   "errors": 0
+  }
+ ],
+ "summary": {
+  "shots": 51,
+  "overflow_failures": [],
+  "mobile_drawer_open_failures": [],
+  "js_error_failures": []
+ }
+}

@@ -1,0 +1,113 @@
+{
+ "cycle": "project 2 — full factory cycle through the REBUILT UI only",
+ "steps": [
+  {
+   "step": "provider readiness",
+   "how": "settings UI providers tab → اختبار الاتصال (real probe)",
+   "result": "zai_internal READY"
+  },
+  {
+   "step": "role models",
+   "how": "settings UI models tab → 6 roles → zai_internal/glm-4.6 → حفظ",
+   "result": "all 6 roles saved"
+  },
+  {
+   "step": "project creation",
+   "how": "sidebar مشروع جديد → objective prompt (canonical UI path)",
+   "result": "project #2 PLANNING"
+  },
+  {
+   "step": "plan generation",
+   "how": "live glm-4.6 via zai_internal",
+   "result": "PLAN_CREATED + PLAN_APPROVAL_REQUIRED"
+  },
+  {
+   "step": "owner approval",
+   "how": "Command Center decision queue → اعتماد الخطة",
+   "result": "RUNNING (isolated substrate)"
+  },
+  {
+   "step": "first attempt",
+   "how": "agent used generate_pdf_arabic → missing arabic_reshaper in fresh env",
+   "result": "EXECUTION_FAILED → BLOCKED (shown honestly)"
+  },
+  {
+   "step": "environment fix",
+   "how": "pip install -e \".[test]\" (declared PDF extra in pyproject)",
+   "result": "capability deps installed"
+  },
+  {
+   "step": "retry",
+   "how": "Command Center decision queue → إعادة المحاولة (new §4-C)",
+   "result": "RUNNING → 7 steps real files"
+  },
+  {
+   "step": "review+audit",
+   "how": "autonomous loop",
+   "result": "COMPLETED + CANDIDATE"
+  },
+  {
+   "step": "final verification",
+   "how": "Command Center decision queue → تحقق نهائي",
+   "result": "VERIFIED"
+  },
+  {
+   "step": "persistence",
+   "how": "server_stop.sh + server_start.sh",
+   "result": "status VERIFIED intact, artifacts listed in UI"
+  }
+ ],
+ "event_count": 394,
+ "key_event_kinds": [
+  "AUDIT_COMPLETED",
+  "CAPABILITIES_EVALUATED",
+  "CHECKPOINT_CREATED",
+  "ENVIRONMENT_CHECK_STARTED",
+  "ENVIRONMENT_READY",
+  "EVIDENCE_CREATED",
+  "EXECUTION_COMPLETED",
+  "EXECUTION_FAILED",
+  "EXECUTION_OPENED",
+  "EXECUTION_STARTED",
+  "JOB_COMPLETED",
+  "JOB_CREATED",
+  "JOB_QUEUED",
+  "JOB_RECOVERY_ASSESSED",
+  "JOB_RETRYING",
+  "JOB_STARTED",
+  "JOB_WAITING",
+  "MODEL_CALL_COMPLETED",
+  "MODEL_CALL_PROGRESS",
+  "MODEL_CALL_STARTED",
+  "OWNER_GATE_RESOLVED",
+  "PHASE_COMPLETED",
+  "PHASE_STARTED",
+  "PLANNING_STARTED",
+  "PLAN_APPROVAL_REQUIRED",
+  "PLAN_APPROVED",
+  "PLAN_CREATED",
+  "PLAN_GENERATING",
+  "PREFLIGHT_PASS",
+  "PREFLIGHT_STARTED",
+  "PROJECT_COMPLETION_CANDIDATE",
+  "PROJECT_CREATED",
+  "PROJECT_VERIFIED",
+  "RECOVERY_ASSESSED",
+  "RETRY_REQUESTED",
+  "REVIEW_COMPLETED",
+  "ROLE_EXECUTING",
+  "STAGE_REVIEW",
+  "STEP_COMPLETED",
+  "STEP_STARTED",
+  "TEST_COMPLETED",
+  "TOOL_EXECUTION"
+ ],
+ "real_outputs": [
+  "research_note.md",
+  "T1-introduction.md",
+  "T1-benefits-section.md",
+  "T1-example-section.md",
+  "T1-example.md",
+  "T1-report.pdf"
+ ]
+}
