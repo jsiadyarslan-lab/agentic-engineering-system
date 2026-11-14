@@ -963,6 +963,21 @@
       }
       return;
     }
+    /* (R1 §5-FIX C) اتساق التنقل: المسارات المؤسسية الثمانية تُوجَّه هنا
+       أيضًا — كان تغيير الهاش الحي إلى #/logs مثلًا يقع في الاحتياطي أدناه
+       فيوجَّه إلى overview ويكتب التاريخ فوق المسار المقصود، ومستمع
+       enterprise.js يقرأ الهاش بعد ذلك فيجد overview. الآن المسارُ
+       واحدٌ بصوت واحد في كلا المستمعين. */
+    var entMatch = hash.match(
+      /^#\/(overview|projects|tasks|agents|activity|reviews|artifacts|logs)$/);
+    if (entMatch) {
+      if (document.body.classList.contains("mode-project") &&
+          window.HubProjects) {
+        window.HubProjects.exitProjectMode();
+      }
+      if (window.ControlCenter) window.ControlCenter.showView(entMatch[1]);
+      return;
+    }
     // لا مسار: (REARCH-001 §3) مركز القيادة هو الوجهة الافتراضية —
     // المحادثة لا تعود الصفحة الأولى؛ تبقى قابلة للاسترداد من قائمة
     // الجلسات أو من مسارها المباشر #/chat/{id} عند التحديث عليه.

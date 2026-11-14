@@ -1,11 +1,14 @@
 /* ==========================================================================
-   command-center.js — AES-FACTORY-CONSOLE-REARCHITECTURE-001 §4
+   command-center.js — AES-FACTORY-CONSOLE-REARCHITECTURE-001 §4 + R1
    غرفة القيادة: شريط الحالة العام (A) على كل سطح + الصفحة التنفيذية الكاملة:
    A شريط الحالة · B التشغيل الحالي · C طابور القرارات · D جدول المشاريع
    E صحة المصنع · F خط النشاط.
    قاعدة الصدق (§8): كل رقم من API حي؛ الغياب يُعرض «غير متاح/لا شيء بعد»
-   ولا تُخترق قيمة أبدًا. اتصال الخادم منفصل عن الجاهزية التشغيلية:
-   جاهزية الوكلاء تُثبت بمسبار readiness حقيقي لا بمجرد وجود إعدادات.
+   ولا تُخترق قيمة أبدًا. اتصال الخادم منفصل عن الجاهزية التشغيلية.
+   R1 §2 FIX A: جاهزية الدور من التكوين المختار ونموذجه المُفحوص حصرًا
+   (roleReadiness — الحساب المركزي الوحيد).
+   R1 §3 FIX B: FAILED في طابور القرارات بسببه، والإجراء من لقطة الحالة،
+   ومعالجة {ok,j} الصادقة في إعادة المحاولة.
    سقف الملف <2000 سطر (عقد tests/contracts/test_thinness.py).
    ========================================================================== */
 (function () {
@@ -87,6 +90,97 @@
     return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m";
   }
 
+  /* ================= R1 §2 FIX A — جاهزية الدور: منطق مركزي واحد =================
+     الجذر الذي أصحّه هذا الأمر: كان يُكتفى بمزود عليه أي تكوين READY —
+     ويُتجاهل التكوين المختار فعليًا في role.selection.configuration.
+     الآن الدور جاهز فقط إذا اجتمع الثلاثة من نفس السجل:
+     1) المزود المختار موجود؛ 2) التكوين المختار هو نفسه التكوين صاحب
+     دليل الجاهزية (لا استعارة من تكوين آخر ناجح لدى المزود نفسه)؛
+     3) النموذج المختار معلن في ذلك التكوين. والمسبار (providers_registry
+     .probe_configuration) يفحص اتصال التكوين ونموذجه الافتراضي حصرًا —
+     فإن كان النموذج المختار غير الافتراضي فصلنا «اتصال التكوين» عن
+     «جاهزية النموذج» ولم ندّعِ ما لم يُختبر (R1 §2-6).
+     هذا هو الحساب الوحيد: الشريط العام + صحة المصنع + أي عرض أدوار.
+     حسابان مختلفان للجاهزية ممنوعان. */
+  function roleReadiness(cfgData, role) {
+    var sel = (role && role.selection) || {};
+    var provName = sel.provider || "";
+    var modelName = sel.model || "";
+    var configName = sel.configuration || "";
+    if (!provName) {
+      return { level: "off", code: "غير مهيأ", label: "غير مهيأ",
+        title: "لا مزود مختار لهذا الدور — الجاهزية غير قابلة للإثبات" };
+    }
+    var providers = (cfgData && cfgData.providers) || [];
+    var prov = null;
+    for (var i = 0; i < providers.length; i++) {
+      if (providers[i].id === provName) { prov = providers[i]; break; }
+    }
+    if (!prov) {
+      return { level: "off", code: "مزود غير معروف", label: "مزود غير معروف",
+        title: "المزود المختار «" + provName + "» غير موجود في السجل" };
+    }
+    var configs = (prov.configurations || []).filter(function (c) {
+      return c.enabled;
+    });
+    if (!configs.length) {
+      return { level: "off", code: "بلا تكوين مفعّل", label: "بلا تكوين مفعّل",
+        title: "المزود «" + (prov.label || provName) + "» بلا تكوين مفعّل" };
+    }
+    /* مطابقة التكوين المختار — نفس قاعدة تحقق الخادم: اسم صريح وإلا الأساسي ثم الأول */
+    var cfg = null;
+    if (configName) {
+      for (var j = 0; j < configs.length; j++) {
+        if (configs[j].name === configName) { cfg = configs[j]; break; }
+      }
+      if (!cfg) {
+        return { level: "off", code: "التكوين المختار غير موجود",
+          label: "التكوين المختار غير موجود",
+          title: "التكوين المختار «" + configName + "» غير معلن لدى المزود " + provName };
+      }
+    } else {
+      cfg = configs.filter(function (c) { return c.is_primary; })[0] || configs[0];
+    }
+    if (!modelName) {
+      return { level: "off", code: "لا نموذج مختار", label: "لا نموذج مختار",
+        title: "الدور مربوط بلا نموذج — الجاهزية غير قابلة للإثبات" };
+    }
+    /* النموذج معلن في هذا التكوين تحديدًا؟ — نفس عقد _validate_selection */
+    var declared = cfg.default_model === modelName;
+    if (!declared) {
+      (cfg.models || []).forEach(function (m) {
+        if (m === modelName) declared = true;
+      });
+    }
+    if (!declared) {
+      return { level: "off", code: "النموذج غير معلن في التكوين",
+        label: "النموذج غير معلن في التكوين",
+        title: "النموذج «" + modelName + "» غير معلن في تكوين «" +
+          (cfg.name || "default") + "» — لا جاهزية بلا إعلان" };
+    }
+    /* دليل الجاهزية لهذا التكوين تحديدًا — لا يُمنح READY لمجرد نجاح تكوين آخر */
+    var rd = (cfg.readiness && cfg.readiness.status) || "UNTESTED";
+    var checked = cfg.readiness && cfg.readiness.checked_at
+      ? " — آخر فحص " + String(cfg.readiness.checked_at).slice(0, 19) : "";
+    if (rd === "READY") {
+      if (modelName === cfg.default_model) {
+        return { level: "ready", code: "READY", label: "READY",
+          title: "مسبار التكوين المختار «" + (cfg.name || "default") +
+            "» نجح والنموذج المختار هو النموذج المُفحوص" + checked };
+      }
+      /* اتصال التكوين مُثبت، لكن المسبار فحص النموذج الافتراضي لا المختار —
+         حالة منفصلة صادقة: لا جاهزية نموذج بلا فحص (R1 §2-6). */
+      return { level: "warn", code: "التكوين متصل — النموذج المختار غير مُفحوص",
+        label: "التكوين متصل — النموذج المختار غير مُفحوص",
+        title: "مسبار «" + (cfg.name || "default") + "» فحص النموذج الافتراضي «" +
+          (cfg.default_model || "بلا افتراضي") + "» لا «" + modelName +
+          "» — جاهزية النموذج المختار غير مثبتة بعد" + checked };
+    }
+    return { level: "off", code: rd, label: rd,
+      title: "حالة فحص التكوين المختار «" + (cfg.name || "default") + "»: " + rd +
+        (checked || " — لم يُفحص حيًا بعد") };
+  }
+
   var cache = {};   /* لقطات مشتركة بين الشريط والصفحة — تُجدد دوريًا */
 
   /* ================= A) شريط الحالة العام — على كل سطح ================= */
@@ -159,8 +253,8 @@
     strip.appendChild(stripCell({
       label: "الوكلاء الجاهزة", value: agentsVal, ar: true, dot: agentsDot,
       title: ready === total
-        ? "كل الأدوار بمزود مُفحوص جاهزيته"
-        : "الجاهزية تثبت بمسبار المزود الحي — وجود إعدادات وحده لا يكفي",
+        ? "كل الأدوار بتكوينها المختار مُفحوصًا ونموذجها المختار هو المُفحوص"
+        : "الجاهزية من دليل مسبار التكوين المختار حصرًا — لا يُعد دور جاهزًا لمجرد نجاح تكوين آخر لدى المزود نفسه (R1 §2)",
       nav: "agents"
     }));
 
@@ -213,21 +307,13 @@
       cache.envs = envs.ok ? (envs.j || {}) : null;
       cache.host = host.ok ? (host.j || {}) : null;
 
-      /* جاهزية الوكلاء الصادقة: دور جاهز فقط إذا مزوده بتكوين مُفحوص READY */
+      /* جاهزية الوكلاء الصادقة (R1 §2 FIX A): التكوين المختار هو صاحب الدليل،
+         والنموذج المختار هو المُفحوص — عبر الحساب المركزي الوحيد roleReadiness. */
       var ready = 0, total = 0;
       if (cache.cfg && cache.cfg.roles) {
-        var provReady = {};
-        (cache.cfg.providers || []).forEach(function (p) {
-          (p.configurations || []).forEach(function (c) {
-            if (c.readiness && c.readiness.status === "READY") {
-              provReady[p.id] = true;
-            }
-          });
-        });
         cache.cfg.roles.forEach(function (r) {
           total += 1;
-          var sel = r.selection || {};
-          if (sel.provider && sel.model && provReady[sel.provider]) ready += 1;
+          if (roleReadiness(cache.cfg, r).level === "ready") ready += 1;
         });
       }
       cache.rolesReady = ready;
@@ -386,7 +472,54 @@
     });
   }
 
-  /* ================= C) طابور القرارات ================= */
+  /* ================= C) طابور القرارات =================
+     R1 §3 FIX B: المشاريع الفاشلة في الطابور، والإجراء من المصدر القانوني
+     حصرًا (available_actions من لقطة الحالة /api/projects/{id}/state)،
+     ومعالجة نتيجة Hub.fetchJSON الصادقة ({ok,j} حتى عند HTTP غير ناجح):
+     ok=true → تحديث من المصدر الحي؛ ok=false → خطأ معلن والصف باقٍ؛
+     فشل شبكة → رسالة واضحة والزر يعود فعالًا. لا نجاح وهميًا ولا اختفاءً صامتًا. */
+  var queueNote = "";
+  function setQueueNote(msg) {
+    queueNote = String(msg || "");
+    var n = document.getElementById("cmd-queue-note");
+    if (n) { n.textContent = queueNote; n.style.display = ""; }
+  }
+  function clearQueueNote() {
+    queueNote = "";
+    var n = document.getElementById("cmd-queue-note");
+    if (n) { n.textContent = ""; n.style.display = "none"; }
+  }
+  function retryButton(p) {
+    var re = el("button", "btn ghost small", "إعادة المحاولة");
+    re.title = "إعادة آخر فشل (تخطيط أو خطوة) — من الإجراءات المعلنة في لقطة الحالة";
+    re.addEventListener("click", function () {
+      re.disabled = true;
+      re.textContent = "…جارٍ الإعادة";
+      clearQueueNote();
+      Hub.fetchJSON("/api/projects/" + p.id + "/retry", { method: "POST" })
+        .then(function (res) {
+          if (res && res.ok) {
+            /* نجاح فعلي — الحالة والطابور يُحدَّثان من المصدر الحي */
+            render();
+          } else {
+            /* HTTP 4xx/5xx — fetchJSON يعيد {ok:false,j} — الخطأ يُعرض والصف باقٍ */
+            var d = (res && res.j) || {};
+            setQueueNote("رُفضت إعادة المحاولة للمشروع #" + p.id + ": " +
+              (d.detail || d.error || d.message || "خطأ من الخادم بلا تفصيل"));
+            re.disabled = false;
+            re.textContent = "إعادة المحاولة";
+          }
+        })
+        .catch(function (e) {
+          /* فشل شبكة أو جسم غير JSON — لم يُنفّذ أي أمر؛ رسالة صادقة والزر يعود */
+          setQueueNote("تعذر تنفيذ إعادة المحاولة للمشروع #" + p.id +
+            " — لم يُنفَّذ أي أمر: " + e);
+          re.disabled = false;
+          re.textContent = "إعادة المحاولة";
+        });
+    });
+    return re;
+  }
   function decisionRow(p, kind, why) {
     var row = el("div", "cmd-decision");
     var dot = el("span", "cmd-kind-dot " + kind);
@@ -402,25 +535,27 @@
     main.appendChild(meta);
     row.appendChild(main);
     var acts = el("div", "cmd-decision-actions");
-    /* (REARCH-001 §4-C) معالجة المتعطل: إعادة المحاولة من الطابور نفسه —
-       نفس نقطة النهاية ونفس عقد زر «↻ إعادة» في واجهة المشروع. */
-    if (p.status === "BLOCKED" || p.status === "ESCALATED" || p.status === "FAILED") {
-      var re = el("button", "btn ghost small", "إعادة المحاولة");
-      re.title = "إعادة آخر فشل (تخطيط أو خطوة) — عقد زر ↻ إعادة في المشروع";
-      re.addEventListener("click", function () {
-        re.disabled = true;
-        re.textContent = "…جارٍ الإعادة";
-        Hub.fetchJSON("/api/projects/" + p.id + "/retry", { method: "POST" })
-          .then(function () {
-            re.disabled = false;
-            re.textContent = "إعادة المحاولة";
-            render();
-          }).catch(function () {
-            re.disabled = false;
-            re.textContent = "إعادة المحاولة";
-          });
-      });
-      acts.appendChild(re);
+    /* (R1 §3) المتعطل/الفاشل/المصعد: إعادة المحاولة تُعرض فقط إذا أعلنتها
+       اللقطة القانونية available_actions — لا زر بلا أمر خلفه فعليًا. */
+    if (kind === "blocked" || kind === "failed") {
+      var ph = el("span", "cmd-acts-check", "جارٍ فحص الإجراءات المتاحة…");
+      acts.appendChild(ph);
+      Hub.fetchJSON("/api/projects/" + p.id + "/state")
+        .then(function (r) {
+          if (ph.parentNode) ph.parentNode.removeChild(ph);
+          var list = (r.ok && r.j && r.j.available_actions) || null;
+          if (!r.ok || !list) {
+            acts.appendChild(el("span", "cmd-acts-check",
+              "تعذر التحقق من الإجراءات المتاحة — افتح المشروع."));
+            return;
+          }
+          if (list.indexOf("retry") !== -1) acts.appendChild(retryButton(p));
+        })
+        .catch(function () {
+          if (ph.parentNode) ph.parentNode.removeChild(ph);
+          acts.appendChild(el("span", "cmd-acts-check",
+            "تعذر التحقق من الإجراءات المتاحة — افتح المشروع."));
+        });
     }
     if (window.HubEnterprise && HubEnterprise.actionsFor) {
       acts.appendChild(HubEnterprise.actionsFor(p));
@@ -440,6 +575,11 @@
     head.appendChild(el("span", "cmd-section-title", "طابور القرارات — ما ينتظر قرارك"));
     head.appendChild(el("span", "cmd-section-count", String(pending.length)));
     sec.appendChild(head);
+    /* (R1 §3) ملاحظة الطابور حاضرة دائمًا — تُملأ لحظة الخطأ دون انتظار إعادة رسم */
+    var nt = el("div", "cmd-queue-note", queueNote);
+    nt.id = "cmd-queue-note";
+    if (!queueNote) nt.style.display = "none";
+    sec.appendChild(nt);
     if (!pending.length) {
       var b = el("div", "cmd-section-body");
       b.appendChild(el("div", "cmd-empty",
@@ -658,24 +798,17 @@
       return c;
     }
 
-    /* الوكلاء والأدوار — الدور → نموذجه → مزوده → جاهزيته المُفحوصة */
+    /* الوكلاء والأدوار (R1 §2 FIX A) — نفس الحساب المركزي roleReadiness:
+       الدور → تكوينه المختار → دليل مسبار ذلك التكوين → حالة النموذج المختار. */
     var roleLines = [];
     if (cache.cfg && cache.cfg.roles) {
-      var provMap = {};
-      (cache.cfg.providers || []).forEach(function (p) {
-        (p.configurations || []).forEach(function (c) {
-          if (c.readiness && c.readiness.status === "READY") provMap[p.id] = true;
-        });
-      });
       cache.cfg.roles.forEach(function (r) {
         var sel = r.selection || {};
-        var okr = sel.provider && sel.model && provMap[sel.provider];
+        var rd = roleReadiness(cache.cfg, r);
         roleLines.push({
           k: r.label || r.key,
-          v: okr ? ((sel.provider || "—") + " · " + sel.model + " · READY")
-                 : ((sel.provider || sel.model) ? ((sel.provider || "—") + " · " + (sel.model || "—") + " · UNTESTED")
-                                              : "غير مهيأ"),
-          title: okr ? "جاهز بمسبار مزود ناجح" : "الجاهزية غير مثبتة بفحص حي بعد"
+          v: (sel.provider || "—") + " · " + (sel.model || "—") + " · " + rd.label,
+          title: rd.title
         });
       });
     }
@@ -861,8 +994,15 @@
           pending.push({ p: p, kind: "blocked",
             why: "محجوبة: " + (p.last_error || "سبب غير معلن — أعد فحص الجاهزية.") });
         }
+        /* (R1 §3 FIX B) الفاشل في الطابور: العداد يحتسبه — فالطابور الذي
+           يعالج المشكلة يجب أن يعرضه بسببه الحقيقي. */
+        if (p.status === "FAILED") {
+          pending.push({ p: p, kind: "failed",
+            why: "فاشل: " + (p.last_error || "سبب غير معلن — التفاصيل الكاملة في سجل المشروع.") });
+        }
         if (p.status === "ESCALATED") {
-          pending.push({ p: p, kind: "blocked", why: "مصعدة لك بحاجة تدخل." });
+          pending.push({ p: p, kind: "blocked",
+            why: "مصعدة لك بحاجة تدخل." + (p.last_error ? " السبب: " + p.last_error : "") });
         }
       });
       page.appendChild(decisionSection(pending));

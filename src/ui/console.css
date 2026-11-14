@@ -216,6 +216,25 @@ button.cmd-cell:hover { background: var(--bg-hover); }
 .cmd-kind-dot.plan { background: var(--cmd-warn-dot); }
 .cmd-kind-dot.verify { background: var(--cmd-ok-dot); }
 .cmd-kind-dot.blocked { background: var(--cmd-err-dot); }
+/* R1 §3 FIX B — صف فاشل: نقطة فشل + فحص الإجراءات + ملاحظة خطأ الطابور */
+.cmd-kind-dot.failed { background: var(--cmd-err-dot); }
+.cmd-acts-check {
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  opacity: .85;
+  white-space: nowrap;
+}
+.cmd-queue-note {
+  margin: var(--sp-2) var(--sp-4) 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--danger);
+  border-inline-start: 3px solid var(--danger);
+  border-radius: var(--radius-s);
+  background: var(--bg-raised);
+  color: var(--danger);
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+}
 
 /* ---------- D. جدول المشاريع المؤسسي ---------- */
 .cmd-table-wrap { overflow-x: auto; }

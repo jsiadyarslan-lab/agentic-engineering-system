@@ -362,3 +362,66 @@
 - [`data/project2_artifacts.json`](data/project2_artifacts.json) — المخرجات الحقيقية ببصمات SHA-256.
 - [`audit.json`](audit.json) — نتيجة الفحص الميكانيكي لكل لقطة (فيض/درج/أخطاء).
 - [`SHA256SUMS`](SHA256SUMS) · [`MANIFEST.json`](MANIFEST.json) — البصمات والبيان.
+
+---
+
+# أدلة R1 — SEMANTIC TRUTH & EVIDENCE RECONCILIATION (بعد جولة التصحيح)
+
+> التُقطت على البناء المعدّل (FIX A/B/C) بخادم حي حقيقي وقاعدة جديدة: حالات فراغ صادقة + سيناريو جاهزية R1 الحي (مسبار حقيقي → READY؛ تكوين ثانٍ يبقى UNTESTED — موسوم كاختبار لا كبيانات تشغيل). الفحص الميكانيكي الكامل في [`r1/audit.json`](r1/audit.json).
+
+| الفحص الميكانيكي R1 (51 لقطة) | النتيجة |
+|---|---|
+| فيض أفقي | **صفر** على كل الأسطح والمقاسات |
+| الدرج المفتوح فوق المحتوى على الموبايل | **صفر** |
+| أخطاء JavaScript/كونسول | **صفر** |
+| سلوك الدرج الحقيقي (M1 فتح ☰ · M2 إغلاق بالاختيار · M3 إغلاق خارجي · M4 Escape) | **4/4 ناجح** على البناء المعدّل |
+
+## FIX A — جاهزية التكوين المختار (R1-A/R1-B)
+
+**الشريط الحي: `1/6 جاهز بالفحص` — الدور على التكوين غير المفحوص مستبعد** (`r1/screenshots/R1A_live_strip_agents.png`)
+
+![الشريط الحي بعد FIX A](r1/screenshots/R1A_live_strip_agents.png)
+
+**لوحة الصحة: الحالات الثلاث الصادقة معًا — READY / UNTESTED / التكوين متصل والنموذج غير مُفحوص** (`r1/screenshots/R1AB_live_health_roles.png`)
+
+![لوحة صحة المصنع بعد FIX A](r1/screenshots/R1AB_live_health_roles.png)
+
+## FIX B — FAILED في طابور القرارات ومعالجة {ok,j}
+
+**صف FAILED بسببه الحقيقي في الطابور** (`r1/screenshots/R1C_failed_in_queue.png`)
+
+![FAILED في الطابور](r1/screenshots/R1C_failed_in_queue.png)
+
+**إعادة محاولة HTTP 409: الخطأ معلن في صندوق القسم والصف باقٍ والزر يعود فعالًا** (`r1/screenshots/R1D_retry_http409.png`)
+
+![إعادة محاولة مرفوضة 409](r1/screenshots/R1D_retry_http409.png)
+
+**بلا retry في available_actions → لا زر إعادة أصلًا** (`r1/screenshots/R1D2_no_retry_action.png`)
+
+![لا زر بلا إجراء قانوني](r1/screenshots/R1D2_no_retry_action.png)
+
+**إعادة محاولة ناجحة → إعادة تجميع حية من المصدر** (`r1/screenshots/R1E_retry_success.png`)
+
+![إعادة محاولة ناجحة](r1/screenshots/R1E_retry_success.png)
+
+## سلوك الدرج الحقيقي على الموبايل (R1-F §7)
+
+**M1 — الدرج مفتوح بالزر** (`r1/screenshots/R1F_M1_drawer_open.png`)
+
+![M1 الدرج مفتوح](r1/screenshots/R1F_M1_drawer_open.png)
+
+**M2 — يُغلق تلقائيًا بعد اختيار سطح والمحتوى بعرض كامل (الشرط الحاسم)** (`r1/screenshots/R1F_M2_drawer_closed_after_nav.png`)
+
+![M2 إغلاق بعد الاختيار](r1/screenshots/R1F_M2_drawer_closed_after_nav.png)
+
+## الفحص الميكانيكي الكامل بعد R1 (51 لقطة)
+
+- `r1/screenshots/desktop1600_*.png` — 17 سطحًا
+- `r1/screenshots/laptop1366_*.png` — 17 سطحًا
+- `r1/screenshots/mobile390_*.png` — 17 سطحًا
+- نتائج كل صف: [`r1/audit.json`](r1/audit.json) — 51/51 نظيف
+
+## نتائج الاختبارات الوظيفية R1
+
+- [`r1/R1_FUNCTIONAL_RESULTS.json`](r1/R1_FUNCTIONAL_RESULTS.json) — 9/9 PASS (تكامل حي + مسارات فشل معلنة)
+- سكربتا الاختبار: `scripts/r1_functional_tests.py` · `scripts/r1_visual_audit.py`
