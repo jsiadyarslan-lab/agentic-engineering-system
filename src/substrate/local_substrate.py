@@ -67,6 +67,7 @@ import select
 import shutil
 import signal
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -587,6 +588,23 @@ def substrate_capabilities() -> dict[str, object]:
     Returns a truthful record of the kernel features this adapter
     requires. ``supported`` is True only when every required feature
     is present (used fail-closed by :class:`LocalSubstrateAdapter`).
+
+    (AES-FACTORY-RELEASE-READINESS-002 §2) The gate is now a REAL
+    capability probe, not an environment fingerprint: the host's own
+    seccomp mode is recorded for truthfulness but does NOT gate —
+    mode 0 ("no filter on this process") restricts nothing the
+    launcher needs (the sandbox installs its OWN deny-list via
+    PR_SET_NO_NEW_PRIVS + seccomp per-process regardless of host
+    mode). Requiring mode (1, 2) produced a FALSE NEGATIVE on
+    bare-VM CI runners (GitHub Actions: seccomp 0, user namespaces
+    enabled) while proving nothing the sandbox actually uses. The
+    actual required kernel primitive — an unprivileged
+    ``unshare(CLONE_NEWUSER)`` — is now probed once per process in a
+    FRESH single-threaded interpreter (the exact conditions the
+    launcher itself runs under: a fork of a multi-threaded
+    supervisor can inherit thread state that blocks unshare with
+    EINVAL — the reason the supervisor spawns instead of forking).
+    The per-execute launch itself remains the final arbiter.
     """
     capabilities: dict[str, object] = {
         "arch_x86_64_linux": _SUPPORTED_ARCH,
@@ -599,16 +617,81 @@ def substrate_capabilities() -> dict[str, object]:
         capabilities["user_namespaces_enabled"] = value > 0
     except (OSError, ValueError):
         capabilities["user_namespaces_enabled"] = False
+    # معلومة صدق فقط — لا بوابة: وضع seccomp للمضيف لا يمنع
+    # شيئًا يحتاجه المُطلِق (فلتر الرمل يُنصَّب داخل الرمل نفسه).
     capabilities["seccomp_self_mode"] = _seccomp_self_mode()
     capabilities["interpreter"] = sys.executable
     capabilities["interpreter_resolvable"] = os.path.isfile(sys.executable)
+    probe_ok, probe_reason = _userns_probe()
+    capabilities["userns_probe"] = "OK" if probe_ok else f"FAILED: {probe_reason}"
     capabilities["supported"] = bool(
         _SUPPORTED_ARCH
         and capabilities["user_namespaces_enabled"]
-        and capabilities["seccomp_self_mode"] in (1, 2)
         and capabilities["interpreter_resolvable"]
+        and probe_ok
     )
     return capabilities
+
+
+#: Per-process cache of the one real user-namespace probe (the same
+#: caching contract as the bwrap adapter: one real probe per process;
+#: the per-execute launch re-checks cheap invariants and remains the
+#: final arbiter — fail-closed either way).
+_USERNS_PROBE_CACHE: dict[str, object] = {}
+
+#: The probe body: a fresh interpreter, single-threaded, that attempts
+#: the exact first namespace primitive the launcher performs.
+_USERNS_PROBE_CODE = (
+    "import ctypes, os\n"
+    "libc = ctypes.CDLL(None, use_errno=True)\n"
+    "rc = libc.unshare(0x10000000)\n"  # CLONE_NEWUSER
+    "os._exit(0 if rc == 0 else 1)\n"
+)
+
+
+def _userns_probe(*, force: bool = False) -> tuple[bool, str]:
+    """One REAL unprivileged user-namespace creation attempt.
+
+    Spawns a FRESH interpreter (posix_spawn semantics — never a fork
+    of this possibly multi-threaded supervisor) that calls
+    ``unshare(CLONE_NEWUSER)`` and exits 0 on success. This is the
+    kernel primitive every sandbox launch actually needs; probing
+    it directly is the truthful capability test (sysctl reads and
+    host fingerprinting are not). Cached per process unless
+    ``force``.
+    """
+    if not _USERNS_PROBE_CACHE.get("probed_at") or force:
+        verdict: tuple[bool, str]
+        if not sys.platform.startswith("linux"):  # pragma: no cover
+            verdict = (False, "userns probe requires linux")
+        else:
+            try:
+                result = subprocess.run(  # noqa: S603 — ثابت
+                    [sys.executable, "-c", _USERNS_PROBE_CODE],
+                    capture_output=True, timeout=15,
+                )
+            except (OSError, subprocess.TimeoutExpired) as error:
+                verdict = (False, f"probe could not run: {error}")
+            else:
+                if result.returncode == 0:
+                    verdict = (True, "")
+                else:
+                    stderr = (result.stderr or b"").decode(
+                        "utf-8", "replace"
+                    ).strip()[-200:]
+                    verdict = (
+                        False,
+                        f"probe exited {result.returncode}"
+                        + (f": {stderr}" if stderr else ""),
+                    )
+        _USERNS_PROBE_CACHE.clear()
+        _USERNS_PROBE_CACHE.update(
+            {"probed_at": time.time(), "ok": verdict[0], "reason": verdict[1]}
+        )
+    return (
+        bool(_USERNS_PROBE_CACHE.get("ok")),
+        str(_USERNS_PROBE_CACHE.get("reason") or ""),
+    )
 
 
 def _seccomp_self_mode() -> int:
