@@ -1245,6 +1245,17 @@ class LocalSubstrateAdapter(SubstrateAdapter):
             "exit_code": exit_code,
             "duration_ms": duration_ms,
         }
+        # (RR002 §2) سبب الفشل الصادق في الأدلة: عند أي إنهاء غير
+        # مكتمل يُسجَّل termination + exit_code + رأس stderr المحفوظ
+        # (سطر SANDBOX-INIT-ERROR الحقيقي) — نفس المفتاح الذي يقرؤه
+        # LocalSandboxBackend ليرتفع السبب الحقيقي في الرسالة بدل
+        # تفصيل عام يفقد مكان الفشل بالضبط.
+        if termination is not SandboxTermination.COMPLETED:
+            stderr_head = stderr[:400].decode(errors="replace").strip()
+            self._run_evidence[sandbox_id]["failure_reason"] = (
+                f"{termination.value}: exit_code={exit_code}; "
+                f"stderr_head={stderr_head!r}"
+            )
         self._active_runs.pop(sandbox_id, None)
         executed = termination not in (
             SandboxTermination.FAILED_TO_START, SandboxTermination.NOT_RUN

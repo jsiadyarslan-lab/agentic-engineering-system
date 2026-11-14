@@ -174,7 +174,14 @@ def _run_in_substrate(ctx: ToolContext, code: str, workspace: Path,
         )
     stderr = outcome.stderr
     if outcome.termination != "COMPLETED":
+        # (RR002 §2) لا تُلقَ الأدلة الحقيقية: التفصيل العام يُتقدَّم،
+        # لكن stderr الفعلي المحفوظ (سطر SANDBOX-INIT-ERROR الذي يسمّي
+        # الخطوة الفاشلة بالضبط) يُلحق به — الصدق في الرسالة هو أول
+        # شرط للإصلاح الجذري؛ إخفاؤه يحوّل كل فشل بدء إلى غموض متطابق.
         stderr = f"{outcome.termination}: {outcome.detail}"
+        real_stderr = (outcome.stderr or "").strip()
+        if real_stderr:
+            stderr = f"{stderr} | real_stderr={real_stderr[:400]!r}"
     return outcome.exit_code, outcome.stdout, stderr
 
 
