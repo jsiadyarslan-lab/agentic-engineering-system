@@ -67,6 +67,7 @@ import select
 import shutil
 import signal
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -587,6 +588,23 @@ def substrate_capabilities() -> dict[str, object]:
     Returns a truthful record of the kernel features this adapter
     requires. ``supported`` is True only when every required feature
     is present (used fail-closed by :class:`LocalSubstrateAdapter`).
+
+    (AES-FACTORY-RELEASE-READINESS-002 §2) The gate is now a REAL
+    capability probe, not an environment fingerprint: the host's own
+    seccomp mode is recorded for truthfulness but does NOT gate —
+    mode 0 ("no filter on this process") restricts nothing the
+    launcher needs (the sandbox installs its OWN deny-list via
+    PR_SET_NO_NEW_PRIVS + seccomp per-process regardless of host
+    mode). Requiring mode (1, 2) produced a FALSE NEGATIVE on
+    bare-VM CI runners (GitHub Actions: seccomp 0, user namespaces
+    enabled) while proving nothing the sandbox actually uses. The
+    actual required kernel primitive — an unprivileged
+    ``unshare(CLONE_NEWUSER)`` — is now probed once per process in a
+    FRESH single-threaded interpreter (the exact conditions the
+    launcher itself runs under: a fork of a multi-threaded
+    supervisor can inherit thread state that blocks unshare with
+    EINVAL — the reason the supervisor spawns instead of forking).
+    The per-execute launch itself remains the final arbiter.
     """
     capabilities: dict[str, object] = {
         "arch_x86_64_linux": _SUPPORTED_ARCH,
@@ -599,16 +617,81 @@ def substrate_capabilities() -> dict[str, object]:
         capabilities["user_namespaces_enabled"] = value > 0
     except (OSError, ValueError):
         capabilities["user_namespaces_enabled"] = False
+    # معلومة صدق فقط — لا بوابة: وضع seccomp للمضيف لا يمنع
+    # شيئًا يحتاجه المُطلِق (فلتر الرمل يُنصَّب داخل الرمل نفسه).
     capabilities["seccomp_self_mode"] = _seccomp_self_mode()
     capabilities["interpreter"] = sys.executable
     capabilities["interpreter_resolvable"] = os.path.isfile(sys.executable)
+    probe_ok, probe_reason = _userns_probe()
+    capabilities["userns_probe"] = "OK" if probe_ok else f"FAILED: {probe_reason}"
     capabilities["supported"] = bool(
         _SUPPORTED_ARCH
         and capabilities["user_namespaces_enabled"]
-        and capabilities["seccomp_self_mode"] in (1, 2)
         and capabilities["interpreter_resolvable"]
+        and probe_ok
     )
     return capabilities
+
+
+#: Per-process cache of the one real user-namespace probe (the same
+#: caching contract as the bwrap adapter: one real probe per process;
+#: the per-execute launch re-checks cheap invariants and remains the
+#: final arbiter — fail-closed either way).
+_USERNS_PROBE_CACHE: dict[str, object] = {}
+
+#: The probe body: a fresh interpreter, single-threaded, that attempts
+#: the exact first namespace primitive the launcher performs.
+_USERNS_PROBE_CODE = (
+    "import ctypes, os\n"
+    "libc = ctypes.CDLL(None, use_errno=True)\n"
+    "rc = libc.unshare(0x10000000)\n"  # CLONE_NEWUSER
+    "os._exit(0 if rc == 0 else 1)\n"
+)
+
+
+def _userns_probe(*, force: bool = False) -> tuple[bool, str]:
+    """One REAL unprivileged user-namespace creation attempt.
+
+    Spawns a FRESH interpreter (posix_spawn semantics — never a fork
+    of this possibly multi-threaded supervisor) that calls
+    ``unshare(CLONE_NEWUSER)`` and exits 0 on success. This is the
+    kernel primitive every sandbox launch actually needs; probing
+    it directly is the truthful capability test (sysctl reads and
+    host fingerprinting are not). Cached per process unless
+    ``force``.
+    """
+    if not _USERNS_PROBE_CACHE.get("probed_at") or force:
+        verdict: tuple[bool, str]
+        if not sys.platform.startswith("linux"):  # pragma: no cover
+            verdict = (False, "userns probe requires linux")
+        else:
+            try:
+                result = subprocess.run(  # noqa: S603 — ثابت
+                    [sys.executable, "-c", _USERNS_PROBE_CODE],
+                    capture_output=True, timeout=15,
+                )
+            except (OSError, subprocess.TimeoutExpired) as error:
+                verdict = (False, f"probe could not run: {error}")
+            else:
+                if result.returncode == 0:
+                    verdict = (True, "")
+                else:
+                    stderr = (result.stderr or b"").decode(
+                        "utf-8", "replace"
+                    ).strip()[-200:]
+                    verdict = (
+                        False,
+                        f"probe exited {result.returncode}"
+                        + (f": {stderr}" if stderr else ""),
+                    )
+        _USERNS_PROBE_CACHE.clear()
+        _USERNS_PROBE_CACHE.update(
+            {"probed_at": time.time(), "ok": verdict[0], "reason": verdict[1]}
+        )
+    return (
+        bool(_USERNS_PROBE_CACHE.get("ok")),
+        str(_USERNS_PROBE_CACHE.get("reason") or ""),
+    )
 
 
 def _seccomp_self_mode() -> int:
@@ -650,6 +733,11 @@ _LAUNCHER_BOOTSTRAP_CODE = (
     "run_launcher_bootstrap()\n"
 )
 
+# (RR002 §2) 步骤标签：launcher 每个操作一个名字，失败时写进
+# SANDBOX-INIT-ERROR 行——与 _sandbox_init 的 step 契约相同；每
+# launcher 一个全新进程，模块级变量即每请求安全。
+_LAUNCHER_STEP: list[str] = ["bootstrap"]
+
 
 def run_launcher_bootstrap() -> None:
     """Entry point of the spawned LAUNCHER process (never returns).
@@ -675,7 +763,10 @@ def run_launcher_bootstrap() -> None:
         _launcher_sequence(config)
     except BaseException as error:  # noqa: BLE001 - child boundary
         try:
-            os.write(2, f"SANDBOX-INIT-ERROR: {error!r}\n".encode())
+            os.write(
+                2,
+                f"SANDBOX-INIT-ERROR at {_LAUNCHER_STEP[0]}: {error!r}\n".encode(),
+            )
         except OSError:
             pass
         os._exit(125)
@@ -683,23 +774,40 @@ def run_launcher_bootstrap() -> None:
 
 
 def _launcher_sequence(config: dict) -> None:
-    """Launcher-side namespace construction (single-threaded process)."""
+    """Launcher-side namespace construction (single-threaded process).
+
+    (RR002 §2) 每个操作前更新 _LAUNCHER_STEP —— 失败时 SANDBOX-INIT-ERROR
+    行点名确切步骤（unshare 成功、uid_map 写入失败这类区分此前
+    不可见：runner 上的 PermissionError(13) 无法定位是哪个文件）。
+    """
+    step = lambda label: _LAUNCHER_STEP.__setitem__(0, label)  # noqa: E731
+    step("unshare-user")
     _unshare(CLONE_NEWUSER)
+    step("setgroups-deny")
     with open("/proc/self/setgroups", "w") as handle:
         handle.write("deny")
+    step("uid-map")
     with open("/proc/self/uid_map", "w") as handle:
         handle.write(f"0 {_REAL_UID} 1\n")
+    step("gid-map")
     with open("/proc/self/gid_map", "w") as handle:
         handle.write(f"0 {_REAL_GID} 1\n")
+    step("unshare-uts")
     _unshare(CLONE_NEWUTS)
+    step("unshare-net")
     _unshare(CLONE_NEWNET)
+    step("unshare-mount")
     _unshare(CLONE_NEWNS)
+    step("unshare-pid")
     _unshare(CLONE_NEWPID)
+    step("sethostname")
     libc = _libc()
     libc.sethostname.restype = ctypes.c_int
     libc.sethostname.argtypes = [ctypes.c_char_p, ctypes.c_size_t]
     libc.sethostname(SANDBOX_HOSTNAME.encode(), len(SANDBOX_HOSTNAME))
+    step("setpgid")
     os.setpgid(0, 0)
+    step("fork-init")
     init_pid = os.fork()
     if init_pid != 0:
         # launcher: reap the sandbox init and relay its exit code
@@ -1162,6 +1270,17 @@ class LocalSubstrateAdapter(SubstrateAdapter):
             "exit_code": exit_code,
             "duration_ms": duration_ms,
         }
+        # (RR002 §2) سبب الفشل الصادق في الأدلة: عند أي إنهاء غير
+        # مكتمل يُسجَّل termination + exit_code + رأس stderr المحفوظ
+        # (سطر SANDBOX-INIT-ERROR الحقيقي) — نفس المفتاح الذي يقرؤه
+        # LocalSandboxBackend ليرتفع السبب الحقيقي في الرسالة بدل
+        # تفصيل عام يفقد مكان الفشل بالضبط.
+        if termination is not SandboxTermination.COMPLETED:
+            stderr_head = stderr[:400].decode(errors="replace").strip()
+            self._run_evidence[sandbox_id]["failure_reason"] = (
+                f"{termination.value}: exit_code={exit_code}; "
+                f"stderr_head={stderr_head!r}"
+            )
         self._active_runs.pop(sandbox_id, None)
         executed = termination not in (
             SandboxTermination.FAILED_TO_START, SandboxTermination.NOT_RUN

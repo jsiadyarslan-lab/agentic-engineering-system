@@ -1,0 +1,191 @@
+/* ==========================================================================
+   enterprise.css — AES-FACTORY-RECOVERY-AND-UI-001 §4
+   الوحدات المؤسسية — مشتقة حصرًا من نظام التوكنات الكنسي (theme.css).
+   G7: صفر letter-spacing على نص عربي. G3: القيم التقنية mono/tnum.
+   ========================================================================== */
+
+/* ---------- العناوين والأقسام داخل الأسطح المؤسسية ---------- */
+.ent-section { margin-bottom: var(--space-6, 28px); }
+.ent-section-title {
+  font-size: var(--fs-h3); font-weight: 700; color: var(--text-primary);
+  margin: 0 0 10px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ent-note { color: var(--text-muted); font-size: var(--fs-13); margin-top: 10px; }
+.ent-mono { font-family: var(--font-mono); font-size: var(--fs-13); direction: ltr; unicode-bidi: isolate; font-feature-settings: "tnum" 1; }
+.ent-when { color: var(--text-muted); font-size: var(--fs-13); font-feature-settings: "tnum" 1; }
+.ent-policy { color: var(--text-muted); font-size: var(--fs-13); }
+
+/* ---------- شريط الصحة ---------- */
+.ent-health-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.ent-health-card {
+  display: flex; flex-direction: column; gap: 3px;
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m); padding: 10px 14px; min-width: 200px; flex: 1;
+}
+.ent-health-card.ok { border-color: rgba(63, 182, 139, 0.35); }
+.ent-health-card.warn { border-color: rgba(229, 165, 75, 0.35); }
+.ent-health-card.err { border-color: rgba(229, 87, 75, 0.35); }
+.ent-health-label { color: var(--text-muted); font-size: var(--fs-13); }
+.ent-health-value { color: var(--text-primary); font-size: var(--fs-13); font-weight: 600; font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; text-align: right; }
+
+/* ---------- بطاقات KPI ---------- */
+.ent-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 22px; }
+.ent-kpi {
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m); padding: 14px 12px;
+}
+.ent-kpi-num { font-size: 26px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; }
+.ent-kpi-num.ok { color: var(--ok); }
+.ent-kpi-num.live { color: var(--accent); }
+.ent-kpi-num.warn { color: var(--warn); }
+.ent-kpi-num.err { color: var(--danger); }
+.ent-kpi-num.dim { color: var(--text-secondary); }
+.ent-kpi-label { color: var(--text-muted); font-size: var(--fs-13); margin-top: 4px; }
+
+/* ---------- شرائح الحالة ---------- */
+.ent-chip {
+  display: inline-flex; align-items: center; padding: 2px 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border-subtle); color: var(--text-secondary);
+  background: var(--bg-hover); white-space: nowrap;
+}
+.ent-chip.ok { color: var(--ok); border-color: rgba(63, 182, 139, 0.4); background: rgba(63, 182, 139, 0.08); }
+.ent-chip.live { color: var(--accent); border-color: rgba(88, 166, 255, 0.4); background: rgba(88, 166, 255, 0.08); }
+.ent-chip.warn { color: var(--warn); border-color: rgba(229, 165, 75, 0.4); background: rgba(229, 165, 75, 0.08); }
+.ent-chip.err { color: var(--danger); border-color: rgba(229, 87, 75, 0.4); background: rgba(229, 87, 75, 0.08); }
+.ent-chip.paused { color: var(--text-secondary); }
+.ent-chip.dim { color: var(--text-muted); }
+.ent-chip.info { color: var(--accent); }
+
+/* ---------- الصفوف والبطاقات ---------- */
+.ent-list, .ent-feed { display: flex; flex-direction: column; gap: 8px; }
+.ent-row, .ent-run-card {
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m); padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.ent-run-card { flex-direction: column; }
+.ent-run-head { display: flex; align-items: flex-start; gap: 12px; width: 100%; }
+.ent-row-main { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.ent-row-title { color: var(--text-primary); font-weight: 600; font-size: var(--fs-14, 14px); }
+.ent-row-obj {
+  width: 100%; color: var(--text-secondary); font-size: var(--fs-13);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ent-row-err { width: 100%; color: var(--danger); font-size: var(--fs-13); }
+.ent-row-actions { display: flex; gap: 6px; flex: none; align-items: center; }
+
+/* ---------- حالة الفراغ/الخطأ/التحميل ---------- */
+.ent-empty, .ent-error {
+  background: var(--bg-raised); border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-m); padding: 26px 20px; text-align: center;
+}
+.ent-empty-title { color: var(--text-primary); font-weight: 600; margin-bottom: 6px; }
+.ent-empty-hint { color: var(--text-muted); font-size: var(--fs-13); max-width: 520px; margin: 0 auto; }
+.ent-error { border-style: solid; border-color: rgba(229, 87, 75, 0.4); }
+.ent-error-title { color: var(--danger); font-weight: 700; margin-bottom: 6px; }
+.ent-error-msg { color: var(--text-secondary); font-size: var(--fs-13); margin-bottom: 12px; }
+.ent-empty-inline {
+  color: var(--text-muted); font-size: var(--fs-13); padding: 10px 4px;
+}
+.ent-flash {
+  border: 1px solid var(--border-strong); border-radius: var(--radius-m);
+  padding: 10px 14px; margin-bottom: 12px; font-size: var(--fs-13);
+  color: var(--text-primary); background: var(--bg-hover);
+}
+.ent-flash.ok { border-color: rgba(63, 182, 139, 0.4); color: var(--ok); }
+.ent-flash.err { border-color: rgba(229, 87, 75, 0.4); color: var(--danger); }
+
+/* ---------- شريط الأدوات والنماذج ---------- */
+.ent-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.ent-search, .ent-input, .ent-select {
+  background: var(--bg-input); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m); color: var(--text-primary);
+  padding: 8px 12px; font-size: var(--fs-13); font-family: inherit;
+  min-width: 220px;
+}
+.ent-area { width: 100%; resize: vertical; min-height: 64px; }
+.ent-search:focus, .ent-input:focus, .ent-select:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.ent-select { min-width: 150px; }
+.ent-form { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-m); padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ent-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ent-form-msg { font-size: var(--fs-13); color: var(--text-muted); }
+.ent-form-msg.ok { color: var(--ok); }
+.ent-form-msg.err { color: var(--danger); }
+
+/* ---------- طابور المهام ---------- */
+.ent-queue { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.ent-queue-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: var(--bg-sidebar); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m); padding: 8px 12px;
+}
+.ent-queue-ord { color: var(--text-muted); font-size: var(--fs-13); font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; }
+.ent-queue-obj { color: var(--text-secondary); font-size: var(--fs-13); flex: 1; min-width: 160px; }
+
+/* ---------- الأدوار ---------- */
+.ent-role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.ent-role-card { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-m); padding: 12px 14px; }
+.ent-role-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ent-role-name { color: var(--text-primary); font-weight: 700; font-size: var(--fs-14, 14px); }
+.ent-role-model { color: var(--text-secondary); font-size: var(--fs-13); font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; }
+
+/* ---------- تيار النشاط ---------- */
+.ent-feed-row {
+  display: flex; align-items: baseline; gap: 8px;
+  border-bottom: 1px solid var(--border-subtle); padding: 6px 4px;
+}
+.ent-feed-time { color: var(--text-muted); flex: none; }
+.ent-feed-payload { color: var(--text-secondary); font-size: 12px; font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+/* ---------- الجداول (المخرجات) ---------- */
+.ent-table { width: 100%; border-collapse: collapse; background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-m); overflow: hidden; }
+.ent-table th { text-align: right; color: var(--text-muted); font-size: var(--fs-13); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--border-strong); background: var(--bg-sidebar); }
+.ent-table td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: var(--fs-13); }
+.ent-table tr:last-child td { border-bottom: none; }
+.ent-table tr:hover td { background: var(--bg-hover); }
+.ent-file { color: var(--text-primary); }
+
+/* ---------- معاينة المخرجات ---------- */
+.ent-viewer { margin-top: 16px; background: var(--bg-raised); border: 1px solid var(--border-strong); border-radius: var(--radius-m); }
+.ent-viewer-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+.ent-viewer-pre {
+  margin: 0; padding: 14px; max-height: 420px; overflow: auto;
+  font-family: var(--font-mono); font-size: var(--fs-13);
+  color: var(--text-secondary); line-height: var(--lh-body);
+  background: var(--bg-canvas); white-space: pre-wrap;
+}
+
+/* ---------- السجلات ---------- */
+.ent-log-row { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-m); padding: 6px 10px; }
+.ent-log-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ent-log-json {
+  margin: 8px 0 4px; padding: 12px; background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-m);
+  max-height: 320px; overflow: auto; font-family: var(--font-mono);
+  font-size: 12px; color: var(--text-secondary); white-space: pre;
+}
+
+/* ---------- الشريط الجانبي: مجموعات التنقل ---------- */
+.side-nav-group {
+  display: block; color: var(--text-muted); font-size: 11px; font-weight: 700;
+  padding: 12px 12px 4px; letter-spacing: 0;
+}
+.side-nav .nav-badge {
+  margin-inline-start: auto; background: var(--warn); color: var(--bg-canvas);
+  border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 700;
+}
+
+/* ---------- الاستجابة ---------- */
+@media (max-width: 1100px) {
+  .ent-kpis { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  .ent-role-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+@media (max-width: 760px) {
+  .ent-row, .ent-run-head { flex-direction: column; align-items: stretch; }
+  .ent-row-actions { justify-content: flex-end; }
+  .ent-health-card { min-width: 100%; }
+  .ent-search, .ent-select { min-width: 100%; }
+  .ent-table { display: block; overflow-x: auto; }
+}

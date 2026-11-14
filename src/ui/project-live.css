@@ -1205,7 +1205,7 @@ body.live-disconnected .substrate-dot {
   font-size: 11px;
   color: var(--text-dim);
   flex: none;
-  letter-spacing: 0.04em;
+
 }
 .pl-er-stop {
   margin-inline-start: auto;

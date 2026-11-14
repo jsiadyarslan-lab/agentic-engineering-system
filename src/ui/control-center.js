@@ -24,10 +24,13 @@
   function runsView() { return document.getElementById("runs-view"); }
   function archiveView() { return document.getElementById("archive-view"); }
 
-  /** إخفاء أسطح مركز التحكم فقط — بلا مساس بوضع المشروع (يستدعيه openProject). */
+  /** إخفاء أسطح مركز التحكم فقط — بلا مساس بوضع المشروع (يستدعيه openProject).
+   * (AES-FACTORY-RECOVERY-AND-UI-001) الأسطح المؤسسية الثمانية مسجلة
+   * في HubEnterprise فتُخفى من هنا عبر السجل لا بفردان يدوي. */
   function hideSurfaces() {
     if (runsView()) runsView().hidden = true;
     if (archiveView()) archiveView().hidden = true;
+    if (window.HubEnterprise) window.HubEnterprise.hideAll();
   }
 
   /** تبديل العرض: المحادثة أساسًا والتشغيلات/الأرشيف أسطح موازية. */
@@ -45,6 +48,11 @@
     // فارغة. السطح المستهدف يُظهر صراحة هنا.
     if (name === "runs" && runsView()) runsView().hidden = false;
     if (name === "archive" && archiveView()) archiveView().hidden = false;
+    // (AES-FACTORY-RECOVERY-AND-UI-001) الوحدات المؤسسية التسع: التبديل
+    // والعرض والجلب من وحدة enterprise.js — نفس عقد showView الصادق.
+    if (window.HubEnterprise && window.HubEnterprise.handles(name)) {
+      window.HubEnterprise.show(name);
+    }
     // والعودة للمحادثة من وضع المصنع تُخلي سطح المصنع أيضاً
     if (isChat && window.FactoryControl &&
         document.body.classList.contains("mode-factory")) {

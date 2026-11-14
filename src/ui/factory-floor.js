@@ -309,7 +309,10 @@
     floor.appendChild(panel);
 
     /* ---------- الربط ---------- */
-    sExit.addEventListener("click", closeFloor);
+    sExit.addEventListener("click", function () {
+      try { sessionStorage.setItem("aes_floor_closed", "1"); } catch (err) {}
+      closeFloor();
+    });
     sCollapse.addEventListener("click", toggleSessions);
     pToggle.addEventListener("click", togglePanel);
     sInput.addEventListener("input", function () { renderSessions(sInput.value.trim()); });
@@ -1659,17 +1662,21 @@
     backdrop.hidden = false;
   }
 
-  /* إقلاع افتراضي: أرضية المصنع هي الصفحة الرئيسية —
-     العودة للكلاسيكية عبر «الواجهة الكلاسيكية» أو Esc، والعودة من الزر العائم. */
+  /* إقلاع (AES-FACTORY-RECOVERY-AND-UI-001 §4): الغلاف المؤسسي
+     (شريط جانبي ثابت + وحدات) هو الصفحة الافتراضية — الأرضية سطح عمل
+     يفتحه المالك من زرها العائم أو تنقل المصنع، ويُحترم اختياره
+     المخزّن («0» فتح صريح / «1» إغلاق صريح / غائب = الكلاسيكية أولًا). */
   function boot() {
     var closed = null;
     try { closed = sessionStorage.getItem("aes_floor_closed"); } catch (err) {}
-    if (closed === "1") {
+    if (closed === "0") {
+      openFloor();
+      S.started = true;
+      start();
+    } else {
       closeFloor();
       S.started = true;
       start(); /* حي في الخلفية: الجلسات تبقى محدثة لزر العودة */
-    } else {
-      openFloor();
     }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

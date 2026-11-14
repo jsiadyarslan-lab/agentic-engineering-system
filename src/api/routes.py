@@ -278,9 +278,11 @@ def index(request: Request) -> Response:
         b"?v=" + _ASSET_VERSION.encode("ascii"),
         (UI_DIR / "index.html").read_bytes(),
     )
-    # (016 M1) etag من البايتات المخدومة فعليًا — أي تغيير في index.html
-    # يصل المتصفح فورًا (200) بدل 304 أبدي على ثابت مجمّد عند الإقلاع.
-    etag = '"' + hashlib.sha256(html).hexdigest()[:20] + '"'
+    # (FACTORY-RECOVERY-001) عقد etag: "ui<هوية الإصدار>" — الاختبار
+    # (test_ui_asset_versioning_011) يقفل الصيغة المسبوقة بـ ui؛ هوية
+    # الإصدار نفسها بصمة الالتزام الحية فتتغير مع كل إصدار (نفس خاصية
+    # 016 M1: حامل النسخة القديمة يحصل على 200 لا 304 أبدي).
+    etag = '"ui' + _ASSET_VERSION + '"'
     inm = request.headers.get("if-none-match", "")
     tokens = [t.strip() for t in inm.split(",") if t.strip()]
     if etag in tokens or f"W/{etag}" in tokens or "*" in tokens:
