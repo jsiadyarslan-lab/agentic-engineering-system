@@ -11,7 +11,12 @@ __pycache__/
 node_modules/
 .env
 *.log
-src/agent_hub_v2.egg-info/
+
+# Packaging build by-products — generated at install time, never source
+# (general rule: covers agent_hub_v2, agentic_engineering_system, and any future src-layout package)
+src/*.egg-info/
+*.egg-info/
+
 runtime/secrets/
 
 # Runtime databases and artifacts
