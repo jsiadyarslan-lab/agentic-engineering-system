@@ -49,7 +49,7 @@
  "files": [
   {
    "path": "REARCHITECTURE-REPORT.md",
-   "bytes": 50873
+   "bytes": 68019
   },
   {
    "path": "VISUAL-EVIDENCE-INDEX.md",
@@ -400,6 +400,38 @@
    "bytes": 19034
   },
   {
+   "path": "r2a/BASELINE-GATES.json",
+   "bytes": 2234
+  },
+  {
+   "path": "r2a/CI-FINAL-COMPARISON.json",
+   "bytes": 29654
+  },
+  {
+   "path": "r2a/FINGERPRINT-CHECK.txt",
+   "bytes": 977
+  },
+  {
+   "path": "r2a/check_fingerprints.py",
+   "bytes": 4841
+  },
+  {
+   "path": "r2a/ci-raw/BASE_pull_request_run43604740811_job132476843069.log",
+   "bytes": 36782
+  },
+  {
+   "path": "r2a/ci-raw/BASE_push_run43604724868_job132476794567.log",
+   "bytes": 35854
+  },
+  {
+   "path": "r2a/ci-raw/HEAD_pull_request_run43647440560_job132608270441.log",
+   "bytes": 36788
+  },
+  {
+   "path": "r2a/ci-raw/HEAD_push_run43647435949_job132608256598.log",
+   "bytes": 35957
+  },
+  {
    "path": "screenshots/lifecycle/E2_project_view_verified.png",
    "bytes": 86650
   },
@@ -645,9 +677,10 @@
   },
   {
    "path": "SHA256SUMS",
-   "bytes": 16136
+   "bytes": 17009
   }
  ],
  "r1_note": "R1 evidence regenerated after FIX A/B/C — semantic truth & evidence reconciliation",
- "r2_note": "R2 delivery closure: fingerprints regenerated to self-consistent fixpoint after report reconciliation; stale REPORT/MANIFEST lines at be81bf9 disclosed in R2§5"
+ "r2_note": "R2 delivery closure: fingerprints regenerated to self-consistent fixpoint after report reconciliation; stale REPORT/MANIFEST lines at be81bf9 disclosed in R2§5",
+ "r2a_note": "R2A delivery correction: r2a/ evidence package added (final CI comparison, baseline gates, four ordered-run raw job logs, reproducible fingerprint checker + its run log); MANIFEST/SHA256SUMS regenerated to the same self-consistent fixpoint design (exclude self, include counterpart). Re-verify with: python3 r2a/check_fingerprints.py"
 }
