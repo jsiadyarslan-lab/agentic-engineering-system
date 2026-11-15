@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>المصنع · هندسة وتسليم</title>
+<style>
+:root{color-scheme:dark;--base:#171b1a;--side:#131716;--panel:#1d2320;--lift:#252c28;--hover:#2b332e;--line:#343e37;--soft:#29302c;--text:#f0f1ea;--muted:#b0bdb2;--dim:#96a59a;--mint:#bcead2;--ink:#123124;--good:#a8dfbf;--warn:#efbf8e;--bad:#f7ada2;--bgwarn:#352a22;--bgbad:#372724;--focus:#a0edc1;--shadow:0 16px 55px #0005;--sidebar:245px;--inspect:390px}
+:root[data-theme=light]{color-scheme:light;--base:#f8f8f2;--side:#eeefe8;--panel:#fffefa;--lift:#eff2eb;--hover:#e3eae0;--line:#cbd4c9;--soft:#e1e8df;--text:#19261e;--muted:#465b4f;--dim:#536959;--mint:#245d44;--ink:#fff;--good:#1e6846;--warn:#81421b;--bad:#952f2b;--bgwarn:#f5e9d9;--bgbad:#fbe9e5;--focus:#24694b;--shadow:0 16px 55px #23372925}
+*{box-sizing:border-box}body{margin:0;background:var(--base);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-size:14px;line-height:1.65}button,input,select,textarea{font:inherit;color:inherit}button,a,input,select,textarea{outline-offset:3px}*:focus-visible{outline:2px solid var(--focus)}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}a{color:var(--mint)}[hidden]{display:none!important}.svg{width:17px;height:17px;flex:none;vertical-align:middle}.mono,code,time{font-family:ui-monospace,Consolas,monospace;font-size:.9em;direction:ltr;unicode-bidi:isolate}.skip{position:fixed;z-index:20;top:8px;right:8px;background:var(--panel);padding:10px;transform:translateY(-150%)}.skip:focus{transform:none}
+.frame{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100dvh}.side{position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:15px;background:var(--side);border-inline-end:1px solid var(--line);padding:17px 12px 12px;min-width:0;z-index:5}.side-scroll{flex:1;overflow:auto;min-height:0}.brand{display:flex;align-items:center;gap:10px;padding:3px 5px 14px}.brand b,.profile b{display:block;font-size:14px}.brand small,.profile small{display:block;color:var(--dim);font-size:11px}.mark{width:38px;height:38px;border:1px solid var(--line);color:var(--mint);display:grid;place-items:center;border-radius:11px;background:var(--panel)}.mark svg{width:23px;height:23px}.nav{display:grid;gap:4px}.nav-btn{display:flex;align-items:center;min-height:39px;gap:9px;width:100%;padding:7px 9px;text-align:start;background:none;border:1px solid transparent;border-radius:8px;color:var(--muted);text-decoration:none}.nav-btn:hover,.icon:hover{background:var(--hover);color:var(--text)}.nav-btn.current{background:var(--lift);border-color:var(--line);color:var(--text)}.nav-btn.new{background:var(--lift);border-color:var(--line);color:var(--mint);font-weight:700;margin-bottom:4px}.nav-btn .truncate{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.nav-btn kbd{margin-inline-start:auto;border:1px solid var(--line);padding:0 5px;border-radius:5px;font-size:11px}.section-label{font-size:11px;color:var(--dim);font-weight:700;padding:18px 9px 6px}.subnav{padding-inline-start:15px}.subnav .nav-btn{font-size:12px;min-height:32px}.dot{width:7px;height:7px;border-radius:100%;background:currentColor;display:inline-block;flex:none}.attention{color:var(--warn)}.bad{color:var(--bad)}.ok{color:var(--good)}.profile{border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:12px 3px 0}.avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:var(--lift);color:var(--mint);font-weight:700}.profile .icon{margin-inline-start:auto}
+.main{min-width:0}.top{height:63px;padding:0 22px;position:sticky;top:0;z-index:4;background:var(--base);border-bottom:1px solid var(--soft);display:flex;align-items:center;justify-content:space-between;gap:12px}.crumb,.top-actions,.actions,.meta,.pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.crumb{min-width:0;flex-wrap:nowrap}.crumb b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{flex-wrap:nowrap}.pill,.status{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;white-space:nowrap;background:var(--panel);color:var(--muted)}.status.warn{color:var(--warn);background:var(--bgwarn);border-color:transparent}.status.bad{color:var(--bad);background:var(--bgbad);border-color:transparent}.status.ok{color:var(--good)}.pill.demo{color:var(--mint)}.icon{background:none;border:1px solid transparent;display:inline-grid;place-items:center;border-radius:8px;width:34px;height:34px;color:var(--muted);flex:none}.mobile{display:none}
+.stage{display:grid;min-width:0;grid-template-columns:minmax(0,1fr)}.stage.split{grid-template-columns:minmax(0,1fr) minmax(320px,var(--inspect))}.canvas{width:100%;max-width:865px;margin-inline:auto;padding:35px 25px 36px;min-width:0}.canvas.thread{max-width:780px;padding-bottom:0}.canvas.wide{max-width:1130px}.inspect{min-width:0;position:sticky;top:63px;height:calc(100dvh - 63px);overflow:auto;border-inline-start:1px solid var(--line);background:var(--panel);z-index:3}.inspect-head{position:sticky;top:0;background:var(--panel);z-index:1;border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:6px}.inspect-body{padding:17px}.overlay{display:none}
+.eyebrow{display:flex;gap:9px;align-items:center;color:var(--mint);font-size:11px;font-weight:700;margin:0 0 8px}.serial{color:var(--dim);letter-spacing:.04em}.page-head{margin:0 0 24px}.page-head h1,.hero h1{font-size:clamp(25px,4vw,38px);line-height:1.28;margin:0 0 7px;letter-spacing:-.035em}.page-head p,.hero p{margin:0;color:var(--muted)}.thread-title{font-size:clamp(23px,4vw,30px)!important}.h2{margin:21px 0 8px;font-size:17px}.muted{color:var(--muted)}.dim{color:var(--dim)}.small{font-size:12px}.subtle{color:var(--dim);font-size:11px}.spacer{margin-top:14px}.hr{border:0;border-top:1px solid var(--line);margin:17px 0}.hero{padding:28px 0 14px}.hero-mark{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--mint);padding:8px;margin-bottom:13px}
+.btn{min-height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--lift);color:var(--text);font-weight:650;text-decoration:none;font-size:12px}.btn:hover{background:var(--hover)}.btn.primary{background:var(--mint);color:var(--ink);border-color:transparent}.btn.primary:hover{filter:brightness(.93)}.btn.quiet{background:transparent;color:var(--muted)}.btn.quiet:hover{background:var(--hover);color:var(--text)}.btn.danger{color:var(--bad);background:var(--bgbad)}.btn.selected{color:var(--mint);border-color:var(--mint);background:var(--panel)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;margin:10px 0}.card h2,.card h3,.card p{margin:0}.card h2{font-size:17px}.card h3{font-size:14px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row.wrap{flex-wrap:wrap}.cluster{display:flex;gap:10px;align-items:flex-start;min-width:0}.tile-icon{width:33px;height:33px;border-radius:8px;display:grid;place-items:center;background:var(--lift);border:1px solid var(--line);color:var(--mint);flex:none}.tile-icon.bad{background:var(--bgbad);color:var(--bad);border-color:transparent}.row-title{display:block;font-weight:700;overflow-wrap:anywhere}.row-desc{display:block;color:var(--dim);font-size:12px}.list-item{padding:10px 0;border-top:1px solid var(--soft)}.list-item:first-child{border-top:0}.empty{padding:23px 15px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);margin-top:12px}.callout{padding:11px 12px;background:var(--lift);border-radius:8px;border-inline-start:3px solid var(--mint);margin:12px 0}.callout.warn{background:var(--bgwarn);border-color:var(--warn)}.callout.bad{background:var(--bgbad);border-color:var(--bad)}.callout p{margin:3px 0 0;color:var(--text)}.banner{padding:11px 12px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:10px;margin-bottom:15px}.banner .actions{margin-inline-start:auto}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 13px;margin:12px 0}.facts dt{color:var(--muted);font-size:12px}.facts dd{margin:0;overflow-wrap:anywhere}
+.message{display:flex;margin:13px 0 17px;gap:10px;align-items:flex-start}.message.user{justify-content:flex-start}.bubble{background:var(--lift);border:1px solid var(--line);border-radius:14px 5px 14px 14px;padding:9px 13px;max-width:87%;white-space:pre-wrap;overflow-wrap:anywhere}.message.bot .message-text{padding-top:2px;flex:1;min-width:0}.message-text p{margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere}.message-tag{font-size:11px;color:var(--dim);display:block;margin-bottom:3px}.run-card{margin:8px 42px 18px 0;padding:13px 14px}.run-card .actions{margin-top:11px}.run-key{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim)}.thread-actions{padding:3px 42px 14px 0}.composer-wrap{position:sticky;bottom:0;padding:10px 0 12px;background:var(--base);z-index:2}.hero+.composer-wrap{position:static}.composer{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:10px 11px 8px}.composer:focus-within{border-color:var(--mint)}.composer textarea{resize:vertical;width:100%;min-height:52px;background:transparent;border:0;padding:3px 4px;display:block;outline:none}.composer .row{flex-wrap:wrap;gap:5px}.composer-footer{color:var(--dim);font-size:11px;text-align:center;margin:6px 0 0}.composer .btn{min-height:32px}.source-chip{font-size:11px;display:inline-flex;align-items:center;gap:3px;color:var(--mint)}
+.steps{margin:13px 0}.step{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;border-top:1px solid var(--soft);padding:10px 2px}.step:first-child{border-top:0}.step div{min-width:0}.step .btn{margin-top:5px}.trace{list-style:none;padding:0;margin:0}.trace li{position:relative;padding:6px 12px 11px;border-inline-start:1px solid var(--line);margin-inline-start:4px}.trace li:before{content:"";position:absolute;inset-inline-start:-4px;top:12px;background:var(--mint);width:7px;height:7px;border-radius:50%}.trace time{display:block;color:var(--dim)}pre{background:var(--side);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;white-space:pre-wrap;margin:11px 0;font-size:12px;overflow-wrap:anywhere}pre[dir=ltr]{text-align:left}
+.field{margin:11px 0;display:grid;gap:5px}.field label,.field>span{font-weight:700;font-size:12px}.field input,.field select,.field textarea,.url-input{box-sizing:border-box;width:100%;background:var(--side);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px}.field small{color:var(--dim)}.field input[type=checkbox]{width:auto;min-height:auto}.field textarea{resize:vertical}.browser-bar{display:flex;gap:5px;align-items:center;margin-bottom:9px}.browser-bar .url-input{flex:1;min-width:0;font-size:12px}.browser-doc{border:1px solid var(--line);background:var(--base);border-radius:12px;padding:16px}.browser-doc h3{margin:10px 0 3px;font-size:19px}.browser-doc p{margin:8px 0}.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px}.compare pre{min-width:0}.artifact-text{background:var(--base);padding:12px;border-radius:9px;border:1px solid var(--line);margin-top:10px}.artifact-text h3,.artifact-text p{margin:3px 0 9px}.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:11px 0}
+dialog{color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(500px,calc(100vw - 24px));padding:17px;box-shadow:var(--shadow);max-height:85dvh}dialog::backdrop{background:#0009}dialog h2{margin:0;font-size:18px}#toast{position:fixed;bottom:18px;inset-inline-end:18px;padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--lift);box-shadow:var(--shadow);z-index:20}
+@media(max-width:1120px){:root{--sidebar:210px;--inspect:345px}.canvas{padding-inline:18px}.top{padding-inline:15px}}
+@media(max-width:960px){.stage.split{grid-template-columns:minmax(0,1fr)}.inspect{position:fixed;inset:63px auto 0 0;width:min(430px,100vw);height:calc(100dvh - 63px);box-shadow:var(--shadow);z-index:6}.overlay.inspect-overlay{display:block;position:fixed;inset:63px 0 0;background:#0007;border:0;z-index:5}}
+@media(max-width:720px){.frame{display:block}.side{display:none;position:fixed;right:0;top:0;width:min(280px,82vw);height:100dvh;z-index:9;box-shadow:var(--shadow)}.side.open{display:flex}.overlay.side-overlay{display:block;position:fixed;inset:0;background:#0008;border:0;z-index:8}.mobile{display:inline-grid}.top{padding:0 9px}.top-actions{gap:3px}.top .hide-mobile{display:none}.canvas{padding:21px 12px 22px}.canvas.thread{padding-bottom:0}.run-card,.thread-actions{margin-inline-start:0;padding-inline-start:11px}.grid2{grid-template-columns:1fr}.inspect-body{padding:13px}.compare{grid-template-columns:1fr}.step{grid-template-columns:30px minmax(0,1fr) auto}.step .tile-icon{width:28px;height:28px}}
+@media(prefers-reduced-motion:reduce){*,*::after,*::before{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+/* V3 · a conversation first, evidence beside it */
+:root{--base:#121519;--side:#161b21;--panel:#1b2128;--lift:#242c35;--hover:#2b3541;--line:#38434f;--soft:#272e37;--text:#edf1f7;--muted:#bdc8d6;--dim:#a2afbe;--mint:#bfd8ff;--ink:#112b46;--good:#addcc3;--warn:#f2cb9f;--bad:#f6b5aa;--bgwarn:#372c24;--bgbad:#382723;--focus:#add9ff;--sidebar:254px;--inspect:378px}
+:root[data-theme=light]{--base:#fcfbf8;--side:#eeeee8;--panel:#fff;--lift:#e9edf2;--hover:#e1e8f0;--line:#c9d0d7;--soft:#dedfe2;--text:#18242e;--muted:#3b4a59;--dim:#4c5b6b;--mint:#254d80;--ink:#fff;--focus:#245b9a}
+body{font-size:15px;line-height:1.7}
+.top{height:57px;padding-inline:20px;background:var(--base)}
+.brand{margin-bottom:7px}.brand b{font-size:16px}.brand small{letter-spacing:.03em}
+.nav-btn{border:0;min-height:38px}.nav-btn.new{min-height:44px;background:var(--mint);color:var(--ink);border-radius:11px}.nav-btn.new:hover{filter:brightness(.93)}
+.nav-btn.secondary{color:var(--dim);font-size:11px}.counter{background:var(--bgwarn);color:var(--warn);border-radius:99px;padding:0 7px;font-size:11px}.pin{font-size:9px;color:var(--mint)}.section-label{letter-spacing:.04em}
+.frame.side-hidden{grid-template-columns:minmax(0,1fr)}.frame.side-hidden>.side{display:none}
+.project-tabs{display:flex;gap:5px;align-items:center;padding:6px 19px;border-bottom:1px solid var(--soft);overflow:auto;position:sticky;top:57px;background:var(--base);z-index:3}.project-tabs .btn{font-size:12px;min-height:32px;flex:none;border-color:transparent}.project-tabs .btn.selected{border-color:var(--line)}
+.home-center{max-width:700px;margin:auto;padding-top:clamp(24px,10vh,125px)}.home-center .hero{text-align:center;padding:6px 0 22px}.home-center .hero h1{font-size:clamp(30px,5vw,45px);letter-spacing:-.06em}.home-center .eyebrow,.home-actions{justify-content:center}.home-center .composer-wrap{position:static}.home-follow{max-width:700px;margin:36px auto 0}
+.canvas.thread{max-width:790px;display:flex;flex-direction:column;min-height:calc(100dvh - 104px);padding-top:21px}
+.thread-head{padding-bottom:16px;border-bottom:1px solid var(--soft);margin-bottom:14px}
+.thread-head .eyebrow .btn{border:0;padding:0;min-height:22px;font-size:11px}.thread-head h1{margin:0;line-height:1.25}
+.transcript{flex:1}.chat-empty{text-align:center;padding:clamp(37px,13vh,125px) 0 30px;color:var(--muted)}.chat-empty h2{color:var(--text);margin:0}.chat-empty p{margin:6px 0}.message{margin-bottom:18px}.message.user .bubble{border:0;max-width:min(85%,580px);border-radius:17px 7px 17px 17px}.message.bot .avatar{border:0;background:var(--lift);border-radius:50%}.message.bot .message-text{padding-inline-end:2px}.inline-source{margin:-8px 42px 15px 0}.bubble{font-size:14px}.composer-wrap{padding-bottom:13px}.composer{box-shadow:0 8px 24px #0002;border-radius:19px;padding:10px 12px}.composer textarea{padding:5px 5px 2px;min-height:52px}.composer-footer{margin-top:5px}.composer .source-chip{border:1px solid var(--line);border-radius:6px;padding-inline-start:6px;margin-block:2px}.source-chip .btn{border:0;padding:1px 5px;min-height:22px;font-size:10px}.work-card{border:1px solid var(--line);border-radius:13px;background:var(--panel);border-inline-start:3px solid var(--mint)}.work-card h2{font-size:17px;margin:5px 0 0}.work-card p{margin:4px 0 0}.inspect{height:calc(100dvh - 104px);top:104px;border-color:var(--line)}.inspect-head{padding:10px 12px}.inspect .facts{font-size:13px}.inspect .actions .btn{white-space:normal}.artifact-text pre{margin:5px 0 0}.scope-field{max-width:310px}.storage-warning{padding:7px 16px;color:var(--warn);background:var(--bgwarn)}details summary{cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:960px){.inspect{inset:104px auto 0 0;height:calc(100dvh - 104px)}.overlay.inspect-overlay{inset:104px 0 0}}
+@media(max-width:720px){.frame.side-hidden>.side.open{display:flex}.top{padding-inline:8px}.project-tabs{padding-inline:6px}.project-tabs .btn{padding-inline:6px}.inline-source{margin-inline-start:0}.canvas.thread{padding-top:12px}.home-center{padding-top:20px}.home-follow{margin-top:20px}.thread-head{margin-bottom:7px}.message{margin-block:11px}.inspect-head{padding-inline:9px}}
+
+</style>
+<style>
+.json-view{max-height:480px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,monospace;background:var(--side);padding:12px;border-radius:9px;border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.big-num{font-size:28px;font-weight:750}.transcript{min-height:240px}
+.nav-btn{display:flex;align-items:center;gap:10px;text-decoration:none;padding:9px 10px;color:var(--text);border-radius:9px;overflow:hidden}
+.nav-btn:hover,.nav-btn.selected{background:var(--lift)}.nav-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage{min-height:calc(100dvh - 104px)}.card{overflow-wrap:anywhere}.card pre{direction:ltr}.card summary{cursor:pointer}
+.pills{font-size:12px;color:var(--good)}.btn.selected{border-color:var(--mint)}
+@media(max-width:740px){.grid{grid-template-columns:1fr}.home-center{padding-top:10px}.canvas{padding:15px}}
+</style>
+</head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
+'use strict';
+/* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
+   All domain records come from the AES API; mutations are explicit. */
+const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false};
+const root=document.getElementById('app');
+const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'overview'}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
+const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
+const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
+const link=(name,href,cls='')=>'<a class="btn '+cls+'" href="'+E(href)+'">'+E(name)+'</a>';
+const kind=s=>{s=String(s||'UNKNOWN').toUpperCase();return ['FAILED','BLOCKED','ERROR','INTERRUPTED'].includes(s)?'bad':['VERIFIED','COMPLETED','SUCCESS','PASSED'].includes(s)?'ok':['RUNNING','PLANNING','REVISING'].includes(s)?'warn':''};
+const tag=s=>'<span class="status '+kind(s)+'">'+E(s||'UNKNOWN')+'</span>';
+const msg=s=>'<div class="empty">'+E(s)+'</div>';
+const json=s=>'<pre dir="ltr" class="json-view">'+E(JSON.stringify(s,null,2))+'</pre>';
+const date=s=>s?new Date(s).toLocaleString('ar',{dateStyle:'medium',timeStyle:'short'}):'غير محدد';
+const pid=()=>state.project?.id||route().id;
+const current=()=>state.details||state.project;
+async function req(path,opts={},timeout=12000){
+  const a=new AbortController(),clock=setTimeout(()=>a.abort(),timeout);
+  try{
+    const r=await fetch(path,{credentials:'same-origin',cache:'no-store',signal:a.signal,...opts});
+    const raw=await r.text();let body=null;
+    try{body=raw?JSON.parse(raw):null}catch{body=raw}
+    if(!r.ok)throw Error('HTTP '+r.status+' — '+(typeof body==='object'?body?.detail||r.statusText:raw.slice(0,180)));
+    return body;
+  }catch(e){throw Error(e.name==='AbortError'?'تجاوز الطلب مهلة '+(timeout/1000)+' ثانية':e.message)}
+  finally{clearTimeout(clock)}
+}
+async function post(path,data){return req(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data||{})},25000)}
+function heading(t,sub=''){return '<div class="page-head"><h1>'+E(t)+'</h1><p class="muted">'+E(sub)+'</p></div>'}
+function navBar(){
+ const r=route(),p=current(),project=pid();
+ const menus=[['home','الرئيسية'],['decisions','قرارات المالك'],['tools','الأدوات والإضافات'],['settings','الإعدادات']];
+ const projects=state.projects.slice(0,50);
+ return '<aside class="side '+(state.side?'open':'')+'"><div class="brand"><b>◈ مصنع الهندسة</b><small>Agentic Engineering System</small></div>'+
+ '<div class="side-scroll">'+link('＋ مشروع جديد','#/home','primary')+
+ '<div class="section-label">مساحة العمل</div>'+menus.map(x=>'<a class="nav-btn '+(!r.id&&r.view===x[0]?'selected':'')+'" href="#/'+x[0]+'">'+E(x[1])+'</a>').join('')+
+ '<div class="section-label">المشاريع الحقيقية · '+projects.length+'</div>'+
+ (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'overview')+'"><span class="pin">●</span><span class="nav-text">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
+ '</div><div class="muted" style="font-size:11px">LIVE API · دون بيانات تجريبية</div></aside>'+
+ (state.side?'<button class="overlay side-overlay" data-action="side" aria-label="إغلاق القائمة"></button>':'');
+}
+function tabs(){
+ const r=route();if(!r.id)return '';
+ const tabs=[['overview','نظرة عامة'],['chat','المحادثات'],['runs','التشغيل'],['decisions','القرارات'],['outputs','المخرجات'],['browser','المراجع']];
+ return '<nav class="project-tabs" aria-label="مساحات المشروع">'+tabs.map(([v,t])=>link(t,url(r.id,v),r.view===v?'selected':'quiet')).join('')+'</nav>';
+}
+function shell(content){
+ const r=route();const p=current();
+ root.innerHTML='<div class="frame">'+navBar()+'<main class="main" id="main"><header class="top"><div class="crumb">'+btn('☰','side','quiet')+'<strong>'+E(r.id?(p?.name||('مشروع '+r.id)):'المصنع')+'</strong></div><div class="top-actions"><span class="pills">● بيانات الإنتاج</span>'+btn('تحديث','refresh','quiet')+link('الواجهة الحالية','/','quiet')+'</div></header>'+
+ tabs()+'<div class="stage"><div class="canvas '+(['home','overview'].includes(r.view)?'wide':'')+'">'+
+ (state.error?'<div class="callout bad" role="alert"><strong>خطأ في الاتصال</strong><p>'+E(state.error)+'</p></div>':'')+
+ (state.status?'<div class="callout" role="status">'+E(state.status)+'</div>':'')+
+ content+'</div></div></main></div>';
+}
+function home(){
+ const active=state.projects.filter(p=>['RUNNING','PLANNING','REVISING'].includes(String(p.status||'').toUpperCase()));
+ const blocked=state.projects.filter(p=>['BLOCKED','FAILED','INTERRUPTED'].includes(String(p.status||'').toUpperCase()));
+ return '<div class="home-center"><div class="hero"><div class="eyebrow">المصنع · بيانات فعلية من Oracle</div><h1>ماذا تريد أن تنجز؟</h1><p>أنشئ مشروعًا بهدف محدد، أو افتح مشروعًا قائمًا لمراجعة تشغيله وأدلته.</p></div>'+
+ '<form id="create" class="card"><label class="field"><span>اسم المشروع</span><input name="name" required maxlength="200" placeholder="مثال: منصة تحليل العمليات"></label>'+
+ '<label class="field"><span>الهدف والمخرج المطلوب</span><textarea name="objective" required rows="3" minlength="3" placeholder="صف النتيجة التي تريد تحقيقها..."></textarea></label>'+
+ '<div class="row wrap"><span class="muted">الإنشاء يحفظ مشروع DRAFT فقط، ولا يبدأ تنفيذًا.</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إنشاء مشروع حقيقي</button></div></form>'+
+ '<div class="grid"><article class="card"><h2>تعمل الآن</h2><p class="big-num">'+active.length+'</p></article><article class="card"><h2>تحتاج متابعة</h2><p class="big-num">'+blocked.length+'</p></article><article class="card"><h2>كل المشاريع</h2><p class="big-num">'+state.projects.length+'</p></article></div>'+
+ '<h2 class="h2">المشاريع</h2>'+(state.projects.length?state.projects.map(p=>'<article class="card row wrap"><div><strong>'+E(p.name||p.title||'مشروع')+'</strong><p>'+E((p.objective||'').slice(0,160))+'</p></div><div class="actions">'+tag(p.status)+link('افتح',url(p.id,'overview'),'primary')+'</div></article>').join(''):msg('لا مشاريع مسجلة.'))+'</div>';
+}
+function overview(){
+ const p=current();if(!p)return msg('اختر مشروعًا');
+ const snap=state.details,gate=snap?.execution_gate||{},open=(snap?.gates||[]).filter(g=>g.status==='PENDING');
+ const status=p.status||'UNKNOWN';
+ const top='<div class="thread-head"><div class="eyebrow">المشروع '+E(p.id)+'</div><h1>'+E(p.name||'مشروع')+'</h1><p>'+E(p.objective||'لم يسجل هدف')+'</p></div>';
+ return top+'<div class="card"><div class="row wrap"><div><div class="eyebrow">الحالة القانونية من قاعدة المصنع</div><h2>'+tag(status)+'</h2></div><div class="actions">'+link('التشغيل',url(p.id,'runs'),'primary')+link('القرارات',url(p.id,'decisions'))+'</div></div><p class="muted">'+E(gate.blocked_reason||gate.owner_action||'لا يوجد سبب تعطل مؤكد في هذه اللقطة.')+'</p></div>'+
+ '<div class="grid"><div class="card"><b>المراحل</b><p class="big-num">'+(snap?.phases?.length??'—')+'</p></div><div class="card"><b>قرارات معلّقة</b><p class="big-num">'+(snap?.gates?open.length:'—')+'</p></div><div class="card"><b>الأدلة</b><p class="big-num">'+(snap?.evidence?.length??'—')+'</p></div></div>'+
+ '<h2 class="h2">ما يحتاج انتباهك</h2>'+
+ (!snap?msg('جارٍ قراءة الحالة التفصيلية، والمشروع ظاهر من قائمة الإنتاج.') :
+ open.length?open.map(g=>'<div class="card"><div class="row wrap"><div><b>'+E(g.kind||'قرار')+'</b><p>'+E(g.reason||g.description||'دليل القرار في صفحة القرارات')+'</p></div>'+link('راجع القرار',url(p.id,'decisions'),'primary')+'</div></div>').join(''):
+ ['BLOCKED','FAILED','INTERRUPTED'].includes(status)?'<div class="callout warn">لا قرار مالك مفتوح؛ راجع مسار التشغيل والأحداث لتحديد سبب التوقف.</div>':msg('لا توجد بوابات مالك معلّقة في اللقطة الحالية.'))+
+ '<h2 class="h2">آخر الأحداث</h2>'+events(snap?.events||[],5);
+}
+function events(items,limit=20){
+ return items.length?'<ol class="trace">'+items.slice(-limit).reverse().map(x=>'<li><b>'+E(x.kind||'حدث')+'</b> <small>'+E(date(x.created_at||x.timestamp))+'</small><div class="muted">'+E(x.role||x.state||'')+'</div></li>').join('')+'</ol>':msg('لا أحداث متاحة لهذه القراءة.');
+}
+function runs(){
+ const p=current();if(!p)return msg('لا مشروع محدد');
+ const snap=state.details;
+ return heading('تشغيل المشروع','مهام ومراحل وأحداث حقيقية من قاعدة المصنع.')+
+ '<div class="banner">'+tag(p.status)+'<div class="actions">'+(p.status==='DRAFT'&&!(snap?.plan)?btn('توليد خطة حقيقية','plan','primary'):'')+
+ (snap?.plan&&!snap.plan.approved_by_owner?btn('مراجعة واعتماد الخطة','approve-plan','primary'):'')+
+ (['BLOCKED','PAUSED','INTERRUPTED'].includes(String(p.status||''))?btn('استئناف بعد المراجعة','resume'):'')+
+ (p.status==='RUNNING'?btn('إيقاف التشغيل','stop'):'')+'</div></div>'+
+ (!snap?msg('جلب مراحل التشغيل...'):'<div class="card"><h2>المراحل ('+snap.phases.length+')</h2>'+snap.phases.map(ph=>'<div class="step"><b>'+E(ph.name||ph.title||'مرحلة')+'</b>'+tag(ph.status)+'</div>').join('')+'</div>'+
+ '<div class="card"><h2>الخطة المسجلة</h2>'+(snap.plan?'<details><summary>عرض الخطة</summary>'+json(snap.plan)+'</details>':msg('لا خطة منشأة بعد.'))+'</div>'+
+ '<div class="card"><h2>آخر المحاولات</h2>'+(snap.executions?.length?snap.executions.map(x=>'<details><summary>'+E('التنفيذ '+x.id)+' · '+E(x.status||x.verdict||'غير معروف')+'</summary>'+json(x)+'</details>').join(''):msg('لا محاولات مسجلة.'))+'</div>'+
+ '<div class="card"><h2>سجل الأحداث</h2>'+events(snap.events||[],30)+'</div>');
+}
+function decisions(){
+ const r=route(),snap=state.details,p=current();
+ if(!r.id){const blocked=state.projects.filter(x=>['BLOCKED','WAITING_OWNER','PAUSED'].includes(x.status));return heading('قرارات المالك','لا يعتمد أي قرار من هذا العرض دون فتح المشروع.')+(blocked.length?blocked.map(x=>'<div class="card row wrap"><div><b>'+E(x.name||'مشروع')+'</b><p>'+tag(x.status)+'</p></div>'+link('افحص البوابات',url(x.id,'decisions'),'primary')+'</div>').join(''):msg('لا مشاريع بحالة متابعة في القائمة الحالية.'))}
+ const gates=snap?.gates||[];
+ return heading('بوابات المالك','القرارات المسجلة ونتائجها من API المشروع.')+
+ (snap?.plan&&!snap.plan.approved_by_owner?'<div class="card"><h2>الخطة تنتظر الاعتماد</h2><p>الاعتماد يطلق سير العمل الحقيقي في الخلفية.</p>'+btn('راجع واعتمد الخطة','approve-plan','primary')+'<details><summary>بيانات الخطة</summary>'+json(snap.plan)+'</details></div>':'')+
+ (gates.length?gates.map(g=>'<div class="card"><div class="row wrap"><div><b>'+E(g.kind||'بوابة')+'</b><p>Gate #'+E(g.id)+' · '+tag(g.status)+'</p></div>'+(g.status==='PENDING'?'<div class="actions">'+btn('اعتماد','gate-yes-'+g.id,'primary')+btn('رفض','gate-no-'+g.id)+'</div>':'')+'</div><details><summary>بيانات القرار والدليل</summary>'+json(g)+'</details></div>').join(''):msg('لا بوابات قرار مسجلة لهذه القراءة.'))+
+ (!snap?msg('جارٍ تحميل البوابات'):'');
+}
+function outputs(){
+ const r=route();if(!r.id)return msg('افتح مشروعًا لعرض مخرجاته.');
+ const list=state.artifacts?.artifacts;
+ return heading('مخرجات المشروع','ملفات مثبتة في أدلة التشغيل. لا توجد مخرجات تجريبية.')+
+ (!list?msg('جارٍ طلب المخرجات من الخادم...'):list.length?list.map((a,i)=>'<div class="card row wrap"><div><b>'+E(a.name||'ملف')+'</b><p class="muted">'+E(a.kind)+' · خطوة '+E(a.step_id||'—')+' · '+E(a.verdict||'بلا حكم')+'</p><small class="mono">'+E(a.sha256||'بصمة غير متوفرة')+'</small></div><div class="actions">'+(a.kind==='file'&&a.step_id?btn('معاينة النص','artifact-'+i,'primary'):'')+'</div></div>').join(''):msg('لا توجد ملفات مثبتة في سجل الأدلة حتى الآن.'))+
+ (state.preview?'<div class="card"><h2>'+E(state.preview.name)+'</h2><p class="muted">المحتوى معروض للقراءة فقط (حد 256KB من API).</p><pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre></div>':'');
+}
+function chat(){
+ const r=route(),p=current(),convos=state.convos?.conversations||[],mid=state.conversationId;
+ return heading('محادثات المشروع','المحادثات حقيقية ومحفوظة في قاعدة AES. إرسال الرسالة يستدعي المزود المحدد على الخادم.')+
+ '<div class="card"><h2>سجل المحادثات</h2><div class="actions">'+btn('محادثة جديدة','new-chat','primary')+
+ convos.map(c=>btn(c.title||('محادثة '+c.id),'conversation-'+c.id,(mid===c.id?'selected':''))).join('')+'</div></div>'+
+ '<div class="transcript">'+(state.messages?.messages?.length?state.messages.messages.map(m=>'<article class="message '+(m.role==='user'?'user':'bot')+'"><div class="message-text"><strong>'+E(m.role||'رسالة')+'</strong><p>'+E(m.content||'')+'</p></div></article>').join(''):msg(mid?'لا رسائل أو لم يكتمل جلبها.':'اختر محادثة أو ابدأ جديدة.'))+'</div>'+
+ '<form id="send-chat" class="card"><label class="field"><span>أرسل إلى النموذج الحقيقي</span><textarea name="message" required rows="3" placeholder="اكتب سؤالك..."></textarea></label><div class="row wrap"><small class="muted">الإرسال قد يستهلك مزود النموذج. لا ينفذ أمر مشروع تلقائيًا.</small><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال</button></div></form>'+
+ '<p class="muted">عند إنشاء محادثة من هنا تُربط بالمشروع بعد استلام معرفها. إذا فشل الربط يُعلَن ذلك صراحة.</p>';
+}
+function browserPage(){
+ return heading('المراجع والمتصفح','النسخة الحالية لا توفر API للتحكم بمتصفح مدمج.')+
+ '<div class="card"><h2>مراجع الأدلة</h2><p>اعرض مراجع التشغيل من قسم المخرجات. فتح موقع خارجي لا يمنح الوكلاء إذنًا بالتفاعل معه.</p><div class="actions">'+link('المخرجات',url(pid(),'outputs'),'primary')+link('المتصفح في الواجهة الحالية','/','quiet')+'</div></div>'+
+ '<div class="empty">لا توجد جلسة متصفح مدمج متصلة بهذه الواجهة. لن نعرض متصفحًا وهميًا.</div>';
+}
+function toolsPage(){return heading('الأدوات والإضافات','هذه الواجهة تقرأ API الإنتاج؛ إدارة المزودات والقدرات تبقى في الواجهة القائمة.')+
+ '<div class="card"><h2>المزودات والأدوات</h2><p>لا يمكن اعتبار الأداة موصولة أو جاهزة بلا فحص توفر صادر من الخادم.</p>'+link('فتح إعدادات النظام الحالية','/','primary')+'</div>'}
+function settingsPage(){return heading('الإعدادات','لا نكتب إعدادات الخادم من هذه المعاينة.')+
+ '<div class="card"><h2>المظهر</h2>'+btn('داكن','theme-dark','primary')+btn('فاتح','theme-light')+'</div>'+
+ '<div class="card"><h2>إعدادات النظام</h2><p>المزودات، الصلاحيات، وبيئات التنفيذ تُدار من الواجهة الحالية حتى يعتمد تكامل API مفصل.</p>'+link('فتح الإعدادات الحقيقية','/','primary')+'</div>'}
+function paint(){const r=route();state.view=r.view;const pages={home,overview,chat,runs,decisions,outputs,browser:browserPage,tools:toolsPage,settings:settingsPage};let content=(pages[r.view]||home)();shell(content)}
+async function loadAll(){
+ const n=++state.revision;state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;
+ paint();
+ try{const data=await req('/api/projects');if(n!==state.revision)return;state.projects=Array.isArray(data.projects)?data.projects:[];}catch(e){if(n===state.revision){state.error=e.message;state.projects=[]}}
+ const r=route();state.project=state.projects.find(p=>p.id===r.id)||null;paint();
+ if(r.id){await refreshDetail(n);if(n===state.revision)await loadExtra(n)}
+ state.loading=false;paint();
+}
+async function refreshDetail(n=state.revision){
+ const r=route();if(!r.id)return;
+ try{let d=await req('/api/projects/'+r.id+'/state',{},16000);if(n!==state.revision)return;state.details=d;state.project=d;state.error='';}
+ catch(e){if(n!==state.revision)return;state.error='تعذر قراءة التفاصيل: '+e.message}
+ paint();
+}
+async function loadExtra(n=state.revision){
+ const r=route(),p=r.id;if(!p)return;
+ let path=null;
+ if(r.view==='outputs')path='/api/projects/'+p+'/artifacts';
+ if(r.view==='chat')path='/api/projects/'+p+'/conversations';
+ if(!path)return;
+ try{const data=await req(path);if(n!==state.revision)return;
+ if(r.view==='outputs')state.artifacts=data;
+ else{state.convos=data;if(state.conversationId&&!data.conversations?.some(c=>c.id===state.conversationId))state.conversationId=null;}
+ }catch(e){if(n===state.revision)state.error=e.message}
+ if(n===state.revision)paint();
+ if(r.view==='chat'&&state.conversationId)await loadMessages();
+}
+async function loadMessages(){
+ if(!state.conversationId)return;
+ const id=state.conversationId;
+ try{const d=await req('/api/conversations/'+id+'/messages');if(id===state.conversationId){state.messages=d;paint()}}
+ catch(e){state.error=e.message;paint()}
+}
+async function mutation(path,payload,warning){
+ if(state.busy)return;
+ if(warning&&!window.confirm(warning))return;
+ state.busy=true;state.status='أُرسل الأمر إلى الخادم. لا توجد نتيجة ناجحة قبل الرد.';state.error='';paint();
+ try{const x=await post(path,payload);state.status='استجاب الخادم للأمر. راجع الحالة المحدثة.';await loadAll();state.status='تم تسجيل رد الخادم. '+(x?.launch?.launched?'أُطلق التشغيل الحقيقي.':'حالة الإطلاق موضحة في التشغيل.');}
+ catch(e){state.error=e.message;state.status='لم يثبت نجاح العملية.'}
+ finally{state.busy=false;paint()}
+}
+async function handle(action){
+ const id=pid();if(action==='refresh'){await loadAll();return}
+ if(action==='side'){state.side=!state.side;paint();return}
+ if(action==='new-chat'){state.conversationId=null;state.messages=null;paint();return}
+ if(action.startsWith('conversation-')){state.conversationId=Number(action.split('-')[1]);state.messages=null;paint();await loadMessages();return}
+ if(action.startsWith('theme-')){state.theme=action.slice(6);document.documentElement.setAttribute('data-theme',state.theme);return}
+ if(action==='plan')return mutation('/api/projects/'+id+'/plan/generate',{},'سيُطلب إنشاء خطة حقيقية وقد يستدعي مزود نموذج. متابعة؟');
+ if(action==='approve-plan')return mutation('/api/projects/'+id+'/plan/approve',{approved:true,feedback:''},'اعتماد الخطة يطلق التنفيذ الحقيقي تلقائيًا وقد يستهلك موارد. هل اعتمدت الخطة بعد مراجعتها؟');
+ if(action==='resume')return mutation('/api/projects/'+id+'/resume',{},'استئناف سير العمل الحقيقي لهذا المشروع؟');
+ if(action==='stop')return mutation('/api/projects/'+id+'/stop',{reason:'إيقاف بطلب المالك من واجهة V3',final:false},'إرسال أمر إيقاف تشغيل المشروع إلى الخادم؟');
+ if(action.startsWith('gate-')){
+   let parts=action.split('-'),gid=Number(parts[2]),yes=parts[1]==='yes';
+   return mutation('/api/projects/'+id+'/gates/'+gid,{approved:yes,note:'قرار من واجهة V3 الحية'},yes?'اعتماد هذه البوابة قد يستأنف التنفيذ الحقيقي. هل توافق؟':'رفض هذه البوابة قد يوقف سير العمل. هل توافق؟');
+ }
+ if(action.startsWith('artifact-')){
+   const n=Number(action.split('-')[1]),a=state.artifacts?.artifacts?.[n];if(!a||a.kind!=='file'||!a.step_id)return;
+   state.preview=null;state.status='جارٍ تحميل النص المثبت...';paint();
+   try{const q='/api/projects/'+id+'/artifacts/content?step_id='+encodeURIComponent(a.step_id)+'&name='+encodeURIComponent(a.name);
+     const controller=new AbortController(),clock=setTimeout(()=>controller.abort(),12000);
+     try{const r=await fetch(q,{cache:'no-store',credentials:'same-origin',signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);state.preview={name:a.name,text:await r.text()};state.status='';}
+     finally{clearTimeout(clock)}
+   }catch(e){state.error='تعذر عرض الملف: '+e.message;state.status=''}
+   paint();return;
+ }
+}
+async function submitCreate(form){
+ if(state.busy)return;let f=new FormData(form),name=String(f.get('name')||'').trim(),objective=String(f.get('objective')||'').trim();
+ if(!name||objective.length<3)return;
+ state.busy=true;state.error='';state.status='جارٍ إنشاء مشروع DRAFT حقيقي...';paint();
+ try{const p=await post('/api/projects',{name,objective,execution_policy:'STRICT_ISOLATED'});state.status='حُفظ المشروع في قاعدة المصنع.';location.hash=url(p.id,'overview')}
+ catch(e){state.error=e.message;state.status='لم يُنشأ المشروع'}
+ finally{state.busy=false;paint()}
+}
+async function submitChat(form){
+ if(state.busy)return;let text=String(new FormData(form).get('message')||'').trim();if(!text)return;
+ state.busy=true;state.error='';state.status='اتصلنا بمسار المحادثة الحقيقي؛ ننتظر النتيجة.';paint();
+ let conversationId=state.conversationId||null;
+ try{
+   const ac=new AbortController(),timeout=setTimeout(()=>ac.abort(),90000);
+   try{
+     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,conversation_id:conversationId}),signal:ac.signal});
+     if(!res.ok)throw Error('HTTP '+res.status+' '+(await res.text()).slice(0,180));
+     const rd=res.body.getReader(),dec=new TextDecoder();let buffer='',total=0;
+     while(true){const n=await rd.read();if(n.done)break;total+=n.value.byteLength;if(total>3000000)throw Error('حد حجم بث المحادثة');
+       buffer+=dec.decode(n.value,{stream:true});
+       let chunks=buffer.split(/\r?\n\r?\n/);buffer=chunks.pop()||'';
+       for(const chunk of chunks){const line=chunk.split(/\r?\n/).filter(x=>x.startsWith('data:')).map(x=>x.slice(5)).join('\n').trim();if(!line||line==='[DONE]')continue;
+         try{const ev=JSON.parse(line),d=ev.payload||ev;const cand=Number(d.conversation_id||ev.conversation_id||d.scope?.conversation_id||ev.scope?.conversation_id);
+           if(Number.isInteger(cand)&&cand>0)conversationId=cand;
+         }catch{}
+       }
+     }
+   }finally{clearTimeout(timeout)}
+   if(conversationId){
+     state.conversationId=conversationId;
+     if(route().id){try{await post('/api/conversations/'+conversationId+'/move-to-project',{project_id:route().id})}catch(e){state.error='المحادثة محفوظة لكن ربطها بالمشروع فشل: '+e.message}}
+     await loadExtra(state.revision);await loadMessages();
+   }else{state.error='عاد البث دون معرف محادثة؛ راجع قائمة المحادثات الحالية.';await loadExtra(state.revision)}
+   state.status='انتهت قراءة بث المحادثة. لا نعد بنجاح النموذج قبل مراجعة الرسائل المحفوظة.';
+ }catch(e){state.error='فشل البث أو انقطع: '+e.message+'. قد يستمر التنفيذ على الخادم؛ لا تعِد الإرسال دون فحص سجل المحادثة.';state.status=''}
+ finally{state.busy=false;paint()}
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
+document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}});
+window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=null;loadAll()});
+setInterval(()=>{if(!document.hidden&&!state.busy&&route().id&&!state.loading)refreshDetail()},30000);
+if(!location.hash)history.replaceState(null,'','#/home');
+document.documentElement.setAttribute('data-theme',state.theme);
+loadAll();
+</script></body></html>
