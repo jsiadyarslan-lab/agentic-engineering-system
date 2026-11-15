@@ -1,0 +1,504 @@
+/* ==========================================================================
+   console.css — AES-FACTORY-CONSOLE-REARCHITECTURE-001 §6
+   طبقة نظام التصميم الموحد فوق توكنز theme.css — غرفة تحكم مؤسسية:
+   شريط الحالة العام · مركز القيادة (A–F) · الجداول المؤسسية · الدرج المحمول
+   · حالات الفراغ/التحميل/الخطأ الموحدة. بلا ألوان جديدة خارج التوكنز:
+   كل القيم مشتقة من theme.css حصرًا.
+   ========================================================================== */
+
+:root {
+  /* ---------- امتدادات النظام (مشتقة حصرًا من توكنز theme.css) ---------- */
+  --cmd-strip-h: 44px;
+  --cmd-tile-min: 148px;
+  --cmd-radius: var(--radius-m);
+  --cmd-gutter: var(--sp-5);
+  --cmd-card-bg: var(--bg-raised);
+  --cmd-card-border: var(--border-subtle);
+  --cmd-head-bg: var(--bg-sidebar);
+  --cmd-mono-num: var(--font-mono);
+  --cmd-live-dot: var(--accent);
+  --cmd-ok-dot: var(--ok);
+  --cmd-warn-dot: var(--warn);
+  --cmd-err-dot: var(--danger);
+  --cmd-idle-dot: var(--text-faint);
+}
+
+/* ================= 1) شريط الحالة العام — على كل سطح =================
+   A. شريط الحالة: اتصال الخادم منفصل عن الجاهزية التشغيلية حصرًا —
+   كل مربع مؤشر مستقل بمعناه الصادق، ولا مؤشر مركّب واحد يوحي بجاهزية. */
+.cmd-strip {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  background: var(--border-subtle);
+  border-block: 1px solid var(--border-subtle);
+  min-height: var(--cmd-strip-h);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+  z-index: var(--z-sticky);
+  background: var(--bg-sidebar);
+}
+.cmd-strip::-webkit-scrollbar { display: none; }
+
+.cmd-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
+  min-width: var(--cmd-tile-min);
+  flex: 1 0 auto;
+  background: var(--bg-sidebar);
+  border-inline-end: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+.cmd-cell:last-child { border-inline-end: none; }
+
+.cmd-cell-label {
+  color: var(--text-muted);
+  font-size: var(--fs-11);
+  letter-spacing: 0;            /* G7: صفر تباعد على العربي */
+}
+.cmd-cell-value {
+  color: var(--text-primary);
+  font-size: var(--fs-12);
+  font-weight: 600;
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+/* النسخة العربية من القيمة (تسميات صادقة) لا تُفرض ltr */
+.cmd-cell-value.ar { direction: rtl; unicode-bidi: isolate; }
+
+.cmd-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cmd-idle-dot);
+  flex: none;
+}
+.cmd-dot.ok { background: var(--cmd-ok-dot); }
+.cmd-dot.live { background: var(--cmd-live-dot); box-shadow: 0 0 0 3px var(--accent-soft); }
+.cmd-dot.warn { background: var(--cmd-warn-dot); }
+.cmd-dot.err { background: var(--cmd-err-dot); }
+.cmd-dot.idle { background: var(--cmd-idle-dot); }
+
+/* النقر على مؤشر يفتح السطح صاحب التفصيل */
+button.cmd-cell {
+  cursor: pointer;
+  border: none;
+  text-align: start;
+  font: inherit;
+}
+button.cmd-cell:hover { background: var(--bg-hover); }
+
+/* ================= 2) مركز القيادة — البنية العامة ================= */
+.cmd-page { display: flex; flex-direction: column; gap: var(--sp-5); }
+
+.cmd-section {
+  background: var(--cmd-card-bg);
+  border: 1px solid var(--cmd-card-border);
+  border-radius: var(--cmd-radius);
+  overflow: hidden;
+}
+.cmd-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--cmd-head-bg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cmd-section-title {
+  color: var(--text-primary);
+  font-size: var(--fs-14);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.cmd-section-sub { color: var(--text-muted); font-size: var(--fs-12); }
+.cmd-section-count {
+  margin-inline-start: auto;
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-feature-settings: "tnum" 1;
+}
+.cmd-section-body { padding: var(--sp-4); }
+.cmd-section-body.flush { padding: 0; }
+
+/* ---------- B. منطقة التشغيل الحالي ---------- */
+.cmd-current {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(130px, 1fr));
+  gap: 1px;
+  background: var(--border-subtle);
+}
+.cmd-current-main {
+  background: var(--bg-raised);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.cmd-current-title {
+  color: var(--text-primary);
+  font-size: var(--fs-17);
+  font-weight: 700;
+}
+.cmd-current-sub { color: var(--text-secondary); font-size: var(--fs-13); line-height: var(--lh-body); }
+.cmd-current-stage { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+
+.cmd-current-cell {
+  background: var(--bg-raised);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  justify-content: center;
+}
+.cmd-cell-k { color: var(--text-muted); font-size: var(--fs-11); }
+.cmd-cell-v {
+  color: var(--text-primary);
+  font-size: var(--fs-15);
+  font-weight: 600;
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1;
+}
+.cmd-cell-v.ar { direction: rtl; }
+
+.cmd-progress {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 120px;
+}
+.cmd-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width var(--dur) var(--ease);
+}
+
+/* ---------- C. طابور القرارات ---------- */
+.cmd-decision {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cmd-decision:last-child { border-bottom: none; }
+.cmd-decision-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cmd-decision-title { color: var(--text-primary); font-weight: 600; font-size: var(--fs-14); }
+.cmd-decision-why { color: var(--text-secondary); font-size: var(--fs-13); line-height: var(--lh-body); }
+.cmd-decision-meta { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.cmd-decision-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+
+.cmd-kind-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  margin-top: 5px; flex: none;
+  background: var(--cmd-idle-dot);
+}
+.cmd-kind-dot.plan { background: var(--cmd-warn-dot); }
+.cmd-kind-dot.verify { background: var(--cmd-ok-dot); }
+.cmd-kind-dot.blocked { background: var(--cmd-err-dot); }
+/* R1 §3 FIX B — صف فاشل: نقطة فشل + فحص الإجراءات + ملاحظة خطأ الطابور */
+.cmd-kind-dot.failed { background: var(--cmd-err-dot); }
+.cmd-acts-check {
+  color: var(--text-secondary);
+  font-size: var(--fs-12);
+  opacity: .85;
+  white-space: nowrap;
+}
+.cmd-queue-note {
+  margin: var(--sp-2) var(--sp-4) 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--danger);
+  border-inline-start: 3px solid var(--danger);
+  border-radius: var(--radius-s);
+  background: var(--bg-raised);
+  color: var(--danger);
+  font-size: var(--fs-13);
+  line-height: var(--lh-body);
+}
+
+/* ---------- D. جدول المشاريع المؤسسي ---------- */
+.cmd-table-wrap { overflow-x: auto; }
+.cmd-th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.cmd-th-sort:hover { color: var(--text-secondary); }
+.cmd-th-sort .dir { font-size: 9px; opacity: .8; }
+
+.cmd-obj-cell {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- E. صحة المصنع ---------- */
+.cmd-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--sp-3);
+}
+.cmd-health-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--cmd-radius);
+  padding: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.cmd-health-head { display: flex; align-items: center; gap: var(--sp-2); }
+.cmd-health-title { color: var(--text-primary); font-weight: 600; font-size: var(--fs-13); }
+.cmd-health-lines { display: flex; flex-direction: column; gap: 6px; }
+.cmd-health-line { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-13); }
+.cmd-health-line .k { color: var(--text-muted); flex: none; }
+.cmd-health-line .v {
+  color: var(--text-secondary);
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-feature-settings: "tnum" 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmd-health-line .v.ar { direction: rtl; }
+
+/* ---------- F. خط النشاط ---------- */
+.cmd-tl { position: relative; padding-inline-start: 18px; }
+.cmd-tl::before {
+  content: "";
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-start: 4px;
+  width: 2px;
+  background: var(--border-subtle);
+  border-radius: 2px;
+}
+.cmd-tl-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: 7px 0 7px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+  cursor: pointer;
+}
+.cmd-tl-row:last-child { border-bottom: none; }
+.cmd-tl-row:hover .cmd-tl-what { color: var(--text-primary); }
+.cmd-tl-row::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: -18px;
+  top: 13px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cmd-idle-dot);
+  box-shadow: 0 0 0 3px var(--bg-raised);
+}
+.cmd-tl-row.ok::before { background: var(--cmd-ok-dot); }
+.cmd-tl-row.live::before { background: var(--cmd-live-dot); }
+.cmd-tl-row.err::before { background: var(--cmd-err-dot); }
+.cmd-tl-row.warn::before { background: var(--cmd-warn-dot); }
+
+.cmd-tl-time {
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  flex: none;
+  font-feature-settings: "tnum" 1;
+}
+.cmd-tl-what { color: var(--text-secondary); font-size: var(--fs-13); min-width: 0; }
+.cmd-tl-proj {
+  margin-inline-start: auto;
+  color: var(--text-muted);
+  font-size: var(--fs-12);
+  font-family: var(--cmd-mono-num);
+  direction: ltr;
+  unicode-bidi: isolate;
+  flex: none;
+}
+
+/* ================= 3) حالات موحدة: فراغ/تحميل/خطأ ================= */
+.cmd-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+  color: var(--text-muted);
+}
+.cmd-empty-title { color: var(--text-secondary); font-weight: 600; font-size: var(--fs-14); }
+.cmd-empty-hint { font-size: var(--fs-13); max-width: 460px; line-height: var(--lh-body); }
+.cmd-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-4);
+  color: var(--text-muted);
+  font-size: var(--fs-13);
+}
+.cmd-loading::before {
+  content: "";
+  width: 12px; height: 12px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: cmd-spin .8s linear infinite;
+}
+@keyframes cmd-spin { to { transform: rotate(360deg); } }
+
+.cmd-flash {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-s);
+  font-size: var(--fs-13);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+.cmd-flash.ok { border-color: var(--ok-border); color: var(--ok); background: var(--ok-soft); }
+.cmd-flash.err { border-color: var(--danger-border); color: var(--danger-hi); background: var(--danger-soft); }
+
+/* ================= 4) الجداول على الهاتف → بطاقات ================= */
+@media (max-width: 720px) {
+  .ent-table, .cmd-table-wrap table { border: none; background: transparent; }
+  .ent-table thead { display: none; }
+  .ent-table tbody { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .ent-table tr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--cmd-radius);
+    padding: var(--sp-3);
+  }
+  .ent-table td {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    border: none;
+    padding: 2px 0;
+  }
+  .ent-table td::before {
+    content: attr(data-k);
+    color: var(--text-muted);
+    font-size: var(--fs-11);
+    flex: none;
+    min-width: 84px;
+  }
+  .ent-table td:empty { display: none; }
+  .cmd-current { grid-template-columns: 1fr 1fr; }
+  .cmd-current-main { grid-column: 1 / -1; }
+  .cmd-health-grid { grid-template-columns: 1fr; }
+  .cmd-cell { min-width: 0; flex-basis: auto; }
+  .cmd-cell-value { max-width: 140px; }
+}
+
+/* ================= 5) الدرج المحمول الحقيقي (§7) =================
+   الشريط الجانبي على ≤900px: طبقة علوية معتمة + إغلاق بثلاث طرق
+   (اختيار سطح / نقر خارجي / زر إغلاق) + Escape، ويُغلق فور التنقل. */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: calc(var(--z-sidebar) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.sidebar-backdrop.visible { opacity: 1; pointer-events: auto; }
+
+.sidebar-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex: none;
+}
+.sidebar-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+@media (max-width: 900px) {
+  .sidebar {
+    transition: transform var(--dur) var(--ease);
+    will-change: transform;
+  }
+  .sidebar-close { display: inline-flex; }
+  body:not(.sidebar-collapsed) .sidebar-backdrop.visible { display: block; }
+}
+
+/* إشعال العتمة فقط حين الشريط مفتوح فعليًا على الشاشات الضيقة */
+@media (max-width: 900px) {
+  body:not(.sidebar-collapsed) .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+}
+
+/* ================= 6) تنقية الأسطح المؤسسية (كثافة وتراتب) ================= */
+/* تقليل التكرار البصري للبطاقات: حدود هادئة وتباعد محسوب */
+.ent-row, .ent-run-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-m);
+}
+.ent-section { margin-bottom: var(--sp-5); }
+.ent-section-title { letter-spacing: 0; }
+.ent-toolbar { flex-wrap: wrap; }
+.cc-view .cc-head { position: sticky; top: 0; z-index: var(--z-sticky); }
+.cc-view .cc-body {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: var(--sp-5) var(--cmd-gutter) var(--sp-8);
+  width: 100%;
+}
+
+/* شريط الحالة يلتصق أعلى كل سطح مؤسسي */
+.cmd-strip-host { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+
+/* أرقام جدولية موحدة في كل القيم الرقمية المؤسسية */
+.ent-mono, .ent-when {
+  font-feature-settings: "tnum" 1;
+}
+
+/* روابط سريعة تحت حالات الفراغ */
+.cmd-empty .btn { margin-top: var(--sp-2); }
+
+/* تباين قراءة أعلى في العناوين الفرعية للأسطح */
+.cc-sub { color: var(--text-muted); font-size: var(--fs-12); }
+
+@media (max-width: 1366px) {
+  .cc-view .cc-body { padding: var(--sp-4) var(--sp-4) var(--sp-8); }
+}

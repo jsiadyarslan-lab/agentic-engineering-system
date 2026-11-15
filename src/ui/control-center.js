@@ -355,6 +355,17 @@
     }
   }, 60000);
 
+  /* (REARCH-001 §3) الوجهة الافتراضية عند الإقلاع: مركز القيادة —
+   * المحادثة قناة عمل مستقلة لا الصفحة الأولى. يُنفَّذ هنا لأن
+   * ControlCenter لا يوجد بعد عند إقلاع app.js، وبلا مسار صريح فقط:
+   * #/chat/{id} و#/project/{id} والمسارات المؤسسية تبقى محترمة حرفيًا. */
+  (function bootDefault() {
+    var h = location.hash || "";
+    if (h === "" || h === "#" || h === "#/") {
+      setTimeout(function () { showView("overview"); }, 120);
+    }
+  })();
+
   window.ControlCenter = {
     showView: showView,
     hideSurfaces: hideSurfaces,

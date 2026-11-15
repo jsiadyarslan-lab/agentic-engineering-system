@@ -735,6 +735,7 @@
   // ---------- طي الشريط الجانبي ----------
   function toggleSidebar() {
     document.body.classList.toggle("sidebar-collapsed");
+    syncSidebarChrome();
   }
   $("sidebar-toggle").addEventListener("click", toggleSidebar);
   var collapseBtn = $("sidebar-collapse");
@@ -760,8 +761,51 @@
     sidebarMq.addEventListener("change", function (e) {
       if (sidebarUserOverride) return;
       document.body.classList.toggle("sidebar-collapsed", e.matches);
+      syncSidebarChrome();
     });
   }
+
+  // ---------- (REARCH-001 §7) الدرج المحمول الحقيقي ----------
+  // الشريط على ≤900px طبقة علوية: خلفية معتمة تُظهر/تُخفى مع الحالة،
+  // ويُغلق بثلاث طرق: اختيار سطح · نقر خارجي · زر الإغلاق، وزر Escape.
+  // التنقل يغلق الدرج فورًا فلا يبقى فوق مساحة العمل أبدًا.
+  var sidebarBackdrop = $("sidebar-backdrop");
+  var sidebarCloseBtn = $("sidebar-close");
+
+  function sidebarIsMobileOpen() {
+    return sidebarMq.matches &&
+      !document.body.classList.contains("sidebar-collapsed");
+  }
+  function syncSidebarChrome() {
+    if (!sidebarBackdrop) return;
+    var open = sidebarIsMobileOpen();
+    sidebarBackdrop.hidden = !open;
+    sidebarBackdrop.classList.toggle("visible", open);
+  }
+  function closeSidebarDrawer() {
+    if (!sidebarMq.matches) return;
+    if (!document.body.classList.contains("sidebar-collapsed")) {
+      document.body.classList.add("sidebar-collapsed");
+      sidebarUserOverride = true;
+      syncSidebarChrome();
+    }
+  }
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", closeSidebarDrawer);
+  }
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener("click", closeSidebarDrawer);
+  }
+  /* اختيار أي سطح من التنقل يغلق الدرج فورًا على الهاتف */
+  document.querySelectorAll(".side-nav-item").forEach(function (btn) {
+    btn.addEventListener("click", closeSidebarDrawer);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var settingsOpen = !$("settings-drawer") || !$("settings-drawer").hidden;
+    if (!settingsOpen && sidebarIsMobileOpen()) closeSidebarDrawer();
+  });
+  syncSidebarChrome();
 
   // ---------- النمط: محادثة / مهمة ----------
   function setMode(mode, opts) {
@@ -919,15 +963,30 @@
       }
       return;
     }
-    // لا مسار: محادثة محفوظة سابقًا (استرداد بعد refresh §1) أو بداية
+    /* (R1 §5-FIX C) اتساق التنقل: المسارات المؤسسية الثمانية تُوجَّه هنا
+       أيضًا — كان تغيير الهاش الحي إلى #/logs مثلًا يقع في الاحتياطي أدناه
+       فيوجَّه إلى overview ويكتب التاريخ فوق المسار المقصود، ومستمع
+       enterprise.js يقرأ الهاش بعد ذلك فيجد overview. الآن المسارُ
+       واحدٌ بصوت واحد في كلا المستمعين. */
+    var entMatch = hash.match(
+      /^#\/(overview|projects|tasks|agents|activity|reviews|artifacts|logs)$/);
+    if (entMatch) {
+      if (document.body.classList.contains("mode-project") &&
+          window.HubProjects) {
+        window.HubProjects.exitProjectMode();
+      }
+      if (window.ControlCenter) window.ControlCenter.showView(entMatch[1]);
+      return;
+    }
+    // لا مسار: (REARCH-001 §3) مركز القيادة هو الوجهة الافتراضية —
+    // المحادثة لا تعود الصفحة الأولى؛ تبقى قابلة للاسترداد من قائمة
+    // الجلسات أو من مسارها المباشر #/chat/{id} عند التحديث عليه.
     if (document.body.classList.contains("mode-project")) {
       if (window.HubProjects) window.HubProjects.exitProjectMode();
       return;
     }
-    var saved = savedActiveConversation();
-    if (saved && !state.conversationId
-        && chatTitleEl.textContent === "محادثة جديدة") {
-      openConversationById(parseInt(saved, 10));
+    if (window.ControlCenter) {
+      window.ControlCenter.showView("overview");
     }
   }
 

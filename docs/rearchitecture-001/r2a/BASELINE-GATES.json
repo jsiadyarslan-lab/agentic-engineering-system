@@ -1,0 +1,72 @@
+{
+ "document": "R2A§1 baseline verification — GitHub API read at R2A start",
+ "command": "AES-FACTORY-CONSOLE-REARCHITECTURE-001-R2A §1",
+ "generated_utc": "2026-11-14T23:21:18Z",
+ "expectations": {
+  "pr7_head": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+  "base_branch": "factory/recovery-ui-001",
+  "base_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+  "main_sha_prefix": "9d77a79",
+  "stats_at_85566e6": {
+   "files": 163,
+   "additions": 5100,
+   "deletions": 76,
+   "commits": 5
+  }
+ },
+ "observed": {
+  "pr7": {
+   "status": 200,
+   "state": "open",
+   "draft": true,
+   "head_sha": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+   "head_ref": "aes/factory-console-rearchitecture-001",
+   "base_ref": "factory/recovery-ui-001",
+   "base_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "base_repo_full": "jsiadyarslan-lab/agentic-engineering-system",
+   "changed_files": 163,
+   "additions": 5100,
+   "deletions": 76,
+   "commits": 5,
+   "mergeable_state": "unstable",
+   "title": "AES-FACTORY-CONSOLE-REARCHITECTURE-001 — غرفة التحكم المؤسسية (Draft، لا يُدمج)",
+   "body_len": 7386
+  },
+  "main": {
+   "status": 200,
+   "sha": "9d77a79e71902411371decef2dd68499068246ee"
+  },
+  "base_branch_tip": {
+   "status": 200,
+   "sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821"
+  },
+  "pr5": {
+   "status": 200,
+   "state": "open",
+   "merged": false,
+   "draft": false,
+   "head_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "head_ref": "factory/recovery-ui-001"
+  },
+  "remote_branch_head": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+  "local_head": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+  "local_matches_remote": true
+ },
+ "gates": {
+  "pr7_open": true,
+  "pr7_draft": true,
+  "head_matches_order": true,
+  "base_ref_ok": true,
+  "base_sha_ok": true,
+  "main_ok": true,
+  "base_tip_ok": true,
+  "pr5_open_unmerged": true,
+  "stats_files": true,
+  "stats_add": true,
+  "stats_del": true,
+  "commits5": true,
+  "local_remote_sync": true
+ },
+ "all_gates_pass": true,
+ "note": "Diff stats 163/+5100/−76 are the official GitHub values at the R2 delivery head 85566e6 (5 commits). They correct the stale +4971/4-commits figures of the be81bf9 era, which are kept only as history."
+}

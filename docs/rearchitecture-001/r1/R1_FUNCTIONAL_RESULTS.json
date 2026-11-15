@@ -1,0 +1,74 @@
+{
+  "suite": "AES-FACTORY-CONSOLE-REARCHITECTURE-001-R1 §6 (R1-A..R1-E)",
+  "generated_at": "2026-11-14T17:24:16+00:00",
+  "duration_s": 21.0,
+  "layers": {
+    "live_integration": "مسبار حي حقيقي + ربط حقيقي عبر API — لقطات من الواجهة الحية",
+    "failure_paths": "تثبيت مسارات Playwright لنقاط نهاية محددة (409/FAILED/بلا إجراء) — عقود اختبار لا بيانات تشغيل"
+  },
+  "results": [
+    {
+      "id": "R1-A-live",
+      "name": "الدور على التكوين غير المفحوص لا يحصل على READY (تكامل حي)",
+      "pass": true,
+      "detail": "الشريط الحي: «1/6 جاهز بالفحص» — reviewer فقط على التكوين المفحوص default/glm-4.6 جاهز؛ thinker على r1_untested_cfg (UNTESTED) مستبعد",
+      "screenshot": "R1A_live_strip_agents.png"
+    },
+    {
+      "id": "R1-A/B-live",
+      "name": "لوحة صحة المصنع تعرض الحالات الثلاث الصادقة (تكامل حي)",
+      "pass": true,
+      "detail": "أسطر الأدوار الحية: المفكر\nzai_internal · glm-4.6 · UNTESTED ⏎ المدقق\nzai_internal · glm-4.6 · READY ⏎ المنفذ\nnvidia · nvidia/nemotron-3-ultra-550b-a55b · UNTESTED ⏎ المراجع\nnvidia · nvidia/nemotron-3-ultra-550b-a55b · UNTESTED ⏎ المُحكَّم\nzai_internal · glm-4.5-air · التكوين متصل — النموذج المختار غير مُفحوص ⏎ المحادثة\nnvidia · nvidia/nemotron-3-ultra-550b-a55b · UNTESTED",
+      "screenshot": "R1AB_live_health_roles.png"
+    },
+    {
+      "id": "R1-CONSOLE-live",
+      "name": "صفر أخطاء JS في السطح الحي المفحوص",
+      "pass": true,
+      "detail": "pageerror count = 0",
+      "screenshot": null
+    },
+    {
+      "id": "R1-A",
+      "name": "دور على تكوين UNTESTED لا يظهر جاهزًا (فحص منطق مركزي)",
+      "pass": true,
+      "detail": "الشريط: «1/6 جاهز بالفحص» — المتوقع 1/6 (reviewer وحده على probed/m-default)",
+      "screenshot": "R1A_stub_strip_1of6.png"
+    },
+    {
+      "id": "R1-B",
+      "name": "النموذج غير المُفحوص/غير المعلن لا يُعرض جاهزًا — الحالة منفصلة",
+      "pass": true,
+      "detail": "أسطر الأدوار: المفكر\nstubprov · m-default · UNTESTED ⏎ المدقق\nstubprov · m-default · READY ⏎ المنفذ\nstubprov · m-alt · التكوين متصل — النموذج المختار غير مُفحوص ⏎ المراجع\nstubprov · m-undeclared · النموذج غير معلن في التكوين ⏎ المُحكَّم\nstubprov · m-alt · التكوين متصل — النموذج المختار غير مُفحوص ⏎ المحادثة\nstubprov · m-alt · التكوين متصل — النموذج المختار غير مُفحوص",
+      "screenshot": null
+    },
+    {
+      "id": "R1-C",
+      "name": "مشروع FAILED يظهر في طابور القرارات مع سبب الفشل",
+      "pass": true,
+      "detail": "الصف: «#7 مشروع فاشل R1\nفاشل: EXECUTION_FAILED — الأداة pdf_build انهارت: TTFError\nفاشلة\n2026-11-14 11:30:00\nفتح\nإعادة المحاولة»",
+      "screenshot": "R1C_failed_in_queue.png"
+    },
+    {
+      "id": "R1-D",
+      "name": "إعادة محاولة HTTP 409 — الخطأ معلن والصف باقٍ والزر يعود فعالًا",
+      "pass": true,
+      "detail": "زر موجود=True، نداءات retry=1، نص الملاحظة=«رُفضت إعادة المحاولة للمشروع #7: لا فشل قابل للإعادة (409)»، الصف باقٍ=True، الزر فعال=True — استجابة {ok:false} لم تُعامل كنجاح",
+      "screenshot": "R1D_retry_http409.png"
+    },
+    {
+      "id": "R1-E",
+      "name": "إعادة محاولة ناجحة — تحديث من المصدر الحي ومسح الخطأ القديم",
+      "pass": true,
+      "detail": "عدد نداءات retry=1 (استجابة 200)، الطابور أُعيد بناؤه=True، الملاحظة مُسحت=True",
+      "screenshot": "R1E_retry_success.png"
+    },
+    {
+      "id": "R1-D2",
+      "name": "بلا retry في available_actions — لا زر إعادة يُعرض",
+      "pass": true,
+      "detail": "الزر غائب=True، الإجراءات من اللقطة القانونية حصرًا (hint=True)",
+      "screenshot": "R1D2_no_retry_action.png"
+    }
+  ]
+}

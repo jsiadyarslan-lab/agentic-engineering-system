@@ -1,0 +1,493 @@
+{
+ "r2a_command": "AES-FACTORY-CONSOLE-REARCHITECTURE-001-R2A §3",
+ "runs": {
+  "HEAD_push": {
+   "run_id": 43647435949,
+   "expected_sha": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+   "head_sha": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+   "sha_matches_expected": true,
+   "head_branch": "aes/factory-console-rearchitecture-001",
+   "event": "push",
+   "status": "completed",
+   "conclusion": "failure",
+   "created_at": "2026-11-14T22:18:59Z",
+   "run_attempt": 1,
+   "jobs": [
+    {
+     "job_id": 132608256598,
+     "name": "tests",
+     "conclusion": "failure",
+     "failed_steps": [
+      "Trusted suite"
+     ],
+     "log_bytes": 34957,
+     "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+    }
+   ],
+   "job_log_files": [
+    "HEAD_push__job132608256598.log"
+   ],
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'PAUSED', 'WAITING_GATE', 'COMPLETED', 'STOPPED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  },
+  "HEAD_pull_request": {
+   "run_id": 43647440560,
+   "expected_sha": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+   "head_sha": "85566e63d58b64b1a5e7e4596ae20b54c989afaa",
+   "sha_matches_expected": true,
+   "head_branch": "aes/factory-console-rearchitecture-001",
+   "event": "pull_request",
+   "status": "completed",
+   "conclusion": "failure",
+   "created_at": "2026-11-14T22:19:02Z",
+   "run_attempt": 1,
+   "jobs": [
+    {
+     "job_id": 132608270441,
+     "name": "tests",
+     "conclusion": "failure",
+     "failed_steps": [
+      "Trusted suite"
+     ],
+     "log_bytes": 35788,
+     "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+    }
+   ],
+   "job_log_files": [
+    "HEAD_pull_request__job132608270441.log"
+   ],
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'COMPLETED', 'WAITING_GATE', 'PAUSED', 'STOPPED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  },
+  "BASE_push": {
+   "run_id": 43604724868,
+   "expected_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "head_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "sha_matches_expected": true,
+   "head_branch": "factory/recovery-ui-001",
+   "event": "push",
+   "status": "completed",
+   "conclusion": "failure",
+   "created_at": "2026-11-14T14:24:45Z",
+   "run_attempt": 1,
+   "jobs": [
+    {
+     "job_id": 132476794567,
+     "name": "tests",
+     "conclusion": "failure",
+     "failed_steps": [
+      "Trusted suite"
+     ],
+     "log_bytes": 34854,
+     "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+    }
+   ],
+   "job_log_files": [
+    "BASE_push__job132476794567.log"
+   ],
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'STOPPED', 'PAUSED', 'WAITING_GATE', 'COMPLETED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  },
+  "BASE_pull_request": {
+   "run_id": 43604740811,
+   "expected_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "head_sha": "ee22926f61bc3c57b3a17b05c3afedcc1b47a821",
+   "sha_matches_expected": true,
+   "head_branch": "factory/recovery-ui-001",
+   "event": "pull_request",
+   "status": "completed",
+   "conclusion": "failure",
+   "created_at": "2026-11-14T14:24:57Z",
+   "run_attempt": 1,
+   "jobs": [
+    {
+     "job_id": 132476843069,
+     "name": "tests",
+     "conclusion": "failure",
+     "failed_steps": [
+      "Trusted suite"
+     ],
+     "log_bytes": 35782,
+     "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+    }
+   ],
+   "job_log_files": [
+    "BASE_pull_request__job132476843069.log"
+   ],
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'WAITING_GATE', 'STOPPED', 'PAUSED', 'COMPLETED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  },
+  "R2_HEAD_push": {
+   "run_id": 43621379657,
+   "expected_sha": "be81bf95d030e3ba516c9f28a5cf965e5e047e44",
+   "head_sha": "be81bf95d030e3ba516c9f28a5cf965e5e047e44",
+   "sha_matches_expected": true,
+   "event": "push",
+   "conclusion": "failure",
+   "source": "logs archived by R2 (r2work/ci_logs)",
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'PAUSED', 'WAITING_GATE', 'COMPLETED', 'STOPPED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  },
+  "R2_HEAD_pull_request": {
+   "run_id": 43621384969,
+   "expected_sha": "be81bf95d030e3ba516c9f28a5cf965e5e047e44",
+   "head_sha": "be81bf95d030e3ba516c9f28a5cf965e5e047e44",
+   "sha_matches_expected": true,
+   "event": "pull_request",
+   "conclusion": "failure",
+   "source": "logs archived by R2 (r2work/ci_logs)",
+   "failed_tests_visible": [
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+   ],
+   "failed_with_reasons": {
+    "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+    "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+    "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+    "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'STOPPED', 'COMPLETED', 'PAUSED', 'WAITING_GATE'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+    "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+    "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+    "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+    "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+    "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+    "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+    "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+    "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+   },
+   "pytest_totals": "18 failed / 266 passed"
+  }
+ },
+ "structural_limit": {
+  "cause": "trusted-suite.yml pipes pytest through `tail -40` (line 46); GitHub stores only the last 40 pytest lines, which cover the tail 12 of the 18 FAILED summary entries. The first 6 failed-test IDs never leave the runner and are unrecoverable from any GitHub log, for any run of this workflow (head, base, or re-run).",
+  "workflow_read_only": true,
+  "workflow_modified": false,
+  "visible_ids_per_run": 12,
+  "hidden_ids_per_run": 6,
+  "total_failed_per_run": 18
+ },
+ "comparison": {
+  "totals_all_6_runs": {
+   "HEAD_push": "18 failed / 266 passed",
+   "HEAD_pull_request": "18 failed / 266 passed",
+   "BASE_push": "18 failed / 266 passed",
+   "BASE_pull_request": "18 failed / 266 passed",
+   "R2_HEAD_push": "18 failed / 266 passed",
+   "R2_HEAD_pull_request": "18 failed / 266 passed"
+  },
+  "totals_uniform": true,
+  "visible_common_base_vs_head": [
+   "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+   "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+   "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+   "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+   "tests/api/test_projects_api.py::test_run_stream_completes_project",
+   "tests/api/test_projects_api.py::test_sub_resources_exposed",
+   "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+   "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+   "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+   "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+   "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+   "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+  ],
+  "visible_count": 12,
+  "visible_only_in_base": [],
+  "visible_only_in_head_NEW": [],
+  "visible_reason_mismatches": [],
+  "be81bf9_vs_85566e6_visible_diff": []
+ },
+ "verdict": "BASELINE-VISIBLE-SET MATCH — FULL 18-ID PARITY UNPROVABLE FROM CI LOGS → CI UNVERIFIABLE",
+ "document": "R2A§3 final CI verification — four ordered runs, full failed-test extraction",
+ "generated_utc": "2026-11-14T23:21:18Z",
+ "raw_logs_note": "The four raw job logs of the ordered runs are archived verbatim in r2a/ci-raw/ (job-log API download, secret-scanned). The two R2-era be81bf9 logs are parsed from the R2 session archive (r2work/ci_logs) and were part of the R2 evidence package.",
+ "local_paired_run_reference": "R2§2(3) local paired run stays additional independent evidence (284 collected, identical single environment failure on both trees, full untruncated output) — it is not a substitute for the CI-log comparison.",
+ "post_r2a_monitoring": {
+  "command": "AES-FACTORY-CONSOLE-REARCHITECTURE-001-R2B §3 (POST_R2A_MONITORING)",
+  "generated_utc": "2026-11-15T07:46:51Z",
+  "runs": {
+   "POST_R2A_push": {
+    "run_id": 43653293824,
+    "run_number": 67,
+    "expected_sha": "87adfcbe4bf2c776f53d4fb9a3012c901991f72c",
+    "head_sha": "87adfcbe4bf2c776f53d4fb9a3012c901991f72c",
+    "sha_matches_expected": true,
+    "head_branch": "aes/factory-console-rearchitecture-001",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-11-14T23:27:01Z",
+    "run_attempt": 1,
+    "jobs": [
+     {
+      "job_id": 132626258765,
+      "name": "tests",
+      "conclusion": "failure",
+      "failed_steps": [
+       "Trusted suite"
+      ],
+      "log_bytes": 35961,
+      "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+     }
+    ],
+    "job_log_files": [
+     "post-r2a-monitoring/POST_R2A_push_run43653293824_job132626258765.log"
+    ],
+    "failed_tests_visible": [
+     "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+     "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+     "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+     "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+     "tests/api/test_projects_api.py::test_run_stream_completes_project",
+     "tests/api/test_projects_api.py::test_sub_resources_exposed",
+     "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+     "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+     "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+     "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+     "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+     "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+    ],
+    "failed_with_reasons": {
+     "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+     "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+     "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+     "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'COMPLETED', 'PAUSED', 'WAITING_GATE', 'STOPPED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+     "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+     "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+     "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+     "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+     "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+     "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+     "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+     "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+    },
+    "pytest_totals": "18 failed / 266 passed"
+   },
+   "POST_R2A_pull_request": {
+    "run_id": 43653298777,
+    "run_number": 68,
+    "expected_sha": "87adfcbe4bf2c776f53d4fb9a3012c901991f72c",
+    "head_sha": "87adfcbe4bf2c776f53d4fb9a3012c901991f72c",
+    "sha_matches_expected": true,
+    "head_branch": "aes/factory-console-rearchitecture-001",
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-11-14T23:27:04Z",
+    "run_attempt": 1,
+    "jobs": [
+     {
+      "job_id": 132626273534,
+      "name": "tests",
+      "conclusion": "failure",
+      "failed_steps": [
+       "Trusted suite"
+      ],
+      "log_bytes": 36783,
+      "pytest_line_window_note": "workflow pipes pytest through `tail -40` (trusted-suite.yml step Trusted suite)"
+     }
+    ],
+    "job_log_files": [
+     "post-r2a-monitoring/POST_R2A_pull_request_run43653298777_job132626273534.log"
+    ],
+    "failed_tests_visible": [
+     "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything",
+     "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job",
+     "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner",
+     "tests/api/test_projects_api.py::test_recovery_listing_after_pause",
+     "tests/api/test_projects_api.py::test_run_stream_completes_project",
+     "tests/api/test_projects_api.py::test_sub_resources_exposed",
+     "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real",
+     "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate",
+     "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model",
+     "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation",
+     "tests/core/test_stop_api.py::test_cycle_status_finished_shape",
+     "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes"
+    ],
+    "failed_with_reasons": {
+     "tests/core/test_stop_api.py::test_cycle_status_finished_shape": "AssertionError: assert 'FAILED' == 'EVIDENCED'",
+     "tests/core/test_stop_mission.py::test_mission_stop_then_resume_completes": "AssertionError: الحالة النهائية FAILED — الدورة لم تكتمل أدلةً؛ PDF غير موجود في مجلد المهمة؛ عدد المصادر 0 خارج النطاق 5-8",
+     "tests/api/test_control_actions_0134.py::test_pause_and_resume_same_durable_job": "AssertionError: الحلقة لم تدخل الخطوة",
+     "tests/api/test_control_actions_0134.py::test_final_stop_is_durable_and_preserves_everything": "AssertionError: لم تصل الحالة إلى {'WAITING_GATE', 'STOPPED', 'PAUSED', 'COMPLETED'} — آخر: BLOCKED (الحواجز: sandbox (BLOCKED) — الإجراء قبل البدء، لا بعده)",
+     "tests/api/test_executor_no_starvation.py::test_preflight_blocked_run_terminates_and_releases_runner": "AssertionError: المهمة التالية لم تكتمل — خيط الحلقات ما زال محتجزًا (الحالة: BLOCKED)",
+     "tests/api/test_projects_api.py::test_run_stream_completes_project": "AssertionError: assert 'PHASE_STARTED' in ['run.start', 'PROJECT_CREATED', 'PLANNING_STARTED', 'PLAN_GENERATING', 'MODEL_CALL_STARTED', 'MODEL_CALL_COMPLETED', ...]",
+     "tests/api/test_projects_api.py::test_recovery_listing_after_pause": "AssertionError: المشروع لم يدخل RUNNING خلال المهلة",
+     "tests/api/test_projects_api.py::test_sub_resources_exposed": "AssertionError: assert ([{'phase_id': 1, 'phase_title': 'مرحلة وحيدة', 'id': 1, 'ordinal': 1, ...}] and 'PENDING' == 'COMPLETED'",
+     "tests/api/test_sandbox_integration.py::test_manager_builds_and_executes_for_real": "AssertionError: assert 'FAILED' == 'EXECUTED'",
+     "tests/api/test_sandbox_integration.py::test_write_file_tool_executes_inside_substrate": "roles.tool_failures.ToolFailure: بيئة التنفيذ المعزولة لم تبدأ: FAILED_TO_START: FAILED_TO_START: exit_code=125; stderr_head=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\" | real_stderr=\"SANDBOX-INIT-ERROR at setgroups-deny: PermissionError(13, 'Permission denied')\"",
+     "tests/api/test_task_live.py::test_task_live_cycle_passes_and_persists_conversation": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']",
+     "tests/api/test_task_live.py::test_task_each_role_receives_its_own_provider_and_model": "AssertionError: ['الحالة النهائية FAILED — الدورة لم تكتمل أدلةً', 'مهام فاشلة: T1']"
+    },
+    "pytest_totals": "18 failed / 266 passed"
+   }
+  },
+  "six_run_comparison": {
+   "command_reference": "R2B §3 — six GitHub-retrieved complete job logs",
+   "runs_compared": {
+    "BASE_push_ee22926": 43604724868,
+    "BASE_pull_request_ee22926": 43604740811,
+    "HEAD_push_85566e6": 43647435949,
+    "HEAD_pull_request_85566e6": 43647440560,
+    "POST_R2A_push_87adfcbe": 43653293824,
+    "POST_R2A_pull_request_87adfcbe": 43653298777
+   },
+   "visible_failed_identifiers_per_run": 12,
+   "visible_failed_identifiers_identical_across_all_six_runs": true,
+   "visible_failed_reasons_identical_after_set_repr_order_normalization": true,
+   "totals_identical_across_all_six_runs": "18 failed / 266 passed / 3 warnings",
+   "new_visible_failed_identifiers_vs_baseline": [],
+   "healed_visible_failed_identifiers": [],
+   "artifacts_on_post_r2a_runs": {
+    "total_count": 0,
+    "note": "no junit/report artifacts — nothing recoverable"
+   },
+   "full_18_test_identity": "UNVERIFIABLE — the inherited `tail -40` step discards the first 6 FAILED summary lines before they reach GitHub; no artifact exists to recover them"
+  },
+  "binding_statement": "No new visible failed identifiers. Full 18-test identity comparison remains UNVERIFIABLE.",
+  "verdict": "POST-R2A MONITORING — NO NEW VISIBLE FAILED IDENTIFIERS; CI REMAINS CI UNVERIFIABLE",
+  "raw_logs_note": "Both post-R2A raw job logs archived verbatim (no reformatting, no trimming) in r2a/post-r2a-monitoring/ after a secret scan (clean; GitHub-masked 'basic ***' auth-header signature and public repo-owner URL literals only). The four original R2A ci-raw/ logs are untouched."
+ }
+}

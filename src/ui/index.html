@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="/static/control-center.css?v=4.0.0">
   <link rel="stylesheet" href="/static/factory-control.css?v=4.0.0">
   <link rel="stylesheet" href="/static/factory-floor.css?w=m2">
+  <!-- AES-FACTORY-CONSOLE-REARCHITECTURE-001: طبقة غرفة القيادة فوق نظام التوكنز -->
+  <link rel="stylesheet" href="/static/console.css?v=4.0.0">
 </head>
 <body>
   <!-- نظام الأيقونات الموحد (AES-UI-PREMIUM-REDESIGN-001): رموز خطية
@@ -121,6 +123,9 @@
             <span class="brand-sub" dir="ltr">AGENTIC ENGINEERING</span>
           </span>
         </span>
+        <button class="sidebar-close" id="sidebar-close" title="إغلاق القائمة (Esc)" aria-label="إغلاق القائمة">
+          <span class="icon"><svg><use href="#i-close"/></svg></span>
+        </button>
         <button class="icon-btn" id="sidebar-collapse" title="طي الشريط">
           <span class="icon"><svg><use href="#i-forward"/></svg></span>
         </button>
@@ -139,15 +144,17 @@
         <input id="side-search" type="search" placeholder="ابحث في المحادثات والمشاريع…" aria-label="ابحث في المحادثات والمشاريع">
       </div>
 
-      <!-- التنقل المؤسسي (AES-FACTORY-RECOVERY-AND-UI-001 §4):
-           تسع وحدات فوق قنوات العمل — كل عنصر مسار حقيقي موصول بالـAPI -->
+      <!-- التنقل المؤسسي (AES-FACTORY-CONSOLE-REARCHITECTURE-001 §3):
+           المحاور الخمسة — كل عنصر مسار حقيقي موصول بالـAPI نفسه،
+           فلا مسار قديم تُرك ولا وظيفة حُذفت، وإنما أعيد تنظيمها غرفة قيادة -->
       <nav class="side-nav" id="side-nav" aria-label="التنقل الأساسي">
-        <span class="side-nav-group">المصنع</span>
-        <button class="side-nav-item" data-nav="overview" title="النظرة التنفيذية: الحالة والصحة والقرارات المنتظرة">
+        <span class="side-nav-group">مركز القيادة</span>
+        <button class="side-nav-item" data-nav="overview" title="مركز القيادة: حالة المصنع والتشغيل الحالي وطابور القرارات">
           <span class="icon"><svg><use href="#i-overview"/></svg></span>
-          <span class="side-nav-label">نظرة عامة</span>
+          <span class="side-nav-label">مركز القيادة</span>
           <em class="nav-badge" id="decisions-badge" hidden></em>
         </button>
+        <span class="side-nav-group">المشاريع والتنفيذ</span>
         <button class="side-nav-item" data-nav="projects" title="المشاريع والمساحات — إنشاء وفتح وأرشفة">
           <span class="icon"><svg><use href="#i-project"/></svg></span>
           <span class="side-nav-label">المشاريع</span>
@@ -161,15 +168,21 @@
           <span class="icon"><svg><use href="#i-runs"/></svg></span>
           <span class="side-nav-label">التشغيلات الحية</span>
         </button>
+        <span class="side-nav-group">الحوكمة</span>
         <button class="side-nav-item" data-nav="reviews" title="المراجعات والاعتمادات — قرارات المالك المنتظرة">
           <span class="icon"><svg><use href="#i-reviews"/></svg></span>
           <span class="side-nav-label">المراجعات والاعتمادات</span>
         </button>
-        <span class="side-nav-group">القدرات والتشخيص</span>
+        <span class="side-nav-group">البنية الوكيلية</span>
         <button class="side-nav-item" data-nav="agents" title="الوكلاء والقدرات: الأدوار والنماذج والمزودون والركيزة">
           <span class="icon"><svg><use href="#i-agents"/></svg></span>
           <span class="side-nav-label">الوكلاء والقدرات</span>
         </button>
+        <button class="side-nav-item" data-nav="factory" title="غرفة التحكم بالمصنع">
+          <span class="icon"><svg><use href="#i-factory"/></svg></span>
+          <span class="side-nav-label">مصنع الوكلاء</span>
+        </button>
+        <span class="side-nav-group">الأدلة والتاريخ</span>
         <button class="side-nav-item" data-nav="artifacts" title="المخرجات والتسليمات — ملفات حقيقية ببصمات قرص">
           <span class="icon"><svg><use href="#i-file"/></svg></span>
           <span class="side-nav-label">المخرجات والتسليمات</span>
@@ -178,18 +191,14 @@
           <span class="icon"><svg><use href="#i-terminal"/></svg></span>
           <span class="side-nav-label">السجلات والأحداث</span>
         </button>
-        <span class="side-nav-group">قنوات العمل</span>
-        <button class="side-nav-item" data-nav="chat" title="المحادثات">
-          <span class="icon"><svg><use href="#i-chat"/></svg></span>
-          <span class="side-nav-label">المحادثات</span>
-        </button>
-        <button class="side-nav-item" data-nav="factory" title="غرفة التحكم بالمصنع">
-          <span class="icon"><svg><use href="#i-factory"/></svg></span>
-          <span class="side-nav-label">مصنع الوكلاء</span>
-        </button>
         <button class="side-nav-item" data-nav="archive" title="المشاريع المؤرشفة">
           <span class="icon"><svg><use href="#i-archive"/></svg></span>
           <span class="side-nav-label">الأرشيف</span>
+        </button>
+        <span class="side-nav-group">قنوات العمل</span>
+        <button class="side-nav-item" data-nav="chat" title="المحادثات — مساحة عمل مستقلة، ليست الصفحة الافتراضية">
+          <span class="icon"><svg><use href="#i-chat"/></svg></span>
+          <span class="side-nav-label">المحادثات</span>
         </button>
       </nav>
 
@@ -219,8 +228,9 @@
       </div>
     </aside>
 
-    <!-- عمود المحادثة -->
+    <!-- العمود الرئيسي: شريط الحالة العام يعلو كل سطح (مركز القيادة §4-A) -->
     <main class="chat">
+      <div class="cmd-strip" id="cmd-strip" aria-label="شريط الحالة العام"></div>
       <header class="chat-head">
         <button class="icon-btn sidebar-toggle" id="sidebar-toggle" title="إظهار/إخفاء المحادثات">
           <span class="icon"><svg><use href="#i-collapse"/></svg></span>
@@ -316,8 +326,8 @@
           <button class="icon-btn" id="overview-back" title="عودة للمحادثة">
             <span class="icon"><svg><use href="#i-back"/></svg></span>
           </button>
-          <span class="cc-title">نظرة عامة تنفيذية</span>
-          <span class="cc-sub" id="overview-sub">حالة المصنع والصحة والقرارات المنتظرة</span>
+          <span class="cc-title">مركز القيادة</span>
+          <span class="cc-sub" id="overview-sub">حالة المصنع والتشغيل الحالي وطابور القرارات والصحة</span>
         </header>
         <div class="cc-scroll"><div class="cc-body" id="overview-body"></div></div>
       </section>
@@ -458,6 +468,9 @@
 
   </div>
 
+  <!-- خلفية الدرج المحمول (REARCH §7): نقر خارجي يغلق الشريط -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
   <!-- حدود الأخطاء العامة -->
   <div class="error-boundary" id="error-boundary" hidden></div>
 
@@ -576,5 +589,6 @@
   <script src="/static/evolution.js?w=m2"></script>
   <script src="/static/factory-floor.js?w=m2"></script>
   <script src="/static/enterprise.js?v=4.0.0"></script>
+  <script src="/static/command-center.js?v=4.0.0"></script>
 </body>
 </html>

@@ -71,20 +71,22 @@
   });
 
   // ---------- System Connection Check ----------
+  // (REARCH-001 §8) الاتصال عن الخادم حصرًا — لا يوحي بجاهزية التنفيذ:
+  // جاهزية الوكلاء تُعرض منفصلة من مسبارات المزودين في نفس اللوحة.
   function checkSystemConnection() {
     fetchJSON("/health").then(function (out) {
       if (out.ok && out.j) {
         state.systemConnected = true;
-        factorySystemStatus.textContent = "SYSTEM: CONNECTED";
+        factorySystemStatus.textContent = "SERVER: CONNECTED — الاتصال بالخادم فقط؛ جاهزية التنفيذ أدناه";
         factorySystemStatus.classList.remove("bad");
       } else {
         state.systemConnected = false;
-        factorySystemStatus.textContent = "SYSTEM: DISCONNECTED";
+        factorySystemStatus.textContent = "SERVER: DISCONNECTED";
         factorySystemStatus.classList.add("bad");
       }
     }, function () {
       state.systemConnected = false;
-      factorySystemStatus.textContent = "SYSTEM: DISCONNECTED";
+      factorySystemStatus.textContent = "SERVER: DISCONNECTED";
       factorySystemStatus.classList.add("bad");
     });
   }

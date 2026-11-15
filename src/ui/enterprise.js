@@ -115,6 +115,12 @@
   function renderOverview() {
     var body = $("overview-body");
     if (!body) return;
+    /* (REARCH-001 §4) مركز القيادة الكامل (A–F) وحدة command-center.js —
+       مسار العرض الوحيد؛ الكود أدناه احتياط صامت لو غابت الوحدة. */
+    if (window.CommandCenter && window.CommandCenter.render) {
+      window.CommandCenter.render();
+      return;
+    }
     loading(body, "جارٍ تجميع حالة المصنع من المصادر الحية…");
     Promise.all([
       Hub.fetchJSON("/health"),
@@ -320,6 +326,11 @@
           if (r.ok && r.j && r.j.id) {
             formMsg.textContent = "أُنشئ المشروع #" + r.j.id + " — فتحه الآن…";
             formMsg.className = "ent-form-msg ok";
+            /* (REARCH-001 §9) اكتمال دورة الإنشاء القانونية: توليد الخطة
+               أمر خلفي بنفس عقد مسار المحادثة (createProjectFromObjective)
+               — الخطة تصل عبر التيار والاعتماد بوابة مالك كما هو. */
+            Hub.fetchJSON("/api/projects/" + r.j.id + "/plan/generate",
+              { method: "POST" });
             setTimeout(function () {
               form.hidden = true;
               nameIn.value = ""; objIn.value = "";
@@ -345,12 +356,12 @@
       form.appendChild(formRow);
       body.appendChild(form);
 
-      /* القائمة */
-      var list = el("div", "ent-list");
-      body.appendChild(list);
+      /* القائمة — جدول مؤسسي (REARCH-001 §5) يتحول بطاقات على الهاتف */
+      var wrapT = el("div", "cmd-table-wrap");
+      body.appendChild(wrapT);
 
       function drawList() {
-        list.textContent = "";
+        wrapT.textContent = "";
         var q = projFilter.q.toLowerCase();
         var items = all.filter(function (p) {
           if (projFilter.status !== "ALL" && p.status !== projFilter.status) return false;
@@ -358,52 +369,64 @@
           return (String(p.name) + " " + String(p.objective)).toLowerCase().indexOf(q) >= 0;
         });
         if (!items.length) {
-          list.appendChild(renderEmptyNote(all.length
+          wrapT.appendChild(renderEmptyNote(all.length
             ? "لا نتائج مطابقة للبحث/التصفية الحالية."
             : "لا مشاريع بعد — أنشئ أول مشروع ليبدأ المصنع عمله."));
           return;
         }
-        items.forEach(function (p) { list.appendChild(projectRow(p)); });
+        var tbl = el("table", "ent-table");
+        var thead = el("thead"); var hr = el("tr");
+        ["المشروع", "الحالة", "السياسة", "الهدف", "آخر نشاط", ""].forEach(function (t) {
+          hr.appendChild(el("th", "", t));
+        });
+        thead.appendChild(hr); tbl.appendChild(thead);
+        var tb = el("tbody");
+        items.forEach(function (p) {
+          var tr = el("tr");
+          if (p.last_error) tr.title = "آخر خطأ: " + p.last_error;
+          var tdN = el("td"); tdN.setAttribute("data-k", "المشروع");
+          tdN.appendChild(el("span", "ent-row-title", "#" + p.id + " " + p.name));
+          tr.appendChild(tdN);
+          var tdS = el("td"); tdS.setAttribute("data-k", "الحالة");
+          tdS.appendChild(chip(p.status)); tr.appendChild(tdS);
+          var tdP = el("td", "",
+            p.execution_policy === "STRICT_ISOLATED" ? "عزل صارم" : "محلي متوافق");
+          tdP.setAttribute("data-k", "السياسة");
+          tr.appendChild(tdP);
+          var tdO = el("td", "cmd-obj-cell", p.objective || "");
+          tdO.setAttribute("data-k", "الهدف");
+          if (p.objective) tdO.title = p.objective;
+          tr.appendChild(tdO);
+          var tdW = el("td", "ent-when", fmtWhen(p.updated_at));
+          tdW.setAttribute("data-k", "آخر نشاط");
+          tr.appendChild(tdW);
+          var tdA = el("td"); tdA.setAttribute("data-k", "إجراءات");
+          var acts = el("div", "ent-row-actions");
+          var open = el("button", "btn ghost small", "فتح");
+          open.addEventListener("click", function () { openProject(p.id); });
+          acts.appendChild(open);
+          if (!p.archived_at) {
+            var arch = el("button", "btn ghost small", "أرشفة");
+            arch.addEventListener("click", function () {
+              if (!window.confirm("أرشفة المشروع #" + p.id + "؟ يبقى كاملًا قابلًا للاسترجاع.")) return;
+              arch.disabled = true;
+              Hub.fetchJSON("/api/projects/" + p.id + "/archive", { method: "POST" })
+                .then(function () { renderProjects(); })
+                .catch(function () { arch.disabled = false; });
+            });
+            acts.appendChild(arch);
+          }
+          tdA.appendChild(acts);
+          tr.appendChild(tdA);
+          tb.appendChild(tr);
+        });
+        tbl.appendChild(tb);
+        wrapT.appendChild(tbl);
       }
       drawList();
     }).catch(function (e) {
       errorBox($("projects-body"), "فشل الاتصال: " + e, renderProjects);
     });
-  }
-  function projectRow(p) {
-    var row = el("div", "ent-row");
-    var main = el("div", "ent-row-main");
-    var t = el("span", "ent-row-title", "#" + p.id + " " + p.name);
-    main.appendChild(t);
-    main.appendChild(chip(p.status));
-    if (p.execution_policy) {
-      main.appendChild(el("span", "ent-policy", p.execution_policy === "STRICT_ISOLATED"
-        ? "عزل صارم" : "محلي متوافق"));
-    }
-    main.appendChild(el("span", "ent-when", fmtWhen(p.updated_at)));
-    var objEl = el("div", "ent-row-obj", p.objective || "");
-    main.appendChild(objEl);
-    if (p.last_error) {
-      main.appendChild(el("div", "ent-row-err", "آخر خطأ: " + p.last_error));
-    }
-    row.appendChild(main);
-    var acts = el("div", "ent-row-actions");
-    var open = el("button", "btn ghost small", "فتح");
-    open.addEventListener("click", function () { openProject(p.id); });
-    acts.appendChild(open);
-    if (!p.archived_at) {
-      var arch = el("button", "btn ghost small", "أرشفة");
-      arch.addEventListener("click", function () {
-        if (!window.confirm("أرشفة المشروع #" + p.id + "؟ يبقى كاملًا قابلًا للاسترجاع.")) return;
-        arch.disabled = true;
-        Hub.fetchJSON("/api/projects/" + p.id + "/archive", { method: "POST" })
-          .then(function () { renderProjects(); })
-          .catch(function () { arch.disabled = false; });
-      });
-      acts.appendChild(arch);
-    }
-    row.appendChild(acts);
-    return row;
   }
   function openProject(id) {
     if (window.ControlCenter) window.ControlCenter.showView("chat");
@@ -479,6 +502,31 @@
             (s.last_error ? " — آخر خطأ: " + s.last_error : "");
           queue.appendChild(row);
         });
+        /* (REARCH-001 §5) فصل صادق بعد الصفوف: نشطة/منتظرة/مكتملة/فاشلة */
+        var seg = el("div", "ent-queue");
+        var groups = [
+          ["قيد العمل الآن", ["IN_PROGRESS", "RUNNING"]],
+          ["منتظرة في الطابور", ["PENDING"]],
+          ["مكتملة", ["COMPLETED", "VERIFIED", "PASS"]],
+          ["فاشلة/محجوبة", ["FAILED", "BLOCKED", "ERROR"]]
+        ];
+        groups.forEach(function (g) {
+          var inG = steps.filter(function (s) {
+            return g[1].indexOf(s.status || "") !== -1;
+          });
+          var row = el("div", "ent-queue-row");
+          row.appendChild(el("span", "ent-queue-ord", g[0]));
+          row.appendChild(el("span", "ent-queue-obj",
+            inG.length ? inG.map(function (s) { return "خطوة " + s.ordinal; }).join(" · ")
+                       : "— لا شيء"));
+          row.appendChild(el("span", "ent-chip " +
+            (g[0].indexOf("فاشلة") === 0 && inG.length ? "err"
+              : g[0] === "قيد العمل الآن" && inG.length ? "live"
+              : g[0] === "مكتملة" && inG.length ? "ok" : "dim"),
+            String(inG.length)));
+          seg.appendChild(row);
+        });
+        queue.appendChild(seg);
       }).catch(function () {
         queue.textContent = "";
         queue.appendChild(renderEmptyNote("تعذر تحميل الخطوات لهذا المشروع."));
@@ -628,6 +676,12 @@
           var pay = ev.payload ? JSON.stringify(ev.payload) : "";
           row.appendChild(el("span", "ent-feed-payload",
             pay.length > 130 ? pay.slice(0, 130) + "…" : pay));
+          /* (REARCH-001 §5) JSON الخام من النافذة التفصيلية لا من السطر */
+          row.title = "افتح تفاصيل الحدث (JSON الخام)";
+          row.style.cursor = "pointer";
+          row.addEventListener("click", function () {
+            if (Hub.openModal) Hub.openModal(ev);
+          });
           feed.appendChild(row);
         });
       }
@@ -840,6 +894,7 @@
   }
 
   /* ================= 7) المخرجات والتسليمات ================= */
+  var pendingArtifactsProject = null;   /* (REARCH-001) قفزة من مركز القيادة */
   function renderArtifacts() {
     var body = $("artifacts-body");
     if (!body) return;
@@ -927,6 +982,10 @@
       }
       sel.addEventListener("change", load);
       refresh.addEventListener("click", load);
+      if (pendingArtifactsProject) {
+        sel.value = String(pendingArtifactsProject);
+        pendingArtifactsProject = null;
+      }
       load();
     }).catch(function (e) {
       errorBox($("artifacts-body"), "فشل الاتصال: " + e, renderArtifacts);
@@ -1014,21 +1073,26 @@
           return;
         }
         items.forEach(function (ev) {
+          /* (REARCH-001 §5) جدول سجلات مؤسسي: الوقت/النوع/المشروع/المصدر/الدلالة/المعرّف
+             — JSON الخام في النافذة التفصيلية فقط (Hub.openModal) لا في القائمة */
+          var src = (ev.source || (ev.payload && (ev.payload.source || ev.payload.role)) || "—");
+          var tone = kindClass(ev.kind);
+          var toneLabel = tone === "err" ? "خطأ" : tone === "ok" ? "اكتمال"
+            : tone === "live" ? "جارٍ" : "معلومة";
           var row = el("div", "ent-log-row");
           var line = el("div", "ent-log-line");
           line.appendChild(el("span", "ent-mono ent-feed-time",
             String(ev.created_at || "").slice(11, 19)));
           line.appendChild(el("span", "ent-mono", "ev#" + ev.id));
-          line.appendChild(el("span", "ent-chip " + kindClass(ev.kind), kindLabel(ev.kind)));
-          line.appendChild(el("span", "ent-feed-payload",
-            (ev.payload ? JSON.stringify(ev.payload) : "").slice(0, 150)));
+          line.appendChild(el("span", "ent-chip " + tone, kindLabel(ev.kind)));
+          line.appendChild(el("span", "ent-mono",
+            ev.project_id != null ? "مشروع #" + ev.project_id : "—"));
+          line.appendChild(el("span", "ent-when", String(src)));
+          line.appendChild(el("span", "ent-chip " + tone, toneLabel));
           var exp = el("button", "btn ghost small", "JSON");
+          exp.title = "الـ JSON الخام الكامل في نافذة تفصيلية";
           exp.addEventListener("click", function () {
-            var old = row.querySelector(".ent-log-json");
-            if (old) { old.remove(); return; }
-            var pre = el("pre", "ent-log-json", JSON.stringify(ev, null, 2));
-            pre.setAttribute("dir", "ltr");
-            row.appendChild(pre);
+            if (Hub.openModal) Hub.openModal(ev);
           });
           line.appendChild(exp);
           row.appendChild(line);
@@ -1120,6 +1184,24 @@
     show: show,
     handles: function (name) { return !!VIEWS[name]; },
     hideAll: hideAll,
-    refresh: refreshCurrent
+    refresh: refreshCurrent,
+    /* (REARCH-001) واجهات تكامل مركز القيادة: نفس الإجراءات لا نسخ منها */
+    openProject: openProject,
+    actionsFor: function (p) { return ReviewActions(p); },
+    goProjectsNew: function () {
+      show("projects");
+      setTimeout(function () {
+        var f = $("projects-body") && $("projects-body").querySelector(".ent-form");
+        if (f) {
+          f.hidden = false;
+          var n = f.querySelector(".ent-input");
+          if (n) n.focus();
+        }
+      }, 60);
+    },
+    goArtifacts: function (pid) {
+      pendingArtifactsProject = pid;
+      show("artifacts");
+    }
   };
 })();
