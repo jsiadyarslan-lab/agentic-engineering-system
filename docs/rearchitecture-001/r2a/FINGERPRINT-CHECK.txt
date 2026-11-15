@@ -1,9 +1,9 @@
 {
  "checker": "r2a/check_fingerprints.py (R2A§6 — reproducible, hash-free output)",
  "design": "each list excludes ITSELF and includes its COUNTERPART",
- "sha256sums_entries": 158,
+ "sha256sums_entries": 161,
  "sha256sums_malformed_lines": [],
- "manifest_files_entries": 158,
+ "manifest_files_entries": 161,
  "excludes_itself": {
   "SHA256SUMS_excludes_self": true,
   "MANIFEST_excludes_self": true
@@ -12,7 +12,7 @@
   "SHA256SUMS_includes_MANIFEST": true,
   "MANIFEST_includes_SHA256SUMS": true
  },
- "shared_content_files": 157,
+ "shared_content_files": 160,
  "counterpart_exclusive_ok": true,
  "counterpart_entries": {
   "in_SHA256SUMS_only": "MANIFEST.json",
@@ -20,7 +20,7 @@
  },
  "unexpected_only_in_SHA256SUMS": [],
  "unexpected_only_in_MANIFEST": [],
- "content_verification_ok": "157/157",
+ "content_verification_ok": "160/160",
  "hash_mismatches": [],
  "size_mismatches": [],
  "missing_from_disk": [],

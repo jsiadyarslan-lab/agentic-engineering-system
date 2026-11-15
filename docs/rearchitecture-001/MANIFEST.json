@@ -1,5 +1,5 @@
 {
- "generated_at_utc": "2026-11-15T00:00:00Z",
+ "generated_at_utc": "2026-11-15T16:00:00Z",
  "before_provenance": "rr002-evidence release package (sha256 45ce0fa5879e14542aae491a1d5e5673e8786102bae8aa9ebc6a9e6d20137dce) — byte-verified originals",
  "counts": {
   "after_surfaces_51": 51,
@@ -49,7 +49,7 @@
  "files": [
   {
    "path": "REARCHITECTURE-REPORT.md",
-   "bytes": 68019
+   "bytes": 84683
   },
   {
    "path": "VISUAL-EVIDENCE-INDEX.md",
@@ -405,7 +405,7 @@
   },
   {
    "path": "r2a/CI-FINAL-COMPARISON.json",
-   "bytes": 29654
+   "bytes": 40895
   },
   {
    "path": "r2a/FINGERPRINT-CHECK.txt",
@@ -430,6 +430,18 @@
   {
    "path": "r2a/ci-raw/HEAD_push_run43647435949_job132608256598.log",
    "bytes": 35957
+  },
+  {
+   "path": "r2a/post-r2a-monitoring/MONITORING-METADATA.json",
+   "bytes": 6498
+  },
+  {
+   "path": "r2a/post-r2a-monitoring/POST_R2A_pull_request_run43653298777_job132626273534.log",
+   "bytes": 36783
+  },
+  {
+   "path": "r2a/post-r2a-monitoring/POST_R2A_push_run43653293824_job132626258765.log",
+   "bytes": 35961
   },
   {
    "path": "screenshots/lifecycle/E2_project_view_verified.png",
@@ -677,10 +689,11 @@
   },
   {
    "path": "SHA256SUMS",
-   "bytes": 17009
+   "bytes": 17410
   }
  ],
  "r1_note": "R1 evidence regenerated after FIX A/B/C — semantic truth & evidence reconciliation",
  "r2_note": "R2 delivery closure: fingerprints regenerated to self-consistent fixpoint after report reconciliation; stale REPORT/MANIFEST lines at be81bf9 disclosed in R2§5",
- "r2a_note": "R2A delivery correction: r2a/ evidence package added (final CI comparison, baseline gates, four ordered-run raw job logs, reproducible fingerprint checker + its run log); MANIFEST/SHA256SUMS regenerated to the same self-consistent fixpoint design (exclude self, include counterpart). Re-verify with: python3 r2a/check_fingerprints.py"
+ "r2a_note": "R2A delivery correction: r2a/ evidence package added (final CI comparison, baseline gates, four ordered-run raw job logs, reproducible fingerprint checker + its run log); MANIFEST/SHA256SUMS regenerated to the same self-consistent fixpoint design (exclude self, include counterpart). Re-verify with: python3 r2a/check_fingerprints.py",
+ "r2b_note": "R2B final monitoring evidence & scheduler retirement: post-R2A monitoring runs #67/#68 raw logs archived verbatim in r2a/post-r2a-monitoring/ with metadata (incl. scheduler 530590 retirement record); CI-FINAL-COMPARISON.json gained the POST_R2A_MONITORING set; fingerprints regenerated to self-consistent fixpoint after these additions"
 }
