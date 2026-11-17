@@ -71,6 +71,8 @@ async function setup(page) {
     await setup(desktop);
     await desktop.goto(BASE,{waitUntil:"domcontentloaded"});
     await desktop.waitForSelector("#projects-list a.nav-item",{timeout:15000});
+    const docWidth=await desktop.evaluate(()=>document.documentElement.scrollWidth);
+    assert.ok(docWidth <= 1368,"RTL horizontal overflow: "+docWidth+"px for a 1366px viewport");
     assert.match(await desktop.locator("#thread").innerText(),/ماذا تريد أن تنجز اليوم/);
     await desktop.screenshot({path:path.join(OUTPUT,"01-home-desktop.png"),fullPage:true});
     await desktop.goto(BASE+"#/p/4",{waitUntil:"domcontentloaded"});
