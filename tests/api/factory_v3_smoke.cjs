@@ -12,6 +12,7 @@ const serverState={id:4,name:'مشروع الإنتاج #4',status:'PAUSED',obje
   gates:[],phases:[],executions:[],evidence:[],events:[],plan:null};
 function response(data){return{ok:true,status:200,text:async()=>JSON.stringify(data)}}
 const calls=[];
+let holdSecondRead=false, releaseSecondRead=null;
 async function fetchMock(url,opts={}){
   calls.push(url);
   if(url==='/api/chat/stream'){
@@ -28,6 +29,7 @@ async function fetchMock(url,opts={}){
     let n=0;
     return{ok:true,status:200,body:{getReader(){return{async read(){
       if(n>=events.length)return{done:true};
+      if(holdSecondRead&&n===1){await new Promise(resolve=>{releaseSecondRead=resolve});holdSecondRead=false;}
       return{done:false,value:new TextEncoder().encode(events[n++])}
     }}}}};
   }
@@ -84,6 +86,24 @@ async function settle(){
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
   assert(calls.includes('/api/conversations/22/move-to-project'),'new chat must be linked to project');
   assert(!calls.some(x=>/\/plan\/approve|\/resume|\/gates\//.test(x)),'a question must not execute owner actions');
+  browser.location.hash='#/p/4/chat';
+  browser.__test.state.conversationId=null;
+  browser.__test.state.messages=null;
+  browser.__test.state.error='';
+  holdSecondRead=true;
+  const pending=browser.__test.submitChat({});
+  await settle();
+  assert.equal(typeof releaseSecondRead,'function','test stream must pause after first bind');
+  browser.location.hash='#/p/4/chat/23';
+  browser.__test.state.conversationId=23;
+  browser.__test.state.messages=null;
+  browser.__test.paint();
+  assert(!root.innerHTML.includes('قيد الإرسال'),'pending reply must not render in another conversation');
+  releaseSecondRead();
+  await pending;
+  assert.equal(browser.__test.state.conversationId,23,'in-flight reply must not switch currently selected conversation');
+  assert.equal(browser.__test.route().conversationId,23,'navigation link must remain on conversation 23');
+
   browser.location.hash='#/p/4/outputs';
   browser.__test.state.artifacts={artifacts:Array.from({length:35},(_,i)=>({
     name:'article-'+i+'.html',kind:'file',step_id:i+1,evidence_id:100+i,verdict:'UNVERIFIED',
