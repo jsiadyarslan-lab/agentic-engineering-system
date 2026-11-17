@@ -96,5 +96,17 @@ async function settle(){
   assert(root.innerHTML.includes('build.js'),'code filter must show code evidence');
   assert(root.innerHTML.includes('حكم دليل الخطوة: FAILED'),'step verdict must not be upgraded');
   assert(!root.innerHTML.includes('article-0.html'),'code filter must exclude HTML pages');
+  browser.location.hash='#/p/4/runs';
+  browser.__test.state.details={...serverState,plan:{id:12,approved_by_owner:true},
+    phases:[{id:41,plan_id:11,title:'Older'},{id:42,plan_id:12,title:'Current'}]};
+  browser.__test.state.steps={steps:[
+    {id:111,phase_id:41,phase_title:'Older',objective:'خطوة تاريخية فاشلة',status:'FAILED',attempts:3},
+    {id:112,phase_id:42,phase_title:'Current',objective:'خطوة حاليّة ناجحة',status:'COMPLETED',attempts:1}
+  ]};
+  browser.__test.paint();
+  assert(root.innerHTML.includes('خطوات الخطة الحالية (1)'),'current plan should count only its steps');
+  assert(root.innerHTML.includes('خطوة حاليّة ناجحة'),'actual objective field must be displayed');
+  assert(root.innerHTML.includes('الخطط القديمة (1 خطوة)'),'historical plan must be separate');
+
   process.stdout.write('AES_CHAT_UI_SMOKE_PASS\n');
 })().catch(e=>{console.error(e);process.exitCode=1});
