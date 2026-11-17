@@ -108,3 +108,16 @@ def test_node_browser_smoke_contract():
                             timeout=25)
     assert result.returncode == 0, result.stdout + "\\n" + result.stderr
     assert "AES_CHAT_UI_SMOKE_PASS" in result.stdout
+
+def test_html_artifact_preview_is_sandboxed_and_never_claims_site_accepted():
+    source = PAGE.read_text(encoding="utf-8")
+    assert 'sandbox=""' in source
+    assert 'referrerpolicy="no-referrer"' in source
+    assert "script-src &#39;none&#39;" in source
+    assert "connect-src &#39;none&#39;" in source
+    assert "form-action &#39;none&#39;" in source
+    assert "E(isolatedDoc)" in source
+    assert "state.previewMode" in source
+    assert "معاينة مرئية آمنة" in source
+    assert "لا يمثل اختبار قبول" in source
+    assert "تعذّر جلب قائمة المخرجات" in source
