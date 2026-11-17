@@ -9,7 +9,7 @@
   const safeNum = v => Number.isInteger(+v) && +v > 0 ? +v : null;
   const state = {
     route:{pid:null,cid:null}, projects:[],conversations:[],project:null,snapshot:null,
-    messages:[],steps:null,artifacts:null,preview:null, providers:null,readiness:null,
+    messages:[],steps:null,artifacts:null,preview:null, providers:null,readiness:null,modelConfig:null,webMode:"auto",
     mode:"ask",panel:"runs",panelOpen:false,sideOpen:false,
     dark:true,revision:0,loading:false,busy:false,streaming:false,streamText:"",
     streamStatus:"",streamMessage:null,stopRequested:false,pendingMessage:null,
@@ -251,26 +251,76 @@
       '<div class="card"><h4>معاينة منتج حقيقي</h4><p>يمكنك فحص الملفات النصية المثبتة من «المخرجات». الروابط الخارجية تُفتح خارج المصنع حتى تتوفر جلسة متصفح مصرح بها.</p>'+
       action("المخرجات","tab-outputs")+'</div>';
   }
+
   function renderTools(){
     if(!state.providers)return '<div class="empty">جارٍ قراءة المزودات من الخادم…</div>';
     const items=Array.isArray(state.providers)?state.providers:Array.isArray(state.providers.providers)?state.providers.providers:[];
-    return '<div class="notice">المزودات المدرجة من API الحي. الإضافة غير المتاحة لا يُشار إليها بوصفها متصلة.</div>'+
-      (items.length?items.map(p=>'<div class="card"><div class="card-head"><h4>'+esc(p.name||p.provider||p.id||"مزود")+'</h4>'+
-      status(p.status||"مسجل")+'</div><p class="mini">'+esc(p.description||"تُدار صلاحيات هذه الإضافة من إعدادات المزود الأصلية.")+'</p></div>').join(""):
-      '<div class="empty">لم يُرجع API أي مزودات.</div>')+
-      '<div class="card"><h4>المتصفح الخارجي</h4><p>لا توجد صلاحيات تحكم بمتصفح حي في هذه الواجهة.</p></div>';
+    return '<div class="notice">هذه حالة التسجيل في قاعدة الخادم، وليست إثباتًا بأن كل استدعاء نموذج سينجح. لا تُعرض مفاتيح API.</div>'+
+      (items.length?items.map(p=>{
+        const configEnabled=(p.configurations||[]).some(c=>c.enabled);
+        const available=Boolean(p.enabled&&configEnabled&&(p.auth_type!=="bearer"||p.has_key));
+        return '<div class="card"><div class="card-head"><h4>'+esc(p.display_name||p.name||p.id||"مزود")+'</h4>'+
+          status(available?"مكوّن":"غير جاهز")+'</div>'+
+          '<p class="mini">'+esc(available?"مسجل ومهيأ مبدئيًا؛ يتطلب اختبار قدرة مستقل.":p.has_key===false?"لا يوجد مفتاح محفوظ.":"التكوين أو التفعيل غير مكتمل.")+'</p>'+
+          '<div class="mini">التكوينات: '+esc((p.configurations||[]).length)+'</div></div>';
+      }).join(""):'<div class="empty">لم يُرجع API أي مزودات.</div>')+
+      '<div class="card"><h4>المتصفح المدمج</h4><p>التحكم بمتصفح خارجي يتطلب جلسة متصفح وموافقات؛ لا يوجد هذا العقد في API الحالي.</p>'+
+      action("متصفح التطور الموجود","tab-browser")+'</div>';
   }
   function renderSettings(){
     const theme=document.documentElement.dataset.theme||"dark";
+    const roles=state.modelConfig?.roles||[];
+    const chat=roles.find(x=>x.key==="chat")?.selection||{};
+    const providers=state.modelConfig?.providers||[];
+    const options=providers.map(p=>
+      '<option value="'+esc(p.id)+'" '+(p.id===chat.provider?"selected":"")+'>'+esc(p.label||p.id)+
+      (p.available?"":" · غير متاح")+'</option>').join("");
+    const roleList=roles.map(r=>
+      '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span>'+
+      esc(r.label||r.key)+'</span><small>'+esc((r.selection?.provider||"—")+" / "+(r.selection?.model||"—"))+'</small></div>').join("");
     return '<div class="card"><h4>المظهر</h4><div class="action-row">'+
       action("داكن","theme-dark",theme==="dark"?"primary":"")+
       action("فاتح","theme-light",theme==="light"?"primary":"")+'</div></div>'+
-      '<div class="card"><h4>حالة البيئة</h4>'+
+      '<div class="card"><h4>بحث المحادثة</h4><p>اختيار طريقة استخدام البحث في الرسائل القادمة فقط.</p>'+
+      '<div class="action-row">'+["auto","on","off"].map(m=>
+        action(({auto:"تلقائي",on:"بحث صريح",off:"بدون ويب"})[m],"web-"+m,state.webMode===m?"primary":"")).join("")+
+      '</div></div>'+
+      '<div class="card"><h4>نماذج المحادثة</h4><p>تغيير ربط نموذج المحادثة يحفظ إعدادًا عامًا يؤثر على الطلبات المقبلة.</p>'+
+      (!state.modelConfig?'<div class="empty">جارٍ قراءة إعدادات النماذج…</div>':
+      '<form id="chat-settings-form"><label for="model-provider">المزود</label>'+
+      '<select id="model-provider" name="provider" class="surface-input" required>'+options+'</select>'+
+      '<label for="model-id">معرف النموذج</label>'+
+      '<input id="model-id" name="model" class="surface-input mono" required maxlength="200" value="'+esc(chat.model||"")+'">'+
+      '<input type="hidden" name="configuration" value="'+esc(chat.configuration||"")+'">'+
+      '<div class="action-row"><button class="btn primary" type="submit">حفظ ربط المحادثة</button></div></form>')+'</div>'+
+      '<div class="card"><h4>ربط الأدوار المسجل</h4>'+(roleList||'<p>لم تصل بيانات الدور.</p>')+'</div>'+
+      '<div class="card"><h4>حالة البيئة الفعلية</h4>'+
       (state.readiness?'<pre class="preview">'+esc(JSON.stringify(state.readiness,null,2))+'</pre>':
       '<p>جارٍ قراءة جاهزية الخادم…</p>')+'</div>'+
-      '<div class="card"><h4>المزوّدات والإضافات</h4><p>اطلع على حالة مزودات النماذج المسجلة دون كشف مفاتيحها.</p>'+action("فتح الإضافات","tools")+'</div>'+
-      '<div class="card"><h4>إدارة متقدمة</h4><p>الإعدادات غير المدعومة محفوظة في الواجهة السابقة إلى حين نقل عقودها، لا نمثلها بأزرار صورية.</p>'+
+      '<div class="card"><h4>الإضافات</h4><p>استعرض المزودات الفعلية دون نقل مفاتيحها إلى المتصفح.</p>'+
+      action("الإضافات","tools")+'</div>'+
+      '<div class="card"><h4>الإعدادات المتقدمة</h4><p>لا تُعرض واجهة مزيفة لميزات لم يُنقل عقد API الخاص بها.</p>'+
       '<a class="btn" href="/static/factory-legacy.html">الواجهة السابقة</a></div>';
+  }
+  async function saveChatSettings(form) {
+    if(state.busy)return;
+    const fd=new FormData(form),provider=String(fd.get("provider")||"").trim(),
+      model=String(fd.get("model")||"").trim(),
+      configuration=String(fd.get("configuration")||"").trim();
+    if(!provider||!model)return report("المزود والنموذج مطلوبان.",true);
+    if(!window.confirm("ستُحفظ إعدادات نموذج المحادثة في قاعدة المصنع، وستؤثر على الرسائل القادمة. متابعة؟"))return;
+    state.busy=true;
+    try {
+      const result=await request("/api/models/config",{
+        method:"PUT",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({chat:{provider,model,configuration}})
+      },20000);
+      if(result?.success!==true)throw Error("رد غير متوقع؛ لم نؤكد الحفظ.");
+      state.modelConfig=await request("/api/models/config",{},12000);
+      report("أكد الخادم حفظ نموذج المحادثة. لن تتأثر الرسائل المحفوظة.");
+      renderPanel();
+    }catch(e){report("فشل حفظ الإعدادات: "+e.message,true);}
+    finally{state.busy=false;}
   }
   async function loadPanelData(mode) {
     const key=state.revision,id=state.route.pid;
@@ -284,9 +334,14 @@
       }else if(mode==="tools"&&state.providers===null){
         const d=await request("/api/providers");
         state.providers=d;renderPanel();
-      }else if(mode==="settings"&&state.readiness===null){
-        const d=await request("/api/environment/readiness");
-        state.readiness=d;renderPanel();
+      }else if(mode==="settings"){
+        const pending=[];
+        if(state.readiness===null)pending.push(request("/api/environment/readiness")
+          .then(d=>{state.readiness=d;}));
+        if(state.modelConfig===null)pending.push(request("/api/models/config")
+          .then(d=>{state.modelConfig=d;}));
+        if(pending.length)await Promise.all(pending);
+        renderPanel();
       }
     }catch(e){report("تعذر فتح القسم: "+e.message,true);}
   }
@@ -438,7 +493,7 @@
     state.streaming=true;state.streamText="";state.streamMessage=null;
     state.streamStatus="إرسال إلى المحادثة الحقيقية…";state.stopRequested=false;
     const key=state.revision;state.lastSeq=0;
-    const body={message,conversation_id:state.route.cid||null,project_id:state.route.pid||null,web:"auto"};
+    const body={message,conversation_id:state.route.cid||null,project_id:state.route.pid||null,web:state.webMode};
     const controller=new AbortController();state.streamAbort=controller;
     renderThread(true);
     try{
@@ -588,6 +643,13 @@
     if(id.startsWith("file-")){await previewFile(Number(id.slice(5)));return;}
     if(id==="close-preview"){state.preview=null;renderPanel();return;}
     if(id==="download-preview"){downloadPreview();return;}
+    if(id.startsWith("web-")){
+      const webMode=id.slice(4);
+      if(!["auto","on","off"].includes(webMode))return;
+      state.webMode=webMode;
+      localStorage.setItem("aes:chat:web-mode",webMode);
+      renderPanel();return;
+    }
     if(id.startsWith("theme-")){
       const theme=id.slice(6);
       if(!["dark","light"].includes(theme))return;
@@ -603,6 +665,7 @@
   }
   async function onSubmit(e){
     if(e.target?.id==="create-project-form"){e.preventDefault();await createProject(e.target);return;}
+    if(e.target?.id==="chat-settings-form"){e.preventDefault();await saveChatSettings(e.target);return;}
     if(e.target?.id!=="composer-form")return;
     e.preventDefault();const box=$("prompt"),message=box.value.trim();
     if(!message)return;
@@ -641,6 +704,8 @@
       if(!document.hidden&&!state.streaming&&!state.busy&&state.route.pid)loadProject(state.revision);
     },30000);
     document.documentElement.dataset.theme=localStorage.getItem("aes:chat:theme")==="light"?"light":"dark";
+    const priorWebMode=localStorage.getItem("aes:chat:web-mode");
+    state.webMode=["auto","on","off"].includes(priorWebMode)?priorWebMode:"auto";
     syncMode();openRoute();
   }
   wire();
