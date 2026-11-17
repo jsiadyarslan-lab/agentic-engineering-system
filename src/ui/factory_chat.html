@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>مصنع الهندسة — مساحة العمل</title>
+<meta name="description" content="المحادثات والمشاريع والتشغيل والمخرجات والأدلة في مساحة عمل واحدة.">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/chat-workspace.css">
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="الشريط الجانبي">
+    <div class="sb-head"><div class="brand-logo" aria-hidden="true">✳</div><div><div class="sb-title">مصنع الهندسة</div><div class="sb-sub">AES · مساحة العمل</div></div><div class="spacer"></div></div>
+    <button id="new-chat" class="nav-primary" data-action="new-chat" type="button"><span>✎</span><strong>محادثة جديدة</strong><span class="spacer"></span><span>＋</span></button>
+    <div class="sb-scroll">
+      <div class="sb-label">العمل</div>
+      <button class="nav-item" type="button" data-action="home"><span>⌂</span><span class="t">الرئيسية</span></button>
+      <button class="nav-item" type="button" data-action="create-project"><span>□</span><span class="t">مشروع جديد</span></button>
+      <button class="nav-item" type="button" data-action="all-decisions"><span>◇</span><span class="t">قراراتي</span></button>
+      <button class="nav-item" type="button" data-action="search"><span>⌕</span><span class="t">البحث</span></button>
+      <div class="sb-label">المشاريع الحية</div>
+      <div id="projects-list" class="stack"><div class="empty">جارٍ جلب المشاريع…</div></div>
+      <div class="sb-label">المحادثات المحفوظة</div>
+      <div id="chats-list" class="stack"><div class="empty">جارٍ جلب المحادثات…</div></div>
+    </div>
+    <div class="sb-bottom">
+      <button class="nav-item" type="button" data-action="tools"><span>◈</span><span class="t">الأدوات والإضافات</span></button>
+      <button class="nav-item" type="button" data-action="settings"><span>⚙</span><span class="t">الإعدادات</span></button>
+      <a class="nav-item" href="/static/factory-legacy.html" rel="noopener"><span>↗</span><span class="t">واجهة المصنع السابقة</span></a>
+    </div>
+  </aside>
+  <div class="main-area">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="icon-btn" id="sidebar-toggle" data-action="sidebar" type="button" aria-label="فتح القائمة">☰</button><strong id="current-title">مساحة العمل</strong><span id="current-status" class="live-light">جارٍ الاتصال</span></div>
+      <div class="top-actions"><button class="icon-btn hide-mobile" data-action="refresh" type="button" title="تحديث الحالة" aria-label="تحديث">↻</button><button class="icon-btn" data-action="inspector" type="button" aria-label="المخرجات والتشغيل">◫</button></div>
+    </header>
+    <div class="workspace">
+      <section class="chat-area" aria-label="المحادثة والعمل">
+        <div class="scrollbody" id="scrollbody">
+          <div class="thread" id="thread">
+            <div class="intro"><div class="mark">✳</div><h1>ماذا تريد أن تنجز اليوم؟</h1><p>اسأل، ابدأ مشروعًا، أو افتح مخرجات عملك الحقيقي.</p></div>
+          </div>
+        </div>
+        <div class="composer-wrap">
+          <form class="composer" id="composer-form">
+            <label for="prompt" class="sr-only">اكتب رسالة أو هدف مشروع</label>
+            <textarea id="prompt" rows="1" maxlength="32000" placeholder="اكتب رسالة…"></textarea>
+            <div class="composer-tools">
+              <div class="mode-switch" role="group" aria-label="نوع الطلب"><button type="button" id="mode-ask" data-action="mode-ask" class="active">اسأل</button><button type="button" id="mode-build" data-action="mode-build">أنشئ مشروعًا</button></div>
+              <button class="icon-btn" type="button" data-action="inspector" title="المخرجات والأدلة">◫</button>
+              <div class="spacer"></div>
+              <button class="btn" type="button" id="stop-chat" data-action="stop-chat" hidden>إيقاف</button>
+              <button class="send" type="submit" id="send" aria-label="إرسال">↑</button>
+            </div>
+          </form>
+          <p class="composer-hint" id="composer-hint">المحادثة لا تشغّل المهام تلقائيًا. عمليات المصنع تتطلب قرارًا صريحًا.</p>
+        </div>
+      </section>
+      <aside class="panel" id="inspector" aria-label="تفاصيل المشروع والمخرجات" hidden>
+        <div class="panel-header"><strong id="panel-title">لوحة العمل</strong><button class="icon-btn" data-action="inspector-close" aria-label="إغلاق التفاصيل" type="button">✕</button></div>
+        <div class="panel-scroll"><div class="panel-tabbar" id="panel-tabs">
+          <button class="btn" data-action="tab-runs" type="button">التشغيل</button>
+          <button class="btn" data-action="tab-outputs" type="button">المخرجات</button>
+          <button class="btn" data-action="tab-decisions" type="button">القرارات</button>
+          <button class="btn" data-action="tab-browser" type="button">المراجع</button>
+        </div><div id="panel-content"><div class="empty">افتح مشروعًا لرؤية معلوماته.</div></div></div>
+      </aside>
+    </div>
+  </div>
+</div>
+<div id="veil" class="screen-veil" hidden data-action="close-overlays"></div>
+<div id="dialog-host" hidden></div>
+<div class="sr-only" aria-live="polite" id="live-announce"></div>
+<script src="/static/chat-workspace.js" defer></script>
+</body>
+</html>

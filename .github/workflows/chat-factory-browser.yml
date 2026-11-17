@@ -1,0 +1,64 @@
+name: AES Chat Factory browser acceptance
+on:
+  pull_request:
+    paths:
+      - 'src/ui/chat-workspace.*'
+      - 'src/ui/factory_chat.html'
+      - 'src/api/routes.py'
+      - 'tests/ui/chat_factory_browser.cjs'
+      - '.github/workflows/chat-factory-browser.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: aes-chat-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install API dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Verify project chat contract
+        run: pytest -q tests/api/test_chat_factory_live.py --disable-warnings
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start isolated local AES API
+        run: |
+          PYTHONPATH=src python -m uvicorn api.routes:app --host 127.0.0.1 --port 8010 > /tmp/aes-chat-uvicorn.log 2>&1 &
+          echo $! > /tmp/aes-chat-uvicorn.pid
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8010/workspace >/dev/null; then
+              echo 'AES_WORKSPACE_LOCAL_READY'
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/aes-chat-uvicorn.log
+          exit 1
+      - name: Chromium desktop and mobile acceptance
+        run: node tests/ui/chat_factory_browser.cjs
+      - name: Copy server log
+        if: always()
+        run: |
+          mkdir -p browser-artifacts
+          if test -f /tmp/aes-chat-uvicorn.log; then cp /tmp/aes-chat-uvicorn.log browser-artifacts/server.log; fi
+      - name: Upload screenshots and server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aes-chat-factory-browser-evidence
+          path: |
+            browser-artifacts/*.png
+            browser-artifacts/server.log
+          if-no-files-found: warn
