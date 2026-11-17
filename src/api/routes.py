@@ -241,6 +241,8 @@ class ChatStartIn(BaseModel):
 
     message: str = Field(min_length=1, max_length=32_000)
     conversation_id: int | None = None
+    # Project scope must be committed before the first SSE event.
+    project_id: int | None = Field(default=None, ge=1)
     provider: str | None = None
     model: str | None = None
     web: str = Field(default="auto",
@@ -930,18 +932,38 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
     """
     from api.streaming import next_seq_base
 
-    # المحادثة: إنشاء إن لم تعط — نمط محادثة (§14)
+    # A scoped project chat is attached before append_message and
+    # conversation.bind. An existing conversation cannot cross project IDs.
+    if body.project_id is not None:
+        from workflow import service as workflow_service
+        if workflow_service.get_project(_sessions, body.project_id) is None:
+            raise HTTPException(
+                status_code=404, detail=f"مشروع غير معروف: {body.project_id}"
+            )
     if body.conversation_id is None:
         conversation = convo.create_conversation(
             _sessions, title=body.message, mode="chat"
         )
         conversation_id = conversation.id
-    elif convo.get_conversation(_sessions, body.conversation_id) is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"محادثة غير معروفة: {body.conversation_id}",
-        )
+        if body.project_id is not None:
+            convo.move_conversation_to_project(
+                _sessions, conversation_id, body.project_id
+            )
     else:
+        existing_conversation = convo.get_conversation(
+            _sessions, body.conversation_id
+        )
+        if existing_conversation is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"محادثة غير معروفة: {body.conversation_id}",
+            )
+        if (body.project_id is not None
+                and existing_conversation.project_id != body.project_id):
+            raise HTTPException(
+                status_code=409,
+                detail="المحادثة خارج نطاق المشروع المطلوب — لا إرسال",
+            )
         conversation_id = body.conversation_id
     convo.append_message(
         _sessions, conversation_id, role="user", content=body.message
