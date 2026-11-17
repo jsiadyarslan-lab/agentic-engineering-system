@@ -20,6 +20,8 @@ async function fetchMock(url,opts={}){
       {kind:'conversation.bind',scope:{conversation_id:id},details:{conversation_id:id}},
       {kind:'message_delta',scope:{conversation_id:id},delta:'رد '},
       {kind:'message_delta',scope:{conversation_id:999},delta:'تسرب ممنوع'},
+      {kind:'message_delta',delta:'حدث بلا نطاق'},
+      {kind:'message_completed',scope:{conversation_id:999}},
       {kind:'message_delta',scope:{conversation_id:id},delta:'فعلي'},
       {kind:'message_completed',scope:{conversation_id:id}}
     ].map(x=>'data: '+JSON.stringify(x)+'\n\n');
@@ -38,11 +40,13 @@ async function fetchMock(url,opts={}){
 }
 let lastHash='#/p/4/chat';
 const root={innerHTML:'',scrollTop:0,scrollHeight:100};
+const listeners={};
 const browser={
   document:{
     getElementById(_id){return root},
     documentElement:{setAttribute(){}},
-    addEventListener(){},
+    addEventListener(name,fn){listeners[name]=fn},
+    activeElement:null,
     hidden:false
   },
   location:{hash:lastHash},
@@ -63,11 +67,16 @@ async function settle(){
   assert(root.innerHTML.includes('aes-chat-layout'),'chat surface must render');
   assert(root.innerHTML.includes('PAUSED'),'backend project status must remain visible');
   assert(root.innerHTML.includes('محادثة حقيقية'),'existing conversations must load');
+  assert.equal(typeof listeners.input,'function','input draft handler must be registered');
+  listeners.input({target:{name:'message',value:'مسودة لم ترسل بعد',closest:()=>true}});
+  browser.__test.paint();
+  assert(root.innerHTML.includes('مسودة لم ترسل بعد'),'draft must persist after a view render');
   await browser.__test.submitChat({});
   await settle();
   assert.equal(browser.__test.state.conversationId,22,'stable conversation binding must be used');
   assert.equal(browser.__test.state.error,'','no false error for complete stream');
   assert(!browser.__test.state.liveText.includes('تسرب ممنوع'),'foreign SSE scope must be rejected');
+  assert(!browser.__test.state.liveText.includes('حدث بلا نطاق'),'unscoped SSE must be rejected');
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
   assert(calls.includes('/api/conversations/22/move-to-project'),'new chat must be linked to project');
   assert(!calls.some(x=>/\/plan\/approve|\/resume|\/gates\//.test(x)),'a question must not execute owner actions');
