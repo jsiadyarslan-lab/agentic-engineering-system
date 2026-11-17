@@ -370,6 +370,7 @@ async function submitCreate(form){
 async function submitChat(form){
  if(state.busy)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
  const projectAtStart=route().id,originDraft=draftKey(),conversationAtStart=state.conversationId||null;let cid=conversationAtStart,finished=false,wasError=false;
+ const originVisible=()=>route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
  state.busy=true;state.pendingProjectId=projectAtStart;state.pendingConversationId=conversationAtStart;state.activeChatId=cid;state.stopPending=false;state.error='';state.liveText='';state.pendingText=message;state.streamNotice='يتصل';state.status='';paint();
  try{
    const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),90000);
@@ -383,12 +384,12 @@ async function submitChat(form){
        let ev;try{ev=JSON.parse(lines.map(x=>x.slice(5)).join('\n').trim())}catch{return}
        const candidate=Number(ev.scope?.conversation_id||ev.details?.conversation_id||ev.conversation_id);
        if(['conversation.bind','message_delta','message_completed','chat.error','message_started','chat.status'].includes(ev.kind)&&(!Number.isInteger(candidate)||candidate<=0))return;
-       if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate;state.activeChatId=cid}
-       if(ev.kind==='message_delta')state.liveText+=String(ev.delta??ev.text??'');
-       if(ev.kind==='chat.status'||ev.kind==='message_started')state.streamNotice=ev.text||ev.status||'يكتب الآن';
+       if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate;if(originVisible())state.activeChatId=cid}
+       if(ev.kind==='message_delta'&&originVisible())state.liveText+=String(ev.delta??ev.text??'');
+       if((ev.kind==='chat.status'||ev.kind==='message_started')&&originVisible())state.streamNotice=ev.text||ev.status||'يكتب الآن';
        if(ev.kind==='message_completed')finished=true;
-       if(ev.kind==='chat.error'){wasError=true;state.error=ev.text||ev.code||'فشل توليد الرد'}
-       const now=Date.now();if(now-lastRender>90||finished||wasError){paint();lastRender=now;const el=document.getElementById('aes-chat-thread');if(el)el.scrollTop=el.scrollHeight}
+       if(ev.kind==='chat.error'){wasError=true;if(originVisible())state.error=ev.text||ev.code||'فشل توليد الرد'}
+       const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;const el=document.getElementById('aes-chat-thread');if(el)el.scrollTop=el.scrollHeight}
      };
      while(true){const x=await reader.read();if(x.done)break;bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true}).replace(/\r\n/g,'\n');let k;while((k=buf.indexOf('\n\n'))!==-1){onFrame(buf.slice(0,k));buf=buf.slice(k+2)}}
      if(buf.trim())onFrame(buf);
@@ -399,8 +400,8 @@ async function submitChat(form){
     if(stillOnOrigin){history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);state.conversationId=cid;await loadExtra(state.revision);await loadMessages()}}
    else state.error='لم يعد معرف المحادثة';
    if(!wasError&&!state.error){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
- }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
- finally{state.busy=false;state.pendingProjectId=null;state.pendingConversationId=null;state.activeChatId=null;state.stopPending=false;state.pendingText='';if(!state.error)state.liveText='';paint()}
+ }catch(e){if(originVisible())state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&originVisible()){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
+ finally{const stillOnOrigin=originVisible();state.busy=false;state.pendingProjectId=null;state.pendingConversationId=null;state.activeChatId=null;state.stopPending=false;state.pendingText='';if(!stillOnOrigin||!state.error)state.liveText='';paint()}
 }
 document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
 document.addEventListener('input',e=>{const t=e.target;if(t?.name==='message'&&t.closest?.('#send-chat'))state.drafts[draftKey()]=t.value;});
