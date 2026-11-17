@@ -392,7 +392,7 @@ async function submitChat(form){
     const stillOnOrigin=route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
     if(stillOnOrigin){history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);state.conversationId=cid;await loadExtra(state.revision);await loadMessages()}}
    else state.error='لم يعد معرف المحادثة';
-   if(!wasError&&!state.error){if(route().id===projectAtStart&&route().view==='chat')state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
+   if(!wasError&&!state.error){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
  }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
  finally{state.busy=false;state.pendingProjectId=null;state.pendingConversationId=null;state.activeChatId=null;state.stopPending=false;state.pendingText='';if(!state.error)state.liveText='';paint()}
 }
