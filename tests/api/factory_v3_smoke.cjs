@@ -36,6 +36,9 @@ async function fetchMock(url,opts={}){
   if(url==='/api/projects/4/conversations')return response({conversations:[{id:22,title:'محادثة حقيقية'}]});
   if(url==='/api/conversations/22/messages')return response({messages:[{role:'user',content:'تحدث'},{role:'assistant',content:'رد فعلي'}]});
   if(url==='/api/conversations/22/move-to-project')return response({project_id:4});
+  if(url==='/api/research/providers')return response({providers:[{name:'Real Search Source',effective_status:'STALE',state_reason:'Probe expired'}]});
+  if(url==='/api/execution/environments')return response({environments:[{id:7,name:'OCI Worker',backend:'REMOTE_WORKER',state:'NOT_READY',is_default:true}]});
+  if(url==='/api/models/config')return response({roles:[{key:'chat',label:'محادثة',selection:{provider:'real-provider',model:'real-model'}}],providers:[{id:'real-provider',label:'Model Provider',state:'غير متصل',reason:'No key'}]});
   throw new Error('Unexpected API call: '+url);
 }
 let lastHash='#/p/4/chat';
@@ -57,7 +60,7 @@ const browser={
   AbortController,TextEncoder,TextDecoder,Date,JSON,Number,String,
   console
 };
-vm.runInNewContext(js+'\n;globalThis.__test={route,state,submitChat,paint};',browser,{timeout:1500});
+vm.runInNewContext(js+'\n;globalThis.__test={route,state,submitChat,paint,loadAll};',browser,{timeout:1500});
 async function settle(){
   for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));
 }
@@ -107,6 +110,15 @@ async function settle(){
   assert(root.innerHTML.includes('خطوات الخطة الحالية (1)'),'current plan should count only its steps');
   assert(root.innerHTML.includes('خطوة حاليّة ناجحة'),'actual objective field must be displayed');
   assert(root.innerHTML.includes('الخطط القديمة (1 خطوة)'),'historical plan must be separate');
+  browser.location.hash='#/tools';
+  await browser.__test.loadAll();
+  assert(root.innerHTML.includes('Real Search Source'),'real research provider must be shown');
+  assert(root.innerHTML.includes('STALE'),'expired research probe must not be displayed as READY');
+  assert(root.innerHTML.includes('OCI Worker'),'real execution environment must be shown');
+  browser.location.hash='#/settings';
+  await browser.__test.loadAll();
+  assert(root.innerHTML.includes('real-model'),'real role model assignment must be shown');
+  assert(root.innerHTML.includes('غير متصل'),'provider configuration missing must remain visible');
 
   process.stdout.write('AES_CHAT_UI_SMOKE_PASS\n');
 })().catch(e=>{console.error(e);process.exitCode=1});
