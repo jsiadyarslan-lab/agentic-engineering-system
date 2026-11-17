@@ -95,3 +95,16 @@ def test_inline_javascript_parses_under_node_if_available(tmp_path):
     proc = subprocess.run([node, "--check", str(script)], capture_output=True,
                           text=True, timeout=20)
     assert proc.returncode == 0, proc.stderr
+
+def test_node_browser_smoke_contract():
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node.js is not installed")
+    script = Path(__file__).with_name("factory_v3_smoke.cjs")
+    result = subprocess.run([node, str(script)], text=True, capture_output=True,
+                            timeout=25)
+    assert result.returncode == 0, result.stdout + "\\n" + result.stderr
+    assert "AES_CHAT_UI_SMOKE_PASS" in result.stdout
