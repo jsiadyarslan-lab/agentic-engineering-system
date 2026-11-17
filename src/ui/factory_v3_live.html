@@ -55,7 +55,7 @@ body{font-size:15px;line-height:1.7}
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
@@ -161,10 +161,27 @@ function decisions(){
 }
 function outputs(){
  const r=route();if(!r.id)return msg('افتح مشروعًا لعرض مخرجاته.');
- const list=state.artifacts?.artifacts;
- return heading('مخرجات المشروع','ملفات مثبتة في أدلة التشغيل. لا توجد مخرجات تجريبية.')+
- (!list?msg('جارٍ طلب المخرجات من الخادم...'):list.length?list.map((a,i)=>'<div class="card row wrap"><div><b>'+E(a.name||'ملف')+'</b><p class="muted">'+E(a.kind)+' · خطوة '+E(a.step_id||'—')+' · '+E(a.verdict||'بلا حكم')+'</p><small class="mono">'+E(a.sha256||'بصمة غير متوفرة')+'</small></div><div class="actions">'+(a.kind==='file'&&a.step_id?btn('معاينة النص','artifact-'+i,'primary'):'')+'</div></div>').join(''):msg('لا توجد ملفات مثبتة في سجل الأدلة حتى الآن.'))+
- (state.preview?'<div class="card"><h2>'+E(state.preview.name)+'</h2><p class="muted">المحتوى معروض للقراءة فقط (حد 256KB من API).</p><pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre></div>':'');
+ const list=Array.isArray(state.artifacts?.artifacts)?state.artifacts.artifacts:null;
+ const q=state.artifactQuery.trim().toLowerCase(),type=state.artifactType;
+ const selected=list?list.map((a,index)=>({a,index})).filter(({a})=>{
+   const name=String(a.name||'').toLowerCase();
+   if(q&&!name.includes(q)&&!String(a.step_id||'').includes(q))return false;
+   if(type==='html')return /\.html?$/i.test(name);
+   if(type==='code')return /\.(js|css|json|py|ts|tsx|jsx|sh|ps1)$/i.test(name);
+   if(type==='docs')return /\.(md|txt|pdf|csv|xml|ya?ml)$/i.test(name);
+   return true;
+ }):[];
+ const result=selected.slice(0,state.artifactLimit);
+ const kinds=[['all','الكل'],['html','صفحات HTML'],['code','الكود'],['docs','الوثائق']];
+ const filters='<form id="artifact-filter-form" class="card"><label class="field"><span>ابحث داخل أسماء الملفات أو رقم الخطوة</span><input name="q" type="search" autocomplete="off" placeholder="مثال: index.html أو build.js" value="'+E(state.artifactQuery)+'"></label><div class="row wrap"><div class="actions">'+kinds.map(([id,label])=>btn(label,'artifact-type-'+id,type===id?'selected':'quiet')).join('')+'</div><button type="submit" class="btn primary">بحث</button></div></form>';
+ return heading('مخرجات المشروع','ملفات وأدلة حقيقية مثبتة في سجل التشغيل. وجود الملف لا يعني قبول التسليم النهائي.')+
+ filters+
+ (!list?msg('جارٍ طلب قائمة الأدلة والمخرجات من الخادم...'):
+ '<div class="row wrap"><b>'+selected.length+' نتيجة من أصل '+list.length+' مخرج موثق</b><small class="muted">الملفات غير المثبتة لا تظهر في هذه القائمة</small></div>'+
+ (selected.length?result.map(({a,index})=>'<article class="card"><div class="row wrap"><div class="artifact-name"><b>'+E(a.name||'ملف')+'</b><p class="muted">خطوة #'+E(a.step_id||'غير محددة')+' · دليل #'+E(a.evidence_id||'—')+' · نوع '+E(a.kind||'—')+'</p><small class="muted">حكم دليل الخطوة: '+E(a.verdict||'غير محدد')+'</small></div><div class="actions">'+(a.kind==='file'&&a.step_id?btn('معاينة النص','artifact-'+index,'primary'):'')+'</div></div><details><summary>هوية الملف والتحقق</summary><div class="mono">SHA256: '+E(a.sha256||'لا بصمة مسجلة')+'</div><div class="muted">البايتات: '+E(a.bytes??'غير معروف')+'</div></details></article>').join(''):msg('لا نتائج تطابق مرشح البحث.'))+
+ (selected.length>state.artifactLimit?'<div class="row">'+btn('عرض المزيد ('+(selected.length-state.artifactLimit)+')','artifact-more','quiet')+'</div>':'')
+ )+
+ (state.preview?'<section class="card"><div class="row wrap"><h2>معاينة نصية: '+E(state.preview.name)+'</h2>'+btn('إغلاق المعاينة','artifact-close','quiet')+'</div><p class="muted">قراءة فعلية من خادم المصنع، حتى 256KB فقط. هذه ليست معاينة تشغيل للموقع ولا تثبت صحة المنتج.</p><pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre></section>':'');
 }
 function chat(){
  const p=current(),convos=state.convos?.conversations||[],mid=state.conversationId,thread=state.messages?.messages||[];
@@ -256,6 +273,9 @@ async function handle(action){
    let parts=action.split('-'),gid=Number(parts[2]),yes=parts[1]==='yes';
    return mutation('/api/projects/'+id+'/gates/'+gid,{approved:yes,note:'قرار من واجهة V3 الحية'},yes?'اعتماد هذه البوابة قد يستأنف التنفيذ الحقيقي. هل توافق؟':'رفض هذه البوابة قد يوقف سير العمل. هل توافق؟');
  }
+ if(action==='artifact-more'){state.artifactLimit+=30;paint();return}
+ if(action==='artifact-close'){state.preview=null;paint();return}
+ if(action.startsWith('artifact-type-')){state.artifactType=action.slice('artifact-type-'.length);state.artifactLimit=30;state.preview=null;paint();return}
  if(action.startsWith('artifact-')){
    const n=Number(action.split('-')[1]),a=state.artifacts?.artifacts?.[n];if(!a||a.kind!=='file'||!a.step_id)return;
    state.preview=null;state.status='جارٍ تحميل النص المثبت...';paint();
@@ -311,7 +331,7 @@ async function submitChat(form){
 }
 document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
 document.addEventListener('input',e=>{const t=e.target;if(t?.name==='message'&&t.closest?.('#send-chat'))state.drafts[draftKey()]=t.value;});
-document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}});
+document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}if(e.target.id==='artifact-filter-form'){e.preventDefault();state.artifactQuery=String(new FormData(e.target).get('q')||'').trim().slice(0,180);state.artifactLimit=30;state.preview=null;paint()}});
 window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=route().conversationId||null;loadAll()});
 setInterval(()=>{if(document.hidden||state.busy||!route().id||state.loading)return;
  const editor=document.activeElement;if(editor?.matches?.('#send-chat textarea'))return;
