@@ -51,7 +51,7 @@ async function fetchMock(url,opts={}){
   if(url==='/api/conversations/35')return response({conversation_id:35,title:'محادثة أقدم',project_id:4});
   if(url==='/api/conversations/35/messages')return response({conversation_id:35,messages:[{role:'assistant',content:'رد أقدم'}]});
   if(url==='/api/conversations/41')return response({conversation_id:41,title:'خارج المشروع',project_id:9});
-  if(url==='/api/conversations/22/move-to-project')return response({project_id:4});
+  if(url==='/api/conversations/22')return response({conversation_id:22,project_id:4,title:'محادثة حقيقية'});
   if(url==='/api/chat/stop?conversation_id=22')return response({status:'STOPPING'});
   if(url==='/api/research/providers')return response({providers:[{name:'Real Search Source',effective_status:'STALE',state_reason:'Probe expired'}]});
   if(url==='/api/execution/environments')return response({environments:[{id:7,name:'OCI Worker',backend:'REMOTE_WORKER',state:'NOT_READY',is_default:true}]});
@@ -99,7 +99,7 @@ async function settle(){
   assert(!browser.__test.state.liveText.includes('تسرب ممنوع'),'foreign SSE scope must be rejected');
   assert(!browser.__test.state.liveText.includes('حدث بلا نطاق'),'unscoped SSE must be rejected');
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
-  assert(calls.includes('/api/conversations/22/move-to-project'),'new chat must be linked to project');
+  assert(calls.includes('/api/conversations/22'),'new chat must verify its project scope before rendering');
   await browser.__test.loadAll();
   assert.equal(browser.__test.state.conversationId,22,'direct link survives reload using conversation_id');
   assert(root.innerHTML.includes('رد فعلي'),'transcript must be restored on reload');

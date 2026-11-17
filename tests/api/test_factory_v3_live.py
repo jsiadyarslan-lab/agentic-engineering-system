@@ -62,7 +62,7 @@ def test_conversation_is_the_default_project_surface():
     assert 'class="aes-chat-layout"' in source
     assert "conversation-" in source
     assert "loadMessages()" in source
-    assert "/move-to-project" in source
+    assert "project_id:projectAtStart" in source  # atomic project-scoped chat
 
 
 def test_chat_reply_is_streamed_from_actual_backend_with_fail_closed_scoping():

@@ -261,7 +261,7 @@ function chat(){
  (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article>':'')+
  (isBusyHere&&state.liveText?'<article class="aes-chat-message from-ai"><small>المساعد · رد مباشر</small><div dir="auto">'+E(state.liveText)+'</div></article>':'')+
  (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+'</div>'+
- '<div class="aes-chat-dock">'+progressLine+feedback+'<form id="send-chat" class="aes-chat-composer"><textarea dir="auto" name="message" required maxlength="32000" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالة للمساعد" '+(canSend?'':'disabled')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">إرسال رسالة لا يشغّل المشروع</span>'+
+ '<div class="aes-chat-dock">'+progressLine+feedback+'<form id="send-chat" class="aes-chat-composer"><textarea dir="auto" name="message" required maxlength="32000" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالة للمساعد" '+(canSend?'':'disabled')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">AES · مساعد المشروع</span>'+
  (state.stopPending?'<span class="muted">جارٍ طلب الإيقاف…</span>':canStop?btn('طلب إيقاف الرد','stop-chat','quiet'):
  (!isBusyHere&&waiting)?btn('تحقّق من الرد','chat-check','quiet'):
  '<button class="btn primary" type="submit" '+(canSend?'':'disabled')+'>إرسال ↑</button>')+'</div></form></div></section></div>';
@@ -408,7 +408,9 @@ async function followSavedReply(){
      const last=savedReply();
      state.recoveringChat=false;
      state.error='';
-     state.status=last?.role==='assistant'&&last.state_badge==='COMPLETED'?'وصل الرد المحفوظ من الخادم.':'';
+     state.status=last?.role==='assistant'&&last.state_badge==='COMPLETED'?'وصل الرد المحفوظ من الخادم.':
+       last?.role==='assistant'&&last.state_badge==='PARTIAL'?'تم حفظ جزء من الرد، لكن التوليد لم يكتمل.':
+       last?.role==='assistant'&&last.state_badge==='FAILED'?'فشل توليد الرد؛ الخطأ مثبت في السجل.':'';
      if(state.status&&state.expectedReply)delete state.drafts[state.expectedReply.draft];
      state.expectedReply=null;
      if(!state.status&&(last?.role!=='assistant'||!['FAILED','PARTIAL'].includes(last.state_badge)))
@@ -483,7 +485,7 @@ async function submitChat(form){
  try{
    const ac=new AbortController(),timer=setTimeout(()=>{windowExpired=true;ac.abort()},90000);
    try{
-     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:cid}),signal:ac.signal});
+     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:cid,project_id:projectAtStart}),signal:ac.signal});
      if(!res.ok)throw Error('HTTP '+res.status+' '+(await res.text()).slice(0,180));
      if(!res.body)throw Error('لا يوجد بث من الخادم');
      const reader=res.body.getReader(),decoder=new TextDecoder();let buf='',bytes=0,lastRender=0;
@@ -501,7 +503,7 @@ async function submitChat(form){
          if(ev.kind==='message_delta'){state.streamNotice='يصل الرد الآن';state.liveText+=String(ev.delta??ev.text??'');}
        }
        if(ev.kind==='message_completed')finished=true;
-       if(ev.kind==='chat.error'){wasError=true;if(originVisible()){state.streamNotice='';state.error='أبلغ الخادم بتعذر إكمال الرد'+(ev.code?' ('+String(ev.code).slice(0,48)+')':'')+'.'}}
+       if(ev.kind==='chat.error'){wasError=true;if(originVisible()){state.streamNotice='';state.error=(ev.details?.partial_chars&&ev.details?.persisted?'انقطع رد النموذج بعد وصول نص جزئي، وقد حُفظ ما وصل بحالة PARTIAL. ':'تعذّر إكمال رد النموذج. ')+(ev.code?'تصنيف الخطأ: '+String(ev.code).slice(0,48)+'. ':'')+'راجع السجل قبل إعادة المحاولة.'}}
        const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;}
      };
      let frame=[];
@@ -519,19 +521,21 @@ async function submitChat(form){
      buf+=decoder.decode();drain(true);
      if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
    }finally{clearTimeout(timer)}
-   if(cid){if(!conversationAtStart&&projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){if(originVisible())state.error='تعذر ربط المحادثة بالمشروع: '+e.message}}
+   if(cid){if(!conversationAtStart&&projectAtStart){try{const meta=await req('/api/conversations/'+cid);if(Number(meta.project_id)!==projectAtStart)throw Error('هوية مشروع غير مطابقة')}catch(e){if(originVisible())state.error='تعذر التحقق من هوية المحادثة: '+e.message}}
     const stillOnOrigin=route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
     if(stillOnOrigin){history.replaceState(null,'',chatURL(projectAtStart,cid));state.conversationId=cid;state.messages=null;await loadChat(state.revision,projectAtStart,cid)}}
    else state.error='لم يعد معرف المحادثة';
-   if(!wasError&&!state.error&&!state.messagesError){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
+   if(accepted)delete state.drafts[originDraft];
+   if(!wasError&&!state.error&&!state.messagesError){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم'}
  }catch(e){
+   if(accepted)delete state.drafts[originDraft];
    if(originVisible()){
      state.streamNotice='';
      state.error=windowExpired?'انتهت مهلة العرض المباشر. لم يُلغَ الطلب على الخادم.':'تعذر متابعة البث. لم تُرسل الواجهة طلبًا ثانيًا.';
    }
    if(cid&&(accepted||conversationAtStart)){
      let linked=Boolean(conversationAtStart);
-     if(!linked&&accepted){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart});linked=true}catch{if(originVisible())state.error='تعذر ربط المحادثة بالمشروع بعد انقطاع البث.'}}
+     if(!linked&&accepted){try{const meta=await req('/api/conversations/'+cid);linked=Number(meta.project_id)===projectAtStart}catch{}if(!linked&&originVisible())state.error='لم يثبت ارتباط المحادثة بالمشروع بعد انقطاع البث.'}
      if(linked&&originVisible()){
        history.replaceState(null,'',chatURL(projectAtStart,cid));state.conversationId=cid;
        state.recoveringChat=true;state.expectedReply={message,after,draft:originDraft};state.serverChat='unknown';state.messages=null;
