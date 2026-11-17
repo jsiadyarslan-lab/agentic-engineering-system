@@ -171,6 +171,7 @@ async function settle(){
   assert(root.innerHTML.includes('real-model'),'real role model assignment must be shown');
   assert(root.innerHTML.includes('غير متصل'),'provider configuration missing must remain visible');
   browser.location.hash='#/p/4/chat/22';
+  browser.__test.state.conversationId=22;
   browser.__test.state.busy=true;
   browser.__test.state.pendingProjectId=4;
   browser.__test.state.pendingConversationId=22;
