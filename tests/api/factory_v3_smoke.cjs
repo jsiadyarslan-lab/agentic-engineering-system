@@ -29,7 +29,11 @@ async function fetchMock(url,opts={}){
       {kind:'message_delta',scope:{conversation_id:id},delta:'فعلي'},
       {kind:'message_completed',scope:{conversation_id:id}}
     ]).map(x=>'data: '+JSON.stringify(x)+'\r\n\r\n');
-    const chunks=[events[0],...events.slice(1).flatMap(line=>[line.slice(0,-3),line.slice(-3)])];
+    const chunks=[events[0],...events.slice(1).flatMap(event=>{
+      const line=event.replace(',"scope":',',\r\ndata: "scope":');
+      const split=line.indexOf('\r');
+      return [line.slice(0,split+1),line.slice(split+1,-3),line.slice(-3)];
+    })];
     let n=0;
     return{ok:true,status:200,body:{getReader(){return{async read(){
       if(n>=chunks.length)return{done:true};
@@ -39,8 +43,11 @@ async function fetchMock(url,opts={}){
   }
   if(url==='/api/projects')return response({projects:[{id:4,name:'مشروع الإنتاج #4',status:'PAUSED',objective:'إنشاء الموقع'}]});
   if(url==='/api/projects/4/state')return response(serverState);
-  if(url==='/api/projects/4/conversations')return response({conversations:[{id:22,title:'محادثة حقيقية'}]});
-  if(url==='/api/conversations/22/messages')return response({messages:[{role:'user',content:'تحدث'},{role:'assistant',content:'رد فعلي'}]});
+  if(url==='/api/projects/4/conversations')return response({conversations:[{conversation_id:22,project_id:4,title:'محادثة حقيقية'}]});
+  if(url==='/api/conversations/22/messages')return response({conversation_id:22,messages:[{role:'user',content:'تحدث'},{role:'assistant',content:'رد فعلي'}]});
+  if(url==='/api/conversations/35')return response({conversation_id:35,title:'محادثة أقدم',project_id:4});
+  if(url==='/api/conversations/35/messages')return response({conversation_id:35,messages:[{role:'assistant',content:'رد أقدم'}]});
+  if(url==='/api/conversations/41')return response({conversation_id:41,title:'خارج المشروع',project_id:9});
   if(url==='/api/conversations/22/move-to-project')return response({project_id:4});
   if(url==='/api/chat/stop?conversation_id=22')return response({status:'STOPPING'});
   if(url==='/api/research/providers')return response({providers:[{name:'Real Search Source',effective_status:'STALE',state_reason:'Probe expired'}]});
@@ -49,13 +56,14 @@ async function fetchMock(url,opts={}){
   throw new Error('Unexpected API call: '+url);
 }
 let lastHash='#/p/4/chat';
-const root={innerHTML:'',scrollTop:0,scrollHeight:100};
+const root={innerHTML:'',scrollTop:0,scrollHeight:100,dataset:{}};
 const listeners={};
 const browser={
   document:{
     getElementById(_id){return root},
     documentElement:{setAttribute(){}},
     addEventListener(name,fn){listeners[name]=fn},
+    querySelector(){return null},
     activeElement:null,
     hidden:false
   },
@@ -75,7 +83,7 @@ async function settle(){
   await settle();
   assert.equal(browser.__test.route().view,'chat','project must open into chat, not dashboard');
   assert(root.innerHTML.includes('aes-chat-layout'),'chat surface must render');
-  assert(root.innerHTML.includes('PAUSED'),'backend project status must remain visible');
+  assert(root.innerHTML.includes('المشروع متوقف مؤقتًا'),'backend project status must remain visible');
   assert(root.innerHTML.includes('محادثة حقيقية'),'existing conversations must load');
   assert.equal(typeof listeners.input,'function','input draft handler must be registered');
   listeners.input({target:{name:'message',value:'مسودة لم ترسل بعد',closest:()=>true}});
@@ -89,6 +97,10 @@ async function settle(){
   assert(!browser.__test.state.liveText.includes('حدث بلا نطاق'),'unscoped SSE must be rejected');
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
   assert(calls.includes('/api/conversations/22/move-to-project'),'new chat must be linked to project');
+  await browser.__test.loadAll();
+  assert.equal(browser.__test.state.conversationId,22,'direct link survives reload using conversation_id');
+  assert(root.innerHTML.includes('رد فعلي'),'transcript must be restored on reload');
+  assert(root.innerHTML.includes('href="#/p/4/chat/22"'),'chat list must include an actual deep link');
   assert(!calls.some(x=>/\/plan\/approve|\/resume|\/gates\//.test(x)),'a question must not execute owner actions');
   browser.location.hash='#/p/4/chat';
   browser.__test.state.conversationId=null;
@@ -183,5 +195,14 @@ async function settle(){
   assert(calls.includes('/api/chat/stop?conversation_id=22'),'stop must call the server endpoint');
   assert(browser.__test.state.streamNotice.includes('طلب الإيقاف قُبل'),'STOPPING is not falsely reported as finished');
 
+  browser.__test.state.busy=false;
+  browser.location.hash='#/p/4/chat/35';
+  await browser.__test.loadAll();
+  assert(root.innerHTML.includes('رد أقدم'),'old chat not in project list must still load after ownership check');
+  browser.location.hash='#/p/4/chat/41';
+  await browser.__test.loadAll();
+  assert(root.innerHTML.includes('تعذر فتح المحادثة'),'invalid direct links must show an error, not a blank new chat');
+  assert(!calls.includes('/api/conversations/41/messages'),'do not load another project’s transcript');
+  assert(root.innerHTML.includes('aria-label="رسالة للمساعد" disabled'),'invalid direct link disables sending');
   process.stdout.write('AES_CHAT_UI_SMOKE_PASS\n');
 })().catch(e=>{console.error(e);process.exitCode=1});

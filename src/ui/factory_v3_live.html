@@ -49,16 +49,47 @@ body{font-size:15px;line-height:1.7}
 @media(max-width:740px){.grid{grid-template-columns:1fr}.home-center{padding-top:10px}.canvas{padding:15px}}
 </style>
 <style id="aes-conversation-shell">
-.aes-chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;min-height:calc(100dvh - 174px)}.aes-chat-primary{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - 174px)}.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0 16px}.aes-chat-head h1{font-size:18px;margin:0}.aes-chat-head small{font-size:11px;color:var(--muted)}.aes-chat-thread{flex:1;min-height:300px;max-height:calc(100dvh - 360px);overflow:auto;padding:20px 2%;overscroll-behavior:contain}.aes-welcome{text-align:center;max-width:520px;margin:12vh auto 0}.aes-welcome h2{font-size:27px}.aes-welcome p{color:var(--muted)}.aes-chat-message{white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;line-height:1.85;max-width:90%;padding:9px 14px;border-radius:16px}.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:6px}.aes-chat-message.from-owner{background:var(--lift);margin-right:auto;max-width:76%}.aes-chat-message.from-ai{margin-left:auto;max-width:100%}.aes-chat-composer{margin-top:auto;background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:11px}.aes-chat-composer textarea{background:transparent;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:48px;max-height:220px;padding:6px;color:var(--text);font:inherit}.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px}.aes-inspect-links,.aes-chat-convos{display:flex;flex-direction:column;gap:8px;margin:16px 0}.aes-chat-inspect{padding:12px;border-inline-start:1px solid var(--line)}.aes-chat-convos button{white-space:normal;text-align:start}body:has(.aes-chat-layout) .canvas{max-width:none!important;width:100%;padding:15px 20px}body:has(.aes-chat-layout) .stage{padding:0 10px}@media(max-width:950px){.aes-chat-layout{grid-template-columns:1fr}.aes-chat-inspect{border-inline-start:0;border-top:1px solid var(--line)}.aes-chat-thread{min-height:260px}}@media(max-width:600px){.aes-chat-message{max-width:100%}.aes-chat-message.from-owner{max-width:85%}.aes-chat-head h1{font-size:15px}body:has(.aes-chat-layout) .canvas{padding:10px}}
+/* Chat owns the viewport. Only the transcript and navigation scroll. */
+.main.is-chat{height:100dvh;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);overflow:hidden}
+.main.is-chat .top,.main.is-chat .project-tabs{position:relative;top:auto}
+.main.is-chat .project-tabs{scrollbar-width:thin}
+.main.is-chat .stage{display:block;min-height:0;overflow:hidden}
+.main.is-chat .canvas{display:block;height:100%;padding:0;max-width:none}
+.aes-chat-layout{height:100%;min-height:0}
+.aes-chat-primary{height:100%;min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(16px,calc((100% - 760px)/2));border-bottom:1px solid var(--soft)}
+.aes-chat-head h1{font-size:19px;line-height:1.4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aes-chat-head>div{min-width:0}.aes-chat-head .btn{flex:none}.aes-chat-head small{font-size:12px;color:var(--muted)}
+.aes-chat-thread{overflow:auto;min-height:0;padding:18px max(16px,calc((100% - 760px)/2));overscroll-behavior:contain;scrollbar-gutter:stable;outline-offset:-3px}
+.aes-welcome{max-width:490px;margin:clamp(12px,7vh,68px) auto 0;text-align:center}.aes-welcome h2{font-size:clamp(21px,3vw,30px);line-height:1.35;margin:0 0 9px}.aes-welcome p{margin:0;color:var(--muted)}
+.aes-chat-message{overflow-wrap:anywhere;white-space:pre-wrap;margin:0 0 18px;line-height:1.85;border-radius:14px}
+.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:4px}
+.aes-chat-message.from-owner{margin-inline-end:auto;max-width:85%;width:fit-content;padding:9px 13px;background:var(--lift)}
+.aes-chat-message.from-ai{padding:3px 4px 12px;border-bottom:1px solid var(--soft)}
+.aes-chat-dock{padding:8px max(16px,calc((100% - 760px)/2)) max(10px,env(safe-area-inset-bottom));background:var(--base)}
+.aes-chat-feedback{font-size:13px;line-height:1.45;margin:0 0 6px;max-height:4em;overflow:auto;overflow-wrap:anywhere}
+.aes-chat-composer{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 10px}
+.aes-chat-composer:focus-within{border-color:var(--focus)}
+.aes-chat-composer textarea{background:none;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:43px;max-height:min(24dvh,180px);padding:4px;color:var(--text);font:inherit}
+.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.aes-composer-bar .btn{min-height:36px}
+.aes-chat-links .nav-btn{min-height:34px;padding-block:5px}.aes-chat-links .nav-btn[aria-current=page]{background:var(--lift);font-weight:650}
+.crumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-objective{max-width:76ch;overflow-wrap:anywhere}
+@media(min-width:721px){.main.is-chat .top [data-action=side]{display:none}}
+@media(max-width:720px){.aes-chat-head{padding-block:8px}.aes-chat-head h1{font-size:16px}.aes-chat-thread{padding-block:10px}.aes-chat-dock{padding-top:4px}.is-chat .top-actions .pills,.is-chat .top-actions a{display:none}}
 </style><style id="aes-steps-ux">.aes-step-facts{padding:9px 14px}.aes-step-facts p{margin:8px 0;overflow-wrap:anywhere}.aes-historical{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}.aes-historical>summary{color:var(--muted);cursor:pointer}.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style><style id="aes-static-artifact-preview">.aes-artifact-frame{display:block;width:100%;height:min(620px,66vh);border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:12px;overflow:auto}.artifact-name{max-width:100%;overflow-wrap:anywhere}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
 'use strict';
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,previewMode:'source',toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:'',pendingConversationId:null};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,previewMode:'source',toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:'',pendingConversationId:null,convosError:'',messagesError:'',threadLoading:false,threadRequest:0};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
+const chatId=c=>{const id=Number(c?.conversation_id??c?.id);return Number.isSafeInteger(id)&&id>0?id:null};
+const projectChats=()=>state.convos?.conversations||[];
+const chatURL=(p,c)=>url(p,'chat')+(c?'/'+c:'');
+const chatTitle=c=>c?.title||('محادثة '+chatId(c));
 const draftKey=()=>String(route().id)+':'+String(state.conversationId||'new');
 const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
 const link=(name,href,cls='')=>'<a class="btn '+cls+'" href="'+E(href)+'">'+E(name)+'</a>';
@@ -83,30 +114,38 @@ async function req(path,opts={},timeout=12000){
 async function post(path,data){return req(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data||{})},25000)}
 function heading(t,sub=''){return '<div class="page-head"><h1>'+E(t)+'</h1><p class="muted">'+E(sub)+'</p></div>'}
 function navBar(){
- const r=route(),p=current(),project=pid();
+ const r=route();
  const menus=[['home','الرئيسية'],['decisions','قرارات المالك'],['tools','الأدوات والإضافات'],['settings','الإعدادات']];
  const projects=state.projects.slice(0,50);
  return '<aside class="side '+(state.side?'open':'')+'"><div class="brand"><b>◈ مصنع الهندسة</b><small>Agentic Engineering System</small></div>'+
  '<div class="side-scroll">'+link('＋ مشروع جديد','#/home','primary')+
  '<div class="section-label">مساحة العمل</div>'+menus.map(x=>'<a class="nav-btn '+(!r.id&&r.view===x[0]?'selected':'')+'" href="#/'+x[0]+'">'+E(x[1])+'</a>').join('')+
  '<div class="section-label">المشاريع الحقيقية · '+projects.length+'</div>'+
- (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'chat')+'"><span class="pin">●</span><span class="nav-text">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
- (r.id?'<div class="section-label">محادثات المشروع</div>'+(state.convos?.conversations?.length?state.convos.conversations.slice(0,40).map(c=>'<button class="nav-btn '+(state.conversationId===c.id?'selected':'')+'" data-action="conversation-'+c.id+'">'+E(c.title||('محادثة '+c.id))+'</button>').join(''):'<div class="muted">لا محادثات محفوظة</div>'):'')+
+ (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'chat')+'"><span class="pin">●</span><span class="nav-text" dir="auto">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
+ (r.id?'<section class="aes-chat-links" aria-label="محادثات المشروع"><div class="section-label">محادثات المشروع</div>'+
+ (projectChats().length?projectChats().slice(0,40).map(c=>'<a class="nav-btn '+(state.conversationId===chatId(c)?'selected':'')+'"'+(state.conversationId===chatId(c)?' aria-current="page"':'')+' href="'+chatURL(r.id,chatId(c))+'"><span dir="auto" class="nav-text">'+E(chatTitle(c))+'</span></a>').join(''):'<div class="muted small">'+E(state.convosError||(!state.convos?'جارٍ التحميل…':'لا محادثات محفوظة بعد'))+'</div>')+'</section>':'')+
  '</div><div class="muted" style="font-size:11px">LIVE API · دون بيانات تجريبية</div></aside>'+
  (state.side?'<button class="overlay side-overlay" data-action="side" aria-label="إغلاق القائمة"></button>':'');
 }
 function tabs(){
  const r=route();if(!r.id)return '';
  const tabs=[['chat','المحادثة'],['overview','ملخص المشروع'],['runs','التشغيل'],['outputs','المخرجات'],['decisions','القرارات'],['browser','المراجع']];
- return '<nav class="project-tabs" aria-label="مساحات المشروع">'+tabs.map(([v,t])=>link(t,url(r.id,v),r.view===v?'selected':'quiet')).join('')+'</nav>';
+ return '<nav class="project-tabs" aria-label="مساحات المشروع">'+tabs.map(([v,t])=>link(t,v==='chat'?chatURL(r.id,state.conversationId):url(r.id,v),r.view===v?'selected':'quiet')).join('')+'</nav>';
 }
 function shell(content){
  const r=route();const p=current();
- root.innerHTML='<div class="frame">'+navBar()+'<main class="main" id="main"><header class="top"><div class="crumb">'+btn('☰','side','quiet')+'<strong>'+E(r.id?(p?.name||('مشروع '+r.id)):'المصنع')+'</strong></div><div class="top-actions"><span class="pills">● بيانات الإنتاج</span>'+btn('تحديث','refresh','quiet')+link('الواجهة الحالية','/','quiet')+'</div></header>'+
+ const oldThread=document.getElementById('aes-chat-thread'),oldEditor=document.querySelector('#send-chat textarea');
+ const threadKey=chatURL(r.id,state.conversationId),sameThread=oldThread?.dataset.threadKey===threadKey;
+ const scrolled=oldThread?.scrollTop??0,nearEnd=!oldThread||oldThread.scrollHeight-oldThread.clientHeight-scrolled<48;
+ const editing=oldEditor&&document.activeElement===oldEditor,selection=editing?[oldEditor.selectionStart,oldEditor.selectionEnd]:null;
+ root.innerHTML='<div class="frame">'+navBar()+'<main class="main '+(r.view==='chat'?'is-chat':'')+'" id="main"><header class="top"><div class="crumb">'+btn('☰','side','quiet')+'<strong dir="auto">'+E(r.id?(p?.name||('مشروع '+r.id)):'المصنع')+'</strong></div><div class="top-actions"><span class="pills">● بيانات الإنتاج</span>'+btn('تحديث','refresh','quiet')+link('الواجهة الحالية','/','quiet')+'</div></header>'+
  tabs()+'<div class="stage"><div class="canvas '+(['home','overview'].includes(r.view)?'wide':'')+'">'+
- (state.error?'<div class="callout bad" role="alert"><strong>خطأ في الاتصال</strong><p>'+E(state.error)+'</p></div>':'')+
- (state.status?'<div class="callout" role="status">'+E(state.status)+'</div>':'')+
+ (r.view!=='chat'&&state.error?'<div class="callout bad" role="alert"><strong>خطأ في الاتصال</strong><p>'+E(state.error)+'</p></div>':'')+
+ (r.view!=='chat'&&state.status?'<div class="callout" role="status">'+E(state.status)+'</div>':'')+
  content+'</div></div></main></div>';
+ const newThread=document.getElementById('aes-chat-thread');
+ if(newThread){newThread.dataset.threadKey=threadKey;newThread.scrollTop=(sameThread&&!nearEnd)?scrolled:newThread.scrollHeight;}
+ if(editing&&sameThread){const el=document.querySelector('#send-chat textarea');if(el&&!el.disabled){el.focus({preventScroll:true});el.setSelectionRange(...selection);}}
 }
 function home(){
  const active=state.projects.filter(p=>['RUNNING','PLANNING','REVISING'].includes(String(p.status||'').toUpperCase()));
@@ -122,7 +161,7 @@ function overview(){
  const p=current();if(!p)return msg('اختر مشروعًا');
  const snap=state.details,gate=snap?.execution_gate||{},open=(snap?.gates||[]).filter(g=>g.status==='PENDING');
  const status=p.status||'UNKNOWN';
- const top='<div class="thread-head"><div class="eyebrow">المشروع '+E(p.id)+'</div><h1>'+E(p.name||'مشروع')+'</h1><p>'+E(p.objective||'لم يسجل هدف')+'</p></div>';
+ const top='<div class="thread-head"><div class="eyebrow">المشروع '+E(p.id)+'</div><h1 dir="auto">'+E(p.name||'مشروع')+'</h1><p class="project-objective" dir="auto">'+E(p.objective||'لم يسجل هدف')+'</p></div>';
  return top+'<div class="card"><div class="row wrap"><div><div class="eyebrow">الحالة القانونية من قاعدة المصنع</div><h2>'+tag(status)+'</h2></div><div class="actions">'+link('التشغيل',url(p.id,'runs'),'primary')+link('القرارات',url(p.id,'decisions'))+'</div></div><p class="muted">'+E(gate.blocked_reason||gate.owner_action||'لا يوجد سبب تعطل مؤكد في هذه اللقطة.')+'</p></div>'+
  '<div class="grid"><div class="card"><b>المراحل</b><p class="big-num">'+(snap?.phases?.length??'—')+'</p></div><div class="card"><b>قرارات معلّقة</b><p class="big-num">'+(snap?.gates?open.length:'—')+'</p></div><div class="card"><b>الأدلة</b><p class="big-num">'+(snap?.evidence?.length??'—')+'</p></div></div>'+
  '<h2 class="h2">ما يحتاج انتباهك</h2>'+
@@ -198,22 +237,26 @@ function outputs(){
  previewPanel;
 }
 function chat(){
- const p=current(),convos=state.convos?.conversations||[],mid=state.conversationId,thread=state.messages?.messages||[];
- const recent=(state.artifacts?.artifacts||[]).filter(a=>a.kind==='file').slice(0,5);
- const isBusyHere=state.busy&&state.pendingProjectId===pid()&&state.pendingConversationId===(state.conversationId||null),draft=state.drafts[draftKey()]||'';
- const controls=convos.map(c=>btn(c.title||('محادثة '+c.id),'conversation-'+c.id,mid===c.id?'selected':'')).join('');
- return '<div class="aes-chat-layout"><section class="aes-chat-primary"><header class="aes-chat-head"><div><small>مصنع AES · مشروع '+E(pid())+'</small><h1>'+E(p?.name||'المحادثة')+'</h1></div>'+btn('محادثة جديدة','new-chat','quiet')+'</header>'+
- '<div class="aes-chat-thread" id="aes-chat-thread">'+
- (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>ماذا تريد أن ننجز؟</h2><p>ابدأ محادثة، ثم راجع التشغيل والمخرجات دون مغادرة مساحة العمل.</p></div>':'')+
+ const p=current(),id=state.conversationId,record=projectChats().find(c=>chatId(c)===id);
+ const thread=state.messages?.messages||[],draft=state.drafts[draftKey()]||'';
+ const isBusyHere=state.busy&&state.pendingProjectId===route().id&&state.pendingConversationId===(id||null);
+ const canSend=!state.busy&&p?.id===route().id&&(!id||(!state.threadLoading&&!state.messagesError&&state.messages!==null));
+ const title=id?(record?chatTitle(record):'محادثة '+id):'محادثة جديدة';
+ const empty=state.threadLoading?['جارٍ تحميل المحادثة','نقرأ الرسائل المحفوظة.']:
+ state.messagesError?['تعذر فتح المحادثة',state.messagesError]:
+ id?['لا رسائل في هذه المحادثة','يمكنك كتابة أول رسالة.']:
+ ['ما الذي تريد إنجازه؟','اكتب ما تحتاجه. يبدأ التنفيذ من صفحة التشغيل بعد المراجعة.'];
+ const phase=p?.status==='PAUSED'?'المشروع متوقف مؤقتًا':p?.status==='BLOCKED'?'المشروع متعطّل':'المشروع '+pid();
+ const feedback=state.error?'<p class="aes-chat-feedback bad" role="alert" dir="auto">'+E(state.error)+'</p>':
+ state.status?'<p class="aes-chat-feedback ok" role="status">'+E(state.status)+'</p>':'';
+ return '<div class="aes-chat-layout"><section class="aes-chat-primary" aria-label="المحادثة"><header class="aes-chat-head"><div><small>'+E(phase)+'</small><h1 dir="auto">'+E(title)+'</h1></div>'+link('＋ محادثة جديدة',chatURL(pid(),null),'quiet')+'</header>'+
+ '<div class="aes-chat-thread" id="aes-chat-thread" tabindex="0" aria-label="سجل الرسائل" aria-busy="'+state.threadLoading+'">'+
+ (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>'+E(empty[0])+'</h2><p dir="auto">'+E(empty[1])+'</p></div>':'')+
  thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
- (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
- (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+
- '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span>'+(isBusyHere?(state.activeChatId&&!state.stopPending?btn('إيقاف الرد','stop-chat','danger'):'<span class="btn quiet" aria-disabled="true">'+(state.stopPending?'طلب الإيقاف…':'جارٍ الاتصال…')+'</span>'):'<button class="btn primary" type="submit">إرسال ↑</button>')+'</div></form></section>'+
- '<aside class="aes-chat-inspect"><div class="row wrap"><b>حالة المشروع</b>'+tag(p?.status||'UNKNOWN')+'</div><p class="muted">'+E(p?.objective||'لا هدف مسجل')+'</p>'+
- (['PAUSED','BLOCKED'].includes(p?.status)?'<div class="callout warn">المشروع متوقف. فتح المحادثة لا يستأنف العمل.</div>':'')+
- '<div class="aes-inspect-links">'+link('التشغيل',url(pid(),'runs'),'quiet')+link('المخرجات',url(pid(),'outputs'),'quiet')+link('القرارات',url(pid(),'decisions'),'quiet')+'</div>'+
- '<details open><summary>أحدث الملفات المثبتة ('+recent.length+')</summary><div class="aes-chat-convos">'+(recent.length?recent.map(a=>'<div><b>'+E(a.name||'ملف')+'</b><small class="muted"> · دليل #'+E(a.evidence_id||'—')+' · '+E(a.verdict||'غير محدد')+'</small></div>').join(''):msg(state.artifactsError?'تعذر قراءة الملفات: '+state.artifactsError:state.artifacts?'لا ملفات مثبتة بعد.':'جارٍ جلب قائمة المخرجات...'))+link('فتح كل المخرجات',url(pid(),'outputs'),'quiet')+'</div></details>'+
- '<details open><summary>المحادثات المحفوظة</summary><div class="aes-chat-convos">'+controls+'</div></details></aside></div>';
+ (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+
+ (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+'</div>'+
+ '<div class="aes-chat-dock">'+feedback+'<form id="send-chat" class="aes-chat-composer"><textarea dir="auto" name="message" required maxlength="32000" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالة للمساعد" '+(canSend?'':'disabled')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">إرسال رسالة لا يشغّل المشروع</span>'+
+ (isBusyHere?(state.activeChatId&&!state.stopPending?btn('إيقاف الرد','stop-chat','danger'):'<span class="muted">'+(state.stopPending?'جارٍ طلب الإيقاف…':'جارٍ الاتصال…')+'</span>'):'<button class="btn primary" type="submit" '+(canSend?'':'disabled')+'>إرسال ↑</button>')+'</div></form></div></section></div>';
 }
 function browserPage(){
  return heading('المراجع والمتصفح','النسخة الحالية لا توفر API للتحكم بمتصفح مدمج.')+
@@ -249,7 +292,7 @@ function settingsPage(){
 function paint(){const r=route();state.view=r.view;const pages={home,overview,chat,runs,decisions,outputs,browser:browserPage,tools:toolsPage,settings:settingsPage};let content=(pages[r.view]||home)();shell(content)}
 async function loadAll(){
  const n=++state.revision,r=route();
- state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;state.artifactsError='';
+ state.loading=true;state.error='';state.status='';state.conversationId=r.conversationId||null;state.convosError='';state.messagesError='';state.threadLoading=Boolean(r.view==='chat'&&state.conversationId);state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;state.artifactsError='';
  state.project=state.projects.find(p=>p.id===r.id)||null;
  paint();
  const listFetch=(async()=>{
@@ -286,10 +329,7 @@ async function loadExtra(n=state.revision){
  if(!p)return;
  let path=null;
  if(r.view==='outputs')path='/api/projects/'+p+'/artifacts';
- if(r.view==='chat')path='/api/projects/'+p+'/conversations';
- if(r.view==='chat'){
-   req('/api/projects/'+p+'/artifacts').then(data=>{if(n!==state.revision)return;state.artifacts=data;state.artifactsError='';paint()}).catch(error=>{if(n===state.revision){state.artifactsError=error.message;paint()}});
- }
+ if(r.view==='chat'){await loadChat(n,p,r.conversationId);return;}
  if(r.view==='runs'){
    const results=await Promise.allSettled([req('/api/projects/'+p+'/steps'),req('/api/projects/'+p+'/runtime')]);
    if(n!==state.revision)return;
@@ -299,18 +339,36 @@ async function loadExtra(n=state.revision){
    paint();return;
  }
  if(!path)return;
- try{const data=await req(path);if(n!==state.revision)return;
- if(r.view==='outputs')state.artifacts=data;
- else{state.convos=data;if(state.conversationId&&!data.conversations?.some(c=>c.id===state.conversationId))state.conversationId=null;}
- }catch(e){if(n===state.revision)state.error=e.message}
+ try{const data=await req(path);if(n!==state.revision)return;state.artifacts=data}
+ catch(e){if(n===state.revision)state.error=e.message}
  if(n===state.revision)paint();
- if(r.view==='chat'&&state.conversationId)await loadMessages();
 }
-async function loadMessages(){
- if(!state.conversationId)return;
- const id=state.conversationId;
- try{const d=await req('/api/conversations/'+id+'/messages');if(id===state.conversationId){state.messages=d;paint()}}
- catch(e){state.error=e.message;paint()}
+async function loadChat(revision,project,id){
+ const request=++state.threadRequest;
+ const currentRequest=()=>revision===state.revision&&request===state.threadRequest&&route().id===project&&route().view==='chat'&&state.conversationId===(id||null);
+ if(!currentRequest())return;
+ state.messagesError='';state.threadLoading=Boolean(id);
+ paint();
+ let conversations=[];
+ try{
+   try{const d=await req('/api/projects/'+project+'/conversations');if(!currentRequest())return;
+     if(!Array.isArray(d.conversations))throw Error('استجابة المحادثات غير صالحة');
+     conversations=d.conversations.filter(c=>chatId(c)!==null&&Number(c.project_id??project)===project);
+     state.convos={conversations};state.convosError='';
+   }catch(e){if(!currentRequest())return;state.convosError='تعذر جلب القائمة: '+e.message}
+   if(!id)return;
+   if(!conversations.some(c=>chatId(c)===id)){
+     const c=await req('/api/conversations/'+id);
+     if(!currentRequest())return;
+     if(chatId(c)!==id||Number(c.project_id)!==project)throw Error('المحادثة لا تنتمي إلى هذا المشروع.');
+     state.convos={conversations:[c,...conversations]};
+   }
+   const d=await req('/api/conversations/'+id+'/messages');
+   if(!currentRequest())return;
+   if(chatId(d)!==id||!Array.isArray(d.messages))throw Error('استجابة السجل لا تطابق المحادثة المطلوبة.');
+   state.messages=d;
+ }catch(e){if(currentRequest()){state.messages=null;state.messagesError=e.message}}
+ finally{if(currentRequest()){state.threadLoading=false;paint();}}
 }
 async function mutation(path,payload,warning){
  if(state.busy)return;
@@ -332,8 +390,6 @@ async function handle(action){
    finally{state.stopPending=false;paint()}
    return;
  }
- if(action==='new-chat'){state.conversationId=null;state.messages=null;history.replaceState(null,'',url(id,'chat'));paint();return}
- if(action.startsWith('conversation-')){state.conversationId=Number(action.split('-')[1]);state.messages=null;history.replaceState(null,'',url(id,'chat')+'/'+state.conversationId);paint();await loadMessages();return}
  if(action.startsWith('theme-')){state.theme=action.slice(6);document.documentElement.setAttribute('data-theme',state.theme);return}
  if(action==='plan')return mutation('/api/projects/'+id+'/plan/generate',{},'سيُطلب إنشاء خطة حقيقية وقد يستدعي مزود نموذج. متابعة؟');
  if(action==='approve-plan')return mutation('/api/projects/'+id+'/plan/approve',{approved:true,feedback:''},'اعتماد الخطة يطلق التنفيذ الحقيقي تلقائيًا وقد يستهلك موارد. هل اعتمدت الخطة بعد مراجعتها؟');
@@ -368,7 +424,7 @@ async function submitCreate(form){
  finally{state.busy=false;paint()}
 }
 async function submitChat(form){
- if(state.busy)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
+ if(state.busy||state.threadLoading||state.messagesError||current()?.id!==route().id)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
  const projectAtStart=route().id,originDraft=draftKey(),conversationAtStart=state.conversationId||null;let cid=conversationAtStart,finished=false,wasError=false;
  const originVisible=()=>route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
  state.busy=true;state.pendingProjectId=projectAtStart;state.pendingConversationId=conversationAtStart;state.activeChatId=cid;state.stopPending=false;state.error='';state.liveText='';state.pendingText=message;state.streamNotice='يتصل';state.status='';paint();
@@ -389,20 +445,29 @@ async function submitChat(form){
        if((ev.kind==='chat.status'||ev.kind==='message_started')&&originVisible())state.streamNotice=ev.text||ev.status||'يكتب الآن';
        if(ev.kind==='message_completed')finished=true;
        if(ev.kind==='chat.error'){wasError=true;if(originVisible())state.error=ev.text||ev.code||'فشل توليد الرد'}
-       const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;const el=document.getElementById('aes-chat-thread');if(el)el.scrollTop=el.scrollHeight}
+       const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;}
      };
-     const eventBoundary=/(?:\r\n|\r|\n){2}/;
-     const drain=()=>{let boundary;while((boundary=eventBoundary.exec(buf))!==null){onFrame(buf.slice(0,boundary.index));buf=buf.slice(boundary.index+boundary[0].length)}};
+     let frame=[];
+     const drain=(final=false)=>{
+       let end;
+       while((end=buf.search(/[\r\n]/))>=0){
+         if(buf[end]==='\r'&&end===buf.length-1&&!final)break;
+         const line=buf.slice(0,end),width=buf[end]==='\r'&&buf[end+1]==='\n'?2:1;
+         buf=buf.slice(end+width);
+         if(line)frame.push(line);else if(frame.length){onFrame(frame.join('\n'));frame=[]}
+       }
+       if(final&&(buf||frame.length)){if(buf)frame.push(buf);onFrame(frame.join('\n'));}
+     };
      while(true){const x=await reader.read();if(x.done)break;bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true});drain()}
-     buf+=decoder.decode();drain();if(buf.trim())onFrame(buf);
+     buf+=decoder.decode();drain(true);
      if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
    }finally{clearTimeout(timer)}
-   if(cid){if(projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}
+   if(cid){if(!conversationAtStart&&projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){if(originVisible())state.error='تعذر ربط المحادثة بالمشروع: '+e.message}}
     const stillOnOrigin=route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
-    if(stillOnOrigin){history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);state.conversationId=cid;await loadExtra(state.revision);await loadMessages()}}
+    if(stillOnOrigin){history.replaceState(null,'',chatURL(projectAtStart,cid));state.conversationId=cid;state.messages=null;await loadChat(state.revision,projectAtStart,cid)}}
    else state.error='لم يعد معرف المحادثة';
-   if(!wasError&&!state.error){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
- }catch(e){if(originVisible())state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&originVisible()){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
+   if(!wasError&&!state.error&&!state.messagesError){if(route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===cid)state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
+ }catch(e){if(originVisible())state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&originVisible()&&conversationAtStart){try{await loadChat(state.revision,projectAtStart,cid)}catch{}}}
  finally{const stillOnOrigin=originVisible();state.busy=false;state.pendingProjectId=null;state.pendingConversationId=null;state.activeChatId=null;state.stopPending=false;state.pendingText='';if(!stillOnOrigin||!state.error)state.liveText='';paint()}
 }
 document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
@@ -411,7 +476,7 @@ document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefau
 window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=route().conversationId||null;loadAll()});
 setInterval(()=>{if(document.hidden||state.busy||!route().id||state.loading)return;
  const editor=document.activeElement;if(editor?.matches?.('#send-chat textarea'))return;
- refreshDetail()},30000);
+ if(route().view!=='chat')refreshDetail()},30000);
 if(!location.hash)history.replaceState(null,'','#/home');
 document.documentElement.setAttribute('data-theme',state.theme);
 state.conversationId=route().conversationId||null;
