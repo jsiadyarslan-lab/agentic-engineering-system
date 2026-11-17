@@ -53,3 +53,45 @@ def test_real_api_wiring_and_approval_confirmations_are_explicit():
     assert "credentials:'same-origin'" in source
     assert "data-action=" in source
     assert "حالة الإطلاق" in source
+
+def test_conversation_is_the_default_project_surface():
+    source = PAGE.read_text(encoding="utf-8")
+    assert ":'chat',conversationId:" in source
+    assert "url(x.id,'chat')" in source
+    assert "function chat()" in source
+    assert 'class="aes-chat-layout"' in source
+    assert "conversation-" in source
+    assert "loadMessages()" in source
+    assert "/move-to-project" in source
+
+
+def test_chat_reply_is_streamed_from_actual_backend_with_fail_closed_scoping():
+    source = PAGE.read_text(encoding="utf-8")
+    assert "ev.kind==='message_delta'" in source
+    assert "ev.kind==='message_completed'" in source
+    assert "ev.kind==='chat.error'" in source
+    assert "ev.scope?.conversation_id" in source
+    assert "if(cid&&cid!==candidate)return" in source
+    assert "if(!finished&&!wasError)throw" in source
+    assert "state.pendingText=message" in source
+    assert "state.liveText+=" in source
+    assert "document.getElementById('aes-chat-thread')" in source
+    assert "window.confirm(warning)" in source
+
+
+def test_inline_javascript_parses_under_node_if_available(tmp_path):
+    import re
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js is not installed")
+    source = PAGE.read_text(encoding="utf-8")
+    scripts = re.findall(r"<script>(.*?)</script>", source, flags=re.S)
+    assert len(scripts) == 1
+    script = tmp_path / "factory-v3-live.js"
+    script.write_text(scripts[0], encoding="utf-8")
+    proc = subprocess.run([node, "--check", str(script)], capture_output=True,
+                          text=True, timeout=20)
+    assert proc.returncode == 0, proc.stderr
