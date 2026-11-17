@@ -50,7 +50,7 @@ body{font-size:15px;line-height:1.7}
 </style>
 <style id="aes-conversation-shell">
 .aes-chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;min-height:calc(100dvh - 174px)}.aes-chat-primary{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - 174px)}.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0 16px}.aes-chat-head h1{font-size:18px;margin:0}.aes-chat-head small{font-size:11px;color:var(--muted)}.aes-chat-thread{flex:1;min-height:300px;max-height:calc(100dvh - 360px);overflow:auto;padding:20px 2%;overscroll-behavior:contain}.aes-welcome{text-align:center;max-width:520px;margin:12vh auto 0}.aes-welcome h2{font-size:27px}.aes-welcome p{color:var(--muted)}.aes-chat-message{white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;line-height:1.85;max-width:90%;padding:9px 14px;border-radius:16px}.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:6px}.aes-chat-message.from-owner{background:var(--lift);margin-right:auto;max-width:76%}.aes-chat-message.from-ai{margin-left:auto;max-width:100%}.aes-chat-composer{margin-top:auto;background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:11px}.aes-chat-composer textarea{background:transparent;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:48px;max-height:220px;padding:6px;color:var(--text);font:inherit}.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px}.aes-inspect-links,.aes-chat-convos{display:flex;flex-direction:column;gap:8px;margin:16px 0}.aes-chat-inspect{padding:12px;border-inline-start:1px solid var(--line)}.aes-chat-convos button{white-space:normal;text-align:start}body:has(.aes-chat-layout) .canvas{max-width:none!important;width:100%;padding:15px 20px}body:has(.aes-chat-layout) .stage{padding:0 10px}@media(max-width:950px){.aes-chat-layout{grid-template-columns:1fr}.aes-chat-inspect{border-inline-start:0;border-top:1px solid var(--line)}.aes-chat-thread{min-height:260px}}@media(max-width:600px){.aes-chat-message{max-width:100%}.aes-chat-message.from-owner{max-width:85%}.aes-chat-head h1{font-size:15px}body:has(.aes-chat-layout) .canvas{padding:10px}}
-</style><style id="aes-steps-ux">.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
+</style><style id="aes-steps-ux">.aes-step-facts{padding:9px 14px}.aes-step-facts p{margin:8px 0;overflow-wrap:anywhere}.aes-historical{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}.aes-historical>summary{color:var(--muted);cursor:pointer}.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
 'use strict';
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
@@ -137,9 +137,19 @@ function events(items,limit=20){
 function runs(){
  const p=current();if(!p)return msg('لا مشروع محدد');
  const snap=state.details,steps=state.steps?.steps||[];
- const stepView='<div class="card"><h2>الخطوات الفعلية ('+(state.steps?steps.length:'—')+')</h2><p class="muted">حالة كل خطوة مرتبطة بسجل المشروع ولا تساوي تحقق التسليم النهائي.</p>'+
- (state.steps?steps.length?steps.map(x=>'<details class="aes-step-detail"><summary><b>'+E(x.title||x.description||('خطوة '+x.id))+'</b> '+tag(x.status)+' <small>'+E(x.phase_title||'مرحلة')+' · #'+E(x.id)+'</small></summary>'+json(x)+'</details>').join(''):msg('لا خطوات مسجلة'):msg('جارٍ تحميل خطوات المشروع'))+'</div>';
-
+ const phasePlan=new Map((snap?.phases||[]).map(p=>[Number(p.id),Number(p.plan_id)]));
+ const latestPlanId=Number(snap?.plan?.id||0),hasPlanContext=latestPlanId>0&&phasePlan.size>0;
+ const currentSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))===latestPlanId):steps;
+ const historicalSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))!==latestPlanId):[];
+ const renderSteps=items=>items.map(x=>'<details class="aes-step-detail"><summary><b>'+E(x.objective||x.title||x.description||('خطوة '+x.id))+'</b> '+tag(x.status)+' <small>مرحلة '+E(x.phase_title||'—')+' · #'+E(x.id)+' · المحاولات '+E(x.attempts??0)+'</small></summary>'+
+ '<div class="aes-step-facts">'+(x.expected_output?'<p><b>المخرج المتوقع: </b>'+E(x.expected_output)+'</p>':'')+
+ (x.last_error?'<p class="bad"><b>آخر خطأ: </b>'+E(x.last_error)+'</p>':'')+
+ (Array.isArray(x.acceptance_criteria)&&x.acceptance_criteria.length?'<details><summary>معايير القبول ('+x.acceptance_criteria.length+')</summary>'+json(x.acceptance_criteria)+'</details>':'')+
+ '<details><summary>السجل التقني الكامل</summary>'+json(x)+'</details></div></details>').join('');
+ const stepView='<div class="card"><h2>خطوات الخطة الحالية ('+(state.steps?currentSteps.length:'—')+')</h2>'+
+ '<p class="muted">'+(latestPlanId?'الخطة الحالية #'+E(latestPlanId)+'؛ عرض الخطوات مرتبط بإصدار الخطة.':'لم تُحدد خطة حالية؛ لا يمكن تصنيف الخطوات التاريخية.')+'</p>'+
+ (state.steps?currentSteps.length?renderSteps(currentSteps):msg('لا توجد خطوات مسجلة في الخطة الحالية.'):msg('جارٍ تحميل خطوات المشروع'))+
+ (historicalSteps.length?'<details class="aes-historical"><summary>الخطط القديمة ('+historicalSteps.length+' خطوة) — تاريخ فقط</summary>'+renderSteps(historicalSteps)+'</details>':'')+'</div>';
  return heading('تشغيل المشروع','المهام والنتائج الفعلية قبل السجلات التشخيصية.')+stepView+
  '<div class="banner">'+tag(p.status)+'<div class="actions">'+(p.status==='DRAFT'&&!(snap?.plan)?btn('توليد خطة حقيقية','plan','primary'):'')+
  (snap?.plan&&!snap.plan.approved_by_owner?btn('مراجعة واعتماد الخطة','approve-plan','primary'):'')+
