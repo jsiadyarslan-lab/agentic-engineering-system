@@ -28,12 +28,13 @@ async function fetchMock(url,opts={}){
       {kind:'message_completed',scope:{conversation_id:999}},
       {kind:'message_delta',scope:{conversation_id:id},delta:'فعلي'},
       {kind:'message_completed',scope:{conversation_id:id}}
-    ]).map(x=>'data: '+JSON.stringify(x)+'\n\n');
+    ]).map(x=>'data: '+JSON.stringify(x)+'\r\n\r\n');
+    const chunks=[events[0],...events.slice(1).flatMap(line=>[line.slice(0,-3),line.slice(-3)])];
     let n=0;
     return{ok:true,status:200,body:{getReader(){return{async read(){
-      if(n>=events.length)return{done:true};
+      if(n>=chunks.length)return{done:true};
       if(holdSecondRead&&n===1){await new Promise(resolve=>{releaseSecondRead=resolve});holdSecondRead=false;}
-      return{done:false,value:new TextEncoder().encode(events[n++])}
+      return{done:false,value:new TextEncoder().encode(chunks[n++])}
     }}}}};
   }
   if(url==='/api/projects')return response({projects:[{id:4,name:'مشروع الإنتاج #4',status:'PAUSED',objective:'إنشاء الموقع'}]});
