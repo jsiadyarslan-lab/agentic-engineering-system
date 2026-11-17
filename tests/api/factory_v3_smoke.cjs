@@ -12,12 +12,15 @@ const serverState={id:4,name:'مشروع الإنتاج #4',status:'PAUSED',obje
   gates:[],phases:[],executions:[],evidence:[],events:[],plan:null};
 function response(data){return{ok:true,status:200,text:async()=>JSON.stringify(data)}}
 const calls=[];
-let holdSecondRead=false, releaseSecondRead=null;
+let holdSecondRead=false, releaseSecondRead=null, streamErrorAfterBind=false;
 async function fetchMock(url,opts={}){
   calls.push(url);
   if(url==='/api/chat/stream'){
     const id=22;
-    const events=[
+    const events=(streamErrorAfterBind?[
+      {kind:'conversation.bind',scope:{conversation_id:id},details:{conversation_id:id}},
+      {kind:'chat.error',scope:{conversation_id:id},text:'OLD_THREAD_PROVIDER_ERROR'}
+    ]:[
       {kind:'conversation.bind',scope:{conversation_id:id},details:{conversation_id:id}},
       {kind:'message_delta',scope:{conversation_id:id},delta:'رد '},
       {kind:'message_delta',scope:{conversation_id:999},delta:'تسرب ممنوع'},
@@ -25,7 +28,7 @@ async function fetchMock(url,opts={}){
       {kind:'message_completed',scope:{conversation_id:999}},
       {kind:'message_delta',scope:{conversation_id:id},delta:'فعلي'},
       {kind:'message_completed',scope:{conversation_id:id}}
-    ].map(x=>'data: '+JSON.stringify(x)+'\n\n');
+    ]).map(x=>'data: '+JSON.stringify(x)+'\n\n');
     let n=0;
     return{ok:true,status:200,body:{getReader(){return{async read(){
       if(n>=events.length)return{done:true};
@@ -104,6 +107,25 @@ async function settle(){
   assert.equal(browser.__test.state.conversationId,23,'in-flight reply must not switch currently selected conversation');
   assert.equal(browser.__test.route().conversationId,23,'navigation link must remain on conversation 23');
 
+  browser.location.hash='#/p/4/chat';
+  browser.__test.state.conversationId=null;
+  browser.__test.state.messages=null;
+  browser.__test.state.error='';
+  streamErrorAfterBind=true;
+  holdSecondRead=true;
+  const interrupted=browser.__test.submitChat({});
+  await settle();
+  assert.equal(typeof releaseSecondRead,'function','failed stream must be paused before error');
+  browser.location.hash='#/p/4/chat/23';
+  browser.__test.state.conversationId=23;
+  browser.__test.state.error='';
+  releaseSecondRead();
+  await interrupted;
+  assert.equal(browser.__test.state.error,'','error from old conversation must not appear in newly selected thread');
+  assert(!root.innerHTML.includes('OLD_THREAD_PROVIDER_ERROR'),'old stream failure must be hidden');
+  assert.equal(browser.__test.state.conversationId,23,'an error cannot hijack selected conversation');
+  streamErrorAfterBind=false;
+
   browser.location.hash='#/p/4/outputs';
   browser.__test.state.artifacts={artifacts:Array.from({length:35},(_,i)=>({
     name:'article-'+i+'.html',kind:'file',step_id:i+1,evidence_id:100+i,verdict:'UNVERIFIED',
@@ -120,6 +142,13 @@ async function settle(){
   assert(root.innerHTML.includes('build.js'),'code filter must show code evidence');
   assert(root.innerHTML.includes('حكم دليل الخطوة: FAILED'),'step verdict must not be upgraded');
   assert(!root.innerHTML.includes('article-0.html'),'code filter must exclude HTML pages');
+  browser.__test.state.preview={name:'index.html',text:'<h1>Test</h1><script>evil()</script>'};
+  browser.__test.state.previewMode='visual';
+  browser.__test.paint();
+  assert(root.innerHTML.includes('sandbox=""'),'HTML preview must not inherit running script privileges');
+  assert(root.innerHTML.includes('Content-Security-Policy'),'HTML preview must inject restrictive CSP');
+  assert(root.innerHTML.includes('&lt;script&gt;evil()&lt;/script&gt;'),'source markup must be encoded in srcdoc attribute');
+  browser.__test.state.preview=null;
   browser.location.hash='#/p/4/runs';
   browser.__test.state.details={...serverState,plan:{id:12,approved_by_owner:true},
     phases:[{id:41,plan_id:11,title:'Older'},{id:42,plan_id:12,title:'Current'}]};
