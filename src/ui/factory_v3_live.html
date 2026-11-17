@@ -90,6 +90,7 @@ function navBar(){
  '<div class="section-label">مساحة العمل</div>'+menus.map(x=>'<a class="nav-btn '+(!r.id&&r.view===x[0]?'selected':'')+'" href="#/'+x[0]+'">'+E(x[1])+'</a>').join('')+
  '<div class="section-label">المشاريع الحقيقية · '+projects.length+'</div>'+
  (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'chat')+'"><span class="pin">●</span><span class="nav-text">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
+ (r.id?'<div class="section-label">محادثات المشروع</div>'+(state.convos?.conversations?.length?state.convos.conversations.slice(0,40).map(c=>'<button class="nav-btn '+(state.conversationId===c.id?'selected':'')+'" data-action="conversation-'+c.id+'">'+E(c.title||('محادثة '+c.id))+'</button>').join(''):'<div class="muted">لا محادثات محفوظة</div>'):'')+
  '</div><div class="muted" style="font-size:11px">LIVE API · دون بيانات تجريبية</div></aside>'+
  (state.side?'<button class="overlay side-overlay" data-action="side" aria-label="إغلاق القائمة"></button>':'');
 }
@@ -169,6 +170,7 @@ function chat(){
  (!thread.length&&!state.busy?'<div class="aes-welcome"><h2>ماذا تريد أن ننجز؟</h2><p>ابدأ محادثة، ثم راجع التشغيل والمخرجات دون مغادرة مساحة العمل.</p></div>':'')+
  thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
  (state.busy?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
+ (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+
  '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'></textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال ↑</button></div></form></section>'+
  '<aside class="aes-chat-inspect"><div class="row wrap"><b>حالة المشروع</b>'+tag(p?.status||'UNKNOWN')+'</div><p class="muted">'+E(p?.objective||'لا هدف مسجل')+'</p>'+
  (['PAUSED','BLOCKED'].includes(p?.status)?'<div class="callout warn">المشروع متوقف. فتح المحادثة لا يستأنف العمل.</div>':'')+
@@ -256,7 +258,7 @@ async function submitCreate(form){
  if(state.busy)return;let f=new FormData(form),name=String(f.get('name')||'').trim(),objective=String(f.get('objective')||'').trim();
  if(!name||objective.length<3)return;
  state.busy=true;state.error='';state.status='جارٍ إنشاء مشروع DRAFT حقيقي...';paint();
- try{const p=await post('/api/projects',{name,objective,execution_policy:'STRICT_ISOLATED'});state.status='حُفظ المشروع في قاعدة المصنع.';location.hash=url(p.id,'overview')}
+ try{const p=await post('/api/projects',{name,objective,execution_policy:'STRICT_ISOLATED'});state.status='حُفظ المشروع في قاعدة المصنع.';location.hash=url(p.id,'chat')}
  catch(e){state.error=e.message;state.status='لم يُنشأ المشروع'}
  finally{state.busy=false;paint()}
 }
@@ -286,7 +288,7 @@ async function submitChat(form){
      if(buf.trim())onFrame(buf);
      if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
    }finally{clearTimeout(timer)}
-   if(cid){state.conversationId=cid;if(projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}await loadExtra(state.revision);await loadMessages()}
+   if(cid){state.conversationId=cid;if(projectAtStart){history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}await loadExtra(state.revision);await loadMessages()}
    else state.error='لم يعد معرف المحادثة';
    if(!wasError&&!state.error)state.status='حُفظ الرد على الخادم';
  }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
