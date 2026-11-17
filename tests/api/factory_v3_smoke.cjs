@@ -173,6 +173,7 @@ async function settle(){
   browser.location.hash='#/p/4/chat/22';
   browser.__test.state.busy=true;
   browser.__test.state.pendingProjectId=4;
+  browser.__test.state.pendingConversationId=22;
   browser.__test.state.activeChatId=22;
   browser.__test.state.stopPending=false;
   browser.__test.paint();
