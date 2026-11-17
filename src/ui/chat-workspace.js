@@ -305,8 +305,9 @@
   async function saveChatSettings(form) {
     if(state.busy)return;
     const fd=new FormData(form),provider=String(fd.get("provider")||"").trim(),
-      model=String(fd.get("model")||"").trim(),
-      configuration=String(fd.get("configuration")||"").trim();
+      model=String(fd.get("model")||"").trim();
+    const previousProvider=state.modelConfig?.roles?.find(r=>r.key==="chat")?.selection?.provider;
+    const configuration=provider===previousProvider?String(fd.get("configuration")||"").trim():"";
     if(!provider||!model)return report("المزود والنموذج مطلوبان.",true);
     if(!window.confirm("ستُحفظ إعدادات نموذج المحادثة في قاعدة المصنع، وستؤثر على الرسائل القادمة. متابعة؟"))return;
     state.busy=true;
