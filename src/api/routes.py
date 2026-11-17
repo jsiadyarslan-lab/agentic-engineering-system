@@ -27,6 +27,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import re
 import subprocess
 import threading
@@ -295,6 +296,10 @@ def index(request: Request) -> Response:
     إصدار ولو لم يتغير index.html نفسه، فيحصل المتصفح الحامل لنسخة
     قديمة على 200 بهيكل مرقّم جديد بدل 304 على قِدَم.
     """
+    # Explicit, reversible deployment switch. Default remains the existing
+    # factory; turn on only after G3 browser and rollback acceptance.
+    if os.environ.get("AES_CHAT_DEFAULT_UI", "").lower() in ("1", "true", "chat"):
+        return factory_chat_workspace(request)
     html = _V_PATTERN.sub(
         b"?v=" + _ASSET_VERSION.encode("ascii"),
         (UI_DIR / "index.html").read_bytes(),
