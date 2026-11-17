@@ -55,7 +55,7 @@ body{font-size:15px;line-height:1.7}
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,toolsData:null,settingsData:null,activeChatId:null,stopPending:false};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:''};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
@@ -204,11 +204,11 @@ function chat(){
  thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
  (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
  (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+
- '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span>'+(isBusyHere?btn(state.stopPending?'طلب الإيقاف…':'إيقاف الرد','stop-chat',state.activeChatId&&!state.stopPending?'danger':'quiet'):'<button class="btn primary" type="submit">إرسال ↑</button>')+'</div></form></section>'+
+ '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span>'+(isBusyHere?(state.activeChatId&&!state.stopPending?btn('إيقاف الرد','stop-chat','danger'):'<span class="btn quiet" aria-disabled="true">'+(state.stopPending?'طلب الإيقاف…':'جارٍ الاتصال…')+'</span>'):'<button class="btn primary" type="submit">إرسال ↑</button>')+'</div></form></section>'+
  '<aside class="aes-chat-inspect"><div class="row wrap"><b>حالة المشروع</b>'+tag(p?.status||'UNKNOWN')+'</div><p class="muted">'+E(p?.objective||'لا هدف مسجل')+'</p>'+
  (['PAUSED','BLOCKED'].includes(p?.status)?'<div class="callout warn">المشروع متوقف. فتح المحادثة لا يستأنف العمل.</div>':'')+
  '<div class="aes-inspect-links">'+link('التشغيل',url(pid(),'runs'),'quiet')+link('المخرجات',url(pid(),'outputs'),'quiet')+link('القرارات',url(pid(),'decisions'),'quiet')+'</div>'+
- '<details open><summary>أحدث الملفات المثبتة ('+recent.length+')</summary><div class="aes-chat-convos">'+(recent.length?recent.map(a=>'<div><b>'+E(a.name||'ملف')+'</b><small class="muted"> · دليل #'+E(a.evidence_id||'—')+' · '+E(a.verdict||'غير محدد')+'</small></div>').join(''):msg(state.artifacts?'لا ملفات مثبتة بعد.':'جارٍ جلب قائمة المخرجات...'))+link('فتح كل المخرجات',url(pid(),'outputs'),'quiet')+'</div></details>'+
+ '<details open><summary>أحدث الملفات المثبتة ('+recent.length+')</summary><div class="aes-chat-convos">'+(recent.length?recent.map(a=>'<div><b>'+E(a.name||'ملف')+'</b><small class="muted"> · دليل #'+E(a.evidence_id||'—')+' · '+E(a.verdict||'غير محدد')+'</small></div>').join(''):msg(state.artifactsError?'تعذر قراءة الملفات: '+state.artifactsError:state.artifacts?'لا ملفات مثبتة بعد.':'جارٍ جلب قائمة المخرجات...'))+link('فتح كل المخرجات',url(pid(),'outputs'),'quiet')+'</div></details>'+
  '<details open><summary>المحادثات المحفوظة</summary><div class="aes-chat-convos">'+controls+'</div></details></aside></div>';
 }
 function browserPage(){
@@ -245,7 +245,7 @@ function settingsPage(){
 function paint(){const r=route();state.view=r.view;const pages={home,overview,chat,runs,decisions,outputs,browser:browserPage,tools:toolsPage,settings:settingsPage};let content=(pages[r.view]||home)();shell(content)}
 async function loadAll(){
  const n=++state.revision,r=route();
- state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;
+ state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;state.artifactsError='';
  state.project=state.projects.find(p=>p.id===r.id)||null;
  paint();
  const listFetch=(async()=>{
@@ -284,7 +284,7 @@ async function loadExtra(n=state.revision){
  if(r.view==='outputs')path='/api/projects/'+p+'/artifacts';
  if(r.view==='chat')path='/api/projects/'+p+'/conversations';
  if(r.view==='chat'){
-   req('/api/projects/'+p+'/artifacts').then(data=>{if(n!==state.revision)return;state.artifacts=data;paint()}).catch(()=>{if(n===state.revision)paint()});
+   req('/api/projects/'+p+'/artifacts').then(data=>{if(n!==state.revision)return;state.artifacts=data;state.artifactsError='';paint()}).catch(error=>{if(n===state.revision){state.artifactsError=error.message;paint()}});
  }
  if(r.view==='runs'){
    const results=await Promise.allSettled([req('/api/projects/'+p+'/steps'),req('/api/projects/'+p+'/runtime')]);
