@@ -94,6 +94,23 @@ def test_chat_factory_page_and_real_assets_served(client):
         assert client.get("/static/" + path).status_code == 200
 
 
+
+def test_factory_root_switch_is_reversible(client, monkeypatch):
+    """G3 requires an explicit opt-in and a one-variable rollback."""
+    legacy = client.get("/")
+    assert legacy.status_code == 200
+    assert "chat-workspace.js" not in legacy.text
+    monkeypatch.setenv("AES_CHAT_DEFAULT_UI", "1")
+    updated = client.get("/")
+    assert updated.status_code == 200
+    assert "chat-workspace.js" in updated.text
+    assert updated.headers["etag"] == client.get("/workspace").headers["etag"]
+    monkeypatch.delenv("AES_CHAT_DEFAULT_UI")
+    restored = client.get("/")
+    assert restored.status_code == 200
+    assert "chat-workspace.js" not in restored.text
+
+
 def test_interaction_contract_has_no_simulated_execution():
     html = (UI / "factory_chat.html").read_text("utf-8")
     js = (UI / "chat-workspace.js").read_text("utf-8")
