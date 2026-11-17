@@ -268,6 +268,25 @@ class CycleResumeIn(BaseModel):
     cycle_id: str = Field(min_length=1)
 
 
+@app.get("/workspace")
+def factory_chat_workspace(request: Request) -> Response:
+    """AES Chat Factory workspace, staged independently of the legacy root.
+
+    No mock data and no deployment assumption. A real owner may verify the
+    UI at /workspace after OCI has actually pulled this revision.
+    """
+    html = (UI_DIR / "factory_chat.html").read_bytes()
+    etag = '"' + hashlib.sha256(html).hexdigest()[:20] + '"'
+    if request.headers.get("if-none-match") in (etag, f"W/{etag}"):
+        return Response(status_code=304, headers={
+            "ETag": etag, "Cache-Control": "no-cache"
+        })
+    return Response(
+        content=html, media_type="text/html",
+        headers={"ETag": etag, "Cache-Control": "no-cache"},
+    )
+
+
 @app.get("/")
 def index(request: Request) -> Response:
     """الواجهة — الروابط تُرقّم وقت الخدمة بهوية الإصدار الحي (الأمر 011).
