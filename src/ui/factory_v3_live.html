@@ -48,14 +48,16 @@ body{font-size:15px;line-height:1.7}
 .pills{font-size:12px;color:var(--good)}.btn.selected{border-color:var(--mint)}
 @media(max-width:740px){.grid{grid-template-columns:1fr}.home-center{padding-top:10px}.canvas{padding:15px}}
 </style>
-</head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
+<style id="aes-conversation-shell">
+.aes-chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;min-height:calc(100dvh - 174px)}.aes-chat-primary{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - 174px)}.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0 16px}.aes-chat-head h1{font-size:18px;margin:0}.aes-chat-head small{font-size:11px;color:var(--muted)}.aes-chat-thread{flex:1;min-height:300px;max-height:calc(100dvh - 360px);overflow:auto;padding:20px 2%;overscroll-behavior:contain}.aes-welcome{text-align:center;max-width:520px;margin:12vh auto 0}.aes-welcome h2{font-size:27px}.aes-welcome p{color:var(--muted)}.aes-chat-message{white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;line-height:1.85;max-width:90%;padding:9px 14px;border-radius:16px}.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:6px}.aes-chat-message.from-owner{background:var(--lift);margin-right:auto;max-width:76%}.aes-chat-message.from-ai{margin-left:auto;max-width:100%}.aes-chat-composer{margin-top:auto;background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:11px}.aes-chat-composer textarea{background:transparent;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:48px;max-height:220px;padding:6px;color:var(--text);font:inherit}.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px}.aes-inspect-links,.aes-chat-convos{display:flex;flex-direction:column;gap:8px;margin:16px 0}.aes-chat-inspect{padding:12px;border-inline-start:1px solid var(--line)}.aes-chat-convos button{white-space:normal;text-align:start}body:has(.aes-chat-layout) .canvas{max-width:none!important;width:100%;padding:15px 20px}body:has(.aes-chat-layout) .stage{padding:0 10px}@media(max-width:950px){.aes-chat-layout{grid-template-columns:1fr}.aes-chat-inspect{border-inline-start:0;border-top:1px solid var(--line)}.aes-chat-thread{min-height:260px}}@media(max-width:600px){.aes-chat-message{max-width:100%}.aes-chat-message.from-owner{max-width:85%}.aes-chat-head h1{font-size:15px}body:has(.aes-chat-layout) .canvas{padding:10px}}
+</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
 'use strict';
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:''};
 const root=document.getElementById('app');
-const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'overview'}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
+const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
 const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
 const link=(name,href,cls='')=>'<a class="btn '+cls+'" href="'+E(href)+'">'+E(name)+'</a>';
@@ -87,13 +89,13 @@ function navBar(){
  '<div class="side-scroll">'+link('＋ مشروع جديد','#/home','primary')+
  '<div class="section-label">مساحة العمل</div>'+menus.map(x=>'<a class="nav-btn '+(!r.id&&r.view===x[0]?'selected':'')+'" href="#/'+x[0]+'">'+E(x[1])+'</a>').join('')+
  '<div class="section-label">المشاريع الحقيقية · '+projects.length+'</div>'+
- (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'overview')+'"><span class="pin">●</span><span class="nav-text">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
+ (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'chat')+'"><span class="pin">●</span><span class="nav-text">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
  '</div><div class="muted" style="font-size:11px">LIVE API · دون بيانات تجريبية</div></aside>'+
  (state.side?'<button class="overlay side-overlay" data-action="side" aria-label="إغلاق القائمة"></button>':'');
 }
 function tabs(){
  const r=route();if(!r.id)return '';
- const tabs=[['overview','نظرة عامة'],['chat','المحادثات'],['runs','التشغيل'],['decisions','القرارات'],['outputs','المخرجات'],['browser','المراجع']];
+ const tabs=[['chat','المحادثة'],['overview','ملخص المشروع'],['runs','التشغيل'],['outputs','المخرجات'],['decisions','القرارات'],['browser','المراجع']];
  return '<nav class="project-tabs" aria-label="مساحات المشروع">'+tabs.map(([v,t])=>link(t,url(r.id,v),r.view===v?'selected':'quiet')).join('')+'</nav>';
 }
 function shell(content){
@@ -160,13 +162,18 @@ function outputs(){
  (state.preview?'<div class="card"><h2>'+E(state.preview.name)+'</h2><p class="muted">المحتوى معروض للقراءة فقط (حد 256KB من API).</p><pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre></div>':'');
 }
 function chat(){
- const r=route(),p=current(),convos=state.convos?.conversations||[],mid=state.conversationId;
- return heading('محادثات المشروع','المحادثات حقيقية ومحفوظة في قاعدة AES. إرسال الرسالة يستدعي المزود المحدد على الخادم.')+
- '<div class="card"><h2>سجل المحادثات</h2><div class="actions">'+btn('محادثة جديدة','new-chat','primary')+
- convos.map(c=>btn(c.title||('محادثة '+c.id),'conversation-'+c.id,(mid===c.id?'selected':''))).join('')+'</div></div>'+
- '<div class="transcript">'+(state.messages?.messages?.length?state.messages.messages.map(m=>'<article class="message '+(m.role==='user'?'user':'bot')+'"><div class="message-text"><strong>'+E(m.role||'رسالة')+'</strong><p>'+E(m.content||'')+'</p></div></article>').join(''):msg(mid?'لا رسائل أو لم يكتمل جلبها.':'اختر محادثة أو ابدأ جديدة.'))+'</div>'+
- '<form id="send-chat" class="card"><label class="field"><span>أرسل إلى النموذج الحقيقي</span><textarea name="message" required rows="3" placeholder="اكتب سؤالك..."></textarea></label><div class="row wrap"><small class="muted">الإرسال قد يستهلك مزود النموذج. لا ينفذ أمر مشروع تلقائيًا.</small><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال</button></div></form>'+
- '<p class="muted">عند إنشاء محادثة من هنا تُربط بالمشروع بعد استلام معرفها. إذا فشل الربط يُعلَن ذلك صراحة.</p>';
+ const p=current(),convos=state.convos?.conversations||[],mid=state.conversationId,thread=state.messages?.messages||[];
+ const controls=convos.map(c=>btn(c.title||('محادثة '+c.id),'conversation-'+c.id,mid===c.id?'selected':'')).join('');
+ return '<div class="aes-chat-layout"><section class="aes-chat-primary"><header class="aes-chat-head"><div><small>مصنع AES · مشروع '+E(pid())+'</small><h1>'+E(p?.name||'المحادثة')+'</h1></div>'+btn('محادثة جديدة','new-chat','quiet')+'</header>'+
+ '<div class="aes-chat-thread" id="aes-chat-thread">'+
+ (!thread.length&&!state.busy?'<div class="aes-welcome"><h2>ماذا تريد أن ننجز؟</h2><p>ابدأ محادثة، ثم راجع التشغيل والمخرجات دون مغادرة مساحة العمل.</p></div>':'')+
+ thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
+ (state.busy?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
+ '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'></textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال ↑</button></div></form></section>'+
+ '<aside class="aes-chat-inspect"><div class="row wrap"><b>حالة المشروع</b>'+tag(p?.status||'UNKNOWN')+'</div><p class="muted">'+E(p?.objective||'لا هدف مسجل')+'</p>'+
+ (['PAUSED','BLOCKED'].includes(p?.status)?'<div class="callout warn">المشروع متوقف. فتح المحادثة لا يستأنف العمل.</div>':'')+
+ '<div class="aes-inspect-links">'+link('التشغيل',url(pid(),'runs'),'quiet')+link('المخرجات',url(pid(),'outputs'),'quiet')+link('القرارات',url(pid(),'decisions'),'quiet')+'</div>'+
+ '<details open><summary>المحادثات المحفوظة</summary><div class="aes-chat-convos">'+controls+'</div></details></aside></div>';
 }
 function browserPage(){
  return heading('المراجع والمتصفح','النسخة الحالية لا توفر API للتحكم بمتصفح مدمج.')+
@@ -184,7 +191,7 @@ async function loadAll(){
  paint();
  try{const data=await req('/api/projects');if(n!==state.revision)return;state.projects=Array.isArray(data.projects)?data.projects:[];}catch(e){if(n===state.revision){state.error=e.message;state.projects=[]}}
  const r=route();state.project=state.projects.find(p=>p.id===r.id)||null;paint();
- if(r.id){await refreshDetail(n);if(n===state.revision)await loadExtra(n)}
+ if(r.id){await Promise.all([refreshDetail(n),loadExtra(n)])}
  state.loading=false;paint();
 }
 async function refreshDetail(n=state.revision){
@@ -223,8 +230,8 @@ async function mutation(path,payload,warning){
 async function handle(action){
  const id=pid();if(action==='refresh'){await loadAll();return}
  if(action==='side'){state.side=!state.side;paint();return}
- if(action==='new-chat'){state.conversationId=null;state.messages=null;paint();return}
- if(action.startsWith('conversation-')){state.conversationId=Number(action.split('-')[1]);state.messages=null;paint();await loadMessages();return}
+ if(action==='new-chat'){state.conversationId=null;state.messages=null;history.replaceState(null,'',url(id,'chat'));paint();return}
+ if(action.startsWith('conversation-')){state.conversationId=Number(action.split('-')[1]);state.messages=null;history.replaceState(null,'',url(id,'chat')+'/'+state.conversationId);paint();await loadMessages();return}
  if(action.startsWith('theme-')){state.theme=action.slice(6);document.documentElement.setAttribute('data-theme',state.theme);return}
  if(action==='plan')return mutation('/api/projects/'+id+'/plan/generate',{},'سيُطلب إنشاء خطة حقيقية وقد يستدعي مزود نموذج. متابعة؟');
  if(action==='approve-plan')return mutation('/api/projects/'+id+'/plan/approve',{approved:true,feedback:''},'اعتماد الخطة يطلق التنفيذ الحقيقي تلقائيًا وقد يستهلك موارد. هل اعتمدت الخطة بعد مراجعتها؟');
@@ -254,39 +261,43 @@ async function submitCreate(form){
  finally{state.busy=false;paint()}
 }
 async function submitChat(form){
- if(state.busy)return;let text=String(new FormData(form).get('message')||'').trim();if(!text)return;
- state.busy=true;state.error='';state.status='اتصلنا بمسار المحادثة الحقيقي؛ ننتظر النتيجة.';paint();
- let conversationId=state.conversationId||null;
+ if(state.busy)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
+ const projectAtStart=route().id;let cid=state.conversationId||null,finished=false,wasError=false;
+ state.busy=true;state.error='';state.liveText='';state.pendingText=message;state.streamNotice='يتصل';state.status='';paint();
  try{
-   const ac=new AbortController(),timeout=setTimeout(()=>ac.abort(),90000);
+   const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),90000);
    try{
-     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,conversation_id:conversationId}),signal:ac.signal});
+     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:cid}),signal:ac.signal});
      if(!res.ok)throw Error('HTTP '+res.status+' '+(await res.text()).slice(0,180));
-     const rd=res.body.getReader(),dec=new TextDecoder();let buffer='',total=0;
-     while(true){const n=await rd.read();if(n.done)break;total+=n.value.byteLength;if(total>3000000)throw Error('حد حجم بث المحادثة');
-       buffer+=dec.decode(n.value,{stream:true});
-       let chunks=buffer.split(/\r?\n\r?\n/);buffer=chunks.pop()||'';
-       for(const chunk of chunks){const line=chunk.split(/\r?\n/).filter(x=>x.startsWith('data:')).map(x=>x.slice(5)).join('\n').trim();if(!line||line==='[DONE]')continue;
-         try{const ev=JSON.parse(line),d=ev.payload||ev;const cand=Number(d.conversation_id||ev.conversation_id||d.scope?.conversation_id||ev.scope?.conversation_id);
-           if(Number.isInteger(cand)&&cand>0)conversationId=cand;
-         }catch{}
-       }
-     }
-   }finally{clearTimeout(timeout)}
-   if(conversationId){
-     state.conversationId=conversationId;
-     if(route().id){try{await post('/api/conversations/'+conversationId+'/move-to-project',{project_id:route().id})}catch(e){state.error='المحادثة محفوظة لكن ربطها بالمشروع فشل: '+e.message}}
-     await loadExtra(state.revision);await loadMessages();
-   }else{state.error='عاد البث دون معرف محادثة؛ راجع قائمة المحادثات الحالية.';await loadExtra(state.revision)}
-   state.status='انتهت قراءة بث المحادثة. لا نعد بنجاح النموذج قبل مراجعة الرسائل المحفوظة.';
- }catch(e){state.error='فشل البث أو انقطع: '+e.message+'. قد يستمر التنفيذ على الخادم؛ لا تعِد الإرسال دون فحص سجل المحادثة.';state.status=''}
- finally{state.busy=false;paint()}
+     if(!res.body)throw Error('لا يوجد بث من الخادم');
+     const reader=res.body.getReader(),decoder=new TextDecoder();let buf='',bytes=0,lastRender=0;
+     const onFrame=frame=>{
+       const lines=frame.split(/\r?\n/).filter(l=>l.startsWith('data:'));if(!lines.length)return;
+       let ev;try{ev=JSON.parse(lines.map(x=>x.slice(5)).join('\n').trim())}catch{return}
+       const candidate=Number(ev.scope?.conversation_id||ev.details?.conversation_id||ev.conversation_id);
+       if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate}
+       if(ev.kind==='message_delta')state.liveText+=String(ev.delta??ev.text??'');
+       if(ev.kind==='chat.status'||ev.kind==='message_started')state.streamNotice=ev.text||ev.status||'يكتب الآن';
+       if(ev.kind==='message_completed')finished=true;
+       if(ev.kind==='chat.error'){wasError=true;state.error=ev.text||ev.code||'فشل توليد الرد'}
+       const now=Date.now();if(now-lastRender>90||finished||wasError){paint();lastRender=now;const el=document.getElementById('aes-chat-thread');if(el)el.scrollTop=el.scrollHeight}
+     };
+     while(true){const x=await reader.read();if(x.done)break;bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true}).replace(/\r\n/g,'\n');let k;while((k=buf.indexOf('\n\n'))!==-1){onFrame(buf.slice(0,k));buf=buf.slice(k+2)}}
+     if(buf.trim())onFrame(buf);
+     if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
+   }finally{clearTimeout(timer)}
+   if(cid){state.conversationId=cid;if(projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}await loadExtra(state.revision);await loadMessages()}
+   else state.error='لم يعد معرف المحادثة';
+   if(!wasError&&!state.error)state.status='حُفظ الرد على الخادم';
+ }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
+ finally{state.busy=false;state.pendingText='';if(!state.error)state.liveText='';paint()}
 }
 document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
 document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}});
-window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=null;loadAll()});
+window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=route().conversationId||null;loadAll()});
 setInterval(()=>{if(!document.hidden&&!state.busy&&route().id&&!state.loading)refreshDetail()},30000);
 if(!location.hash)history.replaceState(null,'','#/home');
 document.documentElement.setAttribute('data-theme',state.theme);
+state.conversationId=route().conversationId||null;
 loadAll();
 </script></body></html>
