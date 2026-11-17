@@ -80,5 +80,21 @@ async function settle(){
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
   assert(calls.includes('/api/conversations/22/move-to-project'),'new chat must be linked to project');
   assert(!calls.some(x=>/\/plan\/approve|\/resume|\/gates\//.test(x)),'a question must not execute owner actions');
+  browser.location.hash='#/p/4/outputs';
+  browser.__test.state.artifacts={artifacts:Array.from({length:35},(_,i)=>({
+    name:'article-'+i+'.html',kind:'file',step_id:i+1,evidence_id:100+i,verdict:'UNVERIFIED',
+    sha256:'evidence-sha-'+i
+  })).concat([{name:'build.js',kind:'file',step_id:44,evidence_id:999,verdict:'FAILED'}])};
+  browser.__test.state.artifactQuery='';
+  browser.__test.state.artifactType='all';
+  browser.__test.state.artifactLimit=30;
+  browser.__test.paint();
+  assert(root.innerHTML.includes('عرض المزيد (6)'),'pagination should constrain huge artifact lists');
+  assert(!root.innerHTML.includes('article-34.html'),'initial view must not flood all results');
+  browser.__test.state.artifactType='code';
+  browser.__test.paint();
+  assert(root.innerHTML.includes('build.js'),'code filter must show code evidence');
+  assert(root.innerHTML.includes('حكم دليل الخطوة: FAILED'),'step verdict must not be upgraded');
+  assert(!root.innerHTML.includes('article-0.html'),'code filter must exclude HTML pages');
   process.stdout.write('AES_CHAT_UI_SMOKE_PASS\n');
 })().catch(e=>{console.error(e);process.exitCode=1});
