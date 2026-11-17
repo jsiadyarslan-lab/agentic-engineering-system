@@ -14,7 +14,7 @@ on:
 
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +44,11 @@ jobs:
           exit 1
       - name: Chromium desktop and mobile acceptance
         run: node tests/ui/chat_factory_browser.cjs
+      - name: Copy server log
+        if: always()
+        run: |
+          mkdir -p browser-artifacts
+          if test -f /tmp/aes-chat-uvicorn.log; then cp /tmp/aes-chat-uvicorn.log browser-artifacts/server.log; fi
       - name: Upload screenshots and server logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,5 +56,5 @@ jobs:
           name: aes-chat-factory-browser-evidence
           path: |
             browser-artifacts/*.png
-            /tmp/aes-chat-uvicorn.log
+            browser-artifacts/server.log
           if-no-files-found: warn
