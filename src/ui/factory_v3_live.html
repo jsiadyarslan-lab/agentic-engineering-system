@@ -50,12 +50,12 @@ body{font-size:15px;line-height:1.7}
 </style>
 <style id="aes-conversation-shell">
 .aes-chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:20px;min-height:calc(100dvh - 174px)}.aes-chat-primary{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - 174px)}.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0 16px}.aes-chat-head h1{font-size:18px;margin:0}.aes-chat-head small{font-size:11px;color:var(--muted)}.aes-chat-thread{flex:1;min-height:300px;max-height:calc(100dvh - 360px);overflow:auto;padding:20px 2%;overscroll-behavior:contain}.aes-welcome{text-align:center;max-width:520px;margin:12vh auto 0}.aes-welcome h2{font-size:27px}.aes-welcome p{color:var(--muted)}.aes-chat-message{white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;line-height:1.85;max-width:90%;padding:9px 14px;border-radius:16px}.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:6px}.aes-chat-message.from-owner{background:var(--lift);margin-right:auto;max-width:76%}.aes-chat-message.from-ai{margin-left:auto;max-width:100%}.aes-chat-composer{margin-top:auto;background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:11px}.aes-chat-composer textarea{background:transparent;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:48px;max-height:220px;padding:6px;color:var(--text);font:inherit}.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px}.aes-inspect-links,.aes-chat-convos{display:flex;flex-direction:column;gap:8px;margin:16px 0}.aes-chat-inspect{padding:12px;border-inline-start:1px solid var(--line)}.aes-chat-convos button{white-space:normal;text-align:start}body:has(.aes-chat-layout) .canvas{max-width:none!important;width:100%;padding:15px 20px}body:has(.aes-chat-layout) .stage{padding:0 10px}@media(max-width:950px){.aes-chat-layout{grid-template-columns:1fr}.aes-chat-inspect{border-inline-start:0;border-top:1px solid var(--line)}.aes-chat-thread{min-height:260px}}@media(max-width:600px){.aes-chat-message{max-width:100%}.aes-chat-message.from-owner{max-width:85%}.aes-chat-head h1{font-size:15px}body:has(.aes-chat-layout) .canvas{padding:10px}}
-</style><style id="aes-steps-ux">.aes-step-facts{padding:9px 14px}.aes-step-facts p{margin:8px 0;overflow-wrap:anywhere}.aes-historical{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}.aes-historical>summary{color:var(--muted);cursor:pointer}.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
+</style><style id="aes-steps-ux">.aes-step-facts{padding:9px 14px}.aes-step-facts p{margin:8px 0;overflow-wrap:anywhere}.aes-historical{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}.aes-historical>summary{color:var(--muted);cursor:pointer}.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style><style id="aes-static-artifact-preview">.aes-artifact-frame{display:block;width:100%;height:min(620px,66vh);border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:12px;overflow:auto}.artifact-name{max-width:100%;overflow-wrap:anywhere}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
 'use strict';
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:'',pendingConversationId:null};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,previewMode:'source',toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:'',pendingConversationId:null};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
@@ -182,16 +182,20 @@ function outputs(){
    return true;
  }):[];
  const result=selected.slice(0,state.artifactLimit);
+ const canShowVisual=state.preview&&/\.html?$/i.test(state.preview.name||'');
+ const isolatedDoc=canShowVisual?'<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; script-src &#39;none&#39;; connect-src &#39;none&#39;; form-action &#39;none&#39;; img-src data:; font-src data:; style-src &#39;unsafe-inline&#39;">'+state.preview.text:'';
+ const previewPanel=state.preview?'<section class="card"><div class="row wrap"><h2>'+E(state.preview.name)+'</h2><div class="actions">'+(canShowVisual?btn('معاينة مرئية آمنة','artifact-view-visual',state.previewMode==='visual'?'selected':'quiet'):'')+btn('عرض المصدر','artifact-view-source',state.previewMode==='source'?'selected':'quiet')+btn('إغلاق','artifact-close','quiet')+'</div></div><p class="muted">محتوى نصي من أدلة المصنع بحد 256KB. العرض المرئي ثابت ومعزول، لا يُشغّل JavaScript أو يتصل بالشبكة، ولا يمثل اختبار قبول للموقع.</p>'+(canShowVisual&&state.previewMode==='visual'?'<iframe class="aes-artifact-frame" title="معاينة HTML ثابتة وآمنة" sandbox="" referrerpolicy="no-referrer" srcdoc="'+E(isolatedDoc)+'"></iframe>':'<pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre>')+'</section>':'';
+
  const kinds=[['all','الكل'],['html','صفحات HTML'],['code','الكود'],['docs','الوثائق']];
  const filters='<form id="artifact-filter-form" class="card"><label class="field"><span>ابحث داخل أسماء الملفات أو رقم الخطوة</span><input name="q" type="search" autocomplete="off" placeholder="مثال: index.html أو build.js" value="'+E(state.artifactQuery)+'"></label><div class="row wrap"><div class="actions">'+kinds.map(([id,label])=>btn(label,'artifact-type-'+id,type===id?'selected':'quiet')).join('')+'</div><button type="submit" class="btn primary">بحث</button></div></form>';
  return heading('مخرجات المشروع','ملفات وأدلة حقيقية مثبتة في سجل التشغيل. وجود الملف لا يعني قبول التسليم النهائي.')+
  filters+
- (!list?msg('جارٍ طلب قائمة الأدلة والمخرجات من الخادم...'):
+ (!list?msg(state.artifactsError?'تعذّر جلب قائمة المخرجات: '+state.artifactsError:'جارٍ طلب قائمة الأدلة والمخرجات من الخادم...'):
  '<div class="row wrap"><b>'+selected.length+' نتيجة من أصل '+list.length+' مخرج موثق</b><small class="muted">الملفات غير المثبتة لا تظهر في هذه القائمة</small></div>'+
  (selected.length?result.map(({a,index})=>'<article class="card"><div class="row wrap"><div class="artifact-name"><b>'+E(a.name||'ملف')+'</b><p class="muted">خطوة #'+E(a.step_id||'غير محددة')+' · دليل #'+E(a.evidence_id||'—')+' · نوع '+E(a.kind||'—')+'</p><small class="muted">حكم دليل الخطوة: '+E(a.verdict||'غير محدد')+'</small></div><div class="actions">'+(a.kind==='file'&&a.step_id?btn('معاينة النص','artifact-'+index,'primary'):'')+'</div></div><details><summary>هوية الملف والتحقق</summary><div class="mono">SHA256: '+E(a.sha256||'لا بصمة مسجلة')+'</div><div class="muted">البايتات: '+E(a.bytes??'غير معروف')+'</div></details></article>').join(''):msg('لا نتائج تطابق مرشح البحث.'))+
  (selected.length>state.artifactLimit?'<div class="row">'+btn('عرض المزيد ('+(selected.length-state.artifactLimit)+')','artifact-more','quiet')+'</div>':'')
  )+
- (state.preview?'<section class="card"><div class="row wrap"><h2>معاينة نصية: '+E(state.preview.name)+'</h2>'+btn('إغلاق المعاينة','artifact-close','quiet')+'</div><p class="muted">قراءة فعلية من خادم المصنع، حتى 256KB فقط. هذه ليست معاينة تشغيل للموقع ولا تثبت صحة المنتج.</p><pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre></section>':'');
+ previewPanel;
 }
 function chat(){
  const p=current(),convos=state.convos?.conversations||[],mid=state.conversationId,thread=state.messages?.messages||[];
@@ -341,13 +345,15 @@ async function handle(action){
  }
  if(action==='artifact-more'){state.artifactLimit+=30;paint();return}
  if(action==='artifact-close'){state.preview=null;paint();return}
+ if(action==='artifact-view-visual'){if(state.preview&&/\.html?$/i.test(state.preview.name)){state.previewMode='visual';paint()}return}
+ if(action==='artifact-view-source'){state.previewMode='source';paint();return}
  if(action.startsWith('artifact-type-')){state.artifactType=action.slice('artifact-type-'.length);state.artifactLimit=30;state.preview=null;paint();return}
  if(action.startsWith('artifact-')){
    const n=Number(action.split('-')[1]),a=state.artifacts?.artifacts?.[n];if(!a||a.kind!=='file'||!a.step_id)return;
    state.preview=null;state.status='جارٍ تحميل النص المثبت...';paint();
    try{const q='/api/projects/'+id+'/artifacts/content?step_id='+encodeURIComponent(a.step_id)+'&name='+encodeURIComponent(a.name);
      const controller=new AbortController(),clock=setTimeout(()=>controller.abort(),12000);
-     try{const r=await fetch(q,{cache:'no-store',credentials:'same-origin',signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);state.preview={name:a.name,text:await r.text()};state.status='';}
+     try{const r=await fetch(q,{cache:'no-store',credentials:'same-origin',signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);state.preview={name:a.name,text:await r.text()};state.previewMode=/\.html?$/i.test(a.name)?'visual':'source';state.status='';}
      finally{clearTimeout(clock)}
    }catch(e){state.error='تعذر عرض الملف: '+e.message;state.status=''}
    paint();return;
