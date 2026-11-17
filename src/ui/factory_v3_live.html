@@ -55,10 +55,11 @@ body{font-size:15px;line-height:1.7}
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
+const draftKey=()=>String(route().id)+':'+String(state.conversationId||'new');
 const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
 const link=(name,href,cls='')=>'<a class="btn '+cls+'" href="'+E(href)+'">'+E(name)+'</a>';
 const kind=s=>{s=String(s||'UNKNOWN').toUpperCase();return ['FAILED','BLOCKED','ERROR','INTERRUPTED'].includes(s)?'bad':['VERIFIED','COMPLETED','SUCCESS','PASSED'].includes(s)?'ok':['RUNNING','PLANNING','REVISING'].includes(s)?'warn':''};
@@ -167,14 +168,15 @@ function outputs(){
 }
 function chat(){
  const p=current(),convos=state.convos?.conversations||[],mid=state.conversationId,thread=state.messages?.messages||[];
+ const isBusyHere=state.busy&&state.pendingProjectId===pid(),draft=state.drafts[draftKey()]||'';
  const controls=convos.map(c=>btn(c.title||('محادثة '+c.id),'conversation-'+c.id,mid===c.id?'selected':'')).join('');
  return '<div class="aes-chat-layout"><section class="aes-chat-primary"><header class="aes-chat-head"><div><small>مصنع AES · مشروع '+E(pid())+'</small><h1>'+E(p?.name||'المحادثة')+'</h1></div>'+btn('محادثة جديدة','new-chat','quiet')+'</header>'+
  '<div class="aes-chat-thread" id="aes-chat-thread">'+
- (!thread.length&&!state.busy?'<div class="aes-welcome"><h2>ماذا تريد أن ننجز؟</h2><p>ابدأ محادثة، ثم راجع التشغيل والمخرجات دون مغادرة مساحة العمل.</p></div>':'')+
+ (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>ماذا تريد أن ننجز؟</h2><p>ابدأ محادثة، ثم راجع التشغيل والمخرجات دون مغادرة مساحة العمل.</p></div>':'')+
  thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
- (state.busy?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
+ (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article><article class="aes-chat-message from-ai" role="status"><small>'+E(state.streamNotice||'جارٍ الرد')+'</small><div dir="auto">'+E(state.liveText||'…')+'</div></article>':'')+'</div>'+
  (!state.busy&&state.error&&state.liveText?'<div class="callout warn"><b>رد جزئي قبل الانقطاع</b><div dir="auto">'+E(state.liveText)+'</div></div>':'')+
- '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'></textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال ↑</button></div></form></section>'+
+ '<form id="send-chat" class="aes-chat-composer"><textarea name="message" required maxlength="32000" rows="2" placeholder="اكتب رسالتك..." aria-label="رسالة للمساعد" '+(state.busy?'disabled':'')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">اسأل · لا يبدأ التنفيذ تلقائيًا</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إرسال ↑</button></div></form></section>'+
  '<aside class="aes-chat-inspect"><div class="row wrap"><b>حالة المشروع</b>'+tag(p?.status||'UNKNOWN')+'</div><p class="muted">'+E(p?.objective||'لا هدف مسجل')+'</p>'+
  (['PAUSED','BLOCKED'].includes(p?.status)?'<div class="callout warn">المشروع متوقف. فتح المحادثة لا يستأنف العمل.</div>':'')+
  '<div class="aes-inspect-links">'+link('التشغيل',url(pid(),'runs'),'quiet')+link('المخرجات',url(pid(),'outputs'),'quiet')+link('القرارات',url(pid(),'decisions'),'quiet')+'</div>'+
@@ -275,8 +277,8 @@ async function submitCreate(form){
 }
 async function submitChat(form){
  if(state.busy)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
- const projectAtStart=route().id;let cid=state.conversationId||null,finished=false,wasError=false;
- state.busy=true;state.error='';state.liveText='';state.pendingText=message;state.streamNotice='يتصل';state.status='';paint();
+ const projectAtStart=route().id,originDraft=draftKey();let cid=state.conversationId||null,finished=false,wasError=false;
+ state.busy=true;state.pendingProjectId=projectAtStart;state.error='';state.liveText='';state.pendingText=message;state.streamNotice='يتصل';state.status='';paint();
  try{
    const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),90000);
    try{
@@ -288,6 +290,7 @@ async function submitChat(form){
        const lines=frame.split(/\r?\n/).filter(l=>l.startsWith('data:'));if(!lines.length)return;
        let ev;try{ev=JSON.parse(lines.map(x=>x.slice(5)).join('\n').trim())}catch{return}
        const candidate=Number(ev.scope?.conversation_id||ev.details?.conversation_id||ev.conversation_id);
+       if(['conversation.bind','message_delta','message_completed','chat.error','message_started','chat.status'].includes(ev.kind)&&(!Number.isInteger(candidate)||candidate<=0))return;
        if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate}
        if(ev.kind==='message_delta')state.liveText+=String(ev.delta??ev.text??'');
        if(ev.kind==='chat.status'||ev.kind==='message_started')state.streamNotice=ev.text||ev.status||'يكتب الآن';
@@ -299,16 +302,20 @@ async function submitChat(form){
      if(buf.trim())onFrame(buf);
      if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
    }finally{clearTimeout(timer)}
-   if(cid){state.conversationId=cid;if(projectAtStart){history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}await loadExtra(state.revision);await loadMessages()}
+   if(cid){if(projectAtStart){if(route().id===projectAtStart)history.replaceState(null,'',url(projectAtStart,'chat')+'/'+cid);try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}
+    if(route().id===projectAtStart){state.conversationId=cid;await loadExtra(state.revision);await loadMessages()}}
    else state.error='لم يعد معرف المحادثة';
-   if(!wasError&&!state.error)state.status='حُفظ الرد على الخادم';
- }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
- finally{state.busy=false;state.pendingText='';if(!state.error)state.liveText='';paint()}
+   if(!wasError&&!state.error){state.status='حُفظ الرد على الخادم';delete state.drafts[originDraft]}
+ }catch(e){state.error='فشل البث: '+e.message+'؛ افحص السجل قبل إعادة الإرسال.';if(cid&&route().id===projectAtStart){state.conversationId=cid;try{await loadExtra(state.revision);await loadMessages()}catch{}}}
+ finally{state.busy=false;state.pendingProjectId=null;state.pendingText='';if(!state.error)state.liveText='';paint()}
 }
 document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
+document.addEventListener('input',e=>{const t=e.target;if(t?.name==='message'&&t.closest?.('#send-chat'))state.drafts[draftKey()]=t.value;});
 document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}});
 window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=route().conversationId||null;loadAll()});
-setInterval(()=>{if(!document.hidden&&!state.busy&&route().id&&!state.loading)refreshDetail()},30000);
+setInterval(()=>{if(document.hidden||state.busy||!route().id||state.loading)return;
+ const editor=document.activeElement;if(editor?.matches?.('#send-chat textarea'))return;
+ refreshDetail()},30000);
 if(!location.hash)history.replaceState(null,'','#/home');
 document.documentElement.setAttribute('data-theme',state.theme);
 state.conversationId=route().conversationId||null;
