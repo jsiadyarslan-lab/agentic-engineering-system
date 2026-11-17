@@ -87,7 +87,16 @@ async function setup(page) {
     await desktop.locator('button[data-action="inspector-close"]').click();
     await desktop.locator("#prompt").fill("ما آخر تقدم للمشروع؟");
     await desktop.locator("#composer-form").evaluate(form=>form.requestSubmit());
-    await desktop.getByText("رد موثق من اختبار محلي").waitFor({timeout:15000});
+    try {
+      await desktop.getByText("رد موثق من اختبار محلي").first().waitFor({timeout:12000});
+    } catch (error) {
+      console.error("AES_DEBUG_ROUTE",desktop.url());
+      console.error("AES_DEBUG_SCOPE",JSON.stringify(scopedPosted));
+      console.error("AES_DEBUG_THREAD",JSON.stringify((await desktop.locator("#thread").innerText()).slice(-2200)));
+      console.error("AES_DEBUG_JS_ERRORS",JSON.stringify(errors));
+      await desktop.screenshot({path:path.join(OUTPUT,"FAILED-chat-debug.png"),fullPage:true});
+      throw error;
+    }
     assert.equal(scopedPosted.project_id,4);
     assert.equal(scopedPosted.message,"ما آخر تقدم للمشروع؟");
     assert.equal(workflowPosts,0,"chat must never start an engineering job");
