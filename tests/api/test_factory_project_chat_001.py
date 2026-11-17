@@ -87,3 +87,31 @@ def test_partial_provider_abort_is_not_retried_or_presented_as_completed(api_env
     assert [m["role"] for m in messages] == ["user", "assistant"]
     assert messages[-1]["state_badge"] == "PARTIAL"
     assert messages[-1]["content"] == "رد حقيقي جزئي ثم "
+
+
+def test_partial_reply_not_reported_saved_when_storage_fails(api_env, monkeypatch):
+    client = TestClient(routes.app)
+    router = api_env["router"]
+    append = routes.convo.append_message
+
+    def broken_stream(_messages, *, on_delta=None, **_kwargs):
+        on_delta("نص وصل إلى المتصفح")
+        raise ProviderCallError("stream disconnected", is_server_error=True)
+
+    def write_user_only(*args, **kwargs):
+        if kwargs.get("role") == "assistant":
+            raise OSError("storage unavailable")
+        return append(*args, **kwargs)
+
+    monkeypatch.setattr(router, "chat_live_stream", broken_stream)
+    monkeypatch.setattr(routes.convo, "append_message", write_user_only)
+    response = client.post("/api/chat/stream", json={"message": "اختبار الحفظ"})
+    assert response.status_code == 200
+    events = sse_events(response)
+    failure = next(e for e in events if e["kind"] == "chat.error")
+    assert failure["details"]["persisted"] is False
+    assert failure["details"]["partial_chars"] == len("نص وصل إلى المتصفح")
+    assert not any(e["kind"] == "message_completed" for e in events)
+    cid = failure["scope"]["conversation_id"]
+    messages = client.get(f"/api/conversations/{cid}/messages").json()["messages"]
+    assert [m["role"] for m in messages] == ["user"]

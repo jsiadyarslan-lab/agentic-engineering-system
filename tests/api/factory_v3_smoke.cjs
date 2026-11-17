@@ -13,10 +13,13 @@ const serverState={id:4,name:'مشروع الإنتاج #4',status:'PAUSED',obje
 function response(data){return{ok:true,status:200,text:async()=>JSON.stringify(data)}}
 const calls=[];
 let holdSecondRead=false, releaseSecondRead=null, streamErrorAfterBind=false, brokenStream=false, serverRunning=false, persistBrokenQuestion=true;
+let streamHttpStatus=200, requestBody=null, slowIndicator=null;
 let savedMessages=[{id:1,role:'user',content:'تحدث'},{id:2,role:'assistant',content:'رد فعلي',state_badge:'COMPLETED'}];
 async function fetchMock(url,opts={}){
   calls.push(url);
   if(url==='/api/chat/stream'){
+    requestBody=JSON.parse(opts.body);
+    if(streamHttpStatus!==200)return {ok:false,status:streamHttpStatus,text:async()=> 'internal provider diagnostics'};
     const id=22;
     const events=(streamErrorAfterBind?[
       {kind:'conversation.bind',scope:{conversation_id:id},details:{conversation_id:id}},
@@ -74,7 +77,7 @@ const browser={
   history:{replaceState(_a,_b,value){browser.location.hash=value}},
   window:{addEventListener(){},confirm(){return true}},
   fetch:fetchMock,FormData:class{get(name){return name==='message'?'تحدث':''}},
-  setTimeout,clearTimeout,setInterval(){},
+  setTimeout(fn,ms){if(ms===12000&&String(fn).includes('لم يصل نص الرد بعد'))slowIndicator=fn;return setTimeout(fn,ms)},clearTimeout,setInterval(){},
   AbortController,DOMException,TextEncoder,TextDecoder,Date,JSON,Number,String,
   console
 };
@@ -95,7 +98,8 @@ async function settle(){
   await browser.__test.submitChat({});
   await settle();
   assert.equal(browser.__test.state.conversationId,22,'stable conversation binding must be used');
-  assert.equal(browser.__test.state.error,'','no false error for complete stream');
+  assert.equal(requestBody.project_id,4,'project is bound in the original POST');
+  assert(root.innerHTML.includes('حُفظ الرد في المحادثة.'),'actual matching persisted transcript confirms completion');
   assert(!browser.__test.state.liveText.includes('تسرب ممنوع'),'foreign SSE scope must be rejected');
   assert(!browser.__test.state.liveText.includes('حدث بلا نطاق'),'unscoped SSE must be rejected');
   assert(root.innerHTML.includes('رد فعلي'),'persisted assistant response must render');
@@ -109,10 +113,22 @@ async function settle(){
   browser.__test.state.conversationId=null;
   browser.__test.state.messages=null;
   browser.__test.state.error='';
+  browser.location.hash='#/p/4/chat/22';
+  await browser.__test.loadAll();
+  await browser.__test.submitChat({});
+  assert(!root.innerHTML.includes('حُفظ الرد في المحادثة.'),'old record cannot prove persistence of this request');
+  assert(root.innerHTML.includes('وصل إقرار بانتهاء الرد، لكن لم يتأكد حفظه في السجل.'));
+  await browser.__test.followSavedReply();
+  assert(root.innerHTML.includes('لم يحفظ الخادم ردًا نهائيًا.'),'verify persisted transcript instead of relying on SSE alone');
+  browser.location.hash='#/p/4/chat';
+  await browser.__test.loadAll();
   holdSecondRead=true;
   const pending=browser.__test.submitChat({});
   await settle();
   assert.equal(typeof releaseSecondRead,'function','test stream must pause after first bind');
+  slowIndicator();
+  assert(root.innerHTML.includes('الرسالة لدى الخادم. لم يصل نص الرد بعد.'));
+  assert(root.innerHTML.includes('is-waiting'),'waiting state belongs next to the pending chat turn');
   browser.location.hash='#/p/4/chat/23';
   browser.__test.state.conversationId=23;
   browser.__test.state.messages=null;
@@ -233,5 +249,14 @@ async function settle(){
   await browser.__test.followSavedReply();
   assert(root.innerHTML.includes('لم يحفظ الخادم ردًا نهائيًا.'));
   assert.equal(calls.filter(x=>x==='/api/chat/stream').length,postsBefore+2);
+  brokenStream=false;
+  streamHttpStatus=401;
+  listeners.input({target:{name:'message',value:'تحدث',closest:()=>true}});
+  await browser.__test.submitChat({});
+  assert(root.innerHTML.includes('انتهت جلسة الدخول. سجّل الدخول ثم أعد الإرسال.'));
+  assert(!root.innerHTML.includes('internal provider diagnostics'));
+  assert.equal(browser.__test.state.drafts['4:22'],'تحدث','the rejected draft remains editable');
+  assert.equal(browser.__test.state.recoveringChat,false,'HTTP rejection is not an accepted reply');
+  assert.equal(calls.filter(x=>x==='/api/chat/stream').length,postsBefore+3);
   process.stdout.write('AES_CHAT_UI_SMOKE_PASS\n');
 })().catch(e=>{console.error(e);process.exitCode=1});

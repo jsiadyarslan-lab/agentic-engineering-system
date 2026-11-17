@@ -61,7 +61,8 @@ def test_conversation_is_the_default_project_surface():
     assert "function chat()" in source
     assert 'class="aes-chat-layout"' in source
     assert "conversation-" in source
-    assert "loadMessages()" in source
+    assert "await loadChat(n,p,r.conversationId)" in source
+    assert "await inspectChat(id,currentRequest)" in source
     assert "project_id:projectAtStart" in source  # atomic project-scoped chat
 
 
