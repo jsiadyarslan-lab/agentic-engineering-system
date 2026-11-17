@@ -55,7 +55,7 @@ body{font-size:15px;line-height:1.7}
 /* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
    All domain records come from the AES API; mutations are explicit. */
 const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30};
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,toolsData:null,settingsData:null};
 const root=document.getElementById('app');
 const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
 const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
@@ -214,18 +214,47 @@ function browserPage(){
  '<div class="card"><h2>مراجع الأدلة</h2><p>اعرض مراجع التشغيل من قسم المخرجات. فتح موقع خارجي لا يمنح الوكلاء إذنًا بالتفاعل معه.</p><div class="actions">'+link('المخرجات',url(pid(),'outputs'),'primary')+link('المتصفح في الواجهة الحالية','/','quiet')+'</div></div>'+
  '<div class="empty">لا توجد جلسة متصفح مدمج متصلة بهذه الواجهة. لن نعرض متصفحًا وهميًا.</div>';
 }
-function toolsPage(){return heading('الأدوات والإضافات','هذه الواجهة تقرأ API الإنتاج؛ إدارة المزودات والقدرات تبقى في الواجهة القائمة.')+
- '<div class="card"><h2>المزودات والأدوات</h2><p>لا يمكن اعتبار الأداة موصولة أو جاهزة بلا فحص توفر صادر من الخادم.</p>'+link('فتح إعدادات النظام الحالية','/','primary')+'</div>'}
-function settingsPage(){return heading('الإعدادات','لا نكتب إعدادات الخادم من هذه المعاينة.')+
- '<div class="card"><h2>المظهر</h2>'+btn('داكن','theme-dark','primary')+btn('فاتح','theme-light')+'</div>'+
- '<div class="card"><h2>إعدادات النظام</h2><p>المزودات، الصلاحيات، وبيئات التنفيذ تُدار من الواجهة الحالية حتى يعتمد تكامل API مفصل.</p>'+link('فتح الإعدادات الحقيقية','/','primary')+'</div>'}
+function toolsPage(){
+ const d=state.toolsData,research=Array.isArray(d?.research?.providers)?d.research.providers:null;
+ const environments=Array.isArray(d?.execution?.environments)?d.execution.environments:null;
+ return heading('الأدوات والقدرات','هذه بيانات الجاهزية الفعلية من API المصنع، وليست إضافات تجريبية.')+
+ '<section class="card"><h2>مزودو البحث</h2><p class="muted">READY يتطلب جاهزية حديثة؛ STALE يعني انتهاء صلاحية الفحص.</p>'+
+ (research?research.length?research.map(p=>'<div class="list-item"><div class="row wrap"><b>'+E(p.name||'مزود بحث')+'</b>'+tag(p.effective_status||'UNKNOWN')+'</div>'+
+ '<small class="muted">'+E(p.state_reason||'لا سبب مسجل')+'</small></div>').join(''):msg('لا مزود بحث مسجل.'):msg('جارٍ تحميل المزودات أو تعذر الاتصال.'))+
+ (d?.researchError?'<div class="callout bad">'+E(d.researchError)+'</div>':'')+'</section>'+
+ '<section class="card"><h2>بيئات تنفيذ المصنع</h2>'+
+ (environments?environments.length?environments.map(e=>'<div class="list-item"><div class="row wrap"><b>'+E(e.name||('بيئة #'+e.id))+'</b>'+tag(e.state||e.status||e.health_state||'غير محدد')+'</div>'+
+ '<p class="muted">'+E(e.backend||'نوع غير معروف')+(e.is_default?' · البيئة الافتراضية':'')+'</p></div>').join(''):msg('لا بيئات تنفيذ مسجلة.'):msg('جارٍ تحميل بيئات التنفيذ أو تعذر الاتصال.'))+
+ (d?.executionError?'<div class="callout bad">'+E(d.executionError)+'</div>':'')+'</section>'+
+ '<section class="card"><h2>الإضافات الخارجية</h2><p>لا يحتوي عقد هذه الواجهة حاليًا على سجل إضافات خارجي قابل لإدارتها من هنا. لا تُعرض أي إضافة على أنها مثبتة أو مصرح لها دون خدمة تفويض موثقة.</p></section>';
+}
+function settingsPage(){
+ const d=state.settingsData,roles=Array.isArray(d?.roles)?d.roles:null;
+ const providers=Array.isArray(d?.providers)?d.providers:null;
+ return heading('إعدادات المصنع','عرض صادق لإعدادات الأدوار والمزودات من الخادم. تعديل مفاتيح الوصول غير متاح من هذه النافذة.')+
+ '<div class="card"><h2>المظهر</h2><div class="actions">'+btn('داكن','theme-dark',state.theme==='dark'?'selected':'quiet')+btn('فاتح','theme-light',state.theme==='light'?'selected':'quiet')+'</div><small class="muted">التغيير محلي في هذه الجلسة ولا يُعدّل إعدادات الخادم.</small></div>'+
+ '<div class="card"><h2>ربط أدوار المصنع بالنماذج</h2>'+
+ (roles?roles.length?roles.map(x=>'<div class="list-item"><div class="row wrap"><b>'+E(x.label||x.key||'دور')+'</b><span class="mono">'+E(x.selection?.model||'غير محدد')+'</span></div><small class="muted">المزود: '+E(x.selection?.provider||'غير محدد')+(x.is_default?' · القيمة الافتراضية':'')+'</small></div>').join(''):msg('لا تعيينات أدوار مسجلة.'):msg('جارٍ جلب تعيينات الأدوار من الخادم...'))+'</div>'+
+ '<div class="card"><h2>مزودو النماذج</h2>'+
+ (providers?providers.length?providers.map(p=>'<div class="list-item"><div class="row wrap"><b>'+E(p.label||p.id||'مزود')+'</b>'+tag(p.readiness_status||p.state||'UNKNOWN')+'</div>'+
+ '<small class="muted">'+E(p.reason||'لا توجد ملاحظة')+'</small></div>').join(''):msg('لا مزود نموذج مسجل.'):msg('جارٍ جلب المزودات...'))+'</div>'+
+ '<div class="card"><h2>تغيير إعدادات النظام</h2><p>قد يؤثر تعديل المزودات والسياسات على تشغيل الأعمال. لا تسمح هذه الواجهة بتعديلها دون تدفق مراجعة منفصل.</p>'+link('افتح إعدادات النسخة الحالية','/','quiet')+'</div>';
+}
 function paint(){const r=route();state.view=r.view;const pages={home,overview,chat,runs,decisions,outputs,browser:browserPage,tools:toolsPage,settings:settingsPage};let content=(pages[r.view]||home)();shell(content)}
 async function loadAll(){
- const n=++state.revision;state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;
+ const n=++state.revision,r=route();
+ state.loading=true;state.error='';state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;
+ state.project=state.projects.find(p=>p.id===r.id)||null;
  paint();
- try{const data=await req('/api/projects');if(n!==state.revision)return;state.projects=Array.isArray(data.projects)?data.projects:[];}catch(e){if(n===state.revision){state.error=e.message;state.projects=[]}}
- const r=route();state.project=state.projects.find(p=>p.id===r.id)||null;paint();
- if(r.id){await Promise.all([refreshDetail(n),loadExtra(n)])}
+ const listFetch=(async()=>{
+   try{const data=await req('/api/projects');if(n!==state.revision)return;state.projects=Array.isArray(data.projects)?data.projects:[];if(!state.details)state.project=state.projects.find(p=>p.id===r.id)||null;}
+   catch(e){if(n===state.revision)state.error='تعذر قراءة قائمة المشاريع: '+e.message}
+   if(n===state.revision)paint();
+ })();
+ const pageFetch=r.id?Promise.allSettled([refreshDetail(n),loadExtra(n)]):
+   ['tools','settings'].includes(r.view)?loadExtra(n):Promise.resolve();
+ await Promise.allSettled([listFetch,pageFetch]);
+ if(n!==state.revision)return;
  state.loading=false;paint();
 }
 async function refreshDetail(n=state.revision){
@@ -235,7 +264,20 @@ async function refreshDetail(n=state.revision){
  paint();
 }
 async function loadExtra(n=state.revision){
- const r=route(),p=r.id;if(!p)return;
+ const r=route(),p=r.id;
+ if(!p&&r.view==='tools'){
+   const [research,execution]=await Promise.allSettled([req('/api/research/providers'),req('/api/execution/environments')]);
+   if(n!==state.revision)return;
+   state.toolsData={research:research.status==='fulfilled'?research.value:null,execution:execution.status==='fulfilled'?execution.value:null,
+     researchError:research.status==='rejected'?research.reason.message:'',executionError:execution.status==='rejected'?execution.reason.message:''};
+   paint();return;
+ }
+ if(!p&&r.view==='settings'){
+   try{const data=await req('/api/models/config');if(n===state.revision)state.settingsData=data}
+   catch(e){if(n===state.revision)state.error='تعذر جلب إعدادات النماذج: '+e.message}
+   if(n===state.revision)paint();return;
+ }
+ if(!p)return;
  let path=null;
  if(r.view==='outputs')path='/api/projects/'+p+'/artifacts';
  if(r.view==='chat')path='/api/projects/'+p+'/conversations';
