@@ -391,8 +391,10 @@ async function submitChat(form){
        if(ev.kind==='chat.error'){wasError=true;if(originVisible())state.error=ev.text||ev.code||'فشل توليد الرد'}
        const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;const el=document.getElementById('aes-chat-thread');if(el)el.scrollTop=el.scrollHeight}
      };
-     while(true){const x=await reader.read();if(x.done)break;bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true}).replace(/\r\n/g,'\n');let k;while((k=buf.indexOf('\n\n'))!==-1){onFrame(buf.slice(0,k));buf=buf.slice(k+2)}}
-     if(buf.trim())onFrame(buf);
+     const eventBoundary=/(?:\r\n|\r|\n){2}/;
+     const drain=()=>{let boundary;while((boundary=eventBoundary.exec(buf))!==null){onFrame(buf.slice(0,boundary.index));buf=buf.slice(boundary.index+boundary[0].length)}};
+     while(true){const x=await reader.read();if(x.done)break;bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true});drain()}
+     buf+=decoder.decode();drain();if(buf.trim())onFrame(buf);
      if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
    }finally{clearTimeout(timer)}
    if(cid){if(projectAtStart){try{await post('/api/conversations/'+cid+'/move-to-project',{project_id:projectAtStart})}catch(e){state.error='حُفظ الرد لكن فشل ربطه بالمشروع: '+e.message}}
