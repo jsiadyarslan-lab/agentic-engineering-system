@@ -259,7 +259,7 @@ async function loadAll(){
 }
 async function refreshDetail(n=state.revision){
  const r=route();if(!r.id)return;
- try{let d=await req('/api/projects/'+r.id+'/state',{},16000);if(n!==state.revision)return;state.details=d;state.project=d;state.error='';}
+ try{let d=await req('/api/projects/'+r.id+'/state',{},16000);if(n!==state.revision)return;state.details=d;state.project=d;if(state.error.startsWith('تعذر قراءة التفاصيل'))state.error='';}
  catch(e){if(n!==state.revision)return;state.error='تعذر قراءة التفاصيل: '+e.message}
  paint();
 }
