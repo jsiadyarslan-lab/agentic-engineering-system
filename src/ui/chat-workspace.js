@@ -102,7 +102,7 @@
       '</div></article>';
   }
   function conversationMarkup(){
-    const bits=state.messages.map(m=>{
+    let bits=state.messages.map(m=>{
       const isUser=m.role==="user";
       return '<article class="message '+(isUser?"user":"assistant")+'">'+
         '<div class="avatar" aria-hidden="true">'+(isUser?"":"✳")+'</div>'+
