@@ -510,8 +510,13 @@
     state.error="";state.banner="جارٍ جلب النص من سجل الملفات المثبتة…";renderThread();
     try{
       const path=callUrl("/api/projects/"+id+"/artifacts/content",{step_id:a.step_id,name:a.name});
-      const content=await request(path,{},18000);
-      if(typeof content!=="string")throw Error("الملف غير نصي أو تنسيقه غير متوقع.");
+      const controller=new AbortController(),clock=setTimeout(()=>controller.abort(),18000);
+      let content;
+      try {
+        const response=await fetch(path,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
+        if(!response.ok)throw Error("HTTP "+response.status);
+        content=await response.text(); // preserve JSON documents as text, not parsed objects
+      }finally{clearTimeout(clock);}
       state.preview={name:a.name,content,sha256:a.sha256,bytes:a.bytes};
       state.banner="المعاينة من API، ولا تعادل تحقق SHA256 للمحتوى كاملًا.";
       renderPanel();renderThread();
@@ -538,7 +543,15 @@
     if(id==="close-overlays"){state.sideOpen=false;syncOverlay();return;}
     if(id==="inspector"){state.panelOpen=!state.panelOpen;syncOverlay();renderPanel();if(state.panelOpen)loadPanelData(state.panel);return;}
     if(id==="inspector-close"){state.panelOpen=false;syncOverlay();return;}
-    if(id==="new-chat"){state.sideOpen=false;location.hash=routeUrl(project,null);if(!project&&location.hash==="#/"){state.messages=[];renderThread();}return;}
+    if(id==="new-chat"){
+      state.sideOpen=false;
+      const next=routeUrl(project,null);
+      if(location.hash===next){
+        state.route.cid=null;state.messages=[];state.streamText="";state.pendingMessage=null;
+        renderThread();renderSidebar();
+      }else location.hash=next;
+      syncOverlay();$("prompt").focus();return;
+    }
     if(id==="refresh"){await refresh();return;}
     if(id==="create-project"||id==="suggest-project"){modalCreate();return;}
     if(id==="close-dialog"){closeDialog();return;}
