@@ -901,11 +901,15 @@ def add_event(sessions, project_id: int, kind: str,
         return 0
 
 
-def list_events(sessions, project_id: int, limit: int = 100) -> list[dict]:
+def list_events(sessions, project_id: int, limit: int = 100, *,
+                kinds: tuple[str, ...] = ()) -> list[dict]:
     with sessions() as session:
+        query = select(ProjectEvent).where(
+            ProjectEvent.project_id == int(project_id))
+        if kinds:
+            query = query.where(ProjectEvent.kind.in_(kinds))
         rows = session.scalars(
-            select(ProjectEvent)
-            .where(ProjectEvent.project_id == int(project_id))
+            query
             .order_by(ProjectEvent.id.desc()).limit(limit)
         ).all()
         return [{

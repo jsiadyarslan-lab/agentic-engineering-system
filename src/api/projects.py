@@ -160,57 +160,100 @@ def _project_or_404(project_id: int) -> dict:
     return project
 
 
-def _execution_gate(project: dict, plan: dict | None) -> dict:
+def _blocked_capabilities(payload: dict) -> list[dict]:
+    """Read both the matrix format and legacy step-failure events."""
+    entries = payload.get("blocked")
+    caps = [
+        item for item in (entries if isinstance(entries, list) else [])
+        if isinstance(item, dict) and item.get("capability_id")
+    ]
+    if not caps and payload.get("capability_id"):
+        caps = [payload]
+    return caps
+
+
+def _execution_gate(project: dict, plan: dict | None,
+                    gates: list[dict] | None = None) -> dict:
     """حالة بوابة التنفيذ المشتقة (011 §1+§3) — مفصولة عن قرار البوابة.
 
     المشتق من: اعتماد الخطة + آخر فحص مسبق (PREFLIGHT_* حدث دائم) —
     لا «البوابة ليست مفتوحة» أبدًا: OPEN أو APPROVED_BUT_BLOCKED
     مع السبب والمطلوب وإجراء المالك نصًا.
     """
-    plan_approved = None
-    if plan is not None:
-        plan_approved = bool(plan.get("approved_by_owner"))
+    plan_approved = bool(plan.get("approved_by_owner")) if plan else None
     verdict = None
     blocked_reason = required_env = owner_action = ""
-    # الأحدث أولًا: list_events تعيد تصاعديًا — نقرأ عكسيًا كي نأخذ
-    # آخر فحص لا أوله (الحالة الحقيقية الآن)
+    blockers = []
+    step_id = execution_id = None
+    # Unrelated job/tool events must not evict the last relevant result.
     for event in reversed(service.list_events(
-            _sessions(), project["id"], limit=50)):
+            _sessions(), project["id"], limit=1,
+            kinds=("PLAN_APPROVED", "PREFLIGHT_PASS", "PREFLIGHT_BLOCKED",
+                   "PREFLIGHT_RECHECKED"))):
         payload = event.get("payload") or {}
-        if event["kind"] == "PREFLIGHT_PASS":
-            verdict = "PASS"
+        kind = event["kind"]
+        if kind == "PLAN_APPROVED":
             break
-        if event["kind"] in ("PREFLIGHT_BLOCKED", "PREFLIGHT_RECHECKED"):
-            # RECHECKED يحمل الحكم نفسه بعد إعادة الفحص (011 §19)
-            event_verdict = payload.get("verdict")
-            if event["kind"] == "PREFLIGHT_RECHECKED" \
-                    and event_verdict != "BLOCKED":
-                continue
-            verdict = event_verdict or "BLOCKED"
-            if verdict != "BLOCKED":
-                break
-            blocked_caps = payload.get("blocked") or []
-            reasons = [
-                f"{b.get('capability_id')}: {b.get('reason', '')[:120]}"
-                for b in blocked_caps if b.get("capability_id") != "llm"
-            ] or ["لا توجد بيئة تنفيذ متوافقة وجاهزة."]
-            blocked_reason = "؛ ".join(reasons)
-            required_env = next(
-                (b.get("required_environment") for b in blocked_caps
-                 if b.get("required_environment")), "",
-            )
-            owner_action = next(
-                (b.get("owner_action") for b in blocked_caps
-                 if b.get("owner_action")), "",
-            )
+        verdict = payload.get("verdict") or (
+            "PASS" if kind == "PREFLIGHT_PASS" else "BLOCKED")
+        if verdict != "BLOCKED":
             break
-    if project["status"] == "RUNNING":
-        verdict = "PASS"   # التنفيذ الجاري برهان على الفتح
-    return gate_machine.plan_execution_state(
+        caps = _blocked_capabilities(payload)
+        gate_id = payload.get("gate_id")
+        source_gates = gates if gates is not None else service.list_gates(
+            _sessions(), project["id"])
+        # A legacy event omits the reason and execution id; its own durable
+        # gate contains both. A matrix recheck has no gate_id, so associate
+        # it only with the still-open step gate for a matching capability.
+        gate = next((g for g in source_gates if g["id"] == gate_id), None)
+        if gate is None and gate_id is None and kind == "PREFLIGHT_RECHECKED" \
+                and project["status"] == "BLOCKED":
+            capability_ids = {b["capability_id"] for b in caps}
+            gate = next((g for g in source_gates if g["status"] == "BLOCKED"
+                         and g["kind"] == "PREFLIGHT_BLOCKED"
+                         and (g.get("details") or {}).get("step_id")
+                         and any(b["capability_id"] in capability_ids
+                                 for b in _blocked_capabilities(
+                                     g.get("details") or {}))), None)
+        details = (gate or {}).get("details") or {}
+        stored = {b["capability_id"]: b
+                  for b in _blocked_capabilities(details)}
+        for cap in caps or stored.values():
+            cap_id = cap["capability_id"]
+            fallback = stored.get(cap_id, {})
+            record = {
+                key: cap.get(key) or fallback.get(key) or ""
+                for key in ("capability_id", "status", "reason",
+                            "required_environment", "owner_action")
+            }
+            if cap_id == "web_search" and not record["owner_action"]:
+                record["owner_action"] = "افحص جاهزية مزوّد البحث، ثم راجع الخطوة."
+            blockers.append(record)
+        step_id = payload.get("step_id") or details.get("step_id")
+        execution_id = payload.get("execution_id") or details.get("execution_id")
+        reasons = []
+        for b in blockers:
+            label = b["capability_id"]
+            if b["status"]:
+                label += f": {b['status']}"
+            if b["reason"]:
+                label += f" — {b['reason']}"
+            reasons.append(label)
+        blocked_reason = "؛ ".join(reasons) or (gate or {}).get("reason") \
+            or payload.get("summary") or ""
+        required_env = next((b["required_environment"] for b in blockers
+                             if b["required_environment"]), "")
+        owner_action = next((b["owner_action"] for b in blockers
+                             if b["owner_action"]), "")
+    state = gate_machine.plan_execution_state(
         plan_approved=plan_approved, preflight_verdict=verdict,
         blocked_reason=blocked_reason,
         required_environment=required_env, owner_action=owner_action,
     )
+    if state["state"] == "APPROVED_BUT_BLOCKED":
+        state.update(blockers=blockers, step_id=step_id,
+                     execution_id=execution_id)
+    return state
 
 
 @router.post("", status_code=201)
@@ -630,7 +673,7 @@ def project_detail(project_id: int) -> dict:
         "gates": gates,
         "events": events,
         "executions": executions,
-        "execution_gate": _execution_gate(project, plan),
+        "execution_gate": _execution_gate(project, plan, gates),
         "active_run": _active_run_id() == project_id,
         "job": job,
     }
@@ -683,7 +726,7 @@ def project_state_snapshot(project_id: int) -> dict:
         "executions": executions,
         "evidence": evidence,
         "audits": audits,
-        "execution_gate": _execution_gate(project, plan),
+        "execution_gate": _execution_gate(project, plan, gates),
         "job": job,
         "environment": _environment_block(project, job=job),
         "timeline": timeline,

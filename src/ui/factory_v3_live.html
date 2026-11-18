@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>المصنع · هندسة وتسليم</title>
+<style>
+:root{color-scheme:dark;--base:#171b1a;--side:#131716;--panel:#1d2320;--lift:#252c28;--hover:#2b332e;--line:#343e37;--soft:#29302c;--text:#f0f1ea;--muted:#b0bdb2;--dim:#96a59a;--mint:#bcead2;--ink:#123124;--good:#a8dfbf;--warn:#efbf8e;--bad:#f7ada2;--bgwarn:#352a22;--bgbad:#372724;--focus:#a0edc1;--shadow:0 16px 55px #0005;--sidebar:245px;--inspect:390px}
+:root[data-theme=light]{color-scheme:light;--base:#f8f8f2;--side:#eeefe8;--panel:#fffefa;--lift:#eff2eb;--hover:#e3eae0;--line:#cbd4c9;--soft:#e1e8df;--text:#19261e;--muted:#465b4f;--dim:#536959;--mint:#245d44;--ink:#fff;--good:#1e6846;--warn:#81421b;--bad:#952f2b;--bgwarn:#f5e9d9;--bgbad:#fbe9e5;--focus:#24694b;--shadow:0 16px 55px #23372925}
+*{box-sizing:border-box}body{margin:0;background:var(--base);color:var(--text);font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-size:14px;line-height:1.65}button,input,select,textarea{font:inherit;color:inherit}button,a,input,select,textarea{outline-offset:3px}*:focus-visible{outline:2px solid var(--focus)}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}a{color:var(--mint)}[hidden]{display:none!important}.svg{width:17px;height:17px;flex:none;vertical-align:middle}.mono,code,time{font-family:ui-monospace,Consolas,monospace;font-size:.9em;direction:ltr;unicode-bidi:isolate}.skip{position:fixed;z-index:20;top:8px;right:8px;background:var(--panel);padding:10px;transform:translateY(-150%)}.skip:focus{transform:none}
+.frame{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100dvh}.side{position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:15px;background:var(--side);border-inline-end:1px solid var(--line);padding:17px 12px 12px;min-width:0;z-index:5}.side-scroll{flex:1;overflow:auto;min-height:0}.brand{display:flex;align-items:center;gap:10px;padding:3px 5px 14px}.brand b,.profile b{display:block;font-size:14px}.brand small,.profile small{display:block;color:var(--dim);font-size:11px}.mark{width:38px;height:38px;border:1px solid var(--line);color:var(--mint);display:grid;place-items:center;border-radius:11px;background:var(--panel)}.mark svg{width:23px;height:23px}.nav{display:grid;gap:4px}.nav-btn{display:flex;align-items:center;min-height:39px;gap:9px;width:100%;padding:7px 9px;text-align:start;background:none;border:1px solid transparent;border-radius:8px;color:var(--muted);text-decoration:none}.nav-btn:hover,.icon:hover{background:var(--hover);color:var(--text)}.nav-btn.current{background:var(--lift);border-color:var(--line);color:var(--text)}.nav-btn.new{background:var(--lift);border-color:var(--line);color:var(--mint);font-weight:700;margin-bottom:4px}.nav-btn .truncate{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.nav-btn kbd{margin-inline-start:auto;border:1px solid var(--line);padding:0 5px;border-radius:5px;font-size:11px}.section-label{font-size:11px;color:var(--dim);font-weight:700;padding:18px 9px 6px}.subnav{padding-inline-start:15px}.subnav .nav-btn{font-size:12px;min-height:32px}.dot{width:7px;height:7px;border-radius:100%;background:currentColor;display:inline-block;flex:none}.attention{color:var(--warn)}.bad{color:var(--bad)}.ok{color:var(--good)}.profile{border-top:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:12px 3px 0}.avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:var(--lift);color:var(--mint);font-weight:700}.profile .icon{margin-inline-start:auto}
+.main{min-width:0}.top{height:63px;padding:0 22px;position:sticky;top:0;z-index:4;background:var(--base);border-bottom:1px solid var(--soft);display:flex;align-items:center;justify-content:space-between;gap:12px}.crumb,.top-actions,.actions,.meta,.pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.crumb{min-width:0;flex-wrap:nowrap}.crumb b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-actions{flex-wrap:nowrap}.pill,.status{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:999px;white-space:nowrap;background:var(--panel);color:var(--muted)}.status.warn{color:var(--warn);background:var(--bgwarn);border-color:transparent}.status.bad{color:var(--bad);background:var(--bgbad);border-color:transparent}.status.ok{color:var(--good)}.pill.demo{color:var(--mint)}.icon{background:none;border:1px solid transparent;display:inline-grid;place-items:center;border-radius:8px;width:34px;height:34px;color:var(--muted);flex:none}.mobile{display:none}
+.stage{display:grid;min-width:0;grid-template-columns:minmax(0,1fr)}.stage.split{grid-template-columns:minmax(0,1fr) minmax(320px,var(--inspect))}.canvas{width:100%;max-width:865px;margin-inline:auto;padding:35px 25px 36px;min-width:0}.canvas.thread{max-width:780px;padding-bottom:0}.canvas.wide{max-width:1130px}.inspect{min-width:0;position:sticky;top:63px;height:calc(100dvh - 63px);overflow:auto;border-inline-start:1px solid var(--line);background:var(--panel);z-index:3}.inspect-head{position:sticky;top:0;background:var(--panel);z-index:1;border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:6px}.inspect-body{padding:17px}.overlay{display:none}
+.eyebrow{display:flex;gap:9px;align-items:center;color:var(--mint);font-size:11px;font-weight:700;margin:0 0 8px}.serial{color:var(--dim);letter-spacing:.04em}.page-head{margin:0 0 24px}.page-head h1,.hero h1{font-size:clamp(25px,4vw,38px);line-height:1.28;margin:0 0 7px;letter-spacing:-.035em}.page-head p,.hero p{margin:0;color:var(--muted)}.thread-title{font-size:clamp(23px,4vw,30px)!important}.h2{margin:21px 0 8px;font-size:17px}.muted{color:var(--muted)}.dim{color:var(--dim)}.small{font-size:12px}.subtle{color:var(--dim);font-size:11px}.spacer{margin-top:14px}.hr{border:0;border-top:1px solid var(--line);margin:17px 0}.hero{padding:28px 0 14px}.hero-mark{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--mint);padding:8px;margin-bottom:13px}
+.btn{min-height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--lift);color:var(--text);font-weight:650;text-decoration:none;font-size:12px}.btn:hover{background:var(--hover)}.btn.primary{background:var(--mint);color:var(--ink);border-color:transparent}.btn.primary:hover{filter:brightness(.93)}.btn.quiet{background:transparent;color:var(--muted)}.btn.quiet:hover{background:var(--hover);color:var(--text)}.btn.danger{color:var(--bad);background:var(--bgbad)}.btn.selected{color:var(--mint);border-color:var(--mint);background:var(--panel)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;margin:10px 0}.card h2,.card h3,.card p{margin:0}.card h2{font-size:17px}.card h3{font-size:14px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.row.wrap{flex-wrap:wrap}.cluster{display:flex;gap:10px;align-items:flex-start;min-width:0}.tile-icon{width:33px;height:33px;border-radius:8px;display:grid;place-items:center;background:var(--lift);border:1px solid var(--line);color:var(--mint);flex:none}.tile-icon.bad{background:var(--bgbad);color:var(--bad);border-color:transparent}.row-title{display:block;font-weight:700;overflow-wrap:anywhere}.row-desc{display:block;color:var(--dim);font-size:12px}.list-item{padding:10px 0;border-top:1px solid var(--soft)}.list-item:first-child{border-top:0}.empty{padding:23px 15px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);margin-top:12px}.callout{padding:11px 12px;background:var(--lift);border-radius:8px;border-inline-start:3px solid var(--mint);margin:12px 0}.callout.warn{background:var(--bgwarn);border-color:var(--warn)}.callout.bad{background:var(--bgbad);border-color:var(--bad)}.callout p{margin:3px 0 0;color:var(--text)}.banner{padding:11px 12px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:10px;margin-bottom:15px}.banner .actions{margin-inline-start:auto}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.facts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:7px 13px;margin:12px 0}.facts dt{color:var(--muted);font-size:12px}.facts dd{margin:0;overflow-wrap:anywhere}
+.message{display:flex;margin:13px 0 17px;gap:10px;align-items:flex-start}.message.user{justify-content:flex-start}.bubble{background:var(--lift);border:1px solid var(--line);border-radius:14px 5px 14px 14px;padding:9px 13px;max-width:87%;white-space:pre-wrap;overflow-wrap:anywhere}.message.bot .message-text{padding-top:2px;flex:1;min-width:0}.message-text p{margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere}.message-tag{font-size:11px;color:var(--dim);display:block;margin-bottom:3px}.run-card{margin:8px 42px 18px 0;padding:13px 14px}.run-card .actions{margin-top:11px}.run-key{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim)}.thread-actions{padding:3px 42px 14px 0}.composer-wrap{position:sticky;bottom:0;padding:10px 0 12px;background:var(--base);z-index:2}.hero+.composer-wrap{position:static}.composer{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:10px 11px 8px}.composer:focus-within{border-color:var(--mint)}.composer textarea{resize:vertical;width:100%;min-height:52px;background:transparent;border:0;padding:3px 4px;display:block;outline:none}.composer .row{flex-wrap:wrap;gap:5px}.composer-footer{color:var(--dim);font-size:11px;text-align:center;margin:6px 0 0}.composer .btn{min-height:32px}.source-chip{font-size:11px;display:inline-flex;align-items:center;gap:3px;color:var(--mint)}
+.steps{margin:13px 0}.step{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:9px;border-top:1px solid var(--soft);padding:10px 2px}.step:first-child{border-top:0}.step div{min-width:0}.step .btn{margin-top:5px}.trace{list-style:none;padding:0;margin:0}.trace li{position:relative;padding:6px 12px 11px;border-inline-start:1px solid var(--line);margin-inline-start:4px}.trace li:before{content:"";position:absolute;inset-inline-start:-4px;top:12px;background:var(--mint);width:7px;height:7px;border-radius:50%}.trace time{display:block;color:var(--dim)}pre{background:var(--side);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;white-space:pre-wrap;margin:11px 0;font-size:12px;overflow-wrap:anywhere}pre[dir=ltr]{text-align:left}
+.field{margin:11px 0;display:grid;gap:5px}.field label,.field>span{font-weight:700;font-size:12px}.field input,.field select,.field textarea,.url-input{box-sizing:border-box;width:100%;background:var(--side);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-height:36px}.field small{color:var(--dim)}.field input[type=checkbox]{width:auto;min-height:auto}.field textarea{resize:vertical}.browser-bar{display:flex;gap:5px;align-items:center;margin-bottom:9px}.browser-bar .url-input{flex:1;min-width:0;font-size:12px}.browser-doc{border:1px solid var(--line);background:var(--base);border-radius:12px;padding:16px}.browser-doc h3{margin:10px 0 3px;font-size:19px}.browser-doc p{margin:8px 0}.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px}.compare pre{min-width:0}.artifact-text{background:var(--base);padding:12px;border-radius:9px;border:1px solid var(--line);margin-top:10px}.artifact-text h3,.artifact-text p{margin:3px 0 9px}.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:11px 0}
+dialog{color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(500px,calc(100vw - 24px));padding:17px;box-shadow:var(--shadow);max-height:85dvh}dialog::backdrop{background:#0009}dialog h2{margin:0;font-size:18px}#toast{position:fixed;bottom:18px;inset-inline-end:18px;padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--lift);box-shadow:var(--shadow);z-index:20}
+@media(max-width:1120px){:root{--sidebar:210px;--inspect:345px}.canvas{padding-inline:18px}.top{padding-inline:15px}}
+@media(max-width:960px){.stage.split{grid-template-columns:minmax(0,1fr)}.inspect{position:fixed;inset:63px auto 0 0;width:min(430px,100vw);height:calc(100dvh - 63px);box-shadow:var(--shadow);z-index:6}.overlay.inspect-overlay{display:block;position:fixed;inset:63px 0 0;background:#0007;border:0;z-index:5}}
+@media(max-width:720px){.frame{display:block}.side{display:none;position:fixed;right:0;top:0;width:min(280px,82vw);height:100dvh;z-index:9;box-shadow:var(--shadow)}.side.open{display:flex}.overlay.side-overlay{display:block;position:fixed;inset:0;background:#0008;border:0;z-index:8}.mobile{display:inline-grid}.top{padding:0 9px}.top-actions{gap:3px}.top .hide-mobile{display:none}.canvas{padding:21px 12px 22px}.canvas.thread{padding-bottom:0}.run-card,.thread-actions{margin-inline-start:0;padding-inline-start:11px}.grid2{grid-template-columns:1fr}.inspect-body{padding:13px}.compare{grid-template-columns:1fr}.step{grid-template-columns:30px minmax(0,1fr) auto}.step .tile-icon{width:28px;height:28px}}
+@media(prefers-reduced-motion:reduce){*,*::after,*::before{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+/* V3 · a conversation first, evidence beside it */
+:root{--base:#121519;--side:#161b21;--panel:#1b2128;--lift:#242c35;--hover:#2b3541;--line:#38434f;--soft:#272e37;--text:#edf1f7;--muted:#bdc8d6;--dim:#a2afbe;--mint:#bfd8ff;--ink:#112b46;--good:#addcc3;--warn:#f2cb9f;--bad:#f6b5aa;--bgwarn:#372c24;--bgbad:#382723;--focus:#add9ff;--sidebar:254px;--inspect:378px}
+:root[data-theme=light]{--base:#fcfbf8;--side:#eeeee8;--panel:#fff;--lift:#e9edf2;--hover:#e1e8f0;--line:#c9d0d7;--soft:#dedfe2;--text:#18242e;--muted:#3b4a59;--dim:#4c5b6b;--mint:#254d80;--ink:#fff;--focus:#245b9a}
+body{font-size:15px;line-height:1.7}
+.top{height:57px;padding-inline:20px;background:var(--base)}
+.brand{margin-bottom:7px}.brand b{font-size:16px}.brand small{letter-spacing:.03em}
+.nav-btn{border:0;min-height:38px}.nav-btn.new{min-height:44px;background:var(--mint);color:var(--ink);border-radius:11px}.nav-btn.new:hover{filter:brightness(.93)}
+.nav-btn.secondary{color:var(--dim);font-size:11px}.counter{background:var(--bgwarn);color:var(--warn);border-radius:99px;padding:0 7px;font-size:11px}.pin{font-size:9px;color:var(--mint)}.section-label{letter-spacing:.04em}
+.frame.side-hidden{grid-template-columns:minmax(0,1fr)}.frame.side-hidden>.side{display:none}
+.project-tabs{display:flex;gap:5px;align-items:center;padding:6px 19px;border-bottom:1px solid var(--soft);overflow:auto;position:sticky;top:57px;background:var(--base);z-index:3}.project-tabs .btn{font-size:12px;min-height:32px;flex:none;border-color:transparent}.project-tabs .btn.selected{border-color:var(--line)}
+.home-center{max-width:700px;margin:auto;padding-top:clamp(24px,10vh,125px)}.home-center .hero{text-align:center;padding:6px 0 22px}.home-center .hero h1{font-size:clamp(30px,5vw,45px);letter-spacing:-.06em}.home-center .eyebrow,.home-actions{justify-content:center}.home-center .composer-wrap{position:static}.home-follow{max-width:700px;margin:36px auto 0}
+.canvas.thread{max-width:790px;display:flex;flex-direction:column;min-height:calc(100dvh - 104px);padding-top:21px}
+.thread-head{padding-bottom:16px;border-bottom:1px solid var(--soft);margin-bottom:14px}
+.thread-head .eyebrow .btn{border:0;padding:0;min-height:22px;font-size:11px}.thread-head h1{margin:0;line-height:1.25}
+.transcript{flex:1}.chat-empty{text-align:center;padding:clamp(37px,13vh,125px) 0 30px;color:var(--muted)}.chat-empty h2{color:var(--text);margin:0}.chat-empty p{margin:6px 0}.message{margin-bottom:18px}.message.user .bubble{border:0;max-width:min(85%,580px);border-radius:17px 7px 17px 17px}.message.bot .avatar{border:0;background:var(--lift);border-radius:50%}.message.bot .message-text{padding-inline-end:2px}.inline-source{margin:-8px 42px 15px 0}.bubble{font-size:14px}.composer-wrap{padding-bottom:13px}.composer{box-shadow:0 8px 24px #0002;border-radius:19px;padding:10px 12px}.composer textarea{padding:5px 5px 2px;min-height:52px}.composer-footer{margin-top:5px}.composer .source-chip{border:1px solid var(--line);border-radius:6px;padding-inline-start:6px;margin-block:2px}.source-chip .btn{border:0;padding:1px 5px;min-height:22px;font-size:10px}.work-card{border:1px solid var(--line);border-radius:13px;background:var(--panel);border-inline-start:3px solid var(--mint)}.work-card h2{font-size:17px;margin:5px 0 0}.work-card p{margin:4px 0 0}.inspect{height:calc(100dvh - 104px);top:104px;border-color:var(--line)}.inspect-head{padding:10px 12px}.inspect .facts{font-size:13px}.inspect .actions .btn{white-space:normal}.artifact-text pre{margin:5px 0 0}.scope-field{max-width:310px}.storage-warning{padding:7px 16px;color:var(--warn);background:var(--bgwarn)}details summary{cursor:pointer}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(max-width:960px){.inspect{inset:104px auto 0 0;height:calc(100dvh - 104px)}.overlay.inspect-overlay{inset:104px 0 0}}
+@media(max-width:720px){.frame.side-hidden>.side.open{display:flex}.top{padding-inline:8px}.project-tabs{padding-inline:6px}.project-tabs .btn{padding-inline:6px}.inline-source{margin-inline-start:0}.canvas.thread{padding-top:12px}.home-center{padding-top:20px}.home-follow{margin-top:20px}.thread-head{margin-bottom:7px}.message{margin-block:11px}.inspect-head{padding-inline:9px}}
+
+</style>
+<style>
+.json-view{max-height:480px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,monospace;background:var(--side);padding:12px;border-radius:9px;border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.big-num{font-size:28px;font-weight:750}.transcript{min-height:240px}
+.nav-btn{display:flex;align-items:center;gap:10px;text-decoration:none;padding:9px 10px;color:var(--text);border-radius:9px;overflow:hidden}
+.nav-btn:hover,.nav-btn.selected{background:var(--lift)}.nav-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage{min-height:calc(100dvh - 104px)}.card{overflow-wrap:anywhere}.card pre{direction:ltr}.card summary{cursor:pointer}
+.pills{font-size:12px;color:var(--good)}.btn.selected{border-color:var(--mint)}
+@media(max-width:740px){.grid{grid-template-columns:1fr}.home-center{padding-top:10px}.canvas{padding:15px}}
+</style>
+<style id="aes-conversation-shell">
+/* Chat owns the viewport. Only the transcript and navigation scroll. */
+.main.is-chat{height:100dvh;min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr);overflow:hidden}
+.main.is-chat .top,.main.is-chat .project-tabs{position:relative;top:auto}
+.main.is-chat .project-tabs{scrollbar-width:thin}
+.main.is-chat .stage{display:block;min-height:0;overflow:hidden}
+.main.is-chat .canvas{display:block;height:100%;padding:0;max-width:none}
+.aes-chat-layout{height:100%;min-height:0}
+.aes-chat-primary{height:100%;min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(16px,calc((100% - 760px)/2));border-bottom:1px solid var(--soft)}
+.aes-chat-head h1{font-size:19px;line-height:1.4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aes-chat-head>div{min-width:0}.aes-chat-head .btn{flex:none}
+.aes-chat-head .aes-chat-kicker{display:block;font-size:11px;line-height:1.6;letter-spacing:.01em;color:var(--dim);margin-bottom:3px}
+.aes-chat-head .aes-project-state{font-size:12px;line-height:1.5;color:var(--muted);display:inline-block;margin-top:3px}
+.aes-chat-identity{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.aes-run-summary{margin:0 0 18px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.aes-run-summary.is-blocked{border-inline-start:4px solid var(--bad);background:var(--bgbad)}
+.aes-run-summary h2{margin:0;font-size:17px}
+.aes-run-summary p{margin:8px 0 0;overflow-wrap:anywhere}
+.aes-run-summary .actions{margin-top:12px}
+.aes-phase-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:11px 0;border-top:1px solid var(--soft)}
+.aes-phase-row:first-of-type{border-top:0}
+.aes-phase-title{min-width:0;overflow-wrap:anywhere}
+.aes-phase-state{display:flex;flex-direction:column;align-items:flex-end;gap:3px;justify-self:end}
+.aes-phase-state .status{inline-size:fit-content}
+.aes-phase-state small{font-size:11px;color:var(--muted)}
+.aes-chat-identity>div{min-width:0}.aes-chat-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;color:var(--mint);background:var(--panel);font-size:16px}
+.aes-chat-head .aes-new-chat{font-size:12px;padding-inline:10px;white-space:nowrap}
+.aes-chat-thread{overflow:auto;min-height:0;padding:18px max(16px,calc((100% - 760px)/2));overscroll-behavior:contain;scrollbar-gutter:stable;outline-offset:-3px}
+.aes-welcome{max-width:490px;margin:clamp(12px,7vh,68px) auto 0;text-align:center}.aes-welcome h2{font-size:clamp(21px,3vw,30px);line-height:1.35;margin:0 0 9px}.aes-welcome p{margin:0;color:var(--muted)}
+.aes-chat-message{overflow-wrap:anywhere;white-space:pre-wrap;margin:0 0 18px;line-height:1.85;border-radius:14px}
+.aes-chat-message small{display:block;color:var(--muted);font-weight:700;margin-bottom:4px}
+.aes-chat-message.from-owner{margin-inline-end:auto;max-width:85%;width:fit-content;padding:9px 13px;background:var(--lift)}
+.aes-chat-message.from-ai{padding:3px 4px 12px;border-bottom:1px solid var(--soft)}
+.aes-chat-message.is-waiting{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px;background:var(--panel);font-size:13px}.aes-chat-message.is-waiting small{margin:0 0 2px}
+.aes-chat-message .aes-reply-body{white-space:normal;font-size:15px;line-height:1.9;min-width:0}
+.aes-reply-body :is(p,h2,h3,h4,ul,ol,blockquote,pre,.aes-md-table){margin:0 0 .8em}
+.aes-reply-body :last-child{margin-bottom:0}
+.aes-reply-body p{white-space:pre-wrap}
+.aes-reply-body :is(h2,h3,h4){font-size:1.11em;line-height:1.5;margin-top:.9em}
+.aes-reply-body :is(ul,ol){padding-inline-start:1.6em}.aes-reply-body li+li{margin-top:.28em}
+.aes-reply-body blockquote{padding-inline-start:.8em;border-inline-start:2px solid var(--mint);color:var(--muted)}
+.aes-reply-body :is(code,pre){font-family:ui-monospace,Consolas,monospace;background:var(--panel);border-radius:6px}
+.aes-reply-body code{padding:.12em .28em;unicode-bidi:isolate}
+.aes-reply-body pre{max-width:100%;white-space:pre;overflow:auto;border:1px solid var(--line);padding:10px 13px;font-size:13px}
+.aes-reply-body pre code{padding:0}.aes-reply-body a{color:var(--mint);text-decoration:underline;text-underline-offset:3px}
+.aes-md-table{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:9px}
+.aes-md-table table{border-collapse:collapse;width:max-content;min-width:100%}.aes-md-table :is(th,td){text-align:start;padding:5px 10px;border-bottom:1px solid var(--soft);max-width:280px}.aes-md-table th{background:var(--panel)}
+.aes-reply-body hr{border:0;border-top:1px solid var(--line);margin:1em 0}
+.aes-chat-dock{padding:8px max(16px,calc((100% - 760px)/2)) max(10px,env(safe-area-inset-bottom));background:var(--base)}
+.aes-chat-feedback{font-size:13px;line-height:1.45;margin:0 0 6px;max-height:4em;overflow:auto;overflow-wrap:anywhere}
+.aes-chat-composer{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 10px}
+.aes-chat-composer:focus-within{border-color:var(--focus)}
+.aes-chat-composer textarea{background:none;border:0;resize:vertical;outline:none;display:block;width:100%;min-height:43px;max-height:min(24dvh,180px);padding:4px;color:var(--text);font:inherit}
+.aes-composer-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}.aes-composer-bar .btn{min-height:36px}
+.aes-chat-links .nav-btn{min-height:34px;padding-block:5px}.aes-chat-links .nav-btn[aria-current=page]{background:var(--lift);font-weight:650}
+.crumb strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-objective{max-width:76ch;overflow-wrap:anywhere}
+@media(min-width:721px){.main.is-chat .top [data-action=side]{display:none}}
+@media(max-width:720px){.aes-chat-head{padding-block:8px}.aes-chat-head h1{font-size:16px}.aes-chat-thread{padding-block:10px}.aes-chat-dock{padding-top:4px}.is-chat .top-actions .pills,.is-chat .top-actions a{display:none}}
+</style><style id="aes-steps-ux">.aes-step-facts{padding:9px 14px}.aes-step-facts p{margin:8px 0;overflow-wrap:anywhere}.aes-historical{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}.aes-historical>summary{color:var(--muted);cursor:pointer}.aes-step-detail{border-top:1px solid var(--line);padding:9px 2px}.aes-step-detail>summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}.aes-step-detail>summary small{color:var(--muted)}.aes-step-detail pre{max-height:350px;overflow:auto}</style><style id="aes-static-artifact-preview">.aes-artifact-frame{display:block;width:100%;height:min(620px,66vh);border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:12px;overflow:auto}.artifact-name{max-width:100%;overflow-wrap:anywhere}</style></head><body><a class="skip" href="#main">تجاوز إلى العمل</a><div id="app"></div><script>
+'use strict';
+/* AES Factory Live V3. No fixtures, simulated execution or optimistic approvals.
+   All domain records come from the AES API; mutations are explicit. */
+const E=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const state={projects:[],project:null,details:null,artifacts:null,convos:null,messages:null,conversationId:null,preview:null,activeId:0,view:'home',error:'',status:'',busy:false,revision:0,side:false,theme:'dark',loading:false,liveText:'',pendingText:'',streamNotice:'',steps:null,runtime:null,drafts:Object.create(null),pendingProjectId:null,artifactQuery:'',artifactType:'all',artifactLimit:30,previewMode:'source',toolsData:null,settingsData:null,activeChatId:null,stopPending:false,artifactsError:'',pendingConversationId:null,convosError:'',messagesError:'',threadLoading:false,threadRequest:0,serverChat:'idle',checkingChat:false,recoveringChat:false,expectedReply:null,unsavedReply:null};
+const root=document.getElementById('app');
+const route=()=>{let a=location.hash.slice(2).split('/');return a[0]==='p'&&/^[0-9]+$/.test(a[1]||'')?{id:Number(a[1]),view:['overview','chat','runs','decisions','outputs','browser'].includes(a[2])?a[2]:'chat',conversationId:/^[0-9]+$/.test(a[3]||'')?Number(a[3]):null}:{id:0,view:['home','decisions','tools','settings'].includes(a[0])?a[0]:'home'}};
+const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
+const chatId=c=>{const id=Number(c?.conversation_id??c?.id);return Number.isSafeInteger(id)&&id>0?id:null};
+const projectChats=()=>state.convos?.conversations||[];
+const chatURL=(p,c)=>url(p,'chat')+(c?'/'+c:'');
+const chatTitle=c=>{
+ const raw=String(c?.title??'').trim();
+ return /[\p{L}\p{N}]/u.test(raw)?raw:'محادثة '+chatId(c);
+};
+const draftKey=()=>String(route().id)+':'+String(state.conversationId||'new');
+const CHAT_SLOW_MS=12000,CHAT_IDLE_MS=90000;
+const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
+const link=(name,href,cls='')=>'<a class="btn '+cls+'" href="'+E(href)+'">'+E(name)+'</a>';
+const kind=s=>{s=String(s||'UNKNOWN').toUpperCase();return ['FAILED','BLOCKED','ERROR','INTERRUPTED'].includes(s)?'bad':['VERIFIED','COMPLETED','SUCCESS','PASSED'].includes(s)?'ok':['RUNNING','PLANNING','REVISING'].includes(s)?'warn':''};
+const tag=s=>'<span class="status '+kind(s)+'">'+E(s||'UNKNOWN')+'</span>';
+const msg=s=>'<div class="empty">'+E(s)+'</div>';
+const json=s=>'<pre dir="ltr" class="json-view">'+E(JSON.stringify(s,null,2))+'</pre>';
+const date=s=>s?new Date(s).toLocaleString('ar',{dateStyle:'medium',timeStyle:'short'}):'غير محدد';
+const pid=()=>state.project?.id||route().id;
+const current=()=>state.details||state.project;
+async function req(path,opts={},timeout=12000){
+  const a=new AbortController(),clock=setTimeout(()=>a.abort(),timeout);
+  try{
+    const r=await fetch(path,{credentials:'same-origin',cache:'no-store',signal:a.signal,...opts});
+    const raw=await r.text();let body=null;
+    try{body=raw?JSON.parse(raw):null}catch{body=raw}
+    if(!r.ok)throw Error('HTTP '+r.status+' — '+(typeof body==='object'?body?.detail||r.statusText:raw.slice(0,180)));
+    return body;
+  }catch(e){throw Error(e.name==='AbortError'?'تجاوز الطلب مهلة '+(timeout/1000)+' ثانية':e.message)}
+  finally{clearTimeout(clock)}
+}
+async function post(path,data){return req(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data||{})},25000)}
+function heading(t,sub=''){return '<div class="page-head"><h1>'+E(t)+'</h1><p class="muted">'+E(sub)+'</p></div>'}
+function navBar(){
+ const r=route();
+ const menus=[['home','الرئيسية'],['decisions','قرارات المالك'],['tools','الأدوات والإضافات'],['settings','الإعدادات']];
+ const projects=state.projects.slice(0,50);
+ return '<aside class="side '+(state.side?'open':'')+'"><div class="brand"><b>◈ مصنع الهندسة</b><small>Agentic Engineering System</small></div>'+
+ '<div class="side-scroll">'+link('＋ مشروع جديد','#/home','primary')+
+ '<div class="section-label">مساحة العمل</div>'+menus.map(x=>'<a class="nav-btn '+(!r.id&&r.view===x[0]?'selected':'')+'" href="#/'+x[0]+'">'+E(x[1])+'</a>').join('')+
+ '<div class="section-label">المشاريع الحقيقية · '+projects.length+'</div>'+
+ (projects.length?projects.map(x=>'<a class="nav-btn '+(r.id===x.id?'selected':'')+'" href="'+url(x.id,'chat')+'"><span class="pin">●</span><span class="nav-text" dir="auto">'+E(x.name||x.title||('مشروع '+x.id))+'</span></a>').join(''):'<div class="muted">لم تُجلب مشاريع بعد</div>')+
+ (r.id?'<section class="aes-chat-links" aria-label="محادثات المشروع"><div class="section-label">محادثات المشروع</div>'+
+ (projectChats().length?projectChats().slice(0,40).map(c=>'<a class="nav-btn '+(state.conversationId===chatId(c)?'selected':'')+'"'+(state.conversationId===chatId(c)?' aria-current="page"':'')+' href="'+chatURL(r.id,chatId(c))+'"><span dir="auto" class="nav-text">'+E(chatTitle(c))+'</span></a>').join(''):'<div class="muted small">'+E(state.convosError||(!state.convos?'جارٍ التحميل…':'لا محادثات محفوظة بعد'))+'</div>')+'</section>':'')+
+ '</div><div class="muted" style="font-size:11px">LIVE API · دون بيانات تجريبية</div></aside>'+
+ (state.side?'<button class="overlay side-overlay" data-action="side" aria-label="إغلاق القائمة"></button>':'');
+}
+function tabs(){
+ const r=route();if(!r.id)return '';
+ const tabs=[['chat','المحادثة'],['overview','ملخص المشروع'],['runs','التشغيل'],['outputs','المخرجات'],['decisions','القرارات'],['browser','المراجع']];
+ return '<nav class="project-tabs" aria-label="مساحات المشروع">'+tabs.map(([v,t])=>link(t,v==='chat'?chatURL(r.id,state.conversationId):url(r.id,v),r.view===v?'selected':'quiet')).join('')+'</nav>';
+}
+function shell(content){
+ const r=route();const p=current();
+ const oldThread=document.getElementById('aes-chat-thread'),oldEditor=document.querySelector('#send-chat textarea');
+ const threadKey=chatURL(r.id,state.conversationId),sameThread=oldThread?.dataset.threadKey===threadKey;
+ const scrolled=oldThread?.scrollTop??0,nearEnd=!oldThread||oldThread.scrollHeight-oldThread.clientHeight-scrolled<48;
+ const editing=oldEditor&&document.activeElement===oldEditor,selection=editing?[oldEditor.selectionStart,oldEditor.selectionEnd]:null;
+ root.innerHTML='<div class="frame">'+navBar()+'<main class="main '+(r.view==='chat'?'is-chat':'')+'" id="main"><header class="top"><div class="crumb">'+btn('☰','side','quiet')+'<strong dir="auto">'+E(r.id?(p?.name||('مشروع '+r.id)):'المصنع')+'</strong></div><div class="top-actions"><span class="pills">● بيانات الإنتاج</span>'+btn('تحديث','refresh','quiet')+link('الواجهة الحالية','/','quiet')+'</div></header>'+
+ tabs()+'<div class="stage"><div class="canvas '+(['home','overview'].includes(r.view)?'wide':'')+'">'+
+ (r.view!=='chat'&&state.error?'<div class="callout bad" role="alert"><strong>خطأ في الاتصال</strong><p>'+E(state.error)+'</p></div>':'')+
+ (r.view!=='chat'&&state.status?'<div class="callout" role="status">'+E(state.status)+'</div>':'')+
+ content+'</div></div></main></div>';
+ const newThread=document.getElementById('aes-chat-thread');
+ if(newThread){newThread.dataset.threadKey=threadKey;newThread.scrollTop=(sameThread&&!nearEnd)?scrolled:newThread.scrollHeight;}
+ if(editing&&sameThread){const el=document.querySelector('#send-chat textarea');if(el&&!el.disabled){el.focus({preventScroll:true});el.setSelectionRange(...selection);}}
+}
+function home(){
+ const active=state.projects.filter(p=>['RUNNING','PLANNING','REVISING'].includes(String(p.status||'').toUpperCase()));
+ const blocked=state.projects.filter(p=>['BLOCKED','FAILED','INTERRUPTED'].includes(String(p.status||'').toUpperCase()));
+ return '<div class="home-center"><div class="hero"><div class="eyebrow">المصنع · بيانات فعلية من Oracle</div><h1>ماذا تريد أن تنجز؟</h1><p>أنشئ مشروعًا بهدف محدد، أو افتح مشروعًا قائمًا لمراجعة تشغيله وأدلته.</p></div>'+
+ '<form id="create" class="card"><label class="field"><span>اسم المشروع</span><input name="name" required maxlength="200" placeholder="مثال: منصة تحليل العمليات"></label>'+
+ '<label class="field"><span>الهدف والمخرج المطلوب</span><textarea name="objective" required rows="3" minlength="3" placeholder="صف النتيجة التي تريد تحقيقها..."></textarea></label>'+
+ '<div class="row wrap"><span class="muted">الإنشاء يحفظ مشروع DRAFT فقط، ولا يبدأ تنفيذًا.</span><button class="btn primary" type="submit" '+(state.busy?'disabled':'')+'>إنشاء مشروع حقيقي</button></div></form>'+
+ '<div class="grid"><article class="card"><h2>تعمل الآن</h2><p class="big-num">'+active.length+'</p></article><article class="card"><h2>تحتاج متابعة</h2><p class="big-num">'+blocked.length+'</p></article><article class="card"><h2>كل المشاريع</h2><p class="big-num">'+state.projects.length+'</p></article></div>'+
+ '<h2 class="h2">المشاريع</h2>'+(state.projects.length?state.projects.map(p=>'<article class="card row wrap"><div><strong>'+E(p.name||p.title||'مشروع')+'</strong><p>'+E((p.objective||'').slice(0,160))+'</p></div><div class="actions">'+tag(p.status)+link('افتح',url(p.id,'overview'),'primary')+'</div></article>').join(''):msg('لا مشاريع مسجلة.'))+'</div>';
+}
+function overview(){
+ const p=current();if(!p)return msg('اختر مشروعًا');
+ const snap=state.details,gate=snap?.execution_gate||{},open=(snap?.gates||[]).filter(g=>g.status==='PENDING');
+ const status=p.status||'UNKNOWN';
+ const top='<div class="thread-head"><div class="eyebrow">المشروع '+E(p.id)+'</div><h1 dir="auto">'+E(p.name||'مشروع')+'</h1><p class="project-objective" dir="auto">'+E(p.objective||'لم يسجل هدف')+'</p></div>';
+ return top+'<div class="card"><div class="row wrap"><div><div class="eyebrow">حالة المشروع المسجّلة</div><h2>'+tag(status)+'</h2></div><div class="actions">'+link('التشغيل',url(p.id,'runs'),'primary')+link('القرارات',url(p.id,'decisions'))+'</div></div>'+
+ (status==='BLOCKED'?'<p class="muted">'+E(gate.state==='APPROVED_BUT_BLOCKED'?gate.reason:p.last_error||'لم يُسجل سبب محدد. راجع التشغيل.')+'</p>':'')+'</div>'+
+ '<div class="grid"><div class="card"><b>المراحل</b><p class="big-num">'+(snap?.phases?.length??'—')+'</p></div><div class="card"><b>قرارات معلّقة</b><p class="big-num">'+(snap?.gates?open.length:'—')+'</p></div><div class="card"><b>الأدلة</b><p class="big-num">'+(snap?.evidence?.length??'—')+'</p></div></div>'+
+ '<h2 class="h2">ما يحتاج انتباهك</h2>'+
+ (!snap?msg('جارٍ قراءة الحالة التفصيلية، والمشروع ظاهر من قائمة الإنتاج.') :
+ open.length?open.map(g=>'<div class="card"><div class="row wrap"><div><b>'+E(g.kind||'قرار')+'</b><p>'+E(g.reason||g.description||'دليل القرار في صفحة القرارات')+'</p></div>'+link('راجع القرار',url(p.id,'decisions'),'primary')+'</div></div>').join(''):
+ ['BLOCKED','FAILED','INTERRUPTED'].includes(status)?'<div class="callout warn">لا قرار مالك مفتوح؛ راجع مسار التشغيل والأحداث لتحديد سبب التوقف.</div>':msg('لا توجد بوابات مالك معلّقة في اللقطة الحالية.'))+
+ '<h2 class="h2">آخر الأحداث</h2>'+events(snap?.events||[],5);
+}
+function events(items,limit=20){
+ return items.length?'<ol class="trace">'+items.slice(-limit).reverse().map(x=>'<li><b>'+E(x.kind||'حدث')+'</b> <small>'+E(date(x.created_at||x.timestamp))+'</small><div class="muted">'+E(x.role||x.state||'')+'</div></li>').join('')+'</ol>':msg('لا أحداث متاحة لهذه القراءة.');
+}
+function liveRun(snap){
+ if(!snap||!Object.hasOwn(snap,'active_run'))return null;
+ return snap.active_run!==null&&Number(snap.active_run?.project_id)===Number(snap.id);
+}
+function runLabel(p,snap){
+ const active=liveRun(snap);
+ const labels={DRAFT:'مسودة',READY:'جاهز',AWAITING_OWNER_APPROVAL:'بانتظار اعتماد الخطة',BLOCKED:'متعطّل',PAUSED:'متوقف مؤقتًا',STOPPED:'متوقف',FAILED:'فشل',INTERRUPTED:'انقطع',COMPLETED:'مكتمل',VERIFIED:'تم التحقق',RUNNING:'آخر حالة محفوظة · RUNNING'};
+ const status=p.status==='RUNNING'&&active?'قيد التنفيذ':labels[p.status]||p.status||'الحالة غير معروفة';
+ return status+' · '+(active===null?'جارٍ التحقق من التشغيل':active?'تشغيل نشط':'لا تشغيل نشط');
+}
+function runSummary(p,snap){
+ const gate=snap?.execution_gate;
+ const blocked=p.status==='BLOCKED',diagnosed=blocked&&gate?.state==='APPROVED_BUT_BLOCKED';
+ const stepId=blocked?(gate?.step_id||p.current_step_id):null;
+ const hasStepEvidence=stepId&&Array.isArray(snap?.evidence)&&snap.evidence.some(e=>Number(e.step_id)===Number(stepId));
+ const reason=diagnosed?gate.reason:blocked?snap?.last_error:'';
+ return '<section class="aes-run-summary'+(blocked?' is-blocked':'')+'" aria-labelledby="run-status-heading">'+
+ '<h2 id="run-status-heading">'+E(runLabel(p,snap))+'</h2>'+
+ (blocked?'<p>'+(stepId?'<strong>الخطوة <bdi>'+E(stepId)+'</bdi></strong> · ':'')+
+ (!diagnosed&&reason?'<strong>آخر خطأ محفوظ</strong> · ':'')+
+ '<span dir="auto">'+E(reason||'لم يُثبت سبب محدد للحجب.')+'</span></p>':'')+
+ (diagnosed&&gate.owner_action?'<p class="muted">'+E(gate.owner_action)+'</p>':'')+
+ (stepId&&Array.isArray(snap?.evidence)&&!hasStepEvidence?'<p class="muted">لا دليل تحقق محفوظ لهذه الخطوة.</p>':'')+
+ '<div class="actions">'+(p.status==='DRAFT'&&!(snap?.plan)?btn('توليد خطة حقيقية','plan','primary'):'')+
+ (snap?.plan&&!snap.plan.approved_by_owner?btn('مراجعة واعتماد الخطة','approve-plan','primary'):'')+
+ (['BLOCKED','PAUSED','INTERRUPTED'].includes(p.status)?btn('استئناف بعد المراجعة','resume'):'')+
+ (liveRun(snap)===true?btn('إيقاف التشغيل','stop'):'')+'</div></section>';
+}
+function runs(){
+ const p=current();if(!p)return msg('لا مشروع محدد');
+ const snap=state.details,steps=state.steps?.steps||[];
+ const phasePlan=new Map((snap?.phases||[]).map(p=>[Number(p.id),Number(p.plan_id)]));
+ const latestPlanId=Number(snap?.plan?.id||0),hasPlanContext=latestPlanId>0&&phasePlan.size>0;
+ const currentSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))===latestPlanId):steps;
+ const historicalSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))!==latestPlanId):[];
+ const isCurrent=(id,activeId)=>liveRun(snap)===true&&p.status==='RUNNING'&&Number(id)===Number(activeId);
+ const recordedStatus=(status,active)=>status==='RUNNING'&&!active
+   ?'<span class="status">RUNNING</span><small>آخر حالة محفوظة</small>':tag(status);
+ const renderSteps=items=>items.map(x=>'<details class="aes-step-detail"><summary><b>'+E(x.objective||x.title||x.description||('خطوة '+x.id))+'</b> '+recordedStatus(x.status,isCurrent(x.id,snap?.current_step_id))+' <small>مرحلة '+E(x.phase_title||'—')+' · #'+E(x.id)+' · المحاولات '+E(x.attempts??0)+'</small></summary>'+
+ '<div class="aes-step-facts">'+(x.expected_output?'<p><b>المخرج المتوقع: </b>'+E(x.expected_output)+'</p>':'')+
+ (x.last_error?'<p class="bad"><b>آخر خطأ: </b>'+E(x.last_error)+'</p>':'')+
+ (Array.isArray(x.acceptance_criteria)&&x.acceptance_criteria.length?'<details><summary>معايير القبول ('+x.acceptance_criteria.length+')</summary>'+json(x.acceptance_criteria)+'</details>':'')+
+ '<details><summary>السجل التقني الكامل</summary>'+json(x)+'</details></div></details>').join('');
+ const stepView='<div class="card"><h2>خطوات الخطة الحالية ('+(state.steps?currentSteps.length:'—')+')</h2>'+
+ '<p class="muted">'+(latestPlanId?'الخطة الحالية #'+E(latestPlanId)+'؛ عرض الخطوات مرتبط بإصدار الخطة.':'لم تُحدد خطة حالية؛ لا يمكن تصنيف الخطوات التاريخية.')+'</p>'+
+ (state.steps?currentSteps.length?renderSteps(currentSteps):msg('لا توجد خطوات مسجلة في الخطة الحالية.'):msg('جارٍ تحميل خطوات المشروع'))+
+ (historicalSteps.length?'<details class="aes-historical"><summary>الخطط القديمة ('+historicalSteps.length+' خطوة) — تاريخ فقط</summary>'+renderSteps(historicalSteps)+'</details>':'')+'</div>';
+ const phases=snap?.phases||[];
+ return heading('تشغيل المشروع','المهام والنتائج الفعلية قبل السجلات التشخيصية.')+runSummary(p,snap)+
+ (!snap?msg('جلب مراحل التشغيل...'):'<div class="card"><h2>المراحل ('+phases.length+')</h2>'+phases.map(ph=>'<div class="aes-phase-row"><b class="aes-phase-title" dir="auto">'+E(ph.name||ph.title||'مرحلة')+'</b><div class="aes-phase-state">'+recordedStatus(ph.status,isCurrent(ph.id,snap.current_phase_id))+'</div></div>').join('')+'</div>')+stepView+
+ (!snap?'':
+ '<div class="card"><h2>الخطة المسجلة</h2>'+(snap.plan?'<details><summary>عرض الخطة</summary>'+json(snap.plan)+'</details>':msg('لا خطة منشأة بعد.'))+'</div>'+
+ '<div class="card"><h2>آخر المحاولات</h2>'+(snap.executions?.length?snap.executions.map(x=>'<details><summary>'+E('التنفيذ '+x.id)+' · '+E(x.status||x.verdict||'غير معروف')+'</summary>'+json(x)+'</details>').join(''):msg('لا محاولات مسجلة.'))+'</div>'+
+ '<div class="card"><details><summary>سجل الأحداث التشخيصية ('+(snap.events?.length||0)+')</summary>'+events(snap.events||[],30)+'</details></div>');
+}
+function decisions(){
+ const r=route(),snap=state.details,p=current();
+ if(!r.id){const blocked=state.projects.filter(x=>['BLOCKED','WAITING_OWNER','PAUSED'].includes(x.status));return heading('قرارات المالك','لا يعتمد أي قرار من هذا العرض دون فتح المشروع.')+(blocked.length?blocked.map(x=>'<div class="card row wrap"><div><b>'+E(x.name||'مشروع')+'</b><p>'+tag(x.status)+'</p></div>'+link('افحص البوابات',url(x.id,'decisions'),'primary')+'</div>').join(''):msg('لا مشاريع بحالة متابعة في القائمة الحالية.'))}
+ const gates=snap?.gates||[];
+ return heading('بوابات المالك','القرارات المسجلة ونتائجها من API المشروع.')+
+ (snap?.plan&&!snap.plan.approved_by_owner?'<div class="card"><h2>الخطة تنتظر الاعتماد</h2><p>الاعتماد يطلق سير العمل الحقيقي في الخلفية.</p>'+btn('راجع واعتمد الخطة','approve-plan','primary')+'<details><summary>بيانات الخطة</summary>'+json(snap.plan)+'</details></div>':'')+
+ (gates.length?gates.map(g=>'<div class="card"><div class="row wrap"><div><b>'+E(g.kind||'بوابة')+'</b><p>Gate #'+E(g.id)+' · '+tag(g.status)+'</p></div>'+(g.status==='PENDING'?'<div class="actions">'+btn('اعتماد','gate-yes-'+g.id,'primary')+btn('رفض','gate-no-'+g.id)+'</div>':'')+'</div><details><summary>بيانات القرار والدليل</summary>'+json(g)+'</details></div>').join(''):msg('لا بوابات قرار مسجلة لهذه القراءة.'))+
+ (!snap?msg('جارٍ تحميل البوابات'):'');
+}
+function outputs(){
+ const r=route();if(!r.id)return msg('افتح مشروعًا لعرض مخرجاته.');
+ const list=Array.isArray(state.artifacts?.artifacts)?state.artifacts.artifacts:null;
+ const q=state.artifactQuery.trim().toLowerCase(),type=state.artifactType;
+ const selected=list?list.map((a,index)=>({a,index})).filter(({a})=>{
+   const name=String(a.name||'').toLowerCase();
+   if(q&&!name.includes(q)&&!String(a.step_id||'').includes(q))return false;
+   if(type==='html')return /\.html?$/i.test(name);
+   if(type==='code')return /\.(js|css|json|py|ts|tsx|jsx|sh|ps1)$/i.test(name);
+   if(type==='docs')return /\.(md|txt|pdf|csv|xml|ya?ml)$/i.test(name);
+   return true;
+ }):[];
+ const result=selected.slice(0,state.artifactLimit);
+ const canShowVisual=state.preview&&/\.html?$/i.test(state.preview.name||'');
+ const isolatedDoc=canShowVisual?'<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; script-src &#39;none&#39;; connect-src &#39;none&#39;; form-action &#39;none&#39;; img-src data:; font-src data:; style-src &#39;unsafe-inline&#39;">'+state.preview.text:'';
+ const previewPanel=state.preview?'<section class="card"><div class="row wrap"><h2>'+E(state.preview.name)+'</h2><div class="actions">'+(canShowVisual?btn('معاينة مرئية آمنة','artifact-view-visual',state.previewMode==='visual'?'selected':'quiet'):'')+btn('عرض المصدر','artifact-view-source',state.previewMode==='source'?'selected':'quiet')+btn('إغلاق','artifact-close','quiet')+'</div></div><p class="muted">محتوى نصي من أدلة المصنع بحد 256KB. العرض المرئي ثابت ومعزول، لا يُشغّل JavaScript أو يتصل بالشبكة، ولا يمثل اختبار قبول للموقع.</p>'+(canShowVisual&&state.previewMode==='visual'?'<iframe class="aes-artifact-frame" title="معاينة HTML ثابتة وآمنة" sandbox="" referrerpolicy="no-referrer" srcdoc="'+E(isolatedDoc)+'"></iframe>':'<pre dir="ltr" class="json-view">'+E(state.preview.text)+'</pre>')+'</section>':'';
+
+ const kinds=[['all','الكل'],['html','صفحات HTML'],['code','الكود'],['docs','الوثائق']];
+ const filters='<form id="artifact-filter-form" class="card"><label class="field"><span>ابحث داخل أسماء الملفات أو رقم الخطوة</span><input name="q" type="search" autocomplete="off" placeholder="مثال: index.html أو build.js" value="'+E(state.artifactQuery)+'"></label><div class="row wrap"><div class="actions">'+kinds.map(([id,label])=>btn(label,'artifact-type-'+id,type===id?'selected':'quiet')).join('')+'</div><button type="submit" class="btn primary">بحث</button></div></form>';
+ return heading('مخرجات المشروع','ملفات وأدلة حقيقية مثبتة في سجل التشغيل. وجود الملف لا يعني قبول التسليم النهائي.')+
+ filters+
+ (!list?msg(state.artifactsError?'تعذّر جلب قائمة المخرجات: '+state.artifactsError:'جارٍ طلب قائمة الأدلة والمخرجات من الخادم...'):
+ '<div class="row wrap"><b>'+selected.length+' نتيجة من أصل '+list.length+' مخرج موثق</b><small class="muted">الملفات غير المثبتة لا تظهر في هذه القائمة</small></div>'+
+ (selected.length?result.map(({a,index})=>'<article class="card"><div class="row wrap"><div class="artifact-name"><b>'+E(a.name||'ملف')+'</b><p class="muted">خطوة #'+E(a.step_id||'غير محددة')+' · دليل #'+E(a.evidence_id||'—')+' · نوع '+E(a.kind||'—')+'</p><small class="muted">حكم دليل الخطوة: '+E(a.verdict||'غير محدد')+'</small></div><div class="actions">'+(a.kind==='file'&&a.step_id?btn('معاينة النص','artifact-'+index,'primary'):'')+'</div></div><details><summary>هوية الملف والتحقق</summary><div class="mono">SHA256: '+E(a.sha256||'لا بصمة مسجلة')+'</div><div class="muted">البايتات: '+E(a.bytes??'غير معروف')+'</div></details></article>').join(''):msg('لا نتائج تطابق مرشح البحث.'))+
+ (selected.length>state.artifactLimit?'<div class="row">'+btn('عرض المزيد ('+(selected.length-state.artifactLimit)+')','artifact-more','quiet')+'</div>':'')
+ )+
+ previewPanel;
+}
+// Rich text for saved assistant turns. Only literal templates emit HTML.
+function replyInline(raw){
+ const token=/`([^`\n]+)`|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|\[([^\[\]\n]{1,512})\]\((https?:\/\/[^\s<>"'()]{1,2048})\)/g;
+ let out='',end=0;
+ for(const m of raw.matchAll(token)){
+   out+=E(raw.slice(end,m.index));
+   if(m[1])out+='<code dir="ltr">'+E(m[1])+'</code>';
+   else if(m[2])out+='<strong>'+E(m[2])+'</strong>';
+   else if(m[3])out+='<em>'+E(m[3])+'</em>';
+   else out+='<a href="'+E(m[5])+'" target="_blank" rel="noopener noreferrer">'+E(m[4])+'</a>';
+   end=m.index+m[0].length;
+ }
+ return out+E(raw.slice(end));
+}
+function replyMarkup(raw){
+ const rows=String(raw??'').replace(/\r\n?/g,'\n').split('\n');
+ const out=[],paragraph=[];
+ const listRow=/^\s*(?:([-+*])|([0-9]+)[.)])\s+(.+)$/;
+ const tableRow=/^\s*\|.*\|\s*$/;
+ const tableRule=/^\s*\|(?:\s*:?-{3,}:?\s*\|)+\s*$/;
+ const cells=s=>s.trim().slice(1,-1).split('|').map(c=>c.trim());
+ const flush=()=>{if(paragraph.length)out.push('<p dir="auto">'+replyInline(paragraph.splice(0).join('\n'))+'</p>')};
+ for(let i=0;i<rows.length;){
+   const line=rows[i++];
+   if(!line.trim()){flush();continue}
+   const fence=line.match(/^\s*(`{3,})([\w+.-]*)\s*$/);
+   const heading=line.match(/^\s*(#{1,6})\s+(.+)$/);
+   const list=line.match(listRow);
+   if(fence){
+     flush();const code=[],closing=new RegExp('^\\s*`{'+fence[1].length+',}\\s*$');
+     while(i<rows.length&&!closing.test(rows[i]))code.push(rows[i++]);
+     if(i<rows.length)i++;
+     out.push('<pre dir="ltr" tabindex="0" aria-label="مقطع كود"><code>'+E(code.join('\n'))+'</code></pre>');
+   }else if(heading){
+     flush();const level=Math.min(4,heading[1].length+1);
+     out.push('<h'+level+' dir="auto">'+replyInline(heading[2])+'</h'+level+'>');
+   }else if(/^\s*(?:---+|\*\*\*+)\s*$/.test(line)){
+     flush();out.push('<hr>');
+   }else if(list){
+     flush();const numbered=Boolean(list[2]),tag=numbered?'ol':'ul',items=[list[3]];
+     while(i<rows.length){
+       const next=rows[i].match(listRow);
+       if(!next||Boolean(next[2])!==numbered)break;
+       items.push(next[3]);i++;
+     }
+     out.push('<'+tag+'>'+items.map(x=>'<li dir="auto">'+replyInline(x)+'</li>').join('')+'</'+tag+'>');
+   }else if(tableRow.test(line)&&tableRule.test(rows[i]||'')&&cells(line).length===cells(rows[i]).length){
+     flush();const head=cells(line),body=[];i++;
+     while(tableRow.test(rows[i]||'')&&cells(rows[i]).length===head.length)body.push(cells(rows[i++]));
+     out.push('<div class="aes-md-table" role="region" aria-label="جدول ضمن الرد" tabindex="0"><table><thead><tr>'+
+       head.map(x=>'<th scope="col" dir="auto">'+replyInline(x)+'</th>').join('')+'</tr></thead><tbody>'+
+       body.map(row=>'<tr>'+row.map(x=>'<td dir="auto">'+replyInline(x)+'</td>').join('')+'</tr>').join('')+
+       '</tbody></table></div>');
+   }else if(/^\s*>/.test(line)){
+     flush();out.push('<blockquote dir="auto">'+replyInline(line.replace(/^\s*>\s?/,''))+'</blockquote>');
+   }else paragraph.push(line);
+ }
+ flush();return out.join('');
+}
+function chat(){
+ const p=current(),id=state.conversationId,record=projectChats().find(c=>chatId(c)===id);
+ const thread=state.messages?.messages||[],draft=state.drafts[draftKey()]||'';
+ const isBusyHere=state.busy&&state.pendingProjectId===route().id&&state.pendingConversationId===(id||null);
+ const waiting=state.serverChat!=='idle'||state.recoveringChat;
+ const canSend=!state.busy&&!waiting&&p?.id===route().id&&(!id||(!state.threadLoading&&!state.messagesError&&state.messages!==null));
+ const title=id?(record?chatTitle(record):'محادثة '+id):'محادثة جديدة';
+ const empty=state.threadLoading?['جارٍ تحميل المحادثة','نقرأ الرسائل المحفوظة.']:
+ state.messagesError?['تعذر فتح المحادثة',state.messagesError]:
+ id?['لا رسائل في هذه المحادثة','يمكنك كتابة أول رسالة.']:
+ ['ما الذي تريد إنجازه؟','اكتب ما تحتاجه. يبدأ التنفيذ من صفحة التشغيل بعد المراجعة.'];
+ const phase=({PAUSED:'المشروع متوقف مؤقتًا',BLOCKED:p?.status==='BLOCKED'?runLabel(p,state.details):'',RUNNING:p?.status==='RUNNING'?runLabel(p,state.details):'',COMPLETED:'التشغيل مكتمل',FAILED:'فشل تشغيل المشروع'})[p?.status]||'المشروع '+pid();
+ const phaseLabel=p?.status==='PAUSED'&&canSend?'تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة':phase;
+ const progress=isBusyHere?state.streamNotice:state.serverChat==='running'?(state.recoveringChat?'انقطع العرض المباشر. الخادم ما زال يعالج الرسالة.':'الخادم يعالج رسالة في هذه المحادثة.'):
+ state.serverChat==='unknown'?'تعذر التحقق من حالة الرد. تحقّق من السجل قبل إعادة الإرسال.':state.recoveringChat?'جارٍ التحقق من حفظ الرد.':(!state.status&&!state.error&&thread.at(-1)?.role==='user')?'آخر رسالة بلا رد محفوظ.':'';
+ const waitingCard=progress&&!state.liveText&&(isBusyHere||waiting)?'<article class="aes-chat-message from-ai is-waiting" role="status"><small>المساعد</small>'+E(progress)+'</article>':'';
+ const progressLine=progress&&!waitingCard?'<p class="aes-chat-feedback muted" role="status">'+E(progress)+'</p>':'';
+ const canStop=(isBusyHere&&state.activeChatId)||(!state.busy&&state.serverChat==='running'&&id);
+ const feedback=state.error?'<p class="aes-chat-feedback bad" role="alert" dir="auto">'+E(state.error)+'</p>':
+ state.status?'<p class="aes-chat-feedback ok" role="status">'+E(state.status)+'</p>':'';
+ return '<div class="aes-chat-layout"><section class="aes-chat-primary" aria-label="المحادثة"><header class="aes-chat-head"><div class="aes-chat-identity"><span class="aes-chat-mark" aria-hidden="true">◈</span><div><span class="aes-chat-kicker">محادثة المشروع</span><h1 dir="auto">'+E(title)+'</h1><a class="aes-project-state" href="'+E(url(pid(),'runs'))+'">'+E(phaseLabel)+'</a></div></div>'+link('＋ محادثة جديدة',chatURL(pid(),null),'quiet aes-new-chat')+'</header>'+
+ '<div class="aes-chat-thread" id="aes-chat-thread" tabindex="0" aria-label="سجل الرسائل" aria-busy="'+state.threadLoading+'">'+
+ (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>'+E(empty[0])+'</h2><p dir="auto">'+E(empty[1])+'</p></div>':'')+
+ thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':m.state_badge==='FAILED'?'فشل الرد':m.state_badge==='PARTIAL'?'رد جزئي':'المساعد')+'</small>'+(m.role==='assistant'?'<div class="aes-reply-body">'+replyMarkup(m.content)+'</div>':'<div dir="auto">'+E(m.content||'')+'</div>')+'</article>').join('')+
+ (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article>':'')+
+ waitingCard+(isBusyHere&&state.liveText?'<article class="aes-chat-message from-ai"><small>المساعد · رد مباشر</small><div dir="auto" class="aes-stream-content" aria-live="polite">'+E(state.liveText)+'</div></article>':'')+
+ (!state.busy&&state.unsavedReply?.thread===draftKey()?'<article class="aes-chat-message from-ai"><small>رد جزئي · لم يُحفظ</small><div dir="auto">'+E(state.unsavedReply.text)+'</div></article>':'')+'</div>'+
+ '<div class="aes-chat-dock">'+progressLine+feedback+'<form id="send-chat" class="aes-chat-composer"><textarea dir="auto" name="message" required maxlength="32000" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالة للمساعد" '+(canSend?'':'disabled')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">محادثة المشروع</span>'+
+ (state.stopPending?'<span class="muted">جارٍ طلب الإيقاف…</span>':canStop?btn('طلب إيقاف الرد','stop-chat','quiet'):
+ (!isBusyHere&&waiting)?btn('تحقّق من الرد','chat-check','quiet'):
+ '<button class="btn primary" type="submit" '+(canSend?'':'disabled')+'>إرسال ↑</button>')+'</div></form></div></section></div>';
+}
+function browserPage(){
+ return heading('المراجع والمتصفح','النسخة الحالية لا توفر API للتحكم بمتصفح مدمج.')+
+ '<div class="card"><h2>مراجع الأدلة</h2><p>اعرض مراجع التشغيل من قسم المخرجات. فتح موقع خارجي لا يمنح الوكلاء إذنًا بالتفاعل معه.</p><div class="actions">'+link('المخرجات',url(pid(),'outputs'),'primary')+link('المتصفح في الواجهة الحالية','/','quiet')+'</div></div>'+
+ '<div class="empty">لا توجد جلسة متصفح مدمج متصلة بهذه الواجهة. لن نعرض متصفحًا وهميًا.</div>';
+}
+function toolsPage(){
+ const d=state.toolsData,research=Array.isArray(d?.research?.providers)?d.research.providers:null;
+ const environments=Array.isArray(d?.execution?.environments)?d.execution.environments:null;
+ return heading('الأدوات والقدرات','هذه بيانات الجاهزية الفعلية من API المصنع، وليست إضافات تجريبية.')+
+ '<section class="card"><h2>مزودو البحث</h2><p class="muted">READY يتطلب جاهزية حديثة؛ STALE يعني انتهاء صلاحية الفحص.</p>'+
+ (research?research.length?research.map(p=>'<div class="list-item"><div class="row wrap"><b>'+E(p.name||'مزود بحث')+'</b>'+tag(p.effective_status||'UNKNOWN')+'</div>'+
+ '<small class="muted">'+E(p.state_reason||'لا سبب مسجل')+'</small></div>').join(''):msg('لا مزود بحث مسجل.'):msg('جارٍ تحميل المزودات أو تعذر الاتصال.'))+
+ (d?.researchError?'<div class="callout bad">'+E(d.researchError)+'</div>':'')+'</section>'+
+ '<section class="card"><h2>بيئات تنفيذ المصنع</h2>'+
+ (environments?environments.length?environments.map(e=>'<div class="list-item"><div class="row wrap"><b>'+E(e.name||('بيئة #'+e.id))+'</b>'+tag(e.state||e.status||e.health_state||'غير محدد')+'</div>'+
+ '<p class="muted">'+E(e.backend||'نوع غير معروف')+(e.is_default?' · البيئة الافتراضية':'')+'</p></div>').join(''):msg('لا بيئات تنفيذ مسجلة.'):msg('جارٍ تحميل بيئات التنفيذ أو تعذر الاتصال.'))+
+ (d?.executionError?'<div class="callout bad">'+E(d.executionError)+'</div>':'')+'</section>'+
+ '<section class="card"><h2>الإضافات الخارجية</h2><p>لا يحتوي عقد هذه الواجهة حاليًا على سجل إضافات خارجي قابل لإدارتها من هنا. لا تُعرض أي إضافة على أنها مثبتة أو مصرح لها دون خدمة تفويض موثقة.</p></section>';
+}
+function settingsPage(){
+ const d=state.settingsData,roles=Array.isArray(d?.roles)?d.roles:null;
+ const providers=Array.isArray(d?.providers)?d.providers:null;
+ return heading('إعدادات المصنع','عرض صادق لإعدادات الأدوار والمزودات من الخادم. تعديل مفاتيح الوصول غير متاح من هذه النافذة.')+
+ '<div class="card"><h2>المظهر</h2><div class="actions">'+btn('داكن','theme-dark',state.theme==='dark'?'selected':'quiet')+btn('فاتح','theme-light',state.theme==='light'?'selected':'quiet')+'</div><small class="muted">التغيير محلي في هذه الجلسة ولا يُعدّل إعدادات الخادم.</small></div>'+
+ '<div class="card"><h2>ربط أدوار المصنع بالنماذج</h2>'+
+ (roles?roles.length?roles.map(x=>'<div class="list-item"><div class="row wrap"><b>'+E(x.label||x.key||'دور')+'</b><span class="mono">'+E(x.selection?.model||'غير محدد')+'</span></div><small class="muted">المزود: '+E(x.selection?.provider||'غير محدد')+(x.is_default?' · القيمة الافتراضية':'')+'</small></div>').join(''):msg('لا تعيينات أدوار مسجلة.'):msg('جارٍ جلب تعيينات الأدوار من الخادم...'))+'</div>'+
+ '<div class="card"><h2>مزودو النماذج</h2>'+
+ (providers?providers.length?providers.map(p=>'<div class="list-item"><div class="row wrap"><b>'+E(p.label||p.id||'مزود')+'</b>'+tag(p.readiness_status||p.state||'UNKNOWN')+'</div>'+
+ '<small class="muted">'+E(p.reason||'لا توجد ملاحظة')+'</small></div>').join(''):msg('لا مزود نموذج مسجل.'):msg('جارٍ جلب المزودات...'))+'</div>'+
+ '<div class="card"><h2>تغيير إعدادات النظام</h2><p>قد يؤثر تعديل المزودات والسياسات على تشغيل الأعمال. لا تسمح هذه الواجهة بتعديلها دون تدفق مراجعة منفصل.</p>'+link('افتح إعدادات النسخة الحالية','/','quiet')+'</div>';
+}
+function paint(){const r=route();state.view=r.view;const pages={home,overview,chat,runs,decisions,outputs,browser:browserPage,tools:toolsPage,settings:settingsPage};let content=(pages[r.view]||home)();shell(content)}
+async function loadAll(){
+ const n=++state.revision,r=route();
+ state.loading=true;state.error='';state.status='';state.conversationId=r.conversationId||null;state.convosError='';state.messagesError='';state.serverChat='idle';state.checkingChat=false;state.recoveringChat=false;state.expectedReply=null;state.threadLoading=Boolean(r.view==='chat'&&state.conversationId);state.details=null;state.artifacts=null;state.convos=null;state.messages=null;state.preview=null;state.steps=null;state.runtime=null;state.toolsData=null;state.settingsData=null;state.artifactsError='';
+ state.project=state.projects.find(p=>p.id===r.id)||null;
+ paint();
+ const listFetch=(async()=>{
+   try{const data=await req('/api/projects');if(n!==state.revision)return;state.projects=Array.isArray(data.projects)?data.projects:[];if(!state.details)state.project=state.projects.find(p=>p.id===r.id)||null;}
+   catch(e){if(n===state.revision)state.error='تعذر قراءة قائمة المشاريع: '+e.message}
+   if(n===state.revision)paint();
+ })();
+ const pageFetch=r.id?Promise.allSettled([refreshDetail(n),loadExtra(n)]):
+   ['tools','settings'].includes(r.view)?loadExtra(n):Promise.resolve();
+ await Promise.allSettled([listFetch,pageFetch]);
+ if(n!==state.revision)return;
+ state.loading=false;paint();
+}
+async function refreshDetail(n=state.revision){
+ const r=route();if(!r.id)return;
+ try{let d=await req('/api/projects/'+r.id+'/state',{},16000);if(n!==state.revision)return;state.details=d;state.project=d;if(state.error.startsWith('تعذر قراءة التفاصيل'))state.error='';}
+ catch(e){if(n!==state.revision)return;state.error='تعذر قراءة التفاصيل: '+e.message}
+ paint();
+}
+async function loadExtra(n=state.revision){
+ const r=route(),p=r.id;
+ if(!p&&r.view==='tools'){
+   const [research,execution]=await Promise.allSettled([req('/api/research/providers'),req('/api/execution/environments')]);
+   if(n!==state.revision)return;
+   state.toolsData={research:research.status==='fulfilled'?research.value:null,execution:execution.status==='fulfilled'?execution.value:null,
+     researchError:research.status==='rejected'?research.reason.message:'',executionError:execution.status==='rejected'?execution.reason.message:''};
+   paint();return;
+ }
+ if(!p&&r.view==='settings'){
+   try{const data=await req('/api/models/config');if(n===state.revision)state.settingsData=data}
+   catch(e){if(n===state.revision)state.error='تعذر جلب إعدادات النماذج: '+e.message}
+   if(n===state.revision)paint();return;
+ }
+ if(!p)return;
+ let path=null;
+ if(r.view==='outputs')path='/api/projects/'+p+'/artifacts';
+ if(r.view==='chat'){await loadChat(n,p,r.conversationId);return;}
+ if(r.view==='runs'){
+   const results=await Promise.allSettled([req('/api/projects/'+p+'/steps'),req('/api/projects/'+p+'/runtime')]);
+   if(n!==state.revision)return;
+   state.steps=results[0].status==='fulfilled'?results[0].value:null;
+   state.runtime=results[1].status==='fulfilled'?results[1].value:null;
+   if(results[0].status==='rejected')state.error='تعذر جلب الخطوات: '+results[0].reason.message;
+   paint();return;
+ }
+ if(!path)return;
+ try{const data=await req(path);if(n!==state.revision)return;state.artifacts=data}
+ catch(e){if(n===state.revision)state.error=e.message}
+ if(n===state.revision)paint();
+}
+async function loadChat(revision,project,id){
+ const request=++state.threadRequest;
+ const currentRequest=()=>revision===state.revision&&request===state.threadRequest&&route().id===project&&route().view==='chat'&&state.conversationId===(id||null);
+ if(!currentRequest())return;
+ state.messagesError='';state.threadLoading=Boolean(id);
+ paint();
+ let conversations=[];
+ try{
+   try{const d=await req('/api/projects/'+project+'/conversations');if(!currentRequest())return;
+     if(!Array.isArray(d.conversations))throw Error('استجابة المحادثات غير صالحة');
+     conversations=d.conversations.filter(c=>chatId(c)!==null&&Number(c.project_id??project)===project);
+     state.convos={conversations};state.convosError='';
+   }catch(e){if(!currentRequest())return;state.convosError='تعذر جلب القائمة: '+e.message}
+   if(!id)return;
+   if(!conversations.some(c=>chatId(c)===id)){
+     const c=await req('/api/conversations/'+id);
+     if(!currentRequest())return;
+     if(chatId(c)!==id||Number(c.project_id)!==project)throw Error('المحادثة لا تنتمي إلى هذا المشروع.');
+     state.convos={conversations:[c,...conversations]};
+   }
+   await inspectChat(id,currentRequest);
+ }catch(e){if(currentRequest()){state.messages=null;state.messagesError=e.message}}
+ finally{if(currentRequest()){state.threadLoading=false;paint();}}
+}
+async function inspectChat(id,visible){
+ let status='unknown';
+ try{
+   const a=await req('/api/chat/active?conversation_id='+id,{},6500);
+   if(a.stream==='chat-'+id&&typeof a.running==='boolean')status=a.running?'running':'idle';
+ }catch{}
+ const d=await req('/api/conversations/'+id+'/messages',{},8500);
+ if(!visible())return;
+ if(chatId(d)!==id||!Array.isArray(d.messages))throw Error('استجابة السجل لا تطابق المحادثة المطلوبة.');
+ state.serverChat=status;state.messages=d;
+}
+function savedReply(expected=state.expectedReply){
+ const rows=state.messages?.messages||[],last=rows.at(-1);
+ if(expected){
+   const i=rows.findLastIndex(m=>m.role==='user'), anchor=rows[i];
+   if(!anchor||i===rows.length-1||anchor.content!==expected.message||!(Number(anchor.id)>expected.after))return null;
+ }
+ return last?.role==='assistant'?last:null;
+}
+async function followSavedReply(){
+ const id=state.conversationId,revision=state.revision,project=route().id;
+ if(!id||state.busy||state.threadLoading||state.checkingChat||(state.messagesError&&!state.recoveringChat)||route().view!=='chat')return;
+ const visible=()=>revision===state.revision&&route().id===project&&route().view==='chat'&&state.conversationId===id&&!state.busy;
+ state.checkingChat=true;
+ try{
+   const wasWaiting=state.serverChat==='running'||state.recoveringChat;
+   await inspectChat(id,visible);
+   if(!visible())return;
+   state.messagesError='';
+   if(state.serverChat==='idle'&&wasWaiting){
+     const last=savedReply();
+     state.recoveringChat=false;
+     state.error='';
+     state.status=last?.role==='assistant'&&last.state_badge==='COMPLETED'?'وصل الرد المحفوظ من الخادم.':
+       last?.role==='assistant'&&last.state_badge==='PARTIAL'?'تم حفظ جزء من الرد، لكن التوليد لم يكتمل.':
+       last?.role==='assistant'&&last.state_badge==='FAILED'?'فشل توليد الرد؛ الخطأ مثبت في السجل.':'';
+     if(state.status&&state.expectedReply)delete state.drafts[state.expectedReply.draft];
+     state.expectedReply=null;
+     if(!state.status&&(last?.role!=='assistant'||!['FAILED','PARTIAL'].includes(last.state_badge)))
+       state.error='لم يحفظ الخادم ردًا نهائيًا. لم تُرسل الواجهة طلبًا ثانيًا.';
+   }
+ }catch(e){if(visible()){state.serverChat='unknown';state.error='تعذر تحديث سجل الرد.'}}
+ finally{if(visible()){state.checkingChat=false;paint();}}
+}
+async function mutation(path,payload,warning){
+ if(state.busy)return;
+ if(warning&&!window.confirm(warning))return;
+ state.busy=true;state.status='أُرسل الأمر إلى الخادم. لا توجد نتيجة ناجحة قبل الرد.';state.error='';paint();
+ try{const x=await post(path,payload);state.status='استجاب الخادم للأمر. راجع الحالة المحدثة.';await loadAll();state.status='تم تسجيل رد الخادم. '+(x?.launch?.launched?'أُطلق التشغيل الحقيقي.':'حالة الإطلاق موضحة في التشغيل.');}
+ catch(e){state.error=e.message;state.status='لم يثبت نجاح العملية.'}
+ finally{state.busy=false;paint()}
+}
+async function handle(action){
+ const id=pid();if(action==='refresh'){await loadAll();return}
+ if(action==='side'){state.side=!state.side;paint();return}
+ if(action==='chat-check'){await followSavedReply();return}
+ if(action==='stop-chat'){
+   const chat=state.busy?state.activeChatId:state.serverChat==='running'?state.conversationId:null;
+   if(!chat||state.stopPending)return;
+   const revision=state.revision;
+   const visible=()=>state.revision===revision&&route().view==='chat'&&(state.conversationId===chat||state.activeChatId===chat);
+   state.stopPending=true;paint();
+   try{const result=await post('/api/chat/stop?conversation_id='+chat,{});
+     if(visible())state.streamNotice=state.status=result.status==='STOPPING'?'طلب الإيقاف قُبل. لم يتأكد انتهاء الرد بعد.':'استجاب الخادم لطلب الإيقاف.';}
+   catch(e){if(visible())state.error='تعذر قبول طلب الإيقاف.'}
+   finally{state.stopPending=false;if(visible()){paint();if(!state.busy)await followSavedReply();}}
+   return;
+ }
+ if(action.startsWith('theme-')){state.theme=action.slice(6);document.documentElement.setAttribute('data-theme',state.theme);return}
+ if(action==='plan')return mutation('/api/projects/'+id+'/plan/generate',{},'سيُطلب إنشاء خطة حقيقية وقد يستدعي مزود نموذج. متابعة؟');
+ if(action==='approve-plan')return mutation('/api/projects/'+id+'/plan/approve',{approved:true,feedback:''},'اعتماد الخطة يطلق التنفيذ الحقيقي تلقائيًا وقد يستهلك موارد. هل اعتمدت الخطة بعد مراجعتها؟');
+ if(action==='resume')return mutation('/api/projects/'+id+'/resume',{},'استئناف سير العمل الحقيقي لهذا المشروع؟');
+ if(action==='stop')return mutation('/api/projects/'+id+'/stop',{reason:'إيقاف بطلب المالك من واجهة V3',final:false},'إرسال أمر إيقاف تشغيل المشروع إلى الخادم؟');
+ if(action.startsWith('gate-')){
+   let parts=action.split('-'),gid=Number(parts[2]),yes=parts[1]==='yes';
+   return mutation('/api/projects/'+id+'/gates/'+gid,{approved:yes,note:'قرار من واجهة V3 الحية'},yes?'اعتماد هذه البوابة قد يستأنف التنفيذ الحقيقي. هل توافق؟':'رفض هذه البوابة قد يوقف سير العمل. هل توافق؟');
+ }
+ if(action==='artifact-more'){state.artifactLimit+=30;paint();return}
+ if(action==='artifact-close'){state.preview=null;paint();return}
+ if(action==='artifact-view-visual'){if(state.preview&&/\.html?$/i.test(state.preview.name)){state.previewMode='visual';paint()}return}
+ if(action==='artifact-view-source'){state.previewMode='source';paint();return}
+ if(action.startsWith('artifact-type-')){state.artifactType=action.slice('artifact-type-'.length);state.artifactLimit=30;state.preview=null;paint();return}
+ if(action.startsWith('artifact-')){
+   const n=Number(action.split('-')[1]),a=state.artifacts?.artifacts?.[n];if(!a||a.kind!=='file'||!a.step_id)return;
+   state.preview=null;state.status='جارٍ تحميل النص المثبت...';paint();
+   try{const q='/api/projects/'+id+'/artifacts/content?step_id='+encodeURIComponent(a.step_id)+'&name='+encodeURIComponent(a.name);
+     const controller=new AbortController(),clock=setTimeout(()=>controller.abort(),12000);
+     try{const r=await fetch(q,{cache:'no-store',credentials:'same-origin',signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);state.preview={name:a.name,text:await r.text()};state.previewMode=/\.html?$/i.test(a.name)?'visual':'source';state.status='';}
+     finally{clearTimeout(clock)}
+   }catch(e){state.error='تعذر عرض الملف: '+e.message;state.status=''}
+   paint();return;
+ }
+}
+async function submitCreate(form){
+ if(state.busy)return;let f=new FormData(form),name=String(f.get('name')||'').trim(),objective=String(f.get('objective')||'').trim();
+ if(!name||objective.length<3)return;
+ state.busy=true;state.error='';state.status='جارٍ إنشاء مشروع DRAFT حقيقي...';paint();
+ try{const p=await post('/api/projects',{name,objective,execution_policy:'STRICT_ISOLATED'});state.status='حُفظ المشروع في قاعدة المصنع.';location.hash=url(p.id,'chat')}
+ catch(e){state.error=e.message;state.status='لم يُنشأ المشروع'}
+ finally{state.busy=false;paint()}
+}
+async function submitChat(form){
+ if(state.busy||state.serverChat!=='idle'||state.recoveringChat||state.threadLoading||state.messagesError||current()?.id!==route().id)return;const message=String(new FormData(form).get('message')||'').trim();if(!message)return;
+ const projectAtStart=route().id,originDraft=draftKey(),conversationAtStart=state.conversationId||null;let cid=conversationAtStart,finished=false,wasError=false,accepted=false,windowExpired=false,rejected=false,partialNotSaved=false,responseError='';
+ const after=Number(state.messages?.messages?.at(-1)?.id)||0;
+ const expected={message,after,draft:originDraft};
+ const originVisible=()=>route().id===projectAtStart&&route().view==='chat'&&(state.conversationId||null)===conversationAtStart;
+ state.busy=true;state.pendingProjectId=projectAtStart;state.pendingConversationId=conversationAtStart;state.activeChatId=null;state.stopPending=false;state.error='';state.liveText='';state.unsavedReply=null;state.pendingText=message;state.streamNotice='نرسل الرسالة إلى الخادم…';state.status='';paint();
+ try{
+   const ac=new AbortController();
+   let timer;
+   const resetIdle=()=>{clearTimeout(timer);timer=setTimeout(()=>{windowExpired=true;ac.abort()},CHAT_IDLE_MS)};
+   const slow=setTimeout(()=>{
+     if(originVisible()&&!finished&&!wasError&&!state.liveText&&!state.stopPending){
+       state.streamNotice=accepted?'الرسالة لدى الخادم. لم يصل نص الرد بعد.':'لم يؤكد الخادم استلام الرسالة بعد.';
+       paint();
+     }
+   },CHAT_SLOW_MS);
+   resetIdle();
+   try{
+     const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,conversation_id:cid,project_id:projectAtStart}),signal:ac.signal});
+     if(!res.ok){
+       rejected=res.status>=400&&res.status<500;
+       responseError=({401:'انتهت جلسة الدخول. سجّل الدخول ثم أعد الإرسال.',403:'الجلسة الحالية لا تملك إذن الإرسال.',404:'لم يعد المشروع أو المحادثة متاحًا.',409:'المحادثة لا تتطابق مع المشروع أو تعذر بدء رد جديد. حدّث الصفحة أولًا.',429:'الخادم يحدّ من الطلبات الآن. انتظر قبل المحاولة مجددًا.'})[res.status]||'رفض الخادم الطلب (HTTP '+res.status+').';
+       throw Error(responseError);
+     }
+     resetIdle();
+     if(!res.body)throw Error('لا يوجد بث من الخادم');
+     const reader=res.body.getReader(),decoder=new TextDecoder();let buf='',bytes=0,lastRender=0;
+     const onFrame=frame=>{
+       const lines=frame.split(/\r?\n/).filter(l=>l.startsWith('data:'));if(!lines.length)return;
+       let ev;try{ev=JSON.parse(lines.map(x=>x.slice(5)).join('\n').trim())}catch{return}
+       const candidate=Number(ev.scope?.conversation_id||ev.details?.conversation_id||ev.conversation_id);
+       if(['conversation.bind','message_delta','message_completed','chat.error','message_started','chat.status'].includes(ev.kind)&&(!Number.isInteger(candidate)||candidate<=0))return;
+       if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate;accepted=true;if(originVisible())state.activeChatId=cid}
+       if(originVisible()&&accepted){
+         if(ev.kind==='conversation.bind')state.streamNotice='استلم الخادم الرسالة. ننتظر بدء الرد.';
+         if(ev.kind==='research.started')state.streamNotice='الخادم يبحث في المصادر قبل الإجابة.';
+         if(ev.kind==='message_started'||ev.status==='generating')state.streamNotice='ننتظر أول جزء من الرد.';
+         if(ev.status==='stream_fallback')state.streamNotice='المزوّد سيعيد الرد دفعة واحدة.';
+         if(ev.kind==='message_delta'){state.streamNotice='يصل الرد الآن';state.liveText+=String(ev.delta??ev.text??'');}
+       }
+       if(ev.kind==='message_completed')finished=true;
+       if(ev.kind==='chat.error'){
+         wasError=true;
+         partialNotSaved=Boolean(state.liveText&&!ev.details?.persisted);
+         responseError=ev.details?.partial_chars?(ev.details.persisted?'انقطع الرد. حُفظ النص الذي وصل.':'انقطع الرد ولم يتمكن الخادم من حفظ النص الذي وصل.'):'لم يكتمل الرد. راجع السجل قبل إعادة المحاولة.';
+         if(originVisible()){state.streamNotice='';state.error=responseError;}
+       }
+       const now=Date.now();
+       if(originVisible()&&(now-lastRender>90||finished||wasError)){
+         // لا تعِد بناء القائمة والكتابة مع كل جزء من النموذج.
+         // حدّث النص فقط؛ أنشئ الفقاعة بالرسم الأول أو في نهاية الطلب.
+         const live=ev.kind==='message_delta'&&document.querySelector('.aes-stream-content');
+         if(live){
+           const thread=document.getElementById('aes-chat-thread');
+           const nearBottom=thread&&thread.scrollHeight-thread.clientHeight-thread.scrollTop<64;
+           live.textContent=state.liveText;
+           if(nearBottom)thread.scrollTop=thread.scrollHeight;
+         }else paint();
+         lastRender=now;
+       }
+     };
+     let frame=[];
+     const drain=(final=false)=>{
+       let end;
+       while((end=buf.search(/[\r\n]/))>=0){
+         if(buf[end]==='\r'&&end===buf.length-1&&!final)break;
+         const line=buf.slice(0,end),width=buf[end]==='\r'&&buf[end+1]==='\n'?2:1;
+         buf=buf.slice(end+width);
+         if(line)frame.push(line);else if(frame.length){onFrame(frame.join('\n'));frame=[]}
+       }
+       if(final&&(buf||frame.length)){if(buf)frame.push(buf);onFrame(frame.join('\n'));}
+     };
+     while(true){const x=await reader.read();if(x.done)break;resetIdle();bytes+=x.value.byteLength;if(bytes>3000000)throw Error('حجم بث مفرط');buf+=decoder.decode(x.value,{stream:true});drain()}
+     buf+=decoder.decode();drain(true);
+     if(!finished&&!wasError)throw Error('انقطع البث دون تأكيد اكتمال');
+   }finally{clearTimeout(timer);clearTimeout(slow)}
+   if(!cid)throw Error('لم يعد معرّف المحادثة');
+   if(!conversationAtStart){
+     const meta=await req('/api/conversations/'+cid);
+     if(chatId(meta)!==cid||Number(meta.project_id)!==projectAtStart)throw Error('هوية مشروع غير مطابقة');
+   }
+   if(originVisible()){
+     history.replaceState(null,'',chatURL(projectAtStart,cid));state.conversationId=cid;state.messages=null;
+     await loadChat(state.revision,projectAtStart,cid);
+     if(route().id===projectAtStart&&route().view==='chat'&&state.conversationId===cid){
+       if(partialNotSaved)state.unsavedReply={thread:draftKey(),text:state.liveText};
+       if(finished&&!wasError){
+         const last=savedReply(expected);
+         if(last?.state_badge==='COMPLETED'){state.status='حُفظ الرد في المحادثة.';}
+         else {
+           state.recoveringChat=true;state.expectedReply=expected;
+           state.error='وصل إقرار بانتهاء الرد، لكن لم يتأكد حفظه في السجل.';
+         }
+       }
+     }
+   }
+   if(accepted)delete state.drafts[originDraft];
+ }catch(e){
+   if(accepted)delete state.drafts[originDraft];
+   if(originVisible()){
+     state.streamNotice='';
+     state.error=rejected?responseError:windowExpired?'توقف وصول تحديثات الرد. نتحقق من السجل دون إعادة الإرسال.':'تعذر متابعة البث. لم تُرسل الواجهة طلبًا ثانيًا.';
+   }
+   if(!rejected&&cid&&(accepted||conversationAtStart)){
+     let linked=Boolean(conversationAtStart);
+     if(!linked&&accepted){try{const meta=await req('/api/conversations/'+cid);linked=Number(meta.project_id)===projectAtStart}catch{}if(!linked&&originVisible())state.error='لم يثبت ارتباط المحادثة بالمشروع بعد انقطاع البث.'}
+     if(linked&&originVisible()){
+       history.replaceState(null,'',chatURL(projectAtStart,cid));state.conversationId=cid;
+       state.recoveringChat=true;state.expectedReply=expected;state.serverChat='unknown';state.messages=null;
+       await loadChat(state.revision,projectAtStart,cid);
+       if(route().id===projectAtStart&&state.conversationId===cid&&!state.messagesError){
+         if(state.serverChat==='running')state.error='';
+         const last=savedReply();
+         if(state.serverChat==='idle'&&last?.role==='assistant'&&last.state_badge==='COMPLETED'){
+           state.status='وصل الرد المحفوظ من الخادم.';state.error='';state.recoveringChat=false;state.expectedReply=null;delete state.drafts[originDraft];
+         }
+       }
+     }
+   }
+ }
+ finally{state.busy=false;state.pendingProjectId=null;state.pendingConversationId=null;state.activeChatId=null;state.stopPending=false;state.pendingText='';state.liveText='';paint()}
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-action]');if(a){e.preventDefault();handle(a.dataset.action)}});
+document.addEventListener('input',e=>{const t=e.target;if(t?.name==='message'&&t.closest?.('#send-chat'))state.drafts[draftKey()]=t.value;});
+document.addEventListener('submit',e=>{if(e.target.id==='create'){e.preventDefault();submitCreate(e.target)}if(e.target.id==='send-chat'){e.preventDefault();submitChat(e.target)}if(e.target.id==='artifact-filter-form'){e.preventDefault();state.artifactQuery=String(new FormData(e.target).get('q')||'').trim().slice(0,180);state.artifactLimit=30;state.preview=null;paint()}});
+window.addEventListener('hashchange',()=>{state.side=false;state.conversationId=route().conversationId||null;loadAll()});
+setInterval(()=>{if(document.hidden||state.busy||!route().id||state.loading)return;
+ const editor=document.activeElement;if(editor?.matches?.('#send-chat textarea'))return;
+ if(route().view!=='chat')refreshDetail()},30000);
+setInterval(()=>{if(!document.hidden&&(state.serverChat!=='idle'||state.recoveringChat))followSavedReply();},4500);
+if(!location.hash)history.replaceState(null,'','#/home');
+document.documentElement.setAttribute('data-theme',state.theme);
+state.conversationId=route().conversationId||null;
+loadAll();
+</script></body></html>

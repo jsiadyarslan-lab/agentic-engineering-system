@@ -29,12 +29,15 @@ def make_title(text: str) -> str:
 
 
 def create_conversation(
-    sessions, *, title: str, mode: str = "chat"
+    sessions, *, title: str, mode: str = "chat",
+    project_id: int | None = None,
 ) -> Conversation:
     """إنشاء محادثة جديدة — النمط معلن من اللحظة الأولى."""
     with sessions() as session:
         conversation = Conversation(
-            title=make_title(title), mode=mode if mode in ("chat", "task") else "chat"
+            title=make_title(title),
+            mode=mode if mode in ("chat", "task") else "chat",
+            project_id=project_id,
         )
         session.add(conversation)
         session.commit()

@@ -17,6 +17,7 @@ from api import routes  # noqa: E402
 from sqlalchemy import select as sa_select  # noqa: E402
 
 from execution.models import ExecutionEnvironment  # noqa: E402
+from workflow import service as workflow_service  # noqa: E402
 
 
 # نفس بيئة اختبارات المشاريع (007) — محرك مخطط + منفذ منظم عبر
@@ -116,6 +117,75 @@ def test_project_detail_carries_execution_gate(client, sessions,
     # لا تسمية غامضة في أي مخرج
     dumped = str(body)
     assert "ليست مفتوحة" not in dumped
+
+
+@pytest.mark.parametrize("event_format", ["legacy", "matrix", "no_detail"])
+def test_snapshot_preserves_recorded_capability_blocker(
+        client, sessions, event_format):
+    """Read a blocked snapshot without launching or changing the project."""
+    svc = workflow_service
+    pid = svc.create_project(
+        sessions, name="اختبار لقطة الحجب", objective="إنشاء هيكل موقع",
+        execution_policy="COMPATIBLE_LOCAL")["id"]
+    plan = svc.create_plan(sessions, pid, {"phases": [{
+        "title": "إعداد الهيكل", "steps": [{"objective": "إنشاء الهيكل"}],
+    }]})
+    svc.approve_plan(sessions, plan["id"])
+    svc.materialize_plan(sessions, plan)
+    phase = svc.list_phases(sessions, pid)[0]
+    step = svc.phase_steps(sessions, phase["id"])[0]
+    svc.update_phase(sessions, phase["id"], status="RUNNING")
+    svc.update_project(sessions, pid, status="BLOCKED",
+                       current_step_id=step["id"], current_phase_id=phase["id"])
+    _sandbox_env(sessions, status="READY", sandboxed=0)
+    execution_id = svc.create_execution(
+        sessions, step["id"], attempt=2, provider="test", model="test",
+        workspace="test-only")
+    svc.update_execution(sessions, execution_id, status="FAILED")
+    blocker = {"capability_id": "web_search", "status": "STALE",
+               "reason": "انتهت صلاحية فحص مزوّد البحث"}
+    if event_format == "legacy":
+        gate_id = svc.open_gate(
+            sessions, pid, "PREFLIGHT_BLOCKED", "تعطّل البحث",
+            {"blocked": [blocker], "execution_id": execution_id},
+            status="BLOCKED")
+        payload = {"gate_id": gate_id, "step_id": step["id"],
+                   "capability_id": "web_search", "status": "STALE"}
+    elif event_format == "matrix":
+        payload = {"blocked": [blocker], "verdict": "BLOCKED",
+                   "step_id": step["id"], "execution_id": execution_id}
+    else:
+        payload = {}
+    svc.add_event(sessions, pid, "PREFLIGHT_PASS", {"verdict": "PASS"})
+    svc.add_event(sessions, pid, "PREFLIGHT_BLOCKED", payload)
+    # Activity after the blocker must not evict it from the projection.
+    for _ in range(55):
+        svc.add_event(sessions, pid, "JOB_HEARTBEAT", {})
+
+    response = client.get(f"/api/projects/{pid}/state")
+    assert response.status_code == 200, response.text
+    snap = response.json()
+    gate = snap["execution_gate"]
+    assert snap["status"] == "BLOCKED"
+    assert snap["active_run"] is None
+    assert snap["phases"][0]["status"] == "RUNNING"  # Historical truth.
+    assert snap["evidence"] == []
+    assert snap["environment"]["selected"]["name"] in (
+        "local-linux", "local-windows")
+    assert snap["environment"]["satisfies_policy"] is True
+    assert gate["state"] == "APPROVED_BUT_BLOCKED"
+    assert gate["required"] == ""
+    assert "إضافة بيئة" not in gate["owner_action"]
+    if event_format == "no_detail":
+        assert gate["blockers"] == []
+        assert gate["reason"] == "سُجّل حجب دون سبب محدد."
+    else:
+        assert gate["step_id"] == step["id"]
+        assert gate["execution_id"] == execution_id
+        assert "web_search: STALE" in gate["reason"]
+        assert blocker["reason"] in gate["reason"]
+        assert gate["blockers"][0]["capability_id"] == "web_search"
+        assert "البحث" in gate["owner_action"]
 
 
 def test_recheck_after_provisioning_opens_without_reapproval(
