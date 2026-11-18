@@ -1314,12 +1314,29 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
                 )
                 streamed = bool(outcome.get("streamed"))
             except (ProviderCallError, AttributeError) as stream_error:
-                # بعد أول قطعة لا تستدعِ المزود ثانية: لا تكرار
-                # للرد ولا فواتير مضاعفة؛ يعالج الاستثناء الخارجي
-                # حفظ النص الجزئي بحالة PARTIAL.
-                if partial["text"]:
+                # لا تعالج أخطاء 429/5xx/timeout كأنها "stream unsupported".
+                # حتى قبل أول قطعة قد يكون المزود قد قبل الاستدعاء.
+                reason = str(stream_error).casefold()
+                unsupported = (
+                    isinstance(stream_error, ProviderCallError)
+                    and not (stream_error.is_timeout
+                             or stream_error.is_throttle
+                             or stream_error.is_server_error)
+                    and any(marker in reason for marker in (
+                        "غير مدعوم", "لا يدعم البث",
+                        "stream not supported", "streaming not supported",
+                        "does not support streaming", "unsupported stream",
+                        "stream unsupported",
+                    ))
+                )
+                missing_stream_method = (
+                    isinstance(stream_error, AttributeError)
+                    and "chat_live_stream" in reason
+                )
+                # النص الجزئي يُحفظ PARTIAL من دون إعادة توليد خفية.
+                if partial["text"] or not (unsupported or missing_stream_method):
                     raise
-                # قبل أي قطعة فقط يسمح بمسار التراجع المعلن.
+                # التراجع المعلن فقط عند إثبات عدم دعم stream.
                 put({
                     "kind": "chat.status",
                     "message_id": message_id,
