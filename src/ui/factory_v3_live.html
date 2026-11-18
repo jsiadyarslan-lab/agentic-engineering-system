@@ -59,7 +59,12 @@ body{font-size:15px;line-height:1.7}
 .aes-chat-primary{height:100%;min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
 .aes-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(16px,calc((100% - 760px)/2));border-bottom:1px solid var(--soft)}
 .aes-chat-head h1{font-size:19px;line-height:1.4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.aes-chat-head>div{min-width:0}.aes-chat-head .btn{flex:none}.aes-chat-head small{font-size:12px;color:var(--muted)}
+.aes-chat-head>div{min-width:0}.aes-chat-head .btn{flex:none}
+.aes-chat-head .aes-chat-kicker{display:block;font-size:11px;line-height:1.6;letter-spacing:.01em;color:var(--dim);margin-bottom:3px}
+.aes-chat-head .aes-project-state{font-size:12px;line-height:1.5;color:var(--muted);display:inline-block;margin-top:3px}
+.aes-chat-identity{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.aes-chat-identity>div{min-width:0}.aes-chat-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;color:var(--mint);background:var(--panel);font-size:16px}
+.aes-chat-head .aes-new-chat{font-size:12px;padding-inline:10px;white-space:nowrap}
 .aes-chat-thread{overflow:auto;min-height:0;padding:18px max(16px,calc((100% - 760px)/2));overscroll-behavior:contain;scrollbar-gutter:stable;outline-offset:-3px}
 .aes-welcome{max-width:490px;margin:clamp(12px,7vh,68px) auto 0;text-align:center}.aes-welcome h2{font-size:clamp(21px,3vw,30px);line-height:1.35;margin:0 0 9px}.aes-welcome p{margin:0;color:var(--muted)}
 .aes-chat-message{overflow-wrap:anywhere;white-space:pre-wrap;margin:0 0 18px;line-height:1.85;border-radius:14px}
@@ -67,6 +72,20 @@ body{font-size:15px;line-height:1.7}
 .aes-chat-message.from-owner{margin-inline-end:auto;max-width:85%;width:fit-content;padding:9px 13px;background:var(--lift)}
 .aes-chat-message.from-ai{padding:3px 4px 12px;border-bottom:1px solid var(--soft)}
 .aes-chat-message.is-waiting{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px;background:var(--panel);font-size:13px}.aes-chat-message.is-waiting small{margin:0 0 2px}
+.aes-chat-message .aes-reply-body{white-space:normal;font-size:15px;line-height:1.9;min-width:0}
+.aes-reply-body :is(p,h2,h3,h4,ul,ol,blockquote,pre,.aes-md-table){margin:0 0 .8em}
+.aes-reply-body :last-child{margin-bottom:0}
+.aes-reply-body p{white-space:pre-wrap}
+.aes-reply-body :is(h2,h3,h4){font-size:1.11em;line-height:1.5;margin-top:.9em}
+.aes-reply-body :is(ul,ol){padding-inline-start:1.6em}.aes-reply-body li+li{margin-top:.28em}
+.aes-reply-body blockquote{padding-inline-start:.8em;border-inline-start:2px solid var(--mint);color:var(--muted)}
+.aes-reply-body :is(code,pre){font-family:ui-monospace,Consolas,monospace;background:var(--panel);border-radius:6px}
+.aes-reply-body code{padding:.12em .28em;unicode-bidi:isolate}
+.aes-reply-body pre{max-width:100%;white-space:pre;overflow:auto;border:1px solid var(--line);padding:10px 13px;font-size:13px}
+.aes-reply-body pre code{padding:0}.aes-reply-body a{color:var(--mint);text-decoration:underline;text-underline-offset:3px}
+.aes-md-table{overflow:auto;max-width:100%;border:1px solid var(--line);border-radius:9px}
+.aes-md-table table{border-collapse:collapse;width:max-content;min-width:100%}.aes-md-table :is(th,td){text-align:start;padding:5px 10px;border-bottom:1px solid var(--soft);max-width:280px}.aes-md-table th{background:var(--panel)}
+.aes-reply-body hr{border:0;border-top:1px solid var(--line);margin:1em 0}
 .aes-chat-dock{padding:8px max(16px,calc((100% - 760px)/2)) max(10px,env(safe-area-inset-bottom));background:var(--base)}
 .aes-chat-feedback{font-size:13px;line-height:1.45;margin:0 0 6px;max-height:4em;overflow:auto;overflow-wrap:anywhere}
 .aes-chat-composer{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:8px 10px}
@@ -90,7 +109,10 @@ const url=(id,v)=>id?'#/p/'+id+'/'+v:'#/'+v;
 const chatId=c=>{const id=Number(c?.conversation_id??c?.id);return Number.isSafeInteger(id)&&id>0?id:null};
 const projectChats=()=>state.convos?.conversations||[];
 const chatURL=(p,c)=>url(p,'chat')+(c?'/'+c:'');
-const chatTitle=c=>c?.title||('محادثة '+chatId(c));
+const chatTitle=c=>{
+ const raw=String(c?.title??'').trim();
+ return /[\p{L}\p{N}]/u.test(raw)?raw:'محادثة '+chatId(c);
+};
 const draftKey=()=>String(route().id)+':'+String(state.conversationId||'new');
 const CHAT_SLOW_MS=12000,CHAT_IDLE_MS=90000;
 const btn=(name,action,more='')=>'<button type="button" class="btn '+more+'" data-action="'+E(action)+'">'+E(name)+'</button>';
@@ -238,6 +260,65 @@ function outputs(){
  )+
  previewPanel;
 }
+// Rich text for saved assistant turns. Only literal templates emit HTML.
+function replyInline(raw){
+ const token=/`([^`\n]+)`|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|\[([^\[\]\n]{1,512})\]\((https?:\/\/[^\s<>"'()]{1,2048})\)/g;
+ let out='',end=0;
+ for(const m of raw.matchAll(token)){
+   out+=E(raw.slice(end,m.index));
+   if(m[1])out+='<code dir="ltr">'+E(m[1])+'</code>';
+   else if(m[2])out+='<strong>'+E(m[2])+'</strong>';
+   else if(m[3])out+='<em>'+E(m[3])+'</em>';
+   else out+='<a href="'+E(m[5])+'" target="_blank" rel="noopener noreferrer">'+E(m[4])+'</a>';
+   end=m.index+m[0].length;
+ }
+ return out+E(raw.slice(end));
+}
+function replyMarkup(raw){
+ const rows=String(raw??'').replace(/\r\n?/g,'\n').split('\n');
+ const out=[],paragraph=[];
+ const listRow=/^\s*(?:([-+*])|([0-9]+)[.)])\s+(.+)$/;
+ const tableRow=/^\s*\|.*\|\s*$/;
+ const tableRule=/^\s*\|(?:\s*:?-{3,}:?\s*\|)+\s*$/;
+ const cells=s=>s.trim().slice(1,-1).split('|').map(c=>c.trim());
+ const flush=()=>{if(paragraph.length)out.push('<p dir="auto">'+replyInline(paragraph.splice(0).join('\n'))+'</p>')};
+ for(let i=0;i<rows.length;){
+   const line=rows[i++];
+   if(!line.trim()){flush();continue}
+   const fence=line.match(/^\s*(`{3,})([\w+.-]*)\s*$/);
+   const heading=line.match(/^\s*(#{1,6})\s+(.+)$/);
+   const list=line.match(listRow);
+   if(fence){
+     flush();const code=[],closing=new RegExp('^\\s*`{'+fence[1].length+',}\\s*$');
+     while(i<rows.length&&!closing.test(rows[i]))code.push(rows[i++]);
+     if(i<rows.length)i++;
+     out.push('<pre dir="ltr" tabindex="0" aria-label="مقطع كود"><code>'+E(code.join('\n'))+'</code></pre>');
+   }else if(heading){
+     flush();const level=Math.min(4,heading[1].length+1);
+     out.push('<h'+level+' dir="auto">'+replyInline(heading[2])+'</h'+level+'>');
+   }else if(/^\s*(?:---+|\*\*\*+)\s*$/.test(line)){
+     flush();out.push('<hr>');
+   }else if(list){
+     flush();const numbered=Boolean(list[2]),tag=numbered?'ol':'ul',items=[list[3]];
+     while(i<rows.length){
+       const next=rows[i].match(listRow);
+       if(!next||Boolean(next[2])!==numbered)break;
+       items.push(next[3]);i++;
+     }
+     out.push('<'+tag+'>'+items.map(x=>'<li dir="auto">'+replyInline(x)+'</li>').join('')+'</'+tag+'>');
+   }else if(tableRow.test(line)&&tableRule.test(rows[i]||'')&&cells(line).length===cells(rows[i]).length){
+     flush();const head=cells(line),body=[];i++;
+     while(tableRow.test(rows[i]||'')&&cells(rows[i]).length===head.length)body.push(cells(rows[i++]));
+     out.push('<div class="aes-md-table" role="region" aria-label="جدول ضمن الرد" tabindex="0"><table><thead><tr>'+
+       head.map(x=>'<th scope="col" dir="auto">'+replyInline(x)+'</th>').join('')+'</tr></thead><tbody>'+
+       body.map(row=>'<tr>'+row.map(x=>'<td dir="auto">'+replyInline(x)+'</td>').join('')+'</tr>').join('')+
+       '</tbody></table></div>');
+   }else if(/^\s*>/.test(line)){
+     flush();out.push('<blockquote dir="auto">'+replyInline(line.replace(/^\s*>\s?/,''))+'</blockquote>');
+   }else paragraph.push(line);
+ }
+ flush();return out.join('');
+}
 function chat(){
  const p=current(),id=state.conversationId,record=projectChats().find(c=>chatId(c)===id);
  const thread=state.messages?.messages||[],draft=state.drafts[draftKey()]||'';
@@ -250,6 +331,7 @@ function chat(){
  id?['لا رسائل في هذه المحادثة','يمكنك كتابة أول رسالة.']:
  ['ما الذي تريد إنجازه؟','اكتب ما تحتاجه. يبدأ التنفيذ من صفحة التشغيل بعد المراجعة.'];
  const phase=({PAUSED:'المشروع متوقف مؤقتًا',BLOCKED:'المشروع متعطّل',RUNNING:'المشروع قيد التنفيذ',COMPLETED:'التشغيل مكتمل',FAILED:'فشل تشغيل المشروع'})[p?.status]||'المشروع '+pid();
+ const phaseLabel=p?.status==='PAUSED'&&canSend?'تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة':phase;
  const progress=isBusyHere?state.streamNotice:state.serverChat==='running'?(state.recoveringChat?'انقطع العرض المباشر. الخادم ما زال يعالج الرسالة.':'الخادم يعالج رسالة في هذه المحادثة.'):
  state.serverChat==='unknown'?'تعذر التحقق من حالة الرد. تحقّق من السجل قبل إعادة الإرسال.':state.recoveringChat?'جارٍ التحقق من حفظ الرد.':(!state.status&&!state.error&&thread.at(-1)?.role==='user')?'آخر رسالة بلا رد محفوظ.':'';
  const waitingCard=progress&&!state.liveText&&(isBusyHere||waiting)?'<article class="aes-chat-message from-ai is-waiting" role="status"><small>المساعد</small>'+E(progress)+'</article>':'';
@@ -257,10 +339,10 @@ function chat(){
  const canStop=(isBusyHere&&state.activeChatId)||(!state.busy&&state.serverChat==='running'&&id);
  const feedback=state.error?'<p class="aes-chat-feedback bad" role="alert" dir="auto">'+E(state.error)+'</p>':
  state.status?'<p class="aes-chat-feedback ok" role="status">'+E(state.status)+'</p>':'';
- return '<div class="aes-chat-layout"><section class="aes-chat-primary" aria-label="المحادثة"><header class="aes-chat-head"><div><small>'+E(phase)+'</small><h1 dir="auto">'+E(title)+'</h1></div><div class="actions">'+link('حالة العمل',url(pid(),'runs'),'quiet')+link('＋ محادثة جديدة',chatURL(pid(),null),'quiet')+'</div></header>'+
+ return '<div class="aes-chat-layout"><section class="aes-chat-primary" aria-label="المحادثة"><header class="aes-chat-head"><div class="aes-chat-identity"><span class="aes-chat-mark" aria-hidden="true">◈</span><div><span class="aes-chat-kicker">محادثة المشروع</span><h1 dir="auto">'+E(title)+'</h1><a class="aes-project-state" href="'+E(url(pid(),'runs'))+'">'+E(phaseLabel)+'</a></div></div>'+link('＋ محادثة جديدة',chatURL(pid(),null),'quiet aes-new-chat')+'</header>'+
  '<div class="aes-chat-thread" id="aes-chat-thread" tabindex="0" aria-label="سجل الرسائل" aria-busy="'+state.threadLoading+'">'+
  (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>'+E(empty[0])+'</h2><p dir="auto">'+E(empty[1])+'</p></div>':'')+
- thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':m.state_badge==='FAILED'?'فشل الرد':m.state_badge==='PARTIAL'?'رد جزئي':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
+ thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':m.state_badge==='FAILED'?'فشل الرد':m.state_badge==='PARTIAL'?'رد جزئي':'المساعد')+'</small>'+(m.role==='assistant'?'<div class="aes-reply-body">'+replyMarkup(m.content)+'</div>':'<div dir="auto">'+E(m.content||'')+'</div>')+'</article>').join('')+
  (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article>':'')+
  waitingCard+(isBusyHere&&state.liveText?'<article class="aes-chat-message from-ai"><small>المساعد · رد مباشر</small><div dir="auto" class="aes-stream-content" aria-live="polite">'+E(state.liveText)+'</div></article>':'')+
  (!state.busy&&state.unsavedReply?.thread===draftKey()?'<article class="aes-chat-message from-ai"><small>رد جزئي · لم يُحفظ</small><div dir="auto">'+E(state.unsavedReply.text)+'</div></article>':'')+'</div>'+

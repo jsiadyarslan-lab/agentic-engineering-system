@@ -193,3 +193,83 @@ def test_same_conversation_rejects_parallel_generation_without_duplicate_user_me
         assert saved == []
     finally:
         routes._chat_active.pop(key, None)
+
+
+def _record_output(sessions, project, filename):
+    return service.create_evidence(
+        sessions, execution_id=97, step_id=23, project_id=project["id"],
+        files={filename: {"sha256": "a" * 64, "bytes": 40}},
+        tool_calls=[], verification={}, review_result={}, commit="",
+        evidence_path="/local/evidence.json", evidence_sha256="",
+        verdict="EVIDENCE_RECORDED", logs=["private trace not for model"],
+    )
+
+
+def test_project_status_and_latest_output_from_same_evidence_as_ui(api_env, monkeypatch):
+    sessions = api_env["sessions"]
+    project = service.create_project(sessions, name="مشروع قبول", objective="بناء موقع")
+    other = service.create_project(sessions, name="مشروع ثان", objective="مهمة أخرى")
+    _record_output(sessions, project, "older.html")
+    newest = _record_output(sessions, project, "latest.html")
+    _record_output(sessions, other, "other-project.html")
+    captured = []
+
+    # Controlled test provider, not production model evidence. Generate the
+    # response only from the context actually delivered by the chat handler.
+    def capture(messages, *, on_delta, **kwargs):
+        import json
+
+        note = messages[0].content
+        captured.append(note)
+        label = "أحدث المخرجات المسجّلة للمشروع، مرتبة من الأحدث: "
+        rows = json.loads(note.split(label, 1)[1].splitlines()[0])
+        status_line = next(line for line in note.splitlines() if line.startswith("الحالة: "))
+        answer = f"{status_line}\nآخر مخرج مسجّل: {rows[0]['name']}"
+        on_delta(answer)
+        return api_env["router"]._wrap(answer, kwargs["provider_id"], kwargs["model"]) | {"streamed": True}
+
+    monkeypatch.setattr(api_env["router"], "chat_live_stream", capture)
+    client = TestClient(routes.app)
+    api_url = f"/api/projects/{project['id']}"
+    state_before = client.get(api_url + "/state").json()
+    outputs = client.get(api_url + "/artifacts").json()["artifacts"]
+    assert outputs[0]["name"] == "latest.html" and outputs[0]["evidence_id"] == newest
+    response = client.post("/api/chat/stream", json={
+        "message": "ما حالة هذا المشروع، وما آخر مخرج محفوظ؟",
+        "project_id": project["id"], "web": "off",
+    })
+    assert response.status_code == 200
+    events = sse_events(response)
+    assert any(e["kind"] == "message_completed" for e in events)
+    cid = next(e for e in events if e["kind"] == "conversation.bind")["scope"]["conversation_id"]
+    assert len(captured) == 1
+    note = captured[0]
+    assert f"الحالة: {project['status']}" in note
+    assert note.index("latest.html") < note.index("older.html")
+    assert f'"evidence_id": {newest}' in note
+    assert "other-project.html" not in note
+    assert "private trace not for model" not in note
+    assert "/local/evidence.json" not in note
+    saved = client.get(f"/api/conversations/{cid}/messages").json()["messages"]
+    assert saved[-1]["role"] == "assistant" and saved[-1]["state_badge"] == "COMPLETED"
+    assert saved[-1]["content"] == f"الحالة: {project['status']}\nآخر مخرج مسجّل: latest.html"
+    assert client.get(api_url + "/state").json() == state_before
+
+
+def test_outputs_context_omitted_unless_requested_and_unavailable_not_empty(api_env, monkeypatch):
+    from api import projects
+
+    p = service.create_project(
+        api_env["sessions"], name="مشروع بلا مخرجات", objective="مراجعة خطة",
+    )
+    assert routes._project_chat_outputs(p["id"], "ماذا تفعل؟") == ""
+    assert "لا تظهر مخرجات محفوظة" in routes._project_chat_outputs(p["id"], "ما آخر مخرج؟")
+
+    def failed_read(_project_id):
+        raise RuntimeError("private connection details")
+
+    monkeypatch.setattr(projects, "project_artifacts", failed_read)
+    note = routes._project_chat_outputs(p["id"], "ما آخر مخرج؟")
+    assert "تعذّر قراءة سجل المخرجات" in note
+    assert "لا تظهر مخرجات" not in note
+    assert "private connection details" not in note

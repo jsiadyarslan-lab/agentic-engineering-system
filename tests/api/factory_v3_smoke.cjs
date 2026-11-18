@@ -81,15 +81,42 @@ const browser={
   AbortController,DOMException,TextEncoder,TextDecoder,Date,JSON,Number,String,
   console
 };
-vm.runInNewContext(js+'\n;globalThis.__test={route,state,submitChat,paint,loadAll,handle,followSavedReply};',browser,{timeout:1500});
+vm.runInNewContext(js+'\n;globalThis.__test={route,state,submitChat,paint,loadAll,handle,followSavedReply,replyMarkup,chatTitle};',browser,{timeout:1500});
 async function settle(){
   for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));
 }
 (async()=>{
+  const {replyMarkup,chatTitle}=browser.__test;
+  const rich=replyMarkup([
+    '### الحالة',
+    '**متوقف**',
+    '- ملف محفوظ',
+    '| الملف | النتيجة |',
+    '| --- | --- |',
+    '| index.html | محفوظ |',
+    '```js',
+    'const answer = 42;',
+    '```',
+    '[دليل](https://example.com/result?q=1&v=2)',
+    '<section>literal</section>'
+  ].join('\n'));
+  assert.equal(chatTitle({conversation_id:26,title:'؟'}),'محادثة 26');
+  assert.equal(chatTitle({conversation_id:26,title:'حالة البناء'}),'حالة البناء');
+  assert.match(rich,/<h4 dir="auto">الحالة<\/h4>/);
+  assert.match(rich,/<strong>متوقف<\/strong>/);
+  assert.match(rich,/<ul><li dir="auto">ملف محفوظ<\/li><\/ul>/);
+  assert.match(rich,/<table><thead>/);
+  assert.match(rich,/<td dir="auto">محفوظ<\/td>/);
+  assert.match(rich,/<pre dir="ltr" tabindex="0" aria-label="مقطع كود"><code>const answer = 42;<\/code><\/pre>/);
+  assert.match(rich,/href="https:\/\/example\.com\/result\?q=1&amp;v=2" target="_blank" rel="noopener noreferrer"/);
+  assert.ok(rich.includes('&lt;section&gt;literal&lt;/section&gt;'));
+  assert.ok(!rich.includes('<section>'));
+  assert.ok(!replyMarkup('[لا يُفتح](ftp://example.com)').includes('href='));
+  assert.equal(replyMarkup(''),'');
   await settle();
   assert.equal(browser.__test.route().view,'chat','project must open into chat, not dashboard');
   assert(root.innerHTML.includes('aes-chat-layout'),'chat surface must render');
-  assert(root.innerHTML.includes('المشروع متوقف مؤقتًا'),'backend project status must remain visible');
+  assert(root.innerHTML.includes('تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة'),'backend project status must remain visible');
   assert(root.innerHTML.includes('محادثة حقيقية'),'existing conversations must load');
   assert.equal(typeof listeners.input,'function','input draft handler must be registered');
   listeners.input({target:{name:'message',value:'مسودة لم ترسل بعد',closest:()=>true}});
