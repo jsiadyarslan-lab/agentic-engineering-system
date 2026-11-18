@@ -122,3 +122,12 @@ def test_html_artifact_preview_is_sandboxed_and_never_claims_site_accepted():
     assert "معاينة مرئية آمنة" in source
     assert "لا يمثل اختبار قبول" in source
     assert "تعذّر جلب قائمة المخرجات" in source
+
+
+def test_stream_updates_message_without_rebuilding_the_composer_on_each_token():
+    source = PAGE.read_text(encoding="utf-8")
+    assert 'class="aes-stream-content" aria-live="polite"' in source
+    assert "live.textContent=state.liveText" in source
+    assert "const nearBottom=thread&&" in source
+    assert "if(nearBottom)thread.scrollTop=thread.scrollHeight" in source
+    assert "else paint();" in source
