@@ -115,3 +115,56 @@ def test_partial_reply_not_reported_saved_when_storage_fails(api_env, monkeypatc
     cid = failure["scope"]["conversation_id"]
     messages = client.get(f"/api/conversations/{cid}/messages").json()["messages"]
     assert [m["role"] for m in messages] == ["user"]
+
+
+def test_provider_transport_error_does_not_start_hidden_second_call(api_env, monkeypatch):
+    """429, timeout and server errors are not evidence of no-stream support."""
+    router = api_env["router"]
+    client = TestClient(routes.app)
+    problems = [
+        ProviderCallError("429 rate limited", code=429, is_throttle=True),
+        ProviderCallError("read timed out", is_timeout=True),
+        ProviderCallError("upstream 503", code=503, is_server_error=True),
+        ProviderCallError("invalid key", code=401),
+    ]
+    for fault in problems:
+        fallback_calls = []
+        def unavailable_stream(*_args, **_kwargs):
+            raise fault
+        def unexpected_fallback(*_args, **_kwargs):
+            fallback_calls.append(True)
+            raise AssertionError("A transport failure is not a streaming capability failure")
+        monkeypatch.setattr(router, "chat_live_stream", unavailable_stream)
+        monkeypatch.setattr(router, "chat_live", unexpected_fallback)
+        response = client.post("/api/chat/stream", json={"message": "فحص خطأ اتصال"})
+        assert response.status_code == 200
+        events = sse_events(response)
+        assert len([e for e in events if e["kind"] == "chat.error"]) == 1
+        assert not any(e.get("status") == "stream_fallback" for e in events)
+        assert not any(e["kind"] == "message_completed" for e in events)
+        assert not fallback_calls
+
+
+def test_explicitly_unsupported_stream_allows_declared_single_fallback(api_env, monkeypatch):
+    """An explicitly unsupported streaming transport can use one full call."""
+    router = api_env["router"]
+    client = TestClient(routes.app)
+    calls = []
+    original_full = router.chat_live
+
+    def unsupported_stream(*_args, **_kwargs):
+        raise ProviderCallError("streaming not supported", code=400)
+
+    def one_full_call(*args, **kwargs):
+        calls.append(True)
+        return original_full(*args, **kwargs)
+
+    monkeypatch.setattr(router, "chat_live_stream", unsupported_stream)
+    monkeypatch.setattr(router, "chat_live", one_full_call)
+    response = client.post("/api/chat/stream", json={"message": "فحص مسار تراجع معلن"})
+    events = sse_events(response)
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert any(e.get("status") == "stream_fallback" for e in events)
+    assert any(e["kind"] == "message_completed" for e in events)
+    assert not any(e["kind"] == "chat.error" for e in events)
