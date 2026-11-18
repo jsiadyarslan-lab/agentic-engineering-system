@@ -1,17 +1,13 @@
 name: AES Chat Acceptance (isolated)
 
 on:
-  push:
-    branches:
-      - aes/factory-live-v3-integration-001
   pull_request:
-    paths:
-      - src/api/routes.py
-      - src/persistence/conversations.py
-      - src/ui/factory_v3_live.html
-      - tests/api/test_factory_*.py
-      - tests/api/factory_v3_smoke.cjs
   workflow_dispatch:
+
+# One active acceptance run per PR; no duplicate push-triggered jobs.
+concurrency:
+  group: aes-chat-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   chat-acceptance:
