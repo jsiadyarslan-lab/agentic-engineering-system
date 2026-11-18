@@ -262,7 +262,7 @@ function chat(){
  (!thread.length&&!isBusyHere?'<div class="aes-welcome"><h2>'+E(empty[0])+'</h2><p dir="auto">'+E(empty[1])+'</p></div>':'')+
  thread.map(m=>'<article class="aes-chat-message '+(m.role==='user'?'from-owner':'from-ai')+'"><small>'+(m.role==='user'?'أنت':m.state_badge==='FAILED'?'فشل الرد':m.state_badge==='PARTIAL'?'رد جزئي':'المساعد')+'</small><div dir="auto">'+E(m.content||'')+'</div></article>').join('')+
  (isBusyHere?'<article class="aes-chat-message from-owner"><small>أنت</small><div dir="auto">'+E(state.pendingText)+'</div></article>':'')+
- waitingCard+(isBusyHere&&state.liveText?'<article class="aes-chat-message from-ai"><small>المساعد · رد مباشر</small><div dir="auto">'+E(state.liveText)+'</div></article>':'')+
+ waitingCard+(isBusyHere&&state.liveText?'<article class="aes-chat-message from-ai"><small>المساعد · رد مباشر</small><div dir="auto" class="aes-stream-content" aria-live="polite">'+E(state.liveText)+'</div></article>':'')+
  (!state.busy&&state.unsavedReply?.thread===draftKey()?'<article class="aes-chat-message from-ai"><small>رد جزئي · لم يُحفظ</small><div dir="auto">'+E(state.unsavedReply.text)+'</div></article>':'')+'</div>'+
  '<div class="aes-chat-dock">'+progressLine+feedback+'<form id="send-chat" class="aes-chat-composer"><textarea dir="auto" name="message" required maxlength="32000" rows="1" placeholder="اكتب رسالتك…" aria-label="رسالة للمساعد" '+(canSend?'':'disabled')+'>'+E(draft)+'</textarea><div class="aes-composer-bar"><span class="muted">محادثة المشروع</span>'+
  (state.stopPending?'<span class="muted">جارٍ طلب الإيقاف…</span>':canStop?btn('طلب إيقاف الرد','stop-chat','quiet'):
@@ -527,7 +527,19 @@ async function submitChat(form){
          responseError=ev.details?.partial_chars?(ev.details.persisted?'انقطع الرد. حُفظ النص الذي وصل.':'انقطع الرد ولم يتمكن الخادم من حفظ النص الذي وصل.'):'لم يكتمل الرد. راجع السجل قبل إعادة المحاولة.';
          if(originVisible()){state.streamNotice='';state.error=responseError;}
        }
-       const now=Date.now();if(originVisible()&&(now-lastRender>90||finished||wasError)){paint();lastRender=now;}
+       const now=Date.now();
+       if(originVisible()&&(now-lastRender>90||finished||wasError)){
+         // لا تعِد بناء القائمة والكتابة مع كل جزء من النموذج.
+         // حدّث النص فقط؛ أنشئ الفقاعة بالرسم الأول أو في نهاية الطلب.
+         const live=ev.kind==='message_delta'&&document.querySelector('.aes-stream-content');
+         if(live){
+           const thread=document.getElementById('aes-chat-thread');
+           const nearBottom=thread&&thread.scrollHeight-thread.clientHeight-thread.scrollTop<64;
+           live.textContent=state.liveText;
+           if(nearBottom)thread.scrollTop=thread.scrollHeight;
+         }else paint();
+         lastRender=now;
+       }
      };
      let frame=[];
      const drain=(final=false)=>{
