@@ -963,6 +963,15 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
             project_context = workflow_service.get_project(
                 _sessions, conversation.project_id
             )
+    # لا تسمح ببدء إجابتين متزامنتين للمحادثة نفسها؛ يمنع اختلاط
+    # الأجزاء في سجل واحد عندما يكرر العميل الطلب أو يفتح تبويبين.
+    stream_key = f"chat-{conversation_id}"
+    if any(run.get("stream") == stream_key and not run["done"].is_set()
+           for run in list(_chat_active.values())):
+        raise HTTPException(
+            status_code=409,
+            detail="توليد رد جارٍ في هذه المحادثة. افحص حالة الرد قبل إعادة الإرسال.",
+        )
     convo.append_message(
         _sessions, conversation_id, role="user", content=body.message
     )
@@ -972,7 +981,6 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
     provider = body.provider or saved.transport_key()
     model = body.model or saved.model
     message_id = f"msg-{uuid.uuid4().hex[:10]}"
-    stream_key = f"chat-{conversation_id}"
     chat_seq = {"n": next_seq_base(_sessions, stream_key)}
     after_base = chat_seq["n"]  # البث يبدأ قبل حدث الربط فيصله أيضًا
     done_event = threading.Event()
@@ -990,7 +998,6 @@ async def chat_stream(body: ChatStartIn) -> StreamingResponse:
         سؤال عن نماذج كلاود). المنع هنا في التوجيه لا في الفلترة
         البصرية بعد الرسم.
         """
-        chat_seq["n"] += 1
         # (013.7 §P17) إضافة project_id إلى نطاق الحدث — نحصل عليه من المحادثة
         from persistence.conversations import get_conversation
         conversation = get_conversation(_sessions, conversation_id)
