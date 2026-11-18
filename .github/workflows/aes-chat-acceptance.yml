@@ -40,4 +40,5 @@ jobs:
             tests/api/test_chat_stream.py \
             tests/api/test_chat_error_handler_p1.py \
             tests/api/test_chat_isolation_0135.py \
+            tests/api/test_sse_keepalive_aes.py \
             tests/api/test_conversation_identity.py
