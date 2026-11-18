@@ -1,0 +1,43 @@
+name: AES Chat Acceptance (isolated)
+
+on:
+  push:
+    branches:
+      - aes/factory-live-v3-integration-001
+  pull_request:
+    paths:
+      - src/api/routes.py
+      - src/persistence/conversations.py
+      - src/ui/factory_v3_live.html
+      - tests/api/test_factory_*.py
+      - tests/api/factory_v3_smoke.cjs
+  workflow_dispatch:
+
+jobs:
+  chat-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: python -m pip install -e '.[test]' pytest-asyncio pytest-timeout
+      - name: Check JavaScript syntax and browser contract
+        run: |
+          node tests/api/factory_v3_smoke.cjs
+      - name: Python API chat and streaming regressions
+        run: |
+          python -m pytest -q --no-header --timeout=50 \
+            tests/api/test_factory_v3_live.py \
+            tests/api/test_factory_project_chat_001.py \
+            tests/api/test_chat_stream.py \
+            tests/api/test_chat_error_handler_p1.py \
+            tests/api/test_chat_isolation_0135.py \
+            tests/api/test_conversation_identity.py
