@@ -168,3 +168,28 @@ def test_explicitly_unsupported_stream_allows_declared_single_fallback(api_env, 
     assert any(e.get("status") == "stream_fallback" for e in events)
     assert any(e["kind"] == "message_completed" for e in events)
     assert not any(e["kind"] == "chat.error" for e in events)
+
+
+def test_same_conversation_rejects_parallel_generation_without_duplicate_user_message(api_env):
+    """Second concurrent HTTP POST must not append a duplicate question."""
+    from threading import Event
+    from persistence import conversations as convo
+    client = TestClient(routes.app)
+    p = service.create_project(api_env["sessions"],
+                               name="مشروع اختبار ازدواج", objective="مراجعة الاستجابة")
+    c = convo.create_conversation(api_env["sessions"], title="اختبار",
+                                  project_id=p["id"])
+    key = "test-pending-same-chat"
+    routes._chat_active[key] = {"done": Event(), "stream": f"chat-{c.id}"}
+    try:
+        reply = client.post("/api/chat/stream", json={
+            "message": "هل يصل مرتين؟",
+            "conversation_id": c.id,
+            "project_id": p["id"],
+        })
+        assert reply.status_code == 409
+        assert "توليد رد جارٍ" in reply.json()["detail"]
+        saved = client.get(f"/api/conversations/{c.id}/messages").json()["messages"]
+        assert saved == []
+    finally:
+        routes._chat_active.pop(key, None)
