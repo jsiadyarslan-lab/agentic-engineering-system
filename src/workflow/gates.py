@@ -133,14 +133,9 @@ def plan_execution_state(
         "state": "APPROVED_BUT_BLOCKED",
         "open_for_execution": False,
         "label": state_label("APPROVED_BUT_BLOCKED"),
-        "reason": blocked_reason
-        or "لا توجد بيئة تنفيذ متوافقة وجاهزة.",
-        "required": required_environment
-        or "Linux/x86_64 Execution Worker",
-        "owner_action": owner_action or (
-            "إضافة بيئة تنفيذ ← التحقق منها ← إعادة الفحص ← "
-            "استئناف المهمة"
-        ),
+        "reason": blocked_reason or "سُجّل حجب دون سبب محدد.",
+        "required": required_environment,
+        "owner_action": owner_action,
     }
 
 

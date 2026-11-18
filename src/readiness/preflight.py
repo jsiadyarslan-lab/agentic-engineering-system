@@ -176,6 +176,7 @@ def task_preflight(
     run_probe_fn: Any = None,
     llm_ready: bool | None = None,
     llm_detail: dict | None = None,
+    require_web_search: bool = False,
 ) -> dict:
     """فحص مسبق كامل — PASS يسمح بالبدء، BLOCKED يمنعه بصدق.
 
@@ -189,6 +190,8 @@ def task_preflight(
     """
     probe = run_probe_fn or registry.run_probe
     required = required_capabilities(goal)
+    if require_web_search and "web_search" not in required:
+        required.append("web_search")
     capabilities: list[dict] = []
     blocked: list[dict] = []
 

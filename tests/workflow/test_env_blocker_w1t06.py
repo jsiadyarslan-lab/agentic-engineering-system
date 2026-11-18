@@ -19,6 +19,7 @@ PLAN_REVISION_APPROVAL بلا استشارة جاهزية القدرات — ك�
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -31,7 +32,7 @@ from workflow import service  # noqa: E402
 GENERIC_REASON = "الحالة النهائية FAILED — الدورة لم تكتمل أدلةً"
 
 
-def _approved_step(wf_env):
+def _approved_step(wf_env, *, required_search=True):
     """مشروع بخطة معتمدة — يعيد (engine, project, plan, phase, step)."""
     engine = wf_env["build_engine"]()
     project = engine.create_project("مشروع W1-T06", "هدف اختبار العائق البيئي")
@@ -40,6 +41,10 @@ def _approved_step(wf_env):
     plan = service.latest_plan(wf_env["sessions"], project["id"])
     phase = service.list_phases(wf_env["sessions"], project["id"])[0]
     step = service.phase_steps(wf_env["sessions"], phase["id"])[0]
+    if required_search:
+        service.update_step(wf_env["sessions"], step["id"],
+                            dependencies='["web_search"]')
+        step = service.get_step(wf_env["sessions"], step["id"])
     return engine, project, plan, phase, step
 
 
@@ -135,6 +140,112 @@ def test_env_blocker_opens_provisioning_gate_not_plan_revision(
     )
     # لا سجل تصعيد مراجعة خطة — الفشل مصنف بيئيًا
     assert all(r.decision != "ESCALATE" for r in _retries(wf_env, step["id"]))
+
+
+def test_required_search_stale_is_recorded_and_rechecked(
+        wf_env, monkeypatch):
+    from execution import service as execution_service
+    from readiness import registry
+    from readiness import service as readiness_service
+
+    engine, project, plan, phase, step = _approved_step(wf_env)
+    execution_id = _exhausted_executions(wf_env, step)
+    _add_env_tool_failure(wf_env, project, step)
+    _patch_capability(monkeypatch, "STALE")
+
+    outcome = engine._on_step_failure(
+        project, plan, phase, step, execution_id, GENERIC_REASON)
+    assert outcome["blocked_kind"] == "environment"
+    (event,) = service.list_events(
+        wf_env["sessions"], project["id"], kinds=("PREFLIGHT_BLOCKED",))
+    assert event["payload"]["step_id"] == step["id"]
+    assert event["payload"]["execution_id"] == execution_id
+    assert event["payload"]["blocked"][0]["status"] == "STALE"
+
+    monkeypatch.setattr(registry, "run_probe", lambda *a, **kw: {})
+    monkeypatch.setattr(execution_service, "select_environment",
+                        lambda *a, **kw: {"id": 1, "name": "local-linux",
+                                          "isolation": "container"})
+
+    monkeypatch.setattr(
+        readiness_service, "capability_view",
+        lambda sessions, cid: {"readiness_status": (
+            "STALE" if cid == "web_search" else "READY")})
+    result = engine.recheck_preflight(project["id"])
+    assert result["verdict"] == "BLOCKED"
+    assert [(b["capability_id"], b["status"]) for b in result["blocked"]] == [
+        ("web_search", "STALE")]
+    assert _gates(wf_env, project["id"])[0]["status"] == "BLOCKED"
+    assert service.list_evidence(wf_env["sessions"], project["id"]) == []
+
+
+@pytest.mark.parametrize("reason", [
+    GENERIC_REASON,
+    "BUILD_FAILED — SEARCH_PROVIDER_NOT_READY في نشاط بحث اختياري",
+])
+def test_optional_search_failure_is_not_a_build_blocker(
+        wf_env, monkeypatch, reason):
+    engine, project, plan, phase, step = _approved_step(
+        wf_env, required_search=False)
+    service.update_step(
+        wf_env["sessions"], step["id"],
+        objective="إنشاء هيكل موقع أخبار. بحث الويب اختياري عند الحاجة.")
+    step = service.get_step(wf_env["sessions"], step["id"])
+    execution_id = _exhausted_executions(wf_env, step)
+    _add_env_tool_failure(wf_env, project, step)
+    _patch_capability(monkeypatch, "STALE")
+
+    outcome = engine._on_step_failure(
+        project, plan, phase, step, execution_id, reason)
+    assert outcome["action"] == "blocked"  # The build is still unsuccessful.
+    assert "blocked_kind" not in outcome
+    assert _gates(wf_env, project["id"])[0]["kind"] == "PLAN_REVISION_APPROVAL"
+    assert service.get_step(wf_env["sessions"], step["id"])["status"] == "FAILED"
+    assert service.list_evidence(wf_env["sessions"], project["id"]) == []
+    assert not service.list_events(
+        wf_env["sessions"], project["id"], kinds=("PREFLIGHT_BLOCKED",))
+
+
+def test_optional_search_failure_can_coexist_with_verified_local_output(
+        wf_env, monkeypatch):
+    import tasks
+
+    engine, project, plan, phase, step = _approved_step(
+        wf_env, required_search=False)
+    execute = tasks.run_task
+
+    def build_after_optional_search_failure(*args, **kwargs):
+        _add_env_tool_failure(wf_env, project, step)
+        return execute(*args, **kwargs)
+
+    monkeypatch.setattr(tasks, "run_task", build_after_optional_search_failure)
+    _patch_capability(monkeypatch, "STALE")
+    result = engine._execute_step(project, plan, phase, step)
+    assert result["verdict"] == "PASS"
+    (record,) = service.list_evidence(wf_env["sessions"], project["id"])
+    (execution,) = service.list_executions(wf_env["sessions"], project["id"])
+    artifact = Path(execution["workspace"]) / "deliverable.md"
+    assert record["files"]["deliverable.md"]["sha256"] == hashlib.sha256(
+        artifact.read_bytes()).hexdigest()
+    assert record["evidence_sha256"] == hashlib.sha256(
+        Path(record["evidence_path"]).read_bytes()).hexdigest()
+    assert record["step_id"] == step["id"]
+    assert service.get_step(wf_env["sessions"], step["id"])["evidence_id"] == record["id"]
+
+
+@pytest.mark.parametrize("objective,criteria,required", [
+    ("إنشاء هيكل موقع أخبار", [], False),
+    ("ابحث في الويب عن مصادر رسمية", [], True),
+    ("إنشاء التقرير", ["بحث الويب إلزامي لإسناد الادعاءات"], True),
+    ("Build website. Web search is not required", [], False),
+    ("Do not search the web", [], False),
+])
+def test_legacy_search_requirement_respects_step_text(
+        wf_env, objective, criteria, required):
+    engine = wf_env["build_engine"]()
+    assert engine._step_requires_web_search({
+        "objective": objective, "acceptance_criteria": criteria,
+    }) is required
 
 
 def test_env_signature_in_reason_text_also_classified(

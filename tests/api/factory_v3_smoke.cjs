@@ -10,6 +10,11 @@ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert(js,'inline factory script exists');
 const serverState={id:4,name:'مشروع الإنتاج #4',status:'PAUSED',objective:'إنشاء الموقع',
   gates:[],phases:[],executions:[],evidence:[],events:[],plan:null};
+const blockedState={id:5,name:'اختبار تشغيل المشروع',status:'BLOCKED',active_run:null,
+  current_phase_id:4,current_step_id:1058,plan:{id:1,approved_by_owner:true},
+  phases:[{id:4,plan_id:1,title:'إعداد المشروع وإنشاء الهيكل',status:'RUNNING'}],
+  execution_gate:{state:'APPROVED_BUT_BLOCKED',step_id:1058,reason:'web_search: STALE'},
+  executions:[{id:673,status:'FAILED'},{id:672,status:'FAILED'}],evidence:[],events:[]};
 function response(data){return{ok:true,status:200,text:async()=>JSON.stringify(data)}}
 const calls=[];
 let holdSecondRead=false, releaseSecondRead=null, streamErrorAfterBind=false, brokenStream=false, serverRunning=false, persistBrokenQuestion=true;
@@ -48,6 +53,9 @@ async function fetchMock(url,opts={}){
   }
   if(url==='/api/projects')return response({projects:[{id:4,name:'مشروع الإنتاج #4',status:'PAUSED',objective:'إنشاء الموقع'}]});
   if(url==='/api/projects/4/state')return response(serverState);
+  if(url==='/api/projects/5/state')return response(blockedState);
+  if(url==='/api/projects/5/steps')return response({steps:[]});
+  if(url==='/api/projects/5/runtime')return response({});
   if(url==='/api/projects/4/conversations')return response({conversations:[{conversation_id:22,project_id:4,title:'محادثة حقيقية'}]});
   if(url==='/api/conversations/22/messages')return response({conversation_id:22,messages:savedMessages.slice()});
   if(url.startsWith('/api/chat/active?conversation_id=')){const id=Number(url.split('=').at(-1));return response({stream:'chat-'+id,running:id===22&&serverRunning});}
@@ -114,6 +122,26 @@ async function settle(){
   assert.ok(!replyMarkup('[لا يُفتح](ftp://example.com)').includes('href='));
   assert.equal(replyMarkup(''),'');
   await settle();
+  browser.location.hash='#/p/5/runs';
+  await browser.__test.loadAll();
+  const runPage=root.innerHTML;
+  assert.ok(runPage.includes('متعطّل · لا تشغيل نشط'));
+  assert.ok(runPage.includes('الخطوة <bdi>1058</bdi>'));
+  assert.ok(runPage.includes('web_search: STALE'));
+  assert.ok(runPage.includes('لا دليل تحقق محفوظ لهذه الخطوة.'));
+  assert.match(runPage,/aes-phase-row.*RUNNING<\/span><small>آخر حالة محفوظة/);
+  assert.ok(runPage.indexOf('aes-run-summary')<runPage.indexOf('خطوات الخطة الحالية'));
+  assert.ok(!runPage.includes('إضافة بيئة'));
+  blockedState.active_run={project_id:4,job_id:91};
+  await browser.__test.loadAll();
+  assert.ok(root.innerHTML.includes('متعطّل · لا تشغيل نشط'));
+  blockedState.active_run={project_id:5,job_id:92};
+  blockedState.status='RUNNING';
+  await browser.__test.loadAll();
+  assert.ok(root.innerHTML.includes('قيد التنفيذ · تشغيل نشط'));
+  assert.ok(!root.innerHTML.includes('آخر حالة محفوظة'));
+  browser.location.hash='#/p/4/chat';
+  await browser.__test.loadAll();
   assert.equal(browser.__test.route().view,'chat','project must open into chat, not dashboard');
   assert(root.innerHTML.includes('aes-chat-layout'),'chat surface must render');
   assert(root.innerHTML.includes('تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة'),'backend project status must remain visible');

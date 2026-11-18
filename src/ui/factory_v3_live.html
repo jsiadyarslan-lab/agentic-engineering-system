@@ -63,6 +63,17 @@ body{font-size:15px;line-height:1.7}
 .aes-chat-head .aes-chat-kicker{display:block;font-size:11px;line-height:1.6;letter-spacing:.01em;color:var(--dim);margin-bottom:3px}
 .aes-chat-head .aes-project-state{font-size:12px;line-height:1.5;color:var(--muted);display:inline-block;margin-top:3px}
 .aes-chat-identity{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.aes-run-summary{margin:0 0 18px;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.aes-run-summary.is-blocked{border-inline-start:4px solid var(--bad);background:var(--bgbad)}
+.aes-run-summary h2{margin:0;font-size:17px}
+.aes-run-summary p{margin:8px 0 0;overflow-wrap:anywhere}
+.aes-run-summary .actions{margin-top:12px}
+.aes-phase-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:11px 0;border-top:1px solid var(--soft)}
+.aes-phase-row:first-of-type{border-top:0}
+.aes-phase-title{min-width:0;overflow-wrap:anywhere}
+.aes-phase-state{display:flex;flex-direction:column;align-items:flex-end;gap:3px;justify-self:end}
+.aes-phase-state .status{inline-size:fit-content}
+.aes-phase-state small{font-size:11px;color:var(--muted)}
 .aes-chat-identity>div{min-width:0}.aes-chat-mark{flex:none;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;color:var(--mint);background:var(--panel);font-size:16px}
 .aes-chat-head .aes-new-chat{font-size:12px;padding-inline:10px;white-space:nowrap}
 .aes-chat-thread{overflow:auto;min-height:0;padding:18px max(16px,calc((100% - 760px)/2));overscroll-behavior:contain;scrollbar-gutter:stable;outline-offset:-3px}
@@ -186,7 +197,8 @@ function overview(){
  const snap=state.details,gate=snap?.execution_gate||{},open=(snap?.gates||[]).filter(g=>g.status==='PENDING');
  const status=p.status||'UNKNOWN';
  const top='<div class="thread-head"><div class="eyebrow">المشروع '+E(p.id)+'</div><h1 dir="auto">'+E(p.name||'مشروع')+'</h1><p class="project-objective" dir="auto">'+E(p.objective||'لم يسجل هدف')+'</p></div>';
- return top+'<div class="card"><div class="row wrap"><div><div class="eyebrow">الحالة القانونية من قاعدة المصنع</div><h2>'+tag(status)+'</h2></div><div class="actions">'+link('التشغيل',url(p.id,'runs'),'primary')+link('القرارات',url(p.id,'decisions'))+'</div></div><p class="muted">'+E(gate.blocked_reason||gate.owner_action||'لا يوجد سبب تعطل مؤكد في هذه اللقطة.')+'</p></div>'+
+ return top+'<div class="card"><div class="row wrap"><div><div class="eyebrow">حالة المشروع المسجّلة</div><h2>'+tag(status)+'</h2></div><div class="actions">'+link('التشغيل',url(p.id,'runs'),'primary')+link('القرارات',url(p.id,'decisions'))+'</div></div>'+
+ (status==='BLOCKED'?'<p class="muted">'+E(gate.state==='APPROVED_BUT_BLOCKED'?gate.reason:p.last_error||'لم يُسجل سبب محدد. راجع التشغيل.')+'</p>':'')+'</div>'+
  '<div class="grid"><div class="card"><b>المراحل</b><p class="big-num">'+(snap?.phases?.length??'—')+'</p></div><div class="card"><b>قرارات معلّقة</b><p class="big-num">'+(snap?.gates?open.length:'—')+'</p></div><div class="card"><b>الأدلة</b><p class="big-num">'+(snap?.evidence?.length??'—')+'</p></div></div>'+
  '<h2 class="h2">ما يحتاج انتباهك</h2>'+
  (!snap?msg('جارٍ قراءة الحالة التفصيلية، والمشروع ظاهر من قائمة الإنتاج.') :
@@ -197,6 +209,34 @@ function overview(){
 function events(items,limit=20){
  return items.length?'<ol class="trace">'+items.slice(-limit).reverse().map(x=>'<li><b>'+E(x.kind||'حدث')+'</b> <small>'+E(date(x.created_at||x.timestamp))+'</small><div class="muted">'+E(x.role||x.state||'')+'</div></li>').join('')+'</ol>':msg('لا أحداث متاحة لهذه القراءة.');
 }
+function liveRun(snap){
+ if(!snap||!Object.hasOwn(snap,'active_run'))return null;
+ return snap.active_run!==null&&Number(snap.active_run?.project_id)===Number(snap.id);
+}
+function runLabel(p,snap){
+ const active=liveRun(snap);
+ const labels={DRAFT:'مسودة',READY:'جاهز',AWAITING_OWNER_APPROVAL:'بانتظار اعتماد الخطة',BLOCKED:'متعطّل',PAUSED:'متوقف مؤقتًا',STOPPED:'متوقف',FAILED:'فشل',INTERRUPTED:'انقطع',COMPLETED:'مكتمل',VERIFIED:'تم التحقق',RUNNING:'آخر حالة محفوظة · RUNNING'};
+ const status=p.status==='RUNNING'&&active?'قيد التنفيذ':labels[p.status]||p.status||'الحالة غير معروفة';
+ return status+' · '+(active===null?'جارٍ التحقق من التشغيل':active?'تشغيل نشط':'لا تشغيل نشط');
+}
+function runSummary(p,snap){
+ const gate=snap?.execution_gate;
+ const blocked=p.status==='BLOCKED',diagnosed=blocked&&gate?.state==='APPROVED_BUT_BLOCKED';
+ const stepId=blocked?(gate?.step_id||p.current_step_id):null;
+ const hasStepEvidence=stepId&&Array.isArray(snap?.evidence)&&snap.evidence.some(e=>Number(e.step_id)===Number(stepId));
+ const reason=diagnosed?gate.reason:blocked?snap?.last_error:'';
+ return '<section class="aes-run-summary'+(blocked?' is-blocked':'')+'" aria-labelledby="run-status-heading">'+
+ '<h2 id="run-status-heading">'+E(runLabel(p,snap))+'</h2>'+
+ (blocked?'<p>'+(stepId?'<strong>الخطوة <bdi>'+E(stepId)+'</bdi></strong> · ':'')+
+ (!diagnosed&&reason?'<strong>آخر خطأ محفوظ</strong> · ':'')+
+ '<span dir="auto">'+E(reason||'لم يُثبت سبب محدد للحجب.')+'</span></p>':'')+
+ (diagnosed&&gate.owner_action?'<p class="muted">'+E(gate.owner_action)+'</p>':'')+
+ (stepId&&Array.isArray(snap?.evidence)&&!hasStepEvidence?'<p class="muted">لا دليل تحقق محفوظ لهذه الخطوة.</p>':'')+
+ '<div class="actions">'+(p.status==='DRAFT'&&!(snap?.plan)?btn('توليد خطة حقيقية','plan','primary'):'')+
+ (snap?.plan&&!snap.plan.approved_by_owner?btn('مراجعة واعتماد الخطة','approve-plan','primary'):'')+
+ (['BLOCKED','PAUSED','INTERRUPTED'].includes(p.status)?btn('استئناف بعد المراجعة','resume'):'')+
+ (liveRun(snap)===true?btn('إيقاف التشغيل','stop'):'')+'</div></section>';
+}
 function runs(){
  const p=current();if(!p)return msg('لا مشروع محدد');
  const snap=state.details,steps=state.steps?.steps||[];
@@ -204,7 +244,10 @@ function runs(){
  const latestPlanId=Number(snap?.plan?.id||0),hasPlanContext=latestPlanId>0&&phasePlan.size>0;
  const currentSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))===latestPlanId):steps;
  const historicalSteps=hasPlanContext?steps.filter(x=>phasePlan.get(Number(x.phase_id))!==latestPlanId):[];
- const renderSteps=items=>items.map(x=>'<details class="aes-step-detail"><summary><b>'+E(x.objective||x.title||x.description||('خطوة '+x.id))+'</b> '+tag(x.status)+' <small>مرحلة '+E(x.phase_title||'—')+' · #'+E(x.id)+' · المحاولات '+E(x.attempts??0)+'</small></summary>'+
+ const isCurrent=(id,activeId)=>liveRun(snap)===true&&p.status==='RUNNING'&&Number(id)===Number(activeId);
+ const recordedStatus=(status,active)=>status==='RUNNING'&&!active
+   ?'<span class="status">RUNNING</span><small>آخر حالة محفوظة</small>':tag(status);
+ const renderSteps=items=>items.map(x=>'<details class="aes-step-detail"><summary><b>'+E(x.objective||x.title||x.description||('خطوة '+x.id))+'</b> '+recordedStatus(x.status,isCurrent(x.id,snap?.current_step_id))+' <small>مرحلة '+E(x.phase_title||'—')+' · #'+E(x.id)+' · المحاولات '+E(x.attempts??0)+'</small></summary>'+
  '<div class="aes-step-facts">'+(x.expected_output?'<p><b>المخرج المتوقع: </b>'+E(x.expected_output)+'</p>':'')+
  (x.last_error?'<p class="bad"><b>آخر خطأ: </b>'+E(x.last_error)+'</p>':'')+
  (Array.isArray(x.acceptance_criteria)&&x.acceptance_criteria.length?'<details><summary>معايير القبول ('+x.acceptance_criteria.length+')</summary>'+json(x.acceptance_criteria)+'</details>':'')+
@@ -213,12 +256,10 @@ function runs(){
  '<p class="muted">'+(latestPlanId?'الخطة الحالية #'+E(latestPlanId)+'؛ عرض الخطوات مرتبط بإصدار الخطة.':'لم تُحدد خطة حالية؛ لا يمكن تصنيف الخطوات التاريخية.')+'</p>'+
  (state.steps?currentSteps.length?renderSteps(currentSteps):msg('لا توجد خطوات مسجلة في الخطة الحالية.'):msg('جارٍ تحميل خطوات المشروع'))+
  (historicalSteps.length?'<details class="aes-historical"><summary>الخطط القديمة ('+historicalSteps.length+' خطوة) — تاريخ فقط</summary>'+renderSteps(historicalSteps)+'</details>':'')+'</div>';
- return heading('تشغيل المشروع','المهام والنتائج الفعلية قبل السجلات التشخيصية.')+stepView+
- '<div class="banner">'+tag(p.status)+'<div class="actions">'+(p.status==='DRAFT'&&!(snap?.plan)?btn('توليد خطة حقيقية','plan','primary'):'')+
- (snap?.plan&&!snap.plan.approved_by_owner?btn('مراجعة واعتماد الخطة','approve-plan','primary'):'')+
- (['BLOCKED','PAUSED','INTERRUPTED'].includes(String(p.status||''))?btn('استئناف بعد المراجعة','resume'):'')+
- (p.status==='RUNNING'?btn('إيقاف التشغيل','stop'):'')+'</div></div>'+
- (!snap?msg('جلب مراحل التشغيل...'):'<div class="card"><h2>المراحل ('+snap.phases.length+')</h2>'+snap.phases.map(ph=>'<div class="step"><b>'+E(ph.name||ph.title||'مرحلة')+'</b>'+tag(ph.status)+'</div>').join('')+'</div>'+
+ const phases=snap?.phases||[];
+ return heading('تشغيل المشروع','المهام والنتائج الفعلية قبل السجلات التشخيصية.')+runSummary(p,snap)+
+ (!snap?msg('جلب مراحل التشغيل...'):'<div class="card"><h2>المراحل ('+phases.length+')</h2>'+phases.map(ph=>'<div class="aes-phase-row"><b class="aes-phase-title" dir="auto">'+E(ph.name||ph.title||'مرحلة')+'</b><div class="aes-phase-state">'+recordedStatus(ph.status,isCurrent(ph.id,snap.current_phase_id))+'</div></div>').join('')+'</div>')+stepView+
+ (!snap?'':
  '<div class="card"><h2>الخطة المسجلة</h2>'+(snap.plan?'<details><summary>عرض الخطة</summary>'+json(snap.plan)+'</details>':msg('لا خطة منشأة بعد.'))+'</div>'+
  '<div class="card"><h2>آخر المحاولات</h2>'+(snap.executions?.length?snap.executions.map(x=>'<details><summary>'+E('التنفيذ '+x.id)+' · '+E(x.status||x.verdict||'غير معروف')+'</summary>'+json(x)+'</details>').join(''):msg('لا محاولات مسجلة.'))+'</div>'+
  '<div class="card"><details><summary>سجل الأحداث التشخيصية ('+(snap.events?.length||0)+')</summary>'+events(snap.events||[],30)+'</details></div>');
@@ -330,7 +371,7 @@ function chat(){
  state.messagesError?['تعذر فتح المحادثة',state.messagesError]:
  id?['لا رسائل في هذه المحادثة','يمكنك كتابة أول رسالة.']:
  ['ما الذي تريد إنجازه؟','اكتب ما تحتاجه. يبدأ التنفيذ من صفحة التشغيل بعد المراجعة.'];
- const phase=({PAUSED:'المشروع متوقف مؤقتًا',BLOCKED:'المشروع متعطّل',RUNNING:'المشروع قيد التنفيذ',COMPLETED:'التشغيل مكتمل',FAILED:'فشل تشغيل المشروع'})[p?.status]||'المشروع '+pid();
+ const phase=({PAUSED:'المشروع متوقف مؤقتًا',BLOCKED:p?.status==='BLOCKED'?runLabel(p,state.details):'',RUNNING:p?.status==='RUNNING'?runLabel(p,state.details):'',COMPLETED:'التشغيل مكتمل',FAILED:'فشل تشغيل المشروع'})[p?.status]||'المشروع '+pid();
  const phaseLabel=p?.status==='PAUSED'&&canSend?'تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة':phase;
  const progress=isBusyHere?state.streamNotice:state.serverChat==='running'?(state.recoveringChat?'انقطع العرض المباشر. الخادم ما زال يعالج الرسالة.':'الخادم يعالج رسالة في هذه المحادثة.'):
  state.serverChat==='unknown'?'تعذر التحقق من حالة الرد. تحقّق من السجل قبل إعادة الإرسال.':state.recoveringChat?'جارٍ التحقق من حفظ الرد.':(!state.status&&!state.error&&thread.at(-1)?.role==='user')?'آخر رسالة بلا رد محفوظ.':'';

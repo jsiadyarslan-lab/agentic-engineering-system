@@ -31,6 +31,7 @@ tick() = وحدة عمل واحدة ذرّية: تحمّل الحالة من ا�
 from __future__ import annotations
 
 import hashlib
+import re
 import subprocess
 import threading
 import time
@@ -866,7 +867,8 @@ class ProjectEngine:
         return goal
 
     def _run_preflight(self, project: dict, plan: dict, *,
-                       force: bool = False) -> dict:
+                       force: bool = False,
+                       require_web_search: bool = False) -> dict:
         """تنفيذ الفحص المسبق الفعلي — policy من المشروع (011 §26).
 
         (AES-EXP-04 §6): حقن المسبارات (إن وُجد) يمر عبر العقد المعلن
@@ -892,6 +894,7 @@ class ProjectEngine:
             run_probe_fn=injected_probe,
             llm_ready=not unready,
             llm_detail={"unready_roles": unready} if unready else None,
+            require_web_search=require_web_search,
         )
 
     def _emit_preflight(self, project_id: int, result: dict) -> None:
@@ -1045,7 +1048,13 @@ class ProjectEngine:
         # القدرات حديثة الفحص تبقى مخزنة وما عادا جاهزًا يُعاد فحصه
         # فعلًا؛ force=True كان يعيد فحص web_search قسريًا (ميزانية كاملة)
         # في كل خنقة فبطئ الوظائف المنتظرة تحت الحمل.
-        result = self._run_preflight(project, plan, force=False)
+        gates = service.open_gates(self._sessions, project_id)
+        required_search = any(
+            self._requires_gated_step_search(gate, plan["id"])
+            for gate in gates
+        )
+        result = self._run_preflight(
+            project, plan, force=False, require_web_search=required_search)
         # نفس شكل تفاصيل _emit_preflight — السبب الحقيقي يصل الواجهة
         # حرفيًا (011 §3: سبب دقيق لا placeholder)
         self._emit(project_id, "PREFLIGHT_RECHECKED", {
@@ -1512,8 +1521,7 @@ class ProjectEngine:
                         "decision": "RETRY"})
             return {"action": "continue", "reason": "إعادة محاولة الخطوة"}
         # (W1-T06) تصنيف العائق البيئي أولًا — قبل فتح بوابة المراجعة
-        blocker = self._environment_blocker(project, step, execution_id,
-                                            reason)
+        blocker = self._environment_blocker(project, step, execution_id, reason)
         if blocker is not None and blocker["status"] != "READY":
             # البيئة ما زالت معطوبة — حاجز توفير يسمّي القدرة والحل،
             # ويُحل بإعادة الفحص (GATE_AUTO_RESOLVED) لا بموافقة خطة.
@@ -1528,15 +1536,16 @@ class ProjectEngine:
             )
             if blocker.get("reason"):
                 gate_reason += f": {str(blocker['reason'])[:220]}"
+            blocked = [{
+                "capability_id": blocker["capability_id"],
+                "status": blocker["status"],
+                "reason": blocker["reason"],
+            }]
             gate_id = service.open_gate(
                 self._sessions, project_id, "PREFLIGHT_BLOCKED",
                 gate_reason,
                 {
-                    "blocked": [{
-                        "capability_id": blocker["capability_id"],
-                        "status": blocker["status"],
-                        "reason": blocker["reason"],
-                    }],
+                    "blocked": blocked,
                     "origin": "step_failure_classification",
                     "step_id": step["id"],
                     "execution_id": execution_id,
@@ -1554,6 +1563,8 @@ class ProjectEngine:
                         "classified_as": "environment_blocker"})
             self._emit(project_id, "PREFLIGHT_BLOCKED",
                        {"step_id": step["id"], "gate_id": gate_id,
+                        "execution_id": execution_id, "verdict": "BLOCKED",
+                        "blocked": blocked,
                         "capability_id": blocker["capability_id"],
                         "status": blocker["status"],
                         "origin": "step_failure_classification",
@@ -1637,10 +1648,54 @@ class ProjectEngine:
         ("BUILD_TOOLING_MISSING", "build"),
     )
 
+    @staticmethod
+    def _step_requires_web_search(step: dict) -> bool:
+        """Use the step contract, not project topic or observed tool usage."""
+        dependencies = step.get("dependencies")
+        if isinstance(dependencies, list) and "web_search" in dependencies:
+            return True
+        # Already approved plans may only express the requirement as text.
+        criteria = step.get("acceptance_criteria") or []
+        for field in (step.get("objective"), *criteria):
+            for line in str(field or "").splitlines():
+                if re.search(
+                    r"اختياري|عند الحاجة|إن لزم|إن أمكن|لا (?:يلزم|يتطلب|تبحث)|"
+                    r"دون بحث|بدون بحث|\b(?:optional|if needed|if available|"
+                    r"not required|do not|without)\b", line, re.IGNORECASE,
+                ):
+                    continue
+                if re.search(
+                    r"^\s*(?:ابحث\s+(?:على|في|عبر)\s+(?:الويب|الإنترنت)|"
+                    r"(?:search|research)\s+(?:the\s+)?(?:web|internet)\b)|"
+                    r"(?:يجب|يلزم|يتطلب)\s+(?:إجراء\s+)?بحث\s+"
+                    r"(?:الويب|(?:في|على|عبر)\s+(?:الويب|الإنترنت))|"
+                    r"بحث\s+الويب\s+(?:إلزامي|مطلوب)|\b"
+                    r"(?:requires?\s+web[ _-]search|web[ _-]search\s+"
+                    r"(?:is\s+)?(?:required|mandatory))\b",
+                    line, re.IGNORECASE,
+                ):
+                    return True
+        return False
+
+    def _requires_gated_step_search(self, gate: dict, plan_id: int) -> bool:
+        """A recheck must include an explicit dependency from the gated step."""
+        details = gate.get("details") or {}
+        if (gate["status"] != "BLOCKED" or gate["kind"] != "PREFLIGHT_BLOCKED"
+                or not details.get("step_id")
+                or not any(b.get("capability_id") == "web_search"
+                           for b in details.get("blocked", []))):
+            return False
+        step = service.get_step(self._sessions, details["step_id"])
+        if step is None or not self._step_requires_web_search(step):
+            return False
+        phase = service.get_phase(self._sessions, step["phase_id"])
+        return phase is not None and phase["plan_id"] == plan_id
+
     def _environment_blocker(self, project: dict, step: dict,
                              execution_id: int, reason: str) -> dict | None:
         """(W1-T06) عائق بيئي وراء فشل الخطوة — القدرة المتورطة وحالتها الآن.
 
+        تُنسب أعطال البحث إلى الخطوة فقط حين ينص عقدها على أن البحث مطلوب.
         الاستدلال من مصدرين: (1) توقيع صريح في نص السبب، (2) الأدق —
         استدعاءات web_search الفاشلة بمحاولة التنفيذ نفسها
         (SEARCH_PROVIDER_NOT_READY / PROVIDER_RESOLUTION /
@@ -1651,6 +1706,7 @@ class ProjectEngine:
         from readiness import service as readiness_service
 
         text = str(reason or "")
+        requires_search = self._step_requires_web_search(step)
         implicated: set[str] = {
             capability_id for signature, capability_id
             in self._ENV_BLOCKER_SIGNATURES if signature in text
@@ -1680,7 +1736,7 @@ class ProjectEngine:
                         ToolInvocation.created_at >= started)
                 for tool, failure_reason, failure_stage, failure_class \
                         in session.execute(query).all():
-                    if tool == "web_search" and (
+                    if requires_search and tool == "web_search" and (
                         failure_reason == "SEARCH_PROVIDER_NOT_READY"
                         or failure_stage == "PROVIDER_RESOLUTION"
                         or failure_class == "DEPENDENCY_FAILURE"
@@ -1693,6 +1749,8 @@ class ProjectEngine:
                         implicated.add("build")
         except Exception:  # noqa: BLE001 — تشخيص داعم لا مسار حاسم
             pass
+        if not requires_search:
+            implicated.discard("web_search")
         if not implicated:
             return None
         if "build" in implicated:
