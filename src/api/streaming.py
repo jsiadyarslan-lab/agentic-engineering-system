@@ -134,7 +134,7 @@ async def live_stream(
                 if _sse_now() - last_write >= SSE_KEEPALIVE_SECONDS:
                     # تعليق SSE لا يحمل بيانات ولا تسلسلًا ولا حكم نجاح؛
                     # يبقي الوصلة حية أثناء انتظار النموذج.
-                    yield ": keepalive\\n\\n".replace("\\\\n", "\\n")
+                    yield ": keepalive\n\n"
                     last_write = _sse_now()
                 continue
             seq = event.get("seq", 0)
