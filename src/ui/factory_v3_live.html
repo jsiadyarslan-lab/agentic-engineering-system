@@ -704,10 +704,11 @@ async function submitChat(form){
  state.busy=true;state.pendingProjectId=projectAtStart;state.pendingConversationId=conversationAtStart;state.activeChatId=null;state.stopPending=false;state.error='';state.liveText='';state.unsavedReply=null;state.pendingText=message;state.streamNotice='نرسل الرسالة إلى الخادم…';state.status='';paint();
  try{
    const ac=new AbortController();
-   let timer;
+   let timer, slowNoticeShown=false;
    const resetIdle=()=>{clearTimeout(timer);timer=setTimeout(()=>{windowExpired=true;ac.abort()},CHAT_IDLE_MS)};
    const slow=setTimeout(()=>{
      if(originVisible()&&!finished&&!wasError&&!state.liveText&&!state.stopPending){
+       slowNoticeShown=true;
        state.streamNotice=accepted?'الرسالة لدى الخادم. لم يصل نص الرد بعد.':'لم يؤكد الخادم استلام الرسالة بعد.';
        paint();
      }
@@ -730,7 +731,8 @@ async function submitChat(form){
        if(['conversation.bind','message_delta','message_completed','chat.error','message_started','chat.status'].includes(ev.kind)&&(!Number.isInteger(candidate)||candidate<=0))return;
        if(Number.isInteger(candidate)&&candidate>0){if(cid&&cid!==candidate)return;cid=candidate;accepted=true;if(originVisible())state.activeChatId=cid}
        if(originVisible()&&accepted){
-         if(ev.kind==='conversation.bind')state.streamNotice='استلم الخادم الرسالة. ننتظر بدء الرد.';
+         if(ev.kind==='conversation.bind')state.streamNotice=slowNoticeShown
+           ?'الرسالة لدى الخادم. لم يصل نص الرد بعد.':'استلم الخادم الرسالة. ننتظر بدء الرد.';
          if(ev.kind==='research.started')state.streamNotice='الخادم يبحث في المصادر قبل الإجابة.';
          if(ev.kind==='message_started'||ev.status==='generating')state.streamNotice='ننتظر أول جزء من الرد.';
          if(ev.status==='stream_fallback')state.streamNotice='المزوّد سيعيد الرد دفعة واحدة.';
