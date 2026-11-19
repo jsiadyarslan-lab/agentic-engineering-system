@@ -460,7 +460,7 @@ function chat(){
  const phaseLabel=p?.status==='PAUSED'&&canSend?'تنفيذ المشروع متوقف مؤقتًا · المحادثة متاحة':phase;
  const progress=isBusyHere?state.streamNotice:state.serverChat==='running'?(state.recoveringChat?'انقطع العرض المباشر. الخادم ما زال يعالج الرسالة.':'الخادم يعالج رسالة في هذه المحادثة.'):
  state.serverChat==='unknown'?'تعذر التحقق من حالة الرد. تحقّق من السجل قبل إعادة الإرسال.':state.recoveringChat?'جارٍ التحقق من حفظ الرد.':(!state.status&&!state.error&&thread.at(-1)?.role==='user')?'آخر رسالة بلا رد محفوظ.':'';
- const waitingCard=progress&&!state.liveText&&(isBusyHere||waiting)?'<article class="aes-chat-message from-ai is-waiting" role="status"><small>المساعد</small>'+E(progress)+'</article>':'';
+ const waitingCard=progress&&!state.liveText&&(isBusyHere||waiting)?'<article class="aes-chat-message from-ai is-waiting" role="status"><small>المساعد</small><span class="aes-wait-message">'+E(progress)+'</span></article>':'';
  const progressLine=progress&&!waitingCard?'<p class="aes-chat-feedback muted" role="status">'+E(progress)+'</p>':'';
  const canStop=(isBusyHere&&state.activeChatId)||(!state.busy&&state.serverChat==='running'&&id);
  const feedback=state.error?'<p class="aes-chat-feedback bad" role="alert" dir="auto">'+E(state.error)+'</p>':

@@ -38,6 +38,7 @@ const server=http.createServer(async(req,res)=>{
    const delta='data: {"kind":"message_delta","scope":{"conversation_id":26},\r\ndata: "delta":"رد حي من بث الاختبار"}\r\n\r\n';
    const complete='data: '+JSON.stringify({kind:'message_completed',scope:{conversation_id:id}})+'\r\n\r\n';
    res.writeHead(200,{'content-type':'text/event-stream','cache-control':'no-cache'});
+   res.flushHeaders();
    res.write(bind);
    if(waitForFirstDelta)await waitForFirstDelta;
    else await new Promise(r=>setTimeout(r,240));
@@ -98,7 +99,14 @@ async function main(){
        await input.fill('رسالة اختبار ثبات المحادثة');
        await send.click();
        try{
-         await page.getByText('الرسالة لدى الخادم. لم يصل نص الرد بعد.',{exact:true}).waitFor({timeout:8000});
+         const waiting=page.locator('.aes-wait-message').filter({hasText:'الرسالة لدى الخادم. لم يصل نص الرد بعد.'});
+         await waiting.waitFor({timeout:8000});
+       }catch(error){
+         console.error('Chat status at failure',JSON.stringify({
+           notices:await page.locator('.aes-chat-feedback,.aes-wait-message').allTextContents(),
+           sent:trace.filter(([m])=>m==='POST').map(([,u])=>u),
+         }));
+         throw error;
        }finally{unblockDelta();waitForFirstDelta=null;}
        await page.getByText('رد حي من بث الاختبار',{exact:true}).waitFor();
        await page.getByText('رد محفوظ بعد البث',{exact:true}).waitFor();
