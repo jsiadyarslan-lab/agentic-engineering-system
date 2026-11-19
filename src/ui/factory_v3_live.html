@@ -746,7 +746,8 @@ async function submitChat(form){
          if(originVisible()){state.streamNotice='';state.error=responseError;}
        }
        const now=Date.now();
-       if(originVisible()&&(now-lastRender>90||finished||wasError)){
+       const firstDelta=ev.kind==='message_delta'&&state.liveText&&!document.querySelector('.aes-stream-content');
+       if(originVisible()&&(firstDelta||now-lastRender>90||finished||wasError)){
          // لا تعِد بناء القائمة والكتابة مع كل جزء من النموذج.
          // حدّث النص فقط؛ أنشئ الفقاعة بالرسم الأول أو في نهاية الطلب.
          const live=ev.kind==='message_delta'&&document.querySelector('.aes-stream-content');

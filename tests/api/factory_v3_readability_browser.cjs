@@ -12,7 +12,7 @@ const chats=[{conversation_id:26,project_id:4,title:'؟'},{conversation_id:31,pr
 const rich='### حالة التنفيذ\n\n**لم يبدأ تشغيل جديد.**\n\n- أول خطوة\n- ثاني خطوة\n\n| الملف | الحالة |\n| --- | --- |\n| index.html | محفوظ |\n\n```js\nconst x = 42;\n```\n\n[الدليل](https://example.com/)\n\n<label>نص حرفي غير منفّذ</label>\n';
 const saved=new Map([[26,[{role:'user',content:'رسالة محفوظة'},{role:'assistant',content:'رد سابق من الاختبار'},{role:'assistant',content:rich},...Array.from({length:32},(_,n)=>({role:'assistant',content:'Content '+n}))]],[31,[{role:'assistant',content:'محتوى المحادثة الثانية'}]],[90,[{role:'assistant',content:'سجل قديم ليس في القائمة'}]]]);
 const trace=[];
-let streamScenario='ok', waitForFirstDelta=null;
+let streamScenario='ok', waitForFirstDelta=null, waitForCompletion=null;
 const server=http.createServer(async(req,res)=>{
  const url=req.url;
  trace.push([req.method,url]);
@@ -43,7 +43,8 @@ const server=http.createServer(async(req,res)=>{
    if(waitForFirstDelta)await waitForFirstDelta;
    else await new Promise(r=>setTimeout(r,240));
    res.write(delta.slice(0,-3));res.write(delta.slice(-3));
-   await new Promise(r=>setTimeout(r,180));
+   if(waitForCompletion)await waitForCompletion;
+   else await new Promise(r=>setTimeout(r,180));
    if(streamScenario==='ok'){
      saved.get(id).push({id:91,role:'user',content:message},
        {id:92,role:'assistant',content:'رد محفوظ بعد البث',state_badge:'COMPLETED'});
@@ -94,8 +95,9 @@ async function main(){
          await body.getByRole('heading',{name:'حالة التنفيذ'}).scrollIntoViewIfNeeded();
          await page.screenshot({path:process.env.AES_TEST_SCREENSHOT});
        }
-       let unblockDelta;
+       let unblockDelta, unblockCompletion;
        waitForFirstDelta=new Promise(resolve=>{unblockDelta=resolve;});
+       waitForCompletion=new Promise(resolve=>{unblockCompletion=resolve;});
        await input.fill('رسالة اختبار ثبات المحادثة');
        await send.click();
        try{
@@ -106,9 +108,12 @@ async function main(){
            notices:await page.locator('.aes-chat-feedback,.aes-wait-message').allTextContents(),
            sent:trace.filter(([m])=>m==='POST').map(([,u])=>u),
          }));
+         unblockCompletion();waitForCompletion=null;
          throw error;
        }finally{unblockDelta();waitForFirstDelta=null;}
-       await page.getByText('رد حي من بث الاختبار',{exact:true}).waitFor();
+       try{
+         await page.locator('.aes-stream-content').filter({hasText:'رد حي من بث الاختبار'}).waitFor({timeout:8000});
+       }finally{unblockCompletion();waitForCompletion=null;}
        await page.getByText('رد محفوظ بعد البث',{exact:true}).waitFor();
        await page.getByText('حُفظ الرد في المحادثة.',{exact:true}).waitFor();
        await page.reload();
