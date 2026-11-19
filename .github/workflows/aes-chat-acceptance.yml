@@ -37,4 +37,8 @@ jobs:
             tests/api/test_chat_error_handler_p1.py \
             tests/api/test_chat_isolation_0135.py \
             tests/api/test_sse_keepalive_aes.py \
-            tests/api/test_conversation_identity.py
+            tests/api/test_conversation_identity.py \
+            tests/api/test_aes_v4_workspace_contract.py \
+            tests/workflow/test_execution_gate_consistency_001.py \
+            tests/workflow/test_search_requirement_contract.py \
+            tests/workflow/test_evidence_commit_001.py

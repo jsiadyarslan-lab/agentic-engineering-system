@@ -160,9 +160,9 @@ def test_search_blocked_goal_blocks_but_fetch_only_goal_proceeds(sessions):
     _ddg(sessions, "NOT_READY", "كل مزودي البحث غير جاهزين")
     _set_status(sessions, "web_fetch", "READY")
 
-    # هدف OSINT (يطلب البحث جوهريًا) → BLOCKED بقرار واعٍ
+    # البحث في الويب مطلوب صراحة → BLOCKED بقرار واعٍ
     osint = preflight.task_preflight(
-        sessions, "ابنِ منصة OSINT متقدمة ببحث ومصادر", llm_ready=True,
+        sessions, "ابحث في الويب عن منشورات رسمية حديثة", llm_ready=True,
         run_probe_fn=_use_seamed(web_search="NOT_READY"),
     )
     assert osint["verdict"] == "BLOCKED"

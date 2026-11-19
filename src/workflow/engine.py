@@ -31,15 +31,15 @@ tick() = وحدة عمل واحدة ذرّية: تحمّل الحالة من ا�
 from __future__ import annotations
 
 import hashlib
-import re
 import subprocess
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Callable
 
 from router.role_config import RoleSelection
-from workflow import auditor, planning_runtime, service
+from workflow import auditor, delivery, planning_runtime, service
 from workflow.models import GATE_KINDS, _utc_now
 from workflow.service import PROJECT_ROLES
 
@@ -47,6 +47,7 @@ from workflow.service import PROJECT_ROLES
 #: تجري فحصًا قسريًا كاملًا (بإقلاع رمل حقيقي) كل 0.5ث فتزاحم الطلبات
 #: اليدوية وقاعدة SQLite. إعادة الفحص الآلية كل 5ث تكفي للتوفير الآلي.
 _AUTO_RECHECK_INTERVAL_S = 5.0
+_RECHECK_DECISION_LOCK = threading.Lock()
 
 #: الحالات التي تُوقف الحلقة (نهائية أو انتظار قرار).
 WAITING_STATES = ("AWAITING_OWNER_APPROVAL", "BLOCKED", "PAUSED")
@@ -94,6 +95,10 @@ class ProjectEngine:
     def _emit(self, project_id: int, kind: str, payload: dict) -> None:
         event_id = service.add_event(self._sessions, project_id, kind,
                                      payload)
+        self._broadcast(project_id, kind, payload, event_id)
+
+    def _broadcast(self, project_id: int, kind: str, payload: dict,
+                   event_id: int) -> None:
         if self._on_event is not None:
             try:
                 self._on_event({
@@ -556,8 +561,8 @@ class ProjectEngine:
             raise EngineError(
                 f"المشروع في حالة {project['status']} — لا استئناف من هنا"
             )
-        if project["status"] == "BLOCKED":
-            gates = service.open_gates(self._sessions, project_id)
+        gates = service.open_gates(self._sessions, project_id)
+        if gates:
             pending = [g for g in gates if g["status"] == "PENDING"]
             if pending:
                 raise EngineError(
@@ -566,13 +571,12 @@ class ProjectEngine:
                 )
             # (011 §19) بوابات توفير فقط: الاستئناف يعيد الفحص —
             # نجح = استمر بلا إعادة اعتماد؛ فشل = السبب الحقيقي.
-            if gates:
-                recheck = self.recheck_preflight(project_id)
-                if recheck["verdict"] != "PASS":
-                    raise EngineError(
-                        "الاستئناف ممكن بعد توفير المتطلبات — "
-                        + recheck["summary"]
-                    )
+            recheck = self.recheck_preflight(project_id)
+            if recheck["verdict"] != "PASS":
+                raise EngineError(
+                    "الاستئناف ممكن بعد توفير المتطلبات — "
+                    + recheck["summary"]
+                )
         # (013.5 §K) استئناف صادق: مشروع أُوقف **أثناء التخطيط** لا خطة
         # له — تشغيل الحلقة عليه نجاح مُدّعى من فراغ. الاستئناف الصادق
         # يعيده DRAFT ويعلن أن الخطوة التالية توليدُ خطة (قرار المالك).
@@ -674,8 +678,9 @@ class ProjectEngine:
         if status == "PAUSED":
             return {"action": "paused",
                     "reason": "متوقف مؤقتًا — الاستئناف قرار صريح"}
-        if status == "BLOCKED":
-            gates = service.open_gates(self._sessions, project_id)
+        gates = (service.open_gates(self._sessions, project_id)
+                 if status in ("BLOCKED", "READY", "RUNNING") else [])
+        if status == "BLOCKED" or gates:
             pending = [g for g in gates if g["status"] == "PENDING"]
             provisioning = [g for g in gates if g["status"] == "BLOCKED"]
             if provisioning and not pending:
@@ -692,7 +697,8 @@ class ProjectEngine:
                     # نبضة خنق: نعيد استخدام آخر نتيجة فحص حقيقية (≤5ث)
                     # كاملة الأ shape — التصنيف يقرأ blocked منها كما هي
                     recheck = getattr(self, "_last_recheck_result", None)
-                    if not recheck:
+                    if not recheck or recheck["verdict"] == "PASS":
+                        # A fresh open gate cannot be bypassed by a cached PASS.
                         recheck = {
                             "verdict": "BLOCKED",
                             "summary": (
@@ -858,14 +864,6 @@ class ProjectEngine:
                 })
         return unready
 
-    def _preflight_goal(self, project: dict, plan: dict) -> str:
-        """هدف الفحص — الهدف الكامل بمعايير قبول الخطة (011 §17)."""
-        goal = project["objective"]
-        criteria = plan.get("acceptance_criteria") or []
-        if criteria:
-            goal += "\nمعايير القبول:\n- " + "\n- ".join(criteria[:6])
-        return goal
-
     def _run_preflight(self, project: dict, plan: dict, *,
                        force: bool = False,
                        require_web_search: bool = False) -> dict:
@@ -888,13 +886,14 @@ class ProjectEngine:
                 )
 
         return preflight_mod.task_preflight(
-            self._sessions, self._preflight_goal(project, plan),
+            self._sessions, project["objective"],
             policy=project.get("execution_policy") or "STRICT_ISOLATED",
             force=force,
             run_probe_fn=injected_probe,
             llm_ready=not unready,
             llm_detail={"unready_roles": unready} if unready else None,
-            require_web_search=require_web_search,
+            require_web_search=(require_web_search
+                                or preflight_mod.requires_web_search(plan)),
         )
 
     def _emit_preflight(self, project_id: int, result: dict) -> None:
@@ -962,21 +961,35 @@ class ProjectEngine:
             ),
             "policy": result.get("policy"),
         })
-        self._emit_preflight(project_id, result)
-        if result["verdict"] == "PASS":
-            self._emit(project_id, "ENVIRONMENT_READY", {
-                "environment": (
-                    {"id": result["environment"]["id"],
-                     "name": result["environment"]["name"],
-                     "isolation": result["environment"].get("isolation", "")}
-                    if result.get("environment") else None
-                ),
-            })
-            self._emit(project_id, "EXECUTION_OPENED", {
-                "plan_id": plan["id"], "version": plan["version"],
-                "summary": "الخطة معتمدة والقدرات جاهزة — التنفيذ مفتوح",
-            })
-            return None
+        # The initial check must also respect a gate recorded while the probe
+        # was running. A previous successful recheck may already have opened
+        # execution; verify readiness again without issuing another OPEN.
+        with _RECHECK_DECISION_LOCK:
+            if service.open_gates(self._sessions, project_id):
+                decision = self._reconcile_preflight(project_id, plan, result)
+                if decision["verdict"] == "PASS":
+                    return None
+                return {
+                    "action": "blocked", "blocked_kind": "preflight",
+                    "reason": decision["summary"], "preflight": decision,
+                }
+            if result["verdict"] == "PASS" and self._preflight_was_open(project_id):
+                return None
+            self._emit_preflight(project_id, result)
+            if result["verdict"] == "PASS":
+                self._emit(project_id, "ENVIRONMENT_READY", {
+                    "environment": (
+                        {"id": result["environment"]["id"],
+                         "name": result["environment"]["name"],
+                         "isolation": result["environment"].get("isolation", "")}
+                        if result.get("environment") else None
+                    ),
+                })
+                self._emit(project_id, "EXECUTION_OPENED", {
+                    "plan_id": plan["id"], "version": plan["version"],
+                    "summary": "الخطة معتمدة والقدرات جاهزة — التنفيذ مفتوح",
+                })
+                return None
         blocked = result["blocked"]
         # (007.1 §17 يبقى سليمًا) المزود غير الجاهز وحده يعالجه حاجز
         # الخطوة بدليل EXECUTION_BLOCKED وبوابة PROVIDER_ACTION_REQUIRED —
@@ -1055,10 +1068,97 @@ class ProjectEngine:
         )
         result = self._run_preflight(
             project, plan, force=False, require_web_search=required_search)
+        # Explicit requests and a live loop can probe concurrently. Serialize
+        # their final decisions, not the (potentially slow) general probes.
+        with _RECHECK_DECISION_LOCK:
+            return self._reconcile_preflight(project_id, plan, result)
+
+    def _preflight_was_open(self, project_id: int) -> bool:
+        previous = service.list_events(
+            self._sessions, project_id, limit=1,
+            kinds=("PLAN_APPROVED", "PREFLIGHT_PASS", "PREFLIGHT_BLOCKED",
+                   "PREFLIGHT_RECHECKED"),
+        )
+        return bool(previous) and (
+            previous[0]["kind"] == "PREFLIGHT_PASS"
+            or (previous[0]["kind"] == "PREFLIGHT_RECHECKED"
+                and previous[0]["payload"].get("verdict") == "PASS")
+        )
+
+    def _reconcile_preflight(self, project_id: int, plan: dict, probe: dict) -> dict:
+        """Reconcile durable blockers before reporting readiness or authorizing launch."""
+        project = self._project(project_id)
+        active_plan = self._active_plan(project)
+        if active_plan is None or active_plan["id"] != plan["id"]:
+            raise EngineError("تغيرت الخطة أثناء الفحص — أعد الفحص للخطة الحالية")
+        gates = service.open_gates(self._sessions, project_id)
+        was_open = self._preflight_was_open(project_id)
+        resolved = False
+        if probe["verdict"] == "PASS":
+            ready_caps = {
+                cap["capability_id"] for cap in probe.get("capabilities", [])
+                if cap.get("status") == "READY" and cap.get("ok")
+            }
+            for gate in gates:
+                if gate["status"] != "BLOCKED" or gate["kind"] != "PREFLIGHT_BLOCKED":
+                    continue
+                caps = {row["capability_id"] for row in service.gate_blockers(gate)}
+                if "build" in caps and self._build_tooling_still_missing(gate):
+                    self._emit(project_id, "GATE_KEPT_BLOCKED", {
+                        "gate_id": gate["id"], "kind": gate["kind"],
+                        "note": "فجوة node/npm قائمة — الحاجز باقٍ حتى التثبيت الفعلي",
+                    })
+                    continue
+                if not (caps - {"build"}).issubset(ready_caps):
+                    continue  # A general PASS is not proof for an unchecked capability.
+                outcome = service.auto_resolve_gate(
+                    self._sessions, gate["id"],
+                    note="إعادة الفحص أثبتت زوال سبب هذه البوابة",
+                )
+                if outcome.get("auto_resolved"):
+                    resolved = True
+                    self._emit(project_id, "GATE_AUTO_RESOLVED", {
+                        "gate_id": gate["id"], "kind": gate["kind"],
+                        "note": "زوال سبب البوابة مثبت — لا إعادة اعتماد مطلوبة",
+                    })
+        remaining = service.open_gates(self._sessions, project_id)
+        # Report a new measurement for the same capability without losing
+        # the holding gate/step identity or pretending it was released.
+        measured = {b["capability_id"]: b for b in probe["blocked"]}
+        persisted = [
+            {**b, **measured.get(b["capability_id"], {}),
+             "gate_id": b["gate_id"], "step_id": b.get("step_id")}
+            for gate in remaining for b in service.gate_blockers(gate)
+        ]
+        result = {
+            **probe, "probe_verdict": probe["verdict"], "opened_now": False,
+        }
+        if persisted:
+            blocked_ids = {b["capability_id"] for b in persisted}
+            result["blocked"] = persisted + [
+                b for b in probe["blocked"] if b["capability_id"] not in blocked_ids
+            ]
+            result["verdict"] = "BLOCKED"
+            result["summary"] = "؛ ".join(
+                f"{b['capability_id']} ({b['status']})"
+                + (f": {b['reason']}" if b.get("reason") else "")
+                for b in result["blocked"]
+            )
+            if project["status"] in ("READY", "RUNNING", "BLOCKED"):
+                service.update_project(
+                    self._sessions, project_id, status="BLOCKED",
+                    last_error=result["summary"][:800],
+                )
+        elif result["verdict"] == "PASS":
+            result["opened_now"] = resolved or not was_open or project["status"] == "BLOCKED"
+            if project["status"] == "BLOCKED":
+                service.update_project(self._sessions, project_id,
+                                       status="READY", last_error="")
         # نفس شكل تفاصيل _emit_preflight — السبب الحقيقي يصل الواجهة
         # حرفيًا (011 §3: سبب دقيق لا placeholder)
         self._emit(project_id, "PREFLIGHT_RECHECKED", {
             "verdict": result["verdict"], "summary": result["summary"],
+            "probe_verdict": result["probe_verdict"],
             "policy": result.get("policy"),
             "matrix": result.get("matrix", []),
             "blocked": [
@@ -1069,6 +1169,8 @@ class ProjectEngine:
                     "required_environment": b.get("required_environment", ""),
                     "owner_action": b.get("owner_action"),
                     "recovery": b.get("recovery", ""),
+                    "gate_id": b.get("gate_id"),
+                    "step_id": b.get("step_id"),
                 }
                 for b in result["blocked"]
             ],
@@ -1079,7 +1181,7 @@ class ProjectEngine:
                 if result.get("environment") else None
             ),
         })
-        if result["verdict"] == "PASS":
+        if result["opened_now"]:
             self._emit(project_id, "ENVIRONMENT_READY", {
                 "environment": (
                     {"id": result["environment"]["id"],
@@ -1093,31 +1195,6 @@ class ProjectEngine:
                 "summary": "إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح "
                            "بلا إعادة اعتماد",
             })
-            for gate in service.open_gates(self._sessions, project_id):
-                if gate["status"] == "BLOCKED":
-                    if self._build_tooling_still_missing(gate):
-                        # (W2-T24) زوال العائق يُثبت فعلًا لا بمجرد نجاح
-                        # فحص القدرات المطلوبة الأخرى — node/npm غائبان
-                        # فالبوابة تبقى صادقة الحجب.
-                        self._emit(project_id, "GATE_KEPT_BLOCKED", {
-                            "gate_id": gate["id"], "kind": gate["kind"],
-                            "note": "فجوة node/npm قائمة — الحاجز باقٍ حتى "
-                                    "التثبيت الفعلي",
-                        })
-                        continue
-                    service.auto_resolve_gate(
-                        self._sessions, gate["id"],
-                        note="إعادة فحص ناجحة بعد التوفير — التنفيذ مفتوح",
-                    )
-                    self._emit(project_id, "GATE_AUTO_RESOLVED", {
-                        "gate_id": gate["id"], "kind": gate["kind"],
-                        "note": "إعادة فحص ناجحة — لا إعادة اعتماد مطلوبة",
-                    })
-            if project["status"] == "BLOCKED":
-                service.update_project(
-                    self._sessions, project_id, status="READY",
-                    last_error="",
-                )
             self._emit(project_id, "PREFLIGHT_PASS", {
                 "summary": result["summary"],
                 "matrix": result.get("matrix", []),
@@ -1169,8 +1246,9 @@ class ProjectEngine:
 
         # 2) سجل التنفيذ الدائم (§7) — كل محاولة سجل مستقل
         attempt = step["attempts"] + 1
-        workspace = PROJECTS_DIR / str(project_id) / "steps" / str(step["id"])
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = (PROJECTS_DIR / str(project_id) / "steps" / str(step["id"])
+                     / "attempts" / uuid.uuid4().hex / "work")
+        workspace.mkdir(parents=True)
         # (013.7 §P14) أمر التنفيذ ومسار العمل
         command_text = step["objective"]
         if step.get("input"):
@@ -1303,6 +1381,10 @@ class ProjectEngine:
                         "role": cycle_role, "phase": "cycle",
                         "objective": str(event.get("text") or "")[:200],
                     })
+            # The inner cycle's terminal result is not step acceptance.
+            # Only the durable audited transition announces completion.
+            if kind == "task_done":
+                return
             self._on_event and self._on_event({
                 "project_id": project_id, "kind": "step.progress",
                 "payload": {"step_id": step["id"],
@@ -1355,92 +1437,64 @@ class ProjectEngine:
             return self._on_step_failure(project, plan, phase, step,
                                          execution_id, result.reason)
 
-        # 4) نجاح ← دليل دائم (§8) + تدقيق ميكانيكي (§12) + checkpoint
+        # A successful executor produces a candidate, not an accepted delivery.
         commit = _git_head()
-        service.update_execution(self._sessions, execution_id,
-                                 status="COMPLETED", commit_sha=commit)
-        self._emit(project_id, "EXECUTION_COMPLETED",
-                   {"execution_id": execution_id, "step_id": step["id"],
-                    "commit_sha": commit, "verdict": result.verdict})
-        evidence_id = service.create_evidence(
-            self._sessions,
-            execution_id=execution_id, step_id=step["id"],
-            project_id=project_id,
-            files=_files_with_sha(result.workspace),
-            tool_calls=result.tool_calls,
-            verification={"final_state": result.final_state,
-                          "state_history": result.state_history},
-            review_result={"verdict": result.verdict},
-            commit=commit,
-            evidence_path=result.evidence_path,
-            evidence_sha256=result.evidence_sha256,
-            verdict=result.verdict,
-            commands=[], artifacts=result.files,
-        )
-        self._emit(project_id, "EVIDENCE_CREATED",
-                   {"evidence_id": evidence_id, "step_id": step["id"],
-                    "files": result.files})
-        self._emit(project_id, "TEST_COMPLETED",
-                   {"step_id": step["id"], "final_state": result.final_state})
-        self._emit(project_id, "REVIEW_COMPLETED",
-                   {"step_id": step["id"], "verdict": result.verdict})
-
         evidence_view = _evidence_view(result)
-        # (SUPERZ 2026-11-01) أدلة المشروع المتراكمة — للمعايير
-        # العابرة للخطوات التي تذكر ملفات خطوات سابقة (فحص حضور
-        # ببصمات مسجلة في evidence_records، لا حكم مضمون).
-        try:
-            prior_files: dict = {}
-            for ev in service.list_evidence(self._sessions, project_id):
-                ev_files = ev.get("files") if isinstance(ev, dict) else None
-                if isinstance(ev_files, dict):
-                    prior_files.update(ev_files)
-            evidence_view["project_files"] = prior_files
-        except Exception:  # noqa: BLE001 — الأدلة التراكمية تحسين لا حاجز
-            pass
+        prior_files = {}
+        for ev in service.list_accepted_evidence(self._sessions, project_id):
+            prior_files.update(ev["files"])
+        evidence_view["project_files"] = prior_files
         findings = auditor.audit_step(
-            step, {"status": "COMPLETED"}, evidence_view
+            step, {"status": "RUNNING"}, evidence_view
         )
-        audit_id = service.create_audit(
-            self._sessions, project_id=project_id, phase_id=phase["id"],
-            step_id=step["id"], execution_id=execution_id,
-            plan_version=plan["version"], findings=findings,
-            evidence_refs=[evidence_id], commit_sha=commit,
-            tests={"final_state": result.final_state},
-            verdict=findings["verdict"],
-        )
-        self._emit(project_id, "AUDIT_COMPLETED",
-                   {"audit_id": audit_id, "step_id": step["id"],
-                    "verdict": findings["verdict"]})
+        if findings["verdict"] == "PASS":
+            try:
+                evidence_path = delivery.stage(
+                    workspace, evidence_view["files"], result.evidence_path,
+                    result.evidence_sha256,
+                )
+            except (OSError, ValueError) as error:
+                # A passing audit of candidate bytes cannot approve a missing
+                # or different snapshot. Preserve the failure for diagnosis.
+                findings = {**findings, "verdict": "FAIL",
+                            "delivery_error": str(error)[:500]}
 
-        # (§11+§12) التدقيق الميكانيكي جزء من الحلقة: معايير مفقودة =
-        # لا اكتمال صامت — التنفيذ يُعلن فاشلًا بتشخيص التدقيق وتعاد
-        # المحاولة أو تُفتح بوابة المالك. لا ثقة بنص المنفذ أبدًا.
         if findings["verdict"] != "PASS":
-            service.update_execution(
-                self._sessions, execution_id, status="FAILED",
-                error=(
-                    f"فشل التدقيق الميكانيكي ({findings['verdict']}): "
-                    f"missing={findings['missing']} "
-                    f"unverifiable={findings['unverifiable']}"
-                )[:2000],
+            reason = (
+                f"فشل التدقيق الميكانيكي ({findings['verdict']}): "
+                f"missing={findings['missing']} "
+                f"unverifiable={findings['unverifiable']}"
             )
+            if findings.get("delivery_error"):
+                reason += f" — delivery: {findings['delivery_error']}"
+            service.update_execution(
+                self._sessions, execution_id, status="FAILED", error=reason[:2000],
+            )
+            audit_id = service.create_audit(
+                self._sessions, project_id=project_id, phase_id=phase["id"],
+                step_id=step["id"], execution_id=execution_id,
+                plan_version=plan["version"], findings=findings,
+                evidence_refs=[], commit_sha=commit,
+                tests={"final_state": result.final_state}, verdict=findings["verdict"],
+            )
+            self._emit(project_id, "AUDIT_COMPLETED", {
+                "audit_id": audit_id, "step_id": step["id"],
+                "execution_id": execution_id, "verdict": findings["verdict"],
+            })
             return self._on_step_failure(
-                project, plan, phase, step, execution_id,
-                f"التدقيق الميكانيكي فشل — missing="
-                f"{findings['missing'][:3]}",
+                project, plan, phase, step, execution_id, reason,
             )
 
-        service.update_step(self._sessions, step["id"], status="COMPLETED",
-                            evidence_id=evidence_id)
-        self._emit(project_id, "STEP_COMPLETED", {
-            "step_id": step["id"], "execution_id": execution_id,
-            "evidence_id": evidence_id, "attempts": attempt,
-        })
-        self._checkpoint(project_id, plan, phase, step)
-        if result.state_history and "ADJUDICATED" in result.state_history:
-            self._emit(project_id, "ADJUDICATION_COMPLETED",
-                       {"step_id": step["id"]})
+        events = service.commit_step_acceptance(
+            self._sessions, project_id=project_id, plan_id=plan["id"],
+            plan_version=plan["version"], phase_id=phase["id"],
+            step_id=step["id"], execution_id=execution_id, commit=commit,
+            findings=findings, files=evidence_view["files"], evidence_path=evidence_path,
+            evidence_sha256=result.evidence_sha256, tool_calls=result.tool_calls,
+            final_state=result.final_state, state_history=result.state_history,
+        )
+        for kind, payload, event_id in events:
+            self._broadcast(project_id, kind, payload, event_id)
         return {"action": "continue", "step_id": step["id"],
                 "verdict": findings["verdict"]}
 
@@ -1650,40 +1704,17 @@ class ProjectEngine:
 
     @staticmethod
     def _step_requires_web_search(step: dict) -> bool:
-        """Use the step contract, not project topic or observed tool usage."""
-        dependencies = step.get("dependencies")
-        if isinstance(dependencies, list) and "web_search" in dependencies:
-            return True
-        # Already approved plans may only express the requirement as text.
-        criteria = step.get("acceptance_criteria") or []
-        for field in (step.get("objective"), *criteria):
-            for line in str(field or "").splitlines():
-                if re.search(
-                    r"اختياري|عند الحاجة|إن لزم|إن أمكن|لا (?:يلزم|يتطلب|تبحث)|"
-                    r"دون بحث|بدون بحث|\b(?:optional|if needed|if available|"
-                    r"not required|do not|without)\b", line, re.IGNORECASE,
-                ):
-                    continue
-                if re.search(
-                    r"^\s*(?:ابحث\s+(?:على|في|عبر)\s+(?:الويب|الإنترنت)|"
-                    r"(?:search|research)\s+(?:the\s+)?(?:web|internet)\b)|"
-                    r"(?:يجب|يلزم|يتطلب)\s+(?:إجراء\s+)?بحث\s+"
-                    r"(?:الويب|(?:في|على|عبر)\s+(?:الويب|الإنترنت))|"
-                    r"بحث\s+الويب\s+(?:إلزامي|مطلوب)|\b"
-                    r"(?:requires?\s+web[ _-]search|web[ _-]search\s+"
-                    r"(?:is\s+)?(?:required|mandatory))\b",
-                    line, re.IGNORECASE,
-                ):
-                    return True
-        return False
+        """Share the same explicit dependency rule for steps and plans."""
+        from readiness.preflight import requires_web_search
+        return requires_web_search(step)
 
     def _requires_gated_step_search(self, gate: dict, plan_id: int) -> bool:
         """A recheck must include an explicit dependency from the gated step."""
         details = gate.get("details") or {}
         if (gate["status"] != "BLOCKED" or gate["kind"] != "PREFLIGHT_BLOCKED"
                 or not details.get("step_id")
-                or not any(b.get("capability_id") == "web_search"
-                           for b in details.get("blocked", []))):
+                or not any(b["capability_id"] == "web_search"
+                           for b in service.gate_blockers(gate))):
             return False
         step = service.get_step(self._sessions, details["step_id"])
         if step is None or not self._step_requires_web_search(step):
@@ -1810,7 +1841,7 @@ class ProjectEngine:
             except ValueError:
                 return False
         blocked = details.get("blocked") or []
-        if not any(
+        if details.get("capability_id") != "build" and not any(
                 str((b or {}).get("capability_id", "")) == "build"
                 for b in blocked if isinstance(b, dict)):
             return False
@@ -1868,7 +1899,8 @@ class ProjectEngine:
         })
         service.update_phase(self._sessions, phase["id"], status="REVIEWING")
         evidences = [
-            e for e in service.list_evidence(self._sessions, project_id)
+            e for e in service.list_accepted_evidence(
+                self._sessions, project_id, limit=None)
             if e["step_id"] in {s["id"] for s in steps}
         ]
         result = auditor.audit_phase(phase, steps, evidences)
@@ -1916,7 +1948,8 @@ class ProjectEngine:
         project_id = project["id"]
         steps = self._pending_steps(project_id, plan_id=plan["id"],
                                     include_completed=True)
-        all_evidence = service.list_evidence(self._sessions, project_id)
+        all_evidence = service.list_accepted_evidence(
+            self._sessions, project_id, limit=None)
         all_audits = service.list_audits(self._sessions, project_id)
         # (SUPERZ 2026-11-01) سلامة الإكمال تُحكم على نطاق الخطة الحالية
         # حصرًا: أدلة وتدقيقيات الخطط الملغاة سجل تاريخي لا دعوى إكمال —
@@ -1928,9 +1961,14 @@ class ProjectEngine:
         current_phase_ids = {int(p["id"]) for p in phases}
         evidences = [e for e in all_evidence
                      if e.get("step_id") in current_step_ids]
-        audits = [a for a in all_audits
-                  if a.get("step_id") in current_step_ids
-                  or a.get("phase_id") in current_phase_ids]
+        accepted_attempts = {e["step_id"]: e["execution_id"] for e in evidences}
+        audits = [
+            a for a in all_audits
+            if (a.get("step_id") in current_step_ids
+                or a.get("phase_id") in current_phase_ids)
+            and (a.get("step_id") not in accepted_attempts
+                 or a.get("execution_id") == accepted_attempts[a["step_id"]])
+        ]
         result = auditor.audit_final(project, phases, steps, evidences, audits)
         audit_id = service.create_audit(
             self._sessions, project_id=project_id, phase_id=None,
@@ -2193,22 +2231,25 @@ def _files_with_sha(workspace: str) -> dict:
     الميكانيكي بالمفقود زورًا على عمل مكتمل (قياس 257 التنفيذ 109:
     الدورة EVIDENCED ثم فشل التدقيق بmissing الملف الموجود فعلًا).
     """
-    root = Path(workspace)
+    root = Path(workspace).resolve()
     if not root.is_dir():
         return {}
     out = {}
     for path in sorted(root.rglob("*")):
         if len(out) >= _EVIDENCE_MAX_FILES:
             break
-        if not path.is_file() or path.name == "evidence.json":
-            continue
-        if any(part in _EVIDENCE_SKIP_DIRS for part in path.parts):
+        relative = path.relative_to(root)
+        if path.name == "evidence.json" or _EVIDENCE_SKIP_DIRS.intersection(relative.parts):
             continue
         try:
-            out[str(path.relative_to(root))] = {
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "bytes": path.stat().st_size,
-            }
+            if root not in path.resolve().parents or not path.is_file() or path.is_symlink():
+                continue
+            with path.open("rb") as stream:
+                digest = hashlib.sha256()
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+                size = stream.tell()
+            out[relative.as_posix()] = {"sha256": digest.hexdigest(), "bytes": size}
         except OSError:
             continue
     return out

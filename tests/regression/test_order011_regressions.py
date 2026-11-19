@@ -133,7 +133,7 @@ def test_impossible_task_says_unavailable_while_provider_ready(sessions):
     assert view["readiness_status"] == "READY"
     # preflight يستهلك capability_view نفسه (لا يعيد الحساب)
     result = preflight.task_preflight(
-        sessions, "مهمة بحث", llm_ready=True, force=False,
+        sessions, "ابحث في الويب عن تقارير رسمية", llm_ready=True, force=False,
         run_probe_fn=_no_probe,
     )
     web = [c for c in result["capabilities"]

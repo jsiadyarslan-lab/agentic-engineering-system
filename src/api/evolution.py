@@ -77,7 +77,7 @@ def evolution_snapshot(project_id: Optional[int] = None) -> dict:
 
     files: dict = {}
     try:
-        for ev in service.list_evidence(sessions, pid, limit=400):
+        for ev in service.list_accepted_evidence(sessions, pid, limit=400):
             created = str(ev.get("created_at") or "")
             for name, meta in (ev.get("files") or {}).items():
                 cur = files.get(name)
@@ -87,6 +87,7 @@ def evolution_snapshot(project_id: Optional[int] = None) -> dict:
                     "bytes": (meta or {}).get("bytes", 0),
                     "sha256": (meta or {}).get("sha256", ""),
                     "step_id": ev.get("step_id"),
+                    "evidence_id": ev["id"],
                     "created_at": created,
                     "verdict": ev.get("verdict", ""),
                     "versions": versions,

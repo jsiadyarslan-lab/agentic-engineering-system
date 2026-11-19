@@ -231,7 +231,7 @@ def test_regression_search_down_fetch_up_capability_aware(sessions):
         row.last_probe_at = _dt.datetime.now(_dt.timezone.utc)
         s.commit()
     result = preflight.task_preflight(
-        sessions, "منصة OSINT بمصادر مفتوحة", llm_ready=True,
+        sessions, "ابحث في الويب عن مصادر رسمية لمنصة OSINT", llm_ready=True,
         run_probe_fn=_seamed(web_search="NOT_READY"),
     )
     assert result["verdict"] == "BLOCKED"

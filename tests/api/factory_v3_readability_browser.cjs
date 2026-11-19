@@ -106,7 +106,7 @@ async function main(){
        await page.getByText('محتوى المحادثة الثانية',{exact:true}).waitFor();
        await page.goBack();
        await page.getByText('رد محفوظ بعد البث',{exact:true}).waitFor();
-       await page.getByRole('link',{name:'ملخص المشروع'}).click();
+       await page.getByRole('link',{name:'نظرة عامة'}).click();
        const spec=page.getByText(/SPEC_ENGLISH_ONLY/);
        await spec.waitFor();
        assert.equal(await spec.evaluate(e=>getComputedStyle(e).direction),'ltr');

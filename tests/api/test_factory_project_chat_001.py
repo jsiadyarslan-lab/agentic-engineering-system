@@ -196,13 +196,35 @@ def test_same_conversation_rejects_parallel_generation_without_duplicate_user_me
 
 
 def _record_output(sessions, project, filename):
-    return service.create_evidence(
-        sessions, execution_id=97, step_id=23, project_id=project["id"],
+    # Seed a linked legacy acceptance (the output projection does not trust
+    # a naked evidence row without its attempt, step and mechanical verdict).
+    pid = project["id"]
+    plan = service.create_plan(
+        sessions, pid,
+        {"phases": [{"title": filename, "steps": [{"objective": filename}]}]},
+    )
+    service.materialize_plan(sessions, plan)
+    phase = service.active_phases(sessions, plan["id"])[0]
+    step = service.phase_steps(sessions, phase["id"])[0]
+    execution = service.create_execution(
+        sessions, step["id"], attempt=1, provider="fixture", model="", workspace=".",
+    )
+    record = service.create_evidence(
+        sessions, execution_id=execution, step_id=step["id"], project_id=pid,
         files={filename: {"sha256": "a" * 64, "bytes": 40}},
         tool_calls=[], verification={}, review_result={}, commit="",
         evidence_path="/local/evidence.json", evidence_sha256="",
-        verdict="EVIDENCE_RECORDED", logs=["private trace not for model"],
+        verdict="PASS", logs=["private trace not for model"],
     )
+    service.create_audit(
+        sessions, project_id=pid, phase_id=phase["id"], step_id=step["id"],
+        execution_id=execution, plan_version=plan["version"], findings={},
+        evidence_refs=[record], commit_sha="", tests={}, verdict="PASS",
+    )
+    service.update_execution(sessions, execution, status="COMPLETED")
+    service.update_step(sessions, step["id"], status="COMPLETED",
+                        evidence_id=record, current_execution_id=execution)
+    return record
 
 
 def test_project_status_and_latest_output_from_same_evidence_as_ui(api_env, monkeypatch):

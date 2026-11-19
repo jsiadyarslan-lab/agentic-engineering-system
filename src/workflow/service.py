@@ -11,7 +11,7 @@ import datetime as _dt
 import json
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from persistence.models import _utc_now
 from workflow.models import (
@@ -662,6 +662,175 @@ def list_evidence(sessions, project_id: int, limit: int = 200) -> list[dict]:
         return [_evidence_dict(row) for row in rows]
 
 
+def list_diagnostic_evidence(sessions, project_id: int, limit: int = 200) -> list[dict]:
+    """Read persisted provider-block evidence without treating it as delivery."""
+    with sessions() as session:
+        rows = session.scalars(
+            select(EvidenceRecord)
+            .where(EvidenceRecord.project_id == int(project_id),
+                   EvidenceRecord.verdict == "EXECUTION_BLOCKED")
+            .order_by(EvidenceRecord.id.desc()).limit(limit)
+        ).all()
+        return [_evidence_dict(row) for row in rows]
+
+
+def list_accepted_evidence(sessions, project_id: int, limit: int | None = 200, *,
+                           step_id: int | None = None,
+                           evidence_id: int | None = None) -> list[dict]:
+    """Delivery projection, not the immutable historical evidence ledger."""
+    if limit is not None and limit <= 0:
+        return []
+    rejected = select(AuditRecord.id).where(
+        AuditRecord.project_id == EvidenceRecord.project_id,
+        AuditRecord.step_id == EvidenceRecord.step_id,
+        AuditRecord.execution_id == EvidenceRecord.execution_id,
+        AuditRecord.verdict != "PASS",
+    ).correlate(EvidenceRecord).exists()
+    query = (
+        select(EvidenceRecord, Execution.workspace, AuditRecord.evidence_refs)
+        .join(Execution, Execution.id == EvidenceRecord.execution_id)
+        .join(Step, Step.id == Execution.step_id)
+        .join(Phase, Phase.id == Step.phase_id)
+        .join(AuditRecord,
+              (AuditRecord.execution_id == Execution.id)
+              & (AuditRecord.step_id == Step.id)
+              & (AuditRecord.phase_id == Phase.id)
+              & (AuditRecord.project_id == Phase.project_id))
+        .where(
+            Phase.project_id == int(project_id),
+            EvidenceRecord.project_id == Phase.project_id,
+            EvidenceRecord.step_id == Step.id,
+            EvidenceRecord.verdict == "PASS",
+            Step.status == "COMPLETED",
+            Step.current_execution_id == Execution.id,
+            Step.evidence_id == EvidenceRecord.id,
+            Execution.status == "COMPLETED",
+            AuditRecord.verdict == "PASS",
+            ~rejected,
+        )
+        .order_by(EvidenceRecord.id.desc())
+    )
+    if step_id is not None:
+        query = query.where(Step.id == int(step_id))
+    if evidence_id is not None:
+        query = query.where(EvidenceRecord.id == int(evidence_id))
+    accepted = {}
+    with sessions() as session:
+        for row, workspace, refs in session.execute(query).yield_per(100):
+            ids = _jload(refs, [])
+            if isinstance(ids, list) and (row.id in ids or str(row.id) in ids):
+                accepted.setdefault(row.id, {
+                    **_evidence_dict(row), "workspace": workspace,
+                })
+                if limit is not None and len(accepted) >= limit:
+                    break
+    return list(accepted.values())
+
+
+def commit_step_acceptance(
+    sessions, *, project_id: int, plan_id: int, plan_version: int,
+    phase_id: int, step_id: int, execution_id: int, commit: str,
+    findings: dict, files: dict, evidence_path: str, evidence_sha256: str,
+    tool_calls: list, final_state: str, state_history: list,
+) -> list[tuple[str, dict, int]]:
+    """Persist the verdict, delivery, transition, checkpoint and outbox together.
+
+    The caller has staged a file snapshot outside the database. A snapshot is
+    never visible as a delivery until this transaction commits. Returned
+    event IDs are for live notification only. Replays use the durable events.
+    """
+    if findings["verdict"] != "PASS" or not files or not evidence_sha256:
+        raise ValueError("step acceptance requires a passing audit and evidence")
+    with sessions() as session, session.begin():
+        # SQLite: reserve the writer before reading the attempt, so two
+        # finalizers cannot both decide the same attempt needs publishing.
+        session.execute(text("BEGIN IMMEDIATE"))
+        execution = session.get(Execution, execution_id)
+        step = session.get(Step, step_id)
+        phase = session.get(Phase, phase_id)
+        if not (
+            execution and step and phase and execution.step_id == step_id
+            and step.phase_id == phase_id and phase.project_id == project_id
+            and phase.plan_id == plan_id
+            and step.current_execution_id == execution_id
+        ):
+            raise ValueError("step acceptance no longer owns this attempt")
+        if execution.status == step.status == "COMPLETED":
+            record = (
+                session.get(EvidenceRecord, step.evidence_id) if step.evidence_id else None
+            )
+            if (record and record.execution_id == execution_id
+                    and execution.checkpoint_id
+                    and (_jload(record.verification, {}) or {}).get(
+                        "delivery_format") == "attempt-snapshot-v1"):
+                return []
+        if execution.status != "RUNNING" or step.status != "RUNNING":
+            raise ValueError("only a running attempt can be accepted")
+
+        record = EvidenceRecord(
+            project_id=project_id, step_id=step_id, execution_id=execution_id,
+            files=json.dumps(files, ensure_ascii=False),
+            artifacts=json.dumps(sorted(files), ensure_ascii=False),
+            tool_calls=json.dumps(tool_calls, ensure_ascii=False),
+            verification=json.dumps({
+                "final_state": final_state, "state_history": state_history,
+                "delivery_format": "attempt-snapshot-v1",
+            }, ensure_ascii=False),
+            review_result=json.dumps({"verdict": "PASS"}),
+            audit_result=json.dumps(findings, ensure_ascii=False),
+            evidence_path=evidence_path, evidence_sha256=evidence_sha256,
+            commit=commit, verdict="PASS",
+        )
+        checkpoint = CheckpointRecord(
+            project_id=project_id, plan_id=plan_id, phase_id=phase_id,
+            step_id=step_id, tick_count=0,
+            state_json=json.dumps({
+                "last_execution": execution_id, "plan_version": plan_version,
+            }),
+        )
+        session.add_all([record, checkpoint])
+        session.flush()
+        audit = AuditRecord(
+            project_id=project_id, phase_id=phase_id, step_id=step_id,
+            execution_id=execution_id, plan_version=plan_version,
+            findings=record.audit_result, evidence_refs=json.dumps([record.id]),
+            commit_sha=commit, tests=json.dumps({"final_state": final_state}),
+            verdict="PASS",
+        )
+        session.add(audit)
+        now = _utc_now()
+        execution.status = "COMPLETED"
+        execution.finished_at = now
+        execution.commit_sha = commit
+        execution.checkpoint_id = checkpoint.id
+        step.status = "COMPLETED"
+        step.evidence_id = record.id
+        step.completed_at = step.updated_at = now
+        session.flush()
+
+        common = {"step_id": step_id, "execution_id": execution_id, "phase_id": phase_id}
+        events = [
+            ("TEST_COMPLETED", {"final_state": final_state}),
+            ("REVIEW_COMPLETED", {"verdict": "PASS"}),
+            ("AUDIT_COMPLETED", {"audit_id": audit.id, "verdict": "PASS"}),
+            ("EXECUTION_COMPLETED", {"commit_sha": commit, "verdict": "PASS"}),
+            ("EVIDENCE_CREATED", {"evidence_id": record.id, "files": sorted(files)}),
+            ("STEP_COMPLETED", {"evidence_id": record.id, "attempts": execution.attempt}),
+            ("CHECKPOINT_CREATED", {"checkpoint_id": checkpoint.id}),
+        ]
+        if "ADJUDICATED" in state_history:
+            events.append(("ADJUDICATION_COMPLETED", {}))
+        persisted = []
+        for kind, details in events:
+            payload = {**common, **details}
+            event = ProjectEvent(project_id=project_id, kind=kind,
+                                 payload=json.dumps(payload, ensure_ascii=False))
+            session.add(event)
+            persisted.append((kind, payload, event))
+        session.flush()
+        return [(kind, payload, event.id) for kind, payload, event in persisted]
+
+
 def create_audit(sessions, *, project_id: int, phase_id: int | None,
                  step_id: int | None, execution_id: int | None,
                  plan_version: int, findings: dict, evidence_refs: list,
@@ -872,6 +1041,35 @@ def open_gates(sessions, project_id: int) -> list[dict]:
     return [
         g for g in list_gates(sessions, project_id)
         if g["status"] in ("PENDING", "BLOCKED")
+    ]
+
+
+def gate_blockers(gate: dict) -> list[dict]:
+    """Project a persisted gate's blockers, including legacy single-capability rows."""
+    details = gate.get("details") or {}
+    entries = details.get("blocked")
+    caps = [
+        item for item in (entries if isinstance(entries, list) else [])
+        if isinstance(item, dict) and item.get("capability_id")
+    ]
+    if not caps and details.get("capability_id"):
+        caps = [details]
+    if gate["status"] == "PENDING":
+        caps = [{"capability_id": "owner_decision"}]
+    # An unnamed blocker must not disappear just because it can't be probed.
+    return [
+        {
+            "capability_id": cap.get("capability_id") or gate["kind"],
+            "status": cap.get("status") or gate["status"],
+            "reason": cap.get("reason") or gate.get("reason") or "",
+            "required_environment": (cap.get("required_environment")
+                                     or details.get("required_environment") or ""),
+            "owner_action": cap.get("owner_action") or details.get("owner_action") or "",
+            "recovery": cap.get("recovery") or "",
+            "gate_id": gate["id"],
+            "step_id": cap.get("step_id") or details.get("step_id"),
+        }
+        for cap in caps or [{}]
     ]
 
 

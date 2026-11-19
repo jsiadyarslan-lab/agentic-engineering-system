@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any
 
@@ -40,27 +41,58 @@ def preflight_budget() -> float:
         return _DEFAULT_PREFLIGHT_BUDGET_S
     return value if value > 0 else _DEFAULT_PREFLIGHT_BUDGET_S
 
-#: كلمات تدل على اعتماد المهمة جوهريًا على البحث الخارجي (§16
-#: Capability Analysis): حين يطلب المالك بحثًا/مصادر/OSINT صراحة
-#: فالبحث قدرة مطلوبة تحجب غيابه البدء؛ وما عداه اختياري — المنفذ
-#: قد يجرب البحث فيفشل في التعافي الموثق لا في حجب مسبق.
-_RESEARCH_HINTS = (
-    "بحث", "ابحث", "ابحثي", "مصادر", "sources", "web search", "osint",
-    "استخبارات مفتوحة", "أخبار", "رصد",
+# A product topic, a source list, and using a tool are not a requirement.
+# A persisted "web_search" dependency or an explicit instruction is.
+_SEARCH_OPTIONAL = re.compile(
+    r"اختياري|غير\s+(?:ضروري|مطلوب|إلزامي)|عند\s+الحاجة|إن\s+(?:لزم|أمكن)|"
+    r"لا\s+(?:يلزم|يتطلب|تبحث|حاجة)|(?:دون|بدون)\s+(?:أي\s+)?بحث|"
+    r"\b(?:optional|if needed|if available|not (?:required|mandatory)|"
+    r"do not|don't|without|no (?:live |web )?(?:research|search)|"
+    r"can (?:skip|omit))\b",
+    re.IGNORECASE,
+)
+_SEARCH_REQUIRED = re.compile(
+    r"^(?:please\s+)?(?:search|research)\s+(?:the\s+)?(?:web|internet)\b|"
+    r"^ابحث[ي]?\s+(?:على|في|عبر)\s+(?:الويب|الإنترنت|الانترنت)|"
+    r"(?:يجب|يلزم|يتطلب)\s+(?:إجراء\s+)?بحث\s+"
+    r"(?:الويب|(?:في|على|عبر)\s+(?:الويب|الإنترنت|الانترنت))|"
+    r"بحث\s+الويب\s+(?:إلزامي|مطلوب)|"
+    r"\b(?:requires?\s+web[ _-]search|web[ _-]search\s+"
+    r"(?:is\s+)?(?:required|mandatory))\b",
+    re.IGNORECASE,
 )
 
 
-def required_capabilities(goal: str) -> list[str]:
-    """القدرات المطلوبة لهذه المهمة — من الجرد المعلن حصرًا.
+def explicit_web_search(*fields: str) -> bool:
+    """A narrow compatibility reader for explicit requirements in older plans."""
+    for field in fields:
+        if not isinstance(field, str):
+            continue
+        for part in re.split(r"[\r\n.!?؟؛;]+", field):
+            clause = part.strip().lstrip("-*• ").strip()
+            clause = re.sub(r"^\d+[)]\s*", "", clause)
+            if not _SEARCH_OPTIONAL.search(clause) and _SEARCH_REQUIRED.search(clause):
+                return True
+    return False
 
-    الأساس الدائم للمسار الحي: LLM (الأدوار) + بيئة تنفيذ (ملفات
-    الأدلة وتنفيذ الكود) + ملفات + شبكة + قشدة + قاعدة. البحث
-    الخارجي مطلوب فقط حين يعتمد عليه الهدف جوهريًا (كلمات صريحة).
-    """
+
+def requires_web_search(contract: dict) -> bool:
+    """Read a plan/step contract without inferring from its subject."""
+    dependencies = contract.get("dependencies")
+    if isinstance(dependencies, list) and "web_search" in dependencies:
+        return True
+    criteria = contract.get("acceptance_criteria")
+    return explicit_web_search(
+        contract.get("objective"),
+        *(criteria if isinstance(criteria, list) else ()),
+    )
+
+
+def required_capabilities(goal: str) -> list[str]:
+    """Resolve mandatory capabilities; search is opt-in, unlike the base set."""
     base = ["llm", "sandbox", "filesystem",
             "network_dns", "network_https", "shell", "persistence"]
-    lowered = (goal or "").lower()
-    if any(hint in lowered for hint in _RESEARCH_HINTS):
+    if explicit_web_search(goal):
         base.append("web_search")
     return base
 

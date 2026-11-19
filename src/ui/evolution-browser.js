@@ -540,7 +540,8 @@ window.EvoBrowser = (function () {
       $("evo-modal-pre").textContent = "جارٍ الجلب…";
       try {
         const u = "/api/projects/" + state.pid + "/artifacts/content?step_id=" +
-          encodeURIComponent(f.step_id) + "&name=" + encodeURIComponent(f.name);
+          encodeURIComponent(f.step_id) + "&name=" + encodeURIComponent(f.name) +
+          (f.evidence_id != null ? "&evidence_id=" + encodeURIComponent(f.evidence_id) : "");
         const r = await fetch(u);
         if (!r.ok) { $("evo-modal-pre").textContent = "لا معاينة متاحة (HTTP " + r.status + ")"; return; }
         $("evo-modal-pre").textContent = await r.text();

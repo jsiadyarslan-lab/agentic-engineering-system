@@ -225,6 +225,10 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
         if sid not in latest_by_step or eid > latest_by_step[sid]:
             latest_by_step[sid] = eid
     superseded_evidence: list = []
+    missing_evidence_steps = [
+        s["id"] for s in steps
+        if s["status"] == "COMPLETED" and s["id"] not in latest_by_step
+    ]
 
     integrity: dict[str, bool] = {}
     for evidence in evidences:
@@ -259,6 +263,7 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
         and not steps_pending
         and not failed_audits
         and not broken_evidence
+        and not missing_evidence_steps
     )
     return {
         "phases_total": len(phases),
@@ -268,11 +273,13 @@ def audit_final(project: dict, phases: list[dict], steps: list[dict],
         "failed_audits": [a["id"] for a in failed_audits],
         "evidence_integrity": integrity,
         "broken_evidence": broken_evidence,
+        "missing_evidence_steps": missing_evidence_steps,
         "superseded_evidence": superseded_evidence,
         "unresolved_issues": (
             [p["id"] for p in phases_pending]
             + [s["id"] for s in steps_pending]
             + broken_evidence
+            + missing_evidence_steps
         ),
         "verdict": "PASS" if passed else "FAIL",
     }

@@ -38,6 +38,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from providers_registry import registry
+from workflow import delivery
 from workflow import gates as gate_machine
 from workflow import service
 from workflow import runner as workflow_runner
@@ -58,6 +59,8 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 #: حالة المشروع النشط — بث لحظي فقط؛ الحقيقة الدائمة في القاعدة.
 #: (013) المصدر الوحيد الآن workflow/runner — لا مسار موازٍ أبدًا.
 _project_state: dict = {"active": None, "lock": threading.Lock()}
+_LAUNCH_REQUEST_LOCK = threading.RLock()
+_LAUNCH_RESULT_EVENT = "EXECUTION_LAUNCH_RESULT"
 
 #: خطاف اختبار — يستبدل مصنع المحرك (test wiring صريح، لا يمر منه إنتاج).
 _test_engine_factory = None
@@ -184,7 +187,8 @@ def _execution_gate(project: dict, plan: dict | None,
     verdict = None
     blocked_reason = required_env = owner_action = ""
     blockers = []
-    step_id = execution_id = None
+    measured_by_gate = {}
+    step_id = execution_id = event_gate_id = None
     # Unrelated job/tool events must not evict the last relevant result.
     for event in reversed(service.list_events(
             _sessions(), project["id"], limit=1,
@@ -199,6 +203,11 @@ def _execution_gate(project: dict, plan: dict | None,
         if verdict != "BLOCKED":
             break
         caps = _blocked_capabilities(payload)
+        if kind == "PREFLIGHT_RECHECKED":
+            measured_by_gate = {
+                (b["gate_id"], b["capability_id"]): b for b in caps
+                if b.get("gate_id") is not None
+            }
         gate_id = payload.get("gate_id")
         source_gates = gates if gates is not None else service.list_gates(
             _sessions(), project["id"])
@@ -216,6 +225,7 @@ def _execution_gate(project: dict, plan: dict | None,
                                  for b in _blocked_capabilities(
                                      g.get("details") or {}))), None)
         details = (gate or {}).get("details") or {}
+        event_gate_id = (gate or {}).get("id")
         stored = {b["capability_id"]: b
                   for b in _blocked_capabilities(details)}
         for cap in caps or stored.values():
@@ -253,6 +263,51 @@ def _execution_gate(project: dict, plan: dict | None,
     if state["state"] == "APPROVED_BUT_BLOCKED":
         state.update(blockers=blockers, step_id=step_id,
                      execution_id=execution_id)
+    # Persisted decisions take precedence over old PASS events or a historical
+    # READY flag. Do not reopen a gate merely by projecting the event log.
+    active = [
+        gate for gate in (gates if gates is not None else
+                          service.open_gates(_sessions(), project["id"]))
+        if gate["status"] in ("BLOCKED", "PENDING")
+    ]
+    if plan_approved and active:
+        current = []
+        for holding_gate in active:
+            rows = service.gate_blockers(holding_gate)
+            # Some historical gates have only a persisted reason. Recover the
+            # typed capability only from an event linked to this exact gate.
+            if (holding_gate["kind"] == "PREFLIGHT_BLOCKED"
+                    and holding_gate["id"] == event_gate_id
+                    and blockers and len(rows) == 1
+                    and rows[0]["capability_id"] == holding_gate["kind"]):
+                rows = [{**rows[0], **b, "step_id": step_id} for b in blockers]
+            current.extend(rows)
+        event_blocks = {b["capability_id"]: b for b in blockers}
+        for row in current:
+            measured = measured_by_gate.get((row["gate_id"], row["capability_id"]), {})
+            for key in ("status", "reason"):
+                row[key] = measured.get(key) or row[key]
+            old = event_blocks.get(row["capability_id"], {})
+            for key in ("required_environment", "owner_action"):
+                row[key] = row[key] or old.get(key) or ""
+        event_gate = next((g for g in active if g["id"] == event_gate_id), None)
+        details = (event_gate or active[0]).get("details") or {}
+        state = gate_machine.plan_execution_state(
+            plan_approved=True, preflight_verdict="BLOCKED",
+            blocked_reason="؛ ".join(
+                f"{b['capability_id']}: {b['status']}"
+                + (f" — {b['reason']}" if b["reason"] else "") for b in current
+            ),
+            required_environment=next((b["required_environment"] for b in current
+                                       if b["required_environment"]), ""),
+            owner_action=next((b["owner_action"] for b in current if b["owner_action"]), ""),
+        )
+        state.update(
+            blockers=current,
+            step_id=(details.get("step_id") or (step_id if event_gate else None)
+                     or next((b["step_id"] for b in current if b.get("step_id")), None)),
+            execution_id=details.get("execution_id") or (execution_id if event_gate else None),
+        )
     return state
 
 
@@ -694,7 +749,8 @@ def project_state_snapshot(project_id: int) -> dict:
     gates = service.list_gates(_sessions(), project_id)
     events = service.list_events(_sessions(), project_id, limit=200)
     executions = service.list_executions(_sessions(), project_id, limit=20)
-    evidence = service.list_evidence(_sessions(), project_id)
+    evidence = service.list_accepted_evidence(_sessions(), project_id)
+    diagnostic_evidence = service.list_diagnostic_evidence(_sessions(), project_id)
     audits = service.list_audits(_sessions(), project_id)
     try:
         job = _harness_manager().job_for_project(project_id)
@@ -717,16 +773,25 @@ def project_state_snapshot(project_id: int) -> dict:
     except Exception:  # noqa: BLE001 — المعايير قراءة اختيارية
         pass
     active = workflow_runner.active_run(_sessions())
+    gate_state = _execution_gate(project, plan, gates)
+    displayed_status = project["status"]
+    if (displayed_status in ("READY", "RUNNING")
+            and gate_state["state"] == "APPROVED_BUT_BLOCKED"
+            and any(g["status"] in ("PENDING", "BLOCKED") for g in gates)):
+        displayed_status = "BLOCKED"
     return {
         **project,
+        **({"status": displayed_status, "stored_status": project["status"]}
+           if displayed_status != project["status"] else {}),
         "plan": plan,
         "phases": phases,
         "gates": gates,
         "events": events[-60:],
         "executions": executions,
         "evidence": evidence,
+        "diagnostic_evidence": diagnostic_evidence,
         "audits": audits,
-        "execution_gate": _execution_gate(project, plan, gates),
+        "execution_gate": gate_state,
         "job": job,
         "environment": _environment_block(project, job=job),
         "timeline": timeline,
@@ -772,6 +837,13 @@ def generate_plan(project_id: int) -> dict:
         raise _http(error) from error
 
 
+def _launch_blocker(sessions, project_id: int) -> dict | None:
+    gates = service.open_gates(sessions, project_id)
+    # Give the explicit owner decision precedence when both kinds are open.
+    return next((g for g in gates if g["status"] == "PENDING"),
+                gates[0] if gates else None)
+
+
 def _launch_after_decision(project_id: int, reason: str) -> dict:
     """إطلاق الحلقة بعد قرار مالك (013 §3) — أمر لا صف قاعدة.
 
@@ -782,6 +854,10 @@ def _launch_after_decision(project_id: int, reason: str) -> dict:
     (013) المصنع يُلتقط وقتَ الطلب لا داخل الخيط الخلفي — بيئة
     الاختبار قد تُستبدل قبل أن يبني الخيط محركه؛ الإنتاج لا يتغير.
     """
+    blocker = _launch_blocker(_sessions(), project_id)
+    if blocker:
+        return {"launched": False, "reason": "execution_gate_blocked",
+                "detail": blocker["reason"]}
 
     def engine_factory(on_event=None):
         factory = _test_engine_factory  # مقرودة قبل الإغلاق أدناه
@@ -815,6 +891,46 @@ def _launch_after_decision(project_id: int, reason: str) -> dict:
                 "detail": str(error)[:300]}
 
 
+def _latest_event(sessions, project_id: int, kind: str) -> dict | None:
+    events = service.list_events(sessions, project_id, limit=1, kinds=(kind,))
+    return events[0] if events else None
+
+
+def _opening_and_launch_result(sessions, project_id: int) -> tuple[int | None, dict | None]:
+    opening = _latest_event(sessions, project_id, "EXECUTION_OPENED")
+    if opening is None:
+        return None, None
+    result = _latest_event(sessions, project_id, _LAUNCH_RESULT_EVENT)
+    if result and result["payload"].get("opening_event_id") != opening["id"]:
+        result = None
+    return opening["id"], result
+
+
+def _remember_launch_result(sessions, project_id: int, opening_id: int | None,
+                            previous: dict | None, launch: dict) -> None:
+    """The durable opening authorizes a request, but does not prove it ran."""
+    if opening_id is None or (previous and previous["payload"].get("satisfied")):
+        return
+    reason = launch.get("reason")
+    service.add_event(sessions, project_id, _LAUNCH_RESULT_EVENT, {
+        "opening_event_id": opening_id,
+        "launched": bool(launch.get("launched")),
+        "reason": reason,
+        "satisfied": bool(launch.get("launched")) or reason == "already_running",
+    })
+
+
+def _request_launch(project_id: int, reason: str) -> dict:
+    # Share the dispatch/receipt critical section with explicit rechecks and
+    # stream attachment, without holding it across general readiness probes.
+    with _LAUNCH_REQUEST_LOCK:
+        sessions = _sessions()
+        opening_id, previous = _opening_and_launch_result(sessions, project_id)
+        launch = _launch_after_decision(project_id, reason)
+        _remember_launch_result(sessions, project_id, opening_id, previous, launch)
+        return launch
+
+
 @router.post("/{project_id}/plan/approve")
 def approve_plan(project_id: int, body: PlanDecisionIn) -> dict:
     """قرار المالك — اعتماد يفعّل الخطة **ويطلق الحلقة فورًا** (013 §3).
@@ -832,7 +948,7 @@ def approve_plan(project_id: int, body: PlanDecisionIn) -> dict:
         raise _http(error) from error
     launch: dict = {"launched": False, "reason": "not_requested"}
     if body.approved:
-        launch = _launch_after_decision(
+        launch = _request_launch(
             project_id, "اعتماد الخطة — أمر المالك"
         )
     return {**result, "launch": launch}
@@ -860,15 +976,29 @@ async def run_project(project_id: int,
     except ValueError:
         after = -1
 
-    db_key = workflow_runner.sessions_db_key(_sessions())
-    active = workflow_runner.active_run(_sessions())
-    if active is not None and active["project_id"] != project_id:
-        raise HTTPException(
-            status_code=409,
-            detail=f"مشروع آخر يعمل حاليًا (#{active['project_id']}) — "
-            "الحلقة الذاتية واحدة في كل لحظة",
-        )
-    launch = _launch_after_decision(project_id, "تشغيل صريح من الواجهة")
+    sessions = _sessions()
+    db_key = workflow_runner.sessions_db_key(sessions)
+    with _LAUNCH_REQUEST_LOCK:
+        active = workflow_runner.active_run(sessions)
+        if active is not None and active["project_id"] != project_id:
+            raise HTTPException(
+                status_code=409,
+                detail=f"مشروع آخر يعمل حاليًا (#{active['project_id']}) — "
+                "الحلقة الذاتية واحدة في كل لحظة",
+            )
+        blocker = _launch_blocker(sessions, project_id)
+        if active is not None:
+            launch = {"launched": False, "reason": "already_running",
+                      "project_id": project_id, "job_id": active.get("job_id")}
+            opening_id, previous = _opening_and_launch_result(sessions, project_id)
+            _remember_launch_result(sessions, project_id, opening_id, previous, launch)
+        else:
+            if blocker:
+                raise HTTPException(status_code=409, detail=blocker["reason"])
+            launch = _request_launch(project_id, "تشغيل صريح من الواجهة")
+            if launch.get("reason") in ("conflict", "execution_gate_blocked"):
+                raise HTTPException(status_code=409, detail=launch.get("detail") or launch["reason"])
+        stream_status = "BLOCKED" if blocker else "RUNNING"
 
     from core.live_bus import BUS
 
@@ -886,7 +1016,7 @@ async def run_project(project_id: int,
         try:
             yield "data: " + json.dumps({
                 "project_id": project_id, "kind": "run.start",
-                "payload": {"status": "RUNNING", "launch": launch},
+                "payload": {"status": stream_status, "launch": launch},
             }, ensure_ascii=False) + "\n\n"
             last_event_id = max(after, 0) if after > 0 else 0
             # البث من البداية أو الاستكمال بعد معرف — أحداث الدائمة
@@ -1026,65 +1156,50 @@ def project_history(project_id: int, before_id: int = 0,
 
 @router.get("/{project_id}/artifacts")
 def project_artifacts(project_id: int) -> dict:
-    """مخرجات المشروع (013.4 §47) — ملفات/تقارير/أدلة من كل خطوة.
-
-    من الأدلة الدائمة حصرًا (evidence.files/artifacts) — لا مسح
-    قرص عام: ما لم يُثبت لا يُعرض.
-    """
+    """List only files belonging to accepted attempts, not candidate bytes."""
     _project_or_404(project_id)
-    artifacts: list[dict] = []
-    for evidence in service.list_evidence(_sessions(), project_id):
-        files = evidence.get("files") or {}
-        for name, meta in files.items():
-            artifacts.append({
-                "name": name,
-                "kind": "file",
-                "sha256": (meta or {}).get("sha256", ""),
-                "bytes": (meta or {}).get("bytes", 0),
-                "step_id": evidence.get("step_id"),
-                "evidence_id": evidence.get("id"),
-                "verdict": evidence.get("verdict", ""),
-                "created_at": evidence.get("created_at"),
-            })
-        for item in evidence.get("artifacts") or []:
-            artifacts.append({
-                "name": str(item),
-                "kind": "artifact",
-                "step_id": evidence.get("step_id"),
-                "evidence_id": evidence.get("id"),
-                "verdict": evidence.get("verdict", ""),
-                "created_at": evidence.get("created_at"),
-            })
-    artifacts.sort(key=lambda a: str(a.get("created_at") or ""),
-                   reverse=True)
+    artifacts = [
+        {
+            "name": name,
+            "kind": "file",
+            "sha256": meta.get("sha256", ""),
+            "bytes": meta.get("bytes", 0),
+            "step_id": evidence["step_id"],
+            "execution_id": evidence["execution_id"],
+            "evidence_id": evidence["id"],
+            "verdict": evidence["verdict"],
+            "delivery_status": "ACCEPTED",
+            "created_at": evidence["created_at"],
+        }
+        for evidence in service.list_accepted_evidence(_sessions(), project_id)
+        for name, meta in evidence["files"].items()
+        if isinstance(meta, dict) and meta.get("sha256")
+    ]
     return {"artifacts": artifacts}
 
 
 @router.get("/{project_id}/artifacts/content")
 def project_artifact_content(project_id: int, step_id: int,
-                             name: str) -> Response:
-    """محتوى ملف مخرَج حقيقي من دليل الخطوة (016 M3) — قراءة قرص حصرًا.
-
-    من ملفات الأدلة الدائمة حصرًا: runtime/projects/{id}/steps/{sid}/{name}.
-    أمان المسار: بلا ".." ولا جذر مطلق ولا شرطة عكسية ولا بايت صفر —
-    يجب أن يبقى الحسم داخل دليل الخطوة. نص utf-8 (مع استبدال) حتى 256KB
-    لأن الغرض معاينة حية لا تنزيل ثنائي.
-    """
+                             name: str, evidence_id: int | None = None) -> Response:
+    """Read a bounded text preview of the selected accepted artifact."""
     _project_or_404(project_id)
     if (not name or name.startswith("/") or "\\" in name
-            or ".." in name or "\x00" in name):
+            or ".." in name.split("/") or "\x00" in name):
         raise HTTPException(status_code=400, detail="invalid artifact name")
-    from pathlib import Path
-    from core.config import settings
-    base = (Path(settings.db_path).parent / "projects" / str(project_id)
-            / "steps" / str(step_id)).resolve()
-    target = (base / name).resolve()
-    if base not in target.parents or not target.is_file():
-        raise HTTPException(status_code=404, detail="artifact file not found")
-    data = target.read_bytes()[:262144]
+    records = service.list_accepted_evidence(
+        _sessions(), project_id, limit=1, step_id=step_id, evidence_id=evidence_id,
+    )
+    if not records:
+        raise HTTPException(status_code=404, detail="accepted artifact not found")
+    try:
+        data = delivery.preview(records[0], name)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="accepted artifact not found") from exc
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(status_code=409, detail="accepted artifact could not be verified") from exc
     return Response(content=data.decode("utf-8", "replace"),
                     media_type="text/plain; charset=utf-8",
-                    headers={"Cache-Control": "no-cache"})
+                    headers={"Cache-Control": "no-store"})
 
 
 class PauseIn(BaseModel):
@@ -1116,7 +1231,7 @@ def retry_project(project_id: int) -> dict:
         ).retry(project_id)
         # إعادة الخطوات/التشغيل تطلق الحلقة فورًا — أمر لا صف قاعدة
         if result.get("retried") in ("steps", "run"):
-            launch = _launch_after_decision(
+            launch = _request_launch(
                 project_id, "إعادة محاولة من المالك"
             )
             return {**result, "launch": launch}
@@ -1194,7 +1309,7 @@ def resume_project(project_id: int) -> dict:
             _harness_manager().mark_resumed(project_id)
         except Exception:  # noqa: BLE001 — دفتر الوظيفة لا يمنع الاستئناف
             pass
-        launch = _launch_after_decision(project_id, "استئناف صريح من المالك")
+        launch = _request_launch(project_id, "استئناف صريح من المالك")
         return {**result, "launch": launch}
     except Exception as error:  # noqa: BLE001
         raise _http(error) from error
@@ -1206,38 +1321,53 @@ def recheck_preflight(project_id: int) -> dict:
     (013 §38: بلا إعادة اعتماد وبلا زر تشغيل إضافي)."""
     _project_or_404(project_id)
     try:
+        sessions = _sessions()
+        # A concurrent request already in flight is not a later explicit
+        # retry. Remember the conflict it could actually have observed.
+        _, prior = _opening_and_launch_result(sessions, project_id)
         result = _build_engine().recheck_preflight(project_id)
-        project = service.get_project(_sessions(), project_id)
         launch: dict = {"launched": False, "reason": "not_requested"}
-        if result["verdict"] == "PASS":
-            launch = _launch_after_decision(
-                project_id, "إعادة فحص ناجحة بعد التوفير — استئناف آلي"
+        with _LAUNCH_REQUEST_LOCK:
+            project = service.get_project(sessions, project_id)
+            gate_state = _execution_gate(
+                project, service.latest_plan(sessions, project_id)
             )
+            opening_id, previous = _opening_and_launch_result(sessions, project_id)
+            retry_conflict = (
+                previous is not None and prior is not None
+                and previous["id"] == prior["id"]
+                and previous["payload"].get("reason") == "conflict"
+                and not previous["payload"].get("satisfied")
+            )
+            first_request = result.get("opened_now") and previous is None
+            if (result["verdict"] == "PASS" and gate_state["open_for_execution"]
+                    and project["status"] in ("READY", "RUNNING")
+                    and opening_id is not None and (first_request or retry_conflict)):
+                active = workflow_runner.active_run(sessions)
+                if active is not None and active["project_id"] == project_id:
+                    launch = {"launched": False, "reason": "already_running",
+                              "project_id": project_id, "job_id": active.get("job_id")}
+                    _remember_launch_result(sessions, project_id, opening_id, previous, launch)
+                elif first_request or active is None:
+                    launch = _request_launch(
+                        project_id, "إعادة فحص ناجحة بعد التوفير — استئناف آلي"
+                    )
             if (not launch.get("launched")
                     and launch.get("reason") == "already_running"):
-                # (AES-EXP-04 - توضيح عقد 013 §38): حلقة المشروع لا تزال
-                # حية وتتنفس؛ نبضتها التالية في فرع الحجب تعيد الفحص
-                # نفسه وتفتح البوابة آلياً - «الفتح التلقائي بلا زر
-                # إضافي» محقق، والإطلاق المزدوج مرفوض بعقد §40 عمداً.
-                launch = {
-                    "launched": True,
-                    "reason": "active_job_continues",
-                    "project_id": launch.get("project_id"),
-                    "job_id": launch.get("job_id"),
-                }
+                # The existing loop continues; this request did not launch it.
+                launch = {**launch, "reason": "active_job_continues"}
         return {
             "project": project,
             "preflight": {
                 "verdict": result["verdict"],
+                "probe_verdict": result["probe_verdict"],
                 "summary": result["summary"],
                 "matrix": result.get("matrix", []),
                 "blocked": result.get("blocked", []),
                 "environment": result.get("environment"),
                 "policy": result.get("policy"),
             },
-            "execution_gate": _execution_gate(
-                project, service.latest_plan(_sessions(), project_id)
-            ),
+            "execution_gate": gate_state,
             "launch": launch,
         }
     except Exception as error:  # noqa: BLE001
@@ -1274,7 +1404,7 @@ def resolve_gate(project_id: int, gate_id: int, body: GateDecisionIn) -> dict:
             "PROVIDER_ACTION_REQUIRED", "ESCALATION",
         ):
             # قرار المالك عالج العائق — الحلقة تستأنف فورًا (013 §3)
-            launch = _launch_after_decision(
+            launch = _request_launch(
                 project_id, "حل بوابة مالك — استئناف آلي"
             )
         return {**outcome, "launch": launch}
@@ -1323,8 +1453,15 @@ def project_executions(project_id: int) -> dict:
 
 @router.get("/{project_id}/evidence")
 def project_evidence(project_id: int) -> dict:
+    """Keep the evidence-list contract for accepted and diagnostic records."""
     _project_or_404(project_id)
-    return {"evidence": service.list_evidence(_sessions(), project_id)}
+    sessions = _sessions()
+    limit = 200
+    visible = (
+        service.list_accepted_evidence(sessions, project_id, limit=limit)
+        + service.list_diagnostic_evidence(sessions, project_id, limit=limit)
+    )
+    return {"evidence": sorted(visible, key=lambda row: row["id"], reverse=True)[:limit]}
 
 
 @router.get("/{project_id}/audit")

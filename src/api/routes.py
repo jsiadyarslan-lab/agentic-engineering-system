@@ -138,6 +138,14 @@ from execution import service as execution_service
 execution_service.set_default_sessions(_sessions)
 
 # ثوابت الواجهة: styles.css + app.js + الخطوط المضمنة محليًا
+@app.api_route("/static/aes-engineering-control-v4-live.html",
+               methods=["GET", "HEAD"], include_in_schema=False)
+def engineering_control_workspace() -> FileResponse:
+    """Keep the owner's existing V4 URL on the single workspace source."""
+    return FileResponse(UI_DIR / "factory_v3_live.html", media_type="text/html",
+                        headers={"Cache-Control": "no-cache"})
+
+
 app.mount("/static", StaticFiles(directory=UI_DIR), name="static")
 app.include_router(execution_router)
 app.include_router(research_router)

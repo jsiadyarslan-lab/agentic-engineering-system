@@ -56,6 +56,8 @@ async function fetchMock(url,opts={}){
   if(url==='/api/projects/5/state')return response(blockedState);
   if(url==='/api/projects/5/steps')return response({steps:[]});
   if(url==='/api/projects/5/runtime')return response({});
+  if(url==='/api/projects/4/artifacts/content?step_id=44&name=build.js&evidence_id=999')
+    return {ok:true,status:200,text:async()=> 'staged accepted bytes'};
   if(url==='/api/projects/4/conversations')return response({conversations:[{conversation_id:22,project_id:4,title:'محادثة حقيقية'}]});
   if(url==='/api/conversations/22/messages')return response({conversation_id:22,messages:savedMessages.slice()});
   if(url.startsWith('/api/chat/active?conversation_id=')){const id=Number(url.split('=').at(-1));return response({stream:'chat-'+id,running:id===22&&serverRunning});}
@@ -215,9 +217,13 @@ async function settle(){
 
   browser.location.hash='#/p/4/outputs';
   browser.__test.state.artifacts={artifacts:Array.from({length:35},(_,i)=>({
-    name:'article-'+i+'.html',kind:'file',step_id:i+1,evidence_id:100+i,verdict:'UNVERIFIED',
-    sha256:'evidence-sha-'+i
-  })).concat([{name:'build.js',kind:'file',step_id:44,evidence_id:999,verdict:'FAILED'}])};
+    name:'article-'+i+'.html',kind:'file',step_id:i+1,evidence_id:100+i,execution_id:200+i,
+    verdict:'PASS',delivery_status:'ACCEPTED',sha256:'evidence-sha-'+i
+  })).concat([
+    {name:'build.js',kind:'file',step_id:44,evidence_id:999,execution_id:998,verdict:'PASS',delivery_status:'ACCEPTED'},
+    {name:'rejected.js',kind:'file',step_id:44,evidence_id:1000,execution_id:997,verdict:'FAILED',delivery_status:'ACCEPTED'},
+    {name:'legacy-conflict.js',kind:'file',step_id:44,evidence_id:1001,execution_id:996,verdict:'PASS'}
+  ])};
   browser.__test.state.artifactQuery='';
   browser.__test.state.artifactType='all';
   browser.__test.state.artifactLimit=30;
@@ -227,7 +233,14 @@ async function settle(){
   browser.__test.state.artifactType='code';
   browser.__test.paint();
   assert(root.innerHTML.includes('build.js'),'code filter must show code evidence');
-  assert(root.innerHTML.includes('حكم دليل الخطوة: FAILED'),'step verdict must not be upgraded');
+  assert(!root.innerHTML.includes('rejected.js'),'a failed attempt is not a delivery');
+  assert(!root.innerHTML.includes('legacy-conflict.js'),'a historical PASS alone is not a delivery');
+  const callsBeforeRejectedClick=calls.length;
+  await browser.__test.handle('artifact-36');
+  assert.equal(calls.length,callsBeforeRejectedClick,'no preview request for rejected row');
+  await browser.__test.handle('artifact-35');
+  assert(calls.includes('/api/projects/4/artifacts/content?step_id=44&name=build.js&evidence_id=999'));
+  assert(root.innerHTML.includes('staged accepted bytes'),'preview displays the selected evidence bytes');
   assert(!root.innerHTML.includes('article-0.html'),'code filter must exclude HTML pages');
   browser.__test.state.preview={name:'index.html',text:'<h1>Test</h1><script>evil()</script>'};
   browser.__test.state.previewMode='visual';
@@ -236,6 +249,9 @@ async function settle(){
   assert(root.innerHTML.includes('Content-Security-Policy'),'HTML preview must inject restrictive CSP');
   assert(root.innerHTML.includes('&lt;script&gt;evil()&lt;/script&gt;'),'source markup must be encoded in srcdoc attribute');
   browser.__test.state.preview=null;
+  browser.__test.state.artifacts={artifacts:[]};
+  browser.__test.paint();
+  assert(root.innerHTML.includes('لا توجد مخرجات مقبولة بعد.'));
   browser.location.hash='#/p/4/runs';
   browser.__test.state.details={...serverState,plan:{id:12,approved_by_owner:true},
     phases:[{id:41,plan_id:11,title:'Older'},{id:42,plan_id:12,title:'Current'}]};
