@@ -1,11 +1,13 @@
 name: AES trusted suite
 
 on:
-  push:
-    branches-ignore:
-      - main
   pull_request:
   workflow_dispatch:
+
+# Cancel superseded PR revisions so private CI minutes are not wasted.
+concurrency:
+  group: aes-trusted-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   tests:

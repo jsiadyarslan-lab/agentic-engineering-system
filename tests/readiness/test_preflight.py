@@ -109,7 +109,7 @@ def test_required_missing_blocks_with_reason_and_recovery(sessions):
     # (011 §12) البحث يُشتق من مزوديه — DDG فاشل بمسبار حقيقي مسجل
     _ddg(sessions, "NOT_READY", "لم تُرجع الأداة مادة قابلة للتحليل")
     result = preflight.task_preflight(
-        sessions, "مهمة بحث",
+        sessions, "ابحث في الويب عن منشورات رسمية حديثة",
         run_probe_fn=_fast_probe({}),
     )
     assert result["verdict"] == "BLOCKED"
@@ -211,7 +211,7 @@ def test_preflight_events_shape():
 
 
 def test_required_capabilities_from_real_inventory():
-    required = preflight.required_capabilities("اريد بناء منصة OSINT")
+    required = preflight.required_capabilities("ابحث في الويب عن منشورات رسمية حديثة")
     inventory_ids = {c["capability_id"] for c in registry.CAPABILITY_INVENTORY}
     # المطلوب من الجرد المعلن حصرًا — لا قدرة مخترعة (§3)
     assert set(required) <= inventory_ids

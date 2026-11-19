@@ -209,7 +209,7 @@ def criteria_view(sessions, project_id: int) -> list[dict]:
     criteria = criteria_of_plan(plan)
     if not criteria:
         return []
-    evidence = service.list_evidence(sessions, project_id)
+    evidence = service.list_accepted_evidence(sessions, project_id)
     executions = service.list_executions(sessions, project_id)
     status_map = _evidence_status(criteria, evidence, executions)
     out = []

@@ -1259,7 +1259,8 @@
   function previewArtifact(a) {
     if (S.sel == null || a.step_id == null || !a.name) return;
     var url = "/api/projects/" + S.sel + "/artifacts/content?step_id=" +
-      a.step_id + "&name=" + encodeURIComponent(String(a.name));
+      a.step_id + "&name=" + encodeURIComponent(String(a.name)) +
+      (a.evidence_id != null ? "&evidence_id=" + encodeURIComponent(a.evidence_id) : "");
     fetch(url, { headers: { accept: "text/plain" } })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);

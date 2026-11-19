@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from pathlib import Path
 
 from sqlalchemy import select
@@ -73,6 +74,13 @@ def load_events_after(sessions, cycle_id: str, after: int,
     return events
 
 
+def _sse_now() -> float:
+    return time.monotonic()
+
+
+SSE_KEEPALIVE_SECONDS = 15.0
+
+
 def sse_line(event: dict) -> str:
     return "data: " + json.dumps(event, ensure_ascii=False) + "\n\n"
 
@@ -98,11 +106,13 @@ async def live_stream(
     sub_id = BUS.subscribe(stream_key, loop, queue)
     try:
         last_seq = after
+        last_write = _sse_now()
         archive = load_events_after(sessions, stream_key, after)
         for event in archive:
             if event.get("seq", 0) > last_seq:
                 last_seq = event["seq"]
             yield sse_line(event)
+            last_write = _sse_now()
 
         if replay_only and not is_running():
             yield sse_line({**STREAM_DONE, "stream": stream_key,
@@ -121,6 +131,11 @@ async def live_stream(
                     yield sse_line({**STREAM_DONE, "stream": stream_key,
                                     "seq": last_seq})
                     return
+                if _sse_now() - last_write >= SSE_KEEPALIVE_SECONDS:
+                    # تعليق SSE لا يحمل بيانات ولا تسلسلًا ولا حكم نجاح؛
+                    # يبقي الوصلة حية أثناء انتظار النموذج.
+                    yield ": keepalive\n\n"
+                    last_write = _sse_now()
                 continue
             seq = event.get("seq", 0)
             if seq and seq <= last_seq:
@@ -128,6 +143,7 @@ async def live_stream(
             if seq:
                 last_seq = seq
             yield sse_line(event)
+            last_write = _sse_now()
             kind = event.get("kind", "")
             if kind in done_kinds:
                 yield sse_line({**STREAM_DONE, "stream": stream_key,
